@@ -3666,9 +3666,11 @@ void MobileEngine::setCwPaddles(bool on)
 
 QString MobileEngine::cwKeyboardPaddles() const
 {
-    const QString keys = AppSettings::instance().value(QStringLiteral("MobileCwKeyboardPaddles"), QStringLiteral("brackets")).toString();
-    return (keys == QLatin1String("ctrl") || keys == QLatin1String("alt") || keys == QLatin1String("off"))
-        ? keys : QStringLiteral("brackets");
+    // Ctrl by default: what USB paddle adapters send, on any layout ([ and ]
+    // need AltGr or Option on Finnish and German ones).
+    const QString keys = AppSettings::instance().value(QStringLiteral("MobileCwKeyboardPaddles"), QStringLiteral("ctrl")).toString();
+    return (keys == QLatin1String("brackets") || keys == QLatin1String("alt") || keys == QLatin1String("off"))
+        ? keys : QStringLiteral("ctrl");
 }
 
 void MobileEngine::setCwKeyboardPaddles(const QString& keys)

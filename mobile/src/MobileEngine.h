@@ -197,9 +197,10 @@ class MobileEngine : public QObject {
     // driving the app's iambic keyer (the desktop's IambicKeyer: mode,
     // speed and swapped paddles follow the radio's settings). Remembered.
     Q_PROPERTY(bool cwPaddles READ cwPaddles WRITE setCwPaddles NOTIFY cwChanged)
-    // Paddles on a hardware keyboard: "brackets" ([ and ]), "ctrl" (left and
-    // right Ctrl, as USB paddle adapters send), "alt" (left and right Alt /
-    // Option, for keyboards with no right Ctrl) or "off". Remembered.
+    // Paddles on a hardware keyboard: "ctrl" (left and right Ctrl, as USB
+    // paddle adapters send; the default), "alt" (left and right Alt / Option,
+    // for keyboards with no right Ctrl), "brackets" ([ and ]) or "off".
+    // Remembered.
     Q_PROPERTY(QString cwKeyboardPaddles READ cwKeyboardPaddles WRITE setCwKeyboardPaddles NOTIFY cwChanged)
     // The radio's iambic mode (0 = A, 1 = B) and swapped paddles, which the
     // app's keyer follows. The radio's own iambic on/off (its key jack) is

@@ -2,9 +2,9 @@ import QtQuick
 import AetherMobile
 
 // CW paddles on a hardware keyboard (CW tab > Key: Paddles, and Paddles on
-// a keyboard): [ and ] by default, left and right Ctrl, which USB paddle
-// adapters (Vail, VBand) send, or left and right Alt / Option, for keyboards
-// with no right Ctrl (Apple's Magic Keyboard). A page forwards its key
+// a keyboard): left and right Ctrl by default, which USB paddle adapters
+// (Vail, VBand) send, left and right Alt / Option, for keyboards with no
+// right Ctrl (Apple's Magic Keyboard), or [ and ]. A page forwards its key
 // events; handle*() return true when they took the key. Left = dit, right =
 // dah (the keyer applies the radio's swapped-paddles setting itself).
 QtObject {

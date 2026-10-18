@@ -323,8 +323,8 @@ offers **Off**.
   are the radio's settings, also in [Radio Setup](#9-radio-setup) →
   Phone/CW. **Paddles on a keyboard** picks which two keys of a hardware
   keyboard are the paddles, the left one dit and the right one dah:
-  left and right **Ctrl** (what USB paddle adapters such as Vail and VBand
-  send), left and right **Alt ⌥** (Option; for keyboards with no right
+  left and right **Ctrl** (the default; what USB paddle adapters such as
+  Vail and VBand send), left and right **Alt ⌥** (Option; for keyboards with no right
   Ctrl, such as Apple's Magic Keyboard), **[ ]** (on English layouts,
   where [ and ] are keys of their own; on Finnish or German layouts they
   need AltGr or Option, so pick Ctrl or Alt there), or **Off**.
