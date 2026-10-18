@@ -205,6 +205,9 @@ class MobileEngine : public QObject {
     // The radio's iambic mode (0 = A, 1 = B) and swapped paddles, which the
     // app's keyer follows. The radio's own iambic on/off (its key jack) is
     // left alone.
+    // iOS: left and right Control / Option come from GameController, as Qt
+    // cannot tell them apart there; the engine keys them itself.
+    Q_PROPERTY(bool nativeKeyboardSides READ nativeKeyboardSides CONSTANT)
     Q_PROPERTY(int cwIambicMode READ cwIambicMode WRITE setCwIambicMode NOTIFY cwChanged)
     Q_PROPERTY(bool cwSwapPaddles READ cwSwapPaddles WRITE setCwSwapPaddles NOTIFY cwChanged)
     Q_PROPERTY(int cwSpeed READ cwSpeed WRITE setCwSpeed NOTIFY cwChanged)
@@ -487,6 +490,7 @@ public:
     void setCwKeyboardPaddles(const QString& keys);
     int cwIambicMode() const;
     void setCwIambicMode(int mode);
+    bool nativeKeyboardSides() const;
     bool cwSwapPaddles() const;
     void setCwSwapPaddles(bool on);
     // The paddles as held now; the keyer forms the elements.
@@ -1038,6 +1042,11 @@ private:
     std::atomic<int> m_paddleElements{0};   // key-downs from the paddles (diagnostics)
     void syncIambicKeyer();
     void releasePaddles();
+    // A left or right Control / Option from GameController (SideKey).
+    void onSideKey(int key, bool pressed);
+    bool m_sideDit{false};
+    bool m_sideDah{false};
+    int m_sideKeysLogged{0};
     // A key or paddle press with break-in off: say why nothing goes on air.
     void noteBreakInOff();
     std::atomic<int> m_cwxSidetoneDowns{0};      // key-downs played (diagnostics)

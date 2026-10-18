@@ -15,6 +15,7 @@
 
 #include "ScreenAwake.h"
 #include "SecureStore.h"
+#include "SideKeys.h"
 
 #include "core/AppActivity.h"
 #include "core/AppSettings.h"
@@ -47,6 +48,7 @@
 #include "models/XvtrPolicy.h"
 
 #include <QGuiApplication>
+#include <QInputMethodQueryEvent>
 #include <QHostAddress>
 #include <QPermissions>
 #include <QJSEngine>
@@ -266,6 +268,12 @@ MobileEngine::MobileEngine(QObject* parent)
         // an app whose main thread is busy when it moves to the background
         // (scene-update watchdog, seen on testers' iPads), and it saves power.
         const bool active = state == Qt::ApplicationActive;
+        if (!active) {
+            // stopTransmit released the paddles; GameController's keys
+            // start from up when the app is back.
+            m_sideDit = false;
+            m_sideDah = false;
+        }
         if (active != m_displayActive) {
             m_displayActive = active;
             qCInfo(lcMobile) << "display" << (active ? "resumed" : "paused (app not in front)");
@@ -411,6 +419,14 @@ MobileEngine::MobileEngine(QObject* parent)
     }
     wireSmartLink();
     wireCw();
+    if (sideKeysAvailable()) {
+        const QPointer<MobileEngine> self = this;
+        startSideKeys([self](SideKey key, bool pressed) {
+            if (self) {
+                self->onSideKey(static_cast<int>(key), pressed);
+            }
+        });
+    }
 
     m_discovery = makeLocalRadioDiscoverySource({.local = true, .simulator = true});
     connect(m_discovery.get(), &RadioDiscoverySource::radioChanged, this,
@@ -3700,6 +3716,46 @@ void MobileEngine::setCwSwapPaddles(bool on)
         releasePaddles();
         m_session.radioModel().transmitModel().setCwSwapPaddles(on);
     }
+}
+
+bool MobileEngine::nativeKeyboardSides() const
+{
+    return sideKeysAvailable();
+}
+
+void MobileEngine::onSideKey(int keyValue, bool pressed)
+{
+    const auto key = static_cast<SideKey>(keyValue);
+    const bool control = key == SideKey::LeftControl || key == SideKey::RightControl;
+    if (cwKeyboardPaddles() != (control ? QLatin1String("ctrl") : QLatin1String("alt"))) {
+        return;
+    }
+    const bool left = key == SideKey::LeftControl || key == SideKey::LeftOption;
+    bool& held = left ? m_sideDit : m_sideDah;
+    if (held == pressed) {
+        return;
+    }
+    if (pressed) {
+        if (!cwMode() || !cwPaddles() || QGuiApplication::applicationState() != Qt::ApplicationActive) {
+            return;
+        }
+        // Typing in a text field (Option gives special characters) keys
+        // nothing.
+        if (QObject* focus = QGuiApplication::focusObject()) {
+            QInputMethodQueryEvent query(Qt::ImEnabled);
+            QCoreApplication::sendEvent(focus, &query);
+            if (query.value(Qt::ImEnabled).toBool()) {
+                return;
+            }
+        }
+    }
+    held = pressed;
+    if (pressed && m_sideKeysLogged < 6) {
+        ++m_sideKeysLogged;
+        qCInfo(lcMobile).noquote() << "CW keyboard paddles:" << (left ? "dit from left" : "dah from right")
+                                   << (control ? "Control" : "Option") << "(GameController)";
+    }
+    setCwPaddleState(m_sideDit, m_sideDah);
 }
 
 void MobileEngine::logKeyboardPaddles(const QString& what)

@@ -12,10 +12,13 @@ queued, waiting on someone, or still to verify follows.
   the waterfall), and the operate pages no longer loop on their own safe
   area after a rotation. To check on the phone's outer screen and on an
   iPhone in landscape.
-- Keyboard paddles on the iPad: in build 80 left and right Option on a
-  Finnish Magic Keyboard keyed nothing. The log now gets the first keys
-  (key, scan code, modifiers) and the page's keyboard focus, so the next
-  build shows whether iPadOS delivers the modifier keys at all.
+- Keyboard paddles on the iPad: in build 80 both Option keys (and with
+  Ctrl, Control and either Command) keyed a dit. Qt 6.12 on iOS passes no
+  scan code, so left and right cannot be told apart and Command arrives
+  as Ctrl. The app now reads left and right Control / Option from Apple's
+  GameController framework (GCKeyboard) on iOS and ignores Command; text
+  fields key nothing. The log shows the first keys and the page's focus.
+  To try on the Magic Keyboard and with a USB paddle adapter.
 
 Parked: two-finger trackpad scrolling of the iPad's pinned panel stops
 halfway (Magic Keyboard; finger scrolling works; --wheel-test finds no

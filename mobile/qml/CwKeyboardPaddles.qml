@@ -23,7 +23,9 @@ QtObject {
         Engine.logKeyboardPaddles("key " + event.key + " scan " + event.nativeScanCode
                                   + " modifiers 0x" + event.modifiers.toString(16)
                                   + (event.text.length > 0 ? " text \"" + event.text + "\"" : "")
-                                  + " -> " + (s === "" ? "not a paddle" : s + (s === "left" ? " (dit)" : " (dah)"))
+                                  + " -> " + (s !== "" ? s + (s === "left" ? " (dit)" : " (dah)")
+                                              : Engine.nativeKeyboardSides && Engine.cwKeyboardPaddles !== "brackets"
+                                                ? "sides from GameController" : "not a paddle")
                                   + " (" + Engine.cwKeyboardPaddles + ")")
     }
 
@@ -34,8 +36,11 @@ QtObject {
             if (event.key === Qt.Key_BracketRight) return "right"
             return ""
         }
+        // iOS: Qt passes no scan code there, so the engine reads left and
+        // right from GameController (Engine.nativeKeyboardSides) itself.
+        if (Engine.nativeKeyboardSides) return ""
         // Qt reports both Ctrl (or Alt) keys as one key: the hardware code
-        // tells them apart (evdev/Android, X11, iOS HID, macOS).
+        // tells them apart (evdev/Android, X11, macOS).
         const sc = event.nativeScanCode
         if (Engine.cwKeyboardPaddles === "alt") {
             // Right Alt is AltGr on many PC layouts.
@@ -43,7 +48,7 @@ QtObject {
             if (event.key !== Qt.Key_Alt) return ""
             if ([56, 64, 226, 58].indexOf(sc) >= 0) return "left"
             if ([100, 108, 230, 61].indexOf(sc) >= 0) return "right"
-                return "left"
+            return "left"
         }
         if (event.key !== Qt.Key_Control && event.key !== Qt.Key_Meta) return ""
         // Qt on Apple platforms reports Command as Ctrl: Command (and the
