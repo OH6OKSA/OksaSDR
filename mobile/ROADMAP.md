@@ -3,7 +3,7 @@
 Updated with every build. The newest TestFlight build is at the top; what is
 queued, waiting on someone, or still to verify follows.
 
-## Next build
+## Next build (79, Android beta 4)
 
 Queued (not yet sent to TestFlight):
 - Passband drag tunes on the tuning step (Wayne: had to round off with the step buttons after each drag).

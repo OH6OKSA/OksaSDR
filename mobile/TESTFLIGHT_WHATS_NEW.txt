@@ -9,22 +9,15 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Spot filters (View > Spots): CW, phone or digital only, and only the newest (5, 15 or 30 minutes).
-- Drag a passband edge to set the filter width; drag a notch along the spectrum to move it.
 - CW paddles: CW tab > Key > Paddles puts dit and dah in PTT's place (hold both for iambic). On a keyboard: [ and ], or left/right Ctrl (USB paddle adapters). [TX]
-- CW decoder: far less noise read as letters (Sens, 8-45 WPM); weak stations decode better.
-- Dragging the passband tunes in STEP increments, so the frequency ends on a round value (as tapping and the step buttons do).
-- Mic level (TX tab) now sets this device's microphone gain, -20 to +30 dB. The radio's mic level never acted on it, so speech could stay low with only a few watts out. Set it so speech peaks near -10 dB on the Mic meter. [TX]
-- Clearer buttons: a button that is on is lit blue, the others dark.
-- PTT can be a switch: TX tab > PTT > Tap on / off (tap to transmit, tap again to stop; stops by itself after 3 minutes). [TX]
-- CW memories and CW text play a sidetone on your device while they are sent.
-- Network & performance shows the busiest threads; Android asks for the microphone on the first connect.
+- CW decoder: far less band noise read as letters (Sens, 8-45 WPM); weak stations decode better.
+- Dragging the passband tunes in STEP increments, so it ends on a round frequency.
+- Drag a passband edge to set the filter width; drag a notch along the spectrum to move it.
+- Spot filters (View > Spots): CW, phone or digital only, and only the newest (5, 15 or 30 minutes).
 
-RECENT (build 77)
-- DX cluster spots on the display (View > Spots); tap one to tune.
-- Notch filters (TNF): press and hold on the display; tap a notch to adjust.
-- TX tab: processing of this device's microphone (gate, EQ, compressor).
-- Memories: press and hold to edit name, frequency and mode. Voice keyer: Listen.
+RECENT (build 78)
+- Mic level (TX tab) is this device's microphone gain, -20 to +30 dB; aim for speech peaks near -10 dB on the Mic meter. [TX]
+- Lit buttons (on = blue); PTT Tap on / off; CW sidetone for memories and CW text.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
@@ -32,7 +25,7 @@ PLEASE TRY
 - Both portrait and landscape; on iPad also Split View.
 - Voice transmit with the device mic or a Bluetooth headset, and tell me how it sounds at the other end. [TX]
 - CW keying, CWX memories (F1–F12 on a keyboard) and the decoder. [TX]
-- New: set Mic level so speech peaks near -10 dB and check the power out; PTT Tap on / off. [TX]
+- New: CW paddles on the screen or a keyboard, and the decoder on a busy CW band. [TX]
 - Spots and the DX cluster, a notch on a carrier, the TX processing at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM

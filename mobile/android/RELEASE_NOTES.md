@@ -1,19 +1,18 @@
-**OksaSDR for Android — beta 3.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight build 78), from the same code.
+**OksaSDR for Android — beta 4.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight build 79), from the same code.
 
-### New in beta 3
-- **Mic level now works with the phone's microphone** — TX tab → Mic level is the phone microphone's own gain, −20 to +30 dB, and the Mic meter follows it. The radio's mic level never acted on the phone's microphone (the radio has no gain stage for its network input), so speech could stay low with only a few watts out. Set it so speech peaks near −10 dB on the Mic meter while you transmit.
-- **Clearer buttons** — a button that is on is lit blue, the others dark.
-- **PTT as a switch** — TX tab → PTT → *Tap on / off*: tap to transmit, tap again to stop; it stops by itself after 3 minutes.
-- **CW sidetone for memories and CW text** while they are sent.
-- **Busiest threads** in Network & performance, to see whether one part of the app is at its limit.
-
-### Since beta 2 (still new to many)
-- Spots and the DX cluster, notch filters (TNF), processing of the phone's microphone (gate, EQ, compressor), memory editing, voice keyer *Listen*; beta 2 also asks for the microphone on the first connect.
+### New in beta 4
+- **CW paddles** — CW tab → Key → *Paddles* puts dit and dah in PTT's place; hold both for iambic squeeze. The app times the elements (iambic A/B and swapped paddles from Radio Setup). A USB paddle adapter (Vail, VBand) works as a keyboard: left/right Ctrl, or [ and ].
+- **CW decoder** — far less band noise read as letters (Sens slider, 8–45 WPM); weak stations decode better.
+- **Tuning by drag** lands on the tuning step, so the frequency ends round.
+- **Filter edges** — drag a passband edge to set any width.
+- **Notches** — drag a notch along the spectrum to move it.
+- **Spot filters** — View → Spots: CW, phone or digital only, and only the newest (5, 15 or 30 minutes).
+- The log notes network changes (Wi-Fi / mobile data), to explain a dropped remote session.
 
 ### Install or update
-1. Download `OksaSDR-android-beta3.apk` below on the phone (about 150 MB).
+1. Download `OksaSDR-android-beta4.apk` below on the phone (about 150 MB).
 2. Open it; allow installing from your browser or file manager when Android asks. If Chrome keeps the download waiting, open ⋮ → *Downloads* → *Keep*.
-3. Beta 3 installs over beta 1 or 2 and keeps your settings. If you have one of the earlier hand-delivered test APKs, uninstall it first (different signing key).
+3. Beta 4 installs over earlier betas and keeps your settings. If you have one of the earlier hand-delivered test APKs, uninstall it first (different signing key).
 
 Android 9 or newer, 64-bit ARM. On the first connect, allow notifications, the microphone and "no battery optimization" so receive keeps going in the background and PTT can transmit.
 
