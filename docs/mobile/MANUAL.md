@@ -430,6 +430,10 @@ them back into the drawer.
 - **View** — band plan, **Spots** (shown or hidden) and the **DX cluster**,
   2D waterfall or 3D, waterfall levels, spectrum range, 3D floor, smoothing
   and gain.
+  - **Spot filters** — which spots show: *All*, *CW*, *Phone* or *Digital*
+    (by the spot's mode, else its comment or the band plan, as on the
+    desktop), and *Any age* or only those from the last 5, 15 or 30
+    minutes.
   - **DX cluster** — tap to connect, again to disconnect. Set the server and
     port (default dxc.nc7j.com 7300) and the callsign it logs in with (the
     radio's own when left empty); **Auto** connects whenever the radio

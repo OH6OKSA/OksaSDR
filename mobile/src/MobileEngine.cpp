@@ -3227,6 +3227,14 @@ void MobileEngine::setupDxCluster()
     m_spotsNotifyTimer.setSingleShot(true);
     m_spotsNotifyTimer.setInterval(500);
     connect(&m_spotsNotifyTimer, &QTimer::timeout, this, &MobileEngine::spotsChanged);
+    // With an age limit, spots leave the display as they age.
+    m_spotsAgeTimer.setInterval(30000);
+    connect(&m_spotsAgeTimer, &QTimer::timeout, this, [this] {
+        if (spotMaxAgeMin() > 0 && showSpots()) {
+            emit spotsChanged();
+        }
+    });
+    m_spotsAgeTimer.start();
     SpotModel& spots = m_session.radioModel().spotModel();
     auto spotsMoved = [this] {
         if (!m_spotsNotifyTimer.isActive()) {
@@ -3287,7 +3295,24 @@ QVariantList MobileEngine::spots() const
     if (!m_connected || !showSpots()) {
         return out;
     }
+    const QString modes = spotModes();
+    const qint64 maxAgeMs = qint64(spotMaxAgeMin()) * 60 * 1000;
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
     for (const SpotData& s : m_session.radioModel().spotModel().spots()) {
+        if (maxAgeMs > 0 && s.addedMs > 0 && now - s.addedMs > maxAgeMs) {
+            continue;
+        }
+        if (modes != QLatin1String("all")) {
+            const QString mode = SpotModeResolver::resolveSpotRadioMode(s.mode, s.comment, s.rxFreqMhz);
+            const bool cw = mode.startsWith(QLatin1String("CW"));
+            const bool digital = mode.startsWith(QLatin1String("DIG")) || mode == QLatin1String("RTTY")
+                || mode == QLatin1String("FDV");
+            const bool phone = !mode.isEmpty() && !cw && !digital;
+            if ((modes == QLatin1String("cw") && !cw) || (modes == QLatin1String("digital") && !digital)
+                || (modes == QLatin1String("phone") && !phone)) {
+                continue;
+            }
+        }
         out << QVariantMap{{QStringLiteral("index"), s.index}, {QStringLiteral("call"), s.callsign},
                            {QStringLiteral("freq"), s.rxFreqMhz}, {QStringLiteral("mode"), s.mode},
                            {QStringLiteral("comment"), s.comment}, {QStringLiteral("spotter"), s.spotterCallsign},
@@ -3306,6 +3331,37 @@ void MobileEngine::setShowSpots(bool on)
 {
     if (on != showSpots()) {
         AppSettings::instance().setValue(QStringLiteral("MobileShowSpots"), on ? QStringLiteral("True") : QStringLiteral("False"));
+        AppSettings::instance().save();
+        emit spotsChanged();
+    }
+}
+
+QString MobileEngine::spotModes() const
+{
+    const QString m = AppSettings::instance().value(QStringLiteral("MobileSpotModes"), QStringLiteral("all")).toString();
+    return (m == QLatin1String("cw") || m == QLatin1String("phone") || m == QLatin1String("digital")) ? m
+                                                                                                      : QStringLiteral("all");
+}
+
+void MobileEngine::setSpotModes(const QString& modes)
+{
+    if (modes != spotModes()) {
+        AppSettings::instance().setValue(QStringLiteral("MobileSpotModes"), modes);
+        AppSettings::instance().save();
+        emit spotsChanged();
+    }
+}
+
+int MobileEngine::spotMaxAgeMin() const
+{
+    return std::clamp(AppSettings::instance().value(QStringLiteral("MobileSpotMaxAgeMin"), 0).toInt(), 0, 240);
+}
+
+void MobileEngine::setSpotMaxAgeMin(int minutes)
+{
+    minutes = std::clamp(minutes, 0, 240);
+    if (minutes != spotMaxAgeMin()) {
+        AppSettings::instance().setValue(QStringLiteral("MobileSpotMaxAgeMin"), minutes);
         AppSettings::instance().save();
         emit spotsChanged();
     }

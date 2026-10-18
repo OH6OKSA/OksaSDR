@@ -154,6 +154,11 @@ class MobileEngine : public QObject {
     // color, source}; empty while showSpots is off.
     Q_PROPERTY(QVariantList spots READ spots NOTIFY spotsChanged)
     Q_PROPERTY(bool showSpots READ showSpots WRITE setShowSpots NOTIFY spotsChanged)
+    // Spot filters (remembered): modes "all", "cw", "phone" or "digital"
+    // (the spot's mode, else its comment or the band plan, as the desktop
+    // resolves it) and the newest only, 0 (any) or 5/15/30 minutes.
+    Q_PROPERTY(QString spotModes READ spotModes WRITE setSpotModes NOTIFY spotsChanged)
+    Q_PROPERTY(int spotMaxAgeMin READ spotMaxAgeMin WRITE setSpotMaxAgeMin NOTIFY spotsChanged)
     // DX cluster: {host, port, callsign (the radio's when not set),
     // callsignFromRadio, autoConnect, state off/connecting/connected, error}.
     Q_PROPERTY(QVariantMap dxCluster READ dxCluster NOTIFY dxClusterChanged)
@@ -514,6 +519,10 @@ public:
     QVariantList spots() const;
     bool showSpots() const;
     void setShowSpots(bool on);
+    QString spotModes() const;
+    void setSpotModes(const QString& modes);
+    int spotMaxAgeMin() const;
+    void setSpotMaxAgeMin(int minutes);
     QVariantMap dxCluster() const;
     // key: host, port, callsign or autoConnect.
     Q_INVOKABLE void setDxCluster(const QString& key, const QVariant& value);
@@ -989,6 +998,7 @@ private:
     QStringList m_dxQueue;
     QTimer m_dxSendTimer;
     QTimer m_spotsNotifyTimer;   // at most two spot list updates a second
+    QTimer m_spotsAgeTimer;      // spots age out of the age filter
     void setupDxCluster();
     QString dxCallsign() const;
     QTimer m_voicePreviewTimer;

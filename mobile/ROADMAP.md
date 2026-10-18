@@ -10,6 +10,8 @@ Queued (not yet sent to TestFlight):
 - CW paddles on the screen with the app's iambic keyer (A/B, squeeze; [ ] or Ctrl L/R on a keyboard); checked on air at 10 W.
 - CW decoder: Sens filter (default 70) and 8-45 WPM; band noise mostly gone, weak calls decode (measured on 20 m).
 - Filter edges dragged on the display (10 Hz steps); notches dragged along the spectrum.
+- Spot filters: mode (CW, phone, digital) and age (5/15/30 min).
+- Network changes in the log (after a SmartLink drop in the background on Android: both links closed at once, back in 13 s).
 
 Open from tester feedback: SmartLink sign-in not kept for one tester (log
 needed).

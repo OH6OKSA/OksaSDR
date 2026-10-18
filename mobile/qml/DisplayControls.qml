@@ -45,6 +45,38 @@ ColumnLayout {
             onClicked: Engine.showSpots = !Engine.showSpots
         }
     }
+    // Which spots show: by mode and age.
+    RowLayout {
+        Layout.fillWidth: true
+        visible: Engine.showSpots
+        Repeater {
+            model: [{ key: "all", label: qsTr("All") }, { key: "cw", label: qsTr("CW") },
+                    { key: "phone", label: qsTr("Phone") }, { key: "digital", label: qsTr("Digital") }]
+            delegate: AppButton {
+                required property var modelData
+                text: modelData.label
+                checked: Engine.spotModes === modelData.key
+                Layout.fillWidth: true
+                Layout.preferredWidth: 1
+                onClicked: Engine.spotModes = modelData.key
+            }
+        }
+    }
+    RowLayout {
+        Layout.fillWidth: true
+        visible: Engine.showSpots
+        Repeater {
+            model: [0, 5, 15, 30]
+            delegate: AppButton {
+                required property int modelData
+                text: modelData === 0 ? qsTr("Any age") : qsTr("%1 min").arg(modelData)
+                checked: Engine.spotMaxAgeMin === modelData
+                Layout.fillWidth: true
+                Layout.preferredWidth: 1
+                onClicked: Engine.spotMaxAgeMin = modelData
+            }
+        }
+    }
     RowLayout {
         Layout.fillWidth: true
         AppButton {

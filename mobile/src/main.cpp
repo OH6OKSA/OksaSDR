@@ -170,6 +170,9 @@ int main(int argc, char* argv[])
         QStringLiteral("Development, receive only: set the filter to <low>,<high> Hz, log the radio's edges, then "
                        "put the old ones back."), QStringLiteral("low,high"));
     parser.addOption(filterEdgesOption);
+    const QCommandLineOption spotFilterOption(QStringLiteral("spot-filter"),
+        QStringLiteral("Spot filter <modes>,<max age min>, e.g. cw,0 (remembered)."), QStringLiteral("filter"));
+    parser.addOption(spotFilterOption);
     const QCommandLineOption setModeOption(QStringLiteral("set-mode"),
         QStringLiteral("Development: set this app's slice to <mode> on a real radio once connected "
                        "(--mode touches only the demo)."), QStringLiteral("mode"));
@@ -576,6 +579,11 @@ int main(int argc, char* argv[])
         QTimer::singleShot(13000, &app, [&engine] {
             qInfo() << "filter-edges-test: restored" << engine.filterLow() << engine.filterHigh();
         });
+    }
+    if (parser.isSet(spotFilterOption)) {
+        const QStringList f = parser.value(spotFilterOption).split(QLatin1Char(','));
+        engine.setSpotModes(f.value(0, QStringLiteral("all")));
+        engine.setSpotMaxAgeMin(f.value(1, QStringLiteral("0")).toInt());
     }
     if (parser.isSet(setModeOption)) {
         const QString mode = parser.value(setModeOption);
