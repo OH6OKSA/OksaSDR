@@ -53,6 +53,8 @@
 #include <QLoggingCategory>
 #include <QThread>
 #include <QDateTime>
+#include <QMetaEnum>
+#include <QNetworkInformation>
 #include <QNetworkInterface>
 #include <QTimer>
 
@@ -125,6 +127,27 @@ MobileEngine::MobileEngine(QObject* parent)
     connect(m_audio, &AudioEngine::txClipRecorded, this, &MobileEngine::onVoiceClipRecorded);
     connect(m_audio, &AudioEngine::txClipFinished, this, &MobileEngine::onVoiceClipFinished);
     setupDxCluster();
+    // Network changes in the log (Wi-Fi <-> mobile data, offline): a remote
+    // session that drops can then be told apart from the network switching
+    // under it.
+    if (QNetworkInformation::loadDefaultBackend()) {
+        QNetworkInformation* net = QNetworkInformation::instance();
+        auto describe = [net] {
+            return QStringLiteral("%1, %2%3")
+                .arg(QString::fromLatin1(QMetaEnum::fromType<QNetworkInformation::TransportMedium>()
+                                             .valueToKey(int(net->transportMedium()))),
+                     QString::fromLatin1(QMetaEnum::fromType<QNetworkInformation::Reachability>()
+                                             .valueToKey(int(net->reachability()))),
+                     net->isMetered() ? QStringLiteral(", metered") : QString());
+        };
+        qCInfo(lcMobile).noquote() << "network:" << describe() << "(" << net->backendName() << ")";
+        connect(net, &QNetworkInformation::transportMediumChanged, this,
+                [describe] { qCInfo(lcMobile).noquote() << "network changed:" << describe(); });
+        connect(net, &QNetworkInformation::reachabilityChanged, this,
+                [describe] { qCInfo(lcMobile).noquote() << "network changed:" << describe(); });
+    } else {
+        qCInfo(lcMobile) << "network: no information backend on this platform";
+    }
     // The final limiter (-1 dBFS) on unless chosen otherwise: the device
     // microphone's gain can boost up to +30 dB.
     if (!AppSettings::instance().contains(QStringLiteral("ClientFinalLimiterTxEnabled"))) {
