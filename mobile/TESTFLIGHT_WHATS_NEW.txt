@@ -9,23 +9,17 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Clearer buttons: a button that is on is now lit blue, the others dark (testers could not tell which state they were in).
+- Mic level (TX tab) now sets this device's microphone gain, -20 to +30 dB. The radio's mic level never acted on it, so speech could stay low with only a few watts out. Set it so speech peaks near -10 dB on the Mic meter. [TX]
+- Clearer buttons: a button that is on is lit blue, the others dark.
 - PTT can be a switch: TX tab > PTT > Tap on / off (tap to transmit, tap again to stop; stops by itself after 3 minutes). [TX]
-- TX tab > Mic level now sets this device's microphone gain (-20 to +30 dB). The radio's mic level never acted on it, so the level could stay low with only a few watts out. Set it so speech peaks near -10 dB on the Mic meter. [TX]
-- CW memories and CW text now play a sidetone on your device while they are sent (they were silent).
-- DX cluster spots: View > Spots connects to a DX cluster (your radio's callsign, or set one); spots show as callsigns on the display, tap one to tune. Spots from other programs on the radio show too.
-- Notch filters (TNF): press and hold on the display to put a notch there; tap it for width, depth, permanent or remove. DSP tab: TNF on/off and + TNF.
-- TX tab, with this device's microphone: processing before it is sent - gate, EQ (low cut, bass, presence) and compressor. [TX]
-- Memories: press and hold one to edit its name, frequency and mode.
-- Voice keyer: Listen plays a recording back to you without transmitting.
-- The Mic meter now moves with this device's microphone while you transmit (it stayed at the bottom).
+- CW memories and CW text play a sidetone on your device while they are sent.
+- Network & performance shows the busiest threads; Android asks for the microphone on the first connect.
 
-RECENT
-- Radios on the connect page are clearly buttons; the pan control reads C, L or R and snaps to centre.
-- iPhone: the controls open from the button beside PTT; the drawer reaches the bottom edge.
-- View: FFT frames/s and waterfall speed keep the value you set.
-- New app icon; volume and pan sliders follow your finger; meter peak hold fixed.
-- Simpler TX tab: MOX removed (hold PTT), one Mic level. The callsign is set in Setup > Radio.
+RECENT (build 77)
+- DX cluster spots on the display (View > Spots); tap one to tune.
+- Notch filters (TNF): press and hold on the display; tap a notch to adjust.
+- TX tab: processing of this device's microphone (gate, EQ, compressor).
+- Memories: press and hold to edit name, frequency and mode. Voice keyer: Listen.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
@@ -33,7 +27,8 @@ PLEASE TRY
 - Both portrait and landscape; on iPad also Split View.
 - Voice transmit with the device mic or a Bluetooth headset, and tell me how it sounds at the other end. [TX]
 - CW keying, CWX memories (F1–F12 on a keyboard) and the decoder. [TX]
-- New: spots and the DX cluster, a notch on a carrier, the TX processing at low power with a second receiver. [TX]
+- New: set Mic level so speech peaks near -10 dB and check the power out; PTT Tap on / off. [TX]
+- Spots and the DX cluster, a notch on a carrier, the TX processing at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM
 Right after it happens, open Log in the top row, tap Copy, and paste the text into an email to oh6oksa@gmail.com. Add your device model, radio model and what you were doing. Screenshots or a screen recording help a lot.

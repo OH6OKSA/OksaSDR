@@ -1,18 +1,19 @@
-**OksaSDR for Android — beta 2.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight build 77), from the same code.
+**OksaSDR for Android — beta 3.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight build 78), from the same code.
 
-### New in beta 2
-- **Spots and the DX cluster** — View → Spots connects to a DX cluster (your radio's callsign, or one you set); spots show as callsigns on the display, tap one to tune. Spots from other programs on the radio show too.
-- **Notch filters (TNF)** — press and hold on the display to put a notch there; tap it for width, depth, permanent or remove. DSP tab: TNF on/off and *+ TNF*.
-- **Processing of the phone's microphone** (TX tab) — gate, EQ (low cut, bass, presence) and compressor before the audio is sent. Test at low power first.
-- **Memory editing** — press and hold a memory to change its name, frequency and mode.
-- **Voice keyer** — *Listen* plays a recording back without transmitting.
-- The **Mic** meter moves with the phone's microphone while you transmit; very low windows (a foldable's outer screen in landscape) show bar meters.
-- **Microphone permission**: beta 1 never asked for it (it had to be turned on in Android's settings). Beta 2 asks on the first connect, and PTT asks again if it was refused.
+### New in beta 3
+- **Mic level now works with the phone's microphone** — TX tab → Mic level is the phone microphone's own gain, −20 to +30 dB, and the Mic meter follows it. The radio's mic level never acted on the phone's microphone (the radio has no gain stage for its network input), so speech could stay low with only a few watts out. Set it so speech peaks near −10 dB on the Mic meter while you transmit.
+- **Clearer buttons** — a button that is on is lit blue, the others dark.
+- **PTT as a switch** — TX tab → PTT → *Tap on / off*: tap to transmit, tap again to stop; it stops by itself after 3 minutes.
+- **CW sidetone for memories and CW text** while they are sent.
+- **Busiest threads** in Network & performance, to see whether one part of the app is at its limit.
+
+### Since beta 2 (still new to many)
+- Spots and the DX cluster, notch filters (TNF), processing of the phone's microphone (gate, EQ, compressor), memory editing, voice keyer *Listen*; beta 2 also asks for the microphone on the first connect.
 
 ### Install or update
-1. Download `OksaSDR-android-beta2.apk` below on the phone (about 150 MB).
+1. Download `OksaSDR-android-beta3.apk` below on the phone (about 150 MB).
 2. Open it; allow installing from your browser or file manager when Android asks. If Chrome keeps the download waiting, open ⋮ → *Downloads* → *Keep*.
-3. Beta 2 installs over beta 1 and keeps your settings. If you have one of the earlier hand-delivered test APKs, uninstall it first (different signing key).
+3. Beta 3 installs over beta 1 or 2 and keeps your settings. If you have one of the earlier hand-delivered test APKs, uninstall it first (different signing key).
 
 Android 9 or newer, 64-bit ARM. On the first connect, allow notifications, the microphone and "no battery optimization" so receive keeps going in the background and PTT can transmit.
 

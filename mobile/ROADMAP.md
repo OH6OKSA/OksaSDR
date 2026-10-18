@@ -3,7 +3,7 @@
 Updated with every build. The newest TestFlight build is at the top; what is
 queued, waiting on someone, or still to verify follows.
 
-## Next build
+## Next build (78, Android beta 3)
 
 Queued (not yet sent to TestFlight):
 - PTT tap on / off mode (tester request), with a 3-minute limit.
