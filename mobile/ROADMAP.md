@@ -115,9 +115,7 @@ Next: verify LAN discovery on the radio's network; APK size (about 150 MB).
 ## Later
 
 From the comparison with upstream main and tester requests:
-- Filter edge drag and custom widths
 - Memory offsets and tones (repeaters); memory groups
-- Dragging a notch; spot filters (band, mode, age)
 - ATU tools and per-band TX settings
 - Profile import and export
 - QSO recording
