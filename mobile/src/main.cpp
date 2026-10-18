@@ -24,6 +24,8 @@
 #include <QQuickWindow>
 #include <QQuickItem>
 #include <QTimer>
+#include <QEventLoop>
+#include <QWheelEvent>
 
 #include <algorithm>
 #include <cmath>
@@ -32,6 +34,20 @@
 // Objects named `name` under `root`, including inside Loader-made items
 // (those have no QObject parent, so findChildren() alone misses them):
 // the visual tree is walked too.
+// Development (--wheel-test): which objects a wheel event visits.
+class WheelTrace : public QObject {
+public:
+    bool on = false;
+    bool eventFilter(QObject* receiver, QEvent* event) override
+    {
+        if (on && event->type() == QEvent::Wheel) {
+            qInfo().noquote() << "wheel-test: trace" << receiver->metaObject()->className() << receiver->objectName()
+                              << "accepted" << event->isAccepted();
+        }
+        return false;
+    }
+};
+
 static QList<QObject*> findNamedObjects(QObject* root, const QString& name)
 {
     QList<QObject*> found = root->findChildren<QObject*>(name);
@@ -129,11 +145,15 @@ int main(int argc, char* argv[])
     parser.addOption(controlsOption);
     const QCommandLineOption controlsTabOption(QStringLiteral("controls-tab"),
         QStringLiteral("Controls tab to show (0 DSP, 1 Audio, 2 TX, 3 CW, 4 View, 5 Profiles, 6 Memory); on a "
-                       "tablet, the one section pinned for this run."), QStringLiteral("index"));
+                       "tablet, the sections pinned for this run (e.g. 0,2,3)."), QStringLiteral("index"));
     parser.addOption(controlsTabOption);
     const QCommandLineOption controlsScrollOption(QStringLiteral("controls-scroll"),
         QStringLiteral("With --controls drawer: scroll the shown tab down by <px> (screenshots)."), QStringLiteral("px"));
     parser.addOption(controlsScrollOption);
+    const QCommandLineOption wheelTestOption(QStringLiteral("wheel-test"),
+        QStringLiteral("Development: send trackpad scrolls across the shown controls and log where they do not "
+                       "scroll the panel, and which item took them."));
+    parser.addOption(wheelTestOption);
     const QCommandLineOption reconnectTestOption(QStringLiteral("reconnect-test"),
         QStringLiteral("With --connect: disconnect after 8 s and reconnect at 11 s."));
     parser.addOption(reconnectTestOption);
@@ -978,16 +998,106 @@ int main(int argc, char* argv[])
             }
         });
     }
+    if (parser.isSet(wheelTestOption)) {
+        QTimer::singleShot(9000, &app, [&qml] {
+            const auto settle = [] {
+                QEventLoop loop;
+                QTimer::singleShot(60, &loop, &QEventLoop::quit);
+                loop.exec();
+            };
+            for (QObject* root : qml.rootObjects()) {
+                auto* window = qobject_cast<QQuickWindow*>(root);
+                if (!window) {
+                    continue;
+                }
+                for (QObject* scroll : findNamedObjects(root, QStringLiteral("controlsTabScroll"))
+                                           + findNamedObjects(root, QStringLiteral("pinnedScroll"))) {
+                    auto* item = qobject_cast<QQuickItem*>(scroll);
+                    auto* flick = qvariant_cast<QQuickItem*>(scroll->property("contentItem"));
+                    if (!item || !item->isVisible() || !flick) {
+                        continue;
+                    }
+                    const qreal room = flick->property("contentHeight").toReal() - item->height();
+                    int total = 0;
+                    QMap<QString, int> blockers;
+                    for (qreal top = 0; top < room && top < 2 * item->height(); top += item->height()) {
+                        for (qreal y = 10; y < item->height() - 10; y += 30) {
+                            for (qreal x = 10; x < item->width() - 10; x += 40) {
+                                flick->setProperty("contentY", std::max(0.0, std::min(top, room - 50)));
+                                const qreal before = flick->property("contentY").toReal();
+                                const QPointF scene = item->mapToScene(QPointF(x, y));
+                                const QPointF global = window->mapToGlobal(scene);
+                                static WheelTrace trace;
+                                if (total == 0) {
+                                    qApp->installEventFilter(&trace);
+                                    trace.on = true;
+                                }
+                                // As a trackpad sends it: begin, a few updates 16 ms apart, end.
+                                static ulong stamp = 1000;
+                                const QList<Qt::ScrollPhase> phases{Qt::ScrollBegin, Qt::ScrollUpdate, Qt::ScrollUpdate,
+                                                                    Qt::ScrollUpdate, Qt::ScrollUpdate, Qt::ScrollEnd};
+                                for (Qt::ScrollPhase phase : phases) {
+                                    const QPoint pixels = phase == Qt::ScrollUpdate ? QPoint(0, -20) : QPoint();
+                                    const QPoint angle = phase == Qt::ScrollUpdate ? QPoint(0, -60) : QPoint();
+                                    QWheelEvent ev(scene, global, pixels, angle, Qt::NoButton, Qt::NoModifier, phase, false);
+                                    ev.setTimestamp(stamp += 16);
+                                    QCoreApplication::sendEvent(window, &ev);
+                                    QEventLoop loop;
+                                    QTimer::singleShot(16, &loop, &QEventLoop::quit);
+                                    loop.exec();
+                                }
+                                trace.on = false;
+                                settle();
+                                QMetaObject::invokeMethod(flick, "cancelFlick");
+                                if (total == 0) {
+                                    qInfo().noquote() << "wheel-test: first point" << scene << "flick" << flick->metaObject()->className()
+                                                      << "contentY" << before << "->" << flick->property("contentY").toReal()
+                                                      << "interactive" << flick->property("interactive");
+                                }
+                                ++total;
+                                if (flick->property("contentY").toReal() <= before) {
+                                    QQuickItem* hit = window->contentItem();
+                                    while (QQuickItem* child = hit->childAt(hit->mapFromScene(scene).x(),
+                                                                            hit->mapFromScene(scene).y())) {
+                                        hit = child;
+                                    }
+                                    QString chain;
+                                    for (QQuickItem* i = hit; i && i != flick && chain.count(QLatin1Char('<')) < 4; i = i->parentItem()) {
+                                        chain += QString::fromLatin1(i->metaObject()->className()).section(QLatin1Char('_'), 0, 0)
+                                                 + QLatin1Char('<');
+                                    }
+                                    ++blockers[chain];
+                                }
+                            }
+                        }
+                    }
+                    int blocked = 0;
+                    for (int n : blockers) {
+                        blocked += n;
+                    }
+                    qInfo().noquote() << "wheel-test:" << scroll->objectName() << total << "points," << blocked
+                                      << "did not scroll";
+                    for (auto it = blockers.cbegin(); it != blockers.cend(); ++it) {
+                        qInfo().noquote() << "wheel-test:   " << it.value() << "x" << it.key();
+                    }
+                }
+            }
+        });
+    }
     if (parser.isSet(controlsScrollOption)) {
         const qreal px = parser.value(controlsScrollOption).toDouble();
         QTimer::singleShot(7000, &app, [&qml, px] {
             for (QObject* root : qml.rootObjects()) {
-                for (QObject* scroll : findNamedObjects(root, QStringLiteral("controlsTabScroll"))) {
+                for (QObject* scroll : findNamedObjects(root, QStringLiteral("controlsTabScroll"))
+                                           + findNamedObjects(root, QStringLiteral("pinnedScroll"))) {
                     auto* item = qobject_cast<QQuickItem*>(scroll);
                     auto* flick = qvariant_cast<QObject*>(scroll->property("contentItem"));
                     if (item && item->isVisible() && flick) {
                         const qreal room = flick->property("contentHeight").toReal() - item->height();
                         flick->setProperty("contentY", std::clamp(px, 0.0, std::max(0.0, room)));
+                        qInfo().noquote() << "controls-scroll:" << scroll->objectName() << "height" << item->height()
+                                          << "contentHeight" << flick->property("contentHeight").toReal()
+                                          << "contentY" << flick->property("contentY").toReal();
                     }
                 }
             }
@@ -1013,10 +1123,15 @@ int main(int argc, char* argv[])
     if (parser.value(controlsOption) != QLatin1String("drawer") && parser.isSet(controlsTabOption)) {
         static const QStringList names{QStringLiteral("DSP"), QStringLiteral("Audio"), QStringLiteral("TX"),
             QStringLiteral("CW"), QStringLiteral("View"), QStringLiteral("Profiles"), QStringLiteral("Memory")};
-        const QString name = names.value(parser.value(controlsTabOption).toInt());
-        if (!name.isEmpty()) {
+        QStringList pinned;
+        for (const QString& index : parser.value(controlsTabOption).split(QLatin1Char(','), Qt::SkipEmptyParts)) {
+            if (const QString name = names.value(index.toInt()); !name.isEmpty()) {
+                pinned << name;
+            }
+        }
+        if (!pinned.isEmpty()) {
             const QStringList saved = engine.pinnedSections();
-            engine.setPinnedSections({name});
+            engine.setPinnedSections(pinned);
             QObject::connect(&app, &QCoreApplication::aboutToQuit, &engine,
                              [&engine, saved] { engine.setPinnedSections(saved); });
         }

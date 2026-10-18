@@ -118,6 +118,7 @@ ColumnLayout {
     }
     ScrollView {
         id: pinnedScroll
+        objectName: "pinnedScroll"
         visible: panel.multiSelect
         Layout.fillWidth: true
         Layout.fillHeight: true
