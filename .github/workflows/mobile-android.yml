@@ -4,8 +4,8 @@ name: Mobile Android
 # and uploads it as a run artifact. Runs on mobile/** and android/** branches
 # when something that goes into the app changes, and on demand. On
 # mobile/oksasdr, a release-signed APK whose mobile/android/release.env names
-# a tag not yet on GitHub is published as that prerelease (see the release
-# job).
+# a tag not yet on GitHub is published as that release, marked Latest (see
+# the release job).
 on:
   workflow_dispatch:
   push:
@@ -196,7 +196,9 @@ jobs:
   # GitHub Release for testers, from mobile/android/release.env (TAG, TITLE)
   # and mobile/android/RELEASE_NOTES.md: published once per tag, only from
   # mobile/oksasdr and only with the release key (a throwaway-signed APK
-  # could not update an installed one).
+  # could not update an installed one). The newest beta is the repository's
+  # Latest release (not a pre-release), so GitHub shows its files at once
+  # and releases/latest leads to it; the title says beta.
   release:
     needs: android-apk
     if: github.ref == 'refs/heads/mobile/oksasdr' && needs.android-apk.outputs.signed == 'true'
@@ -226,7 +228,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: OksaSDR-android-${{ github.run_number }}
-      - name: Publish prerelease
+      - name: Publish release (Latest)
         if: steps.want.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -234,6 +236,6 @@ jobs:
           set -euo pipefail
           mv OksaSDR-android-${{ github.run_number }}.apk "${{ steps.want.outputs.asset }}"
           gh release create "${{ steps.want.outputs.tag }}" "${{ steps.want.outputs.asset }}" \
-            --prerelease --target "$GITHUB_SHA" --title "${{ steps.want.outputs.title }}" \
+            --latest --target "$GITHUB_SHA" --title "${{ steps.want.outputs.title }}" \
             --notes-file mobile/android/RELEASE_NOTES.md
           echo "Published ${{ steps.want.outputs.tag }} with ${{ steps.want.outputs.asset }}." >> "$GITHUB_STEP_SUMMARY"

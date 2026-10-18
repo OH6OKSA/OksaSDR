@@ -66,7 +66,8 @@ Android releases) is checked and partly published automatically:
   every push; a red mark there names the stale doc.
 - Android releases: when `mobile/android/release.env` names a tag that is not
   on GitHub yet, the Android build of `mobile/oksasdr` publishes the
-  release-signed APK as that prerelease with `mobile/android/RELEASE_NOTES.md`.
+  release-signed APK as that release, marked Latest (so `releases/latest`
+  is always the newest beta), with `mobile/android/RELEASE_NOTES.md`.
 
 ## iOS
 
