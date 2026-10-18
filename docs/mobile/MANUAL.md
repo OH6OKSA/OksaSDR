@@ -55,7 +55,9 @@ device's microphone can be used for transmit.
 
 ![Main screen on an iPad](manual/overview.jpg)
 
-From top to bottom:
+From top to bottom. Throughout the app a button that is **on** (a chosen
+mode, a DSP that runs, the shown tab) is **lit blue**; the others are dark.
+
 
 | Area | What it is |
 |---|---|
@@ -150,7 +152,7 @@ The settings that are always there come first; split and the DSP flags
 follow on a second row. On an iPhone in portrait STEP and the antennas, width and AGC sit beside the
 frequency and the rest under it; in landscape it is one row, STEP first.
 
-**Filters and DSP** — the mode's eight filter widths (the active one dark;
+**Filters and DSP** — the mode's eight filter widths (the active one lit;
 choosing one closes the window) and the radio's DSP: NR, NB, ANF, APF (CW),
 and NRL, ANFL, ANFT, NRS, RNN, NRF where the radio has them, and **WNB**, the
 panadapter's wideband noise blanker. **BC** is the app's own beat cancel

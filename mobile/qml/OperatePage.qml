@@ -157,7 +157,7 @@ Page {
                 color: Theme.textDim
                 font.pixelSize: 13
             }
-            ToolButton {
+            TopButton {
                 // Pinned panel: hide it. Hidden: open it as a drawer over the
                 // waterfall.
                 text: Engine.controlsVisible ? qsTr("Hide controls") : qsTr("Controls")
@@ -170,22 +170,22 @@ Page {
                     }
                 }
             }
-            ToolButton {
+            TopButton {
                 text: qsTr("Setup")
                 focusPolicy: Qt.NoFocus
                 onClicked: radioSetup.open()
             }
-            ToolButton {
+            TopButton {
                 text: qsTr("Manual")
                 focusPolicy: Qt.NoFocus
                 onClicked: Qt.openUrlExternally(Engine.manualUrl)
             }
-            ToolButton {
+            TopButton {
                 text: qsTr("Log")
                 focusPolicy: Qt.NoFocus
                 onClicked: logPage.open()
             }
-            ToolButton {
+            TopButton {
                 text: qsTr("Disconnect")
                 onClicked: Engine.disconnectRadio()
             }

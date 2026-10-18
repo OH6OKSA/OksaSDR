@@ -9,6 +9,7 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
+- Clearer buttons: a button that is on is now lit blue, the others dark (testers could not tell which state they were in).
 - PTT can be a switch: TX tab > PTT > Tap on / off (tap to transmit, tap again to stop; stops by itself after 3 minutes). [TX]
 - TX tab > Mic level now sets this device's microphone gain (-20 to +30 dB). The radio's mic level never acted on it, so the level could stay low with only a few watts out. Set it so speech peaks near -10 dB on the Mic meter. [TX]
 - CW memories and CW text now play a sidetone on your device while they are sent (they were silent).

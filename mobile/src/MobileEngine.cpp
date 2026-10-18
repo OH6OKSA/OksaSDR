@@ -3326,8 +3326,8 @@ void MobileEngine::tuneToSpot(int index)
 
 QString MobileEngine::buttonStyle() const
 {
-    const QString style = AppSettings::instance().value(QStringLiteral("MobileButtonStyle"), QStringLiteral("classic")).toString();
-    return (style == QLatin1String("light") || style == QLatin1String("lit")) ? style : QStringLiteral("classic");
+    const QString style = AppSettings::instance().value(QStringLiteral("MobileButtonStyle"), QStringLiteral("lit")).toString();
+    return (style == QLatin1String("light") || style == QLatin1String("classic")) ? style : QStringLiteral("lit");
 }
 
 void MobileEngine::setButtonStyle(const QString& style)

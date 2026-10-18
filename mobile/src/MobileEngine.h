@@ -56,8 +56,9 @@ class MobileEngine : public QObject {
     // Band plan strip at the bottom of the spectrum, as the desktop's:
     // which plan ("" = off) and the plans bundled with the app.
     Q_PROPERTY(QString bandPlan READ bandPlan WRITE setBandPlan NOTIFY bandPlanChanged)
-    // Button colours (remembered): "classic" (light, dark when on), "light"
-    // (dark, light when on) or "lit" (dark, blue when on).
+    // Button colours (remembered): "lit" (dark, blue when on; the default
+    // from build 78), "classic" (light, dark when on, as before) or "light"
+    // (dark, light when on).
     Q_PROPERTY(QString buttonStyle READ buttonStyle WRITE setButtonStyle NOTIFY buttonStyleChanged)
     // PTT as a switch (tap on, tap off) instead of hold-to-talk; remembered.
     // A latched transmission stops by itself after kPttToggleLimitS.

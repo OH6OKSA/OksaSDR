@@ -55,7 +55,7 @@ Page {
             // Controls open from the button beside PTT (thumb reach); the
             // top row keeps only the rest.
             // The rest behind one button: a phone's top row has no room.
-            ToolButton {
+            TopButton {
                 id: moreButton
                 text: "⋯"
                 font.pixelSize: 22
@@ -271,7 +271,7 @@ Page {
                             MenuIcon { width: 18; height: 14; anchors.verticalCenter: parent.verticalCenter }
                             Label {
                                 text: qsTr("Controls")
-                                color: "#202020"
+                                color: Theme.buttonText
                                 font.pixelSize: 15
                                 anchors.verticalCenter: parent.verticalCenter
                             }
