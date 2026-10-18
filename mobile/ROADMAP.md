@@ -5,8 +5,17 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. Open from tester feedback: SmartLink sign-in not kept
-for one tester (log needed).
+- CW refused: when the radio will not key CW, the app says why instead of
+  staying silent. On 2026-10-18 the FLEX-6600 refused every CW key-down
+  ("another client is transmitting or sending a CW/CWX message") with no
+  client on air, in beta 4 and build 79 alike, until the radio was restarted;
+  the cause is not known.
+- CW tab (tester feedback): Iambic A / B and swap paddles in the tab itself,
+  the keyboard row explained ("keyboard keys as paddles") with Option L/R
+  as a choice, a note when break-in is off.
+
+Open from tester feedback: SmartLink sign-in not kept for one tester (log
+needed).
 
 ## Planned: logging (when to build it is open)
 

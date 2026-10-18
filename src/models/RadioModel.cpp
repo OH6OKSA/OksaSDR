@@ -5218,7 +5218,8 @@ bool RadioModel::sendNetCwCommand(const QString& baseCmd, const QString& debugSo
                 << " source=" << (debugSource.isEmpty() ? QStringLiteral("unknown") : debugSource)
                 << " cmd=\"" << fallbackCmd << "\"";
         }
-        return sendTxTcpCommand(fallbackCmd, operation, keying, std::move(delivered));
+        return sendTxTcpCommand(fallbackCmd, operation, keying, std::move(delivered),
+                                keying ? cwKeyReplyHandler() : ResponseCallback{});
     }
 
     // FlexLib format: "cw key 1 time=0x<hex_ms> index=<N> client_handle=0x<handle>".
@@ -5380,8 +5381,20 @@ bool RadioModel::sendNetCwCommand(const QString& baseCmd, const QString& debugSo
     // FlexLib sends the same decorated netcw command over TCP after the UDP
     // copies.  With the 16-bit timestamp format above, the radio can dedupe
     // by index=N and the TCP path provides a reliable delivery backstop.
-    sendTxTcpCommand(fullCmd, operation, keying, keying ? std::function<void()>{} : partDelivered);
+    sendTxTcpCommand(fullCmd, operation, keying, keying ? std::function<void()>{} : partDelivered,
+                     keying ? cwKeyReplyHandler() : ResponseCallback{});
     return parts != 0;
+}
+
+RadioModel::ResponseCallback RadioModel::cwKeyReplyHandler()
+{
+    const QPointer<RadioModel> receiver = this;
+    return [receiver](int code, const QString& body) {
+        if (code != 0 && receiver) {
+            qCWarning(lcCw).noquote() << "CW key-down refused by the radio:" << Qt::hex << code << body;
+            emit receiver->cwKeyRefused(body);
+        }
+    };
 }
 
 bool RadioModel::sendTxTcpCommand(const QString& command, const TxCoordinator::Operation& operation,

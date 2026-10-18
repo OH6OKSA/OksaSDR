@@ -173,6 +173,10 @@ int main(int argc, char* argv[])
     const QCommandLineOption spotFilterOption(QStringLiteral("spot-filter"),
         QStringLiteral("Spot filter <modes>,<max age min>, e.g. cw,0 (remembered)."), QStringLiteral("filter"));
     parser.addOption(spotFilterOption);
+    const QCommandLineOption radioCommandsOption(QStringLiteral("radio-commands"),
+        QStringLiteral("Development: send these radio commands (separated by ';') 7 s after start and log the "
+                       "replies."), QStringLiteral("commands"));
+    parser.addOption(radioCommandsOption);
     const QCommandLineOption setModeOption(QStringLiteral("set-mode"),
         QStringLiteral("Development: set this app's slice to <mode> on a real radio once connected "
                        "(--mode touches only the demo)."), QStringLiteral("mode"));
@@ -592,6 +596,14 @@ int main(int argc, char* argv[])
         const QStringList f = parser.value(spotFilterOption).split(QLatin1Char(','));
         engine.setSpotModes(f.value(0, QStringLiteral("all")));
         engine.setSpotMaxAgeMin(f.value(1, QStringLiteral("0")).toInt());
+    }
+    if (parser.isSet(radioCommandsOption)) {
+        const QStringList commands = parser.value(radioCommandsOption).split(QLatin1Char(';'), Qt::SkipEmptyParts);
+        QTimer::singleShot(7000, &app, [&engine, commands] {
+            for (const QString& c : commands) {
+                engine.devCommand(c.trimmed());
+            }
+        });
     }
     if (parser.isSet(setModeOption)) {
         const QString mode = parser.value(setModeOption);

@@ -2590,6 +2590,36 @@ void MobileEngine::wireCw()
         }
     });
 
+    // The radio refusing CW (e.g. another client sending CW/CWX) must not
+    // leave the key silently dead: say why, at most every few seconds.
+    // A FLEX-6600 once refused every key-down this way with no client
+    // transmitting, until the radio was restarted; say so then.
+    connect(&rm, &RadioModel::cwKeyRefused, this, [this](const QString& message) {
+        static QElapsedTimer shown;
+        if (!shown.isValid() || shown.elapsed() > 5000) {
+            shown.start();
+            const quint32 tx = m_session.radioModel().txClientHandle();
+            const bool nobodyTransmitting = tx == 0 || tx == m_session.radioModel().ourClientHandle();
+            qCWarning(lcMobile).noquote() << "CW refused by the radio:" << message
+                << (nobodyTransmitting ? "(no client transmitting)" : "(another client transmitting)");
+            setLastError(nobodyTransmitting && message.contains(QLatin1String("another client"))
+                ? tr("The radio did not key CW: %1. No client is transmitting, so restarting the radio "
+                     "should clear this.").arg(message)
+                : tr("The radio did not key CW: %1").arg(message));
+        }
+    });
+    // The radio's transmit state in the log, and whose it is.
+    connect(&rm, &RadioModel::radioTransmittingChanged, this, [this](bool on) {
+        static int last = -1;   // the signal also repeats an unchanged state
+        if (int(on) == last) {
+            return;
+        }
+        last = int(on);
+        RadioModel& model = m_session.radioModel();
+        qCInfo(lcMobile).noquote() << "radio transmitting:" << (on ? "yes" : "no")
+            << (on ? (model.txClientHandle() == model.ourClientHandle() ? "(this app)" : "(another client)") : "");
+    });
+
     // Paddles: the elements are timed here (worker thread, steady_clock),
     // as the desktop's local iambic keyer; each edge goes to the radio over
     // NetCW at its scheduled instant and to the sidetone in the same step.
@@ -3283,6 +3313,13 @@ QString MobileEngine::cwxSidetoneStats() const
         .arg(m_cwxSidetoneKeyedMs.load(std::memory_order_relaxed));
 }
 
+void MobileEngine::devCommand(const QString& command)
+{
+    m_session.radioModel().sendCmdPublic(command, [command](int code, const QString& body) {
+        qInfo().noquote() << QStringLiteral("radio-commands: \"%1\" -> 0x%2 %3").arg(command, QString::number(code, 16), body);
+    });
+}
+
 QString MobileEngine::dxCallsign() const
 {
     const QString own = AppSettings::instance().value(QStringLiteral("DxClusterCallsign")).toString().trimmed();
@@ -3597,6 +3634,7 @@ void MobileEngine::setCwKey(bool down, const QString& reason)
     }
     m_cwKeyInput = m_session.radioModel().localTxController()->capture(TxController::Activity::CwKey);
     m_cwKeyHeld = true;
+    qCInfo(lcMobile) << "CW key down";
     if (!m_cwKeyInput.start()) {
         m_cwKeyHeld = false;
         m_cwKeyInput.stop();

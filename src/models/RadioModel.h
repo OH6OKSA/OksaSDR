@@ -1267,6 +1267,10 @@ signals:
     void txAudioGateChanged(bool transmitting);
     // Raw interlock TX state (regardless of ownership — for DAX passthrough).
     void radioTransmittingChanged(bool transmitting);
+    // The radio refused a CW key-down edge (its reply to the TCP copy), e.g.
+    // "Cannot transmit since another client is transmitting or sending a
+    // CW/CWX message". Without it the key just stays silent.
+    void cwKeyRefused(const QString& message);
     // Accepted local PTT intent, including re-engage during a deferred tail.
     // Not radio readback: never use this to publish observed transmit state.
     void localTransmitEngaged();
@@ -1557,6 +1561,8 @@ private:
 
     // Route command to active connection (LAN or WAN)
     using ResponseCallback = RadioConnection::ResponseCallback;
+    // Reply to a CW key-down's TCP copy: logs and emits cwKeyRefused on an error.
+    ResponseCallback cwKeyReplyHandler();
     quint32 sendCmd(const QString& command, ResponseCallback cb = nullptr);
     quint32 clientHandle() const;
     PanadapterModel* ensureOwnedPanadapter(const QString& panId);

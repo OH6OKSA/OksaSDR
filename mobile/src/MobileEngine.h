@@ -534,6 +534,8 @@ public:
     // Development (--spot-test): "add" three test spots near the slice on
     // the radio (source OksaSDR-test, 5 min), "clear" removes them.
     void spotTest(const QString& action);
+    // Development (--radio-commands): send one command and log the radio's reply.
+    void devCommand(const QString& command);
     // Development (--cwx-test): the CWX sidetone's key-downs and keyed time
     // since the last CWX text started.
     QString cwxSidetoneStats() const;
