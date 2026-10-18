@@ -5,8 +5,11 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. Open from tester feedback: SmartLink sign-in not kept
-for one tester (log needed); on-screen CW paddles.
+Queued (not yet sent to TestFlight):
+- Passband drag tunes on the tuning step (Wayne: had to round off with the step buttons after each drag).
+
+Open from tester feedback: SmartLink sign-in not kept for one tester (log
+needed); on-screen CW paddles.
 
 ## Released
 

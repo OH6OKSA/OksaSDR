@@ -872,9 +872,11 @@ Rectangle {
             if (f > 1 - edgeZone) return Math.min(1, (f - 1 + edgeZone) / edgeZone)
             return 0
         }
+        // Tuning lands on the tuning step, as the desktop's VFO drag does
+        // (a tester had to round off with the step buttons after each drag).
         function apply() {
             const shift = translation.x / panArea.width * span
-            if (tuning) Engine.tuneTo(startMhz + shift + edgeMhz)
+            if (tuning) Engine.tuneToSnapped(startMhz + shift + edgeMhz)
             else Engine.panTo(startMhz - shift)
         }
         onActiveChanged: {
@@ -903,7 +905,8 @@ Rectangle {
         }
     }
 
-    // Apple Pencil drags tune ten times finer, for zero-beating.
+    // Apple Pencil drags tune ten times finer, for zero-beating (not on the
+    // step: exact).
     DragHandler {
         target: null
         acceptedDevices: PointerDevice.Stylus

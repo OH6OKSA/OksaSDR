@@ -217,7 +217,8 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
 ![Panadapter and waterfall](manual/spectrum.jpg)
 
 - **Tap** to tune to the touched point (on the tuning step).
-- **Drag inside the filter passband** to tune; the slice follows the finger.
+- **Drag inside the filter passband** to tune; the slice follows the finger
+  in tuning steps (STEP), so it stops on a round frequency.
   Holding the finger at either edge keeps tuning, faster nearer the edge.
 - **Drag anywhere else** to move the view; the frequency stays.
 - **Pinch**, or **− / +** (bottom left), to zoom around the slice.

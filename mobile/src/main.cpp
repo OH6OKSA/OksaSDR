@@ -178,6 +178,11 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: PTT in tap on/off mode at 10 W on 14.250 MHz: tap, 2 s, tap; logs the "
                        "latch, power and mode restored after."));
     parser.addOption(pttToggleTestOption);
+    const QCommandLineOption cwDecodeTestOption(QStringLiteral("cw-decode-test"),
+        QStringLiteral("Development, receive only: CW on <MHz> (e.g. the 14.100 beacons) with the decoder on for "
+                       "60 s, logging what it decodes; mode, frequency and decoder restored after."),
+        QStringLiteral("MHz"));
+    parser.addOption(cwDecodeTestOption);
     const QCommandLineOption pttTestOption(QStringLiteral("ptt-test"),
         QStringLiteral("Development: transmit for <ms> with this device's microphone at 10 W on 14.250 MHz "
                        "(only if this app's slice transmits), logging the Mic meter; power restored after."),
@@ -604,6 +609,32 @@ int main(int argc, char* argv[])
                 engine.setRfPower(power);
                 qInfo() << "ptt-toggle-test: restored power" << power << "toggle" << wasToggle;
             });
+        });
+    }
+    if (parser.isSet(cwDecodeTestOption)) {
+        const double mhz = parser.value(cwDecodeTestOption).toDouble();
+        auto* saved = new QVariantMap;
+        QTimer::singleShot(8000, &app, [&engine, saved, mhz] {
+            (*saved)[QStringLiteral("freq")] = engine.frequencyMhz();
+            (*saved)[QStringLiteral("mode")] = engine.mode();
+            (*saved)[QStringLiteral("decoder")] = engine.cwDecoderEnabled();
+            engine.setMode(QStringLiteral("CW"));
+            engine.setFrequencyMhz(mhz);
+            engine.setCwDecoderEnabled(true);
+            qInfo() << "cw-decode-test: listening on" << mhz << "MHz CW";
+        });
+        for (int s = 20; s <= 70; s += 10) {
+            QTimer::singleShot(8000 + s * 1000, &app, [&engine, s] {
+                qInfo().noquote() << QStringLiteral("cw-decode-test %1 s: %2 | %3")
+                                         .arg(s).arg(engine.cwDecoderStats(),
+                                                     engine.cwDecodedText().right(160).simplified());
+            });
+        }
+        QTimer::singleShot(8000 + 71000, &app, [&engine, saved] {
+            engine.setCwDecoderEnabled(saved->value(QStringLiteral("decoder")).toBool());
+            engine.setMode(saved->value(QStringLiteral("mode")).toString());
+            engine.setFrequencyMhz(saved->value(QStringLiteral("freq")).toDouble());
+            qInfo() << "cw-decode-test: restored" << *saved;
         });
     }
     if (parser.isSet(pttTestOption)) {
