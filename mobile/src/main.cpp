@@ -206,6 +206,14 @@ int main(int argc, char* argv[])
                        "CW frequencies at 25 W and 22 WPM after QRL?, then the decoder listens 60 s; stops on high "
                        "SWR; power, speed, mode, frequency and decoder restored after."), QStringLiteral("call"));
     parser.addOption(cqTestOption);
+    const QCommandLineOption paddleTestModeOption(QStringLiteral("paddle-test-mode"),
+        QStringLiteral("With --paddle-test: the radio's iambic mode A or B for the test (restored after)."),
+        QStringLiteral("mode"));
+    parser.addOption(paddleTestModeOption);
+    const QCommandLineOption keyTestOption(QStringLiteral("key-test"),
+        QStringLiteral("Development: the straight key held 1 s on 14.045 MHz CW at 10 W (only if this app's slice "
+                       "transmits); power, mode, frequency restored after."));
+    parser.addOption(keyTestOption);
     const QCommandLineOption pttTestOption(QStringLiteral("ptt-test"),
         QStringLiteral("Development: transmit for <ms> with this device's microphone at 10 W on 14.250 MHz "
                        "(only if this app's slice transmits), logging the Mic meter; power restored after."),
@@ -695,6 +703,7 @@ int main(int argc, char* argv[])
     }
     if (parser.isSet(paddleTestOption)) {
         auto* saved = new QVariantMap;
+        (*saved)[QStringLiteral("testMode")] = parser.value(paddleTestModeOption).toUpper();
         QTimer::singleShot(8000, &app, [&engine, saved] {
             (*saved)[QStringLiteral("freq")] = engine.frequencyMhz();
             (*saved)[QStringLiteral("mode")] = engine.mode();
@@ -714,7 +723,12 @@ int main(int argc, char* argv[])
                 return;
             }
             (*saved)[QStringLiteral("power")] = engine.rfPower();
+            (*saved)[QStringLiteral("iambicMode")] = engine.radioSetup().value(QStringLiteral("iambicMode"));
             engine.setRfPower(10);
+            if (!(*saved)[QStringLiteral("testMode")].toString().isEmpty()) {
+                engine.setRadioSetup(QStringLiteral("iambicMode"),
+                                     (*saved)[QStringLiteral("testMode")].toString() == QLatin1String("A") ? 0 : 1);
+            }
             auto step = [&engine](int at, bool dit, bool dah, const char* what) {
                 QTimer::singleShot(at, &engine, [&engine, dit, dah, what] {
                     engine.setCwPaddleState(dit, dah);
@@ -729,7 +743,11 @@ int main(int argc, char* argv[])
             step(3900, true, true, "both down");
             step(4700, false, false, "both up");
             QTimer::singleShot(7000, &engine, [&engine, saved] {
-                qInfo() << "paddle-test: elements" << engine.paddleElements();
+                qInfo() << "paddle-test: elements" << engine.paddleElements() << "iambic mode was"
+                        << saved->value(QStringLiteral("iambicMode")) << "test" << saved->value(QStringLiteral("testMode"));
+                if (!saved->value(QStringLiteral("testMode")).toString().isEmpty()) {
+                    engine.setRadioSetup(QStringLiteral("iambicMode"), saved->value(QStringLiteral("iambicMode")));
+                }
                 engine.setRfPower(saved->value(QStringLiteral("power")).toInt());
                 engine.setMode(saved->value(QStringLiteral("mode")).toString());
                 engine.setFrequencyMhz(saved->value(QStringLiteral("freq")).toDouble());
@@ -841,6 +859,41 @@ int main(int argc, char* argv[])
                 }
             });
             timer->start(250);
+        });
+    }
+    if (parser.isSet(keyTestOption)) {
+        auto* saved = new QVariantMap;
+        QTimer::singleShot(8000, &app, [&engine, saved] {
+            (*saved)[QStringLiteral("freq")] = engine.frequencyMhz();
+            (*saved)[QStringLiteral("mode")] = engine.mode();
+            engine.setMode(QStringLiteral("CW"));
+            engine.setFrequencyMhz(14.045);
+        });
+        QTimer::singleShot(11000, &app, [&engine, saved] {
+            bool ownTx = false;
+            for (const QVariant& v : engine.slices()) {
+                const QVariantMap m = v.toMap();
+                if (m.value(QStringLiteral("id")).toInt() == engine.activeSliceId()) {
+                    ownTx = m.value(QStringLiteral("tx")).toBool();
+                }
+            }
+            if (!ownTx || engine.mode() != QLatin1String("CW") || std::abs(engine.frequencyMhz() - 14.045) > 0.0005) {
+                qWarning() << "key-test: not keying";
+                return;
+            }
+            (*saved)[QStringLiteral("power")] = engine.rfPower();
+            engine.setRfPower(10);
+            QTimer::singleShot(700, &engine, [&engine] { engine.setCwKey(true); qInfo() << "key-test: key down" << engine.cwKeyDown(); });
+            QTimer::singleShot(1200, &engine, [&engine] {
+                qInfo() << "key-test: held, tx" << engine.radioTransmitting() << "power" << engine.forwardPowerW();
+            });
+            QTimer::singleShot(1700, &engine, [&engine] { engine.setCwKey(false, QStringLiteral("key-test")); qInfo() << "key-test: key up"; });
+            QTimer::singleShot(3500, &engine, [&engine, saved] {
+                engine.setRfPower(saved->value(QStringLiteral("power")).toInt());
+                engine.setMode(saved->value(QStringLiteral("mode")).toString());
+                engine.setFrequencyMhz(saved->value(QStringLiteral("freq")).toDouble());
+                qInfo() << "key-test: restored" << *saved;
+            });
         });
     }
     if (parser.isSet(pttTestOption)) {

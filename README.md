@@ -222,7 +222,7 @@ refreshed with every user-interface change.</sub>
 | Spots and DX cluster, TNF, memory editing | ✅ Tested against a FLEX-6600M (build 77) |
 | TX processing (gate, EQ, compressor) | ✅ Measured on the FLEX with a test tone; testers' on-air reports welcome |
 | CWX (CW memories, CW text) on air | ✅ Used on air by a tester (POTA/WWFF replies); checked at 10 W with the sidetone in step |
-| CW straight key and paddles on air | ✅ Paddles checked on the FLEX at 10 W (elements on time at 30 WPM, iambic squeeze); straight key used by a tester |
+| CW straight key and paddles on air | ✅ Checked on the FLEX at 10 W: straight key, paddles (elements on time at 30 WPM), iambic A and B squeeze |
 | CW decoder | ✅ Decodes a strong signal cleanly and weak stations' calls (8–45 WPM, Sens filter against noise) |
 | LAN discovery on iOS | ⏳ Needs Apple's multicast entitlement. Connect by IP for now. |
 | LAN discovery on Android | 🧪 Built in; to be verified on the radio's own network |
