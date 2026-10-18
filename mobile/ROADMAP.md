@@ -128,16 +128,16 @@ From the comparison with upstream main and tester requests:
 
 ## Waiting
 
-- **Testers:** feedback on the TX start (no delay, no whoosh) from build 68
-  on, and on build 70.
-- **Upstream (aethersdr/AetherSDR):**
+- **Upstream (aethersdr/AetherSDR)**, left to wait for upstream:
   - [discussion #6409](https://github.com/aethersdr/AetherSDR/discussions/6409): upstreaming, naming, distribution (GPL and Apple);
   - [#6532](https://github.com/aethersdr/AetherSDR/issues/6532): RFC, client-side Beat Cancel;
   - [#6533](https://github.com/aethersdr/AetherSDR/issues/6533): closing the TX slice leaves no slice transmitting;
   - [#6534](https://github.com/aethersdr/AetherSDR/issues/6534): RFC, Opus under Auto over a VPN;
   - [PR #6535](https://github.com/aethersdr/AetherSDR/pull/6535) for #6051: VITA-49 loss counted net of reordering.
-- **To verify:** LAN discovery on Android at the radio's own network (SmartSDR
-  4.3.16 works: a tester's FLEX-6600 runs it).
+- **To verify:** LAN discovery on Android at the radio's own network (on the
+  next visit to the cabin, where the radio is; SmartSDR 4.3.16 works: a
+  tester's FLEX-6600 runs it).
+- **Verified:** the TX start (no delay, no whoosh) since build 68.
 
 ## Platforms
 
