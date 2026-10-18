@@ -32,6 +32,7 @@
 #include "core/discovery/RadioDiscoverySource.h"
 #include "core/CwSidetoneGenerator.h"
 #include "core/CwxLocalKeyer.h"
+#include "core/IambicKeyer.h"
 #include "models/CwRxModel.h"
 #include "models/EqualizerModel.h"
 #include "gui/MemoryCommands.h"
@@ -399,8 +400,9 @@ MobileEngine::MobileEngine(QObject* parent)
 MobileEngine::~MobileEngine()
 {
     s_instance = nullptr;
-    // Its worker calls into the audio engine, which goes below.
+    // Their workers call into the audio engine, which goes below.
     m_cwxLocalKeyer.reset();
+    m_iambicKeyer.reset();
     stopTransmit(QStringLiteral("shutdown"));
     setKeepScreenAwake(false);
     if (m_discovery) {
@@ -1876,6 +1878,7 @@ void MobileEngine::stopTransmit(const QString& reason)
 {
     releasePtt(reason);
     setCwKey(false, reason);
+    releasePaddles();
     if (m_cwxInput.valid()) {
         m_cwxInput.stop();
         m_cwxInput = {};
@@ -2564,12 +2567,39 @@ void MobileEngine::wireCw()
         }
     });
 
+    // Paddles: the elements are timed here (worker thread, steady_clock),
+    // as the desktop's local iambic keyer; each edge goes to the radio over
+    // NetCW at its scheduled instant and to the sidetone in the same step.
+    m_iambicKeyer = std::make_unique<IambicKeyer>();
+    m_iambicKeyer->setOnKeyDownChange([this](bool down, std::chrono::steady_clock::time_point when) {
+        if (m_audio) {
+            m_audio->setCwKeyDown(down, when);
+        }
+        m_paddleKeyDown.store(down, std::memory_order_relaxed);
+        if (down) {
+            m_paddleElements.fetch_add(1, std::memory_order_relaxed);
+        }
+        QMetaObject::invokeMethod(this, &MobileEngine::cwKeyDownChanged, Qt::QueuedConnection);
+    });
+    m_iambicKeyer->setOnRoutedKeyDownChange([this](bool down, std::chrono::steady_clock::time_point when,
+                                                   const TxCoordinator::Request& input) {
+        m_session.radioModel().queueProducerCwKeyEdge(input, down, QStringLiteral("cw:paddles"), 0, 0, when);
+    });
+    connect(&rm.transmitModel(), &TransmitModel::phoneStateChanged, this, &MobileEngine::syncIambicKeyer);
+
     m_cwDecoder = std::make_unique<CwRxModel>();
     m_cwAudio = std::make_unique<DecoderAudioModel>(rm, DecoderAudioModel::Consumer::Cw);
     connect(m_cwAudio.get(), &DecoderAudioModel::nativePcmReady, m_cwDecoder.get(), &CwRxModel::feed);
     connect(m_cwAudio.get(), &DecoderAudioModel::pcmReady, m_cwDecoder.get(), &CwRxModel::feedFixed24);
     connect(m_cwAudio.get(), &DecoderAudioModel::sourceReset, m_cwDecoder.get(), &CwRxModel::reset);
-    connect(m_cwDecoder.get(), &CwRxModel::textDecoded, this, [this](const QString& text, float) {
+    connect(m_cwDecoder.get(), &CwRxModel::textDecoded, this, [this](const QString& text, float cost) {
+        m_cwCostBins[std::clamp(int(cost * 10.0f), 0, 9)] += int(text.size());
+        // As the desktop's Sens slider: uncertain letters (noise) stay out.
+        if (cost >= 1.0f - cwDecoderSensitivity() / 100.0f * 0.9f) {
+            m_cwDropped += int(text.size());
+            return;
+        }
+        m_cwShown += int(text.size());
         m_cwDecodedText += text;
         if (m_cwDecodedText.size() > kCwDecodedMaxChars) {
             m_cwDecodedText = m_cwDecodedText.right(kCwDecodedMaxChars);
@@ -2583,6 +2613,23 @@ void MobileEngine::wireCw()
     connect(this, &MobileEngine::modeChanged, this, &MobileEngine::updateCwDecoder);
 }
 
+int MobileEngine::cwDecoderSensitivity() const
+{
+    // 70 by default (the desktop's 30 let most band noise through here:
+    // measured, noise letters sit at cost 0.5-0.8, a clean signal's below 0.1).
+    return std::clamp(AppSettings::instance().value(QStringLiteral("MobileCwDecoderSensitivity"), QStringLiteral("70")).toInt(), 0, 100);
+}
+
+void MobileEngine::setCwDecoderSensitivity(int sens)
+{
+    sens = std::clamp(sens, 0, 100);
+    if (sens != cwDecoderSensitivity()) {
+        AppSettings::instance().setValue(QStringLiteral("MobileCwDecoderSensitivity"), QString::number(sens));
+        AppSettings::instance().save();
+        emit cwDecoderChanged();
+    }
+}
+
 void MobileEngine::updateCwDecoder()
 {
     if (!m_cwDecoder || !m_cwAudio) {
@@ -2592,6 +2639,8 @@ void MobileEngine::updateCwDecoder()
     m_cwAudio->setSlice(run ? m_slice.data() : nullptr);
     m_cwAudio->setEnabled(run);
     if (run && !m_cwDecoder->isRunning()) {
+        // Hand-sent and keyer CW, not noise read as 60 WPM elements.
+        m_cwDecoder->setSpeedRange(8, 45);
         m_cwDecoder->start();
     } else if (!run && m_cwDecoder->isRunning()) {
         m_cwDecoder->stop();
@@ -3460,6 +3509,7 @@ void MobileEngine::setCwKey(bool down, const QString& reason)
             m_cwKeyInput.stop();
             qCInfo(lcMobile).noquote() << "CW key up:" << (reason.isEmpty() ? QStringLiteral("released") : reason);
             emit cwChanged();
+            emit cwKeyDownChanged();
         }
         return;
     }
@@ -3475,6 +3525,86 @@ void MobileEngine::setCwKey(bool down, const QString& reason)
         return;
     }
     emit cwChanged();
+    emit cwKeyDownChanged();
+}
+
+bool MobileEngine::cwPaddles() const
+{
+    return AppSettings::instance().value(QStringLiteral("MobileCwPaddles"), QStringLiteral("False")).toString()
+        == QLatin1String("True");
+}
+
+void MobileEngine::setCwPaddles(bool on)
+{
+    if (on == cwPaddles()) {
+        return;
+    }
+    releasePaddles();
+    setCwKey(false, QStringLiteral("keying changed"));
+    AppSettings::instance().setValue(QStringLiteral("MobileCwPaddles"), on ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    emit cwChanged();
+}
+
+QString MobileEngine::cwKeyboardPaddles() const
+{
+    const QString keys = AppSettings::instance().value(QStringLiteral("MobileCwKeyboardPaddles"), QStringLiteral("brackets")).toString();
+    return (keys == QLatin1String("ctrl") || keys == QLatin1String("off")) ? keys : QStringLiteral("brackets");
+}
+
+void MobileEngine::setCwKeyboardPaddles(const QString& keys)
+{
+    if (keys != cwKeyboardPaddles()) {
+        releasePaddles();
+        AppSettings::instance().setValue(QStringLiteral("MobileCwKeyboardPaddles"), keys);
+        AppSettings::instance().save();
+        emit cwChanged();
+    }
+}
+
+void MobileEngine::syncIambicKeyer()
+{
+    if (!m_iambicKeyer) {
+        return;
+    }
+    const TransmitModel& tm = m_session.radioModel().transmitModel();
+    m_iambicKeyer->setMode(tm.cwIambicMode() == 0 ? IambicKeyer::Mode::IambicA : IambicKeyer::Mode::IambicB);
+    m_iambicKeyer->setWpm(tm.cwSpeed());
+    m_iambicKeyer->setSwapPaddles(tm.cwSwapPaddles());
+}
+
+void MobileEngine::setCwPaddleState(bool dit, bool dah)
+{
+    if (!m_iambicKeyer) {
+        return;
+    }
+    RadioModel& rm = m_session.radioModel();
+    const bool held = dit || dah;
+    // A new press needs a radio that can key and no TUNE carrier; a release
+    // always goes through, so nothing is left keyed.
+    if (held && !m_cwPaddleHeld
+        && (!cwKeyAvailable() || !rm.transmitModel().admitsCwKeyEdge(true))) {
+        return;
+    }
+    if (held && !m_cwPaddleHeld) {
+        m_cwPaddleInput = rm.localTxController()->capture(TxController::Activity::CwKey).request();
+    }
+    m_cwPaddleHeld = held;
+    rm.setCwPaddleHeld(held);
+    if (!m_iambicKeyer->isRunning()) {
+        syncIambicKeyer();
+        m_iambicKeyer->start();
+    }
+    m_iambicKeyer->setPaddleState(dit, dah, m_cwPaddleInput);
+}
+
+void MobileEngine::releasePaddles()
+{
+    if (m_iambicKeyer && m_cwPaddleHeld) {
+        m_cwPaddleHeld = false;
+        m_session.radioModel().setCwPaddleHeld(false);
+        m_iambicKeyer->setPaddleState(false, false, m_cwPaddleInput);
+    }
 }
 
 void MobileEngine::sendCwx(const QString& text)
@@ -3906,6 +4036,10 @@ void MobileEngine::onConnectionStateChanged(bool connected)
     emit tnfsChanged();
     if (!connected) {
         stopVoicePreview();
+        releasePaddles();
+        if (m_iambicKeyer) {
+            m_iambicKeyer->stop();
+        }
         // The cluster feeds the radio; without one it waits (and comes back
         // with the radio when it was on).
         if (m_dx && m_dxState != QLatin1String("off")) {

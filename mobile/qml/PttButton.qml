@@ -14,6 +14,9 @@ AppButton {
     readonly property bool keyMode: Engine.cwMode && !Engine.tuning
     // Tap on, tap off (TX tab), voice only; the straight key always holds.
     readonly property bool toggleMode: Engine.pttToggle && !keyMode && !Engine.tuning
+    // CW paddles (CW tab > Key): dit and dah side by side over the button,
+    // each its own touch so both can be held (iambic squeeze).
+    readonly property bool paddleMode: keyMode && Engine.cwPaddles
     enabled: (keyMode ? Engine.cwKeyAvailable : Engine.transmitAvailable) || Engine.tuning || pressed
     text: Engine.tuning ? qsTr("TUNE") : keyMode ? (Engine.cwKeyDown ? qsTr("KEY ●") : qsTr("KEY"))
           : Engine.pttLatched ? qsTr("TX ■") : Engine.transmitting ? qsTr("TX") : qsTr("PTT")
@@ -23,6 +26,7 @@ AppButton {
     // Ready, unavailable and transmitting must look different at a glance:
     // ready has a bright border and label, unavailable is dim.
     contentItem: Text {
+        visible: !ptt.paddleMode || !ptt.enabled
         text: ptt.text
         font: ptt.font
         horizontalAlignment: Text.AlignHCenter
@@ -32,6 +36,8 @@ AppButton {
     }
     background: Rectangle {
         radius: Theme.radius
+        // The paddles draw their own faces.
+        opacity: ptt.paddleMode && ptt.enabled ? 0 : 1
         color: Engine.transmitting || Engine.tuning || Engine.cwKeyDown ? Theme.transmit
              : ptt.enabled ? Theme.pttReady : Theme.surface
         border.width: Engine.transmitting ? 3 : ptt.enabled ? 2 : 1
@@ -41,14 +47,84 @@ AppButton {
     // Hold to transmit; release (or losing the touch) always unkeys. While
     // the tune carrier is on, PTT is its off switch.
     // In tap on/off mode a press switches and the release does nothing.
-    onPressed: Engine.tuning ? Engine.stopTransmit("PTT pressed during tune")
-             : keyMode ? Engine.setCwKey(true) : toggleMode ? Engine.togglePtt() : Engine.setPtt(true)
+    onPressed: {
+        if (paddleMode) return
+        if (Engine.tuning) Engine.stopTransmit("PTT pressed during tune")
+        else if (keyMode) Engine.setCwKey(true)
+        else if (toggleMode) Engine.togglePtt()
+        else Engine.setPtt(true)
+    }
     onReleased: {
+        if (paddleMode) return
         if (keyMode) Engine.setCwKey(false, "key released")
         else if (!toggleMode) Engine.setPtt(false, "button released")
     }
     onCanceled: {
+        if (paddleMode) return
         if (keyMode) Engine.setCwKey(false, "touch cancelled by the system")
         else if (!toggleMode) Engine.setPtt(false, "touch cancelled by the system")
+    }
+
+    Item {
+        id: paddles
+        visible: ptt.paddleMode && ptt.enabled
+        anchors.fill: parent
+        z: 2
+        // The keyer swaps the paddles itself (the radio's setting): the left
+        // pad is always the "dit" input; only its label follows the swap.
+        readonly property bool swapped: !!Engine.radioSetup.swapPaddles
+        readonly property bool dit: leftPad.tap.pressed
+        readonly property bool dah: rightPad.tap.pressed
+        onDitChanged: Engine.setCwPaddleState(dit, dah)
+        onDahChanged: Engine.setCwPaddleState(dit, dah)
+        // Hidden or disabled with a paddle down: let go.
+        onVisibleChanged: if (!visible) Engine.setCwPaddleState(false, false)
+        component Pad: Rectangle {
+            id: pad
+            property alias tap: padTap
+            property string symbol
+            property string name
+            radius: Theme.radius
+            color: padTap.pressed ? Theme.transmit : Theme.pttReady
+            border.width: 2
+            border.color: padTap.pressed ? "white" : Theme.transmit
+            Column {
+                anchors.centerIn: parent
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: pad.symbol
+                    color: "white"
+                    font.pixelSize: ptt.fontPx * 1.3
+                    font.bold: true
+                }
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: pad.name
+                    color: "white"
+                    opacity: 0.8
+                    font.pixelSize: Math.max(11, ptt.fontPx * 0.4)
+                }
+            }
+            // Pressed while the finger stays on it; sliding off lets go.
+            TapHandler { id: padTap; gesturePolicy: TapHandler.WithinBounds }
+        }
+        Row {
+            anchors.fill: parent
+            spacing: 4
+            Pad {
+                id: leftPad
+                width: (parent.width - 4) / 2
+                height: parent.height
+                symbol: paddles.swapped ? "–" : "•"
+                name: paddles.swapped ? qsTr("dah") : qsTr("dit")
+            }
+            Pad {
+                id: rightPad
+                width: (parent.width - 4) / 2
+                height: parent.height
+                symbol: paddles.swapped ? "•" : "–"
+                name: paddles.swapped ? qsTr("dit") : qsTr("dah")
+            }
+        }
     }
 }

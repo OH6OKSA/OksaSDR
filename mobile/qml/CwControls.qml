@@ -28,6 +28,50 @@ ColumnLayout {
         }
     }
 
+    // Keying in PTT's place: a straight key, or paddles (dit, dah) timed by
+    // the app's iambic keyer; mode A/B and swapped paddles are the radio's
+    // settings (Setup > Phone/CW).
+    RowLayout {
+        Layout.fillWidth: true
+        Label { text: qsTr("Key"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+        AppButton {
+            text: qsTr("Straight key")
+            checked: !Engine.cwPaddles
+            Layout.fillWidth: true
+            onClicked: Engine.cwPaddles = false
+        }
+        AppButton {
+            text: qsTr("Paddles")
+            checked: Engine.cwPaddles
+            Layout.fillWidth: true
+            onClicked: Engine.cwPaddles = true
+        }
+    }
+    RowLayout {
+        Layout.fillWidth: true
+        visible: Engine.cwPaddles
+        Label { text: qsTr("Keyboard"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+        Repeater {
+            model: [{ key: "brackets", label: "[  ]" }, { key: "ctrl", label: qsTr("Ctrl L/R") }, { key: "off", label: qsTr("Off") }]
+            delegate: AppButton {
+                required property var modelData
+                text: modelData.label
+                checked: Engine.cwKeyboardPaddles === modelData.key
+                Layout.fillWidth: true
+                Layout.preferredWidth: 1
+                onClicked: Engine.cwKeyboardPaddles = modelData.key
+            }
+        }
+    }
+    Label {
+        visible: Engine.cwPaddles
+        Layout.fillWidth: true
+        text: qsTr("Dit and dah share PTT's place; press both for iambic. On a keyboard: [ and ], or left and right Ctrl (USB paddle adapters such as Vail). Iambic A/B and swapped paddles: Setup > Phone/CW.")
+        color: Theme.textDim
+        font.pixelSize: 12
+        wrapMode: Text.WordWrap
+    }
+
     // Memories M1-M12: tap sends (CWX), press and hold edits; F1-F12 on a
     // keyboard send them too. {CALL} = the radio's callsign. The straight key
     // is the KEY button in PTT's place.
@@ -159,6 +203,28 @@ ColumnLayout {
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.cwDecoderEnabled = !Engine.cwDecoderEnabled
+        }
+    }
+
+    // Decoder sensitivity (the desktop's Sens): higher shows only letters
+    // decoded with confidence, so band noise stays out.
+    RowLayout {
+        Layout.fillWidth: true
+        visible: Engine.cwDecoderEnabled
+        Label { text: qsTr("Sens"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+        Slider {
+            id: sensSlider
+            Layout.fillWidth: true
+            from: 0; to: 100; stepSize: 5
+            onMoved: Engine.cwDecoderSensitivity = Math.round(value)
+            Binding on value { when: !sensSlider.pressed; value: Engine.cwDecoderSensitivity }
+        }
+        Label {
+            text: Math.round(sensSlider.value)
+            color: Theme.textDim
+            font.pixelSize: 13
+            Layout.preferredWidth: 28
+            horizontalAlignment: Text.AlignRight
         }
     }
 

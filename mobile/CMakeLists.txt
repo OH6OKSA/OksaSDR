@@ -64,6 +64,7 @@ qt_add_qml_module(aether-mobile
         qml/AppButton.qml
         qml/MenuIcon.qml
         qml/TopButton.qml
+        qml/CwKeyboardPaddles.qml
         qml/ControlsPanel.qml
         qml/MeterView.qml
         qml/AnalogGauge.qml

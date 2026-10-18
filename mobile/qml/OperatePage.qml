@@ -12,7 +12,13 @@ Page {
     // CW text. Space is hold-to-talk: press keys,
     // release unkeys, auto-repeat is ignored, and losing focus unkeys.
     property bool spacePtt: false
+    // CW paddles on the keyboard ([ ] or left/right Ctrl), before the rest.
+    CwKeyboardPaddles { id: kbPaddles }
     Keys.onPressed: (event) => {
+        if (kbPaddles.handlePress(event)) {
+            event.accepted = true
+            return
+        }
         if (event.isAutoRepeat && event.key === Qt.Key_Space) {
             event.accepted = true
             return
@@ -50,6 +56,10 @@ Page {
         event.accepted = true
     }
     Keys.onReleased: (event) => {
+        if (kbPaddles.handleRelease(event)) {
+            event.accepted = true
+            return
+        }
         if (event.key === Qt.Key_Space && !event.isAutoRepeat) {
             page.spacePtt = false
             Engine.setPtt(false, "space released")
@@ -57,6 +67,7 @@ Page {
         }
     }
     onActiveFocusChanged: {
+        if (!activeFocus) kbPaddles.releaseAll()
         if (!activeFocus && spacePtt) {
             spacePtt = false
             Engine.setPtt(false, "page lost keyboard focus")

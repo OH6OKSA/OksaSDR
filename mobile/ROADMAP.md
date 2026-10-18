@@ -7,9 +7,11 @@ queued, waiting on someone, or still to verify follows.
 
 Queued (not yet sent to TestFlight):
 - Passband drag tunes on the tuning step (Wayne: had to round off with the step buttons after each drag).
+- CW paddles on the screen with the app's iambic keyer (A/B, squeeze; [ ] or Ctrl L/R on a keyboard); checked on air at 10 W.
+- CW decoder: Sens filter (default 70) and 8-45 WPM; band noise mostly gone, weak calls decode (measured on 20 m).
 
 Open from tester feedback: SmartLink sign-in not kept for one tester (log
-needed); on-screen CW paddles.
+needed).
 
 ## Released
 
@@ -97,8 +99,8 @@ From the comparison with upstream main and tester requests:
   - [#6533](https://github.com/aethersdr/AetherSDR/issues/6533): closing the TX slice leaves no slice transmitting;
   - [#6534](https://github.com/aethersdr/AetherSDR/issues/6534): RFC, Opus under Auto over a VPN;
   - [PR #6535](https://github.com/aethersdr/AetherSDR/pull/6535) for #6051: VITA-49 loss counted net of reordering.
-- **To verify:** the CW straight key and the decoder on strong signals (CWX is verified on air); the app against
-  SmartSDR 4.3.x firmware.
+- **To verify:** LAN discovery on Android at the radio's own network (SmartSDR
+  4.3.16 works: a tester's FLEX-6600 runs it).
 
 ## Platforms
 

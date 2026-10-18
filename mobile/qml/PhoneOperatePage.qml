@@ -9,6 +9,13 @@ import AetherMobile
 Page {
     id: page
     background: Rectangle { color: Theme.background }
+    // A hardware keyboard or a USB paddle adapter: CW paddles ([ ] or
+    // left/right Ctrl, CW tab).
+    focus: true
+    CwKeyboardPaddles { id: kbPaddles }
+    Keys.onPressed: (event) => { if (kbPaddles.handlePress(event)) event.accepted = true }
+    Keys.onReleased: (event) => { if (kbPaddles.handleRelease(event)) event.accepted = true }
+    onActiveFocusChanged: if (!activeFocus) kbPaddles.releaseAll()
 
     readonly property bool landscape: width > height
     // PTT height, shared with the drawer's copy of the button. PTT runs

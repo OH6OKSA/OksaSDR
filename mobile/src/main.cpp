@@ -166,6 +166,13 @@ int main(int argc, char* argv[])
     const QCommandLineOption buttonStyleOption(QStringLiteral("button-style"),
         QStringLiteral("Button colours: classic, light or lit (remembered)."), QStringLiteral("style"));
     parser.addOption(buttonStyleOption);
+    const QCommandLineOption setModeOption(QStringLiteral("set-mode"),
+        QStringLiteral("Development: set this app's slice to <mode> on a real radio once connected "
+                       "(--mode touches only the demo)."), QStringLiteral("mode"));
+    parser.addOption(setModeOption);
+    const QCommandLineOption cwPaddlesOption(QStringLiteral("cw-paddles"),
+        QStringLiteral("CW keying on the screen: on (paddles) or off (straight key) (remembered)."), QStringLiteral("state"));
+    parser.addOption(cwPaddlesOption);
     const QCommandLineOption micGainOption(QStringLiteral("mic-gain-db"),
         QStringLiteral("This device's microphone gain in dB, -20 .. +30 (remembered)."), QStringLiteral("dB"));
     parser.addOption(micGainOption);
@@ -183,6 +190,15 @@ int main(int argc, char* argv[])
                        "60 s, logging what it decodes; mode, frequency and decoder restored after."),
         QStringLiteral("MHz"));
     parser.addOption(cwDecodeTestOption);
+    const QCommandLineOption paddleTestOption(QStringLiteral("paddle-test"),
+        QStringLiteral("Development: paddles on 14.045 MHz CW at 10 W (only if this app's slice transmits): dit "
+                       "0.6 s, dah 0.6 s, both 0.8 s; logs the elements; power, mode, frequency restored after."));
+    parser.addOption(paddleTestOption);
+    const QCommandLineOption cqTestOption(QStringLiteral("cq-test"),
+        QStringLiteral("Development, with the operator's permission: CQ with <call> on the quietest of five 20 m "
+                       "CW frequencies at 25 W and 22 WPM after QRL?, then the decoder listens 60 s; stops on high "
+                       "SWR; power, speed, mode, frequency and decoder restored after."), QStringLiteral("call"));
+    parser.addOption(cqTestOption);
     const QCommandLineOption pttTestOption(QStringLiteral("ptt-test"),
         QStringLiteral("Development: transmit for <ms> with this device's microphone at 10 W on 14.250 MHz "
                        "(only if this app's slice transmits), logging the Mic meter; power restored after."),
@@ -495,8 +511,10 @@ int main(int argc, char* argv[])
         QTimer::singleShot(8000, &app, [&engine, saved] {
             (*saved)[QStringLiteral("freq")] = engine.frequencyMhz();
             (*saved)[QStringLiteral("mode")] = engine.mode();
+            (*saved)[QStringLiteral("decoder")] = engine.cwDecoderEnabled();
             engine.setMode(QStringLiteral("CW"));
             engine.setFrequencyMhz(14.045);
+            engine.setCwDecoderEnabled(true);
         });
         QTimer::singleShot(11000, &app, [&engine, saved, text] {
             bool ownTx = false;
@@ -526,7 +544,10 @@ int main(int argc, char* argv[])
             QTimer::singleShot(14000, &engine, [&engine, saved, sampler] {
                 sampler->stop();
                 engine.stopCwx();
+                qInfo().noquote() << "cwx-test: decoder" << engine.cwDecoderCounts() << "|"
+                                  << engine.cwDecodedText().right(200).simplified();
                 engine.setRfPower(saved->value(QStringLiteral("power")).toInt());
+                engine.setCwDecoderEnabled(saved->value(QStringLiteral("decoder")).toBool());
                 engine.setMode(saved->value(QStringLiteral("mode")).toString());
                 engine.setFrequencyMhz(saved->value(QStringLiteral("freq")).toDouble());
                 qInfo() << "cwx-test: restored" << *saved << "sidetone" << engine.cwxSidetoneStats();
@@ -535,6 +556,13 @@ int main(int argc, char* argv[])
     }
     if (parser.isSet(buttonStyleOption)) {
         engine.setButtonStyle(parser.value(buttonStyleOption));
+    }
+    if (parser.isSet(setModeOption)) {
+        const QString mode = parser.value(setModeOption);
+        QTimer::singleShot(6000, &app, [&engine, mode] { engine.setMode(mode); });
+    }
+    if (parser.isSet(cwPaddlesOption)) {
+        engine.setCwPaddles(parser.value(cwPaddlesOption) == QLatin1String("on"));
     }
     if (parser.isSet(micGainOption)) {
         engine.setMicGainDb(parser.value(micGainOption).toDouble());
@@ -625,9 +653,9 @@ int main(int argc, char* argv[])
         });
         for (int s = 20; s <= 70; s += 10) {
             QTimer::singleShot(8000 + s * 1000, &app, [&engine, s] {
-                qInfo().noquote() << QStringLiteral("cw-decode-test %1 s: %2 | %3")
-                                         .arg(s).arg(engine.cwDecoderStats(),
-                                                     engine.cwDecodedText().right(160).simplified());
+                qInfo().noquote() << QStringLiteral("cw-decode-test %1 s: %2, sens %3, %4 | %5")
+                                         .arg(s).arg(engine.cwDecoderStats()).arg(engine.cwDecoderSensitivity())
+                                         .arg(engine.cwDecoderCounts(), engine.cwDecodedText().right(160).simplified());
             });
         }
         QTimer::singleShot(8000 + 71000, &app, [&engine, saved] {
@@ -635,6 +663,156 @@ int main(int argc, char* argv[])
             engine.setMode(saved->value(QStringLiteral("mode")).toString());
             engine.setFrequencyMhz(saved->value(QStringLiteral("freq")).toDouble());
             qInfo() << "cw-decode-test: restored" << *saved;
+        });
+    }
+    if (parser.isSet(paddleTestOption)) {
+        auto* saved = new QVariantMap;
+        QTimer::singleShot(8000, &app, [&engine, saved] {
+            (*saved)[QStringLiteral("freq")] = engine.frequencyMhz();
+            (*saved)[QStringLiteral("mode")] = engine.mode();
+            engine.setMode(QStringLiteral("CW"));
+            engine.setFrequencyMhz(14.045);
+        });
+        QTimer::singleShot(11000, &app, [&engine, saved] {
+            bool ownTx = false;
+            for (const QVariant& v : engine.slices()) {
+                const QVariantMap m = v.toMap();
+                if (m.value(QStringLiteral("id")).toInt() == engine.activeSliceId()) {
+                    ownTx = m.value(QStringLiteral("tx")).toBool();
+                }
+            }
+            if (!ownTx || engine.mode() != QLatin1String("CW") || std::abs(engine.frequencyMhz() - 14.045) > 0.0005) {
+                qWarning() << "paddle-test: not keying";
+                return;
+            }
+            (*saved)[QStringLiteral("power")] = engine.rfPower();
+            engine.setRfPower(10);
+            auto step = [&engine](int at, bool dit, bool dah, const char* what) {
+                QTimer::singleShot(at, &engine, [&engine, dit, dah, what] {
+                    engine.setCwPaddleState(dit, dah);
+                    qInfo().noquote() << QStringLiteral("paddle-test: %1 (elements so far %2, %3 WPM)")
+                                             .arg(QLatin1String(what)).arg(engine.paddleElements()).arg(engine.cwSpeed());
+                });
+            };
+            step(700, true, false, "dit down");
+            step(1300, false, false, "dit up");
+            step(2300, false, true, "dah down");
+            step(2900, false, false, "dah up");
+            step(3900, true, true, "both down");
+            step(4700, false, false, "both up");
+            QTimer::singleShot(7000, &engine, [&engine, saved] {
+                qInfo() << "paddle-test: elements" << engine.paddleElements();
+                engine.setRfPower(saved->value(QStringLiteral("power")).toInt());
+                engine.setMode(saved->value(QStringLiteral("mode")).toString());
+                engine.setFrequencyMhz(saved->value(QStringLiteral("freq")).toDouble());
+                qInfo() << "paddle-test: restored" << *saved;
+            });
+        });
+    }
+    if (parser.isSet(cqTestOption)) {
+        const QString call = parser.value(cqTestOption).trimmed().toUpper();
+        auto* st = new QVariantMap;
+        auto* timer = new QTimer(&engine);
+        static const double candidates[] = {14.032, 14.037, 14.043, 14.048, 14.053};
+        QTimer::singleShot(8000, &app, [&engine, st, timer, call] {
+            bool ownTx = false;
+            for (const QVariant& v : engine.slices()) {
+                const QVariantMap m = v.toMap();
+                if (m.value(QStringLiteral("id")).toInt() == engine.activeSliceId()) {
+                    ownTx = m.value(QStringLiteral("tx")).toBool();
+                }
+            }
+            if (!ownTx || call.isEmpty()) {
+                qWarning() << "cq-test: not keying (own TX" << ownTx << ")";
+                return;
+            }
+            (*st)[QStringLiteral("freq")] = engine.frequencyMhz();
+            (*st)[QStringLiteral("mode")] = engine.mode();
+            (*st)[QStringLiteral("power")] = engine.rfPower();
+            (*st)[QStringLiteral("speed")] = engine.cwSpeed();
+            (*st)[QStringLiteral("decoder")] = engine.cwDecoderEnabled();
+            engine.setMode(QStringLiteral("CW"));
+            engine.setCwSpeed(22);
+            engine.setCwDecoderEnabled(true);
+            // Scan: 2.5 s on each candidate, keep the loudest S-meter reading.
+            (*st)[QStringLiteral("step")] = 0;
+            (*st)[QStringLiteral("best")] = 0;
+            (*st)[QStringLiteral("bestDbm")] = 0.0;
+            (*st)[QStringLiteral("peak")] = -200.0;
+            engine.setFrequencyMhz(candidates[0]);
+            QObject::connect(timer, &QTimer::timeout, &engine, [&engine, st, timer, call] {
+                const int step = (*st)[QStringLiteral("step")].toInt();
+                (*st)[QStringLiteral("peak")] = std::max((*st)[QStringLiteral("peak")].toDouble(), engine.sMeterDbm());
+                const int ticks = (*st)[QStringLiteral("ticks")].toInt() + 1;
+                (*st)[QStringLiteral("ticks")] = ticks;
+                if (step < 5 && ticks >= 10) {   // 2.5 s per candidate
+                    const double peak = (*st)[QStringLiteral("peak")].toDouble();
+                    qInfo().noquote() << QStringLiteral("cq-test: %1 MHz peak %2 dBm").arg(candidates[step], 0, 'f', 3).arg(peak, 0, 'f', 1);
+                    if (step == 0 || peak < (*st)[QStringLiteral("bestDbm")].toDouble()) {
+                        (*st)[QStringLiteral("best")] = step;
+                        (*st)[QStringLiteral("bestDbm")] = peak;
+                    }
+                    (*st)[QStringLiteral("step")] = step + 1;
+                    (*st)[QStringLiteral("ticks")] = 0;
+                    (*st)[QStringLiteral("peak")] = -200.0;
+                    if (step + 1 < 5) {
+                        engine.setFrequencyMhz(candidates[step + 1]);
+                    } else {
+                        const double f = candidates[(*st)[QStringLiteral("best")].toInt()];
+                        engine.setFrequencyMhz(f);
+                        engine.setRfPower(25);
+                        qInfo() << "cq-test: quietest" << f << "MHz; QRL?";
+                        QTimer::singleShot(1500, &engine, [&engine] { engine.sendCwx(QStringLiteral("QRL?")); });
+                        (*st)[QStringLiteral("phase")] = QStringLiteral("qrl");
+                    }
+                    return;
+                }
+                if (step < 5) {
+                    return;
+                }
+                // Stop on a bad match whenever we are on the air.
+                if (engine.radioTransmitting() && engine.swrValid() && engine.swr() > 2.5) {
+                    qWarning() << "cq-test: SWR" << engine.swr() << "- stopping";
+                    engine.stopCwx();
+                }
+                const QString phase = (*st)[QStringLiteral("phase")].toString();
+                const int t = ticks;
+                if (phase == QLatin1String("qrl") && t == 30) {   // ~4 s listening after QRL?
+                    if (engine.sMeterDbm() > -95.0) {
+                        qWarning() << "cq-test: frequency in use after QRL? (" << engine.sMeterDbm() << "dBm) - no CQ";
+                        (*st)[QStringLiteral("phase")] = QStringLiteral("done");
+                        (*st)[QStringLiteral("ticks")] = 0;
+                        return;
+                    }
+                    const QString cq = QStringLiteral("CQ CQ CQ DE %1 %1 K").arg(call);
+                    engine.sendCwx(cq + QLatin1Char(' ') + cq);
+                    qInfo() << "cq-test: sending" << cq << "x2";
+                    (*st)[QStringLiteral("phase")] = QStringLiteral("cq");
+                    (*st)[QStringLiteral("ticks")] = 0;
+                } else if (phase == QLatin1String("cq") && !engine.radioTransmitting() && t > 20) {
+                    qInfo() << "cq-test: CQ done, listening 60 s";
+                    (*st)[QStringLiteral("phase")] = QStringLiteral("listen");
+                    (*st)[QStringLiteral("ticks")] = 0;
+                } else if (phase == QLatin1String("listen") && t % 20 == 0) {
+                    qInfo().noquote() << QStringLiteral("cq-test: %1 s, S %2 dBm, decoder %3 | %4")
+                                             .arg(t / 4).arg(engine.sMeterDbm(), 0, 'f', 0).arg(engine.cwDecoderStats(),
+                                                  engine.cwDecodedText().right(200).simplified());
+                    if (t >= 240) {
+                        (*st)[QStringLiteral("phase")] = QStringLiteral("done");
+                        (*st)[QStringLiteral("ticks")] = 0;
+                    }
+                } else if (phase == QLatin1String("done") && t == 1) {
+                    timer->stop();
+                    engine.setRfPower((*st)[QStringLiteral("power")].toInt());
+                    engine.setCwSpeed((*st)[QStringLiteral("speed")].toInt());
+                    engine.setCwDecoderEnabled((*st)[QStringLiteral("decoder")].toBool());
+                    engine.setMode((*st)[QStringLiteral("mode")].toString());
+                    engine.setFrequencyMhz((*st)[QStringLiteral("freq")].toDouble());
+                    qInfo() << "cq-test: restored power" << (*st)[QStringLiteral("power")] << "speed" << (*st)[QStringLiteral("speed")];
+                    QTimer::singleShot(1500, qApp, &QCoreApplication::quit);
+                }
+            });
+            timer->start(250);
         });
     }
     if (parser.isSet(pttTestOption)) {

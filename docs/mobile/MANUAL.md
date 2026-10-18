@@ -310,7 +310,18 @@ offers **Off**.
   → TX → PTT) makes it a switch: tap to transmit, tap again to stop (TX ■
   while it is on); as a safety it stops by itself after 3 minutes. Space on
   a keyboard works the same way.
-- **KEY** — in CW modes the same button is a straight key. The sidetone
+- **KEY** — in CW modes the same button is a straight key, or **paddles**
+  (Controls → CW → Key: *Paddles*): dit and dah side by side in its
+  place, each its own touch, so holding both gives iambic squeeze. The app
+  times the elements itself (iambic A or B, speed and swapped paddles as
+  set in [Radio Setup](#9-radio-setup) → Phone/CW and the CW tab), sends
+  them to the radio and plays the sidetone in step. On a keyboard, **[**
+  and **]** are the paddles, or left and right **Ctrl** for USB paddle
+  adapters (Vail, VBand), chosen under *Keyboard*.
+
+  ![CW paddles in PTT's place](manual/cw-paddles.jpg)
+
+  For a straight key, the sidetone
   plays on this device as you key (at the radio's CW pitch and monitor
   level, when the radio's sidetone is on), without the round trip to the
   radio.
@@ -404,7 +415,12 @@ them back into the drawer.
   - **CW text** — type and *Send*; with **Live** on, each letter goes as you
     type it (Return sends a space). *Stop*, or Esc, clears what is still
     queued.
-  - Speed, pitch, **Break-in** (QSK) and the **Decoder**. Decoded text shows
+  - **Key** — *Straight key* or *Paddles* (see [KEY](#7-transmitting-ptt-key-and-tune)),
+    and the keyboard's paddle keys.
+  - Speed, pitch, **Break-in** (QSK) and the **Decoder**, with **Sens**
+    (0–100, default 70): higher shows only the letters decoded with
+    confidence, so band noise stays out. It reads hand-sent and keyer CW
+    from 8 to 45 WPM. Decoded text shows
     here and along the top of the waterfall; what you send shows there too,
     marked `[TX]`.
 - **View** — band plan, **Spots** (shown or hidden) and the **DX cluster**,

@@ -34,6 +34,7 @@ class AudioEngine;
 class DxClusterClient;
 class CwRxModel;
 class CwxLocalKeyer;
+class IambicKeyer;
 class DecoderAudioModel;
 class PanadapterModel;
 class RadioDiscoverySource;
@@ -186,11 +187,21 @@ class MobileEngine : public QObject {
     Q_PROPERTY(bool cwMode READ cwMode NOTIFY modeChanged)
     Q_PROPERTY(bool cwKeyAvailable READ cwKeyAvailable NOTIFY transmitStateChanged)
     Q_PROPERTY(bool cwxAvailable READ cwxAvailable NOTIFY transmitStateChanged)
-    Q_PROPERTY(bool cwKeyDown READ cwKeyDown NOTIFY cwChanged)
+    Q_PROPERTY(bool cwKeyDown READ cwKeyDown NOTIFY cwKeyDownChanged)
+    // CW keying on the screen: a straight key (KEY) or paddles (dit, dah)
+    // driving the app's iambic keyer (the desktop's IambicKeyer: mode,
+    // speed and swapped paddles follow the radio's settings). Remembered.
+    Q_PROPERTY(bool cwPaddles READ cwPaddles WRITE setCwPaddles NOTIFY cwChanged)
+    // Paddles on a hardware keyboard: "brackets" ([ and ]), "ctrl" (left and
+    // right Ctrl, as USB paddle adapters send) or "off". Remembered.
+    Q_PROPERTY(QString cwKeyboardPaddles READ cwKeyboardPaddles WRITE setCwKeyboardPaddles NOTIFY cwChanged)
     Q_PROPERTY(int cwSpeed READ cwSpeed WRITE setCwSpeed NOTIFY cwChanged)
     Q_PROPERTY(int cwPitch READ cwPitch WRITE setCwPitch NOTIFY cwChanged)
     Q_PROPERTY(bool cwBreakIn READ cwBreakIn WRITE setCwBreakIn NOTIFY cwChanged)
     Q_PROPERTY(bool cwDecoderEnabled READ cwDecoderEnabled WRITE setCwDecoderEnabled NOTIFY cwDecoderChanged)
+    // Decoder sensitivity 0-100 (the desktop's Sens): letters whose cost is at
+    // or above 1 - 0.9 x sens/100 are not shown (band noise decodes as such).
+    Q_PROPERTY(int cwDecoderSensitivity READ cwDecoderSensitivity WRITE setCwDecoderSensitivity NOTIFY cwDecoderChanged)
     // Tuning lock of the active slice (the radio's slice lock; SliceModel
     // refuses tuning while it is on). tuneBlocked fires on a refused tune.
     Q_PROPERTY(bool locked READ locked WRITE setLocked NOTIFY lockedChanged)
@@ -457,7 +468,13 @@ public:
     bool cwMode() const;
     bool cwKeyAvailable() const;
     bool cwxAvailable() const;
-    bool cwKeyDown() const { return m_cwKeyHeld; }
+    bool cwKeyDown() const { return m_cwKeyHeld || m_paddleKeyDown.load(std::memory_order_relaxed); }
+    bool cwPaddles() const;
+    void setCwPaddles(bool on);
+    QString cwKeyboardPaddles() const;
+    void setCwKeyboardPaddles(const QString& keys);
+    // The paddles as held now; the keyer forms the elements.
+    Q_INVOKABLE void setCwPaddleState(bool dit, bool dah);
     int cwSpeed() const;
     void setCwSpeed(int wpm);
     int cwPitch() const;
@@ -511,6 +528,7 @@ public:
     // Development (--cwx-test): the CWX sidetone's key-downs and keyed time
     // since the last CWX text started.
     QString cwxSidetoneStats() const;
+    int paddleElements() const { return m_paddleElements.load(std::memory_order_relaxed); }
     QStringList globalProfiles() const;
     QString activeGlobalProfile() const;
     QStringList txProfiles() const;
@@ -577,6 +595,17 @@ public:
     void setPinnedSections(const QStringList& sections);
     void setCwDecoderEnabled(bool on);
     QString cwDecodedText() const { return m_cwDecodedText; }
+    int cwDecoderSensitivity() const;
+    void setCwDecoderSensitivity(int sens);
+    // Development: letters shown / dropped by the sensitivity since start.
+    QString cwDecoderCounts() const
+    {
+        QStringList bins;
+        for (int b : m_cwCostBins) {
+            bins << QString::number(b);
+        }
+        return QStringLiteral("%1 shown, %2 dropped, cost tenths [%3]").arg(m_cwShown).arg(m_cwDropped).arg(bins.join(QLatin1Char(' ')));
+    }
     QString cwDecoderStats() const { return m_cwDecoderStats; }
     // The active slice's tuning step (radio-reported), Hz.
     int stepHz() const;
@@ -799,6 +828,7 @@ signals:
     // page opens it.
     void stationsRequested();
     void cwChanged();
+    void cwKeyDownChanged();
     void cwDecoderChanged();
     void displayLevelsChanged();
     void lockedChanged();
@@ -969,6 +999,16 @@ private:
     // Sidetone for CWX (memories, CW text): the radio's own keyer sends it,
     // so this plays the same text locally at the same speed, as the desktop.
     std::unique_ptr<CwxLocalKeyer> m_cwxLocalKeyer;
+    std::unique_ptr<IambicKeyer> m_iambicKeyer;
+    int m_cwShown{0};
+    int m_cwDropped{0};
+    int m_cwCostBins[10]{};   // letters by cost, tenths (diagnostics)
+    TxCoordinator::Request m_cwPaddleInput;
+    bool m_cwPaddleHeld{false};
+    std::atomic<bool> m_paddleKeyDown{false};
+    std::atomic<int> m_paddleElements{0};   // key-downs from the paddles (diagnostics)
+    void syncIambicKeyer();
+    void releasePaddles();
     std::atomic<int> m_cwxSidetoneDowns{0};      // key-downs played (diagnostics)
     std::atomic<qint64> m_cwxSidetoneKeyedMs{0};  // time keyed, ms
     std::chrono::steady_clock::time_point m_cwxSidetoneDownAt;  // keyer thread only

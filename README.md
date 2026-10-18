@@ -141,8 +141,10 @@ radio interface, with no computer running alongside.
 - Hold-to-talk PTT from the device's microphone (the radio's mic input is
   set to `PC` when the app connects), with RF power and mic level, plus forward power and SWR
   while transmitting. The microphone is open only while PTT is held.
-- CW: in CW modes the PTT button is the straight key, with the sidetone
-  played on the device; editable memories ({CALL} = your callsign) and CWX
+- CW: in CW modes the PTT button is the straight key or two paddles (dit,
+  dah) with the app's iambic keyer (A/B, squeeze; also [ ] or left/right
+  Ctrl on a keyboard or USB paddle adapter), with the sidetone played on
+  the device; editable memories ({CALL} = your callsign) and CWX
   text sent by the radio at the set speed, with sidetone too; speed, pitch and break-in, plus the CW decoder
   with the decoded text along the top of the waterfall (what you send shows
   there too). Twelve memories, also on F1–F12 from a keyboard (Esc stops),
@@ -220,8 +222,8 @@ refreshed with every user-interface change.</sub>
 | Spots and DX cluster, TNF, memory editing | ✅ Tested against a FLEX-6600M (build 77) |
 | TX processing (gate, EQ, compressor) | ✅ Measured on the FLEX with a test tone; testers' on-air reports welcome |
 | CWX (CW memories, CW text) on air | ✅ Used on air by a tester (POTA/WWFF replies); checked at 10 W with the sidetone in step |
-| CW straight key (KEY) on air | 🧪 Works; keying by touch is hard (on-screen paddles planned) |
-| CW decoder | 🧪 Runs; weak, fading signals (the 14.100 beacons) decode poorly, to check on strong signals |
+| CW straight key and paddles on air | ✅ Paddles checked on the FLEX at 10 W (elements on time at 30 WPM, iambic squeeze); straight key used by a tester |
+| CW decoder | ✅ Decodes a strong signal cleanly and weak stations' calls (8–45 WPM, Sens filter against noise) |
 | LAN discovery on iOS | ⏳ Needs Apple's multicast entitlement. Connect by IP for now. |
 | LAN discovery on Android | 🧪 Built in; to be verified on the radio's own network |
 
