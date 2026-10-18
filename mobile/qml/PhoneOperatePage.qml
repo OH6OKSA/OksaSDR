@@ -82,10 +82,13 @@ Page {
     GridLayout {
         id: grid
         anchors.fill: parent
-        anchors.leftMargin: Theme.spacing / 2 + grid.SafeArea.margins.left
-        anchors.rightMargin: Theme.spacing / 2 + grid.SafeArea.margins.right
+        // The page's safe area, not the grid's own: the grid's margins move
+        // the grid, which changes its own safe area (a binding loop that left
+        // the layout unsettled after a rotation on Android).
+        anchors.leftMargin: Theme.spacing / 2 + page.SafeArea.margins.left
+        anchors.rightMargin: Theme.spacing / 2 + page.SafeArea.margins.right
         anchors.topMargin: Theme.spacing / 2
-        anchors.bottomMargin: Theme.spacing / 2 + Math.max(grid.SafeArea.margins.bottom, 8)
+        anchors.bottomMargin: Theme.spacing / 2 + Math.max(page.SafeArea.margins.bottom, 8)
         columns: 1
         columnSpacing: Theme.spacing / 2
         rowSpacing: Theme.spacing / 2
@@ -159,8 +162,11 @@ Page {
                 Layout.topMargin: -Theme.spacing / 2
             }
 
-            // Horizontally scrolling band strip.
+            // Horizontally scrolling band strip. Left out in very low
+            // landscape (a phone's outer screen, small iPhones), where the
+            // display needs the room; the Band button on it picks bands.
             RowLayout {
+                visible: !(page.landscape && Theme.tightHeight)
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
                 ListView {

@@ -5,7 +5,15 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. To verify in build 80: Alt ⌥ paddles on the iPad's
+- Android outer screen in landscape: the layout no longer runs off the
+  bottom (PTT and the step buttons were cut). The metrics now follow the
+  room inside the safe area (status and navigation bars, the camera
+  cutout), very low landscape leaves the band strip out (Band button on
+  the waterfall), and the operate pages no longer loop on their own safe
+  area after a rotation. To check on the phone's outer screen and on an
+  iPhone in landscape.
+
+To verify in build 80: Alt ⌥ paddles on the iPad's
 Magic Keyboard (the log shows the first keys). Real-device screenshots for
 GitHub from the iPad and the Android phone. Open from tester feedback:
 SmartLink sign-in not kept for one tester (log needed).

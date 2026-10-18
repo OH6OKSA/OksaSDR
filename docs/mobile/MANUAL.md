@@ -79,7 +79,9 @@ in the same place.
 | ![iPhone portrait](manual/phone-portrait.jpg) | ![iPhone landscape](manual/phone-landscape.jpg) |
 
 The layout follows the device: rotation, Split View, Stage Manager and
-folding switch it live.
+folding switch it live. On a very low screen in landscape (a phone's outer
+screen, the smaller iPhones) the band buttons give way to the display; the
+**Band** button on the waterfall picks bands there.
 
 ### Network quality
 

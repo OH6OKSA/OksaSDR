@@ -208,10 +208,12 @@ Page {
         anchors.fill: parent
         // Stay clear of the home indicator and rounded corners: iOS defers or
         // cancels touches at the screen edges, which would end a held PTT.
-        anchors.leftMargin: Theme.spacing + grid.SafeArea.margins.left
-        anchors.rightMargin: Theme.spacing + grid.SafeArea.margins.right
+        // The page's safe area, not the grid's own (that is a binding loop:
+        // the margins move the grid, which changes its own safe area).
+        anchors.leftMargin: Theme.spacing + page.SafeArea.margins.left
+        anchors.rightMargin: Theme.spacing + page.SafeArea.margins.right
         anchors.topMargin: Theme.spacing
-        anchors.bottomMargin: Theme.spacing + Math.max(grid.SafeArea.margins.bottom, 12)
+        anchors.bottomMargin: Theme.spacing + Math.max(page.SafeArea.margins.bottom, 12)
         columnSpacing: Theme.spacing
         rowSpacing: Theme.spacing
         columns: page.twoColumns ? 2 : 1
@@ -371,7 +373,7 @@ Page {
         // covers it and carries a copy.
         height: page.portrait ? Math.min(page.height * 0.5, 560)
                               : page.height - page.pttHeight - 2 * Theme.spacing
-                                - Math.max(grid.SafeArea.margins.bottom, 12)
+                                - Math.max(page.SafeArea.margins.bottom, 12)
         // From the window's edge: Qt otherwise keeps popups inside the safe
         // area (above Android's navigation bar).
         margins: 0

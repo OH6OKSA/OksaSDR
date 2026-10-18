@@ -12,13 +12,22 @@ ApplicationWindow {
 
     // Phone-sized windows (iPhone, folded iPhone Duo, narrow Split View)
     // get the phone layout; it switches live on rotation or fold/unfold.
-    // Adaptive metrics follow the window (Theme.qml).
-    Binding { target: Theme; property: "windowWidth"; value: window.width }
-    Binding { target: Theme; property: "windowHeight"; value: window.height }
+    // Adaptive metrics follow the room the pages have (Theme.qml): the
+    // window less its safe area (status and navigation bars, cutouts), which
+    // matters on a phone's outer screen in landscape.
+    Binding {
+        target: Theme; property: "windowWidth"
+        value: pages.width - pages.SafeArea.margins.left - pages.SafeArea.margins.right
+    }
+    Binding {
+        target: Theme; property: "windowHeight"
+        value: pages.height - pages.SafeArea.margins.top - pages.SafeArea.margins.bottom
+    }
     readonly property bool phoneSized: Theme.phoneLayout
 
     // The page follows the connection: radio list until connected.
     Loader {
+        id: pages
         anchors.fill: parent
         sourceComponent: Engine.connectionState !== "connected" ? connectPage
                        : window.phoneSized ? phoneOperatePage : operatePage
