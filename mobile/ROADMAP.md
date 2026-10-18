@@ -3,20 +3,53 @@
 Updated with every build. The newest TestFlight build is at the top; what is
 queued, waiting on someone, or still to verify follows.
 
-## Next build (79, Android beta 4)
+## Next build
 
-Queued (not yet sent to TestFlight):
-- Passband drag tunes on the tuning step (Wayne: had to round off with the step buttons after each drag).
-- CW paddles on the screen with the app's iambic keyer (A/B, squeeze; [ ] or Ctrl L/R on a keyboard); checked on air at 10 W, with the straight key and iambic A and B.
-- CW decoder: Sens filter (default 70) and 8-45 WPM; band noise mostly gone, weak calls decode (measured on 20 m).
-- Filter edges dragged on the display (10 Hz steps); notches dragged along the spectrum.
-- Spot filters: mode (CW, phone, digital) and age (5/15/30 min).
-- Network changes in the log (after a SmartLink drop in the background on Android: both links closed at once, back in 13 s).
+Nothing queued yet. Open from tester feedback: SmartLink sign-in not kept
+for one tester (log needed).
 
-Open from tester feedback: SmartLink sign-in not kept for one tester (log
-needed).
+## Planned: logging (when to build it is open)
+
+QSO logging from the app to any logbook, through the standard ADIF routes
+(analysed 2026-10-18):
+
+1. **Quick log and callsign lookup.** Call and RST typed (or the call
+   from a tapped spot); frequency, band, mode, UTC time, power and the own
+   station from the radio. Name, QTH, grid and LoTW / eQSL / paper-QSL
+   from QRZ.com through the engine's existing `CallsignLookupService`
+   (cache, photos, distance and bearing; country, continent and CQ zone
+   from cty.dat without a QRZ subscription). The QRZ password goes in the
+   platform secure store (the desktop uses QtKeychain). POTA / WWFF
+   fields (SIG / SIG_INFO, MY_SIG).
+2. **A log on the device and destinations**, any of:
+   - WSJT-X UDP "Logged ADIF" (port 2237): MacLoggerDX, Log4OM
+     (ADIF_MESSAGE), HRD Logbook (QSO forwarding), GridTracker, JTAlert;
+   - plain ADIF over UDP (port 2333, WSJT-X's secondary-server format):
+     Log4OM, HRD; N1MM+ to confirm on a real install (ADIF import works);
+   - Wavelog / Cloudlog HTTP API (`/api/qso`, a read+write key, the
+     station profile from `/api/station_info`), also over mobile data;
+   - an ADIF file shared to anything (mail, Files, AirDrop), e.g. LoTW
+     through TQSL.
+   A queue resends to HTTP destinations when the network returns; UDP
+   (no acknowledgement) keeps the device log and a resend. UDP needs the
+   logbook's computer on the same network or a VPN.
+3. **Later:** Wavelog's `/api/radio` (frequency/mode to Wavelog's own log
+   form); spots marked by LoTW users and worked-before
+   (`/api/logbook_check_callsign`, upstream idea #2809); the CW decoder's
+   text offering the call; QRZ.com logbook upload.
+
+Not planned: LoTW upload from the app (needs TQSL signing with the
+operator's certificate; the logbook or Wavelog does it); QSY from Wavelog
+to the radio (needs a listening server on the phone, not possible in the
+iOS background).
 
 ## Released
+
+**Build 79** (2026-10-18), iPhone and iPad, and Android beta 4:
+- CW paddles on the screen with the app's iambic keyer (A/B, squeeze; [ ] or Ctrl L/R on a keyboard); straight key, paddles and iambic A and B checked on air.
+- CW decoder: Sens filter (default 70) and 8–45 WPM; band noise mostly gone, weak calls decode.
+- Passband drag tunes on the tuning step; filter edges and notches drag on the display.
+- Spot filters (mode, age); network changes in the log.
 
 **Build 78** (2026-10-18), iPhone and iPad, and Android beta 3:
 - Mic level acts on this device's microphone (own gain, −20 to +30 dB, limiter at −1 dBFS); the radio's mic level does not act on its PC input (measured: 6.2 W at level 10, 6.0 W at 90).
@@ -73,6 +106,9 @@ from `mobile/android/release.env`.
 Beta 3: what iOS build 78 brings (Mic level as the device microphone's
 gain, lit buttons, PTT tap on / off, CWX sidetone, busiest threads); the
 first beta marked Latest on GitHub.
+
+Beta 4: what iOS build 79 brings (CW paddles, decoder, edge and notch
+drags, spot filters); the first published by CI as Latest.
 
 Next: verify LAN discovery on the radio's network; APK size (about 150 MB).
 
