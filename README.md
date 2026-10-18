@@ -128,7 +128,8 @@ radio interface, with no computer running alongside.
 - TUNE carrier with tune power, the radio's ATU (tune or bypass,
   memories) and the speech processor (PROC NOR/DX/DX+), VOX (level, delay)
   and DEXP when the radio's own microphone is in use, AM carrier, monitor
-  and radio mic level.
+  and mic level (the device microphone's own gain, up to +30 dB, as the
+  radio has no gain stage for its PC input).
 - **Voice keyer**: twelve voice macros F1–F12. With SmartSDR+ they are the
   radio's DVK; without it the app records and plays them itself, kept on
   the device. *Listen* plays one back without transmitting.

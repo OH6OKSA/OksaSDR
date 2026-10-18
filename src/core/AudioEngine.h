@@ -43,6 +43,7 @@ class QThread;
 
 #include <functional>
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <deque>
 #include <vector>
@@ -315,6 +316,9 @@ public:
 
     // Client-side PC mic gain (0-100 → 0.0-1.0, applied before Opus encoding)
     void setPcMicGain(int level) { m_pcMicGain.store(qBound(0, level, 100) / 100.0f); }
+    // The same gain in dB, -40 .. +30 (a boost the slider above cannot give;
+    // the mobile app's device microphone needs it).
+    void setPcMicGainDb(float db) { m_pcMicGain.store(std::pow(10.0f, std::clamp(db, -40.0f, 30.0f) / 20.0f)); }
 
     // Opus TX encoding for SmartLink compressed audio
     void setOpusTxEnabled(bool on) { m_opusTxEnabled.store(on); }

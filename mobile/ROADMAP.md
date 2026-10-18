@@ -6,6 +6,7 @@ queued, waiting on someone, or still to verify follows.
 ## Next build
 
 Queued (not yet sent to TestFlight):
+- Mic level acts on this device's microphone (own gain, -20 to +30 dB, limiter at -1 dBFS); the radio's mic level does not act on its PC input (measured: 6.2 W at level 10, 6.0 W at 90). A tester (FLEX-6600, 4.3.16) got only a few watts.
 - Sidetone for CW memories and CW text (a tester on a Samsung A56: silent while macros were sent).
 
 ## Released

@@ -163,6 +163,14 @@ int main(int argc, char* argv[])
                        "transmits), logging the local sidetone; power, mode and frequency restored after."),
         QStringLiteral("text"));
     parser.addOption(cwxTestOption);
+    const QCommandLineOption micGainOption(QStringLiteral("mic-gain-db"),
+        QStringLiteral("This device's microphone gain in dB, -20 .. +30 (remembered)."), QStringLiteral("dB"));
+    parser.addOption(micGainOption);
+    const QCommandLineOption micLevelTestOption(QStringLiteral("mic-level-test"),
+        QStringLiteral("Development: a 2 s PTT burst at 10 W on 14.250 MHz with this device's microphone and "
+                       "the radio's mic level at <level>, logging forward power; restored after."),
+        QStringLiteral("level"));
+    parser.addOption(micLevelTestOption);
     const QCommandLineOption pttTestOption(QStringLiteral("ptt-test"),
         QStringLiteral("Development: transmit for <ms> with this device's microphone at 10 W on 14.250 MHz "
                        "(only if this app's slice transmits), logging the Mic meter; power restored after."),
@@ -510,6 +518,59 @@ int main(int argc, char* argv[])
                 engine.setMode(saved->value(QStringLiteral("mode")).toString());
                 engine.setFrequencyMhz(saved->value(QStringLiteral("freq")).toDouble());
                 qInfo() << "cwx-test: restored" << *saved << "sidetone" << engine.cwxSidetoneStats();
+            });
+        });
+    }
+    if (parser.isSet(micGainOption)) {
+        engine.setMicGainDb(parser.value(micGainOption).toDouble());
+    }
+    if (parser.isSet(micLevelTestOption)) {
+        const int testLevel = std::clamp(parser.value(micLevelTestOption).toInt(), 0, 100);
+        QTimer::singleShot(8000, &app, [&engine] { engine.setFrequencyMhz(14.250); });
+        QTimer::singleShot(10000, &app, [&engine, testLevel] {
+            bool ownTx = false;
+            for (const QVariant& v : engine.slices()) {
+                const QVariantMap m = v.toMap();
+                if (m.value(QStringLiteral("id")).toInt() == engine.activeSliceId()) {
+                    ownTx = m.value(QStringLiteral("tx")).toBool();
+                }
+            }
+            if (!ownTx || std::abs(engine.frequencyMhz() - 14.250) > 0.0005 || engine.mode() != QLatin1String("USB")) {
+                qWarning() << "mic-level-test: not keying";
+                return;
+            }
+            const int power = engine.rfPower();
+            const int micLevel = engine.radioMicLevel();
+            engine.setRfPower(10);
+            auto* sum = new QVariantMap;
+            auto* sampler = new QTimer(&engine);
+            QObject::connect(sampler, &QTimer::timeout, &engine, [&engine, sum] {
+                if (engine.radioTransmitting()) {
+                    const QString k = QString::number(engine.radioMicLevel());
+                    (*sum)[k + "n"] = sum->value(k + "n").toInt() + 1;
+                    (*sum)[k + "w"] = sum->value(k + "w").toDouble() + engine.forwardPowerW();
+                    (*sum)[k + "mic"] = engine.micLevelDbfs();
+                }
+            });
+            sampler->start(100);
+            auto burst = [&engine](int level, int at) {
+                QTimer::singleShot(at, &engine, [&engine, level] { engine.setRadioMicLevel(level); });
+                QTimer::singleShot(at + 800, &engine, [&engine] { engine.setPtt(true, QStringLiteral("mic-level-test")); });
+                QTimer::singleShot(at + 2800, &engine, [&engine] { engine.setPtt(false, QStringLiteral("mic-level-test")); });
+            };
+            burst(testLevel, 500);
+            QTimer::singleShot(4500, &engine, [&engine, sampler, sum, power, micLevel, testLevel] {
+                sampler->stop();
+                {
+                    const QString k = QString::number(testLevel);
+                    const int n = sum->value(k + "n").toInt();
+                    qInfo().noquote() << QStringLiteral("mic-level-test: radio mic level %1: average %2 W over %3 samples, Mic meter %4 dB")
+                                             .arg(k).arg(n ? sum->value(k + "w").toDouble() / n : 0.0, 0, 'f', 2).arg(n)
+                                             .arg(sum->value(k + "mic").toDouble(), 0, 'f', 1);
+                }
+                engine.setRadioMicLevel(micLevel);
+                engine.setRfPower(power);
+                qInfo() << "mic-level-test: restored mic level" << micLevel << "power" << power;
             });
         });
     }

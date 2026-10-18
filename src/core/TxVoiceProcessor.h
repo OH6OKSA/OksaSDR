@@ -93,6 +93,8 @@ public:
     // then keeps the object alive, so a racing acquire load that still sees
     // the old pointer dereferences a live filter rather than freed memory.
     void setRnnoise(RNNoiseFilter* rnnoise) noexcept;
+    // Linear, 0 .. kMaxMicGain (+30 dB).
+    static constexpr float kMaxMicGain = 31.62f;
     void setMicGain(float gain) noexcept;
     void setMeasurementCaptureEnabled(bool enabled) noexcept;
 

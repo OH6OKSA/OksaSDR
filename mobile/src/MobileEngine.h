@@ -234,7 +234,10 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QString cwDecodedText READ cwDecodedText NOTIFY cwDecoderChanged)
     Q_PROPERTY(QString cwDecoderStats READ cwDecoderStats NOTIFY cwDecoderChanged)
     Q_PROPERTY(int rfPower READ rfPower WRITE setRfPower NOTIFY rfPowerChanged)
-    Q_PROPERTY(int micGain READ micGain WRITE setMicGain NOTIFY micGainChanged)
+    // This device's microphone gain in dB (-20 .. +30), applied before the
+    // audio is sent: the radio has no gain stage for its PC input, so its
+    // mic level does nothing to this microphone.
+    Q_PROPERTY(double micGainDb READ micGainDb WRITE setMicGainDb NOTIFY micGainChanged)
     Q_PROPERTY(double micLevelDbfs READ micLevelDbfs NOTIFY txMetersChanged)
     Q_PROPERTY(double micPeakDbfs READ micPeakDbfs NOTIFY txMetersChanged)
     // Whether the Mic level reads now: the radio meters a mic on its own
@@ -594,8 +597,8 @@ public:
     int rfPower() const;
     void setRfPower(int power);
     // Client-side gain on this device's microphone, 0..100 (PcMicGain).
-    int micGain() const;
-    void setMicGain(int gain);
+    double micGainDb() const;
+    void setMicGainDb(double db);
     double micLevelDbfs() const { return m_micLevelDbfs; }
     double micPeakDbfs() const { return m_micPeakDbfs; }
     bool micMeterLive() const;

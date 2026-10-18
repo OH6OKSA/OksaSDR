@@ -196,7 +196,10 @@ void TxVoiceProcessor::setRnnoise(RNNoiseFilter* rnnoise) noexcept
 
 void TxVoiceProcessor::setMicGain(float gain) noexcept
 {
-    m_micGain = std::isfinite(gain) ? std::clamp(gain, 0.0f, 1.0f) : 1.0f;
+    // Up to +30 dB: the desktop's PC mic slider only attenuates (0..1), but a
+    // phone microphone can need boosting (the radio has no gain stage for
+    // the PC input). The final limiter after this stage catches the peaks.
+    m_micGain = std::isfinite(gain) ? std::clamp(gain, 0.0f, kMaxMicGain) : 1.0f;
 }
 
 void TxVoiceProcessor::setMeasurementCaptureEnabled(bool enabled) noexcept
@@ -327,7 +330,7 @@ bool TxVoiceProcessor::processWorkBuffer(int frames48,
     }
 
     work = reinterpret_cast<float*>(m_work48.data());
-    if (m_micGain < 0.999f) {
+    if (std::abs(m_micGain - 1.0f) > 0.001f) {
         for (int sample = 0; sample < frames48 * kChannels; ++sample) {
             work[sample] *= m_micGain;
         }

@@ -188,19 +188,37 @@ ColumnLayout {
         }
     }
 
-    // ---- Microphone ----
+    // ---- Microphone: one level, the one that acts. With this device's
+    // microphone that is the app's own gain (the radio has no gain stage
+    // for its PC input, so its mic level does nothing there); with a
+    // microphone on the radio, the radio's mic level. ----
     Label {
-        text: qsTr("Mic level  %1").arg(Engine.radioMicLevel)
+        text: Engine.transmitAvailable
+              ? qsTr("Mic level  %1%2 dB").arg(Engine.micGainDb > 0 ? "+" : "").arg(Math.round(Engine.micGainDb))
+              : qsTr("Mic level  %1").arg(Engine.radioMicLevel)
         color: Theme.textDim
         font.pixelSize: 15
     }
     Slider {
+        id: micSlider
         Layout.fillWidth: true
-        from: 0
-        to: 100
+        from: Engine.transmitAvailable ? -20 : 0
+        to: Engine.transmitAvailable ? 30 : 100
         stepSize: 1
-        value: Engine.radioMicLevel
-        onMoved: Engine.radioMicLevel = Math.round(value)
+        onMoved: Engine.transmitAvailable ? Engine.micGainDb = Math.round(value)
+                                          : Engine.radioMicLevel = Math.round(value)
+        Binding on value {
+            when: !micSlider.pressed
+            value: Engine.transmitAvailable ? Engine.micGainDb : Engine.radioMicLevel
+        }
+    }
+    Label {
+        visible: Engine.transmitAvailable
+        Layout.fillWidth: true
+        text: qsTr("This device's microphone: set it so speech peaks near -10 dB on the Mic meter while you transmit.")
+        color: Theme.textDim
+        font.pixelSize: 12
+        wrapMode: Text.WordWrap
     }
     AppButton {
         Layout.fillWidth: true

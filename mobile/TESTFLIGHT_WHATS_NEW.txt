@@ -9,6 +9,7 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
+- TX tab > Mic level now sets this device's microphone gain (-20 to +30 dB). The radio's mic level never acted on it, so the level could stay low with only a few watts out. Set it so speech peaks near -10 dB on the Mic meter. [TX]
 - CW memories and CW text now play a sidetone on your device while they are sent (they were silent).
 - DX cluster spots: View > Spots connects to a DX cluster (your radio's callsign, or set one); spots show as callsigns on the display, tap one to tune. Spots from other programs on the radio show too.
 - Notch filters (TNF): press and hold on the display to put a notch there; tap it for width, depth, permanent or remove. DSP tab: TNF on/off and + TNF.

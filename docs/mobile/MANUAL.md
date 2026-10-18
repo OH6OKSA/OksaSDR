@@ -354,8 +354,14 @@ them back into the drawer.
   expander, on/off and level) in voice modes — shown only when the radio's
   own microphone input is selected, as they do nothing with this device's
   microphone — the AM **carrier** level in
-  AM/SAM/DSB, monitor (MON), **Mic level** (the radio's, as SmartSDR's MIC), microphone
-  choice and the transmit filter (low and high cut).
+  AM/SAM/DSB, monitor (MON), **Mic level**, microphone choice and the
+  transmit filter (low and high cut). **Mic level** with this device's
+  microphone is the app's own gain, −20 to +30 dB: the radio has no gain
+  stage for its PC input, so its mic level does nothing to this
+  microphone. Set it so speech peaks near −10 dB on the Mic meter while
+  you transmit (phone microphones often need +10 to +20 dB); a limiter at
+  −1 dBFS keeps the loudest peaks from clipping. With a microphone on the
+  radio it is the radio's mic level (0–100), as SmartSDR's MIC.
   - **This device's microphone: processing** (voice modes, with this
     device's microphone) — AetherSDR's client-side transmit chain, run on
     the phone or tablet before the audio is sent: **Gate** (mutes the
@@ -427,9 +433,8 @@ radio.
   frees its slices), and the model, serial, firmware, region and address.
 - **Transmit** — maximum power, TX delay, transmit timeout (0 = off) and the
   TUNE signal (single or two tone).
-- **Phone/CW** — microphone bias and boost; *This device's microphone
-  (trim)*, which lowers the device microphone before it reaches the radio
-  (100 % = as captured; adjust the TX tab's Mic level normally); the CW
+- **Phone/CW** — microphone bias and boost (the radio's own microphone
+  inputs; this device's microphone gain is the TX tab's Mic level); the CW
   keyer's break-in delay,
   iambic mode (off, A, B) and swapped paddles.
 - **Audio** — the radio's line out and headphone levels and muting.

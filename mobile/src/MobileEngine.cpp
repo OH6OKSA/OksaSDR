@@ -24,6 +24,7 @@
 #include "core/SpotModeResolver.h"
 #include "core/ClientComp.h"
 #include "core/ClientEq.h"
+#include "core/ClientFinalLimiter.h"
 #include "core/ClientGate.h"
 #include "core/RadioDiscovery.h"
 #include "core/backends/IRadioBackend.h"
@@ -123,6 +124,15 @@ MobileEngine::MobileEngine(QObject* parent)
     connect(m_audio, &AudioEngine::txClipRecorded, this, &MobileEngine::onVoiceClipRecorded);
     connect(m_audio, &AudioEngine::txClipFinished, this, &MobileEngine::onVoiceClipFinished);
     setupDxCluster();
+    // The final limiter (-1 dBFS) on unless chosen otherwise: the device
+    // microphone's gain can boost up to +30 dB.
+    if (!AppSettings::instance().contains(QStringLiteral("ClientFinalLimiterTxEnabled"))) {
+        if (ClientFinalLimiter* limiter = m_audio->clientFinalLimiterTx()) {
+            limiter->setEnabled(true);
+            m_audio->saveClientFinalLimiterSettings();
+            AppSettings::instance().save();
+        }
+    }
     m_txChainSaveTimer.setSingleShot(true);
     m_txChainSaveTimer.setInterval(1000);
     connect(&m_txChainSaveTimer, &QTimer::timeout, this, [this] {
@@ -972,11 +982,11 @@ void MobileEngine::startDeviceMicrophoneCapture()
     // Make sure the play-and-record session is active before the input opens
     // (it can be lost to another app or an interruption).
     configureAudioSession();
-    const int gain = AppSettings::instance().value(QStringLiteral("PcMicGain"), 100).toInt();
+    const float gainDb = float(micGainDb());
     const QHostAddress address = m_session.radioModel().radioAddress();
     AudioEngine* audio = m_audio;
-    QMetaObject::invokeMethod(audio, [audio, gain, address] {
-        audio->setPcMicGain(gain);
+    QMetaObject::invokeMethod(audio, [audio, gainDb, address] {
+        audio->setPcMicGainDb(gainDb);
         if (!audio->isTxStreaming() && audio->hasAnyTxStream()) {
             audio->startTxStream(address, kRadioTxAudioPort);
         }
@@ -986,7 +996,7 @@ void MobileEngine::startDeviceMicrophoneCapture()
                    .arg(audio->isTxStreaming() ? 1 : 0)
                    .arg(QString::number(audio->remoteTxStreamId(), 16))
                    .arg(QString::number(audio->txStreamId(), 16))
-                   .arg(gain);
+                   .arg(QStringLiteral("%1 dB").arg(gainDb, 0, 'f', 0));
     }, Qt::QueuedConnection);
 }
 
@@ -1881,21 +1891,28 @@ void MobileEngine::stopTransmit(const QString& reason)
     }
 }
 
-int MobileEngine::micGain() const
+double MobileEngine::micGainDb() const
 {
-    return AppSettings::instance().value(QStringLiteral("PcMicGain"), 100).toInt();
+    AppSettings& settings = AppSettings::instance();
+    const QVariant db = settings.value(QStringLiteral("MobileMicGainDb"));
+    if (db.isValid()) {
+        return std::clamp(db.toDouble(), -20.0, 30.0);
+    }
+    // Before build 78 the app kept an attenuation-only trim in percent.
+    const int percent = settings.value(QStringLiteral("PcMicGain"), 100).toInt();
+    return percent >= 100 ? 0.0 : std::max(-20.0, 20.0 * std::log10(std::max(1, percent) / 100.0));
 }
 
-void MobileEngine::setMicGain(int gain)
+void MobileEngine::setMicGainDb(double db)
 {
-    gain = std::clamp(gain, 0, 100);
-    if (gain == micGain()) {
+    db = std::clamp(std::round(db), -20.0, 30.0);
+    if (std::abs(db - micGainDb()) < 0.01) {
         return;
     }
-    AppSettings::instance().setValue(QStringLiteral("PcMicGain"), gain);
+    AppSettings::instance().setValue(QStringLiteral("MobileMicGainDb"), db);
     AppSettings::instance().save();
     AudioEngine* audio = m_audio;
-    QMetaObject::invokeMethod(audio, [audio, gain] { audio->setPcMicGain(gain); }, Qt::QueuedConnection);
+    QMetaObject::invokeMethod(audio, [audio, db] { audio->setPcMicGainDb(float(db)); }, Qt::QueuedConnection);
     emit micGainChanged();
 }
 
