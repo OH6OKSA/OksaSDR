@@ -15,7 +15,10 @@ Page {
     CwKeyboardPaddles { id: kbPaddles }
     Keys.onPressed: (event) => { if (kbPaddles.handlePress(event)) event.accepted = true }
     Keys.onReleased: (event) => { if (kbPaddles.handleRelease(event)) event.accepted = true }
-    onActiveFocusChanged: if (!activeFocus) kbPaddles.releaseAll()
+    onActiveFocusChanged: {
+        if (!activeFocus) kbPaddles.releaseAll()
+        if (kbPaddles.active) Engine.logKeyboardPaddles("page keyboard focus " + (activeFocus ? "in" : "out"))
+    }
 
     readonly property bool landscape: width > height
     // PTT height, shared with the drawer's copy of the button. PTT runs

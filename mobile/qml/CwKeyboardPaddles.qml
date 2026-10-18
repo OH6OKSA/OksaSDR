@@ -12,9 +12,20 @@ QtObject {
     property bool dit: false
     property bool dah: false
     readonly property bool active: Engine.cwMode && Engine.cwPaddles && Engine.cwKeyboardPaddles !== "off"
-    // The first press of each side goes to the log with its codes, so a
-    // keyboard or adapter can be checked from the developer link.
-    property var logged: ({})
+    // The first keys while active go to the log with their codes (any key,
+    // taken or not), so a keyboard or adapter can be checked from the
+    // developer link.
+    property int keysLogged: 0
+    onActiveChanged: if (active) Engine.logKeyboardPaddles("on (" + Engine.cwKeyboardPaddles + ")")
+    function logKey(event, s) {
+        if (keysLogged >= 24) return
+        ++keysLogged
+        Engine.logKeyboardPaddles("key " + event.key + " scan " + event.nativeScanCode
+                                  + " modifiers 0x" + event.modifiers.toString(16)
+                                  + (event.text.length > 0 ? " text \"" + event.text + "\"" : "")
+                                  + " -> " + (s === "" ? "not a paddle" : s + (s === "left" ? " (dit)" : " (dah)"))
+                                  + " (" + Engine.cwKeyboardPaddles + ")")
+    }
 
     // Left or right for a key, "" when it is not a paddle key now.
     function side(event) {
@@ -32,8 +43,7 @@ QtObject {
             if (event.key !== Qt.Key_Alt) return ""
             if ([56, 64, 226, 58].indexOf(sc) >= 0) return "left"
             if ([100, 108, 230, 61].indexOf(sc) >= 0) return "right"
-            console.info("CW keyboard paddles: unknown Alt scan code", sc, "taken as the left paddle")
-            return "left"
+                return "left"
         }
         if (event.key !== Qt.Key_Control && event.key !== Qt.Key_Meta) return ""
         // Qt on Apple platforms reports Command as Ctrl: Command (and the
@@ -42,7 +52,6 @@ QtObject {
         if ([227, 231, 55, 54, 125, 126, 133, 134].indexOf(sc) >= 0) return ""
         if ([29, 37, 224, 59].indexOf(sc) >= 0) return "left"
         if ([97, 105, 228, 62].indexOf(sc) >= 0) return "right"
-        console.info("CW keyboard paddles: unknown Ctrl scan code", sc, "taken as the left paddle")
         return "left"
     }
     function apply() {
@@ -51,16 +60,12 @@ QtObject {
     function handlePress(event) {
         if (!active) return false
         const s = side(event)
+        if (!event.isAutoRepeat) logKey(event, s)
         if (s === "") return false
         if (!event.isAutoRepeat) {
             if (s === "left") dit = true
             else dah = true
             apply()
-            if (!logged[s]) {
-                logged[s] = true
-                console.info("CW keyboard paddles:", s, "=", s === "left" ? "dit" : "dah", "from key", event.key,
-                             "scan code", event.nativeScanCode, "(" + Engine.cwKeyboardPaddles + ")")
-            }
         }
         return true
     }

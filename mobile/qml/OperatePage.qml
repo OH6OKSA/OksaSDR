@@ -68,6 +68,7 @@ Page {
     }
     onActiveFocusChanged: {
         if (!activeFocus) kbPaddles.releaseAll()
+        if (kbPaddles.active) Engine.logKeyboardPaddles("page keyboard focus " + (activeFocus ? "in" : "out"))
         if (!activeFocus && spacePtt) {
             spacePtt = false
             Engine.setPtt(false, "page lost keyboard focus")

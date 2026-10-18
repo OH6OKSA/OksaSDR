@@ -491,6 +491,9 @@ public:
     void setCwSwapPaddles(bool on);
     // The paddles as held now; the keyer forms the elements.
     Q_INVOKABLE void setCwPaddleState(bool dit, bool dah);
+    // Keyboard paddles' diagnostics to the app log (QML's console output
+    // does not reach it).
+    Q_INVOKABLE void logKeyboardPaddles(const QString& what);
     int cwSpeed() const;
     void setCwSpeed(int wpm);
     int cwPitch() const;

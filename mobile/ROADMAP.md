@@ -12,11 +12,15 @@ queued, waiting on someone, or still to verify follows.
   the waterfall), and the operate pages no longer loop on their own safe
   area after a rotation. To check on the phone's outer screen and on an
   iPhone in landscape.
+- Keyboard paddles on the iPad: in build 80 left and right Option on a
+  Finnish Magic Keyboard keyed nothing. The log now gets the first keys
+  (key, scan code, modifiers) and the page's keyboard focus, so the next
+  build shows whether iPadOS delivers the modifier keys at all.
 
-To verify in build 80: Alt ⌥ paddles on the iPad's
-Magic Keyboard (the log shows the first keys). Real-device screenshots for
-GitHub from the iPad and the Android phone. Open from tester feedback:
-SmartLink sign-in not kept for one tester (log needed).
+Parked: two-finger trackpad scrolling of the iPad's pinned panel stops
+halfway (Magic Keyboard; finger scrolling works; --wheel-test finds no
+blocker on the desktop). Open from tester feedback: SmartLink sign-in not
+kept for one tester (log needed).
 
 ## Planned: logging (when to build it is open)
 

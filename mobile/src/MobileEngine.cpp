@@ -3702,6 +3702,11 @@ void MobileEngine::setCwSwapPaddles(bool on)
     }
 }
 
+void MobileEngine::logKeyboardPaddles(const QString& what)
+{
+    qCInfo(lcMobile).noquote() << "CW keyboard paddles:" << what.left(200);
+}
+
 void MobileEngine::noteBreakInOff()
 {
     if (m_session.radioModel().transmitModel().cwBreakIn()) {
