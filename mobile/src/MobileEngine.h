@@ -198,8 +198,14 @@ class MobileEngine : public QObject {
     // speed and swapped paddles follow the radio's settings). Remembered.
     Q_PROPERTY(bool cwPaddles READ cwPaddles WRITE setCwPaddles NOTIFY cwChanged)
     // Paddles on a hardware keyboard: "brackets" ([ and ]), "ctrl" (left and
-    // right Ctrl, as USB paddle adapters send) or "off". Remembered.
+    // right Ctrl, as USB paddle adapters send), "alt" (left and right Alt /
+    // Option, for keyboards with no right Ctrl) or "off". Remembered.
     Q_PROPERTY(QString cwKeyboardPaddles READ cwKeyboardPaddles WRITE setCwKeyboardPaddles NOTIFY cwChanged)
+    // The radio's iambic mode (0 = A, 1 = B) and swapped paddles, which the
+    // app's keyer follows. The radio's own iambic on/off (its key jack) is
+    // left alone.
+    Q_PROPERTY(int cwIambicMode READ cwIambicMode WRITE setCwIambicMode NOTIFY cwChanged)
+    Q_PROPERTY(bool cwSwapPaddles READ cwSwapPaddles WRITE setCwSwapPaddles NOTIFY cwChanged)
     Q_PROPERTY(int cwSpeed READ cwSpeed WRITE setCwSpeed NOTIFY cwChanged)
     Q_PROPERTY(int cwPitch READ cwPitch WRITE setCwPitch NOTIFY cwChanged)
     Q_PROPERTY(bool cwBreakIn READ cwBreakIn WRITE setCwBreakIn NOTIFY cwChanged)
@@ -478,6 +484,10 @@ public:
     void setCwPaddles(bool on);
     QString cwKeyboardPaddles() const;
     void setCwKeyboardPaddles(const QString& keys);
+    int cwIambicMode() const;
+    void setCwIambicMode(int mode);
+    bool cwSwapPaddles() const;
+    void setCwSwapPaddles(bool on);
     // The paddles as held now; the keyer forms the elements.
     Q_INVOKABLE void setCwPaddleState(bool dit, bool dah);
     int cwSpeed() const;
@@ -1024,6 +1034,8 @@ private:
     std::atomic<int> m_paddleElements{0};   // key-downs from the paddles (diagnostics)
     void syncIambicKeyer();
     void releasePaddles();
+    // A key or paddle press with break-in off: say why nothing goes on air.
+    void noteBreakInOff();
     std::atomic<int> m_cwxSidetoneDowns{0};      // key-downs played (diagnostics)
     std::atomic<qint64> m_cwxSidetoneKeyedMs{0};  // time keyed, ms
     std::chrono::steady_clock::time_point m_cwxSidetoneDownAt;  // keyer thread only

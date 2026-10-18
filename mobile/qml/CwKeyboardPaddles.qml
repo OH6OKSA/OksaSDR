@@ -1,11 +1,12 @@
 import QtQuick
 import AetherMobile
 
-// CW paddles on a hardware keyboard (CW tab > Key: Paddles, and Keyboard
-// paddles): [ and ] by default, or left and right Ctrl, which USB paddle
-// adapters (Vail, VBand) send. A page forwards its key events; handle*()
-// return true when they took the key. Left = dit, right = dah (the keyer
-// applies the radio's swapped-paddles setting itself).
+// CW paddles on a hardware keyboard (CW tab > Key: Paddles, and Paddles on
+// a keyboard): [ and ] by default, left and right Ctrl, which USB paddle
+// adapters (Vail, VBand) send, or left and right Alt / Option, for keyboards
+// with no right Ctrl (Apple's Magic Keyboard). A page forwards its key
+// events; handle*() return true when they took the key. Left = dit, right =
+// dah (the keyer applies the radio's swapped-paddles setting itself).
 QtObject {
     id: kp
     property bool dit: false
@@ -19,10 +20,19 @@ QtObject {
             if (event.key === Qt.Key_BracketRight) return "right"
             return ""
         }
-        if (event.key !== Qt.Key_Control && event.key !== Qt.Key_Meta) return ""
-        // Qt reports both Ctrl keys as one key: the hardware code tells them
-        // apart (evdev/Android, X11, iOS HID, macOS).
+        // Qt reports both Ctrl (or Alt) keys as one key: the hardware code
+        // tells them apart (evdev/Android, X11, iOS HID, macOS).
         const sc = event.nativeScanCode
+        if (Engine.cwKeyboardPaddles === "alt") {
+            // Right Alt is AltGr on many PC layouts.
+            if (event.key === Qt.Key_AltGr) return "right"
+            if (event.key !== Qt.Key_Alt) return ""
+            if ([56, 64, 226, 58].indexOf(sc) >= 0) return "left"
+            if ([100, 108, 230, 61].indexOf(sc) >= 0) return "right"
+            console.info("CW keyboard paddles: unknown Alt scan code", sc, "taken as the left paddle")
+            return "left"
+        }
+        if (event.key !== Qt.Key_Control && event.key !== Qt.Key_Meta) return ""
         if ([29, 37, 224, 59].indexOf(sc) >= 0) return "left"
         if ([97, 105, 228, 62].indexOf(sc) >= 0) return "right"
         console.info("CW keyboard paddles: unknown Ctrl scan code", sc, "taken as the left paddle")

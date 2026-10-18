@@ -10,9 +10,11 @@ queued, waiting on someone, or still to verify follows.
   ("another client is transmitting or sending a CW/CWX message") with no
   client on air, in beta 4 and build 79 alike, until the radio was restarted;
   the cause is not known.
-- CW tab (tester feedback): Iambic A / B and swap paddles in the tab itself,
-  the keyboard row explained ("keyboard keys as paddles") with Option L/R
-  as a choice, a note when break-in is off.
+- CW tab (tester feedback): Iambic A / B and Swap ⇄ in the tab itself;
+  "Paddles on a keyboard" says which key is dit and which dah, with left /
+  right Alt ⌥ (Option) as a choice for keyboards with no right Ctrl; a note
+  when keying with break-in off; the dit and dah pads' labels now follow
+  Swap (they never did). Alt ⌥ on the iPad's Magic Keyboard is to try.
 
 Open from tester feedback: SmartLink sign-in not kept for one tester (log
 needed).

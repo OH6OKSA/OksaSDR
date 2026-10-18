@@ -317,11 +317,17 @@ offers **Off**.
 - **KEY** — in CW modes the same button is a straight key, or **paddles**
   (Controls → CW → Key: *Paddles*): dit and dah side by side in its
   place, each its own touch, so holding both gives iambic squeeze. The app
-  times the elements itself (iambic A or B, speed and swapped paddles as
-  set in [Radio Setup](#9-radio-setup) → Phone/CW and the CW tab), sends
-  them to the radio and plays the sidetone in step. On a keyboard, **[**
-  and **]** are the paddles, or left and right **Ctrl** for USB paddle
-  adapters (Vail, VBand), chosen under *Keyboard*.
+  times the elements itself, sends them to the radio and plays the
+  sidetone in step. **Iambic** in the CW tab sets **A** or **B** (B adds
+  one more element after a squeeze) and **Swap ⇄** (dah on the left); they
+  are the radio's settings, also in [Radio Setup](#9-radio-setup) →
+  Phone/CW. **Paddles on a keyboard** picks which two keys of a hardware
+  keyboard are the paddles, the left one dit and the right one dah:
+  left and right **Ctrl** (what USB paddle adapters such as Vail and VBand
+  send), left and right **Alt ⌥** (Option; for keyboards with no right
+  Ctrl, such as Apple's Magic Keyboard), **[ ]** (on English layouts,
+  where [ and ] are keys of their own; on Finnish or German layouts they
+  need AltGr or Option, so pick Ctrl or Alt there), or **Off**.
 
   ![CW paddles in PTT's place](manual/cw-paddles.jpg)
 
@@ -419,9 +425,12 @@ them back into the drawer.
   - **CW text** — type and *Send*; with **Live** on, each letter goes as you
     type it (Return sends a space). *Stop*, or Esc, clears what is still
     queued.
-  - **Key** — *Straight key* or *Paddles* (see [KEY](#7-transmitting-ptt-key-and-tune)),
-    and the keyboard's paddle keys.
-  - Speed, pitch, **Break-in** (QSK) and the **Decoder**, with **Sens**
+  - **Key** — *Straight key* or *Paddles*; with paddles, **Iambic** A / B and
+    **Swap ⇄**, and **Paddles on a keyboard** (see
+    [KEY](#7-transmitting-ptt-key-and-tune)).
+  - Speed, pitch, **Break-in** (QSK) and the **Decoder**. With Break-in off
+    the key does not put the radio on air; the app says so when you key.
+    The decoder has **Sens**
     (0–100, default 70): higher shows only the letters decoded with
     confidence, so band noise stays out. It reads hand-sent and keyer CW
     from 8 to 45 WPM. Decoded text shows

@@ -3641,6 +3641,7 @@ void MobileEngine::setCwKey(bool down, const QString& reason)
         setLastError(tr("The radio did not accept the CW key."));
         return;
     }
+    noteBreakInOff();
     emit cwChanged();
     emit cwKeyDownChanged();
 }
@@ -3666,7 +3667,8 @@ void MobileEngine::setCwPaddles(bool on)
 QString MobileEngine::cwKeyboardPaddles() const
 {
     const QString keys = AppSettings::instance().value(QStringLiteral("MobileCwKeyboardPaddles"), QStringLiteral("brackets")).toString();
-    return (keys == QLatin1String("ctrl") || keys == QLatin1String("off")) ? keys : QStringLiteral("brackets");
+    return (keys == QLatin1String("ctrl") || keys == QLatin1String("alt") || keys == QLatin1String("off"))
+        ? keys : QStringLiteral("brackets");
 }
 
 void MobileEngine::setCwKeyboardPaddles(const QString& keys)
@@ -3676,6 +3678,38 @@ void MobileEngine::setCwKeyboardPaddles(const QString& keys)
         AppSettings::instance().setValue(QStringLiteral("MobileCwKeyboardPaddles"), keys);
         AppSettings::instance().save();
         emit cwChanged();
+    }
+}
+
+int MobileEngine::cwIambicMode() const { return m_session.radioModel().transmitModel().cwIambicMode(); }
+
+void MobileEngine::setCwIambicMode(int mode)
+{
+    if (m_connected) {
+        m_session.radioModel().transmitModel().setCwIambicMode(mode ? 1 : 0);
+    }
+}
+
+bool MobileEngine::cwSwapPaddles() const { return m_session.radioModel().transmitModel().cwSwapPaddles(); }
+
+void MobileEngine::setCwSwapPaddles(bool on)
+{
+    if (m_connected) {
+        releasePaddles();
+        m_session.radioModel().transmitModel().setCwSwapPaddles(on);
+    }
+}
+
+void MobileEngine::noteBreakInOff()
+{
+    if (m_session.radioModel().transmitModel().cwBreakIn()) {
+        return;
+    }
+    static QElapsedTimer shown;
+    if (!shown.isValid() || shown.elapsed() > 10000) {
+        shown.start();
+        qCInfo(lcMobile) << "CW keyed with break-in off";
+        setLastError(tr("Break-in is off, so the key does not put the radio on air. Turn on Break-in in the CW tab."));
     }
 }
 
@@ -3705,6 +3739,7 @@ void MobileEngine::setCwPaddleState(bool dit, bool dah)
     }
     if (held && !m_cwPaddleHeld) {
         m_cwPaddleInput = rm.localTxController()->capture(TxController::Activity::CwKey).request();
+        noteBreakInOff();
     }
     m_cwPaddleHeld = held;
     rm.setCwPaddleHeld(held);

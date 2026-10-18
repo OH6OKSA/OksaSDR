@@ -128,7 +128,8 @@ int main(int argc, char* argv[])
         QStringLiteral("state"));
     parser.addOption(controlsOption);
     const QCommandLineOption controlsTabOption(QStringLiteral("controls-tab"),
-        QStringLiteral("With --controls drawer: tab to show (0 Mode … 4 CW)."), QStringLiteral("index"));
+        QStringLiteral("Controls tab to show (0 DSP, 1 Audio, 2 TX, 3 CW, 4 View, 5 Profiles, 6 Memory); on a "
+                       "tablet, the one section pinned for this run."), QStringLiteral("index"));
     parser.addOption(controlsTabOption);
     const QCommandLineOption controlsScrollOption(QStringLiteral("controls-scroll"),
         QStringLiteral("With --controls drawer: scroll the shown tab down by <px> (screenshots)."), QStringLiteral("px"));
@@ -1005,6 +1006,20 @@ int main(int argc, char* argv[])
                 }
             }
         });
+    }
+
+    // The tablet's side panel shows pinned sections, not tabs: pin only that
+    // one for this run and put the user's choice back on exit.
+    if (parser.value(controlsOption) != QLatin1String("drawer") && parser.isSet(controlsTabOption)) {
+        static const QStringList names{QStringLiteral("DSP"), QStringLiteral("Audio"), QStringLiteral("TX"),
+            QStringLiteral("CW"), QStringLiteral("View"), QStringLiteral("Profiles"), QStringLiteral("Memory")};
+        const QString name = names.value(parser.value(controlsTabOption).toInt());
+        if (!name.isEmpty()) {
+            const QStringList saved = engine.pinnedSections();
+            engine.setPinnedSections({name});
+            QObject::connect(&app, &QCoreApplication::aboutToQuit, &engine,
+                             [&engine, saved] { engine.setPinnedSections(saved); });
+        }
     }
 
     if (parser.isSet(screenshotOption)) {

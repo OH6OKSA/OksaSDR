@@ -72,7 +72,7 @@ AppButton {
         z: 2
         // The keyer swaps the paddles itself (the radio's setting): the left
         // pad is always the "dit" input; only its label follows the swap.
-        readonly property bool swapped: !!Engine.radioSetup.swapPaddles
+        readonly property bool swapped: Engine.cwSwapPaddles
         readonly property bool dit: leftPad.tap.pressed
         readonly property bool dah: rightPad.tap.pressed
         onDitChanged: Engine.setCwPaddleState(dit, dah)
