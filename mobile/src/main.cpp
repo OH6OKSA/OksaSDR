@@ -166,6 +166,10 @@ int main(int argc, char* argv[])
     const QCommandLineOption buttonStyleOption(QStringLiteral("button-style"),
         QStringLiteral("Button colours: classic, light or lit (remembered)."), QStringLiteral("style"));
     parser.addOption(buttonStyleOption);
+    const QCommandLineOption filterEdgesOption(QStringLiteral("filter-edges-test"),
+        QStringLiteral("Development, receive only: set the filter to <low>,<high> Hz, log the radio's edges, then "
+                       "put the old ones back."), QStringLiteral("low,high"));
+    parser.addOption(filterEdgesOption);
     const QCommandLineOption setModeOption(QStringLiteral("set-mode"),
         QStringLiteral("Development: set this app's slice to <mode> on a real radio once connected "
                        "(--mode touches only the demo)."), QStringLiteral("mode"));
@@ -556,6 +560,22 @@ int main(int argc, char* argv[])
     }
     if (parser.isSet(buttonStyleOption)) {
         engine.setButtonStyle(parser.value(buttonStyleOption));
+    }
+    if (parser.isSet(filterEdgesOption)) {
+        const QStringList e = parser.value(filterEdgesOption).split(QLatin1Char(','));
+        auto* old = new QPair<int, int>;
+        QTimer::singleShot(8000, &app, [&engine, e, old] {
+            *old = {engine.filterLow(), engine.filterHigh()};
+            qInfo() << "filter-edges-test: was" << old->first << old->second;
+            engine.setFilterEdges(e.value(0).toInt(), e.value(1).toInt());
+        });
+        QTimer::singleShot(10000, &app, [&engine] {
+            qInfo() << "filter-edges-test: radio now" << engine.filterLow() << engine.filterHigh();
+        });
+        QTimer::singleShot(11000, &app, [&engine, old] { engine.setFilterEdges(old->first, old->second); });
+        QTimer::singleShot(13000, &app, [&engine] {
+            qInfo() << "filter-edges-test: restored" << engine.filterLow() << engine.filterHigh();
+        });
     }
     if (parser.isSet(setModeOption)) {
         const QString mode = parser.value(setModeOption);

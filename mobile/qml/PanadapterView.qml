@@ -91,6 +91,49 @@ Rectangle {
             color: Theme.passband
             opacity: 0.9
         }
+
+        // Drag an edge to set the filter (10 Hz steps), as on the desktop; a
+        // finger's width around each edge. Hidden when the passband is too
+        // narrow to leave room for the tuning drag between them.
+        component EdgeHandle: Item {
+            id: edge
+            property bool high: false
+            readonly property bool active: edgeDrag.active
+            visible: passband.width >= 60
+            width: 28
+            height: passband.height
+            x: (high ? passband.width : 0) - width / 2
+            z: 3
+            property int startLow: 0
+            property int startHigh: 0
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: passband.edgeTop
+                width: edge.active ? 4 : 0
+                height: parent.height - y
+                color: Theme.passband
+            }
+            DragHandler {
+                id: edgeDrag
+                target: null
+                xAxis.enabled: true
+                yAxis.enabled: false
+                onActiveChanged: {
+                    if (active) {
+                        edge.startLow = Engine.filterLow
+                        edge.startHigh = Engine.filterHigh
+                    }
+                }
+                onTranslationChanged: {
+                    if (!active) return
+                    const hz = Math.round(translation.x / passband.pxPerMhz * 1e6 / 10) * 10
+                    if (edge.high) Engine.setFilterEdges(edge.startLow, edge.startHigh + hz)
+                    else Engine.setFilterEdges(edge.startLow + hz, edge.startHigh)
+                }
+            }
+        }
+        EdgeHandle { high: false }
+        EdgeHandle { high: true }
     }
 
     // The other slices on this pan: dim markers with their letter; a tap
@@ -197,6 +240,25 @@ Rectangle {
                     tnfPopup.tnfId = notch.modelData.id
                     tnfPopup.anchorX = notch.cx
                     tnfPopup.open()
+                }
+            }
+            // Drag it along the spectrum (the handle's part; on the waterfall a
+            // drag still moves the view), in 10 Hz steps.
+            Item {
+                width: parent.width
+                height: panArea.height * spectrum.spectrumFraction
+                property real startMhz: 0
+                DragHandler {
+                    target: null
+                    xAxis.enabled: true
+                    yAxis.enabled: false
+                    enabled: notch.modelData.id >= 0
+                    onActiveChanged: if (active) parent.startMhz = notch.modelData.freq
+                    onTranslationChanged: {
+                        if (!active) return
+                        const hz = Math.round(translation.x / notch.pxPerMhz * 1e6 / 10) * 10
+                        Engine.setTnf(notch.modelData.id, "freq", parent.startMhz + hz / 1e6)
+                    }
                 }
             }
         }

@@ -734,6 +734,9 @@ public:
     // last frequency and mode used on that band.
     Q_INVOKABLE void selectBand(const QString& band);
     Q_INVOKABLE void setFilterWidth(int widthHz);
+    // Both filter edges (Hz from the carrier), as a drag of an edge on the
+    // display sets them; at least 50 Hz apart.
+    Q_INVOKABLE void setFilterEdges(int lowHz, int highHz);
     Q_INVOKABLE void selectSlice(int sliceId);
     Q_INVOKABLE void addSlice();
     // Split on: a TX slice on the same pan, 1 kHz up in CW, 5 kHz up

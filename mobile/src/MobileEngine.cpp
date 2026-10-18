@@ -4007,6 +4007,19 @@ int MobileEngine::filterWidth() const
     return m_slice ? ModeFilters::widthForEdges(mode(), filterLow(), filterHigh()) : 0;
 }
 
+void MobileEngine::setFilterEdges(int lowHz, int highHz)
+{
+    if (!m_slice) {
+        return;
+    }
+    lowHz = std::clamp(lowHz, -12000, 12000);
+    highHz = std::clamp(highHz, -12000, 12000);
+    if (highHz - lowHz < 50 || (lowHz == m_slice->filterLow() && highHz == m_slice->filterHigh())) {
+        return;
+    }
+    m_slice->setFilterWidth(lowHz, highHz);
+}
+
 void MobileEngine::setFilterWidth(int widthHz)
 {
     if (!m_slice || widthHz <= 0) {
