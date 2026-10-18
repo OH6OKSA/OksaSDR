@@ -9,6 +9,7 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
+- CW memories and CW text now play a sidetone on your device while they are sent (they were silent).
 - DX cluster spots: View > Spots connects to a DX cluster (your radio's callsign, or set one); spots show as callsigns on the display, tap one to tune. Spots from other programs on the radio show too.
 - Notch filters (TNF): press and hold on the display to put a notch there; tap it for width, depth, permanent or remove. DSP tab: TNF on/off and + TNF.
 - TX tab, with this device's microphone: processing before it is sent - gate, EQ (low cut, bass, presence) and compressor. [TX]

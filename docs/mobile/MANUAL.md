@@ -304,8 +304,10 @@ offers **Off**.
 
 - **PTT** — hold to transmit from the device's microphone; release to stop.
   The microphone is open only while PTT is held.
-- **KEY** — in CW modes the same button is a straight key (radio-side
-  keyer and sidetone).
+- **KEY** — in CW modes the same button is a straight key. The sidetone
+  plays on this device as you key (at the radio's CW pitch and monitor
+  level, when the radio's sidetone is on), without the round trip to the
+  radio.
 - **TUNE** (Controls → TX) sends a carrier at the tune power; while it is on,
   the big button reads TUNE and pressing it stops the carrier.
 
@@ -384,7 +386,8 @@ them back into the drawer.
   - **Memories M1–M12** — tap to send (through the radio's CWX keyer at the
     set speed), press and hold to edit, or F1–F12 on a keyboard. `{CALL}`
     becomes your callsign. They are the app's own; the radio's stored CWX
-    macros are left alone.
+    macros are left alone. What they send, and CW text below, plays as
+    sidetone on this device too.
   - **CW text** — type and *Send*; with **Live** on, each letter goes as you
     type it (Return sends a space). *Stop*, or Esc, clears what is still
     queued.

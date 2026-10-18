@@ -138,9 +138,9 @@ radio interface, with no computer running alongside.
 - Hold-to-talk PTT from the device's microphone (the radio's mic input is
   set to `PC` when the app connects), with RF power and mic level, plus forward power and SWR
   while transmitting. The microphone is open only while PTT is held.
-- CW: in CW modes the PTT button is the straight key (radio-side keyer and
-  sidetone); editable memories ({CALL} = your callsign) and CWX text
-  sent by the radio at the set speed; speed, pitch and break-in, plus the CW decoder
+- CW: in CW modes the PTT button is the straight key, with the sidetone
+  played on the device; editable memories ({CALL} = your callsign) and CWX
+  text sent by the radio at the set speed, with sidetone too; speed, pitch and break-in, plus the CW decoder
   with the decoded text along the top of the waterfall (what you send shows
   there too). Twelve memories, also on F1–F12 from a keyboard (Esc stops),
   and a Live mode that sends letters as you type; {CALL} sends the

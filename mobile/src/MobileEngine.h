@@ -16,6 +16,7 @@
 #include <QStringList>
 #include <QElapsedTimer>
 #include <atomic>
+#include <chrono>
 #include <QTimer>
 
 #include <algorithm>
@@ -32,6 +33,7 @@ namespace AetherSDR {
 class AudioEngine;
 class DxClusterClient;
 class CwRxModel;
+class CwxLocalKeyer;
 class DecoderAudioModel;
 class PanadapterModel;
 class RadioDiscoverySource;
@@ -488,6 +490,9 @@ public:
     // Development (--spot-test): "add" three test spots near the slice on
     // the radio (source OksaSDR-test, 5 min), "clear" removes them.
     void spotTest(const QString& action);
+    // Development (--cwx-test): the CWX sidetone's key-downs and keyed time
+    // since the last CWX text started.
+    QString cwxSidetoneStats() const;
     QStringList globalProfiles() const;
     QString activeGlobalProfile() const;
     QStringList txProfiles() const;
@@ -939,6 +944,12 @@ private:
     void stopVoicePreview();
     bool m_cwKeyHeld{false};
     std::unique_ptr<CwRxModel> m_cwDecoder;
+    // Sidetone for CWX (memories, CW text): the radio's own keyer sends it,
+    // so this plays the same text locally at the same speed, as the desktop.
+    std::unique_ptr<CwxLocalKeyer> m_cwxLocalKeyer;
+    std::atomic<int> m_cwxSidetoneDowns{0};      // key-downs played (diagnostics)
+    std::atomic<qint64> m_cwxSidetoneKeyedMs{0};  // time keyed, ms
+    std::chrono::steady_clock::time_point m_cwxSidetoneDownAt;  // keyer thread only
     std::unique_ptr<DecoderAudioModel> m_cwAudio;
     QString m_cwDecodedText;
     QString m_cwDecoderStats;

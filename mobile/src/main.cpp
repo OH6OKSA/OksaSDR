@@ -158,6 +158,11 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: set this device's TX processing, e.g. compOn=1,compThreshold=-30 "
                        "(remembered)."), QStringLiteral("settings"));
     parser.addOption(txChainOption);
+    const QCommandLineOption cwxTestOption(QStringLiteral("cwx-test"),
+        QStringLiteral("Development: send <text> as CWX at 10 W on 14.045 MHz CW (only if this app's slice "
+                       "transmits), logging the local sidetone; power, mode and frequency restored after."),
+        QStringLiteral("text"));
+    parser.addOption(cwxTestOption);
     const QCommandLineOption pttTestOption(QStringLiteral("ptt-test"),
         QStringLiteral("Development: transmit for <ms> with this device's microphone at 10 W on 14.250 MHz "
                        "(only if this app's slice transmits), logging the Mic meter; power restored after."),
@@ -463,6 +468,50 @@ int main(int argc, char* argv[])
             }
         });
         QTimer::singleShot(7000, &app, [&engine] { qInfo() << "tnf-test: left" << engine.tnfs(); });
+    }
+    if (parser.isSet(cwxTestOption)) {
+        const QString text = parser.value(cwxTestOption);
+        auto* saved = new QVariantMap;
+        QTimer::singleShot(8000, &app, [&engine, saved] {
+            (*saved)[QStringLiteral("freq")] = engine.frequencyMhz();
+            (*saved)[QStringLiteral("mode")] = engine.mode();
+            engine.setMode(QStringLiteral("CW"));
+            engine.setFrequencyMhz(14.045);
+        });
+        QTimer::singleShot(11000, &app, [&engine, saved, text] {
+            bool ownTx = false;
+            for (const QVariant& v : engine.slices()) {
+                const QVariantMap m = v.toMap();
+                if (m.value(QStringLiteral("id")).toInt() == engine.activeSliceId()) {
+                    ownTx = m.value(QStringLiteral("tx")).toBool();
+                }
+            }
+            if (!ownTx || engine.mode() != QLatin1String("CW") || std::abs(engine.frequencyMhz() - 14.045) > 0.0005) {
+                qWarning() << "cwx-test: not sending (own TX:" << ownTx << engine.mode() << engine.frequencyMhz() << ")";
+                return;
+            }
+            (*saved)[QStringLiteral("power")] = engine.rfPower();
+            engine.setRfPower(10);
+            QTimer::singleShot(700, &engine, [&engine, text] {
+                qInfo() << "cwx-test: sending" << text << "at" << engine.cwSpeed() << "WPM";
+                engine.sendCwx(text);
+            });
+            auto* sampler = new QTimer(&engine);
+            QObject::connect(sampler, &QTimer::timeout, &engine, [&engine] {
+                qInfo().noquote() << QStringLiteral("cwx-test: tx=%1 power=%2 W sidetone %3")
+                                         .arg(engine.radioTransmitting()).arg(engine.forwardPowerW(), 0, 'f', 1)
+                                         .arg(engine.cwxSidetoneStats());
+            });
+            sampler->start(500);
+            QTimer::singleShot(14000, &engine, [&engine, saved, sampler] {
+                sampler->stop();
+                engine.stopCwx();
+                engine.setRfPower(saved->value(QStringLiteral("power")).toInt());
+                engine.setMode(saved->value(QStringLiteral("mode")).toString());
+                engine.setFrequencyMhz(saved->value(QStringLiteral("freq")).toDouble());
+                qInfo() << "cwx-test: restored" << *saved << "sidetone" << engine.cwxSidetoneStats();
+            });
+        });
     }
     if (parser.isSet(pttTestOption)) {
         const int ms = std::clamp(parser.value(pttTestOption).toInt(), 500, 5000);

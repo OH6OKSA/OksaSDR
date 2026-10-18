@@ -3,6 +3,11 @@
 Updated with every build. The newest TestFlight build is at the top; what is
 queued, waiting on someone, or still to verify follows.
 
+## Next build
+
+Queued (not yet sent to TestFlight):
+- Sidetone for CW memories and CW text (a tester on a Samsung A56: silent while macros were sent).
+
 ## Released
 
 **Build 77** (2026-10-17), iPhone and iPad, and Android beta 2:

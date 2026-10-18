@@ -30,6 +30,7 @@
 #include "core/backends/flex/PanadapterStream.h"
 #include "core/discovery/RadioDiscoverySource.h"
 #include "core/CwSidetoneGenerator.h"
+#include "core/CwxLocalKeyer.h"
 #include "models/CwRxModel.h"
 #include "models/EqualizerModel.h"
 #include "gui/MemoryCommands.h"
@@ -388,6 +389,8 @@ MobileEngine::MobileEngine(QObject* parent)
 MobileEngine::~MobileEngine()
 {
     s_instance = nullptr;
+    // Its worker calls into the audio engine, which goes below.
+    m_cwxLocalKeyer.reset();
     stopTransmit(QStringLiteral("shutdown"));
     setKeepScreenAwake(false);
     if (m_discovery) {
@@ -2503,6 +2506,42 @@ void MobileEngine::wireCw()
     connect(&rm.transmitModel(), &TransmitModel::phoneStateChanged, this, syncSidetone);
     connect(&rm.transmitModel(), &TransmitModel::stateChanged, this, &MobileEngine::cwChanged);
 
+    // CWX (memories, CW text, Live) keys in the radio, which tells nothing of
+    // the elements: a local keyer plays the same text at the same speed into
+    // the sidetone, on its own thread against steady_clock (the desktop's
+    // CwxLocalKeyer). Feedback only; it may drift a little from the radio.
+    m_cwxLocalKeyer = std::make_unique<CwxLocalKeyer>();
+    m_cwxLocalKeyer->setOnKeyDownChange([this](bool down, std::chrono::steady_clock::time_point when) {
+        if (m_audio) {
+            m_audio->setCwKeyDown(down, when);
+        }
+        if (down) {
+            m_cwxSidetoneDowns.fetch_add(1, std::memory_order_relaxed);
+            m_cwxSidetoneDownAt = when;
+        } else if (m_cwxSidetoneDownAt.time_since_epoch().count() != 0) {
+            m_cwxSidetoneKeyedMs.fetch_add(
+                std::chrono::duration_cast<std::chrono::milliseconds>(when - m_cwxSidetoneDownAt).count(),
+                std::memory_order_relaxed);
+        }
+    });
+    connect(&rm.cwxModel(), &CwxModel::transmissionRequested, this, [this](const QString& text, int wpm) {
+        if (m_audio) {
+            m_audio->noteCwOverSpeed(wpm);
+        }
+        m_cwxSidetoneDowns.store(0, std::memory_order_relaxed);
+        m_cwxSidetoneKeyedMs.store(0, std::memory_order_relaxed);
+        qCInfo(lcMobile) << "CWX sidetone:" << text.size() << "characters at" << wpm << "WPM";
+        if (m_cwxLocalKeyer) {
+            m_cwxLocalKeyer->start(text, wpm);
+        }
+    });
+    // Also emitted by the disconnect at shutdown, after the keyer is gone.
+    connect(&rm.cwxModel(), &CwxModel::transmissionCancelled, this, [this] {
+        if (m_cwxLocalKeyer) {
+            m_cwxLocalKeyer->stop();
+        }
+    });
+
     m_cwDecoder = std::make_unique<CwRxModel>();
     m_cwAudio = std::make_unique<DecoderAudioModel>(rm, DecoderAudioModel::Consumer::Cw);
     connect(m_cwAudio.get(), &DecoderAudioModel::nativePcmReady, m_cwDecoder.get(), &CwRxModel::feed);
@@ -3133,6 +3172,13 @@ void MobileEngine::spotTest(const QString& action)
             }
         }
     }
+}
+
+QString MobileEngine::cwxSidetoneStats() const
+{
+    return QStringLiteral("%1 key-downs, %2 ms keyed")
+        .arg(m_cwxSidetoneDowns.load(std::memory_order_relaxed))
+        .arg(m_cwxSidetoneKeyedMs.load(std::memory_order_relaxed));
 }
 
 QString MobileEngine::dxCallsign() const
