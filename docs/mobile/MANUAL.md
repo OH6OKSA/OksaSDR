@@ -219,6 +219,9 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
 - **Tap** to tune to the touched point (on the tuning step).
 - **Drag inside the filter passband** to tune; the slice follows the finger
   in tuning steps (STEP), so it stops on a round frequency.
+- **Drag a passband edge** (a finger's width around either edge line) to
+  set the filter in 10 Hz steps, for any width; the filter chooser's eight
+  widths stay as they were.
   Holding the finger at either edge keeps tuning, faster nearer the edge.
 - **Drag anywhere else** to move the view; the frequency stays.
 - **Pinch**, or **− / +** (bottom left), to zoom around the slice.
@@ -250,7 +253,8 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
   (yellow, or green when permanent; dim while TNF is off). Tap it for its
   width (50–500 Hz), depth, *Permanent*, a 10 Hz nudge either way and
   *Remove*; *TNF on/off* there is the radio's switch for all notches —
-  they only work while it is on.
+  they only work while it is on. Drag a notch along the spectrum (not the
+  waterfall) to move it.
 
 ![Notch settings](manual/tnf.jpg)
 

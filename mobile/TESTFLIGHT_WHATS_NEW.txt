@@ -9,6 +9,7 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
+- Drag a passband edge to set the filter width; drag a notch along the spectrum to move it.
 - CW paddles: CW tab > Key > Paddles puts dit and dah in PTT's place (hold both for iambic). On a keyboard: [ and ], or left/right Ctrl (USB paddle adapters). [TX]
 - CW decoder: far less noise read as letters (Sens, 8-45 WPM); weak stations decode better.
 - Dragging the passband tunes in STEP increments, so the frequency ends on a round value (as tapping and the step buttons do).

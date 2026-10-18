@@ -9,6 +9,7 @@ Queued (not yet sent to TestFlight):
 - Passband drag tunes on the tuning step (Wayne: had to round off with the step buttons after each drag).
 - CW paddles on the screen with the app's iambic keyer (A/B, squeeze; [ ] or Ctrl L/R on a keyboard); checked on air at 10 W.
 - CW decoder: Sens filter (default 70) and 8-45 WPM; band noise mostly gone, weak calls decode (measured on 20 m).
+- Filter edges dragged on the display (10 Hz steps); notches dragged along the spectrum.
 
 Open from tester feedback: SmartLink sign-in not kept for one tester (log
 needed).
