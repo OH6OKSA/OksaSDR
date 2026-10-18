@@ -11,7 +11,8 @@ have yet) and the docs as they are at HEAD:
     update;
   * a UI change (mobile/qml) needs the manual (docs/mobile/MANUAL.md) and
     refreshed screenshots (mobile/tools/update-docs.sh RADIO_IP);
-  * the TestFlight notes fit Apple's 4000 characters and are in English;
+  * the TestFlight notes and App Description fit Apple's 4000 characters,
+    the notes are in English and the description uses the app's name;
   * every relative link, image and #anchor in the docs resolves;
   * the docs carry no old repository names, phone numbers or radio serials.
 
@@ -40,6 +41,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 IOS_WORKFLOW = ROOT / ".github/workflows/mobile-ios.yml"
 NOTES = "mobile/TESTFLIGHT_WHATS_NEW.txt"
+DESCRIPTION = "mobile/TESTFLIGHT_DESCRIPTION.txt"
 ROADMAP = "mobile/ROADMAP.md"
 MANUAL = "docs/mobile/MANUAL.md"
 DOCS = ["README.md", "docs/mobile/*.md", "mobile/*.md", "mobile/android/*.md"]
@@ -147,7 +149,7 @@ def check_links(errors):
 
 
 def check_forbidden(errors):
-    for doc in doc_files() + [ROOT / NOTES]:
+    for doc in doc_files() + [ROOT / NOTES, ROOT / DESCRIPTION]:
         for number, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), 1):
             for pattern, what in FORBIDDEN:
                 if pattern.search(line):
@@ -155,6 +157,11 @@ def check_forbidden(errors):
 
 
 def check_notes(errors):
+    description = (ROOT / DESCRIPTION).read_text(encoding="utf-8")
+    if len(description) > NOTES_LIMIT:
+        errors.append(f"{DESCRIPTION}: {len(description)} characters, TestFlight takes {NOTES_LIMIT}")
+    if re.search(r"AetherSDR Mobile|aether-mobile", description):
+        errors.append(f"{DESCRIPTION}: the app's old name; it is OksaSDR")
     text = (ROOT / NOTES).read_text(encoding="utf-8")
     if len(text) > NOTES_LIMIT:
         errors.append(f"{NOTES}: {len(text)} characters, TestFlight takes {NOTES_LIMIT}")

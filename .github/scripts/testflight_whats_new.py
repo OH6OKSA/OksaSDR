@@ -2,8 +2,10 @@
 """Set TestFlight "What to Test" for one build via the App Store Connect API.
 
 Env: API_KEY_ID, API_ISSUER_ID, API_KEY_P8 (key contents), BUNDLE_ID,
-BUILD_NUMBER, NOTES_FILE. Waits for the uploaded build to appear, then
-creates or updates its beta build localization in the app's primary locale.
+BUILD_NUMBER, NOTES_FILE, and optionally DESCRIPTION_FILE. Sets the app's
+beta description (TestFlight's "App Description") from DESCRIPTION_FILE,
+then waits for the uploaded build to appear and creates or updates its beta
+build localization in the app's primary locale.
 """
 import json
 import os
@@ -55,7 +57,7 @@ def main() -> int:
     if len(notes) > MAX_CHARS:
         print(f"notes are {len(notes)} characters; TestFlight allows {MAX_CHARS}", file=sys.stderr)
         return 1
-    build_number = os.environ["BUILD_NUMBER"]
+    build_number = os.environ.get("BUILD_NUMBER", "").strip()
 
     apps = call("GET", "/apps", query={"filter[bundleId]": os.environ["BUNDLE_ID"]})["data"]
     if not apps:
@@ -63,6 +65,34 @@ def main() -> int:
         return 1
     app = apps[0]
     locale = app["attributes"].get("primaryLocale") or "en-US"
+
+    # The app's TestFlight description, kept in the repository so a rename
+    # or new address reaches testers (it once still read "AetherSDR Mobile").
+    description_file = os.environ.get("DESCRIPTION_FILE")
+    if description_file and os.path.exists(description_file):
+        description = open(description_file, encoding="utf-8").read().strip()
+        if len(description) > MAX_CHARS:
+            print(f"description is {len(description)} characters; TestFlight allows {MAX_CHARS}", file=sys.stderr)
+            return 1
+        localizations = call("GET", f"/apps/{app['id']}/betaAppLocalizations")["data"]
+        current = next((l for l in localizations if l["attributes"].get("locale") == locale), None)
+        if current and current["attributes"].get("description") == description:
+            print(f"App Description already up to date ({locale})")
+        elif current:
+            call("PATCH", f"/betaAppLocalizations/{current['id']}", {"data": {
+                "type": "betaAppLocalizations", "id": current["id"],
+                "attributes": {"description": description}}})
+            print(f"updated App Description ({locale})")
+        else:
+            call("POST", "/betaAppLocalizations", {"data": {
+                "type": "betaAppLocalizations",
+                "attributes": {"locale": locale, "description": description},
+                "relationships": {"app": {"data": {"type": "apps", "id": app["id"]}}}}})
+            print(f"set App Description ({locale})")
+
+    if not build_number:
+        print("no build number: App Description only")
+        return 0
 
     deadline = time.time() + WAIT_SECONDS
     build = None

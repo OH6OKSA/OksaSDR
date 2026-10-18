@@ -1,8 +1,9 @@
 name: TestFlight What to Test
 
-# Sets a build's TestFlight "What to Test" from mobile/TESTFLIGHT_WHATS_NEW.txt.
-# Called by the iOS build after a successful upload, or run by hand for an
-# existing build number.
+# Sets a build's TestFlight "What to Test" from mobile/TESTFLIGHT_WHATS_NEW.txt
+# and the app's TestFlight "App Description" from mobile/TESTFLIGHT_DESCRIPTION.txt.
+# Called by the iOS build after a successful upload, run by hand for an
+# existing build number, and on its own when the description file changes.
 on:
   workflow_call:
     inputs:
@@ -12,8 +13,13 @@ on:
   workflow_dispatch:
     inputs:
       build_number:
-        description: 'Build number (the iOS workflow run number)'
-        required: true
+        description: 'Build number (the iOS workflow run number); empty sets only the App Description'
+        required: false
+  # A changed App Description reaches TestFlight without a build.
+  push:
+    branches: ['mobile/oksasdr']
+    paths:
+      - 'mobile/TESTFLIGHT_DESCRIPTION.txt'
 
 permissions:
   contents: read
@@ -27,6 +33,7 @@ jobs:
         with:
           sparse-checkout: |
             mobile/TESTFLIGHT_WHATS_NEW.txt
+            mobile/TESTFLIGHT_DESCRIPTION.txt
             .github/scripts
       - name: Install PyJWT
         run: python3 -m pip install --quiet 'pyjwt[crypto]==2.10.1'
@@ -36,6 +43,7 @@ jobs:
           API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
           API_KEY_P8: ${{ secrets.APPSTORE_API_KEY_P8 }}
           BUNDLE_ID: ${{ vars.AETHER_MOBILE_BUNDLE_ID || 'com.aethersdr.mobile' }}
-          BUILD_NUMBER: ${{ inputs.build_number }}
+          BUILD_NUMBER: ${{ inputs.build_number || '' }}
           NOTES_FILE: mobile/TESTFLIGHT_WHATS_NEW.txt
+          DESCRIPTION_FILE: mobile/TESTFLIGHT_DESCRIPTION.txt
         run: python3 .github/scripts/testflight_whats_new.py
