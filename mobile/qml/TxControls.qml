@@ -24,7 +24,7 @@ ColumnLayout {
             background: Rectangle {
                 implicitHeight: Theme.touchTarget
                 radius: Theme.radius
-                color: Engine.tuning ? Theme.transmit : tuneButton.down ? "#bdbdbd" : "#e0e0e0"
+                color: Engine.tuning ? Theme.transmit : tuneButton.down ? Theme.buttonFaceDown : Theme.buttonFace
                 opacity: tuneButton.enabled ? 1.0 : 0.5
             }
             onClicked: Engine.toggleTune()
@@ -225,6 +225,26 @@ ColumnLayout {
         visible: Engine.canUseDeviceMicrophone
         text: qsTr("Use this device's microphone")
         onClicked: Engine.useDeviceMicrophone()
+    }
+
+    // PTT: hold to talk, or tap on / tap off (a latched transmission stops
+    // by itself after 3 minutes).
+    RowLayout {
+        Layout.fillWidth: true
+        visible: !Engine.cwMode
+        Label { text: qsTr("PTT"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+        AppButton {
+            text: qsTr("Hold to talk")
+            checked: !Engine.pttToggle
+            Layout.fillWidth: true
+            onClicked: Engine.pttToggle = false
+        }
+        AppButton {
+            text: qsTr("Tap on / off")
+            checked: Engine.pttToggle
+            Layout.fillWidth: true
+            onClicked: Engine.pttToggle = true
+        }
     }
 
     // TX audio passband (low and high cut of the transmitted audio).

@@ -12,9 +12,11 @@ AppButton {
     // Stays enabled while held: disabling a pressed button cancels the
     // press, which would unkey mid-transmission.
     readonly property bool keyMode: Engine.cwMode && !Engine.tuning
+    // Tap on, tap off (TX tab), voice only; the straight key always holds.
+    readonly property bool toggleMode: Engine.pttToggle && !keyMode && !Engine.tuning
     enabled: (keyMode ? Engine.cwKeyAvailable : Engine.transmitAvailable) || Engine.tuning || pressed
     text: Engine.tuning ? qsTr("TUNE") : keyMode ? (Engine.cwKeyDown ? qsTr("KEY ●") : qsTr("KEY"))
-          : Engine.transmitting ? qsTr("TX") : qsTr("PTT")
+          : Engine.pttLatched ? qsTr("TX ■") : Engine.transmitting ? qsTr("TX") : qsTr("PTT")
     focusPolicy: Qt.NoFocus
     font.pixelSize: fontPx
     font.bold: true
@@ -38,9 +40,15 @@ AppButton {
     }
     // Hold to transmit; release (or losing the touch) always unkeys. While
     // the tune carrier is on, PTT is its off switch.
+    // In tap on/off mode a press switches and the release does nothing.
     onPressed: Engine.tuning ? Engine.stopTransmit("PTT pressed during tune")
-             : keyMode ? Engine.setCwKey(true) : Engine.setPtt(true)
-    onReleased: keyMode ? Engine.setCwKey(false, "key released") : Engine.setPtt(false, "button released")
-    onCanceled: keyMode ? Engine.setCwKey(false, "touch cancelled by the system")
-                        : Engine.setPtt(false, "touch cancelled by the system")
+             : keyMode ? Engine.setCwKey(true) : toggleMode ? Engine.togglePtt() : Engine.setPtt(true)
+    onReleased: {
+        if (keyMode) Engine.setCwKey(false, "key released")
+        else if (!toggleMode) Engine.setPtt(false, "button released")
+    }
+    onCanceled: {
+        if (keyMode) Engine.setCwKey(false, "touch cancelled by the system")
+        else if (!toggleMode) Engine.setPtt(false, "touch cancelled by the system")
+    }
 }

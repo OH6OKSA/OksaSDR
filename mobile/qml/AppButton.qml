@@ -18,7 +18,7 @@ Button {
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
-        color: control.checked ? "#ffffff" : "#1a1a1a"
+        color: control.checked ? Theme.buttonTextOn : Theme.buttonText
         opacity: control.enabled ? 1.0 : 0.4
     }
 
@@ -26,8 +26,8 @@ Button {
         implicitWidth: Theme.buttonWidth
         implicitHeight: Theme.touchTarget
         radius: Theme.radius
-        color: control.checked ? (control.down ? "#4a4b4c" : "#353637")
-             : control.down ? "#bdbdbd" : "#e0e0e0"
+        color: control.checked ? (control.down ? Theme.buttonFaceOnDown : Theme.buttonFaceOn)
+             : control.down ? Theme.buttonFaceDown : Theme.buttonFace
         opacity: control.enabled ? 1.0 : 0.5
     }
 }

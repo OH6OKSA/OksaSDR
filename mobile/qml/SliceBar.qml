@@ -82,7 +82,7 @@ RowLayout {
                                 text: chip.modelData.letter + " " + chip.modelData.frequency.toFixed(3)
                                       + (bar.compact ? "" : " " + chip.modelData.mode)
                                 font: chip.font
-                                color: chip.checked ? "#ffffff" : "#1a1a1a"
+                                color: chip.checked ? Theme.buttonTextOn : Theme.buttonText
                             }
                             // The transmit slice: a red tag, not just two letters.
                             Rectangle {

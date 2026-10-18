@@ -4,7 +4,7 @@ import QtQuick
 // font glyph, so it is the same clear size on every device.
 Canvas {
     id: caret
-    property color color: "#1a1a1a"
+    property color color: Theme.buttonText
     property real size: 12
     implicitWidth: size
     implicitHeight: Math.round(size * 0.62)

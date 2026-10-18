@@ -40,12 +40,12 @@ Page {
                 implicitWidth: connectChip.implicitWidth + 2 * Theme.spacing
                 implicitHeight: Theme.touchTarget * 0.8
                 radius: Theme.radius
-                color: row.down ? "#bdbdbd" : "#e0e0e0"
+                color: row.down ? Theme.buttonFaceDown : Theme.buttonFace
                 Label {
                     id: connectChip
                     anchors.centerIn: parent
                     text: qsTr("Connect ›")
-                    color: "#202020"
+                    color: Theme.buttonText
                     font.pixelSize: 16
                 }
             }

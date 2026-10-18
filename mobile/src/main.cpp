@@ -163,6 +163,9 @@ int main(int argc, char* argv[])
                        "transmits), logging the local sidetone; power, mode and frequency restored after."),
         QStringLiteral("text"));
     parser.addOption(cwxTestOption);
+    const QCommandLineOption buttonStyleOption(QStringLiteral("button-style"),
+        QStringLiteral("Button colours: classic, light or lit (remembered)."), QStringLiteral("style"));
+    parser.addOption(buttonStyleOption);
     const QCommandLineOption micGainOption(QStringLiteral("mic-gain-db"),
         QStringLiteral("This device's microphone gain in dB, -20 .. +30 (remembered)."), QStringLiteral("dB"));
     parser.addOption(micGainOption);
@@ -171,6 +174,10 @@ int main(int argc, char* argv[])
                        "the radio's mic level at <level>, logging forward power; restored after."),
         QStringLiteral("level"));
     parser.addOption(micLevelTestOption);
+    const QCommandLineOption pttToggleTestOption(QStringLiteral("ptt-toggle-test"),
+        QStringLiteral("Development: PTT in tap on/off mode at 10 W on 14.250 MHz: tap, 2 s, tap; logs the "
+                       "latch, power and mode restored after."));
+    parser.addOption(pttToggleTestOption);
     const QCommandLineOption pttTestOption(QStringLiteral("ptt-test"),
         QStringLiteral("Development: transmit for <ms> with this device's microphone at 10 W on 14.250 MHz "
                        "(only if this app's slice transmits), logging the Mic meter; power restored after."),
@@ -521,6 +528,9 @@ int main(int argc, char* argv[])
             });
         });
     }
+    if (parser.isSet(buttonStyleOption)) {
+        engine.setButtonStyle(parser.value(buttonStyleOption));
+    }
     if (parser.isSet(micGainOption)) {
         engine.setMicGainDb(parser.value(micGainOption).toDouble());
     }
@@ -571,6 +581,28 @@ int main(int argc, char* argv[])
                 engine.setRadioMicLevel(micLevel);
                 engine.setRfPower(power);
                 qInfo() << "mic-level-test: restored mic level" << micLevel << "power" << power;
+            });
+        });
+    }
+    if (parser.isSet(pttToggleTestOption)) {
+        QTimer::singleShot(8000, &app, [&engine] { engine.setFrequencyMhz(14.250); });
+        QTimer::singleShot(10000, &app, [&engine] {
+            const int power = engine.rfPower();
+            const bool wasToggle = engine.pttToggle();
+            engine.setRfPower(10);
+            engine.setPttToggle(true);
+            auto log = [&engine](const char* what) {
+                qInfo().noquote() << QStringLiteral("ptt-toggle-test: %1: latched=%2 tx=%3")
+                                         .arg(QLatin1String(what)).arg(engine.pttLatched()).arg(engine.radioTransmitting());
+            };
+            QTimer::singleShot(500, &engine, [&engine, log] { engine.togglePtt(); log("tapped on"); });
+            QTimer::singleShot(2000, &engine, [log] { log("1.5 s later"); });
+            QTimer::singleShot(2500, &engine, [&engine, log] { engine.togglePtt(); log("tapped off"); });
+            QTimer::singleShot(3500, &engine, [&engine, log, power, wasToggle] {
+                log("1 s later");
+                engine.setPttToggle(wasToggle);
+                engine.setRfPower(power);
+                qInfo() << "ptt-toggle-test: restored power" << power << "toggle" << wasToggle;
             });
         });
     }

@@ -37,6 +37,11 @@ Page {
             break
         case Qt.Key_Escape: Engine.stopCwx(); Engine.dvkStop(); break
         case Qt.Key_Space:
+            // Tap on/off mode: Space switches, as the button does.
+            if (Engine.pttToggle && !Engine.cwMode) {
+                Engine.togglePtt()
+                break
+            }
             page.spacePtt = true
             Engine.setPtt(true)
             break

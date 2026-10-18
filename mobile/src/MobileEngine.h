@@ -56,6 +56,13 @@ class MobileEngine : public QObject {
     // Band plan strip at the bottom of the spectrum, as the desktop's:
     // which plan ("" = off) and the plans bundled with the app.
     Q_PROPERTY(QString bandPlan READ bandPlan WRITE setBandPlan NOTIFY bandPlanChanged)
+    // Button colours (remembered): "classic" (light, dark when on), "light"
+    // (dark, light when on) or "lit" (dark, blue when on).
+    Q_PROPERTY(QString buttonStyle READ buttonStyle WRITE setButtonStyle NOTIFY buttonStyleChanged)
+    // PTT as a switch (tap on, tap off) instead of hold-to-talk; remembered.
+    // A latched transmission stops by itself after kPttToggleLimitS.
+    Q_PROPERTY(bool pttToggle READ pttToggle WRITE setPttToggle NOTIFY pttToggleChanged)
+    Q_PROPERTY(bool pttLatched READ pttLatched NOTIFY pttToggleChanged)
     Q_PROPERTY(QStringList bandPlans READ bandPlans CONSTANT)
     // Receive audio coding: "Auto" (Opus when remote: SmartLink, a tailnet,
     // or the radio reached through a VPN), "Opus" or "None"; applies from
@@ -309,6 +316,13 @@ public:
     QString callsign() const;
     QString bandPlan() const;
     void setBandPlan(const QString& name);
+    QString buttonStyle() const;
+    void setButtonStyle(const QString& style);
+    bool pttToggle() const;
+    void setPttToggle(bool on);
+    bool pttLatched() const { return m_pttLatched; }
+    // Toggle-mode PTT: keys when not transmitting, unkeys when it is.
+    Q_INVOKABLE void togglePtt();
     QStringList bandPlans() const;
     // The active plan's segments (empty when off), for the spectrum.
     QVector<BandPlanManager::Segment> bandPlanSegments() const;
@@ -741,6 +755,8 @@ signals:
     void lastErrorChanged();
     void callsignChanged();
     void bandPlanChanged();
+    void buttonStyleChanged();
+    void pttToggleChanged();
     void audioCompressionChanged();
     void networkChanged();
     void performanceChanged();
@@ -925,6 +941,8 @@ private:
     // TX chain settings are written a moment after the last change (a
     // slider drag would otherwise write the settings file on every step).
     QTimer m_txChainSaveTimer;
+    bool m_pttLatched{false};
+    QTimer m_pttToggleLimit;
     // DX cluster: its spots go to the radio ("spot add", as the desktop),
     // deduplicated per call within 1 kHz and sent at most RbnRateLimit a
     // second; the radio shows them to every client and brings them back

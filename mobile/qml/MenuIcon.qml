@@ -4,7 +4,7 @@ import QtQuick
 // Android's fonts reachable from Qt lack U+2630 and drew a box.
 Item {
     id: icon
-    property color color: "#202020"
+    property color color: Theme.buttonText
     implicitWidth: 20
     implicitHeight: 16
     Column {

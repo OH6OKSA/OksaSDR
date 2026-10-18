@@ -53,13 +53,13 @@ ColumnLayout {
                     text: (modelData.freq).toFixed(4)
                     font.family: "monospace"
                     font.pixelSize: 15
-                    color: "#1a1a1a"
+                    color: Theme.buttonText
                 }
-                Label { text: modelData.mode; font.pixelSize: 13; color: "#2a5c8a" }
+                Label { text: modelData.mode; font.pixelSize: 13; color: Theme.buttonTextDim }
                 Label {
                     text: modelData.name
                     font.pixelSize: 14
-                    color: "#1a1a1a"
+                    color: Theme.buttonText
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }

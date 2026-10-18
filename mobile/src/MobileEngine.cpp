@@ -1977,6 +1977,11 @@ void MobileEngine::releasePtt(const QString& reason)
         return;
     }
     m_pttHeld = false;
+    if (m_pttLatched) {
+        m_pttLatched = false;
+        m_pttToggleLimit.stop();
+        emit pttToggleChanged();
+    }
     m_pttInput.stop();
     stopDeviceMicrophoneCapture();
     // A voice macro ends with its PTT press.
@@ -3317,6 +3322,70 @@ void MobileEngine::tuneToSpot(int index)
     }
     qCInfo(lcMobile) << "tune to spot" << spot.callsign << spot.rxFreqMhz;
     tuneTo(spot.rxFreqMhz);
+}
+
+QString MobileEngine::buttonStyle() const
+{
+    const QString style = AppSettings::instance().value(QStringLiteral("MobileButtonStyle"), QStringLiteral("classic")).toString();
+    return (style == QLatin1String("light") || style == QLatin1String("lit")) ? style : QStringLiteral("classic");
+}
+
+void MobileEngine::setButtonStyle(const QString& style)
+{
+    if (style != buttonStyle()) {
+        AppSettings::instance().setValue(QStringLiteral("MobileButtonStyle"), style);
+        AppSettings::instance().save();
+        emit buttonStyleChanged();
+    }
+}
+
+namespace {
+constexpr int kPttToggleLimitS = 180;
+}
+
+bool MobileEngine::pttToggle() const
+{
+    return AppSettings::instance().value(QStringLiteral("MobilePttToggle"), QStringLiteral("False")).toString()
+        == QLatin1String("True");
+}
+
+void MobileEngine::setPttToggle(bool on)
+{
+    if (on == pttToggle()) {
+        return;
+    }
+    // Switching back to hold-to-talk never leaves a transmission latched.
+    if (!on && m_pttLatched) {
+        releasePtt(QStringLiteral("PTT mode changed to hold"));
+    }
+    AppSettings::instance().setValue(QStringLiteral("MobilePttToggle"), on ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    emit pttToggleChanged();
+}
+
+void MobileEngine::togglePtt()
+{
+    if (m_pttHeld) {
+        releasePtt(QStringLiteral("toggled off"));
+        return;
+    }
+    setPtt(true);
+    if (!m_pttHeld) {
+        return;
+    }
+    m_pttLatched = true;
+    if (!m_pttToggleLimit.isActive()) {
+        m_pttToggleLimit.setSingleShot(true);
+        m_pttToggleLimit.setInterval(kPttToggleLimitS * 1000);
+        connect(&m_pttToggleLimit, &QTimer::timeout, this, [this] {
+            if (m_pttLatched) {
+                releasePtt(QStringLiteral("toggle time limit"));
+                setLastError(tr("Transmit stopped after %1 minutes (PTT in tap on/off mode).").arg(kPttToggleLimitS / 60));
+            }
+        }, Qt::UniqueConnection);
+    }
+    m_pttToggleLimit.start();
+    emit pttToggleChanged();
 }
 
 bool MobileEngine::locked() const

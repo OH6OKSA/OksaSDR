@@ -303,7 +303,10 @@ offers **Off**.
 ## 7. Transmitting: PTT, KEY and TUNE
 
 - **PTT** — hold to transmit from the device's microphone; release to stop.
-  The microphone is open only while PTT is held.
+  The microphone is open only while transmitting. **Tap on / off** (Controls
+  → TX → PTT) makes it a switch: tap to transmit, tap again to stop (TX ■
+  while it is on); as a safety it stops by itself after 3 minutes. Space on
+  a keyboard works the same way.
 - **KEY** — in CW modes the same button is a straight key. The sidetone
   plays on this device as you key (at the radio's CW pitch and monitor
   level, when the radio's sidetone is on), without the round trip to the
@@ -354,8 +357,9 @@ them back into the drawer.
   expander, on/off and level) in voice modes — shown only when the radio's
   own microphone input is selected, as they do nothing with this device's
   microphone — the AM **carrier** level in
-  AM/SAM/DSB, monitor (MON), **Mic level**, microphone choice and the
-  transmit filter (low and high cut). **Mic level** with this device's
+  AM/SAM/DSB, monitor (MON), **Mic level**, microphone choice, **PTT**
+  (*Hold to talk* or *Tap on / off*) and the transmit filter (low and high
+  cut). **Mic level** with this device's
   microphone is the app's own gain, −20 to +30 dB: the radio has no gain
   stage for its PC input, so its mic level does nothing to this
   microphone. Set it so speech peaks near −10 dB on the Mic meter while
