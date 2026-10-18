@@ -5,19 +5,10 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-- CW refused: when the radio will not key CW, the app says why instead of
-  staying silent. On 2026-10-18 the FLEX-6600 refused every CW key-down
-  ("another client is transmitting or sending a CW/CWX message") with no
-  client on air, in beta 4 and build 79 alike, until the radio was restarted;
-  the cause is not known.
-- CW tab (tester feedback): Iambic A / B and Swap ⇄ in the tab itself;
-  "Paddles on a keyboard" says which key is dit and which dah, with left /
-  right Alt ⌥ (Option) as a choice for keyboards with no right Ctrl; a note
-  when keying with break-in off; the dit and dah pads' labels now follow
-  Swap (they never did). Alt ⌥ on the iPad's Magic Keyboard is to try.
-
-Open from tester feedback: SmartLink sign-in not kept for one tester (log
-needed).
+Nothing queued yet. To verify in build 80: Alt ⌥ paddles on the iPad's
+Magic Keyboard (the log shows the first keys). Real-device screenshots for
+GitHub from the iPad and the Android phone. Open from tester feedback:
+SmartLink sign-in not kept for one tester (log needed).
 
 ## Planned: logging (when to build it is open)
 
@@ -55,6 +46,11 @@ to the radio (needs a listening server on the phone, not possible in the
 iOS background).
 
 ## Released
+
+**Build 80** (2026-10-18), iPhone and iPad, and Android beta 5:
+- CW tab: Iambic A / B and Swap ⇄; "Paddles on a keyboard" with Ctrl (the default), Alt ⌥ (Option) or [ ], each explained; the dit and dah labels follow Swap; Command never keys a dit.
+- CW refused: the radio's reason shows. On 2026-10-18 the FLEX-6600 refused every CW key-down ("another client is transmitting…") with no client on air until it was restarted; the cause is not known.
+- Keying with break-in off says why nothing goes on air.
 
 **Build 79** (2026-10-18), iPhone and iPad, and Android beta 4:
 - CW paddles on the screen with the app's iambic keyer (A/B, squeeze; [ ] or Ctrl L/R on a keyboard); straight key, paddles and iambic A and B checked on air.
@@ -120,6 +116,9 @@ first beta marked Latest on GitHub.
 
 Beta 4: what iOS build 79 brings (CW paddles, decoder, edge and notch
 drags, spot filters); the first published by CI as Latest.
+
+Beta 5: what iOS build 80 brings (iambic and keyboard paddles in the CW
+tab, the CW refused notice, the break-in note).
 
 Next: verify LAN discovery on the radio's network; APK size (about 150 MB).
 

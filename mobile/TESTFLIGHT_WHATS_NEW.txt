@@ -9,15 +9,14 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- CW paddles: CW tab > Key > Paddles puts dit and dah in PTT's place (hold both for iambic). On a keyboard: [ and ], or left/right Ctrl (USB paddle adapters). [TX]
-- CW decoder: far less band noise read as letters (Sens, 8-45 WPM); weak stations decode better.
-- Dragging the passband tunes in STEP increments, so it ends on a round frequency.
-- Drag a passband edge to set the filter width; drag a notch along the spectrum to move it.
-- Spot filters (View > Spots): CW, phone or digital only, and only the newest (5, 15 or 30 minutes).
+- CW tab, with Paddles: Iambic A / B and Swap are now in the tab itself. The dit and dah pads' labels follow Swap.
+- Paddles on a keyboard: pick which two keys are dit (left) and dah (right). Ctrl, the new default, suits a PC keyboard or a USB paddle adapter (Vail, VBand). Alt / Option suits Apple keyboards, which have no right Ctrl. [ ] is only for English layouts. [TX]
+- If the radio refuses to key CW, the app now says why. If it blames another client while none is on air, restart the radio.
+- Keying with Break-in off now tells you why nothing goes on air.
 
-RECENT (build 78)
-- Mic level (TX tab) is this device's microphone gain, -20 to +30 dB; aim for speech peaks near -10 dB on the Mic meter. [TX]
-- Lit buttons (on = blue); PTT Tap on / off; CW sidetone for memories and CW text.
+RECENT (build 79)
+- CW paddles on the screen (hold both for iambic); CW decoder with far less noise (Sens, 8-45 WPM).
+- Drag tunes in STEP increments; drag filter edges and notches; spot filters.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
@@ -25,7 +24,7 @@ PLEASE TRY
 - Both portrait and landscape; on iPad also Split View.
 - Voice transmit with the device mic or a Bluetooth headset, and tell me how it sounds at the other end. [TX]
 - CW keying, CWX memories (F1–F12 on a keyboard) and the decoder. [TX]
-- New: CW paddles on the screen or a keyboard, and the decoder on a busy CW band. [TX]
+- New: paddles on a keyboard (Alt / Option on an iPad keyboard, Ctrl on a PC keyboard or paddle adapter) and Iambic A / B in the CW tab. [TX]
 - Spots and the DX cluster, a notch on a carrier, the TX processing at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM
