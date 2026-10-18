@@ -3,15 +3,18 @@
 Updated with every build. The newest TestFlight build is at the top; what is
 queued, waiting on someone, or still to verify follows.
 
-## Next build (78, Android beta 3)
+## Next build
 
-Queued (not yet sent to TestFlight):
-- PTT tap on / off mode (tester request), with a 3-minute limit.
-- Lit buttons: on = blue, off = dark (chosen 2026-10-18 from three styles after tester feedback); the top row's buttons follow.
-- Mic level acts on this device's microphone (own gain, -20 to +30 dB, limiter at -1 dBFS); the radio's mic level does not act on its PC input (measured: 6.2 W at level 10, 6.0 W at 90). A tester (FLEX-6600, 4.3.16) got only a few watts.
-- Sidetone for CW memories and CW text (a tester on a Samsung A56: silent while macros were sent).
+Nothing queued yet. Open from tester feedback: SmartLink sign-in not kept
+for one tester (log needed); on-screen CW paddles.
 
 ## Released
+
+**Build 78** (2026-10-18), iPhone and iPad, and Android beta 3:
+- Mic level acts on this device's microphone (own gain, −20 to +30 dB, limiter at −1 dBFS); the radio's mic level does not act on its PC input (measured: 6.2 W at level 10, 6.0 W at 90).
+- Lit buttons: on = blue, off = dark (chosen from three styles after tester feedback).
+- PTT tap on / off mode, with a 3-minute limit.
+- Sidetone for CW memories and CW text; busiest threads in Network & performance; Android asks for the microphone on the first connect.
 
 **Build 77** (2026-10-17), iPhone and iPad, and Android beta 2:
 - Spots on the display and a DX cluster connection (spots go to the radio); tap to tune.
@@ -59,6 +62,10 @@ Beta 2: what iOS build 77 brings (spots and DX cluster, TNF, TX
 processing, memory editing, voice keyer Listen, Mic meter). Published by CI
 from `mobile/android/release.env`.
 
+Beta 3: what iOS build 78 brings (Mic level as the device microphone's
+gain, lit buttons, PTT tap on / off, CWX sidetone, busiest threads); the
+first beta marked Latest on GitHub.
+
 Next: verify LAN discovery on the radio's network; APK size (about 150 MB).
 
 ## Later
@@ -87,7 +94,7 @@ From the comparison with upstream main and tester requests:
   - [#6533](https://github.com/aethersdr/AetherSDR/issues/6533): closing the TX slice leaves no slice transmitting;
   - [#6534](https://github.com/aethersdr/AetherSDR/issues/6534): RFC, Opus under Auto over a VPN;
   - [PR #6535](https://github.com/aethersdr/AetherSDR/pull/6535) for #6051: VITA-49 loss counted net of reordering.
-- **To verify:** CW keying, CWX and the decoder on the air; the app against
+- **To verify:** the CW straight key and the decoder on strong signals (CWX is verified on air); the app against
   SmartSDR 4.3.x firmware.
 
 ## Platforms

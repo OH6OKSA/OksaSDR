@@ -8,13 +8,13 @@
 ![Status](https://img.shields.io/badge/status-beta-orange)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-OksaSDR runs the AetherSDR engine (`libaethercore`) on the iPad or
-iPhone and talks to the radio directly. There is no PC, server, `aetherd` or
+OksaSDR runs the AetherSDR engine (`libaethercore`) on the iPad, iPhone
+or an Android phone or tablet and talks to the radio directly. There is no PC, server, `aetherd` or
 SmartSDR in between: at home on the same network, or from anywhere over
 SmartLink (or your own VPN), it is a complete station control surface.
 
 > OksaSDR is maintained by Niko Oksa, OH6OKSA, and was called *AetherSDR
-> Mobile* until build 70. It is **not** an official AetherSDR app: the
+> Mobile* until build 74. It is **not** an official AetherSDR app: the
 > AetherSDR project plans its own mobile app. Engine work is offered
 > upstream; see
 > [discussion #6409](https://github.com/aethersdr/AetherSDR/discussions/6409).
@@ -219,7 +219,9 @@ refreshed with every user-interface change.</sub>
 | Several slices and panadapters, multiFLEX | ✅ Supported |
 | Spots and DX cluster, TNF, memory editing | ✅ Tested against a FLEX-6600M (build 77) |
 | TX processing (gate, EQ, compressor) | ✅ Measured on the FLEX with a test tone; testers' on-air reports welcome |
-| CW keying, CWX and decoder on air | ⏳ Not yet verified |
+| CWX (CW memories, CW text) on air | ✅ Used on air by a tester (POTA/WWFF replies); checked at 10 W with the sidetone in step |
+| CW straight key (KEY) on air | 🧪 Works; keying by touch is hard (on-screen paddles planned) |
+| CW decoder | 🧪 Runs; weak, fading signals (the 14.100 beacons) decode poorly, to check on strong signals |
 | LAN discovery on iOS | ⏳ Needs Apple's multicast entitlement. Connect by IP for now. |
 | LAN discovery on Android | 🧪 Built in; to be verified on the radio's own network |
 
