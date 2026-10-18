@@ -47,7 +47,8 @@ Earlier builds: see the git log and `TESTFLIGHT_WHATS_NEW.txt`.
 
 Same code as iOS (`mobile/android/` holds the platform parts), built and
 signed in GitHub Actions (`mobile-android.yml`); betas in
-[Releases](https://github.com/OH6OKSA/OksaSDR/releases).
+[Releases](https://github.com/OH6OKSA/OksaSDR/releases) (the newest is
+marked Latest: [releases/latest](https://github.com/OH6OKSA/OksaSDR/releases/latest)).
 
 Beta 1: receive, spectrum and waterfall, TX, background receive (foreground
 service, Qt kept running), SmartLink with the sign-in kept in the Android

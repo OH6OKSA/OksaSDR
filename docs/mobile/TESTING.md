@@ -78,8 +78,9 @@ every function.
 The Android beta needs no invitation: download it and install it.
 
 1. On the phone, open
-   **[github.com/OH6OKSA/OksaSDR/releases](https://github.com/OH6OKSA/OksaSDR/releases)**
-   and download the newest `OksaSDR-android-….apk` (about 150 MB).
+   **[github.com/OH6OKSA/OksaSDR/releases/latest](https://github.com/OH6OKSA/OksaSDR/releases/latest)**
+   (always the newest beta) and download its `OksaSDR-android-beta….apk`
+   under *Assets* (about 150 MB).
 2. Open the downloaded file. If Chrome keeps it waiting, open ⋮ →
    *Downloads* and choose *Keep*.
 3. Android asks to allow installing apps from the browser or file

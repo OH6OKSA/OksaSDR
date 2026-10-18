@@ -27,7 +27,7 @@ SmartLink (or your own VPN), it is a complete station control surface.
 
 **[Join the TestFlight test group](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md)** (iPhone, iPad): what you need and how to join.
 
-**[Android beta: download the APK](https://github.com/OH6OKSA/OksaSDR/releases)** (Android 9 or newer, 64-bit ARM): see the
+**[Android beta: download the APK](https://github.com/OH6OKSA/OksaSDR/releases/latest)** (Android 9 or newer, 64-bit ARM): see the
 [tester guide](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md#android) for installing it.
 
 **[User manual](docs/mobile/MANUAL.md)** — every function, with screenshots
@@ -232,7 +232,7 @@ refreshed with every user-interface change.</sub>
   You need iPadOS or iOS 18 or newer and a FlexRadio: on the same network,
   through SmartLink from anywhere, or over your own VPN.
 - **Android beta.** Download the APK from
-  **[Releases](https://github.com/OH6OKSA/OksaSDR/releases)** and install it
+  **[the latest release](https://github.com/OH6OKSA/OksaSDR/releases/latest)** and install it
   (Android 9 or newer, 64-bit ARM); the
   [tester guide](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md#android)
   has the steps.

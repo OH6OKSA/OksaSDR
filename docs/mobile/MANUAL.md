@@ -503,7 +503,7 @@ Android.
 | ![OksaSDR on Android](android-foldable.jpg) | ![Controls drawer on Android](android-foldable-controls.jpg) | ![OksaSDR on an Android phone screen](android-phone.jpg) |
 
 **Installing.** Download the newest APK from
-[Releases](https://github.com/OH6OKSA/OksaSDR/releases) on the phone, open
+[the latest release](https://github.com/OH6OKSA/OksaSDR/releases/latest) on the phone, open
 it, and allow installing from your browser or file manager when Android
 asks. A newer beta installs over the old one and keeps your settings.
 Android 9 or newer, 64-bit ARM (practically every phone and tablet from the
