@@ -35,8 +35,9 @@ else
     source_args=(--demo)
 fi
 
+# ipad-landscape.jpg and the android-*.jpg are screenshots from the
+# devices (taken over the developer link), so they are not rendered here.
 echo "Rendering screenshots (${RADIO:-demo radio})..."
-shot ipad-landscape 1366x1024 "${source_args[@]}" --controls visible
 shot ipad-mini-portrait 744x1133 "${source_args[@]}" --controls visible
 shot iphone-portrait 440x956 "${source_args[@]}" --controls visible
 shot iphone-landscape 956x440 "${source_args[@]}" --controls visible
@@ -44,7 +45,6 @@ shot iphone-landscape-drawer 956x440 "${source_args[@]}" --controls drawer
 shot passband-lsb 1366x1024 --demo --mode LSB --controls visible
 
 # Strip metadata and compress for the README.
-magick "$TMP/ipad-landscape.png" -resize 1100x -strip -quality 85 "$OUT/ipad-landscape.jpg"
 magick "$TMP/ipad-mini-portrait.png" -resize 600x -strip -quality 85 "$OUT/ipad-mini-portrait.jpg"
 magick "$TMP/iphone-portrait.png" -strip -quality 88 "$OUT/iphone-portrait.jpg"
 magick "$TMP/iphone-landscape.png" -strip -quality 88 "$OUT/iphone-landscape.jpg"

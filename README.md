@@ -20,7 +20,7 @@ SmartLink (or your own VPN), it is a complete station control surface.
 > [discussion #6409](https://github.com/aethersdr/AetherSDR/discussions/6409).
 
 <p align="center">
-  <img src="docs/mobile/ipad-landscape.jpg" width="70%" alt="OksaSDR on a 12.9-inch iPad: panadapter, waterfall and controls"/>
+  <img src="docs/mobile/ipad-landscape.jpg" width="70%" alt="OksaSDR on an iPad (a screenshot from the device): 3D spectrum, waterfall and the pinned Audio and TX controls"/>
   &nbsp;
   <img src="docs/mobile/iphone-portrait.jpg" width="22%" alt="OksaSDR on iPhone in portrait"/>
 </p>
@@ -195,7 +195,7 @@ radio interface, with no computer running alongside.
 <p align="center">
   <img src="docs/mobile/android-foldable.jpg" width="40%" alt="OksaSDR on Android: a OnePlus Open's inner screen, 3D spectrum and waterfall"/>
   &nbsp;
-  <img src="docs/mobile/android-foldable-controls.jpg" width="40%" alt="OksaSDR on Android with the controls drawer open on the TX tab"/>
+  <img src="docs/mobile/android-foldable-controls.jpg" width="40%" alt="OksaSDR on Android with the controls drawer open on the CW tab: memories, CW text, speed, break-in and the decoder"/>
   &nbsp;
   <img src="docs/mobile/android-phone.jpg" width="16%" alt="OksaSDR on Android: the OnePlus Open's outer screen in portrait"/>
 </p>
