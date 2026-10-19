@@ -12,6 +12,15 @@ queued, waiting on someone, or still to verify follows.
   the waterfall), and the operate pages no longer loop on their own safe
   area after a rotation. To check on the phone's outer screen and on an
   iPhone in landscape.
+- SmartLink stays signed in, and reconnects after Disconnect (iPad user
+  and testers: the sign-in was gone after a restart, and after Disconnect
+  the radio would not connect again). A sign-in from the kept token
+  stored an empty token over it (Auth0 does not rotate them), and without
+  it a reconnect registered with an expired id token, which the server
+  refused, and the app then forgot the sign-in. The token is kept now; a
+  refused session signs in again once from it; connecting while the
+  SmartLink server is down reconnects first; and the app reconnects to
+  the server when it comes back to the front.
 - Keyboard paddles on the iPad: in build 80 both Option keys (and with
   Ctrl, Control and either Command) keyed a dit. Qt 6.12 on iOS passes no
   scan code, so left and right cannot be told apart and Command arrives
@@ -22,8 +31,7 @@ queued, waiting on someone, or still to verify follows.
 
 Parked: two-finger trackpad scrolling of the iPad's pinned panel stops
 halfway (Magic Keyboard; finger scrolling works; --wheel-test finds no
-blocker on the desktop). Open from tester feedback: SmartLink sign-in not
-kept for one tester (log needed).
+blocker on the desktop).
 
 ## Planned: logging (when to build it is open)
 

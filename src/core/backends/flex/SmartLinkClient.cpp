@@ -129,6 +129,10 @@ void SmartLinkClient::loginWithRefreshToken(const QString& refreshToken)
         qCDebug(lcSmartLink) << "SmartLinkClient: Auth0 refresh already in progress";
         return;
     }
+    // Kept so a later reconnect() refreshes again instead of registering
+    // with an expired id token: Auth0 returns a new refresh token only when
+    // it rotates them, and a sign-in from a stored token had none before.
+    m_refreshToken = refreshToken;
 
     QUrl url(QString("https://%1/oauth/token").arg(AUTH0_DOMAIN));
     QNetworkRequest req(url);

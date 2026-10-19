@@ -1077,6 +1077,7 @@ private:
     WanRadioInfo m_pendingWan;
     bool m_wanActive{false};
     bool m_wanUserDisconnect{false};
+    bool m_smartLinkRetried{false};   // one re-sign-in after a refused session
     QTimer m_wanReconnectTimer;
     QString m_smartLinkState{QStringLiteral("signedOut")};
     double m_micLevelDbfs{-100.0};

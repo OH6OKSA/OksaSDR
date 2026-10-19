@@ -268,6 +268,12 @@ MobileEngine::MobileEngine(QObject* parent)
         // an app whose main thread is busy when it moves to the background
         // (scene-update watchdog, seen on testers' iPads), and it saves power.
         const bool active = state == Qt::ApplicationActive;
+        // Back in front signed in but without the SmartLink server (it
+        // drops in the background): reconnect, so the radio list is live.
+        if (active && m_smartLink.isAuthenticated() && !m_smartLink.isConnected()) {
+            qCInfo(lcMobile) << "SmartLink: reconnecting to the server (app in front)";
+            m_smartLink.reconnect();
+        }
         if (!active) {
             // stopTransmit released the paddles; GameController's keys
             // start from up when the app is back.
@@ -557,13 +563,34 @@ void MobileEngine::disconnectRadio()
 void MobileEngine::wireSmartLink()
 {
     connect(&m_smartLink, &SmartLinkClient::authenticated, this, [this] {
-        // Auth0 may rotate the refresh token on every refresh; keep the latest.
-        saveSecret(kSmartLinkTokenKey, m_smartLink.refreshToken());
+        // Auth0 may rotate the refresh token on every refresh; keep the
+        // latest. Never an empty one over the kept token: that lost the
+        // sign-in after every start (a refresh without rotation had none).
+        if (!m_smartLink.refreshToken().isEmpty()) {
+            saveSecret(kSmartLinkTokenKey, m_smartLink.refreshToken());
+        }
         setSmartLinkState(QStringLiteral("signedIn"));
     });
     connect(&m_smartLink, &SmartLinkClient::authFailed, this, [this](const QString& error) {
+        // The server refusing an expired id token is not a wrong password:
+        // sign in again once from the kept token before giving it up.
+        const QString kept = !m_smartLink.refreshToken().isEmpty() ? m_smartLink.refreshToken()
+                                                                   : loadSecret(kSmartLinkTokenKey);
+        if (error.contains(QLatin1String("registration invalid")) && !m_smartLinkRetried && !kept.isEmpty()) {
+            m_smartLinkRetried = true;
+            qCInfo(lcMobile) << "SmartLink refused the session: signing in again from the kept sign-in";
+            setSmartLinkState(QStringLiteral("signingIn"));
+            m_smartLink.loginWithRefreshToken(kept);
+            return;
+        }
+        m_smartLinkRetried = false;
+        qCInfo(lcMobile).noquote() << "SmartLink sign-in failed:" << error;
         removeSecret(kSmartLinkTokenKey);
         m_wanReconnectTimer.stop();
+        if (m_connectionState == QLatin1String("connecting") && m_wanActive) {
+            m_wanActive = false;
+            setConnectionState(QStringLiteral("idle"));
+        }
         setLastError(tr("SmartLink: %1").arg(error));
         setSmartLinkState(QStringLiteral("signedOut"));
     });
@@ -577,6 +604,7 @@ void MobileEngine::wireSmartLink()
     });
     connect(&m_smartLink, &SmartLinkClient::radioListReceived, this,
             [this](const QList<WanRadioInfo>& radios) {
+        m_smartLinkRetried = false;   // the server took the session
         m_wanRadios = radios;
         emit smartLinkRadiosChanged();
     });
@@ -719,6 +747,15 @@ void MobileEngine::connectSmartLinkRadio(int index)
     m_radioName = radio.nickname.isEmpty() ? radio.model : radio.nickname;
     setLastError({});
     setConnectionState(QStringLiteral("connecting"));
+    // The SmartLink server connection may have dropped (after a disconnect,
+    // in the background, on a network change): sign in again from the kept
+    // sign-in first; the retry timer asks for the radio once it is back.
+    if (!m_smartLink.isConnected()) {
+        qCInfo(lcMobile) << "SmartLink server not connected: reconnecting before the radio";
+        m_smartLink.reconnect();
+        m_wanReconnectTimer.start();
+        return;
+    }
     startWanConnect();
 }
 
