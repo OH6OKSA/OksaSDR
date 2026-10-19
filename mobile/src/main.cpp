@@ -198,6 +198,10 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: send these radio commands (separated by ';') 7 s after start and log the "
                        "replies."), QStringLiteral("commands"));
     parser.addOption(radioCommandsOption);
+    const QCommandLineOption selectBandOption(QStringLiteral("select-band"),
+        QStringLiteral("Development: press this band button 9 s after start (a real radio), e.g. 20m or a "
+                       "transverter's name; the band list goes to the log."), QStringLiteral("band"));
+    parser.addOption(selectBandOption);
     const QCommandLineOption setModeOption(QStringLiteral("set-mode"),
         QStringLiteral("Development: set this app's slice to <mode> on a real radio once connected "
                        "(--mode touches only the demo)."), QStringLiteral("mode"));
@@ -624,6 +628,13 @@ int main(int argc, char* argv[])
             for (const QString& c : commands) {
                 engine.devCommand(c.trimmed());
             }
+        });
+    }
+    if (parser.isSet(selectBandOption)) {
+        const QString band = parser.value(selectBandOption);
+        QTimer::singleShot(9000, &app, [&engine, band] {
+            qInfo().noquote() << "select-band: bands" << engine.bands().join(QLatin1Char(' ')) << "-> pressing" << band;
+            engine.selectBand(band);
         });
     }
     if (parser.isSet(setModeOption)) {
