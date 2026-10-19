@@ -23,10 +23,16 @@ Rectangle {
         // stretches with its area, so it keeps iPad landscape's shape (height
         // 0.158 of the width) in every orientation and the waterfall takes
         // the rest; never lower than two touch targets (phones in portrait).
-        spectrumFraction: Engine.spectrum3D
+        // A split dragged at the divider (Engine.spectrumSplit) replaces it,
+        // within limits that keep the band plan and the waterfall's buttons.
+        readonly property real autoFraction: Engine.spectrum3D
             ? Math.min(0.5, (Math.max(width * 0.158, Theme.touchTarget * 2) + bandPlanHeight)
                             / Math.max(1, height))
             : 0.4
+        readonly property real minFraction: Math.min(0.5, (bandPlanHeight + 40) / Math.max(1, height))
+        readonly property real maxFraction: Math.max(minFraction, 1 - (Theme.touchTarget + 16) / Math.max(1, height))
+        spectrumFraction: Math.max(minFraction, Math.min(maxFraction,
+            Engine.spectrumSplit > 0 ? Engine.spectrumSplit / 100 : autoFraction))
     }
 
     // 3D stacked trace on the GPU in place of the trace (the waterfall stays
@@ -451,6 +457,65 @@ Rectangle {
         }
     }
 
+
+    // Divider between the spectrum and the waterfall, as the desktop's: drag
+    // it up or down to give either more room; a double tap goes back to the
+    // automatic split. The new split applies when the finger lifts (resizing
+    // restarts the waterfall's history); a line shows where it will be.
+    Item {
+        id: divider
+        z: 6
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.leftMargin: scaleStrip.width   // the dBm scale keeps its own drag
+        height: Math.round(Theme.touchTarget * 0.5)
+        y: Math.round(parent.height * spectrum.spectrumFraction - height / 2)
+        // The grip sits off centre, clear of the slice and its passband.
+        Rectangle {
+            id: dividerGrip
+            anchors.verticalCenter: parent.verticalCenter
+            x: Math.round(parent.width * 0.75 - width / 2)
+            width: 44
+            height: 4
+            radius: 2
+            color: Theme.text
+            opacity: dividerDrag.pressed ? 0.9 : 0.4
+        }
+        MouseArea {
+            id: dividerDrag
+            anchors.fill: parent
+            preventStealing: true
+            cursorShape: Qt.SizeVerCursor
+            property real grabOffset: 0
+            property real target: -1   // fraction under the finger while dragging
+            onPressed: (mouse) => {
+                grabOffset = mouse.y - divider.height / 2
+                target = spectrum.spectrumFraction
+            }
+            onPositionChanged: (mouse) => {
+                const y = divider.mapToItem(panArea, 0, mouse.y - grabOffset).y
+                target = Math.max(spectrum.minFraction, Math.min(spectrum.maxFraction, y / Math.max(1, panArea.height)))
+            }
+            onReleased: {
+                if (target > 0 && Math.abs(target - spectrum.spectrumFraction) * panArea.height >= 4) {
+                    Engine.spectrumSplit = Math.round(target * 100)
+                }
+                target = -1
+            }
+            onCanceled: target = -1
+            onDoubleClicked: Engine.spectrumSplit = 0
+        }
+    }
+    // Where the divider goes, while it is dragged.
+    Rectangle {
+        visible: dividerDrag.pressed && dividerDrag.target > 0
+        z: 6
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 2
+        y: Math.round(dividerDrag.target * parent.height) - 1
+        color: Theme.accent
+    }
 
     // Zoom out / in, bottom left of the waterfall as in AetherSDR. Together
     // the size of one step button below (eight across the same width), each

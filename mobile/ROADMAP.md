@@ -16,6 +16,9 @@ queued, waiting on someone, or still to verify follows.
   band stack for it (X0, X1 …) and the radio tunes the RF frequency and
   does the IF. Setting transverters up in the app is for later.
 
+- Spectrum / waterfall divider (operator request, as the desktop's): drag
+  the line between them to give either more room; double tap for the
+  automatic split; remembered.
 - Choppy audio across a reordering network path (a tester's iPad mini
   over a VPN and SmartLink, while the operator's iPad on the same radio
   played clean): a late audio packet was measured against the newest

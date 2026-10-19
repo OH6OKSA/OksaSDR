@@ -239,6 +239,12 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
   the top. Dragging sets **3D floor**, how far under the noise the zero
   sits (0–24 dB, default 6): drag up and the noise rises, down and it
   sinks. The same setting is a slider in View.
+- The **divider** between the spectrum and the waterfall (a short bar on
+  the line, right of centre): drag it up or down to give the spectrum or
+  the waterfall more room, as on the desktop. The new split applies when
+  you lift your finger (a line shows where it goes; the waterfall starts
+  over at its new size) and is remembered. Double-tap it for the
+  automatic split.
 - **RF GAIN +8 dB** (top right) shows the RF gain; tap it for AGC, AGC-T and
   RF gain. A gain step shows on the
   waterfall and trace, as on the desktop.

@@ -257,6 +257,9 @@ class MobileEngine : public QObject {
     // 3D stacked trace (the desktop's 3DSS, CPU-drawn) in place of the
     // 2D waterfall.
     Q_PROPERTY(bool spectrum3D READ spectrum3D WRITE setSpectrum3D NOTIFY displayLevelsChanged)
+    // The spectrum's share of the display in percent (the desktop's
+    // draggable divider, 10-90); 0 is automatic. Remembered.
+    Q_PROPERTY(int spectrumSplit READ spectrumSplit WRITE setSpectrumSplit NOTIFY displayLevelsChanged)
     Q_PROPERTY(int spectrum3DFloorDepth READ spectrum3DFloorDepth WRITE setSpectrum3DFloorDepth NOTIFY displayLevelsChanged)
     Q_PROPERTY(int spectrum3DGain READ spectrum3DGain WRITE setSpectrum3DGain NOTIFY displayLevelsChanged)
     Q_PROPERTY(int spectrum3DSmoothing READ spectrum3DSmoothing WRITE setSpectrum3DSmoothing NOTIFY displayLevelsChanged)
@@ -594,6 +597,8 @@ public:
     bool wfAutoLevel() const { return displayInt("MobileWfAuto", 1) != 0; }
     void setWfAutoLevel(bool on) { setDisplayInt("MobileWfAuto", on ? 1 : 0); }
     int wfBlackLevel() const { return displayInt("MobileWfBlack", 50); }
+    int spectrumSplit() const { return displayInt("MobileSpectrumSplit", 0); }
+    void setSpectrumSplit(int percent) { setDisplayInt("MobileSpectrumSplit", percent <= 0 ? 0 : std::clamp(percent, 10, 90)); }
     void setWfBlackLevel(int v) { setDisplayInt("MobileWfBlack", std::clamp(v, 0, 100)); }
     int wfColorGain() const { return displayInt("MobileWfGain", 50); }
     void setWfColorGain(int v) { setDisplayInt("MobileWfGain", std::clamp(v, 0, 100)); }
