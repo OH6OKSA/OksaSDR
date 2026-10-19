@@ -12,6 +12,106 @@ ColumnLayout {
     // Never ask for more width than the column gives; rows share what is there.
     implicitWidth: 200
 
+    // ---- FM repeater (FM modes): offset and CTCSS on transmit ----
+    // As the desktop's RX applet: the radio transmits on the frequency moved
+    // by the offset (− below, + above) and sends the tone; receive stays on
+    // the frequency shown. Presets: 0.6 MHz (2 m), 1.6 (70 cm, some
+    // countries), 5 (US 70 cm), 7.6 (70 cm in Europe, e.g. Germany).
+    ColumnLayout {
+        id: fm
+        visible: Engine.fmMode
+        Layout.fillWidth: true
+        spacing: Theme.spacing / 2
+        Label { text: qsTr("FM repeater"); color: Theme.textDim; font.pixelSize: 16 }
+        RowLayout {
+            Layout.fillWidth: true
+            Label { text: qsTr("Offset"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+            Repeater {
+                model: [{ key: "simplex", label: qsTr("Simplex") }, { key: "down", label: "−" }, { key: "up", label: "+" }]
+                delegate: AppButton {
+                    required property var modelData
+                    text: modelData.label
+                    checked: Engine.repeaterDir === modelData.key
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: modelData.key === "simplex" ? 2 : 1
+                    focusPolicy: Qt.NoFocus
+                    onClicked: Engine.repeaterDir = modelData.key
+                }
+            }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            visible: Engine.repeaterDir !== "simplex"
+            Label { text: qsTr("Shift"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+            Repeater {
+                model: [0.6, 1.6, 5.0, 7.6]
+                delegate: AppButton {
+                    required property real modelData
+                    text: modelData.toFixed(1)
+                    checked: Math.abs(Engine.repeaterOffsetMhz - modelData) < 0.0005
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    leftPadding: 2
+                    rightPadding: 2
+                    focusPolicy: Qt.NoFocus
+                    onClicked: Engine.repeaterOffsetMhz = modelData
+                }
+            }
+            // Any other shift, in MHz.
+            TextField {
+                id: shiftField
+                Layout.preferredWidth: 76
+                font.pixelSize: 15
+                horizontalAlignment: TextInput.AlignRight
+                inputMethodHints: Qt.ImhFormattedNumbersOnly
+                Binding on text { when: !shiftField.activeFocus; value: Engine.repeaterOffsetMhz.toFixed(3) }
+                onEditingFinished: {
+                    const v = parseFloat(text.replace(",", "."))
+                    if (!isNaN(v) && v >= 0 && v <= 100) Engine.repeaterOffsetMhz = v
+                }
+            }
+            Label { text: "MHz"; color: Theme.textDim; font.pixelSize: 13 }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            Label { text: qsTr("Tone"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+            AppButton {
+                text: qsTr("Off")
+                checked: !Engine.ctcssOn
+                Layout.fillWidth: true
+                Layout.preferredWidth: 1
+                focusPolicy: Qt.NoFocus
+                onClicked: Engine.ctcssOn = false
+            }
+            AppButton {
+                text: "CTCSS"
+                checked: Engine.ctcssOn
+                Layout.fillWidth: true
+                Layout.preferredWidth: 1
+                focusPolicy: Qt.NoFocus
+                onClicked: Engine.ctcssOn = true
+            }
+            ComboBox {
+                Layout.fillWidth: true
+                Layout.preferredWidth: 2
+                Layout.preferredHeight: Theme.touchTarget
+                enabled: Engine.ctcssOn
+                model: Engine.ctcssTones
+                currentIndex: Engine.ctcssTones.indexOf(Engine.ctcssTone)
+                displayText: currentIndex >= 0 ? currentText + " Hz" : qsTr("tone")
+                font.pixelSize: Theme.buttonFont
+                onActivated: (index) => Engine.ctcssTone = Engine.ctcssTones[index]
+            }
+        }
+        Label {
+            Layout.fillWidth: true
+            text: qsTr("The radio transmits on the frequency moved by the offset and sends the tone; receive stays on the frequency shown.")
+            color: Theme.textDim
+            font.pixelSize: 12
+            wrapMode: Text.WordWrap
+        }
+    }
+
     // ---- Tune and ATU (both transmit; routed like PTT) ----
     RowLayout {
         Layout.fillWidth: true

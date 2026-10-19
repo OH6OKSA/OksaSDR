@@ -11,6 +11,11 @@ queued, waiting on someone, or still to verify follows.
   transverter's band). The step buttons stayed at ±1 kHz with a 12.5 kHz
   STEP; with an FM step they take the STEP and jump 100 kHz, 1 MHz and
   10 MHz.
+- FM repeater on the slice (the same tester, for German 70 cm repeaters):
+  TX tab in FM modes: offset Simplex / − / + with a shift (0.6, 1.6, 5.0,
+  7.6 MHz or typed) and CTCSS on transmit with its tone, as the desktop's
+  RX applet. Checked on the FLEX: −7.6 MHz and 88.5 Hz reached the radio
+  (DOWN, CTCSS_TX in its status) and were set back.
 - The band button of the active band is lit (as the desktop's): the band
   table, a transverter's whole band, WWV, else GEN.
 - Trackpad scrolling on the iPad (Magic Keyboard) and on Macs running the

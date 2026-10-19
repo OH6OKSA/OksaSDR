@@ -31,6 +31,7 @@
 #include "core/backends/IRadioBackend.h"
 #include "core/backends/flex/PanadapterStream.h"
 #include "core/discovery/RadioDiscoverySource.h"
+#include "core/CtcssTones.h"
 #include "core/CwSidetoneGenerator.h"
 #include "core/CwxLocalKeyer.h"
 #include "core/IambicKeyer.h"
@@ -2159,6 +2160,75 @@ QVector<XvtrPolicy::Transverter> transvertersOf(const RadioModel& rm)
     return list;
 }
 } // namespace
+
+bool MobileEngine::fmMode() const
+{
+    if (!m_slice) {
+        return false;
+    }
+    const QString mode = m_slice->mode();
+    return mode == QLatin1String("FM") || mode == QLatin1String("NFM") || mode == QLatin1String("DFM");
+}
+
+QString MobileEngine::repeaterDir() const
+{
+    const QString dir = m_slice ? m_slice->repeaterOffsetDir().toLower() : QString();
+    return (dir == QLatin1String("down") || dir == QLatin1String("up")) ? dir : QStringLiteral("simplex");
+}
+
+void MobileEngine::setRepeaterDir(const QString& dir)
+{
+    if (m_slice && (dir == QLatin1String("simplex") || dir == QLatin1String("down") || dir == QLatin1String("up"))) {
+        m_slice->setRepeaterOffsetDir(dir);
+    }
+}
+
+double MobileEngine::repeaterOffsetMhz() const
+{
+    return m_slice ? m_slice->fmRepeaterOffsetFreq() : 0.0;
+}
+
+void MobileEngine::setRepeaterOffsetMhz(double mhz)
+{
+    if (m_slice && std::isfinite(mhz) && mhz >= 0.0 && mhz <= 100.0) {
+        m_slice->setFmRepeaterOffsetFreq(mhz);
+    }
+}
+
+bool MobileEngine::ctcssOn() const
+{
+    return m_slice && m_slice->fmToneMode().toLower() == QLatin1String("ctcss_tx");
+}
+
+void MobileEngine::setCtcssOn(bool on)
+{
+    if (m_slice) {
+        m_slice->setFmToneMode(on ? QStringLiteral("ctcss_tx") : QStringLiteral("off"));
+    }
+}
+
+QString MobileEngine::ctcssTone() const
+{
+    bool ok = false;
+    const double hz = m_slice ? m_slice->fmToneValue().toDouble(&ok) : 0.0;
+    return ok && hz > 0.0 ? QString::number(hz, 'f', 1) : QString();
+}
+
+void MobileEngine::setCtcssTone(const QString& tone)
+{
+    if (m_slice && ctcssTones().contains(tone)) {
+        m_slice->setFmToneValue(tone);
+    }
+}
+
+QStringList MobileEngine::ctcssTones() const
+{
+    QStringList list;
+    for (const CtcssTone& tone : kCtcssTones) {
+        list << QString::number(tone.frequency, 'f', 1);
+    }
+    return list;
+}
 
 QString MobileEngine::activeBand() const
 {
@@ -4624,9 +4694,14 @@ void MobileEngine::bindSlice(SliceModel* slice)
     m_sliceConnections.clear();
     m_slice = slice;
     applyBeatCancel();
+    emit fmChanged();
     if (slice) {
         m_sliceConnections.append(connect(slice, &SliceModel::frequencyChanged, this, &MobileEngine::frequencyChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::modeChanged));
+        m_sliceConnections.append(connect(slice, &SliceModel::fmToneModeChanged, this, &MobileEngine::fmChanged));
+        m_sliceConnections.append(connect(slice, &SliceModel::fmToneValueChanged, this, &MobileEngine::fmChanged));
+        m_sliceConnections.append(connect(slice, &SliceModel::repeaterOffsetDirChanged, this, &MobileEngine::fmChanged));
+        m_sliceConnections.append(connect(slice, &SliceModel::fmRepeaterOffsetFreqChanged, this, &MobileEngine::fmChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::lockedChanged, this, &MobileEngine::lockedChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::tuneBlockedByLock, this, &MobileEngine::tuneBlocked));
         // The preset set changes with the mode.

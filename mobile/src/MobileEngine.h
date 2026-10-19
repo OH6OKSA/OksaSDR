@@ -112,6 +112,16 @@ class MobileEngine : public QObject {
     Q_PROPERTY(int activeFilterPreset READ activeFilterPreset NOTIFY filterChanged)
     Q_PROPERTY(int filterWidth READ filterWidth NOTIFY filterChanged)
     // HF bands, the radio's transverter (XVTR) bands, WWV and GEN.
+    // FM repeater and tone of the active slice (FM, NFM, DFM), as the
+    // desktop's RX applet: offset direction "simplex" / "down" / "up", the
+    // offset in MHz, CTCSS on transmit and its tone ("88.5"). The radio
+    // shifts the transmit frequency and sends the tone.
+    Q_PROPERTY(bool fmMode READ fmMode NOTIFY modeChanged)
+    Q_PROPERTY(QString repeaterDir READ repeaterDir WRITE setRepeaterDir NOTIFY fmChanged)
+    Q_PROPERTY(double repeaterOffsetMhz READ repeaterOffsetMhz WRITE setRepeaterOffsetMhz NOTIFY fmChanged)
+    Q_PROPERTY(bool ctcssOn READ ctcssOn WRITE setCtcssOn NOTIFY fmChanged)
+    Q_PROPERTY(QString ctcssTone READ ctcssTone WRITE setCtcssTone NOTIFY fmChanged)
+    Q_PROPERTY(QStringList ctcssTones READ ctcssTones CONSTANT)
     Q_PROPERTY(QStringList bands READ bands NOTIFY bandsChanged)
     // The band button the active slice's frequency falls in, lit as the
     // desktop's: a transverter's whole band, WWV's frequencies, else GEN.
@@ -511,6 +521,16 @@ public:
     // below 100, else kHz ("439", "7", "14074").
     Q_INVOKABLE double frequencyFromEntry(const QString& entry) const;
     QString activeBand() const;
+    bool fmMode() const;
+    QString repeaterDir() const;
+    void setRepeaterDir(const QString& dir);
+    double repeaterOffsetMhz() const;
+    void setRepeaterOffsetMhz(double mhz);
+    bool ctcssOn() const;
+    void setCtcssOn(bool on);
+    QString ctcssTone() const;
+    void setCtcssTone(const QString& tone);
+    QStringList ctcssTones() const;
     // The paddles as held now; the keyer forms the elements.
     Q_INVOKABLE void setCwPaddleState(bool dit, bool dah);
     // Keyboard paddles' diagnostics to the app log (QML's console output
@@ -833,6 +853,7 @@ public:
     Q_INVOKABLE void setPanPixels(int width, int height);
 
 signals:
+    void fmChanged();
     void bandsChanged();
     void keyboardOnPageChanged();
     void connectionStateChanged();

@@ -390,7 +390,11 @@ them back into the drawer.
   and once a minute a "performance" line (CPU, frames drawn). Below, the radio's
   8-band receive and transmit equalizer
   (volume is on the info panel's speaker).
-- **TX** — TUNE and the
+- **TX** — in FM modes first **FM repeater**: **Offset** *Simplex*, *−*
+  (transmit below) or *+* (above), the **Shift** (0.6, 1.6, 5.0 or 7.6 MHz,
+  or type any) and **Tone**: *CTCSS* on transmit with its tone. The radio
+  transmits on the shifted frequency and sends the tone; receive stays on
+  the frequency shown. Then TUNE and the
   ATU (tune, bypass, memories), tune power, RF power, speech processor (PROC
   NOR/DX/DX+), **VOX** (on/off, level and delay) and **DEXP** (the downward
   expander, on/off and level) in voice modes — shown only when the radio's
