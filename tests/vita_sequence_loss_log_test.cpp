@@ -3,6 +3,10 @@
 // takes explicit timestamps, and meter packets are fed straight to
 // processDatagram() on a stream that never binds. The prefix is what the docs
 // Log Analyzer rule vita-sequence-errors matches.
+// Loss is counted net of reordering (VitaSequenceTracker): a missing number
+// counts, and logs, once it falls more than kWindow (7) behind the newest
+// packet, one error per lost packet; so after a gap the stream runs on until
+// the gap is out of the window.
 
 #include "core/backends/flex/PanadapterStream.h"
 #include "core/backends/flex/VitaSequenceLossReport.h"
@@ -186,11 +190,15 @@ int main(int argc, char** argv)
         }
         report("in-order packets log nothing", g_warnings.isEmpty());
         VitaSequenceLossLogTestAccess::feedMeter(stream, id, 7);  // 4..6 missing
+        report("a gap inside the reorder window logs nothing yet", g_warnings.isEmpty());
+        for (int seq = 8; seq <= 12; ++seq) {
+            VitaSequenceLossLogTestAccess::feedMeter(stream, id, seq);  // 4 is 8 behind at 12
+        }
         report("a gap logs one warning", g_warnings.size() == 1);
         report("on aether.vita49 with the stream, category and counts",
                g_warnings.value(0) == QStringLiteral(
                    "aether.vita49: PanadapterStream: VITA-49 sequence errors on meter stream "
-                   "0x7000000a: 1 in the last 0 s, 1 since the stream started (5 packets received)"));
+                   "0x7000000a: 1 in the last 0 s, 1 since the stream started (10 packets received)"));
         for (int i = 0; i < 50; ++i) {
             VitaSequenceLossLogTestAccess::feedMeter(stream, id, i * 3);
         }
@@ -224,11 +232,16 @@ int main(int argc, char** argv)
                stream.packetTotalCount() == totalBefore + 1);
         VitaSequenceLossLogTestAccess::feedMeter(stream, id, 1);
         VitaSequenceLossLogTestAccess::feedMeter(stream, id, 5);  // 2..4 missing
-        report("reconnect: a real gap still logs at once",
+        for (int seq = 6; seq <= 10; ++seq) {
+            VitaSequenceLossLogTestAccess::feedMeter(stream, id, seq);  // 2 is 8 behind at 10
+        }
+        report("reconnect: a real gap still logs",
                g_warnings.size() == 1
                    && g_warnings.value(0) == QStringLiteral(
                           "aether.vita49: PanadapterStream: VITA-49 sequence errors on meter stream "
-                          "0x7000000b: 1 in the last 0 s, 1 since the stream started (3 packets received)"));
+                          "0x7000000b: 1 in the last 0 s, 1 since the stream started (8 packets received)"));
+        VitaSequenceLossLogTestAccess::feedMeter(stream, id, 11);
+        VitaSequenceLossLogTestAccess::feedMeter(stream, id, 12);  // 3 and 4 follow it out of the window
 
         // A pan or waterfall closed and re-created with the same id restarts too.
         // The limiter reported just above, so it would hold a line back: the
@@ -255,18 +268,22 @@ int main(int argc, char** argv)
 
     {
         // Many new stream ids with a gap each, as from a burst of stray
-        // datagrams: the first error of each id is due at once, but the lines
-        // stop at the shared budget.
+        // datagrams: the first error of each id is due at once (once the gap
+        // is out of the reorder window), but the lines stop at the shared
+        // budget.
         g_warnings.clear();
         qInstallMessageHandler(capture);
         PanadapterStream stream;  // no init(), no socket
         for (quint32 i = 0; i < 20; ++i) {
             VitaSequenceLossLogTestAccess::feedMeter(stream, 0x71000000u + i, 0);
-            VitaSequenceLossLogTestAccess::feedMeter(stream, 0x71000000u + i, 5);
+            VitaSequenceLossLogTestAccess::feedMeter(stream, 0x71000000u + i, 5);  // 1..4 missing
+            for (int seq = 6; seq <= 12; ++seq) {
+                VitaSequenceLossLogTestAccess::feedMeter(stream, 0x71000000u + i, seq);  // all four out of the window by 12
+            }
         }
         report("burst of new ids: lines stop at the shared budget",
                g_warnings.size() == VitaSequenceLossBudget::kLinesPerInterval);
-        report("burst of new ids: every error is still counted", stream.packetErrorCount() == 20);
+        report("burst of new ids: every error is still counted", stream.packetErrorCount() == 80);
         qInstallMessageHandler(nullptr);
     }
 
