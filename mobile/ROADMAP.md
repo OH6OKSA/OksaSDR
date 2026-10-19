@@ -181,7 +181,7 @@ From the comparison with upstream main and tester requests:
 | Spectrum, waterfall, 3D | ✅ | ✅ |
 | RX audio, background audio | ✅ | ✅ (foreground service) |
 | Voice TX (device mic, Bluetooth headset) | ✅ | ✅ |
-| CW, CWX, decoder, voice keyer | ✅ (CW on air to verify) | built in, to verify |
+| CW, CWX, decoder, voice keyer | ✅ (straight key and paddles on air) | ✅ (straight key and paddles on air, SmartLink) |
 | Spots and DX cluster, TNF, memory editing | ✅ | ✅ |
 | TX processing (gate, EQ, compressor) | ✅ | ✅ |
 | Keyboard, pencil/stylus | ✅ | to verify |
