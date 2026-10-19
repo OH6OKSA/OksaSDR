@@ -5,30 +5,10 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-- Space PTT on the iPad's Magic Keyboard: a held Space keyed PTT and
-  released it about 0.1 s later (UIKit sent the release while the key was
-  down; the screen PTT works). iOS now takes Space from GameController too,
-  only while the operate page has the keyboard (no dialog, no text entry).
-
-- Transverter (XVTR) bands (tester request, Android): the transverters
-  set up in the radio (SmartSDR or the desktop's Radio Setup > XVTR) show
-  as band buttons after 6 m, as on the desktop; a tap selects the radio's
-  band stack for it (X0, X1 …) and the radio tunes the RF frequency and
-  does the IF. Setting transverters up in the app is for later.
-
-- Spectrum / waterfall divider (operator request, as the desktop's): drag
-  the line between them to give either more room; double tap for the
-  automatic split; remembered.
-- Choppy audio across a reordering network path (a tester's iPad mini
-  over a VPN and SmartLink, while the operator's iPad on the same radio
-  played clean): a late audio packet was measured against the newest
-  packet's 4-bit count, read as a jump of up to 15, and concealed 8 frames
-  before playing out of order. A late packet is dropped now (its slot was
-  concealed already) and reordering no longer counts as loss.
-
-To verify in build 81: SmartLink after Disconnect and a
-restart; Option paddles on the iPad's Magic Keyboard (GameController); the
-Android outer screen in landscape.
+Nothing queued yet. To verify in build 82: Space PTT on the iPad's Magic
+Keyboard; the divider on phones and tablets; transverter bands with a real
+transverter (the tester who asked); the external iPad's audio over its
+reordering path. Later: setting transverters up in the app (Radio Setup).
 
 Parked: two-finger trackpad scrolling of the iPad's pinned panel stops
 halfway (Magic Keyboard; finger scrolling works; --wheel-test finds no
@@ -70,6 +50,13 @@ to the radio (needs a listening server on the phone, not possible in the
 iOS background).
 
 ## Released
+
+**Build 82** (2026-10-19), iPhone and iPad, and Android beta 7:
+- Draggable divider between the spectrum and the waterfall (as the desktop's); double tap for the automatic split; remembered.
+- Transverter (XVTR) bands from the radio as band buttons after 6 m (checked with a temporary receive-only 2m transverter: band X0, 144.100 MHz on XVTA).
+- Remote audio: a late packet is dropped instead of concealing a false 8-frame jump and playing out of order (choppy audio across reordering paths); reordering no longer counts as loss.
+- iPad Space PTT holds: Space from GameController, only while the operate page has the keyboard.
+- Sequence-loss tests updated to the reorder-tolerant count; --select-band dev option.
 
 **Build 81** (2026-10-19), iPhone and iPad, and Android beta 6:
 - SmartLink stays signed in after a restart and reconnects after Disconnect (the kept token was overwritten by an empty one; a refused session now signs in again from it).
@@ -152,6 +139,9 @@ tab, the CW refused notice, the break-in note).
 
 Beta 6: what iOS build 81 brings (SmartLink stays signed in and
 reconnects; the outer screen in landscape fits).
+
+Beta 7: what iOS build 82 brings (spectrum / waterfall divider,
+transverter bands, smoother audio across reordering networks).
 
 Next: verify LAN discovery on the radio's network; APK size (about 150 MB).
 
