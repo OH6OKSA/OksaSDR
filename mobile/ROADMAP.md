@@ -16,6 +16,13 @@ queued, waiting on someone, or still to verify follows.
   band stack for it (X0, X1 …) and the radio tunes the RF frequency and
   does the IF. Setting transverters up in the app is for later.
 
+- Choppy audio across a reordering network path (a tester's iPad mini
+  over a VPN and SmartLink, while the operator's iPad on the same radio
+  played clean): a late audio packet was measured against the newest
+  packet's 4-bit count, read as a jump of up to 15, and concealed 8 frames
+  before playing out of order. A late packet is dropped now (its slot was
+  concealed already) and reordering no longer counts as loss.
+
 To verify in build 81: SmartLink after Disconnect and a
 restart; Option paddles on the iPad's Magic Keyboard (GameController); the
 Android outer screen in landscape.

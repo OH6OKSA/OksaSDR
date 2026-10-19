@@ -807,6 +807,7 @@ void PanadapterStream::processDatagram(const QByteArray& data)
     // Only track owned/routed streams — skip uncategorized packets. (#455)
     bool sequenceError = false;
     int  audioMissedThisPacket = 0;
+    bool audioLate = false;   // an audio packet behind the newest: dropped
     // Filled under the stats lock; formatted and logged after it is released.
     bool reportSequenceLoss = false;
     int lossHeldBackErrors = 0;
@@ -829,13 +830,25 @@ void PanadapterStream::processDatagram(const QByteArray& data)
             }
             stats.lossLog.start(m_seqLossClock.elapsed());
         }
-        // Errors: on audio every break in the count (its concealment needs
-        // that); elsewhere packets actually lost, as a short final packet
-        // routinely overtakes the ones sent before it.
+        // Errors: packets actually lost, net of reordering. Audio conceals
+        // the numbers a packet skips over at once (it cannot wait), and a
+        // late audio packet is dropped: its slot was concealed already, and
+        // decoding it now would play it out of order. Measuring a late
+        // packet's 4-bit count against the newest read as a jump of up to
+        // 15 and concealed 8 frames for it; across a reordering path (a
+        // tester's iPad over VPN and SmartLink: 10-50 % "sequence errors")
+        // that made the audio choppy.
         int lostPackets = 0;
         if (cat == CatAudio) {
-            if (stats.lastSeq >= 0 && vitaSeq != ((stats.lastSeq + 1) & 0x0F)) {
-                lostPackets = 1;
+            const VitaSequenceTracker::Result seq = stats.reorderTracker.add(vitaSeq);
+            lostPackets = seq.lost;
+            if (seq.reordered || seq.duplicate) {
+                audioLate = true;
+                if (seq.reordered) {
+                    stats.reorderedCount++;
+                }
+            } else if (stats.lastSeq >= 0) {
+                audioMissedThisPacket = (vitaSeq - stats.lastSeq - 1) & 0x0F;
             }
         } else {
             const VitaSequenceTracker::Result seq = stats.reorderTracker.add(vitaSeq);
@@ -848,11 +861,6 @@ void PanadapterStream::processDatagram(const QByteArray& data)
             sequenceError = true;
             stats.errorCount += lostPackets;
             m_catStats[cat].errors += lostPackets;
-            if (cat == CatAudio) {
-                // 4-bit modular distance, minus the one packet we just got. (#2731)
-                audioMissedThisPacket =
-                    ((vitaSeq - stats.lastSeq - 1) & 0x0F);
-            }
             // The shared budget is asked only when this stream's line is
             // due; when it says no, the error stays held for the next line.
             const qint64 nowMs = m_seqLossClock.elapsed();
@@ -867,7 +875,10 @@ void PanadapterStream::processDatagram(const QByteArray& data)
                 lossStreamPackets = stats.totalCount - stats.startTotalCount;
             }
         }
-        stats.lastSeq = vitaSeq;
+        // Audio measures the next packet from the newest in-order one.
+        if (!audioLate) {
+            stats.lastSeq = vitaSeq;
+        }
 
         if (cat == CatAudio) {
             const int payloadBytes = data.size() - VITA49_HEADER_BYTES - (hasTrailer ? 4 : 0);
@@ -980,6 +991,11 @@ void PanadapterStream::processDatagram(const QByteArray& data)
         if (payloadBytes < 8) return;
         QByteArray payload(reinterpret_cast<const char*>(raw + payloadStart), payloadBytes);
         emit iqDataReady(channel, payload, rate);
+        return;
+    }
+
+    // A late audio packet's slot was concealed when the newer one came.
+    if (audioLate) {
         return;
     }
 

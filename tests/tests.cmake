@@ -3197,6 +3197,13 @@ target_include_directories(remote_audio_rx_sequence_restart_test PRIVATE src tes
 target_link_libraries(remote_audio_rx_sequence_restart_test PRIVATE aethercore Qt6::Core)
 add_test(NAME remote_audio_rx_sequence_restart_test COMMAND remote_audio_rx_sequence_restart_test)
 
+# A late remote_audio_rx packet is dropped, not concealed as a 14-packet jump
+# and played out of order; reordering is not counted as loss.
+add_executable(remote_audio_rx_reorder_test tests/remote_audio_rx_reorder_test.cpp)
+target_include_directories(remote_audio_rx_reorder_test PRIVATE src tests)
+target_link_libraries(remote_audio_rx_reorder_test PRIVATE aethercore Qt6::Core)
+add_test(NAME remote_audio_rx_reorder_test COMMAND remote_audio_rx_reorder_test)
+
 # The start-up "Platform: Qt platform plugin" line and its fallback line (#6285).
 # Pure: no QGuiApplication.
 add_executable(qt_platform_choice_test
