@@ -4,6 +4,11 @@ name: Mobile iOS engine
 # Runs on mobile/** branches and on demand; no signing, no app bundle yet.
 on:
   workflow_dispatch:
+    inputs:
+      ninja_check:
+        description: 'Also build with Ninja first (every compile error at once, keep going)'
+        type: boolean
+        default: false
   push:
     branches: ['mobile/**']
     # Only what goes into the app starts a build (each push uploads to
@@ -53,6 +58,9 @@ jobs:
       # APPSTORE_API_KEY_P8 (the .p8 file's contents). The bundle ID comes
       # from the repository variable AETHER_MOBILE_BUNDLE_ID.
       HAS_SIGNING: ${{ secrets.APPLE_TEAM_ID != '' && secrets.APPSTORE_API_KEY_ID != '' && secrets.APPSTORE_API_ISSUER_ID != '' && secrets.APPSTORE_API_KEY_P8 != '' }}
+      # Uploads to TestFlight only from the release branch; other mobile/**
+      # branches (CI experiments) archive unsigned and upload nothing.
+      UPLOAD: ${{ github.ref == 'refs/heads/mobile/oksasdr' && secrets.APPLE_TEAM_ID != '' && secrets.APPSTORE_API_KEY_ID != '' && secrets.APPSTORE_API_ISSUER_ID != '' && secrets.APPSTORE_API_KEY_P8 != '' }}
       BUNDLE_ID: ${{ vars.AETHER_MOBILE_BUNDLE_ID || 'com.aethersdr.mobile' }}
     steps:
       - uses: actions/checkout@v4
@@ -126,7 +134,11 @@ jobs:
           done
           ls -la "$RUNNER_TEMP/fftw-ios/lib"
 
+      # The Xcode archive below compiles everything itself, so a Ninja build
+      # first doubled the compile time (about 10 minutes a run). On demand
+      # (ninja_check) it still runs, for every compile error in one go.
       - name: Configure (iOS, AETHER_MOBILE)
+        if: github.event_name == 'workflow_dispatch' && inputs.ninja_check
         run: |
           set -o pipefail
           export PKG_CONFIG_LIBDIR="$RUNNER_TEMP/fftw-ios/lib/pkgconfig"
@@ -140,21 +152,18 @@ jobs:
             2>&1 | tee configure.log
 
       - name: Build aethercore (keep going)
+        if: github.event_name == 'workflow_dispatch' && inputs.ninja_check
         run: |
           set -o pipefail
           cmake --build build-ios --target aethercore -- -k 0 2>&1 | tee build.log
 
       - name: Build aether-mobile app (link, unsigned)
+        if: github.event_name == 'workflow_dispatch' && inputs.ninja_check
         run: |
           set -o pipefail
           cmake --build build-ios --target aether-mobile -- -k 0 2>&1 | tee app.log
           app="$(find build-ios/mobile -maxdepth 2 -name 'aether-mobile.app' -type d | head -1)"
           test -n "$app" || { echo "ERROR: no aether-mobile.app produced"; exit 1; }
-          # An .ipa is the bundle under Payload/; sideloading tools re-sign it
-          # with the installer's own Apple ID.
-          rm -rf Payload && mkdir Payload && cp -R "$app" Payload/
-          ditto -c -k --sequesterRsrc --keepParent Payload aether-mobile-unsigned.ipa
-          ls -la aether-mobile-unsigned.ipa
       - name: Configure Xcode project (iOS app)
         run: |
           set -o pipefail
@@ -172,8 +181,8 @@ jobs:
             -DAETHER_MOBILE_BUILD_NUMBER="${{ github.run_number }}" \
             -DAETHER_MOBILE_TEAM_ID="$team" \
             2>&1 | tee xcode-configure.log
-      - name: Archive (unsigned check, no secrets)
-        if: env.HAS_SIGNING != 'true'
+      - name: Archive (unsigned check, no upload)
+        if: env.UPLOAD != 'true'
         run: |
           set -o pipefail
           xcodebuild -project build-xcode/AetherSDR.xcodeproj -scheme aether-mobile \
@@ -182,7 +191,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcode-archive.log | grep -E "error:|warning: .*aether-mobile|ARCHIVE" || true
           test -d "$RUNNER_TEMP/aether-mobile.xcarchive/Products/Applications/aether-mobile.app"
       - name: Archive, sign and upload to TestFlight
-        if: env.HAS_SIGNING == 'true'
+        if: env.UPLOAD == 'true'
         env:
           API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
           API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
@@ -205,8 +214,7 @@ jobs:
             2>&1 | tee xcode-archive.log | grep -E "error:|ARCHIVE" || true
           test -d "$RUNNER_TEMP/aether-mobile.xcarchive"
           # Symbols of exactly the binary that goes to TestFlight, so tester
-          # crash reports (.ips) can be symbolized (the Ninja .ipa above is a
-          # different build with different UUIDs and offsets).
+          # crash reports (.ips) can be symbolized.
           mkdir -p testflight-symbols
           cp -R "$RUNNER_TEMP/aether-mobile.xcarchive/dSYMs/." testflight-symbols/ 2>/dev/null || true
           cp "$RUNNER_TEMP/aether-mobile.xcarchive/Products/Applications/aether-mobile.app/aether-mobile" \
@@ -227,6 +235,17 @@ jobs:
             -exportPath "$RUNNER_TEMP/export" "${auth[@]}" 2>&1 | tee xcode-export.log
           rm -f "$key"
           echo "Uploaded build ${{ github.run_number }} of $BUNDLE_ID to App Store Connect (TestFlight)." >> "$GITHUB_STEP_SUMMARY"
+      # The unsigned .ipa (for sideloading; the tools re-sign it with the
+      # installer's own Apple ID) is the archive's app: the bundle under
+      # Payload/, the same build that goes to TestFlight.
+      - name: Unsigned .ipa from the archive
+        run: |
+          set -o pipefail
+          app="$RUNNER_TEMP/aether-mobile.xcarchive/Products/Applications/aether-mobile.app"
+          test -d "$app" || { echo "ERROR: no aether-mobile.app in the archive"; exit 1; }
+          rm -rf Payload && mkdir Payload && cp -R "$app" Payload/
+          ditto -c -k --sequesterRsrc --keepParent Payload aether-mobile-unsigned.ipa
+          ls -la aether-mobile-unsigned.ipa
       - name: Summarize errors
         if: always()
         run: |
@@ -244,6 +263,10 @@ jobs:
             echo "App compile/link errors (first 150):"
             echo '```'
             grep -E "error:|Undefined symbols|ld: " app.log 2>/dev/null | sed -E 's#^.*/(src|mobile|third_party)/#\1/#' | sort -u | head -150 || true
+            echo '```'
+            echo "Xcode archive errors (first 150):"
+            echo '```'
+            grep -E "error:|Undefined symbols|ld: " xcode-archive.log 2>/dev/null | sed -E 's#^.*/(src|mobile|third_party)/#\1/#' | sort -u | head -150 || true
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -307,7 +330,7 @@ jobs:
   # TestFlight "What to Test" for this build, from mobile/TESTFLIGHT_WHATS_NEW.txt.
   testflight-notes:
     needs: ios-engine
-    if: success()
+    if: success() && github.ref == 'refs/heads/mobile/oksasdr'
     uses: ./.github/workflows/testflight-notes.yml
     with:
       build_number: ${{ github.run_number }}

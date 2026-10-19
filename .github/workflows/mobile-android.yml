@@ -124,11 +124,36 @@ jobs:
           git checkout -q "$ANDROID_OPENSSL_COMMIT"
           ls -la "ssl_3/$ANDROID_ABI"
 
+      # ccache keeps compiled objects between runs, so a change compiles
+      # only what it touched. The NDK is installed afresh every run, so the
+      # compiler is checked by content, not by its file time.
+      - name: ccache
+        run: |
+          sudo apt-get install -y -qq ccache >/dev/null
+          {
+            echo "CCACHE_DIR=$HOME/.ccache"
+            echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
+            echo "CCACHE_NOHASHDIR=true"
+            echo "CCACHE_COMPILERCHECK=content"
+            echo "CCACHE_MAXSIZE=2G"
+          } >> "$GITHUB_ENV"
+          ccache --version | head -1
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-android-${{ env.ANDROID_ABI }}-ndk${{ env.NDK_VERSION }}-${{ github.sha }}
+          restore-keys: |
+            ccache-android-${{ env.ANDROID_ABI }}-ndk${{ env.NDK_VERSION }}-
+
       - name: Configure (Android, AETHER_MOBILE)
         run: |
           set -o pipefail
           export PKG_CONFIG_LIBDIR="$RUNNER_TEMP/fftw-android/lib/pkgconfig"
           "$QT_ANDROID/bin/qt-cmake" -S . -B build-android -G Ninja \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_BUILD_TYPE=Release \
             -DQT_HOST_PATH="$QT_HOST" \
             -DANDROID_SDK_ROOT="$ANDROID_SDK_ROOT" \
@@ -144,8 +169,10 @@ jobs:
       - name: Build APK
         run: |
           set -o pipefail
+          ccache --zero-stats >/dev/null
           cmake --build build-android --target apk 2>&1 | tee build.log
           ls -la build-android/mobile/android-build/build/outputs/apk/release/
+          ccache --show-stats | head -20
 
       - name: Sign APK
         env:
