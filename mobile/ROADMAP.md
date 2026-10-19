@@ -10,6 +10,12 @@ queued, waiting on someone, or still to verify follows.
   down; the screen PTT works). iOS now takes Space from GameController too,
   only while the operate page has the keyboard (no dialog, no text entry).
 
+- Transverter (XVTR) bands (tester request, Android): the transverters
+  set up in the radio (SmartSDR or the desktop's Radio Setup > XVTR) show
+  as band buttons after 6 m, as on the desktop; a tap selects the radio's
+  band stack for it (X0, X1 …) and the radio tunes the RF frequency and
+  does the IF. Setting transverters up in the app is for later.
+
 To verify in build 81: SmartLink after Disconnect and a
 restart; Option paddles on the iPad's Magic Keyboard (GameController); the
 Android outer screen in landscape.

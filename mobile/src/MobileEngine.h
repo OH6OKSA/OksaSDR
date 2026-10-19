@@ -111,7 +111,8 @@ class MobileEngine : public QObject {
     // The preset nearest the current passband width, or 0 if none is close.
     Q_PROPERTY(int activeFilterPreset READ activeFilterPreset NOTIFY filterChanged)
     Q_PROPERTY(int filterWidth READ filterWidth NOTIFY filterChanged)
-    Q_PROPERTY(QStringList bands READ bands CONSTANT)
+    // HF bands, the radio's transverter (XVTR) bands, WWV and GEN.
+    Q_PROPERTY(QStringList bands READ bands NOTIFY bandsChanged)
     Q_PROPERTY(bool bandsAvailable READ bandsAvailable NOTIFY connectionStateChanged)
     Q_PROPERTY(QString lastAddress READ lastAddress NOTIFY lastAddressChanged)
     Q_PROPERTY(QString smartLinkState READ smartLinkState NOTIFY smartLinkChanged)
@@ -818,6 +819,7 @@ public:
     Q_INVOKABLE void setPanPixels(int width, int height);
 
 signals:
+    void bandsChanged();
     void keyboardOnPageChanged();
     void connectionStateChanged();
     void lastErrorChanged();
@@ -1050,6 +1052,7 @@ private:
     void releasePaddles();
     // A left or right Control / Option from GameController (SideKey).
     void onSideKey(int key, bool pressed);
+    QStringList m_lastBands;
     bool m_keyboardOnPage{false};
     bool m_spacePtt{false};   // PTT held by Space from GameController
     int m_spaceLogged{0};

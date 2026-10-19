@@ -288,6 +288,17 @@ MobileEngine::MobileEngine(QObject* parent)
     });
     connect(&rm, &RadioModel::sliceAdded, this, &MobileEngine::onSliceAdded);
     connect(&rm, &RadioModel::otherClientsChanged, this, [this](int, const QStringList&) { emit stationsChanged(); });
+    // Transverter bands follow the radio's xvtr status (infoChanged) and the
+    // connection.
+    const auto refreshBands = [this] {
+        const QStringList now = bands();
+        if (now != m_lastBands) {
+            m_lastBands = now;
+            emit bandsChanged();
+        }
+    };
+    connect(&rm, &RadioModel::infoChanged, this, refreshBands);
+    connect(this, &MobileEngine::connectionStateChanged, this, refreshBands);
     connect(&rm, &RadioModel::sliceRemoved, this, [this](int) { applyBeatCancel(); });
     connect(&rm, &RadioModel::sliceRemoved, this, [this](int id) {
         // The split's TX slice closed (here, another client or the radio):
@@ -2132,13 +2143,39 @@ void MobileEngine::panTo(double centerMhz)
     emit panGeometryChanged();
 }
 
+namespace {
+// The radio's transverters (Radio Setup > XVTR in SmartSDR or the desktop),
+// in their configured order, as the band policy takes them.
+QVector<XvtrPolicy::Transverter> transvertersOf(const RadioModel& rm)
+{
+    QVector<XvtrPolicy::Transverter> list;
+    for (const RadioModel::XvtrInfo& x : rm.xvtrList()) {
+        list.append({x.index, x.order, x.name, x.rfFreq, x.ifFreq, x.isValid});
+    }
+    std::stable_sort(list.begin(), list.end(), [](const auto& a, const auto& b) {
+        return (a.order < 0 ? a.index : a.order) < (b.order < 0 ? b.index : b.order);
+    });
+    return list;
+}
+} // namespace
+
 QStringList MobileEngine::bands() const
 {
-    return {QStringLiteral("160m"), QStringLiteral("80m"), QStringLiteral("60m"), QStringLiteral("40m"),
-            QStringLiteral("30m"), QStringLiteral("20m"), QStringLiteral("17m"), QStringLiteral("15m"),
-            QStringLiteral("12m"), QStringLiteral("10m"), QStringLiteral("6m"),
-            // The radio's WWV and general-coverage stacks, as the desktop's band panel.
-            QStringLiteral("WWV"), QStringLiteral("GEN")};
+    QStringList list{QStringLiteral("160m"), QStringLiteral("80m"), QStringLiteral("60m"), QStringLiteral("40m"),
+                     QStringLiteral("30m"), QStringLiteral("20m"), QStringLiteral("17m"), QStringLiteral("15m"),
+                     QStringLiteral("12m"), QStringLiteral("10m"), QStringLiteral("6m")};
+    // Transverter bands between HF and the utility stacks, as the desktop's
+    // band panel: the radio tunes the RF frequency and does the IF itself.
+    if (m_connected) {
+        for (const XvtrPolicy::Transverter& x : transvertersOf(m_session.radioModel())) {
+            if (x.isValid && !x.name.isEmpty() && !list.contains(x.name)) {
+                list << x.name;
+            }
+        }
+    }
+    // The radio's WWV and general-coverage stacks, as the desktop's band panel.
+    list << QStringLiteral("WWV") << QStringLiteral("GEN");
+    return list;
 }
 
 bool MobileEngine::bandsAvailable() const
@@ -2152,7 +2189,7 @@ void MobileEngine::selectBand(const QString& band)
     if (!bandsAvailable() || !m_pan) {
         return;
     }
-    const auto result = XvtrPolicy::resolveBandStackKey(band, {}, rm.capabilities());
+    const auto result = XvtrPolicy::resolveBandStackKey(band, transvertersOf(rm), rm.capabilities());
     if (!result.isSupported()) {
         setLastError(result.unsupportedReason);
         return;

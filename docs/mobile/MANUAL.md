@@ -63,7 +63,7 @@ mode, a DSP that runs, the shown tab) is **lit blue**; the others are dark.
 |---|---|
 | Top row | Radio name, [network quality](#network-quality), app version, **Controls** (open or hide the controls), **Setup** ([Radio Setup](#9-radio-setup)), **Manual**, **Log**, **Disconnect** (on a phone Setup, Manual, Log and Disconnect are behind **⋯**, and the controls open from the button beside PTT) |
 | Frequency row | Frequency, mode, and the [info panel](#3-frequency-mode-and-the-info-panel) |
-| Band buttons | 160 m … 6 m, WWV, GEN |
+| Band buttons | 160 m … 6 m, the radio's transverter (XVTR) bands, WWV, GEN |
 | Slice row | The two [meters](#4-meters-and-slices) at the ends, the slices in between |
 | Panadapter and waterfall | The [spectrum display](#5-panadapter-and-waterfall) |
 | Step buttons | Tune by −1 kHz … +1 kHz |
@@ -124,8 +124,11 @@ choose from the radio's list. Tap-tune, arrow keys and the Pencil use it.
 there. The radio keeps these in its *band stack*, which is part of the
 radio's global profile, so a different profile can bring a band back
 elsewhere. **WWV** holds the time-signal frequencies and **GEN** general
-coverage, each with its own band-stack memory. On a phone the band row
-scrolls sideways.
+coverage, each with its own band-stack memory. Transverters set up in the
+radio (in SmartSDR or the AetherSDR desktop: Radio Setup → XVTR) get a
+button of their own after 6 m, named as in the radio (for example 2m): the
+radio tunes the RF frequency, uses the transverter port and does the IF
+itself. On a phone the band row scrolls sideways.
 
 **Step buttons.** ±1 Hz … ±1 kHz, landing on round frequencies: +10 Hz from
 14.100 002 goes to 14.100 010, not 14.100 012.
