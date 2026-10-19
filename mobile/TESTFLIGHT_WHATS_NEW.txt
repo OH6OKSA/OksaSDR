@@ -9,14 +9,13 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- CW tab, with Paddles: Iambic A / B and Swap are now in the tab itself. The dit and dah pads' labels follow Swap.
-- Paddles on a keyboard: pick which two keys are dit (left) and dah (right). Ctrl, the new default, suits a PC keyboard or a USB paddle adapter (Vail, VBand). Alt / Option suits Apple keyboards, which have no right Ctrl. [ ] is only for English layouts. [TX]
-- If the radio refuses to key CW, the app now says why. If it blames another client while none is on air, restart the radio.
-- Keying with Break-in off now tells you why nothing goes on air.
+- SmartLink stays signed in after the app restarts, and the radio connects again after Disconnect. If you are signed out, sign in once more; the password is never stored.
+- iPad keyboard paddles: left and right Option (or Control) now give dit and dah; Command no longer keys anything. [TX]
+- Very low landscape screens (smaller iPhones, a phone's outer screen) fit again; the Band button on the waterfall picks bands there.
 
-RECENT (build 79)
-- CW paddles on the screen (hold both for iambic); CW decoder with far less noise (Sens, 8-45 WPM).
-- Drag tunes in STEP increments; drag filter edges and notches; spot filters.
+RECENT (build 80)
+- CW tab: Iambic A / B and Swap; Paddles on a keyboard (Ctrl, Alt / Option, [ ]). [TX]
+- If the radio refuses to key CW, the app says why; keying with Break-in off says why nothing goes on air.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
@@ -24,7 +23,8 @@ PLEASE TRY
 - Both portrait and landscape; on iPad also Split View.
 - Voice transmit with the device mic or a Bluetooth headset, and tell me how it sounds at the other end. [TX]
 - CW keying, CWX memories (F1–F12 on a keyboard) and the decoder. [TX]
-- New: paddles on a keyboard (Alt / Option on an iPad keyboard, Ctrl on a PC keyboard or paddle adapter) and Iambic A / B in the CW tab. [TX]
+- New: SmartLink: Disconnect and connect again, and close and reopen the app; you should stay signed in.
+- New: keyboard paddles with Alt / Option on an iPad keyboard, or Ctrl on a USB paddle adapter. [TX]
 - Spots and the DX cluster, a notch on a carrier, the TX processing at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM

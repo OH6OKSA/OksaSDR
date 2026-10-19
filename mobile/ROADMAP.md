@@ -5,29 +5,9 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-- Android outer screen in landscape: the layout no longer runs off the
-  bottom (PTT and the step buttons were cut). The metrics now follow the
-  room inside the safe area (status and navigation bars, the camera
-  cutout), very low landscape leaves the band strip out (Band button on
-  the waterfall), and the operate pages no longer loop on their own safe
-  area after a rotation. To check on the phone's outer screen and on an
-  iPhone in landscape.
-- SmartLink stays signed in, and reconnects after Disconnect (iPad user
-  and testers: the sign-in was gone after a restart, and after Disconnect
-  the radio would not connect again). A sign-in from the kept token
-  stored an empty token over it (Auth0 does not rotate them), and without
-  it a reconnect registered with an expired id token, which the server
-  refused, and the app then forgot the sign-in. The token is kept now; a
-  refused session signs in again once from it; connecting while the
-  SmartLink server is down reconnects first; and the app reconnects to
-  the server when it comes back to the front.
-- Keyboard paddles on the iPad: in build 80 both Option keys (and with
-  Ctrl, Control and either Command) keyed a dit. Qt 6.12 on iOS passes no
-  scan code, so left and right cannot be told apart and Command arrives
-  as Ctrl. The app now reads left and right Control / Option from Apple's
-  GameController framework (GCKeyboard) on iOS and ignores Command; text
-  fields key nothing. The log shows the first keys and the page's focus.
-  To try on the Magic Keyboard and with a USB paddle adapter.
+Nothing queued yet. To verify in build 81: SmartLink after Disconnect and a
+restart; Option paddles on the iPad's Magic Keyboard (GameController); the
+Android outer screen in landscape.
 
 Parked: two-finger trackpad scrolling of the iPad's pinned panel stops
 halfway (Magic Keyboard; finger scrolling works; --wheel-test finds no
@@ -69,6 +49,12 @@ to the radio (needs a listening server on the phone, not possible in the
 iOS background).
 
 ## Released
+
+**Build 81** (2026-10-19), iPhone and iPad, and Android beta 6:
+- SmartLink stays signed in after a restart and reconnects after Disconnect (the kept token was overwritten by an empty one; a refused session now signs in again from it).
+- iPad keyboard paddles tell left from right Option / Control through GameController (Qt's iOS key events carry no scan code); Command keys nothing.
+- Very low landscape fits (Android outer screen, smaller iPhones): metrics from the safe area, no band strip there, no safe-area binding loop.
+- Keyboard paddle keys and focus in the log; dev options for the pinned panel.
 
 **Build 80** (2026-10-18), iPhone and iPad, and Android beta 5:
 - CW tab: Iambic A / B and Swap ⇄; "Paddles on a keyboard" with Ctrl (the default), Alt ⌥ (Option) or [ ], each explained; the dit and dah labels follow Swap; Command never keys a dit.
@@ -142,6 +128,9 @@ drags, spot filters); the first published by CI as Latest.
 
 Beta 5: what iOS build 80 brings (iambic and keyboard paddles in the CW
 tab, the CW refused notice, the break-in note).
+
+Beta 6: what iOS build 81 brings (SmartLink stays signed in and
+reconnects; the outer screen in landscape fits).
 
 Next: verify LAN discovery on the radio's network; APK size (about 150 MB).
 

@@ -1,17 +1,15 @@
-**OksaSDR for Android — beta 5.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight build 80), from the same code.
+**OksaSDR for Android — beta 6.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight build 81), from the same code.
 
-### New in beta 5
-- **CW tab** — with *Paddles*, Iambic A / B and Swap are now in the tab itself, and the dit and dah pads' labels follow Swap.
-- **Paddles on a keyboard** — pick which two keys are dit (left) and dah (right): **Ctrl**, now the default, for a PC keyboard or a USB paddle adapter (Vail, VBand); **Alt** for keyboards with no right Ctrl; **[ ]** only on English layouts.
-- **CW refused** — if the radio will not key CW, the app says why. If it blames another client while none is on air, restart the radio.
-- Keying with **Break-in** off now tells you why nothing goes on air.
+### New in beta 6
+- **SmartLink stays signed in** after the app restarts, and the radio connects again after *Disconnect*. If you are signed out, sign in once more; the password is never stored.
+- **Outer screen in landscape** (foldables, small phones): the layout fits again, PTT and the step buttons included; the *Band* button on the waterfall picks bands there.
 
-Still new from beta 4: CW paddles on the screen, a quieter CW decoder, drag tuning on the step, filter edge and notch drags, spot filters.
+Still new from beta 5: Iambic A / B and Swap in the CW tab, paddles on a keyboard (Ctrl, Alt, [ ]), the CW refused notice, the break-in note.
 
 ### Install or update
-1. Download `OksaSDR-android-beta5.apk` below on the phone (about 150 MB).
+1. Download `OksaSDR-android-beta6.apk` below on the phone (about 150 MB).
 2. Open it; allow installing from your browser or file manager when Android asks. If Chrome keeps the download waiting, open ⋮ → *Downloads* → *Keep*.
-3. Beta 5 installs over earlier betas and keeps your settings. If you have one of the earlier hand-delivered test APKs, uninstall it first (different signing key).
+3. Beta 6 installs over earlier betas and keeps your settings. If you have one of the earlier hand-delivered test APKs, uninstall it first (different signing key).
 
 Android 9 or newer, 64-bit ARM. On the first connect, allow notifications, the microphone and "no battery optimization" so receive keeps going in the background and PTT can transmit.
 
