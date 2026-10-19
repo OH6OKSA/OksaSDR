@@ -9,14 +9,13 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Drag the line between the spectrum and the waterfall (the short bar, right of centre) to give either more room; double-tap it for the automatic split.
-- Transverter (XVTR) bands: transverters set up in the radio show as band buttons after 6 m (e.g. 2m); the radio tunes the RF frequency and does the IF.
-- Smoother audio on networks that deliver packets out of order (some VPN and SmartLink paths): a late packet no longer causes a burst of filler audio.
-- iPad keyboard: holding Space keeps PTT on (it dropped after a moment). [TX]
+- Trackpad scrolling (an iPad keyboard's trackpad, or on a Mac): scrolling views follow your fingers and coast on; they stopped halfway before.
+- FM repeater, TX tab in FM modes: offset Simplex / - / + with the shift (e.g. 7.6 MHz) and a CTCSS tone. [TX]
+- Transverter bands: type 439.000 to tune 439 MHz. With an FM step (e.g. 12.5 kHz) the step buttons move by the step, 100 kHz, 1 MHz and 10 MHz.
+- The band button of the band you are on is lit.
 
-RECENT (build 81)
-- SmartLink stays signed in after a restart and reconnects after Disconnect.
-- iPad keyboard paddles: left and right Option (or Control) give dit and dah. [TX]
+RECENT (build 82)
+- Spectrum / waterfall divider; transverter (XVTR) bands; smoother audio on networks that reorder packets; iPad Space PTT holds.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
@@ -24,8 +23,7 @@ PLEASE TRY
 - Both portrait and landscape; on iPad also Split View.
 - Voice transmit with the device mic or a Bluetooth headset, and tell me how it sounds at the other end. [TX]
 - CW keying, CWX memories (F1–F12 on a keyboard) and the decoder. [TX]
-- New: the spectrum / waterfall divider, and transverter bands if your radio has transverters set up.
-- New: Space as PTT on an iPad keyboard (hold to talk). [TX]
+- New: trackpad scrolling on an iPad keyboard or a Mac, and the FM repeater offset and CTCSS if you use FM. [TX]
 - Spots and the DX cluster, a notch on a carrier, the TX processing at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM

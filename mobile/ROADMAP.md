@@ -5,32 +5,11 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-- Transverter bands, from the tester who asked (70 cm transverter: simplex
-  TX and RX work on 436.200): a typed "439.000" tuned 0.439 MHz (above 100
-  read as kHz); it is MHz now wherever the radio can tune it (HF or a
-  transverter's band). The step buttons stayed at ±1 kHz with a 12.5 kHz
-  STEP; with an FM step they take the STEP and jump 100 kHz, 1 MHz and
-  10 MHz.
-- FM repeater on the slice (the same tester, for German 70 cm repeaters):
-  TX tab in FM modes: offset Simplex / − / + with a shift (0.6, 1.6, 5.0,
-  7.6 MHz or typed) and CTCSS on transmit with its tone, as the desktop's
-  RX applet. Checked on the FLEX: −7.6 MHz and 88.5 Hz reached the radio
-  (DOWN, CTCSS_TX in its status) and were set back.
-- The band button of the active band is lit (as the desktop's): the band
-  table, a transverter's whole band, WWV, else GEN.
-- Trackpad scrolling on the iPad (Magic Keyboard) and on Macs running the
-  iPad app (MacBook Pro / Air: no touch screen to scroll with): panels moved
-  about 44 % as far as the fingers and stopped with them ("stops halfway").
-  Qt's iOS plugin sends trackpad scrolling without a scroll phase, which
-  Flickable takes as mouse-wheel notches; the app now gives those events a
-  Mac trackpad's phases (begin, updates, a coast, end), so every scrolling
-  view follows the fingers 1:1 and coasts on.
-
-To verify in build 82: Space PTT on the iPad's Magic
-Keyboard; the divider on phones and tablets; transverter bands with a real
-transverter (the tester who asked); the external iPad's audio over its
-reordering path. Later: setting transverters up in the app (Radio Setup).
-
+Nothing queued yet. To verify in build 84: trackpad scrolling on the
+iPad's Magic Keyboard and on a Mac (MacBook) running the iPad app; the FM
+repeater offset and CTCSS on a 70 cm repeater (the tester who asked); the
+lit band button. Later: setting transverters up in the app (Radio Setup);
+macOS: confirm the iPad app on Apple silicon Macs through TestFlight.
 
 ## Planned: logging (when to build it is open)
 
@@ -68,6 +47,12 @@ to the radio (needs a listening server on the phone, not possible in the
 iOS background).
 
 ## Released
+
+**Build 84** (2026-10-19), iPhone and iPad, and Android beta 8 (build 83 was a CI test, not uploaded):
+- Trackpad scrolling follows the fingers on the iPad and on Macs running the iPad app (Qt's iOS trackpad events get a Mac trackpad's phases; the panels had stopped halfway).
+- FM repeater offset (Simplex / − / +, shift) and CTCSS tone in the TX tab in FM modes.
+- Transverter bands: "439.000" is MHz; FM steps on the step buttons; the active band button is lit.
+- CI: iOS compiles once (about 10 min less); Android keeps a compile cache (about 4 min a run instead of 13); uploads only from mobile/oksasdr.
 
 **Build 82** (2026-10-19), iPhone and iPad, and Android beta 7:
 - Draggable divider between the spectrum and the waterfall (as the desktop's); double tap for the automatic split; remembered.
@@ -160,6 +145,9 @@ reconnects; the outer screen in landscape fits).
 
 Beta 7: what iOS build 82 brings (spectrum / waterfall divider,
 transverter bands, smoother audio across reordering networks).
+
+Beta 8: what iOS build 84 brings (FM repeater offset and CTCSS,
+transverter entry and FM steps, the lit band button).
 
 Next: verify LAN discovery on the radio's network; APK size (about 150 MB).
 
