@@ -13,15 +13,19 @@ queued, waiting on someone, or still to verify follows.
   10 MHz.
 - The band button of the active band is lit (as the desktop's): the band
   table, a transverter's whole band, WWV, else GEN.
+- Trackpad scrolling on the iPad (Magic Keyboard) and on Macs running the
+  iPad app (MacBook Pro / Air: no touch screen to scroll with): panels moved
+  about 44 % as far as the fingers and stopped with them ("stops halfway").
+  Qt's iOS plugin sends trackpad scrolling without a scroll phase, which
+  Flickable takes as mouse-wheel notches; the app now gives those events a
+  Mac trackpad's phases (begin, updates, a coast, end), so every scrolling
+  view follows the fingers 1:1 and coasts on.
 
 To verify in build 82: Space PTT on the iPad's Magic
 Keyboard; the divider on phones and tablets; transverter bands with a real
 transverter (the tester who asked); the external iPad's audio over its
 reordering path. Later: setting transverters up in the app (Radio Setup).
 
-Parked: two-finger trackpad scrolling of the iPad's pinned panel stops
-halfway (Magic Keyboard; finger scrolling works; --wheel-test finds no
-blocker on the desktop).
 
 ## Planned: logging (when to build it is open)
 

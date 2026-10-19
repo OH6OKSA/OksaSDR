@@ -3,6 +3,7 @@
 #include "EchoAudit.h"
 #include "LogBuffer.h"
 #include "MobileEngine.h"
+#include "TrackpadScrollPhases.h"
 #ifdef Q_OS_ANDROID
 #include "../android/AndroidJni.h"
 #endif
@@ -154,6 +155,13 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: send trackpad scrolls across the shown controls and log where they do not "
                        "scroll the panel, and which item took them."));
     parser.addOption(wheelTestOption);
+    const QCommandLineOption wheelIosTestOption(QStringLiteral("wheel-test-ios"),
+        QStringLiteral("Development: scroll the shown controls from the top as iOS's trackpad does (wheel events "
+                       "with pixel and angle deltas, no scroll phase) and log how far they get."));
+    parser.addOption(wheelIosTestOption);
+    const QCommandLineOption trackpadPhasesOption(QStringLiteral("trackpad-phases"),
+        QStringLiteral("Development: give phase-less pixel wheel events trackpad phases, as on iOS (always on there)."));
+    parser.addOption(trackpadPhasesOption);
     const QCommandLineOption reconnectTestOption(QStringLiteral("reconnect-test"),
         QStringLiteral("With --connect: disconnect after 8 s and reconnect at 11 s."));
     parser.addOption(reconnectTestOption);
@@ -335,6 +343,18 @@ int main(int argc, char* argv[])
     QObject::connect(&qml, &QQmlApplicationEngine::objectCreationFailed, &app,
                      [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
     qml.loadFromModule("AetherMobile", "Main");
+    // iOS trackpad scrolling (Magic Keyboard, an iPad app on a Mac) gets the
+    // phases Flickable needs to follow the fingers (TrackpadScrollPhases.h).
+#ifdef Q_OS_IOS
+    const bool trackpadPhases = true;
+#else
+    const bool trackpadPhases = parser.isSet(trackpadPhasesOption);
+#endif
+    if (trackpadPhases && !qml.rootObjects().isEmpty()) {
+        if (auto* window = qobject_cast<QQuickWindow*>(qml.rootObjects().constFirst())) {
+            new AetherSDR::mobile::TrackpadScrollPhases(window);
+        }
+    }
     if (parser.isSet(devLinkOption)) {
         const QString host = parser.value(devLinkOption);
         if (host == QLatin1String("off")) {
@@ -1013,6 +1033,54 @@ int main(int argc, char* argv[])
                         const bool hasPreview = chooser->metaObject()->indexOfMethod("preview()") >= 0;
                         QMetaObject::invokeMethod(chooser, hasPreview ? "preview" : "open");
                     }
+                }
+            }
+        });
+    }
+    if (parser.isSet(wheelIosTestOption)) {
+        QTimer::singleShot(9000, &app, [&qml] {
+            for (QObject* root : qml.rootObjects()) {
+                auto* window = qobject_cast<QQuickWindow*>(root);
+                if (!window) {
+                    continue;
+                }
+                for (QObject* scroll : findNamedObjects(root, QStringLiteral("controlsTabScroll"))
+                                           + findNamedObjects(root, QStringLiteral("pinnedScroll"))) {
+                    auto* item = qobject_cast<QQuickItem*>(scroll);
+                    auto* flick = qvariant_cast<QQuickItem*>(scroll->property("contentItem"));
+                    if (!item || !item->isVisible() || !flick) {
+                        continue;
+                    }
+                    flick->setProperty("contentY", 0.0);
+                    const qreal room = flick->property("contentHeight").toReal() - item->height();
+                    // quiview.mm handleScroll: pixelDelta = the pan's step,
+                    // angleDelta = 2 x it, no phase, the cursor where the
+                    // gesture began (here the panel's centre).
+                    const QPointF scene = item->mapToScene(QPointF(item->width() / 2, item->height() / 2));
+                    const QPointF global = window->mapToGlobal(scene);
+                    ulong stamp = 5000;
+                    const int kEvents = qEnvironmentVariableIntValue("WHEEL_EVENTS") > 0
+                        ? qEnvironmentVariableIntValue("WHEEL_EVENTS") : 240;
+                    QStringList trace;
+                    for (int i = 1; i <= kEvents; ++i) {
+                        QWheelEvent ev(scene, global, QPoint(0, -12), QPoint(0, -24), Qt::NoButton, Qt::NoModifier,
+                                       Qt::NoScrollPhase, false);
+                        ev.setTimestamp(stamp += 16);
+                        QCoreApplication::sendEvent(window, &ev);
+                        QEventLoop loop;
+                        QTimer::singleShot(16, &loop, &QEventLoop::quit);
+                        loop.exec();
+                        if (i % (kEvents / 8) == 0) {
+                            trace << QString::number(flick->property("contentY").toReal(), 'f', 0);
+                        }
+                    }
+                    QEventLoop settle;
+                    QTimer::singleShot(1500, &settle, &QEventLoop::quit);
+                    settle.exec();
+                    qInfo().noquote() << "wheel-test-ios:" << scroll->objectName() << "room" << room
+                                      << "contentY every 30 events" << trace.join(QLatin1Char(' '))
+                                      << "final" << flick->property("contentY").toReal()
+                                      << "(" << kEvents * 12 << "px scrolled)";
                 }
             }
         });

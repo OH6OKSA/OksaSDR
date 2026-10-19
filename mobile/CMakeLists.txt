@@ -28,6 +28,8 @@ qt_add_executable(aether-mobile
     src/LogBuffer.cpp
     src/DevLink.cpp
     src/EchoAudit.cpp
+    src/TrackpadScrollPhases.cpp
+    src/TrackpadScrollPhases.h
     src/EchoAudit.h
     src/DevLink.h
     src/LogBuffer.h
