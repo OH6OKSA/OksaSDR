@@ -1,7 +1,8 @@
 name: TestFlight What to Test
 
 # Sets a build's TestFlight "What to Test" from mobile/TESTFLIGHT_WHATS_NEW.txt
-# and the app's TestFlight "App Description" from mobile/TESTFLIGHT_DESCRIPTION.txt.
+# and the app's TestFlight "App Description" from mobile/TESTFLIGHT_DESCRIPTION.txt,
+# then hands the build to the beta groups (and beta review for external ones).
 # Called by the iOS build after a successful upload, run by hand for an
 # existing build number, and on its own when the description file changes.
 on:
@@ -45,5 +46,8 @@ jobs:
           BUNDLE_ID: ${{ vars.AETHER_MOBILE_BUNDLE_ID || 'com.aethersdr.mobile' }}
           BUILD_NUMBER: ${{ inputs.build_number || '' }}
           NOTES_FILE: mobile/TESTFLIGHT_WHATS_NEW.txt
+          # Beta groups each build goes to (comma separated); empty: every
+          # group that does not get every build by itself.
+          TESTFLIGHT_GROUPS: ${{ vars.TESTFLIGHT_GROUPS || '' }}
           DESCRIPTION_FILE: mobile/TESTFLIGHT_DESCRIPTION.txt
         run: python3 .github/scripts/testflight_whats_new.py

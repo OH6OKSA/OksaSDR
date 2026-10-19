@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Set TestFlight "What to Test" for one build via the App Store Connect API.
+"""Set TestFlight "What to Test" for one build and hand it to the testers.
 
 Env: API_KEY_ID, API_ISSUER_ID, API_KEY_P8 (key contents), BUNDLE_ID,
-BUILD_NUMBER, NOTES_FILE, and optionally DESCRIPTION_FILE. Sets the app's
-beta description (TestFlight's "App Description") from DESCRIPTION_FILE,
-then waits for the uploaded build to appear and creates or updates its beta
-build localization in the app's primary locale.
+BUILD_NUMBER, NOTES_FILE, and optionally DESCRIPTION_FILE and
+TESTFLIGHT_GROUPS. Sets the app's beta description (TestFlight's "App
+Description") from DESCRIPTION_FILE, then waits for the uploaded build to
+appear and creates or updates its beta build localization in the app's
+primary locale. Then it waits for Apple to finish processing the build and
+adds it to the beta groups, the ones named in TESTFLIGHT_GROUPS (comma
+separated) or else every group that does not get each build by itself
+(external groups, and internal ones without access to all builds), and
+submits it for beta review when an external group got it.
 """
 import json
 import os
@@ -122,7 +127,70 @@ def main() -> int:
             "attributes": {"locale": locale, "whatsNew": notes},
             "relationships": {"build": {"data": {"type": "builds", "id": build["id"]}}}}})
         print(f"set What to Test for build {build_number} ({locale})")
-    return 0
+    return 0 if distribute(app, build, build_number, deadline) else 1
+
+
+def distribute(app, build, build_number: str, deadline: float) -> bool:
+    """Adds the build to the beta groups once processed; False on a failure."""
+    while True:
+        state = call("GET", f"/builds/{build['id']}")["data"]["attributes"].get("processingState")
+        if state == "VALID":
+            break
+        if state in ("FAILED", "INVALID"):
+            print(f"build {build_number} is {state}: not handed to testers", file=sys.stderr)
+            return False
+        if time.time() > deadline:
+            print(f"build {build_number} still {state} after waiting: add it to the group by hand",
+                  file=sys.stderr)
+            return False
+        print(f"build {build_number} is {state}; waiting to hand it to the testers")
+        time.sleep(POLL_SECONDS)
+
+    groups = call("GET", f"/apps/{app['id']}/betaGroups", query={"limit": "50"})["data"]
+    wanted = [n.strip() for n in os.environ.get("TESTFLIGHT_GROUPS", "").split(",") if n.strip()]
+    if wanted:
+        chosen = [g for g in groups if g["attributes"].get("name") in wanted]
+        missing = set(wanted) - {g["attributes"].get("name") for g in chosen}
+        if missing:
+            print(f"no TestFlight group named {', '.join(sorted(missing))}", file=sys.stderr)
+    else:
+        chosen = [g for g in groups
+                  if not g["attributes"].get("isInternalGroup")
+                  or not g["attributes"].get("hasAccessToAllBuilds")]
+    if not chosen:
+        print("no TestFlight group to add the build to (internal groups get every build by themselves)")
+        return not wanted
+
+    ok = True
+    external = False
+    for group in chosen:
+        name = group["attributes"].get("name")
+        try:
+            call("POST", f"/betaGroups/{group['id']}/relationships/builds",
+                 {"data": [{"type": "builds", "id": build["id"]}]})
+            print(f"build {build_number} added to TestFlight group '{name}'")
+        except RuntimeError as err:
+            print(f"could not add build {build_number} to '{name}': {err}", file=sys.stderr)
+            ok = False
+            continue
+        if not group["attributes"].get("isInternalGroup"):
+            external = True
+
+    if external:
+        # External testers get a build after beta review; after the first
+        # build of a version Apple usually approves the next ones at once.
+        try:
+            call("POST", "/betaAppReviewSubmissions", {"data": {
+                "type": "betaAppReviewSubmissions",
+                "relationships": {"build": {"data": {"type": "builds", "id": build["id"]}}}}})
+            print(f"build {build_number} submitted for beta review (external testers)")
+        except RuntimeError as err:
+            if "HTTP 409" in str(err):
+                print(f"beta review: already submitted or not needed ({err})")
+            else:
+                print(f"could not submit build {build_number} for beta review: {err}", file=sys.stderr)
+                ok = False
+    return ok
 
 
 if __name__ == "__main__":
