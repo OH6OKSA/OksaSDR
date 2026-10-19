@@ -60,4 +60,22 @@ QtObject {
     readonly property int smallFont: Math.max(10, Math.round(12 * scale))
     readonly property int spacing: Math.round(12 * scale)
     readonly property int radius: 8
+
+    // ---- Step buttons under the display ----
+    // Hz for each button, down then up. HF tunes by 1 Hz to 1 kHz; with an
+    // FM channel step (5 kHz or more, e.g. 12.5 kHz on 70 cm) the buttons
+    // take the radio's STEP and jump 100 kHz, 1 MHz and 10 MHz, all on the
+    // STEP's grid.
+    function stepButtons(stepHz) {
+        if (stepHz >= 5000) {
+            return [-10000000, -1000000, -100000, -stepHz, stepHz, 100000, 1000000, 10000000]
+        }
+        return [-1000, -100, -10, -1, 1, 10, 100, 1000]
+    }
+    // "1", "100", "12.5k", "100k", "1M".
+    function stepLabel(hz) {
+        if (hz >= 1000000) return (hz / 1000000) + "M"
+        if (hz >= 1000) return (hz / 1000) + "k"
+        return String(hz)
+    }
 }

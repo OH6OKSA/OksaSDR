@@ -3,8 +3,9 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import AetherMobile
 
-// Direct frequency entry. A value below 100 is read as MHz, otherwise kHz,
-// so "14.074" and "14074" both tune 14.074 MHz.
+// Direct frequency entry: "14.074" and "14074" both tune 14.074 MHz, and on
+// a transverter band "439.000" (or "439") tunes 439 MHz (Engine.
+// frequencyFromEntry reads it against where the radio can tune).
 Dialog {
     id: dialog
     objectName: "frequencyDialog"
@@ -26,9 +27,9 @@ Dialog {
         if (entry.length < 12) entry += d
     }
     function commit() {
-        const v = parseFloat(entry.replace(",", "."))
-        if (!isNaN(v) && v > 0) {
-            Engine.tuneTo(v < 100 ? v : v / 1000)
+        const mhz = Engine.frequencyFromEntry(entry)
+        if (mhz > 0) {
+            Engine.tuneTo(mhz)
         }
         dialog.close()
     }

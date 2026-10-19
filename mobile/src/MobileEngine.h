@@ -113,6 +113,9 @@ class MobileEngine : public QObject {
     Q_PROPERTY(int filterWidth READ filterWidth NOTIFY filterChanged)
     // HF bands, the radio's transverter (XVTR) bands, WWV and GEN.
     Q_PROPERTY(QStringList bands READ bands NOTIFY bandsChanged)
+    // The band button the active slice's frequency falls in, lit as the
+    // desktop's: a transverter's whole band, WWV's frequencies, else GEN.
+    Q_PROPERTY(QString activeBand READ activeBand NOTIFY frequencyChanged)
     Q_PROPERTY(bool bandsAvailable READ bandsAvailable NOTIFY connectionStateChanged)
     Q_PROPERTY(QString lastAddress READ lastAddress NOTIFY lastAddressChanged)
     Q_PROPERTY(QString smartLinkState READ smartLinkState NOTIFY smartLinkChanged)
@@ -502,6 +505,12 @@ public:
     void setKeyboardOnPage(bool on);
     bool cwSwapPaddles() const;
     void setCwSwapPaddles(bool on);
+    // A typed frequency in MHz (0 when it is none): with a decimal point
+    // MHz if the radio can tune it there, else kHz ("14.074", "439.000" on a
+    // transverter, "14074.5"); digits alone MHz on a transverter's band or
+    // below 100, else kHz ("439", "7", "14074").
+    Q_INVOKABLE double frequencyFromEntry(const QString& entry) const;
+    QString activeBand() const;
     // The paddles as held now; the keyer forms the elements.
     Q_INVOKABLE void setCwPaddleState(bool dit, bool dah);
     // Keyboard paddles' diagnostics to the app log (QML's console output

@@ -66,7 +66,7 @@ mode, a DSP that runs, the shown tab) is **lit blue**; the others are dark.
 | Band buttons | 160 m … 6 m, the radio's transverter (XVTR) bands, WWV, GEN |
 | Slice row | The two [meters](#4-meters-and-slices) at the ends, the slices in between |
 | Panadapter and waterfall | The [spectrum display](#5-panadapter-and-waterfall) |
-| Step buttons | Tune by −1 kHz … +1 kHz |
+| Step buttons | Tune by −1 kHz … +1 kHz (with an FM step: the step, 100 kHz, 1 MHz, 10 MHz) |
 | PTT / KEY | [Transmit](#7-transmitting-ptt-key-and-tune) |
 
 On an iPad or tablet the controls can stay pinned at the side (as above) or
@@ -109,7 +109,8 @@ the time show. Tap it for the details:
 ## 3. Frequency, mode and the info panel
 
 **Frequency.** Tap the frequency for direct entry with a keypad (or type on
-a hardware keyboard), then *Tune*.
+a hardware keyboard), then *Tune*. *14.074* and *14074* both tune
+14.074 MHz; on a transverter band, *439.000* (or *439*) tunes 439 MHz.
 
 ![Frequency entry](manual/frequency.jpg)
 
@@ -131,7 +132,10 @@ radio tunes the RF frequency, uses the transverter port and does the IF
 itself. On a phone the band row scrolls sideways.
 
 **Step buttons.** ±1 Hz … ±1 kHz, landing on round frequencies: +10 Hz from
-14.100 002 goes to 14.100 010, not 14.100 012.
+14.100 002 goes to 14.100 010, not 14.100 012. With an FM channel step of
+5 kHz or more (STEP, e.g. 12.5 kHz on 70 cm) they become ±STEP, ±100 kHz,
+±1 MHz and ±10 MHz, all on the step's grid. The band button of the band
+you are on is lit.
 
 ### The info panel
 

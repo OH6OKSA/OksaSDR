@@ -293,6 +293,7 @@ Page {
                         Layout.minimumWidth: 40
                         Layout.preferredWidth: 60
                         Layout.preferredHeight: Theme.touchTarget
+                        checked: Engine.activeBand === modelData
                         onClicked: Engine.selectBand(modelData)
                     }
                 }
@@ -318,11 +319,10 @@ Page {
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
                 Repeater {
-                    model: [-1000, -100, -10, -1, 1, 10, 100, 1000]
+                    model: Theme.stepButtons(Engine.stepHz)
                     delegate: AppButton {
                         required property int modelData
-                        text: (modelData > 0 ? "+" : "−") + (Math.abs(modelData) >= 1000
-                              ? Math.abs(modelData) / 1000 + "k" : Math.abs(modelData))
+                        text: (modelData > 0 ? "+" : "−") + Theme.stepLabel(Math.abs(modelData))
                         Layout.fillWidth: true
                         Layout.minimumWidth: 40
                         Layout.preferredWidth: Theme.buttonWidth

@@ -198,6 +198,10 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: send these radio commands (separated by ';') 7 s after start and log the "
                        "replies."), QStringLiteral("commands"));
     parser.addOption(radioCommandsOption);
+    const QCommandLineOption setStepOption(QStringLiteral("set-step"),
+        QStringLiteral("Development: set the tuning step to <hz> 8 s after start, as the STEP chooser does."),
+        QStringLiteral("hz"));
+    parser.addOption(setStepOption);
     const QCommandLineOption selectBandOption(QStringLiteral("select-band"),
         QStringLiteral("Development: press this band button 9 s after start (a real radio), e.g. 20m or a "
                        "transverter's name; the band list goes to the log."), QStringLiteral("band"));
@@ -629,6 +633,10 @@ int main(int argc, char* argv[])
                 engine.devCommand(c.trimmed());
             }
         });
+    }
+    if (parser.isSet(setStepOption)) {
+        const int hz = parser.value(setStepOption).toInt();
+        QTimer::singleShot(8000, &app, [&engine, hz] { engine.setStepHz(hz); });
     }
     if (parser.isSet(selectBandOption)) {
         const QString band = parser.value(selectBandOption);

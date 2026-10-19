@@ -5,7 +5,16 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. To verify in build 82: Space PTT on the iPad's Magic
+- Transverter bands, from the tester who asked (70 cm transverter: simplex
+  TX and RX work on 436.200): a typed "439.000" tuned 0.439 MHz (above 100
+  read as kHz); it is MHz now wherever the radio can tune it (HF or a
+  transverter's band). The step buttons stayed at ±1 kHz with a 12.5 kHz
+  STEP; with an FM step they take the STEP and jump 100 kHz, 1 MHz and
+  10 MHz.
+- The band button of the active band is lit (as the desktop's): the band
+  table, a transverter's whole band, WWV, else GEN.
+
+To verify in build 82: Space PTT on the iPad's Magic
 Keyboard; the divider on phones and tablets; transverter bands with a real
 transverter (the tester who asked); the external iPad's audio over its
 reordering path. Later: setting transverters up in the app (Radio Setup).

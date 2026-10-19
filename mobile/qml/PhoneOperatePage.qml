@@ -187,6 +187,7 @@ Page {
                         rightPadding: 2
                         width: Theme.buttonWidth
                         height: Theme.touchTarget
+                        checked: Engine.activeBand === modelData
                         onClicked: Engine.selectBand(modelData)
                     }
                 }
@@ -208,13 +209,13 @@ Page {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 4
-                // Step buttons: land on round frequencies (tuneByHz).
+                // Step buttons: land on round frequencies (tuneByHz); FM
+                // channel steps take the radio's STEP (Theme.stepButtons).
                 Repeater {
-                    model: [-1000, -100, -10, -1, 1, 10, 100, 1000]
+                    model: Theme.stepButtons(Engine.stepHz)
                     delegate: AppButton {
                         required property int modelData
-                        text: (modelData > 0 ? "+" : "−") + (Math.abs(modelData) >= 1000
-                              ? Math.abs(modelData) / 1000 + "k" : Math.abs(modelData))
+                        text: (modelData > 0 ? "+" : "−") + Theme.stepLabel(Math.abs(modelData))
                         leftPadding: 1
                         rightPadding: 1
                         Layout.fillWidth: true

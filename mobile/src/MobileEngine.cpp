@@ -46,6 +46,7 @@
 #include "models/TnfModel.h"
 #include "models/TransmitModel.h"
 #include "models/XvtrPolicy.h"
+#include "models/BandSettings.h"
 
 #include <QGuiApplication>
 #include <QInputMethodQueryEvent>
@@ -2158,6 +2159,67 @@ QVector<XvtrPolicy::Transverter> transvertersOf(const RadioModel& rm)
     return list;
 }
 } // namespace
+
+QString MobileEngine::activeBand() const
+{
+    if (!m_connected || !m_slice) {
+        return {};
+    }
+    const double mhz = m_slice->frequency();
+    // Transverters first, as the desktop: their band is what they tune
+    // through the radio's IF range (to 54 MHz), moved by their offset.
+    for (const XvtrPolicy::Transverter& x : transvertersOf(m_session.radioModel())) {
+        const double offset = x.rfFreqMhz - x.ifFreqMhz;
+        if (x.isValid && !x.name.isEmpty() && mhz >= offset && mhz <= offset + 54.0) {
+            return x.name;
+        }
+    }
+    for (const double wwv : {2.5, 5.0, 10.0, 15.0, 20.0, 25.0}) {
+        if (std::abs(mhz - wwv) < 0.005) {
+            return QStringLiteral("WWV");
+        }
+    }
+    const QString band = BandSettings::bandForFrequency(mhz);
+    return bands().contains(band) ? band : QStringLiteral("GEN");
+}
+
+double MobileEngine::frequencyFromEntry(const QString& entry) const
+{
+    QString text = entry.trimmed();
+    text.replace(QLatin1Char(','), QLatin1Char('.'));
+    bool ok = false;
+    const double value = text.toDouble(&ok);
+    if (!ok || !std::isfinite(value) || value <= 0.0) {
+        return 0.0;
+    }
+    // A transverter tunes its RF band through the radio's IF range (to
+    // 54 MHz), moved by its offset (RF minus IF).
+    const QVector<XvtrPolicy::Transverter> xvtrs =
+        m_connected ? transvertersOf(m_session.radioModel()) : QVector<XvtrPolicy::Transverter>{};
+    const auto onTransverter = [&xvtrs](double mhz) {
+        for (const XvtrPolicy::Transverter& x : xvtrs) {
+            const double offset = x.rfFreqMhz - x.ifFreqMhz;
+            if (x.isValid && mhz >= offset && mhz <= offset + 54.0) {
+                return true;
+            }
+        }
+        return false;
+    };
+    const auto tunable = [&onTransverter](double mhz) { return mhz <= 54.0 || onTransverter(mhz); };
+    const double asMhz = value;
+    const double asKhz = value / 1000.0;
+    if (text.contains(QLatin1Char('.'))) {
+        if (tunable(asMhz)) {
+            return asMhz;
+        }
+        if (tunable(asKhz)) {
+            return asKhz;
+        }
+    } else if (onTransverter(asMhz)) {
+        return asMhz;
+    }
+    return value < 100.0 ? asMhz : asKhz;
+}
 
 QStringList MobileEngine::bands() const
 {
