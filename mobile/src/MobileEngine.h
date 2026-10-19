@@ -208,6 +208,9 @@ class MobileEngine : public QObject {
     // iOS: left and right Control / Option come from GameController, as Qt
     // cannot tell them apart there; the engine keys them itself.
     Q_PROPERTY(bool nativeKeyboardSides READ nativeKeyboardSides CONSTANT)
+    // The tablet page has the keyboard (no dialog, no text entry): only then
+    // does Space from GameController key PTT (iOS). Set by OperatePage.
+    Q_PROPERTY(bool keyboardOnPage READ keyboardOnPage WRITE setKeyboardOnPage NOTIFY keyboardOnPageChanged)
     Q_PROPERTY(int cwIambicMode READ cwIambicMode WRITE setCwIambicMode NOTIFY cwChanged)
     Q_PROPERTY(bool cwSwapPaddles READ cwSwapPaddles WRITE setCwSwapPaddles NOTIFY cwChanged)
     Q_PROPERTY(int cwSpeed READ cwSpeed WRITE setCwSpeed NOTIFY cwChanged)
@@ -491,6 +494,8 @@ public:
     int cwIambicMode() const;
     void setCwIambicMode(int mode);
     bool nativeKeyboardSides() const;
+    bool keyboardOnPage() const { return m_keyboardOnPage; }
+    void setKeyboardOnPage(bool on);
     bool cwSwapPaddles() const;
     void setCwSwapPaddles(bool on);
     // The paddles as held now; the keyer forms the elements.
@@ -813,6 +818,7 @@ public:
     Q_INVOKABLE void setPanPixels(int width, int height);
 
 signals:
+    void keyboardOnPageChanged();
     void connectionStateChanged();
     void lastErrorChanged();
     void callsignChanged();
@@ -1044,6 +1050,9 @@ private:
     void releasePaddles();
     // A left or right Control / Option from GameController (SideKey).
     void onSideKey(int key, bool pressed);
+    bool m_keyboardOnPage{false};
+    bool m_spacePtt{false};   // PTT held by Space from GameController
+    int m_spaceLogged{0};
     bool m_sideDit{false};
     bool m_sideDah{false};
     int m_sideKeysLogged{0};

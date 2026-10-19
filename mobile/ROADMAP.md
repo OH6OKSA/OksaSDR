@@ -5,7 +5,12 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. To verify in build 81: SmartLink after Disconnect and a
+- Space PTT on the iPad's Magic Keyboard: a held Space keyed PTT and
+  released it about 0.1 s later (UIKit sent the release while the key was
+  down; the screen PTT works). iOS now takes Space from GameController too,
+  only while the operate page has the keyboard (no dialog, no text entry).
+
+To verify in build 81: SmartLink after Disconnect and a
 restart; Option paddles on the iPad's Magic Keyboard (GameController); the
 Android outer screen in landscape.
 

@@ -26,6 +26,8 @@ void attach(GCKeyboard* keyboard)
             key = SideKey::LeftOption;
         } else if (keyCode == GCKeyCodeRightAlt) {
             key = SideKey::RightOption;
+        } else if (keyCode == GCKeyCodeSpacebar) {
+            key = SideKey::Space;
         } else {
             return;
         }

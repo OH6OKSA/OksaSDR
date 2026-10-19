@@ -43,6 +43,9 @@ Page {
             break
         case Qt.Key_Escape: Engine.stopCwx(); Engine.dvkStop(); break
         case Qt.Key_Space:
+            // iOS: Space comes from GameController (the engine), as UIKit
+            // ends a held Space after about 0.1 s.
+            if (Engine.nativeKeyboardSides) break
             // Tap on/off mode: Space switches, as the button does.
             if (Engine.pttToggle && !Engine.cwMode) {
                 Engine.togglePtt()
@@ -60,12 +63,19 @@ Page {
             event.accepted = true
             return
         }
+        if (event.key === Qt.Key_Space && Engine.nativeKeyboardSides) {
+            event.accepted = true
+            return
+        }
         if (event.key === Qt.Key_Space && !event.isAutoRepeat) {
             page.spacePtt = false
             Engine.setPtt(false, "space released")
             event.accepted = true
         }
     }
+    // The engine keys Space PTT from GameController (iOS) only while the
+    // page has the keyboard.
+    Binding { target: Engine; property: "keyboardOnPage"; value: page.activeFocus }
     onActiveFocusChanged: {
         if (!activeFocus) kbPaddles.releaseAll()
         if (kbPaddles.active) Engine.logKeyboardPaddles("page keyboard focus " + (activeFocus ? "in" : "out"))
@@ -428,5 +438,8 @@ Page {
     Component.onCompleted: page.forceActiveFocus()
     // A layout switch (rotation, Split View, fold/unfold) destroys this page;
     // a held PTT must not outlive its button.
-    Component.onDestruction: Engine.stopTransmit("layout changed")
+    Component.onDestruction: {
+        Engine.keyboardOnPage = false
+        Engine.stopTransmit("layout changed")
+    }
 }

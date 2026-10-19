@@ -275,10 +275,11 @@ MobileEngine::MobileEngine(QObject* parent)
             m_smartLink.reconnect();
         }
         if (!active) {
-            // stopTransmit released the paddles; GameController's keys
-            // start from up when the app is back.
+            // stopTransmit released the paddles and PTT; GameController's
+            // keys start from up when the app is back.
             m_sideDit = false;
             m_sideDah = false;
+            m_spacePtt = false;
         }
         if (active != m_displayActive) {
             m_displayActive = active;
@@ -3760,9 +3761,46 @@ bool MobileEngine::nativeKeyboardSides() const
     return sideKeysAvailable();
 }
 
+void MobileEngine::setKeyboardOnPage(bool on)
+{
+    if (on == m_keyboardOnPage) {
+        return;
+    }
+    m_keyboardOnPage = on;
+    if (!on && m_spacePtt) {
+        m_spacePtt = false;
+        setPtt(false, QStringLiteral("page lost keyboard focus"));
+    }
+    emit keyboardOnPageChanged();
+}
+
 void MobileEngine::onSideKey(int keyValue, bool pressed)
 {
     const auto key = static_cast<SideKey>(keyValue);
+    if (key == SideKey::Space) {
+        // Hold-to-talk, as OperatePage does elsewhere: only while the page
+        // has the keyboard (no dialog or text entry) and the app is in front.
+        if (m_spaceLogged < 6) {
+            ++m_spaceLogged;
+            qCInfo(lcMobile) << "Space" << (pressed ? "down" : "up") << "(GameController)"
+                             << (m_keyboardOnPage ? "" : "- page has no keyboard focus");
+        }
+        if (pressed) {
+            if (m_spacePtt || !m_keyboardOnPage || QGuiApplication::applicationState() != Qt::ApplicationActive) {
+                return;
+            }
+            if (pttToggle() && !cwMode()) {
+                togglePtt();
+                return;
+            }
+            m_spacePtt = true;
+            setPtt(true);
+        } else if (m_spacePtt) {
+            m_spacePtt = false;
+            setPtt(false, QStringLiteral("space released"));
+        }
+        return;
+    }
     const bool control = key == SideKey::LeftControl || key == SideKey::RightControl;
     if (cwKeyboardPaddles() != (control ? QLatin1String("ctrl") : QLatin1String("alt"))) {
         return;
