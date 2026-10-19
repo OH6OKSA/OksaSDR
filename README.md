@@ -38,8 +38,7 @@ SmartLink (or your own VPN), it is a complete station control surface.
 <h1 align="center"><a href="https://www.paypal.me/NikoOksa">🍻 Buy me a beer 🍻</a></h1>
 
 OksaSDR is free. If it is useful to you and you would like to buy
-me a beer, you can do it through
-**[PayPal](https://www.paypal.me/NikoOksa)**. The desktop project that
+me a beer, you can do it through the link above. The desktop project that
 makes all of this possible takes support through
 [Open Collective](https://opencollective.com/aethersdr).
 
