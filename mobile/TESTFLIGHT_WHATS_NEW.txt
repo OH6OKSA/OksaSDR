@@ -30,6 +30,8 @@ PLEASE TRY
 REPORTING A PROBLEM
 Right after it happens, open Log in the top row, tap Copy, and paste the text into an email to oh6oksa@gmail.com. Add your device model, radio model and what you were doing. Screenshots or a screen recording help a lot.
 
+Questions, tips and news of new builds: the OksaSDR Users group on Facebook, https://www.facebook.com/groups/1468327561855382 (for licensed radio amateurs; give your callsign when you join).
+
 Leave Log → Developer link off; it is only for the developer's own devices.
 
 73, Niko OH6OKSA

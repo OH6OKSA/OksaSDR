@@ -2,5 +2,6 @@ OksaSDR is a FlexRadio client for iPad and iPhone (and Android), built on the Ae
 
 It controls a FlexRadio directly: on your home network, from anywhere over SmartLink, or over your own VPN. Panadapter and waterfall (2D or 3D), tuning, modes, filters, DSP, band stack, memories, spots and DX cluster, notch filters, receive audio, voice transmit with PTT, CW and voice keyers.
 
+Users group (Facebook, for licensed radio amateurs): https://www.facebook.com/groups/1468327561855382
 Tester guide: https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md
 Source code (GPLv3): https://github.com/OH6OKSA/OksaSDR

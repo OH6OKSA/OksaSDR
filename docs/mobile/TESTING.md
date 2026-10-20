@@ -70,6 +70,9 @@ every function.
   row, tap **Copy**, and paste the text into an email to oh6oksa@gmail.com.
   Add the device model and what you were doing. The build number is in the
   app's top row. Screenshots or a screen recording help a lot.
+- **Questions, tips and new builds:** the
+  [OksaSDR Users group on Facebook](https://www.facebook.com/groups/1468327561855382)
+  (for licensed radio amateurs; give your callsign when you join).
 - Leave **Log → Developer link** off; it is only for the developer's own
   devices.
 
