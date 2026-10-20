@@ -15,6 +15,7 @@ namespace {
 // (TestFlight update, prewarm) cannot activate a session; it is retried
 // when the app comes to the front.
 bool g_active = false;
+std::function<void()> g_reactivated;
 
 void activate()
 {
@@ -59,6 +60,11 @@ void activate()
 
 } // namespace
 
+void setAudioSessionReactivatedHandler(std::function<void()> handler)
+{
+    g_reactivated = std::move(handler);
+}
+
 void configureAudioSession()
 {
     // Already active as play-and-record: leave it. Re-activating on every PTT
@@ -88,6 +94,9 @@ void configureAudioSession()
                         g_active = false;
                     } else if (type == AVAudioSessionInterruptionTypeEnded) {
                         activate();
+                        if (g_active && g_reactivated) {
+                            g_reactivated();
+                        }
                     }
                 }];
     // A session that could not start at launch: take it once the app is
@@ -100,6 +109,9 @@ void configureAudioSession()
                     if (!g_active) {
                         qCInfo(lcAudioSession) << "app in front: activating the session";
                         activate();
+                        if (g_active && g_reactivated) {
+                            g_reactivated();
+                        }
                     }
                 }];
 }

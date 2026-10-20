@@ -244,6 +244,24 @@ MobileEngine::MobileEngine(QObject* parent)
         }
     });
     m_perfTimer.start();
+    // After a call, alarm or Siri: receive audio (and a microphone that was
+    // open) could not reopen while iOS held the session (the RX sink's restart
+    // failed), so start them again once the session is back.
+    setAudioSessionReactivatedHandler([this] {
+        if (!m_connected || !m_audio) {
+            return;
+        }
+        qCInfo(lcMobile) << "audio session back: restarting receive audio";
+        AudioEngine* audio = m_audio;
+        QMetaObject::invokeMethod(audio, [audio] {
+            audio->stopRxStream();
+            audio->startRxStream();
+        }, Qt::QueuedConnection);
+        if (m_micCheckOpen || m_pttHeld) {
+            stopDeviceMicrophoneCapture(true);
+            startDeviceMicrophoneCapture();
+        }
+    });
     startStreamThread(m_audioThread);
 
     connect(&rm, &RadioModel::connectionStateChanged, this, &MobileEngine::onConnectionStateChanged);
