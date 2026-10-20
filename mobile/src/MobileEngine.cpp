@@ -1399,10 +1399,27 @@ QStringList MobileEngine::meterKinds() const
             QStringLiteral("Mic"), QStringLiteral("Comp"), QStringLiteral("PA temp"), QStringLiteral("Volts")};
 }
 
+QStringList MobileEngine::meterKindsFor(const QString& side, bool tx) const
+{
+    QStringList kinds = meterKinds();
+    if (!tx) {
+        // Read only while transmitting.
+        for (const char* txOnly : {"Power", "SWR", "ALC", "Comp"}) {
+            kinds.removeAll(QLatin1String(txOnly));
+        }
+    }
+    if (side != QLatin1String("left")) {
+        kinds.removeAll(QStringLiteral("Mic"));
+    }
+    return kinds;
+}
+
 QString MobileEngine::meterChoice(const char* key, const char* fallback) const
 {
-    const QString kind = AppSettings::instance().value(QLatin1String(key), QLatin1String(fallback)).toString();
-    return meterKinds().contains(kind) ? kind : QString::fromLatin1(fallback);
+    const QString k = QLatin1String(key);
+    const QString side = k.contains(QLatin1String("Left")) ? QStringLiteral("left") : QStringLiteral("right");
+    const QString kind = AppSettings::instance().value(k, QLatin1String(fallback)).toString();
+    return meterKindsFor(side, k.endsWith(QLatin1String("Tx"))).contains(kind) ? kind : QString::fromLatin1(fallback);
 }
 
 void MobileEngine::setMeter(const QString& side, bool tx, const QString& kind)
@@ -1413,7 +1430,7 @@ void MobileEngine::setMeter(const QString& side, bool tx, const QString& kind)
     }
     const QString key = side == QLatin1String("left") ? QStringLiteral("MobileMeterLeftTx")
                                                       : QStringLiteral("MobileMeterRightTx");
-    if (meterKinds().contains(kind) && AppSettings::instance().value(key).toString() != kind) {
+    if (meterKindsFor(side, true).contains(kind) && AppSettings::instance().value(key).toString() != kind) {
         AppSettings::instance().setValue(key, kind);
         AppSettings::instance().save();
         emit meterSelectionChanged();
@@ -1422,12 +1439,12 @@ void MobileEngine::setMeter(const QString& side, bool tx, const QString& kind)
 
 QString MobileEngine::meterLeft() const
 {
-    return AppSettings::instance().value(QStringLiteral("MobileMeterLeft"), QStringLiteral("S")).toString();
+    return meterChoice("MobileMeterLeft", "S");
 }
 
 void MobileEngine::setMeterLeft(const QString& kind)
 {
-    if (meterKinds().contains(kind) && kind != meterLeft()) {
+    if (meterKindsFor(QStringLiteral("left"), false).contains(kind) && kind != meterLeft()) {
         AppSettings::instance().setValue(QStringLiteral("MobileMeterLeft"), kind);
         AppSettings::instance().save();
         emit meterSelectionChanged();
@@ -1436,12 +1453,12 @@ void MobileEngine::setMeterLeft(const QString& kind)
 
 QString MobileEngine::meterRight() const
 {
-    return AppSettings::instance().value(QStringLiteral("MobileMeterRight"), QStringLiteral("Power")).toString();
+    return meterChoice("MobileMeterRight", "Volts");
 }
 
 void MobileEngine::setMeterRight(const QString& kind)
 {
-    if (meterKinds().contains(kind) && kind != meterRight()) {
+    if (meterKindsFor(QStringLiteral("right"), false).contains(kind) && kind != meterRight()) {
         AppSettings::instance().setValue(QStringLiteral("MobileMeterRight"), kind);
         AppSettings::instance().save();
         emit meterSelectionChanged();

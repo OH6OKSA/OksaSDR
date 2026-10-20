@@ -211,7 +211,7 @@ Item {
                         columnSpacing: 4
                         rowSpacing: 4
                         Repeater {
-                            model: Engine.meterKinds
+                            model: Engine.meterKindsFor(meter.side, section.modelData.tx)
                             delegate: AppButton {
                                 required property string modelData
                                 text: modelData

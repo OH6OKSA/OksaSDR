@@ -740,6 +740,10 @@ public:
     bool hasSupplyVolts() const;
     // Selectable meters for the two meter faces, remembered on the device.
     QStringList meterKinds() const;
+    // The kinds one meter offers: Power, SWR, ALC and Comp only in transmit
+    // (the radio reads them only then), Mic only on the left meter (the tablet's side
+    // panel, where the TX tab is, covers the right one).
+    Q_INVOKABLE QStringList meterKindsFor(const QString& side, bool tx) const;
     QString meterLeft() const;
     void setMeterLeft(const QString& kind);
     QString meterRight() const;
