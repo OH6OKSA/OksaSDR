@@ -9,7 +9,12 @@ Nothing queued yet. To verify in build 86: an FM repeater memory on the
 air (70 cm testers); DAX turned off at PTT on the radio that had it on;
 receive audio after a call or Siri on an iPhone; the CPU load a tester saw
 after an interruption and a SmartLink reconnect (not reproduced on the
-iPad or Android). Later: a DAX switch on the TX tab; setting transverters
+iPad or Android). Open: a tester's Android 13 tablet freezes ("not
+responding", the GUI thread waiting on the render thread) with the 3D view
+on OpenGL, where one 3D pipeline is not available; fall back to 2D there.
+On the phone the spot labels can run under the RF GAIN badge. The README
+and manual device screenshots are to be retaken (meter chooser, memory
+editor and TX tab changed). Later: a DAX switch on the TX tab; setting transverters
 up in the app; the rest of upstream 26.10.3 as its own build.
 
 ## Planned: logging (when to build it is open)
@@ -170,7 +175,7 @@ Next: verify LAN discovery on the radio's network; APK size (about 150 MB).
 ## Later
 
 From the comparison with upstream main and tester requests:
-- Memory offsets and tones (repeaters); memory groups
+- Memory groups (repeater offsets and tones are in build 86)
 - ATU tools and per-band TX settings
 - Profile import and export
 - QSO recording
@@ -219,3 +224,5 @@ From other FlexRadio mobile clients (PocketSDR for Android, release of
 | Keyboard, pencil/stylus | ✅ | to verify |
 | Phone and tablet layouts | ✅ | ✅ |
 | Distribution | TestFlight | APK in GitHub Releases (beta) |
+| Mac (the iPad app on Apple silicon) | ✅ testers run it through TestFlight | — |
+| Community | [OksaSDR Users](https://www.facebook.com/groups/1468327561855382) on Facebook | same |
