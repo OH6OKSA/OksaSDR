@@ -208,9 +208,13 @@ while you transmit, and in receive too while Controls → TX is open, so the
 level can be set before going on the air; with a microphone on the radio
 it is the radio's own meter.
 
-**Peak hold.** Each meter keeps its highest reading for 1.5 s — an amber
-needle on the analog meter, an amber tick on the bar — then lets it fall
-back slowly, so a voice peak or a burst of noise can be read.
+**Peak hold.** Each meter keeps its highest reading — an amber needle on
+the analog meter, an amber tick on the bar — then lets it fall back, so a
+voice peak or a burst of noise can be read. *Peak hold* in the meter's
+chooser sets it for both meters, as the desktop S meter's decay: *Off*,
+*Fast* (0.2 s, then 20 dB/s), *Medium* (0.5 s, then 10 dB/s; the
+default) or *Slow* (1 s, then 5 dB/s); other scales fall in the same time
+for their span.
 
 **Slices.** Each slice is a button between the meters ("A 14.100 USB"); the
 transmit slice carries a red **TX** tag. Two fit side by side, four make

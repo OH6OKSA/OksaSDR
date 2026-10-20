@@ -281,6 +281,9 @@ class MobileEngine : public QObject {
     // only when both are analog).
     Q_PROPERTY(bool analogMeters READ analogMeters WRITE setAnalogMeters NOTIFY displayLevelsChanged)
     Q_PROPERTY(bool analogLeft READ analogLeft NOTIFY displayLevelsChanged)
+    // Both meters' peak hold, as the desktop S meter's decay choice:
+    // 0 off, 1 fast, 2 medium (the default), 3 slow. Remembered.
+    Q_PROPERTY(int meterPeakHold READ meterPeakHold WRITE setMeterPeakHold NOTIFY displayLevelsChanged)
     Q_PROPERTY(bool analogRight READ analogRight NOTIFY displayLevelsChanged)
     // Sections shown, one under another, in the pinned iPad control panel
     // (as AetherSDR's applet buttons), remembered.
@@ -662,6 +665,8 @@ public:
     {
         setDisplayInt(side == QLatin1String("left") ? "MobileMeterAnalogLeft" : "MobileMeterAnalogRight", on ? 1 : 0);
     }
+    int meterPeakHold() const { return std::clamp(displayInt("MobileMeterPeakHold", 2), 0, 3); }
+    void setMeterPeakHold(int mode) { setDisplayInt("MobileMeterPeakHold", std::clamp(mode, 0, 3)); }
     QStringList pinnedSections() const;
     void setPinnedSections(const QStringList& sections);
     void setCwDecoderEnabled(bool on);

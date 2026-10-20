@@ -64,10 +64,16 @@ Item {
         return v < min ? "< " + min + " dB" : v.toFixed(0) + " dB"
     }
 
-    // Peak hold (the desktop meters' peak): the highest reading stays 1.5 s,
-    // then falls back toward the current one. It starts over whenever the
-    // meter shows another quantity (receive/transmit switch, a new choice) or
-    // stops reading, so one scale's peak never lands on another's.
+    // Peak hold, as the desktop S meter's decay choice (Engine.meterPeakHold,
+    // shared by both meters): the highest reading stays, then falls back
+    // toward the current one. Fast 0.2 s then 20 dB/s, Medium 0.5 s then
+    // 10 dB/s, Slow 1 s then 5 dB/s; other scales fall in the same time for
+    // their span as the S meter's 114 dB. It starts over whenever the meter
+    // shows another quantity (receive/transmit switch, a new choice) or stops
+    // reading, so one scale's peak never lands on another's.
+    readonly property bool peakOn: Engine.meterPeakHold > 0
+    readonly property int peakHoldMs: [0, 200, 500, 1000][Engine.meterPeakHold]
+    readonly property real peakFallDbPerSec: [0, 20, 10, 5][Engine.meterPeakHold]
     property real peak: reading.min
     property double peakHoldUntil: 0
     readonly property real currentValue: reading.live ? reading.v : reading.min
@@ -77,22 +83,23 @@ Item {
         peakHoldUntil = 0
     }
     onScaleKeyChanged: Qt.callLater(resetPeak)
+    onPeakOnChanged: Qt.callLater(resetPeak)
     // Deferred: written while currentValue's binding evaluates (e.g. for
     // the peak tick's visibility), peak would loop back into that binding.
     function updatePeak() {
         if (currentValue >= peak) {
             peak = currentValue
-            peakHoldUntil = Date.now() + 1500
+            peakHoldUntil = Date.now() + peakHoldMs
         }
     }
     onCurrentValueChanged: Qt.callLater(updatePeak)
     Timer {
         interval: 100
         repeat: true
-        running: meter.reading.live && meter.peak > meter.currentValue
+        running: meter.peakOn && meter.reading.live && meter.peak > meter.currentValue
         onTriggered: {
             if (Date.now() < meter.peakHoldUntil) return
-            const fall = (meter.reading.max - meter.reading.min) * 0.04
+            const fall = (meter.reading.max - meter.reading.min) * meter.peakFallDbPerSec / 114 * 0.1
             meter.peak = Math.max(meter.currentValue, meter.peak - fall)
         }
     }
@@ -101,7 +108,7 @@ Item {
         id: gauge
         anchors.fill: parent
         visible: meter.analog
-        peak: meter.peak
+        peak: meter.peakOn ? meter.peak : meter.reading.min
         compact: meter.compact
         kind: meter.kind
         value: meter.reading.v
@@ -143,7 +150,7 @@ Item {
             }
             // Peak hold tick.
             Rectangle {
-                visible: meter.reading.live && meter.peak > meter.currentValue
+                visible: meter.peakOn && meter.reading.live && meter.peak > meter.currentValue
                 width: 2
                 height: parent.height
                 color: "#f0b429"
@@ -188,6 +195,23 @@ Item {
                         Layout.preferredWidth: chooser.cellWidth * 2 + 4
                         Layout.preferredHeight: Theme.touchTarget
                         onClicked: Engine.setMeterAnalog(meter.side, modelData.analog)
+                    }
+                }
+            }
+            Label { text: qsTr("Peak hold"); color: Theme.textDim; font.pixelSize: Math.round(Theme.buttonFont * 0.85) }
+            RowLayout {
+                spacing: 4
+                Repeater {
+                    model: [qsTr("Off"), qsTr("Fast"), qsTr("Medium"), qsTr("Slow")]
+                    delegate: AppButton {
+                        required property string modelData
+                        required property int index
+                        text: modelData
+                        checked: Engine.meterPeakHold === index
+                        focusPolicy: Qt.NoFocus
+                        Layout.preferredWidth: chooser.cellWidth
+                        Layout.preferredHeight: Theme.touchTarget
+                        onClicked: Engine.meterPeakHold = index
                     }
                 }
             }
