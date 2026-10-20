@@ -9,13 +9,14 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Trackpad scrolling (an iPad keyboard's trackpad, or on a Mac): scrolling views follow your fingers and coast on; they stopped halfway before.
-- FM repeater, TX tab in FM modes: offset Simplex / - / + with the shift (e.g. 7.6 MHz) and a CTCSS tone. [TX]
-- Transverter bands: type 439.000 to tune 439 MHz. With an FM step (e.g. 12.5 kHz) the step buttons move by the step, 100 kHz, 1 MHz and 10 MHz.
-- The band button of the band you are on is lit.
+- FM repeater: the offset now moves the transmitter (it sent on the receive frequency before). [TX]
+- Mic level before going on the air: choose Mic for the left meter; while Controls -> TX is open it moves in receive too. Nothing is sent before PTT.
+- Meters offer only what moves: receive S, Mic, PA temp, Volts; Power, SWR, ALC and Comp in transmit.
+- Notch handles are larger and outlined, filled while TNF is on and hollow while off, so they stand out from the waterfall.
+- SmartLink keeps the radio's audio registration alive as SmartSDR does; a refused connection is retried.
 
-RECENT (build 82)
-- Spectrum / waterfall divider; transverter (XVTR) bands; smoother audio on networks that reorder packets; iPad Space PTT holds.
+RECENT (build 84)
+- Trackpad scrolling on an iPad keyboard or a Mac; FM repeater offset and CTCSS; 439.000 types as MHz; the active band button is lit.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
@@ -23,7 +24,7 @@ PLEASE TRY
 - Both portrait and landscape; on iPad also Split View.
 - Voice transmit with the device mic or a Bluetooth headset, and tell me how it sounds at the other end. [TX]
 - CW keying, CWX memories (F1–F12 on a keyboard) and the decoder. [TX]
-- New: trackpad scrolling on an iPad keyboard or a Mac, and the FM repeater offset and CTCSS if you use FM. [TX]
+- New: a repeater through the FM offset, and setting the Mic level on the TX tab before transmitting. [TX]
 - Spots and the DX cluster, a notch on a carrier, the TX processing at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM

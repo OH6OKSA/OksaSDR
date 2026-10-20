@@ -199,11 +199,14 @@ remembered.
 
 ![Meter chooser](manual/meter.jpg)
 
-Available: S, Power, SWR, ALC, Mic, Compression, PA temperature, supply
-voltage. Transmit meters read only while transmitting. **Mic** with this
-device's microphone shows the level of the audio as it is sent (after the
-processing in Controls → TX), while you transmit; with a microphone on the
-radio it is the radio's own meter.
+Receive offers S, Mic, PA temperature and supply voltage; transmit adds
+Power, SWR, ALC and Compression, which the radio reads only while
+transmitting. **Mic** is on the left meter only (on a tablet the side
+panel covers the right one). With this device's microphone it shows the
+level of the audio as it is sent (after the processing in Controls → TX):
+while you transmit, and in receive too while Controls → TX is open, so the
+level can be set before going on the air; with a microphone on the radio
+it is the radio's own meter.
 
 **Peak hold.** Each meter keeps its highest reading for 1.5 s — an amber
 needle on the analog meter, an amber tick on the bar — then lets it fall
@@ -265,7 +268,8 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
 - **Notches (TNF)** — **press and hold** on the display to put a notch
   there, or *+ TNF* in Controls → DSP for one in the middle of the
   passband. A notch shows as a band through spectrum and waterfall
-  (yellow, or green when permanent; dim while TNF is off). Tap it for its
+  (yellow, or green when permanent) with a handle on top outlined in black:
+  filled while TNF is on, hollow while it is off. Tap it for its
   width (50–500 Hz), depth, *Permanent*, a 10 Hz nudge either way and
   *Remove*; *TNF on/off* there is the radio's switch for all notches —
   they only work while it is on. Drag a notch along the spectrum (not the
@@ -405,8 +409,10 @@ them back into the drawer.
   cut). **Mic level** with this device's
   microphone is the app's own gain, −20 to +30 dB: the radio has no gain
   stage for its PC input, so its mic level does nothing to this
-  microphone. Set it so speech peaks near −10 dB on the Mic meter while
-  you transmit (phone microphones often need +10 to +20 dB); a limiter at
+  microphone. Choose Mic for the left meter and set it so speech peaks
+  near −10 dB: while the TX tab is open the microphone is open and the
+  meter moves in receive too (nothing is sent before PTT; not while VOX is
+  on). Phone microphones often need +10 to +20 dB; a limiter at
   −1 dBFS keeps the loudest peaks from clipping. With a microphone on the
   radio it is the radio's mic level (0–100), as SmartSDR's MIC.
   - **This device's microphone: processing** (voice modes, with this

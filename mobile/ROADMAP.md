@@ -5,11 +5,11 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. To verify in build 84: trackpad scrolling on the
-iPad's Magic Keyboard and on a Mac (MacBook) running the iPad app; the FM
-repeater offset and CTCSS on a 70 cm repeater (the tester who asked); the
-lit band button. Later: setting transverters up in the app (Radio Setup);
-macOS: confirm the iPad app on Apple silicon Macs through TestFlight.
+Nothing queued yet. To verify in build 85: the repeater offset on a 70 cm
+repeater (the tester who reported it); the Mic meter on the TX tab with a
+phone microphone; SmartLink sessions with the upstream keepalive. Later:
+setting transverters up in the app (Radio Setup); the rest of upstream
+26.10.3 (SmartSDR 4.3, DeepCW, AGC-T) as its own build.
 
 ## Planned: logging (when to build it is open)
 
@@ -47,6 +47,14 @@ to the radio (needs a listening server on the phone, not possible in the
 iOS background).
 
 ## Released
+
+**Build 85** (2026-10-20), iPhone and iPad, and Android beta 9:
+- FM repeater: the offset sends tx_offset_freq, which moves the transmitter (checked on the air: 29.650 down 0.05 keyed on 29.600).
+- The Mic meter (left meter) moves in receive while the TX tab is open: the microphone opens for it, nothing is sent before PTT, not while VOX is on.
+- Meters offer only readings that move: receive S, Mic, PA temp, Volts; Power, SWR, ALC, Comp in transmit.
+- Notch handles larger and outlined in black, filled with TNF on and hollow with it off; band edges at full strength.
+- From upstream main: SmartLink UDP registration keepalives (#6491), retries after a refused TCP connection (#6484), the TX refusal names the reconnect (#6548).
+- Tools: TestFlight tester report (local), --repeater-test.
 
 **Build 84** (2026-10-19), iPhone and iPad, and Android beta 8 (build 83 was a CI test, not uploaded):
 - Trackpad scrolling follows the fingers on the iPad and on Macs running the iPad app (Qt's iOS trackpad events get a Mac trackpad's phases; the panels had stopped halfway).
