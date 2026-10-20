@@ -9,14 +9,14 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- FM repeater: the offset now moves the transmitter (it sent on the receive frequency before). [TX]
-- Mic level before going on the air: choose Mic for the left meter; while Controls -> TX is open it moves in receive too. Nothing is sent before PTT.
-- Meters offer only what moves: receive S, Mic, PA temp, Volts; Power, SWR, ALC and Comp in transmit.
-- Notch handles are larger and outlined, filled while TNF is on and hollow while off, so they stand out from the waterfall.
-- SmartLink keeps the radio's audio registration alive as SmartSDR does; a refused connection is retried.
+- FM repeater memories: a memory keeps the shift and CTCSS tone (shown in the list, edited with press and hold), and recalling it transmits on the shifted frequency. [TX]
+- Transmit audio when the radio's DAX was left on (e.g. by FT8 software): PTT with this device's microphone now turns DAX transmit off; before, nothing was modulated. [TX]
+- Receive audio comes back after a phone call, alarm or Siri; it stayed silent until a reconnect.
+- Peak hold on the meters: Off, Fast, Medium (default) or Slow, as on the desktop, in the meter's chooser.
+- Join the OksaSDR Users group on Facebook (link below).
 
-RECENT (build 84)
-- Trackpad scrolling on an iPad keyboard or a Mac; FM repeater offset and CTCSS; 439.000 types as MHz; the active band button is lit.
+RECENT (build 85)
+- The FM repeater offset moves the transmitter; Mic meter before transmitting on the TX tab; meters offer only what moves; outlined notch handles; SmartLink keepalive.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
@@ -24,7 +24,7 @@ PLEASE TRY
 - Both portrait and landscape; on iPad also Split View.
 - Voice transmit with the device mic or a Bluetooth headset, and tell me how it sounds at the other end. [TX]
 - CW keying, CWX memories (F1–F12 on a keyboard) and the decoder. [TX]
-- New: a repeater through the FM offset, and setting the Mic level on the TX tab before transmitting. [TX]
+- New: an FM repeater memory, transmit after using FT8 software, and audio after a phone call. [TX]
 - Spots and the DX cluster, a notch on a carrier, the TX processing at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM

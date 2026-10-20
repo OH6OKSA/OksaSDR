@@ -5,11 +5,12 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. To verify in build 85: the repeater offset on a 70 cm
-repeater (the tester who reported it); the Mic meter on the TX tab with a
-phone microphone; SmartLink sessions with the upstream keepalive. Later:
-setting transverters up in the app (Radio Setup); the rest of upstream
-26.10.3 (SmartSDR 4.3, DeepCW, AGC-T) as its own build.
+Nothing queued yet. To verify in build 86: an FM repeater memory on the
+air (70 cm testers); DAX turned off at PTT on the radio that had it on;
+receive audio after a call or Siri on an iPhone; the CPU load a tester saw
+after an interruption and a SmartLink reconnect (not reproduced on the
+iPad or Android). Later: a DAX switch on the TX tab; setting transverters
+up in the app; the rest of upstream 26.10.3 as its own build.
 
 ## Planned: logging (when to build it is open)
 
@@ -47,6 +48,13 @@ to the radio (needs a listening server on the phone, not possible in the
 iOS background).
 
 ## Released
+
+**Build 86** (2026-10-20), iPhone and iPad, and Android beta 10:
+- FM repeater memories: shift and CTCSS tone in the list and the editor; recall sends the desktop's retune and repeater fix-up, so tx_offset_freq moves the transmitter (checked: 29.620 -0.1 recalled transmits on 29.520).
+- PTT with this device's microphone turns the radio's DAX transmit off (with DAX on, the radio ignored the app's audio: confirmed on the FLEX); the log says mic input and DAX at each PTT.
+- iOS: receive audio (and an open microphone) restarts when the audio session comes back after a call, alarm or Siri.
+- Peak hold Off / Fast / Medium / Slow, as the desktop S meter.
+- OksaSDR Users group (Facebook) linked from the README, tester guide and TestFlight texts; README: about the author.
 
 **Build 85** (2026-10-20), iPhone and iPad, and Android beta 9:
 - FM repeater: the offset sends tx_offset_freq, which moves the transmitter (checked on the air: 29.650 down 0.05 keyed on 29.600).
