@@ -32,6 +32,7 @@
 #include "core/backends/flex/PanadapterStream.h"
 #include "core/discovery/RadioDiscoverySource.h"
 #include "core/CtcssTones.h"
+#include "core/MemoryRecallPolicy.h"
 #include "core/CwSidetoneGenerator.h"
 #include "core/CwxLocalKeyer.h"
 #include "core/IambicKeyer.h"
@@ -3346,9 +3347,17 @@ QVariantList MobileEngine::memories() const
     });
     QVariantList out;
     for (const MemoryEntry& m : std::as_const(list)) {
+        const QString dir = m.offsetDir.toLower();
+        const bool ctcss = m.toneMode.toLower() == QLatin1String("ctcss_tx");
         out << QVariantMap{{QStringLiteral("index"), m.index}, {QStringLiteral("name"), m.name},
                            {QStringLiteral("freq"), m.freq}, {QStringLiteral("mode"), m.mode},
-                           {QStringLiteral("group"), m.group}};
+                           {QStringLiteral("group"), m.group},
+                           // FM repeater: direction, shift (MHz) and CTCSS tone.
+                           {QStringLiteral("dir"), dir == QLatin1String("up") || dir == QLatin1String("down")
+                                                       ? dir : QStringLiteral("simplex")},
+                           {QStringLiteral("offset"), std::abs(m.repeaterOffset)},
+                           {QStringLiteral("ctcss"), ctcss},
+                           {QStringLiteral("tone"), m.toneValue > 0.0 ? QString::number(m.toneValue, 'f', 1) : QString()}};
     }
     return out;
 }
@@ -3362,8 +3371,22 @@ void MobileEngine::recallMemory(int index)
     qCInfo(lcMobile) << "recall memory" << index;
     if (rm.usesLocalMemoryBank()) {
         rm.recallCachedMemory(index);
-    } else {
-        rm.sendCommand(QStringLiteral("memory apply %1").arg(index));
+        return;
+    }
+    rm.sendCommand(QStringLiteral("memory apply %1").arg(index));
+    // As the desktop: the radio's memory apply sets the repeater direction and
+    // shift but not tx_offset_freq, which moves the transmitter, so a
+    // repeater memory transmitted on the receive frequency.
+    const auto it = rm.memories().constFind(index);
+    if (m_slice && it != rm.memories().constEnd()) {
+        const QString retune = buildMemoryRecallRetuneCommand(m_slice->sliceId(), it.value());
+        if (!retune.isEmpty()) {
+            rm.sendCommand(retune);
+        }
+        const QString fixup = buildMemoryRecallSliceFixupCommand(m_slice->sliceId(), it.value());
+        if (!fixup.isEmpty()) {
+            rm.sendCommand(fixup);
+        }
     }
 }
 
@@ -3395,7 +3418,8 @@ void MobileEngine::removeMemory(int index)
     }
 }
 
-void MobileEngine::editMemory(int index, const QString& name, double freqMhz, const QString& mode)
+void MobileEngine::editMemory(int index, const QString& name, double freqMhz, const QString& mode,
+                              const QString& dir, double offsetMhz, int ctcss, const QString& tone)
 {
     if (!m_connected) {
         return;
@@ -3410,6 +3434,18 @@ void MobileEngine::editMemory(int index, const QString& name, double freqMhz, co
     e.freq = freqMhz;
     if (!mode.isEmpty()) {
         e.mode = mode;
+    }
+    if (dir == QLatin1String("simplex") || dir == QLatin1String("down") || dir == QLatin1String("up")) {
+        e.offsetDir = dir;
+    }
+    if (offsetMhz >= 0.0 && offsetMhz <= 100.0) {
+        e.repeaterOffset = offsetMhz;
+    }
+    if (ctcss >= 0) {
+        e.toneMode = ctcss ? QStringLiteral("ctcss_tx") : QStringLiteral("off");
+    }
+    if (!tone.isEmpty() && ctcssTones().contains(tone)) {
+        e.toneValue = tone.toDouble();
     }
     const MemoryUpdateData update = buildMemoryUpdateData(e);
     qCInfo(lcMobile) << "edit memory" << index << e.freq << e.mode;

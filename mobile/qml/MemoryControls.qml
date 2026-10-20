@@ -5,7 +5,8 @@ import AetherMobile
 
 // The radio's memory channels (as AetherSDR's Memory panel): tap one to tune
 // to it, save the current slice under a name, press and hold to edit its
-// name, frequency and mode or to delete it.
+// name, frequency, mode and, in FM, its repeater shift and CTCSS tone, or to
+// delete it.
 ColumnLayout {
     id: mem
     spacing: Theme.spacing / 2
@@ -56,6 +57,15 @@ ColumnLayout {
                     color: Theme.buttonText
                 }
                 Label { text: modelData.mode; font.pixelSize: 13; color: Theme.buttonTextDim }
+                // FM repeater: the shift and the CTCSS tone, e.g. "−7.6 88.5".
+                Label {
+                    visible: text.length > 0
+                    text: (modelData.dir === "down" ? "\u2212" + modelData.offset.toFixed(1)
+                           : modelData.dir === "up" ? "+" + modelData.offset.toFixed(1) : "")
+                          + (modelData.ctcss && modelData.tone ? (modelData.dir !== "simplex" ? " " : "") + modelData.tone : "")
+                    font.pixelSize: 13
+                    color: Theme.accent
+                }
                 Label {
                     text: modelData.name
                     font.pixelSize: 14
@@ -78,6 +88,12 @@ ColumnLayout {
         objectName: "memoryEditDialog"
         property int index: -1
         property string mode: ""
+        // FM repeater: direction, shift (MHz), CTCSS on and its tone.
+        property string dir: "simplex"
+        property real offset: 0
+        property bool ctcss: false
+        property string tone: ""
+        readonly property bool fm: mode === "FM" || mode === "NFM" || mode === "DFM"
         parent: Overlay.overlay
         anchors.centerIn: parent
         width: Math.min(440, parent.width - 24)
@@ -91,6 +107,11 @@ ColumnLayout {
             nameEdit.text = m.name
             freqEdit.text = m.freq.toFixed(6).replace(/0{1,3}$/, "")
             mode = m.mode
+            dir = m.dir || "simplex"
+            offset = m.offset || 0
+            ctcss = !!m.ctcss
+            tone = m.tone || ""
+            shiftEdit.text = offset.toFixed(3)
             open()
         }
         // Screenshots (--popup memoryEditDialog): the first memory, or a
@@ -111,7 +132,13 @@ ColumnLayout {
         }
         function save() {
             if (isNaN(freqValue)) return
-            Engine.editMemory(index, nameEdit.text, freqValue, mode)
+            if (fm) {
+                const v = parseFloat(shiftEdit.text.replace(",", "."))
+                Engine.editMemory(index, nameEdit.text, freqValue, mode, dir,
+                                  !isNaN(v) && v >= 0 && v <= 100 ? v : offset, ctcss ? 1 : 0, tone)
+            } else {
+                Engine.editMemory(index, nameEdit.text, freqValue, mode)
+            }
             close()
         }
 
@@ -177,6 +204,90 @@ ColumnLayout {
                             Layout.preferredHeight: Theme.touchTarget
                             onClicked: editDialog.mode = modelData
                         }
+                    }
+                }
+                // FM modes: the repeater the memory recalls (as the TX tab).
+                Label {
+                    visible: editDialog.fm
+                    text: qsTr("FM repeater")
+                    color: Theme.textDim
+                    font.pixelSize: Theme.smallFont
+                }
+                RowLayout {
+                    visible: editDialog.fm
+                    Layout.fillWidth: true
+                    Repeater {
+                        model: [{ key: "simplex", label: qsTr("Simplex") }, { key: "down", label: "\u2212" }, { key: "up", label: "+" }]
+                        delegate: AppButton {
+                            required property var modelData
+                            text: modelData.label
+                            checked: editDialog.dir === modelData.key
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: modelData.key === "simplex" ? 2 : 1
+                            Layout.preferredHeight: Theme.touchTarget
+                            focusPolicy: Qt.NoFocus
+                            onClicked: editDialog.dir = modelData.key
+                        }
+                    }
+                }
+                RowLayout {
+                    visible: editDialog.fm && editDialog.dir !== "simplex"
+                    Layout.fillWidth: true
+                    Repeater {
+                        model: [0.6, 1.6, 5.0, 7.6]
+                        delegate: AppButton {
+                            required property real modelData
+                            text: modelData.toFixed(1)
+                            checked: Math.abs(parseFloat(shiftEdit.text.replace(",", ".")) - modelData) < 0.0005
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 1
+                            Layout.preferredHeight: Theme.touchTarget
+                            leftPadding: 2
+                            rightPadding: 2
+                            focusPolicy: Qt.NoFocus
+                            onClicked: shiftEdit.text = modelData.toFixed(3)
+                        }
+                    }
+                    TextField {
+                        id: shiftEdit
+                        Layout.preferredWidth: 80
+                        font.pixelSize: 15
+                        horizontalAlignment: TextInput.AlignRight
+                        inputMethodHints: Qt.ImhFormattedNumbersOnly
+                    }
+                    Label { text: "MHz"; color: Theme.textDim; font.pixelSize: 13 }
+                }
+                RowLayout {
+                    visible: editDialog.fm
+                    Layout.fillWidth: true
+                    AppButton {
+                        text: qsTr("No tone")
+                        checked: !editDialog.ctcss
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        Layout.preferredHeight: Theme.touchTarget
+                        focusPolicy: Qt.NoFocus
+                        onClicked: editDialog.ctcss = false
+                    }
+                    AppButton {
+                        text: "CTCSS"
+                        checked: editDialog.ctcss
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        Layout.preferredHeight: Theme.touchTarget
+                        focusPolicy: Qt.NoFocus
+                        onClicked: editDialog.ctcss = true
+                    }
+                    ComboBox {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 2
+                        Layout.preferredHeight: Theme.touchTarget
+                        enabled: editDialog.ctcss
+                        model: Engine.ctcssTones
+                        currentIndex: Engine.ctcssTones.indexOf(editDialog.tone)
+                        displayText: currentIndex >= 0 ? currentText + " Hz" : qsTr("tone")
+                        font.pixelSize: Theme.buttonFont
+                        onActivated: (index) => editDialog.tone = Engine.ctcssTones[index]
                     }
                 }
                 RowLayout {

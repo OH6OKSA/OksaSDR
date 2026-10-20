@@ -563,7 +563,11 @@ public:
     Q_INVOKABLE void saveMemory(const QString& name);
     Q_INVOKABLE void removeMemory(int index);
     // Changes a memory's name, frequency (MHz) and mode; other fields stay.
-    Q_INVOKABLE void editMemory(int index, const QString& name, double freqMhz, const QString& mode);
+    // dir "simplex"/"down"/"up" (empty: unchanged), offsetMhz < 0 unchanged,
+    // ctcss < 0 unchanged (0 off, 1 on), tone empty: unchanged.
+    Q_INVOKABLE void editMemory(int index, const QString& name, double freqMhz, const QString& mode,
+                                const QString& dir = QString(), double offsetMhz = -1.0, int ctcss = -1,
+                                const QString& tone = QString());
     bool memoriesWritable() const;
     QVariantList tnfs() const;
     bool tnfEnabled() const;

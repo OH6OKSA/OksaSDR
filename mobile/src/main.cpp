@@ -275,8 +275,9 @@ int main(int argc, char* argv[])
                        "back, restore it, then quit (no keying; VOX, antennas, MTU, callsign left out)."));
     parser.addOption(echoAuditOption);
     const QCommandLineOption memoryEditTestOption(QStringLiteral("memory-edit-test"),
-        QStringLiteral("Development: save a memory \"OksaSDR test\", edit its name, frequency and mode, "
-                       "log what the radio holds, remove it, then quit (other memories untouched)."));
+        QStringLiteral("Development: save a memory \"OksaSDR test\", edit it into an FM repeater memory "
+                       "(29.620, -0.1 MHz, CTCSS 88.5), recall it and log the slice's TX offset, put the slice "
+                       "back, remove the memory, then quit (other memories untouched; nothing transmits)."));
     parser.addOption(memoryEditTestOption);
     const QCommandLineOption spotTestOption(QStringLiteral("spot-test"),
         QStringLiteral("Development: add (three test spots near the slice on the radio, 5 min) or clear them."),
@@ -482,24 +483,51 @@ int main(int argc, char* argv[])
             }
             return QVariantMap();
         };
+        // The slice as it was, put back before the memory is removed.
+        auto* before = new QVariantMap;
+        QTimer::singleShot(7500, &app, [&engine, before] {
+            *before = {{QStringLiteral("mode"), engine.mode()}, {QStringLiteral("mhz"), engine.frequencyMhz()}};
+        });
         QTimer::singleShot(8000, &app, [&engine] { engine.saveMemory(QStringLiteral("OksaSDR test")); });
+        // An FM repeater memory: 29.620 MHz, shift down 0.1 MHz, CTCSS 88.5 Hz.
         QTimer::singleShot(11000, &app, [&engine, findTest] {
             const QVariantMap m = findTest(QStringLiteral("OksaSDR test"));
             qInfo() << "memory-edit-test: saved" << m;
             if (!m.isEmpty()) {
-                engine.editMemory(m.value(QStringLiteral("index")).toInt(), QStringLiteral("OksaSDR edited"), 14.2345,
-                                  QStringLiteral("CW"));
+                engine.editMemory(m.value(QStringLiteral("index")).toInt(), QStringLiteral("OksaSDR edited"), 29.62,
+                                  QStringLiteral("FM"), QStringLiteral("down"), 0.1, 1, QStringLiteral("88.5"));
             }
         });
         QTimer::singleShot(14000, &app, [&engine, findTest] {
             const QVariantMap m = findTest(QStringLiteral("OksaSDR edited"));
             qInfo() << "memory-edit-test: edited" << m;
-            const QVariantMap left = m.isEmpty() ? findTest(QStringLiteral("OksaSDR test")) : m;
-            if (!left.isEmpty()) {
-                engine.removeMemory(left.value(QStringLiteral("index")).toInt());
+            if (!m.isEmpty()) {
+                engine.recallMemory(m.value(QStringLiteral("index")).toInt());
             }
         });
         QTimer::singleShot(17000, &app, [&engine] {
+            qInfo() << "memory-edit-test: recalled: RX" << engine.frequencyMhz() << engine.mode() << "dir"
+                    << engine.repeaterDir() << "offset" << engine.repeaterOffsetMhz() << "TX offset"
+                    << engine.txOffsetMhz() << "CTCSS" << engine.ctcssOn() << engine.ctcssTone();
+            // Straight to the radio: the slice model may not have the recalled
+            // offset yet, and a setter that sees no change sends nothing.
+            engine.devCommand(QStringLiteral("slice set %1 repeater_offset_dir=simplex fm_repeater_offset_freq=0 "
+                                             "tx_offset_freq=0 fm_tone_mode=off").arg(engine.activeSliceId()));
+        });
+        QTimer::singleShot(18500, &app, [&engine, findTest, before] {
+            engine.setMode(before->value(QStringLiteral("mode")).toString());
+            engine.setFrequencyMhz(before->value(QStringLiteral("mhz")).toDouble());
+            QVariantMap m = findTest(QStringLiteral("OksaSDR edited"));
+            if (m.isEmpty()) {
+                m = findTest(QStringLiteral("OksaSDR test"));
+            }
+            if (!m.isEmpty()) {
+                engine.removeMemory(m.value(QStringLiteral("index")).toInt());
+            }
+            qInfo() << "memory-edit-test: restored" << *before << "TX offset" << engine.txOffsetMhz();
+            delete before;
+        });
+        QTimer::singleShot(21000, &app, [&engine] {
             qInfo() << "memory-edit-test: left" << engine.memories().size() << "memories";
             QCoreApplication::quit();
         });

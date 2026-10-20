@@ -482,7 +482,11 @@ them back into the drawer.
 - **Memory** — the radio's memory channels: tap to tune, *Save* stores the
   current frequency under the name typed. **Press and hold** one to edit
   its name, frequency (MHz) and mode — *Current* takes the slice's
-  frequency and mode — or to *Delete* it.
+  frequency and mode — or to *Delete* it. In FM modes it also holds the
+  repeater: *Simplex*, *−* or *+* with the shift (0.6, 1.6, 5.0, 7.6 MHz
+  or typed) and the CTCSS tone; the list shows them (e.g. "−7.6 88.5"),
+  and tapping the memory transmits on the shifted frequency with the tone.
+  *Save* with an FM repeater set on the TX tab stores it too.
 
   ![Editing a memory](manual/memory-edit.jpg)
 
