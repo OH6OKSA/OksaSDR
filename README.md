@@ -33,6 +33,10 @@ SmartLink (or your own VPN), it is a complete station control surface.
 **[User manual](docs/mobile/MANUAL.md)** — every function, with screenshots
 (also the app's *Manual* button).
 
+**[OksaSDR Users on Facebook](https://www.facebook.com/groups/1468327561855382)** — questions, problem reports,
+setups and news of new builds (for licensed radio amateurs; give your
+callsign when you join).
+
 ## Support
 
 <h1 align="center"><a href="https://www.paypal.me/NikoOksa">🍻 Buy me a beer 🍻</a></h1>
@@ -41,6 +45,13 @@ OksaSDR is free. If it is useful to you and you would like to buy
 me a beer, you can do it through the link above. The desktop project that
 makes all of this possible takes support through
 [Open Collective](https://opencollective.com/aethersdr).
+
+## About the author
+
+I'm Niko Oksa, OH6OKSA, a licensed radio amateur since 18 July 1994, from
+Finland. I build OksaSDR in my spare time and use it with my own FLEX.
+By profession I run [Oksa Consulting Oy](https://oksa.fi), helping B2B
+companies with strategy, sales and growth.
 
 ## Why
 
