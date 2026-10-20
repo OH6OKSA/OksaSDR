@@ -186,7 +186,7 @@ Rectangle {
     // Tracking notch filters (TNF), as the desktop draws them: a band of the
     // notch's width through spectrum and waterfall (temporary yellow,
     // permanent green, dimmer while TNF is off) with a handle on top, deeper
-    // notches a bigger one. A tap opens its settings; holding a finger on
+    // notches a bigger one, outlined so it shows over the waterfall. A tap opens its settings; holding a finger on
     // the display adds one there.
     // Screenshots without a notch on the radio: a sample one, drawn here
     // only (tnfPopup.preview()); nothing is sent.
@@ -213,28 +213,43 @@ Rectangle {
                 y: notch.bandTop
                 width: notch.bandWidth
                 height: parent.height - y
-                color: notch.tint
-                opacity: Engine.tnfEnabled ? 0.22 : 0.08
-                border.color: notch.tint
-                border.width: 1
+                // The edges at full strength, so the band reads over a busy
+                // waterfall; the fill stays light.
+                color: Qt.alpha(notch.tint, Engine.tnfEnabled ? 0.22 : 0.06)
+                border.color: Qt.alpha(notch.tint, Engine.tnfEnabled ? 1 : 0.6)
+                border.width: Engine.tnfEnabled ? 2 : 1
             }
+            // The handle: a triangle outlined in black so it stands out from
+            // the waterfall's colours. On: filled with the notch's colour.
+            // TNF off: hollow, the colour as its outline only.
             Canvas {
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: notch.bandTop
-                width: 14
-                height: 10 + notch.modelData.depth * 3
-                opacity: Engine.tnfEnabled ? 0.9 : 0.4
+                width: 26
+                height: 18 + notch.modelData.depth * 4
+                readonly property bool on: Engine.tnfEnabled
                 onPaint: {
                     const ctx = getContext("2d")
                     ctx.reset()
-                    ctx.fillStyle = notch.tint
+                    const m = 2
                     ctx.beginPath()
-                    ctx.moveTo(0, 0)
-                    ctx.lineTo(width, 0)
-                    ctx.lineTo(width / 2, height)
+                    ctx.moveTo(m, m)
+                    ctx.lineTo(width - m, m)
+                    ctx.lineTo(width / 2, height - m)
                     ctx.closePath()
+                    ctx.lineJoin = "round"
+                    ctx.lineWidth = 3
+                    ctx.strokeStyle = "#000000"
+                    ctx.stroke()
+                    ctx.fillStyle = on ? notch.tint : "#0d1117"
                     ctx.fill()
+                    if (!on) {
+                        ctx.lineWidth = 2
+                        ctx.strokeStyle = notch.tint
+                        ctx.stroke()
+                    }
                 }
+                onOnChanged: requestPaint()
                 onHeightChanged: requestPaint()
                 Connections {
                     target: notch
