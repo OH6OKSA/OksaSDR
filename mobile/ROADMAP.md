@@ -173,6 +173,16 @@ From the comparison with upstream main and tester requests:
   chain order
 - CW profiles (new in SmartSDR 4.3)
 
+From other FlexRadio mobile clients (PocketSDR for Android, release of
+2026-10-20), to keep up with:
+- A simple logbook with prefix/country lookup and ADIF export: covered by
+  the logging plan above (steps 1 and 2); a reason to start it sooner.
+- 4O3A Tuner Genius XL control (direct and through the radio, SO2R and
+  1x3): the engine already has the desktop's tuner model (TunerModel),
+  so mostly a mobile panel.
+- PTT latency measured over SmartLink and VPN (key to RF), and FreeDV /
+  RADE on transmit and receive.
+
 ## Waiting
 
 - **Upstream (aethersdr/AetherSDR)**, left to wait for upstream:
