@@ -29,6 +29,8 @@ qt_add_executable(aether-mobile
     src/DevLink.cpp
     src/EchoAudit.cpp
     src/TrackpadScrollPhases.cpp
+    src/QsoLog.cpp
+    src/QsoLog.h
     src/TrackpadScrollPhases.h
     src/EchoAudit.h
     src/DevLink.h
@@ -95,6 +97,7 @@ qt_add_qml_module(aether-mobile
         qml/EqControls.qml
         qml/ProfileControls.qml
         qml/MemoryControls.qml
+        qml/LogControls.qml
         qml/PhoneOperatePage.qml
         qml/StationsDialog.qml
         qml/StepButton.qml

@@ -12,6 +12,7 @@
 #include "gui/VoiceModeGate.h"
 
 #include "AudioSession.h"
+#include "QsoLog.h"
 
 #include "ScreenAwake.h"
 #include "SecureStore.h"
@@ -33,6 +34,10 @@
 #include "core/discovery/RadioDiscoverySource.h"
 #include "core/CtcssTones.h"
 #include "core/MemoryRecallPolicy.h"
+#include "core/CallsignInfo.h"
+#include "core/CallsignLookupService.h"
+#include "core/CtyDatParser.h"
+#include "core/QrzLookupSettings.h"
 #include "core/CwSidetoneGenerator.h"
 #include "core/CwxLocalKeyer.h"
 #include "core/IambicKeyer.h"
@@ -245,6 +250,29 @@ MobileEngine::MobileEngine(QObject* parent)
         }
     });
     m_perfTimer.start();
+    // QSO log and callsign lookup: the log file, cty.dat for the country of
+    // any call, and QRZ.com with the account the Log tab stores (password in
+    // the platform's secure store; the engine keeps it for the session).
+    m_qsoLog = std::make_unique<QsoLog>();
+    m_cty = std::make_unique<CtyDatParser>();
+    m_cty->loadFromResource(QStringLiteral(":/cty.dat"));
+    {
+        CallsignLookupService& lookup = CallsignLookupService::instance();
+        lookup.setCtyParser(m_cty.get());
+        if (!QrzLookupSettings::username().isEmpty()) {
+            lookup.savePassword(loadSecret(QStringLiteral("qrz_password")));
+        }
+        connect(&lookup, &CallsignLookupService::infoReady, this,
+                [this](const CallsignInfo& info, bool) { applyCallInfo(info); });
+        connect(&lookup, &CallsignLookupService::lookupFailed, this, [this](const QString& call, const QString& message) {
+            if (call.compare(m_lookupCall, Qt::CaseInsensitive) == 0) {
+                m_callLookup = {{QStringLiteral("call"), call}, {QStringLiteral("error"), message}};
+                emit callLookupChanged();
+            }
+        });
+    }
+    qCInfo(lcMobile) << "QSO log:" << m_qsoLog->records().size() << "contacts in" << m_qsoLog->path();
+
     // After a call, alarm or Siri: receive audio (and a microphone that was
     // open) could not reopen while iOS held the session (the RX sink's restart
     // failed), so start them again once the session is back.
@@ -3339,6 +3367,181 @@ void MobileEngine::setRfGain(int gain)
     }
 }
 
+QVariantList MobileEngine::recentQsos() const
+{
+    QVariantList out;
+    const QList<QVariantMap>& records = m_qsoLog->records();
+    for (qsizetype i = records.size() - 1; i >= 0 && out.size() < 50; --i) {
+        out << records.at(i);
+    }
+    return out;
+}
+
+int MobileEngine::qsoCount() const
+{
+    return static_cast<int>(m_qsoLog->records().size());
+}
+
+QString MobileEngine::qrzUser() const
+{
+    return QrzLookupSettings::username();
+}
+
+QString MobileEngine::myGrid() const
+{
+    const QString gps = m_session.radioModel().gpsGrid();
+    if (!gps.isEmpty()) {
+        return gps;
+    }
+    return AppSettings::instance().value(QStringLiteral("MobileMyGrid")).toString();
+}
+
+void MobileEngine::setMyGrid(const QString& grid)
+{
+    AppSettings::instance().setValue(QStringLiteral("MobileMyGrid"), grid.trimmed().toUpper());
+    AppSettings::instance().save();
+    emit qrzChanged();
+}
+
+void MobileEngine::setQrzAccount(const QString& user, const QString& password)
+{
+    CallsignLookupService& lookup = CallsignLookupService::instance();
+    QrzLookupSettings::setUsername(user.trimmed());
+    if (user.trimmed().isEmpty()) {
+        removeSecret(QStringLiteral("qrz_password"));
+        lookup.savePassword(QString());
+    } else {
+        if (!password.isEmpty()) {
+            saveSecret(QStringLiteral("qrz_password"), password);
+        }
+        lookup.savePassword(password.isEmpty() ? loadSecret(QStringLiteral("qrz_password")) : password);
+    }
+    lookup.reloadConfiguration();
+    qCInfo(lcMobile) << "QRZ.com account" << (user.trimmed().isEmpty() ? "removed" : "set");
+    emit qrzChanged();
+    if (!m_lookupCall.isEmpty()) {
+        lookup.lookup(m_lookupCall, true);
+    }
+}
+
+void MobileEngine::lookupCallsign(const QString& call)
+{
+    const QString c = call.trimmed().toUpper();
+    m_lookupCall = c;
+    m_callLookup.clear();
+    emit callLookupChanged();
+    if (c.size() < 3) {
+        return;
+    }
+    CallsignLookupService& lookup = CallsignLookupService::instance();
+    if (!m_session.radioModel().callsign().isEmpty()) {
+        lookup.setOwnCallsign(m_session.radioModel().callsign());
+    }
+    lookup.lookup(c);
+}
+
+void MobileEngine::applyCallInfo(const CallsignInfo& info)
+{
+    if (info.call.compare(m_lookupCall, Qt::CaseInsensitive) != 0) {
+        return;
+    }
+    QVariantMap m{{QStringLiteral("call"), info.call}, {QStringLiteral("name"), info.prefixOnly ? QString() : info.displayName()},
+                  {QStringLiteral("qth"), info.prefixOnly ? QString() : info.displayLocation()},
+                  {QStringLiteral("country"), info.country}, {QStringLiteral("grid"), info.grid},
+                  {QStringLiteral("prefixOnly"), info.prefixOnly}, {QStringLiteral("lotw"), info.lotw},
+                  {QStringLiteral("eqsl"), info.eqsl}, {QStringLiteral("mailQsl"), info.mailQsl},
+                  {QStringLiteral("continent"), info.continent}, {QStringLiteral("cqZone"), info.cqZone}};
+    if (info.distanceKm >= 0.0) {
+        m.insert(QStringLiteral("distanceKm"), qRound(info.distanceKm));
+        m.insert(QStringLiteral("bearing"), qRound(info.bearingDeg));
+    }
+    if (info.prefixOnly || info.country.isEmpty()) {
+        if (const DxccEntity* e = m_cty->entityForCallsign(info.call)) {
+            if (info.country.isEmpty()) {
+                m.insert(QStringLiteral("country"), e->name);
+            }
+            m.insert(QStringLiteral("continent"), e->continent);
+            m.insert(QStringLiteral("cqZone"), e->cqZone);
+        }
+    }
+    m_callLookup = m;
+    emit callLookupChanged();
+}
+
+QVariantMap MobileEngine::qsoDefaults() const
+{
+    const double mhz = m_slice ? m_slice->frequency() : 0.0;
+    const QString mode = m_slice ? m_slice->mode() : QString();
+    const QString group = QsoLog::modeGroup(QsoLog::adifMode(mode).first);
+    return {{QStringLiteral("freq"), mhz}, {QStringLiteral("band"), QsoLog::bandOf(mhz)},
+            // No report until the slice's mode is known (59 voice, 599 CW and data).
+            {QStringLiteral("mode"), mode},
+            {QStringLiteral("rst"), mode.isEmpty() ? QString() : group == QLatin1String("PHONE") ? QStringLiteral("59") : QStringLiteral("599")},
+            {QStringLiteral("power"), m_connected ? rfPower() : 0},
+            {QStringLiteral("utc"), QDateTime::currentDateTimeUtc().toString(QStringLiteral("HH:mm"))},
+            {QStringLiteral("myCall"), m_session.radioModel().callsign()}, {QStringLiteral("myGrid"), myGrid()}};
+}
+
+QVariantMap MobileEngine::workedInfo(const QString& call) const
+{
+    const QVariantMap d = qsoDefaults();
+    return {{QStringLiteral("worked"), m_qsoLog->workedCount(call)},
+            {QStringLiteral("dupe"), m_qsoLog->isDupe(call, d.value(QStringLiteral("band")).toString(),
+                                                      QsoLog::adifMode(d.value(QStringLiteral("mode")).toString()).first)}};
+}
+
+bool MobileEngine::logQso(const QVariantMap& fields)
+{
+    const QString call = fields.value(QStringLiteral("call")).toString().trimmed().toUpper();
+    if (call.size() < 3) {
+        return false;
+    }
+    const QVariantMap d = qsoDefaults();
+    const QDateTime now = QDateTime::currentDateTimeUtc();
+    QString timeOn = fields.value(QStringLiteral("timeOn")).toString().remove(QLatin1Char(':'));
+    if (timeOn.size() != 4) {
+        timeOn = now.toString(QStringLiteral("HHmm"));
+    }
+    const auto mode = QsoLog::adifMode(d.value(QStringLiteral("mode")).toString());
+    QVariantMap r{{QStringLiteral("CALL"), call},
+                  {QStringLiteral("QSO_DATE"), now.toString(QStringLiteral("yyyyMMdd"))},
+                  {QStringLiteral("TIME_ON"), timeOn},
+                  {QStringLiteral("TIME_OFF"), now.toString(QStringLiteral("HHmm"))},
+                  {QStringLiteral("FREQ"), QString::number(d.value(QStringLiteral("freq")).toDouble(), 'f', 6)},
+                  {QStringLiteral("BAND"), d.value(QStringLiteral("band"))},
+                  {QStringLiteral("MODE"), mode.first},
+                  {QStringLiteral("SUBMODE"), mode.second},
+                  {QStringLiteral("RST_SENT"), fields.value(QStringLiteral("rstSent"))},
+                  {QStringLiteral("RST_RCVD"), fields.value(QStringLiteral("rstRcvd"))},
+                  {QStringLiteral("TX_PWR"), d.value(QStringLiteral("power")).toInt() > 0 ? d.value(QStringLiteral("power")).toString() : QString()},
+                  {QStringLiteral("COMMENT"), fields.value(QStringLiteral("comment"))},
+                  {QStringLiteral("SIG"), fields.value(QStringLiteral("sig"))},
+                  {QStringLiteral("SIG_INFO"), fields.value(QStringLiteral("sigInfo")).toString().toUpper()},
+                  {QStringLiteral("MY_SIG"), fields.value(QStringLiteral("mySig"))},
+                  {QStringLiteral("MY_SIG_INFO"), fields.value(QStringLiteral("mySigInfo")).toString().toUpper()},
+                  {QStringLiteral("STATION_CALLSIGN"), d.value(QStringLiteral("myCall"))},
+                  {QStringLiteral("MY_GRIDSQUARE"), d.value(QStringLiteral("myGrid"))}};
+    if (m_callLookup.value(QStringLiteral("call")).toString() == call) {
+        r.insert(QStringLiteral("NAME"), m_callLookup.value(QStringLiteral("name")));
+        r.insert(QStringLiteral("QTH"), m_callLookup.value(QStringLiteral("qth")));
+        r.insert(QStringLiteral("GRIDSQUARE"), m_callLookup.value(QStringLiteral("grid")));
+        r.insert(QStringLiteral("COUNTRY"), m_callLookup.value(QStringLiteral("country")));
+        r.insert(QStringLiteral("CONT"), m_callLookup.value(QStringLiteral("continent")));
+        const int cqz = m_callLookup.value(QStringLiteral("cqZone")).toInt();
+        if (cqz > 0) {
+            r.insert(QStringLiteral("CQZ"), cqz);
+        }
+    }
+    if (!m_qsoLog->append(r)) {
+        setLastError(tr("The QSO could not be written to the log file."));
+        return false;
+    }
+    qCInfo(lcMobile).noquote() << QStringLiteral("logged %1 %2 %3 %4").arg(call, r.value(QStringLiteral("BAND")).toString(),
+                                                                         mode.first, timeOn);
+    emit qsoLogChanged();
+    return true;
+}
+
 QVariantList MobileEngine::memories() const
 {
     QList<MemoryEntry> list = m_session.radioModel().memories().values();
@@ -3857,6 +4060,10 @@ void MobileEngine::tuneToSpot(int index)
         }
     }
     qCInfo(lcMobile) << "tune to spot" << spot.callsign << spot.rxFreqMhz;
+    if (m_lastSpotCall != spot.callsign) {
+        m_lastSpotCall = spot.callsign;
+        emit lastSpotCallChanged();
+    }
     tuneTo(spot.rxFreqMhz);
 }
 

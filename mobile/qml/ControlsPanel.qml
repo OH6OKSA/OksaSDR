@@ -26,6 +26,7 @@ ColumnLayout {
         { name: "View", title: qsTr("View"), component: viewSection },
         { name: "Profiles", title: qsTr("Profiles"), component: profileSection },
         { name: "Memory", title: qsTr("Memory"), component: memorySection },
+        { name: "Log", title: qsTr("Log"), component: logSection },
     ]
 
     function toggleSection(name) {
@@ -235,4 +236,5 @@ ColumnLayout {
     Component { id: viewSection; DisplayControls {} }
     Component { id: profileSection; ProfileControls {} }
     Component { id: memorySection; MemoryControls {} }
+    Component { id: logSection; LogControls {} }
 }

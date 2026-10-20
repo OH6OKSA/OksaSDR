@@ -14,10 +14,13 @@ responding", the GUI thread waiting on the render thread) with the 3D view
 on OpenGL, where one 3D pipeline is not available; fall back to 2D there.
 On the phone the spot labels can run under the RF GAIN badge. The README
 and manual device screenshots are to be retaken (meter chooser, memory
-editor and TX tab changed). Later: a DAX switch on the TX tab; setting transverters
+editor and TX tab changed). Queued: logging step 1, the Log tab (quick
+log with QRZ.com / cty.dat lookup, worked-before and dupe, POTA / WWFF
+fields, an ADIF file on the device); step 2 (sending to logbooks, sharing
+the ADIF file) next. Later: a DAX switch on the TX tab; setting transverters
 up in the app; the rest of upstream 26.10.3 as its own build.
 
-## Planned: logging (when to build it is open)
+## Planned: logging (step 1 in the next build)
 
 QSO logging from the app to any logbook, through the standard ADIF routes
 (analysed 2026-10-18):

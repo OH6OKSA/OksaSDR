@@ -39,12 +39,16 @@ class DecoderAudioModel;
 class PanadapterModel;
 class RadioDiscoverySource;
 class SliceModel;
+class CtyDatParser;
+struct CallsignInfo;
 struct PcmFrame;
 struct RadioInfo;
 struct SpectrumDecodeScale;
 }
 
 namespace AetherSDR::mobile {
+
+class QsoLog;
 
 // Composition root of the touch client: owns the radio session, discovery and
 // the audio engine, and exposes the active slice to QML. Lives on the main
@@ -155,6 +159,16 @@ class MobileEngine : public QObject {
     Q_PROPERTY(int rfGainStep READ rfGainStep NOTIFY rfGainChanged)
     // The radio's memory channels: {index, name, freq, mode, group}, by frequency.
     Q_PROPERTY(QVariantList memories READ memories NOTIFY memoriesChanged)
+    // QSO log (the Log tab): the newest contacts first, how many there are,
+    // the callsign lookup for the call being logged (QRZ.com when an account
+    // is set, else cty.dat's country), the call of the spot tapped last, the
+    // QRZ.com user name, and the operator's grid when the radio has no GPS.
+    Q_PROPERTY(QVariantList recentQsos READ recentQsos NOTIFY qsoLogChanged)
+    Q_PROPERTY(int qsoCount READ qsoCount NOTIFY qsoLogChanged)
+    Q_PROPERTY(QVariantMap callLookup READ callLookup NOTIFY callLookupChanged)
+    Q_PROPERTY(QString lastSpotCall READ lastSpotCall NOTIFY lastSpotCallChanged)
+    Q_PROPERTY(QString qrzUser READ qrzUser NOTIFY qrzChanged)
+    Q_PROPERTY(QString myGrid READ myGrid WRITE setMyGrid NOTIFY qrzChanged)
     Q_PROPERTY(bool memoriesWritable READ memoriesWritable NOTIFY memoriesChanged)
     // The radio's tracking notch filters (Flex TNF): {id, freq (MHz),
     // width (Hz), depth 1-3, permanent}; tnfEnabled is the global switch.
@@ -559,6 +573,30 @@ public:
     int rfGainHigh() const;
     int rfGainStep() const;
     QVariantList memories() const;
+    QVariantList recentQsos() const;
+    int qsoCount() const;
+    QVariantMap callLookup() const { return m_callLookup; }
+    QString lastSpotCall() const { return m_lastSpotCall; }
+    QString qrzUser() const;
+    QString myGrid() const;
+    void setMyGrid(const QString& grid);
+    // Looks the call up (debounced by the caller); the answer arrives in
+    // callLookup. An empty call clears it.
+    Q_INVOKABLE void lookupCallsign(const QString& call);
+    // What a contact logged now would carry from the radio: freq (MHz), band,
+    // mode, rst (59 or 599), power (W), utc ("HH:MM"), myCall, myGrid.
+    Q_INVOKABLE QVariantMap qsoDefaults() const;
+    // Logs a contact: fields from the form (call, rstSent, rstRcvd, comment,
+    // sig, sigInfo, mySig, mySigInfo, timeOn "HHmm" optional); the radio's
+    // frequency, band, mode and power and the lookup's name, QTH, grid and
+    // country are added. True when it was written to the log file.
+    Q_INVOKABLE bool logQso(const QVariantMap& fields);
+    // Contacts with this call before, and whether it is a dupe on this band
+    // and mode: {worked, dupe}.
+    Q_INVOKABLE QVariantMap workedInfo(const QString& call) const;
+    // QRZ.com account for the lookup: the password goes to the platform's
+    // secure store, never to the settings. Empty user removes it.
+    Q_INVOKABLE void setQrzAccount(const QString& user, const QString& password);
     Q_INVOKABLE void recallMemory(int index);
     Q_INVOKABLE void saveMemory(const QString& name);
     Q_INVOKABLE void removeMemory(int index);
@@ -929,6 +967,10 @@ signals:
     void lockedChanged();
     void rfGainChanged();
     void memoriesChanged();
+    void qsoLogChanged();
+    void callLookupChanged();
+    void lastSpotCallChanged();
+    void qrzChanged();
     void tnfsChanged();
     void txChainChanged();
     void spotsChanged();
@@ -1055,6 +1097,12 @@ private:
     bool m_dvkRecordingMic{false};
     QList<QObject*> m_micCheckHolders;   // shown TX tabs
     bool m_micCheckOpen{false};          // the microphone is open for them
+    std::unique_ptr<QsoLog> m_qsoLog;
+    std::unique_ptr<CtyDatParser> m_cty;
+    QString m_lookupCall;                // the call callLookup is for
+    QVariantMap m_callLookup;
+    QString m_lastSpotCall;
+    void applyCallInfo(const CallsignInfo& info);
     int m_dvkRecordSlot{0};
     static QString dvkStateName(int status);
     void ensurePanDbmRange(const QString& panId);

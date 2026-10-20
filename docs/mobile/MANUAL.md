@@ -490,6 +490,23 @@ them back into the drawer.
 
   ![Editing a memory](manual/memory-edit.jpg)
 
+- **Log** — quick QSO logging into a log on this device (an ADIF file,
+  `oksasdr-log.adi`). Type the **callsign**, or tap the call of the spot
+  you tuned to last. A card shows who it is: with a **QRZ.com** account
+  (user and password at the bottom; their full records need QRZ.com's XML
+  subscription) the name, QTH, grid, distance and bearing and whether the
+  station uses LoTW, eQSL or paper cards; without one, the country,
+  continent and CQ zone from the callsign's prefix. It also says when the
+  call was **worked before** and when it would be a **dupe** on this band
+  and mode. The reports start at 59 (599 in CW and data) and follow the
+  mode until you type one. Frequency, band, mode, power, the UTC time the
+  call was typed and your own callsign come from the radio; your grid
+  comes from the radio's GPS, or from *My grid*. **Their park** and **My
+  park** (POTA or WWFF with the reference) go into ADIF's SIG / MY_SIG
+  fields; your own park stays for every contact while you activate.
+  **Log** writes the contact; the newest ten are listed. The QRZ.com
+  password is kept in this device's secure store.
+
 ## 9. Radio Setup
 
 **Setup** in the top row (on an iPhone: **⋯** → *Radio Setup*) holds the
