@@ -57,7 +57,7 @@ iOS background).
 **Build 82** (2026-10-19), iPhone and iPad, and Android beta 7:
 - Draggable divider between the spectrum and the waterfall (as the desktop's); double tap for the automatic split; remembered.
 - Transverter (XVTR) bands from the radio as band buttons after 6 m (checked with a temporary receive-only 2m transverter: band X0, 144.100 MHz on XVTA).
-- Remote audio: a late packet is dropped instead of concealing a false 8-frame jump and playing out of order (choppy audio across reordering paths); reordering no longer counts as loss.
+- Remote audio: a late packet is dropped instead of concealing a false 8-frame jump and playing out of order (choppy audio across reordering paths); reordering no longer counts as loss. Verified in the field: the iPad mini 6 tester who heard choppy audio over VPN and SmartLink reports it gone (2026-10-19).
 - iPad Space PTT holds: Space from GameController, only while the operate page has the keyboard.
 - Sequence-loss tests updated to the reorder-tolerant count; --select-band dev option.
 
