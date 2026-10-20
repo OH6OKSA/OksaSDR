@@ -2180,6 +2180,9 @@ void MobileEngine::setRepeaterDir(const QString& dir)
 {
     if (m_slice && (dir == QLatin1String("simplex") || dir == QLatin1String("down") || dir == QLatin1String("up"))) {
         m_slice->setRepeaterOffsetDir(dir);
+        // Direction and magnitude are only labels to the radio:
+        // tx_offset_freq is what moves the transmitter.
+        m_slice->setTxOffsetFreq(SliceModel::txOffsetForDirection(dir, m_slice->fmRepeaterOffsetFreq()));
     }
 }
 
@@ -2192,6 +2195,7 @@ void MobileEngine::setRepeaterOffsetMhz(double mhz)
 {
     if (m_slice && std::isfinite(mhz) && mhz >= 0.0 && mhz <= 100.0) {
         m_slice->setFmRepeaterOffsetFreq(mhz);
+        m_slice->setTxOffsetFreq(SliceModel::txOffsetForDirection(m_slice->repeaterOffsetDir(), mhz));
     }
 }
 
