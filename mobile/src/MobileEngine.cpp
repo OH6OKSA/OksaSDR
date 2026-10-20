@@ -2142,6 +2142,17 @@ void MobileEngine::setPtt(bool down, const QString& reason)
         m_micLevelDbfs = -100.0;
         m_micPeakDbfs = -100.0;
     }
+    // With the radio's DAX transmit on, the radio takes its transmit audio
+    // from the DAX stream and ignores this device's (no modulation, nothing
+    // in the monitor). It is left on by digital-mode software on a PC; with
+    // this device's microphone the operator means it to be heard.
+    TransmitModel& tm = m_session.radioModel().transmitModel();
+    qCInfo(lcMobile).noquote() << QStringLiteral("PTT: mic input %1, DAX transmit %2")
+                                      .arg(tm.micSelection(), tm.daxOn() ? QStringLiteral("on") : QStringLiteral("off"));
+    if (tm.micSelection() == kDeviceMicSelection && tm.daxOn()) {
+        qCWarning(lcMobile) << "DAX transmit was on: turned off so this device's microphone is heard";
+        tm.setDax(false);
+    }
     startDeviceMicrophoneCapture();
     m_pttInput = m_session.radioModel().localTxController()->capture(TxController::Activity::Mox);
     m_pttHeld = true;
