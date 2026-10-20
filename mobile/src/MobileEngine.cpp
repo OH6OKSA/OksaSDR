@@ -850,6 +850,9 @@ void MobileEngine::wireTransmit()
             audio->setRemoteTxStreamId(streamId);
             audio->setOpusTxEnabled(true);
         }, Qt::QueuedConnection);
+        if (m_micCheckOpen) {
+            startDeviceMicrophoneCapture();   // a TX tab shown before the stream came
+        }
         emit transmitStateChanged();
     });
     connect(&rm, &RadioModel::txAudioStreamReady, this, [this](quint32 streamId) {
@@ -884,6 +887,8 @@ void MobileEngine::wireTransmit()
     connect(&rm.transmitModel(), &TransmitModel::micProfileListChanged, this, &MobileEngine::profilesChanged);
     connect(&rm.transmitModel(), &TransmitModel::stateChanged, this, &MobileEngine::profilesChanged);
     connect(&rm.transmitModel(), &TransmitModel::micStateChanged, this, &MobileEngine::profilesChanged);
+    connect(&rm.transmitModel(), &TransmitModel::micStateChanged, this, &MobileEngine::updateMicCheck);
+    connect(&rm.transmitModel(), &TransmitModel::stateChanged, this, &MobileEngine::updateMicCheck);
     connect(&rm.equalizerModel(), &EqualizerModel::txStateChanged, this, &MobileEngine::eqChanged);
     connect(&rm.equalizerModel(), &EqualizerModel::rxStateChanged, this, &MobileEngine::eqChanged);
     connect(&rm.meterModel(), &MeterModel::micMetersChanged, this,
@@ -1092,8 +1097,11 @@ void MobileEngine::startDeviceMicrophoneCapture()
     }, Qt::QueuedConnection);
 }
 
-void MobileEngine::stopDeviceMicrophoneCapture()
+void MobileEngine::stopDeviceMicrophoneCapture(bool force)
 {
+    if (m_micCheckOpen && !force) {
+        return;   // a shown TX tab keeps metering it
+    }
     AudioEngine* audio = m_audio;
     QMetaObject::invokeMethod(audio, [audio] {
         if (audio->isTxStreaming()) {
@@ -1160,7 +1168,53 @@ bool MobileEngine::micMeterLive() const
     if (!m_connected) {
         return false;
     }
-    return m_session.radioModel().transmitModel().micSelection() != kDeviceMicSelection || radioTransmitting();
+    return m_session.radioModel().transmitModel().micSelection() != kDeviceMicSelection || radioTransmitting()
+        || m_micCheckOpen;
+}
+
+void MobileEngine::holdMicCheck(QObject* holder, bool on)
+{
+    if (!holder) {
+        return;
+    }
+    if (on && !m_micCheckHolders.contains(holder)) {
+        m_micCheckHolders.append(holder);
+        connect(holder, &QObject::destroyed, this, [this, holder] {
+            m_micCheckHolders.removeAll(holder);
+            updateMicCheck();
+        });
+    } else if (!on) {
+        m_micCheckHolders.removeAll(holder);
+        disconnect(holder, &QObject::destroyed, this, nullptr);
+    }
+    updateMicCheck();
+}
+
+void MobileEngine::updateMicCheck()
+{
+    const TransmitModel& tm = m_session.radioModel().transmitModel();
+    const bool want = !m_micCheckHolders.isEmpty() && m_connected && tm.micSelection() == kDeviceMicSelection
+        && !tm.voxEnable();
+    if (want == m_micCheckOpen) {
+        return;
+    }
+    if (want) {
+        if (!ensureMicrophonePermission()) {
+            return;   // asked; the next time the tab shows it opens
+        }
+        m_micLevelDbfs = -100.0;
+        m_micPeakDbfs = -100.0;
+        startDeviceMicrophoneCapture();
+        m_micCheckOpen = true;
+        qCInfo(lcMobile) << "mic check: microphone open for the Mic meter";
+    } else {
+        m_micCheckOpen = false;
+        if (!m_pttHeld && !m_dvkRecordingMic && m_voiceState == QLatin1String("idle")) {
+            stopDeviceMicrophoneCapture();
+        }
+        qCInfo(lcMobile) << "mic check: microphone closed";
+    }
+    emit txMetersChanged();
 }
 
 namespace {
@@ -2047,9 +2101,12 @@ void MobileEngine::setPtt(bool down, const QString& reason)
     // keys: opened after keying, the first ~0.6 s went out as silence or the
     // capture's start-up noise.
     m_txSendStats->reset();
-    // The device mic's level starts over (it is metered only while sent).
-    m_micLevelDbfs = -100.0;
-    m_micPeakDbfs = -100.0;
+    // The device mic's level starts over (it is metered only while sent),
+    // unless a shown TX tab was metering it already.
+    if (!m_micCheckOpen) {
+        m_micLevelDbfs = -100.0;
+        m_micPeakDbfs = -100.0;
+    }
     startDeviceMicrophoneCapture();
     m_pttInput = m_session.radioModel().localTxController()->capture(TxController::Activity::Mox);
     m_pttHeld = true;
@@ -2197,6 +2254,11 @@ void MobileEngine::setRepeaterOffsetMhz(double mhz)
         m_slice->setFmRepeaterOffsetFreq(mhz);
         m_slice->setTxOffsetFreq(SliceModel::txOffsetForDirection(m_slice->repeaterOffsetDir(), mhz));
     }
+}
+
+double MobileEngine::txOffsetMhz() const
+{
+    return m_slice ? m_slice->txOffsetFreq() : 0.0;
 }
 
 bool MobileEngine::ctcssOn() const
@@ -4572,6 +4634,7 @@ void MobileEngine::onConnectionStateChanged(bool connected)
         emit txAudioChanged();
         emit cwChanged();
         updateCwDecoder();
+        updateMicCheck();
         return;
     }
     stopTransmit(QStringLiteral("radio disconnected"));
@@ -4582,7 +4645,8 @@ void MobileEngine::onConnectionStateChanged(bool connected)
     } else {
         m_wanActive = false;
     }
-    stopDeviceMicrophoneCapture();
+    m_micCheckOpen = false;
+    stopDeviceMicrophoneCapture(true);
     setKeepScreenAwake(false);
     stopAudio();
     bindSlice(nullptr);

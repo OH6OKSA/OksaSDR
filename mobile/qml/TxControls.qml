@@ -315,7 +315,9 @@ ColumnLayout {
     Label {
         visible: Engine.transmitAvailable
         Layout.fillWidth: true
-        text: qsTr("This device's microphone: set it so speech peaks near -10 dB on the Mic meter while you transmit.")
+        text: Engine.micMeterLive
+              ? qsTr("This device's microphone: with Mic chosen for a meter, speak as on air and set the level so speech peaks near -10 dB. While this tab is open the meter moves before PTT; nothing is sent.")
+              : qsTr("This device's microphone: set it so speech peaks near -10 dB on the Mic meter while you transmit.")
         color: Theme.textDim
         font.pixelSize: 12
         wrapMode: Text.WordWrap
@@ -609,4 +611,11 @@ ColumnLayout {
             }
         }
     }
+
+    // While this tab shows and the app is in front, the microphone stays
+    // open so the level above moves before transmitting (as on the desktop).
+    readonly property bool micCheckShown: visible && Qt.application.state === Qt.ApplicationActive
+    onMicCheckShownChanged: Engine.holdMicCheck(tx, micCheckShown)
+    Component.onCompleted: Engine.holdMicCheck(tx, micCheckShown)
+    Component.onDestruction: Engine.holdMicCheck(tx, false)
 }

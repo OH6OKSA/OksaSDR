@@ -525,6 +525,8 @@ public:
     QString repeaterDir() const;
     void setRepeaterDir(const QString& dir);
     double repeaterOffsetMhz() const;
+    // The signed TX offset the slice carries (for the log and dev tests).
+    double txOffsetMhz() const;
     void setRepeaterOffsetMhz(double mhz);
     bool ctcssOn() const;
     void setCtcssOn(bool on);
@@ -715,6 +717,11 @@ public:
     double micLevelDbfs() const { return m_micLevelDbfs; }
     double micPeakDbfs() const { return m_micPeakDbfs; }
     bool micMeterLive() const;
+    // A shown TX tab holds this device's microphone open, so its Mic meter
+    // moves before transmitting and the level can be set (as the desktop and
+    // SmartSDR, which meter the mic in receive too). Nothing is transmitted:
+    // the radio keys only on PTT. Not while VOX is on (speech would key it).
+    Q_INVOKABLE void holdMicCheck(QObject* holder, bool on);
     QVariantMap txChain() const;
     Q_INVOKABLE void setTxChain(const QString& key, const QVariant& value);
     double compReductionDb() const;
@@ -952,7 +959,8 @@ private:
     void applyTxAudioCapabilities(bool connected, const RadioCapabilities& caps);
     bool ensureMicrophonePermission();
     void startDeviceMicrophoneCapture();
-    void stopDeviceMicrophoneCapture();
+    void stopDeviceMicrophoneCapture(bool force = false);
+    void updateMicCheck();
     void releasePtt(const QString& reason);
     void wireSmartLink();
     void wireCw();
@@ -1032,6 +1040,8 @@ private:
     TxController::Input m_cwxInput;
     bool m_cwxLiveInDecoder{false};
     bool m_dvkRecordingMic{false};
+    QList<QObject*> m_micCheckHolders;   // shown TX tabs
+    bool m_micCheckOpen{false};          // the microphone is open for them
     int m_dvkRecordSlot{0};
     static QString dvkStateName(int status);
     void ensurePanDbmRange(const QString& panId);
