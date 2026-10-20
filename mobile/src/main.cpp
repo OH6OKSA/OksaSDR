@@ -229,6 +229,12 @@ int main(int argc, char* argv[])
                        "the radio's mic level at <level>, logging forward power; restored after."),
         QStringLiteral("level"));
     parser.addOption(micLevelTestOption);
+    const QCommandLineOption repeaterTestOption(QStringLiteral("repeater-test"),
+        QStringLiteral("Development: FM on <MHz>, repeater <down|up> <offset MHz> from the TX tab's setters, "
+                       "then TUNE for <ms> (0: no TUNE) so the transmitted carrier shows where TX went, e.g. "
+                       "29.650:down:0.05:1500. Transmits: only with the operator's consent."),
+        QStringLiteral("spec"));
+    parser.addOption(repeaterTestOption);
     const QCommandLineOption pttToggleTestOption(QStringLiteral("ptt-toggle-test"),
         QStringLiteral("Development: PTT in tap on/off mode at 10 W on 14.250 MHz: tap, 2 s, tap; logs the "
                        "latch, power and mode restored after."));
@@ -674,6 +680,62 @@ int main(int argc, char* argv[])
     }
     if (parser.isSet(micGainOption)) {
         engine.setMicGainDb(parser.value(micGainOption).toDouble());
+    }
+    if (parser.isSet(repeaterTestOption)) {
+        const QStringList spec = parser.value(repeaterTestOption).split(QLatin1Char(':'));
+        const double rxMhz = spec.value(0).toDouble();
+        const QString dir = spec.value(1, QStringLiteral("down"));
+        const double offsetMhz = spec.value(2).toDouble();
+        const int tuneMs = std::clamp(spec.value(3).toInt(), 0, 3000);
+        // What the slice had, put back at the end: a TX offset left behind
+        // would move the next SSB transmission too.
+        auto* before = new QVariantMap;
+        QTimer::singleShot(7500, &app, [&engine, before] {
+            *before = {{QStringLiteral("mode"), engine.mode()}, {QStringLiteral("mhz"), engine.frequencyMhz()},
+                       {QStringLiteral("dir"), engine.repeaterDir()},
+                       {QStringLiteral("offset"), engine.repeaterOffsetMhz()}};
+            qInfo() << "repeater-test: before" << *before;
+        });
+        QTimer::singleShot(12000 + tuneMs + 2000, &app, [&engine, before] {
+            engine.setRepeaterOffsetMhz(before->value(QStringLiteral("offset")).toDouble());
+            engine.setRepeaterDir(before->value(QStringLiteral("dir")).toString());
+            engine.setMode(before->value(QStringLiteral("mode")).toString());
+            engine.setFrequencyMhz(before->value(QStringLiteral("mhz")).toDouble());
+            qInfo() << "repeater-test: restored" << *before << "TX offset" << engine.txOffsetMhz();
+            delete before;
+        });
+        QTimer::singleShot(8000, &app, [&engine, rxMhz] {
+            engine.setMode(QStringLiteral("FM"));
+            engine.setFrequencyMhz(rxMhz);
+        });
+        QTimer::singleShot(10000, &app, [&engine, dir, offsetMhz] {
+            engine.setRepeaterDir(dir);
+            engine.setRepeaterOffsetMhz(offsetMhz);
+        });
+        QTimer::singleShot(12000, &app, [&engine, rxMhz, tuneMs] {
+            qInfo() << "repeater-test: RX" << engine.frequencyMhz() << "mode" << engine.mode() << "dir"
+                    << engine.repeaterDir() << "offset" << engine.repeaterOffsetMhz() << "TX offset"
+                    << engine.txOffsetMhz() << "-> TX" << engine.frequencyMhz() + engine.txOffsetMhz();
+            bool ownTx = false;
+            for (const QVariant& v : engine.slices()) {
+                const QVariantMap m = v.toMap();
+                if (m.value(QStringLiteral("id")).toInt() == engine.activeSliceId()) {
+                    ownTx = m.value(QStringLiteral("tx")).toBool();
+                }
+            }
+            if (tuneMs <= 0 || !ownTx || std::abs(engine.frequencyMhz() - rxMhz) > 0.0005) {
+                qWarning() << "repeater-test: not keying (own slice transmits:" << ownTx << ")";
+                return;
+            }
+            qInfo() << "repeater-test: TUNE on for" << tuneMs << "ms";
+            engine.toggleTune();
+            QTimer::singleShot(tuneMs, &engine, [&engine] {
+                if (engine.tuning()) {
+                    engine.toggleTune();
+                }
+                qInfo() << "repeater-test: TUNE off";
+            });
+        });
     }
     if (parser.isSet(micLevelTestOption)) {
         const int testLevel = std::clamp(parser.value(micLevelTestOption).toInt(), 0, 100);
