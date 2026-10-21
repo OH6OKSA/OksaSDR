@@ -287,8 +287,8 @@ Rectangle {
 
     // Spots the radio holds (the DX cluster's and other programs'):
     // callsigns along the top of the spectrum at their frequency, in up to
-    // four rows so they do not overlap (the rest wait for a zoom); a tap
-    // tunes to the spot.
+    // four rows so they do not overlap (the rest wait for a zoom), clear of
+    // the RF GAIN badge; a tap tunes to the spot.
     readonly property var spotLayout: {
         const out = []
         const bw = Engine.panBandwidthMhz
@@ -304,9 +304,13 @@ Rectangle {
                 items.push({ spot: list[i], x: x, w: list[i].call.length * 7.5 + 12 })
         }
         items.sort((a, b) => a.x - b.x)
+        // The RF GAIN badge at the top right: rows it covers end before it.
+        const badgeLeft = rfLabel.visible ? rfLabel.x - 3 : 1e9
+        const badgeBottom = rfLabel.y + rfLabel.height
         for (let i = 0; i < items.length && out.length < 80; ++i) {
             const it = items[i]
             for (let r = 0; r < rows; ++r) {
+                if (it.x + it.w / 2 > badgeLeft && 4 + r * 24 < badgeBottom) continue
                 if (it.x - it.w / 2 > rowEnd[r] + 3) {
                     rowEnd[r] = it.x + it.w / 2
                     out.push({ spot: it.spot, x: it.x, w: it.w, row: r })
