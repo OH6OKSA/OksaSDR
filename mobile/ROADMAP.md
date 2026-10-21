@@ -5,7 +5,7 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. To verify in build 87: the Log tab on the devices
+Nothing queued yet. To verify in build 88: the Log tab on the devices
 (QRZ.com lookup with an account, the ADIF share sheet on iOS and Android);
 the 3D fallback on the tablet that froze; spot labels beside the RF GAIN
 badge. Still open from build 86: an FM repeater memory on the air, DAX
@@ -16,7 +16,7 @@ and manual device screenshots are to be retaken. Next: logging step 2
 TX tab; setting transverters up in the app; the rest of upstream 26.10.3
 as its own build.
 
-## Planned: logging (step 1 and the ADIF share in build 87)
+## Planned: logging (step 1 and the ADIF share in build 88)
 
 QSO logging from the app to any logbook, through the standard ADIF routes
 (analysed 2026-10-18):
@@ -53,7 +53,7 @@ iOS background).
 
 ## Released
 
-**Build 87** (2026-10-21), iPhone and iPad, and Android beta 11:
+**Build 88** (2026-10-21), iPhone and iPad, and Android beta 11 (build 87 waited hours for a macos-26 runner and was cancelled; 88 is the same code, built on macos-15):
 - Log tab (logging step 1): quick log with the QRZ.com (account in the secure store) or cty.dat lookup, worked before and dupe, reports by mode, POTA / WWFF SIG fields; radio frequency, band, mode, power, UTC and own call and grid; an ADIF 3.1.4 file on the device (QsoLog).
 - Share the log as an ADIF file (iOS share sheet with the file; Android through the FileProvider).
 - The 3D view falls back to 2D when its frames fall behind the data (a tester's Android 13 tablet froze with it on).

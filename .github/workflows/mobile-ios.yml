@@ -50,7 +50,10 @@ env:
 jobs:
   ios-engine:
     # App Store Connect accepts only uploads built with Xcode 26 / the iOS 26 SDK.
-    runs-on: macos-26
+    # macos-15 carries Xcode 26 too (26.3, iOS 26.2 SDK; "Select Xcode" takes
+    # the newest 26.x): macos-26 runners went short for days in October 2026
+    # (jobs "not acquired" for hours), macos-15 ones start at once.
+    runs-on: macos-15
     timeout-minutes: 150
     env:
       # TestFlight signing switches on once these repository secrets exist:

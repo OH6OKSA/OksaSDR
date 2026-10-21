@@ -1,4 +1,4 @@
-**OksaSDR for Android — beta 11.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight build 87), from the same code.
+**OksaSDR for Android — beta 11.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight build 88), from the same code.
 
 ### New in beta 11
 - **Log tab** — quick QSO logging: type the call (or tap the spot you tuned to), see who it is (QRZ.com with your account, else the country from the prefix), worked before / dupe, reports, POTA / WWFF. Frequency, mode, power and time come from the radio.
