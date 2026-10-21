@@ -5,22 +5,18 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. To verify in build 86: an FM repeater memory on the
-air (70 cm testers); DAX turned off at PTT on the radio that had it on;
-receive audio after a call or Siri on an iPhone; the CPU load a tester saw
-after an interruption and a SmartLink reconnect (not reproduced on the
-iPad or Android). Open: a tester's Android 13 tablet freezes ("not
-responding", the GUI thread waiting on the render thread) with the 3D view
-on OpenGL, where one 3D pipeline is not available; fall back to 2D there.
-On the phone the spot labels can run under the RF GAIN badge. The README
-and manual device screenshots are to be retaken (meter chooser, memory
-editor and TX tab changed). Queued: logging step 1, the Log tab (quick
-log with QRZ.com / cty.dat lookup, worked-before and dupe, POTA / WWFF
-fields, an ADIF file on the device); step 2 (sending to logbooks, sharing
-the ADIF file) next. Later: a DAX switch on the TX tab; setting transverters
-up in the app; the rest of upstream 26.10.3 as its own build.
+Nothing queued yet. To verify in build 87: the Log tab on the devices
+(QRZ.com lookup with an account, the ADIF share sheet on iOS and Android);
+the 3D fallback on the tablet that froze; spot labels beside the RF GAIN
+badge. Still open from build 86: an FM repeater memory on the air, DAX
+off at PTT on the radio that had it on, audio after a call on an iPhone,
+the CPU load after an interruption and a SmartLink reconnect. The README
+and manual device screenshots are to be retaken. Next: logging step 2
+(Wavelog / Cloudlog, WSJT-X UDP and plain ADIF UDP); a DAX switch on the
+TX tab; setting transverters up in the app; the rest of upstream 26.10.3
+as its own build.
 
-## Planned: logging (step 1 in the next build)
+## Planned: logging (step 1 and the ADIF share in build 87)
 
 QSO logging from the app to any logbook, through the standard ADIF routes
 (analysed 2026-10-18):
@@ -56,6 +52,12 @@ to the radio (needs a listening server on the phone, not possible in the
 iOS background).
 
 ## Released
+
+**Build 87** (2026-10-21), iPhone and iPad, and Android beta 11:
+- Log tab (logging step 1): quick log with the QRZ.com (account in the secure store) or cty.dat lookup, worked before and dupe, reports by mode, POTA / WWFF SIG fields; radio frequency, band, mode, power, UTC and own call and grid; an ADIF 3.1.4 file on the device (QsoLog).
+- Share the log as an ADIF file (iOS share sheet with the file; Android through the FileProvider).
+- The 3D view falls back to 2D when its frames fall behind the data (a tester's Android 13 tablet froze with it on).
+- Spot labels keep clear of the RF GAIN badge.
 
 **Build 86** (2026-10-20), iPhone and iPad, and Android beta 10:
 - FM repeater memories: shift and CTCSS tone in the list and the editor; recall sends the desktop's retune and repeater fix-up, so tx_offset_freq moves the transmitter (checked: 29.620 -0.1 recalled transmits on 29.520).
