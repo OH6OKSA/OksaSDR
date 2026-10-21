@@ -5,7 +5,7 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. To verify in build 91: the Log tab on the devices
+Nothing queued yet. To verify in build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
 (QRZ.com lookup with an account, the ADIF share sheet on iOS and Android);
 the 3D fallback on the tablet that froze; spot labels beside the RF GAIN
 badge. Still open from build 86: an FM repeater memory on the air, DAX
@@ -52,6 +52,9 @@ to the radio (needs a listening server on the phone, not possible in the
 iOS background).
 
 ## Released
+
+**Build 92** (2026-10-21), iPhone and iPad, and Android beta 12:
+- Flex pans report their span limits (min_bw / max_bw), so a zoom stops at the radio's minimum (1.23 kHz); past it the radio refused the change and the span stayed stuck until a band change (seen on 160 m after CW).
 
 **Build 91** (2026-10-21), iPhone and iPad, and Android beta 11 (build 87 waited hours for a macos-26 runner and was cancelled; 88-90 were CI test runs; 91 is the same code, built on macos-15):
 - Log tab (logging step 1): quick log with the QRZ.com (account in the secure store) or cty.dat lookup, worked before and dupe, reports by mode, POTA / WWFF SIG fields; radio frequency, band, mode, power, UTC and own call and grid; an ADIF 3.1.4 file on the device (QsoLog).

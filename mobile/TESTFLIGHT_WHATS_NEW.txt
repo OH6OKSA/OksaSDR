@@ -9,13 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Log tab: quick QSO logging. Type the call (or tap the spot you tuned to), see who it is (QRZ.com with your account, else the country from the prefix), worked before / dupe, reports, POTA / WWFF. Frequency, mode, power and time come from the radio.
-- Share the log as an ADIF file (mail, Files, AirDrop, your logbook or TQSL for LoTW).
-- The 3D view switches itself to the 2D waterfall on a device too slow for it.
-- Spot labels keep clear of the RF GAIN badge on the phone.
+- Zoom no longer gets stuck: zooming in stops at the radio's narrowest span (1.2 kHz). Zoomed in past it (easy in CW), the span stayed stuck until a band change.
 
-RECENT (build 86)
-- FM repeater memories; DAX turned off at PTT with this device's mic; audio after a phone call or Siri; peak hold choices.
+RECENT (build 91)
+- Log tab: quick QSO logging with QRZ.com / prefix lookup, worked before / dupe, POTA / WWFF, and sharing the log as an ADIF file.
+- The 3D view switches itself to 2D on a device too slow for it; spot labels clear of the RF GAIN badge.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
