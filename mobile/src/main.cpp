@@ -155,6 +155,11 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: send trackpad scrolls across the shown controls and log where they do not "
                        "scroll the panel, and which item took them."));
     parser.addOption(wheelTestOption);
+    const QCommandLineOption zoomTestOption(QStringLiteral("zoom-test"),
+        QStringLiteral("Development: zoom the pan in <n> times by half, then out <n> times by two, 9 s after "
+                       "start, logging the span after each (a real radio; the span ends where it began)."),
+        QStringLiteral("n"));
+    parser.addOption(zoomTestOption);
     const QCommandLineOption wheelIosTestOption(QStringLiteral("wheel-test-ios"),
         QStringLiteral("Development: scroll the shown controls from the top as iOS's trackpad does (wheel events "
                        "with pixel and angle deltas, no scroll phase) and log how far they get."));
@@ -1174,6 +1179,17 @@ int main(int argc, char* argv[])
                 }
             }
         });
+    }
+    if (parser.isSet(zoomTestOption)) {
+        const int n = std::clamp(parser.value(zoomTestOption).toInt(), 1, 20);
+        for (int i = 0; i < 2 * n; ++i) {
+            QTimer::singleShot(9000 + i * 700, &app, [&engine, i, n] {
+                engine.zoom(i < n ? 0.5 : 2.0);
+            });
+            QTimer::singleShot(9000 + i * 700 + 600, &app, [&engine, i] {
+                qInfo() << "zoom-test: step" << i << "span" << engine.panBandwidthMhz() * 1e3 << "kHz";
+            });
+        }
     }
     if (parser.isSet(wheelTestOption)) {
         QTimer::singleShot(9000, &app, [&qml] {

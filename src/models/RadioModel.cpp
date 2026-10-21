@@ -12305,6 +12305,7 @@ void RadioModel::handlePanadapterStatus(const QString& panId, const QMap<QString
     if (m_flexBackend) {
         m_flexBackend->decodePanCenterBandwidth(panId, kvs);
         m_flexBackend->decodePanRange(panId, kvs);
+        m_flexBackend->decodePanBandwidthLimits(panId, kvs);
         m_flexBackend->decodePanRfGain(panId, kvs);
         m_flexBackend->decodePanAntenna(panId, kvs);
         m_flexBackend->decodePanExtensions(panId, kvs);

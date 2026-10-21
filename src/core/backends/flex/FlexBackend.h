@@ -121,6 +121,11 @@ public:
     // field is carried as NaN ("unchanged"), not a negative sentinel.
     void decodePanRange(const QString& panId,
                         const QMap<QString, QString>& kvs);
+    // The pan's span limits the radio reports (min_bw / max_bw, MHz), emitted
+    // as panBandwidthLimitsChanged so a zoom is clamped to what the radio
+    // accepts (below min_bw it refuses the change).
+    void decodePanBandwidthLimits(const QString& panId,
+                                  const QMap<QString, QString>& kvs);
     // Universal pan RF gain / antenna selection — decoded from Flex status and
     // emitted as the normalized typed signals (aetherd RFC 2.3; rfgain+antenna
     // promoted to universal per the 2026-07-05 classification).

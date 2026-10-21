@@ -1024,6 +1024,22 @@ void FlexBackend::decodePanRange(const QString& panId,
     emit panRangeChanged(panId, minDbm, maxDbm);
 }
 
+void FlexBackend::decodePanBandwidthLimits(const QString& panId,
+                                           const QMap<QString, QString>& kvs)
+{
+    if (!kvs.contains(QStringLiteral("min_bw")) || !kvs.contains(QStringLiteral("max_bw"))) {
+        return;
+    }
+    bool okMin = false;
+    bool okMax = false;
+    const double minMhz = kvs.value(QStringLiteral("min_bw")).toDouble(&okMin);
+    const double maxMhz = kvs.value(QStringLiteral("max_bw")).toDouble(&okMax);
+    if (okMin && okMax) {
+        // The model rejects a partial or inverted pair.
+        emit panBandwidthLimitsChanged(panId, minMhz, maxMhz);
+    }
+}
+
 void FlexBackend::decodePanRfGain(const QString& panId,
                                   const QMap<QString, QString>& kvs)
 {
