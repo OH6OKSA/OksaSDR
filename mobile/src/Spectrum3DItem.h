@@ -74,6 +74,7 @@ private:
     using Coverage = std::array<quint8, kCols>;
 
     void onSpectrum(const QVector<float>& binsDbm);
+    void onGpuTooSlow(qint64 frameMs);
     void onWaterfallRow(const QVector<float>& bins, double lowMhz, double highMhz);
     // One new history row from the latest trace (and the tile, when it came
     // with a waterfall line).

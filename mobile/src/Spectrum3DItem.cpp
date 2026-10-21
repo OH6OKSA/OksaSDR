@@ -1,5 +1,7 @@
 #include "Spectrum3DItem.h"
 
+#include <QElapsedTimer>
+
 #include "MobileEngine.h"
 #include "SpectrumPalette.h"
 #include "gui/DssSupplementalCoverage.h"
@@ -159,6 +161,13 @@ private:
     std::unique_ptr<QRhiGraphicsPipeline> m_linePipeline;
     QRhiRenderPassDescriptor* m_rpDesc{nullptr};
     bool m_meshUploaded{false};
+    // Frames that fell behind the data: rows kept arriving but a frame took
+    // more than kSlowFrameMs. A GPU too slow for the 3D view (a tester's
+    // Android tablet stalled the app into "not responding") is told to the
+    // item, which falls back to the 2D waterfall.
+    QElapsedTimer m_frameClock;
+    int m_slowFrames{0};
+    bool m_reportedSlow{false};
     bool m_halfFloat{true};
 
     // Texture rows (RGBA: FFT dBm, coverage, tile dBm, tile coverage) and
@@ -337,6 +346,15 @@ void Spectrum3DItem::pushRow(const QVector<float>& tile, double tileLowMhz, doub
     }
 }
 
+void Spectrum3DItem::onGpuTooSlow(qint64 frameMs)
+{
+    qCWarning(lcSpectrum3D) << "3D view too slow on this GPU (frames" << frameMs
+                            << "ms behind the data): switching to the 2D waterfall";
+    if (m_engine) {
+        m_engine->disable3DTooSlow();
+    }
+}
+
 float Spectrum3DItem::scrollProgressRows() const
 {
     return std::clamp(static_cast<float>(m_rowClock.elapsed()) / std::max(m_msPerRow, 1.0f), 0.0f, 1.0f);
@@ -409,6 +427,20 @@ void Spectrum3DRenderer::synchronize(QQuickRhiItem* rhiItem)
 
     // New rows since the last frame (normally one).
     const quint64 generation = item->m_rowGeneration;
+    {
+        constexpr qint64 kSlowFrameMs = 500;
+        const qint64 sinceLast = m_frameClock.isValid() ? m_frameClock.restart() : (m_frameClock.start(), 0);
+        const quint64 pending = m_uploadedGeneration == ~0ull ? 0 : generation - m_uploadedGeneration;
+        if (sinceLast > kSlowFrameMs && sinceLast < 30000 && pending >= 3) {
+            ++m_slowFrames;
+        } else if (sinceLast < 100) {
+            m_slowFrames = 0;
+        }
+        if (m_slowFrames >= 3 && !m_reportedSlow) {
+            m_reportedSlow = true;
+            QMetaObject::invokeMethod(item, [item, sinceLast] { item->onGpuTooSlow(sinceLast); }, Qt::QueuedConnection);
+        }
+    }
     if (generation != m_uploadedGeneration) {
         const quint64 newRows = m_uploadedGeneration == ~0ull || generation < m_uploadedGeneration
             ? static_cast<quint64>(rows)
