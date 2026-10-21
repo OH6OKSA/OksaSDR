@@ -16,4 +16,10 @@ bool shareText(const QString&, const QString& text)
     return false;
 }
 
+bool shareFile(const QString&, const QString& path, const QString&)
+{
+    copyText(path);
+    return false;
+}
+
 } // namespace AetherSDR::mobile

@@ -59,4 +59,24 @@ bool shareText(const QString& subject, const QString& text)
     return true;
 }
 
+bool shareFile(const QString& subject, const QString& path, const QString&)
+{
+    UIViewController* top = topViewController();
+    if (!top) {
+        return false;
+    }
+    NSURL* url = [NSURL fileURLWithPath:path.toNSString()];
+    UIActivityViewController* sheet = [[UIActivityViewController alloc] initWithActivityItems:@[url]
+                                                                        applicationActivities:nil];
+    [sheet setValue:subject.toNSString() forKey:@"subject"];
+    if (sheet.popoverPresentationController) {
+        sheet.popoverPresentationController.sourceView = top.view;
+        sheet.popoverPresentationController.sourceRect =
+            CGRectMake(CGRectGetMidX(top.view.bounds), CGRectGetMidY(top.view.bounds), 1, 1);
+        sheet.popoverPresentationController.permittedArrowDirections = 0;
+    }
+    [top presentViewController:sheet animated:YES completion:nil];
+    return true;
+}
+
 } // namespace AetherSDR::mobile

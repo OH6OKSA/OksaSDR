@@ -597,6 +597,13 @@ public:
     // QRZ.com account for the lookup: the password goes to the platform's
     // secure store, never to the settings. Empty user removes it.
     Q_INVOKABLE void setQrzAccount(const QString& user, const QString& password);
+    // Opens the share sheet with the log as an ADIF file
+    // ("OksaSDR-log-<date>.adi"): mail, Files, AirDrop, a logbook app, or
+    // TQSL for LoTW. False when there is nothing to share.
+    Q_INVOKABLE bool shareQsoLog();
+    // The 3D view fell behind the data on this GPU: back to the 2D
+    // waterfall, with a notice.
+    void disable3DTooSlow();
     Q_INVOKABLE void recallMemory(int index);
     Q_INVOKABLE void saveMemory(const QString& name);
     Q_INVOKABLE void removeMemory(int index);

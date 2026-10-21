@@ -17,6 +17,8 @@ import android.provider.Settings;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
+import androidx.core.content.FileProvider;
+import java.io.File;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -105,6 +107,25 @@ public final class Platform {
             send.putExtra(Intent.EXTRA_TEXT, text);
             Intent chooser = Intent.createChooser(send, subject);
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(chooser);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // A file from the app's files folder, through the FileProvider Qt's
+    // manifest declares (authority <package>.qtprovider).
+    public static boolean shareFile(Context context, String subject, String path, String mimeType) {
+        try {
+            Uri uri = FileProvider.getUriForFile(context, context.getPackageName() + ".qtprovider", new File(path));
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType(mimeType);
+            send.putExtra(Intent.EXTRA_SUBJECT, subject);
+            send.putExtra(Intent.EXTRA_STREAM, uri);
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            Intent chooser = Intent.createChooser(send, subject);
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
             context.startActivity(chooser);
             return true;
         } catch (Exception e) {

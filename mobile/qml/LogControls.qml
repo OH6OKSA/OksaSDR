@@ -265,6 +265,14 @@ ColumnLayout {
         color: Theme.textDim
         font.pixelSize: 14
     }
+    AppButton {
+        visible: Engine.qsoCount > 0
+        Layout.fillWidth: true
+        Layout.preferredHeight: Theme.touchTarget
+        text: qsTr("Share the log (ADIF)")
+        focusPolicy: Qt.NoFocus
+        onClicked: Engine.shareQsoLog()
+    }
     Repeater {
         model: Engine.recentQsos.slice(0, 10)
         delegate: Label {

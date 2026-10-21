@@ -504,8 +504,11 @@ them back into the drawer.
   comes from the radio's GPS, or from *My grid*. **Their park** and **My
   park** (POTA or WWFF with the reference) go into ADIF's SIG / MY_SIG
   fields; your own park stays for every contact while you activate.
-  **Log** writes the contact; the newest ten are listed. The QRZ.com
-  password is kept in this device's secure store.
+  **Log** writes the contact; the newest ten are listed. **Share the log
+  (ADIF)** opens the share sheet with the whole log as an `.adi` file: mail
+  it, save it to Files or Drive, AirDrop it, or open it in your logbook
+  program or TQSL for LoTW. The QRZ.com password is kept in this device's
+  secure store.
 
 ## 9. Radio Setup
 

@@ -13,6 +13,7 @@
 
 #include "AudioSession.h"
 #include "QsoLog.h"
+#include "ShareText.h"
 
 #include "ScreenAwake.h"
 #include "SecureStore.h"
@@ -3466,6 +3467,36 @@ void MobileEngine::applyCallInfo(const CallsignInfo& info)
     }
     m_callLookup = m;
     emit callLookupChanged();
+}
+
+void MobileEngine::disable3DTooSlow()
+{
+    if (!spectrum3D()) {
+        return;
+    }
+    setSpectrum3D(false);
+    setLastError(tr("The 3D view was too slow on this device and was switched off; "
+                    "the 2D waterfall is shown. It can be turned on again in View."));
+}
+
+bool MobileEngine::shareQsoLog()
+{
+    if (m_qsoLog->records().isEmpty() || !QFile::exists(m_qsoLog->path())) {
+        setLastError(tr("No contacts in the log yet."));
+        return false;
+    }
+    // A dated copy in the app's files folder (Android shares only from there).
+    const QString dir = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath(QStringLiteral("share"));
+    QDir().mkpath(dir);
+    const QString path = QDir(dir).filePath(QStringLiteral("OksaSDR-log-%1.adi")
+                                                .arg(QDateTime::currentDateTimeUtc().toString(QStringLiteral("yyyyMMdd-HHmm"))));
+    QFile::remove(path);
+    if (!QFile::copy(m_qsoLog->path(), path)) {
+        setLastError(tr("The log could not be prepared for sharing."));
+        return false;
+    }
+    qCInfo(lcMobile) << "share QSO log:" << m_qsoLog->records().size() << "contacts";
+    return shareFile(tr("OksaSDR log (ADIF)"), path, QStringLiteral("text/plain"));
 }
 
 QVariantMap MobileEngine::qsoDefaults() const
