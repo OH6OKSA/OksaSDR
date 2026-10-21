@@ -20,12 +20,21 @@ namespace AetherSDR {
 // newest (the 4-bit count cannot tell a later packet apart from that). A
 // jump that cannot be a late packet is counted lost at once (so a stale
 // duplicate, rare on UDP, would read as a loss).
+//
+// What the 4-bit count cannot tell: a gap of exactly 15 packets reads as a
+// duplicate of the newest and counts 0, the only case where real loss is
+// under-counted once the stream is running. In a stream's first kWindow
+// packets a gap of more than kWindow cannot be told apart from packets
+// reordered across the first one and may be miscounted (over or under).
+// The stream's network-quality input counts breaks, one per gap, so this
+// affects only the per-packet count Network Diagnostics shows.
 class VitaSequenceTracker {
 public:
     static constexpr int kWindow = 7;
 
     struct Result {
         int lost = 0;        // packets now known lost
+        int breaks = 0;      // gaps they belong to that were not counted yet
         bool reordered = false;  // this packet filled a gap (arrived late)
         bool duplicate = false;
     };
@@ -35,6 +44,7 @@ public:
         m_last = -1;
         m_missing = 0;
         m_started = 0;
+        m_lastLost = -1;
     }
 
     Result add(int seq)
@@ -71,8 +81,10 @@ public:
             // too far to be reordering. Everything in between is lost, and
             // so is all that was still awaited.
             r.lost = (ahead - 1) + pending();
+            r.breaks = r.lost > 0 ? 1 : 0;
             m_missing = 0;
             m_last = seq;
+            m_lastLost = (seq - 1) & 0x0F;
             return r;
         }
         // Ahead: the numbers in between are missing for now.
@@ -81,7 +93,7 @@ public:
         }
         m_last = seq;
         m_missing &= static_cast<uint16_t>(~bit(seq));
-        r.lost = expire();
+        r.lost = expire(r.breaks);
         return r;
     }
 
@@ -99,14 +111,21 @@ private:
     static uint16_t bit(int seq) { return static_cast<uint16_t>(1u << (seq & 0x0F)); }
 
     // Count and drop missing numbers more than kWindow behind the newest.
-    int expire()
+    // A gap leaves the window one number per packet; numbers next to the one
+    // counted before belong to the same gap, so a gap is one break.
+    int expire(int& breaks)
     {
         int lost = 0;
-        for (int behind = kWindow + 1; behind < 16; ++behind) {
-            const uint16_t b = bit(m_last - behind);
+        for (int behind = 15; behind > kWindow; --behind) {
+            const int seq = (m_last - behind) & 0x0F;
+            const uint16_t b = bit(seq);
             if (m_missing & b) {
                 m_missing &= static_cast<uint16_t>(~b);
                 ++lost;
+                if (m_lastLost < 0 || seq != ((m_lastLost + 1) & 0x0F)) {
+                    ++breaks;
+                }
+                m_lastLost = seq;
             }
         }
         return lost;
@@ -115,6 +134,7 @@ private:
     int m_last = -1;
     uint16_t m_missing = 0;
     int m_started = 0;   // packets since the first, up to kWindow
+    int m_lastLost = -1; // the last number counted lost, to join a gap's packets
 };
 
 } // namespace AetherSDR

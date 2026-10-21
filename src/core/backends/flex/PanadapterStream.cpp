@@ -861,11 +861,16 @@ void PanadapterStream::processDatagram(const QByteArray& data)
         // before it (#6051). Elsewhere every break in the count: audio's
         // concealment relies on it, and DAX audio is passed on unreordered.
         int lostPackets = 0;
+        int breaks = 0;
         if (cat == CatFFT || cat == CatWaterfall || cat == CatMeter) {
-            lostPackets = stats.reorderTracker.add(vitaSeq).lost;
+            const VitaSequenceTracker::Result r = stats.reorderTracker.add(vitaSeq);
+            lostPackets = r.lost;
+            breaks = r.breaks;
         } else if (stats.lastSeq >= 0 && vitaSeq != ((stats.lastSeq + 1) & 0x0F)) {
             lostPackets = 1;
+            breaks = 1;
         }
+        stats.breakCount += breaks;
         if (lostPackets > 0) {
             sequenceError = true;
             stats.errorCount += lostPackets;
@@ -1573,6 +1578,15 @@ int PanadapterStream::packetErrorCount() const
     int total = 0;
     for (auto it = m_streamStats.constBegin(); it != m_streamStats.constEnd(); ++it)
         total += it->errorCount;
+    return total;
+}
+
+int PanadapterStream::packetBreakCount() const
+{
+    QMutexLocker lock(&m_statsMutex);
+    int total = 0;
+    for (auto it = m_streamStats.constBegin(); it != m_streamStats.constEnd(); ++it)
+        total += it->breakCount;
     return total;
 }
 

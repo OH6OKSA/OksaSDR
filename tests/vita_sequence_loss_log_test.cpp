@@ -289,6 +289,26 @@ int main(int argc, char** argv)
         qInstallMessageHandler(nullptr);
     }
 
+    {
+        // Network quality scores breaks, Network Diagnostics shows packets:
+        // a 6-packet burst on a running meter stream is 6 drops but one
+        // break, so the throttle thresholds keep their per-break tuning.
+        PanadapterStream stream;  // no init(), no socket
+        const quint32 id = 0x72000000u;
+        int seq = 0;
+        for (; seq < 40; ++seq) {
+            VitaSequenceLossLogTestAccess::feedMeter(stream, id, seq);
+        }
+        const int errorsBefore = stream.packetErrorCount();
+        const int breaksBefore = stream.packetBreakCount();
+        seq += 6;   // six lost
+        for (int i = 0; i < 20; ++i, ++seq) {
+            VitaSequenceLossLogTestAccess::feedMeter(stream, id, seq);
+        }
+        report("a 6-packet burst shows 6 drops", stream.packetErrorCount() - errorsBefore == 6);
+        report("a 6-packet burst is one break for network quality", stream.packetBreakCount() - breaksBefore == 1);
+    }
+
     std::printf("%s\n", g_failed ? "FAILED" : "PASSED");
     return g_failed ? 1 : 0;
 }
