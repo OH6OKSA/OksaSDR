@@ -213,12 +213,8 @@ From other FlexRadio mobile clients (PocketSDR for Android, release of
 
 ## Waiting
 
-- **Upstream (aethersdr/AetherSDR)**, left to wait for upstream:
-  - [discussion #6409](https://github.com/aethersdr/AetherSDR/discussions/6409): upstreaming, naming, distribution (GPL and Apple);
-  - [#6532](https://github.com/aethersdr/AetherSDR/issues/6532): RFC, client-side Beat Cancel;
-  - [#6533](https://github.com/aethersdr/AetherSDR/issues/6533): closing the TX slice leaves no slice transmitting;
-  - [#6534](https://github.com/aethersdr/AetherSDR/issues/6534): RFC, Opus under Auto over a VPN;
-  - [PR #6535](https://github.com/aethersdr/AetherSDR/pull/6535) for #6051: VITA-49 loss counted net of reordering.
+- **Upstream (aethersdr/AetherSDR):** no longer pursued (2026-10-22); OksaSDR
+  goes its own way and takes upstream changes only when useful.
 - **Three meters while transmitting** (Power, SWR and Mic at once, asked in
   the group by an Aurora user): waiting for his answer on the layout (two
   bars stacked on one side, a third meter in the slice row's middle, or
