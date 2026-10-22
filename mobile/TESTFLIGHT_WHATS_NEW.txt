@@ -9,11 +9,14 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Zoom no longer gets stuck: zooming in stops at the radio's narrowest span (1.2 kHz). Zoomed in past it (easy in CW), the span stayed stuck until a band change.
+- Every mode the radio offers is in the mode chooser: DIGL, SAM, NFM, DFM and RTTY too, and FreeDV's FDVU / FDVL when the radio has the FreeDV waveform.
+- Menus and choosers close when you tap their button again, and a tap outside one only closes it: it no longer moves the frequency. On iPhone, Close sits beside PTT while Controls are open.
+- DAX switch on the TX tab: shows whether the radio sends DAX (a digital-mode program) or the microphone, and turns DAX off if it was left on after FT8.
+- Log tab: saving the QRZ.com account now tells you whether the sign-in worked.
 
-RECENT (build 91)
+RECENT (builds 91–92)
+- Zoom stops at the radio's narrowest span instead of getting stuck (build 92).
 - Log tab: quick QSO logging with QRZ.com / prefix lookup, worked before / dupe, POTA / WWFF, and sharing the log as an ADIF file.
-- The 3D view switches itself to 2D on a device too slow for it; spot labels clear of the RF GAIN badge.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
@@ -21,7 +24,8 @@ PLEASE TRY
 - Both portrait and landscape; on iPad also Split View.
 - Voice transmit with the device mic or a Bluetooth headset, and tell me how it sounds at the other end. [TX]
 - CW keying, CWX memories (F1–F12 on a keyboard) and the decoder. [TX]
-- New: the Log tab: log a few contacts, try the QRZ.com lookup with your account, and share the ADIF file to your logbook.
+- The Log tab: log a few contacts, save your QRZ.com account (it now says if the sign-in worked), and share the ADIF file to your logbook.
+- New: the mode chooser and the other menus: tap the button again to close, and check a tap outside never retunes.
 - Spots and the DX cluster, a notch on a carrier, the TX processing at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM

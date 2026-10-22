@@ -5,17 +5,14 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Queued: the mode chooser offers every mode the radio lists (DIGL, SAM, NFM,
-RTTY and waveform modes such as FreeDV's FDVU/FDVL), not only the common
-six; to verify with the FreeDV waveform by the tester who asked. To verify in build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
+Nothing queued yet. To verify in build 93: FDVU / FDVL with the FreeDV waveform (by the tester who asked); menus closing on a second tap without retuning; the QRZ.com sign-in result with an account. In build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
 (QRZ.com lookup with an account, the ADIF share sheet on iOS and Android);
 the 3D fallback on the tablet that froze; spot labels beside the RF GAIN
 badge. Still open from build 86: an FM repeater memory on the air, DAX
 off at PTT on the radio that had it on, audio after a call on an iPhone,
 the CPU load after an interruption and a SmartLink reconnect. The README
 and manual device screenshots are to be retaken. Next: logging step 2
-(Wavelog / Cloudlog, WSJT-X UDP and plain ADIF UDP); a DAX switch on the
-TX tab; setting transverters up in the app; the rest of upstream 26.10.3
+(Wavelog / Cloudlog, WSJT-X UDP and plain ADIF UDP); setting transverters up in the app; the rest of upstream 26.10.3
 as its own build.
 
 ## Planned: logging (step 1 and the ADIF share in build 91)
@@ -54,6 +51,12 @@ to the radio (needs a listening server on the phone, not possible in the
 iOS background).
 
 ## Released
+
+**Build 93** (2026-10-22), iPhone and iPad, and Android beta 13:
+- The mode chooser offers every mode the radio lists (DIGL, SAM, NFM, DFM, RTTY, and FreeDV's FDVU / FDVL with the waveform), not only six (asked by the FreeDV team).
+- Menus and choosers are modal without dimming: a second tap on their button closes them, and a tap outside never reaches the spectrum to retune; the phone's Controls drawer has Close beside PTT.
+- A DAX switch on the TX tab, showing what the radio transmits.
+- The QRZ.com account's Save checks the sign-in and shows the result.
 
 **Build 92** (2026-10-21), iPhone and iPad, and Android beta 12:
 - Flex pans report their span limits (min_bw / max_bw), so a zoom stops at the radio's minimum (1.23 kHz); past it the radio refused the change and the span stayed stuck until a band change (seen on 160 m after CW).
