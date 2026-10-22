@@ -408,7 +408,10 @@ them back into the drawer.
   expander, on/off and level) in voice modes — shown only when the radio's
   own microphone input is selected, as they do nothing with this device's
   microphone — the AM **carrier** level in
-  AM/SAM/DSB, monitor (MON), **Mic level**, microphone choice, **PTT**
+  AM/SAM/DSB, monitor (MON), **Mic level**, microphone choice, **DAX**
+  (on: the radio sends the audio of a digital-mode program on a computer
+  instead of the microphone; left on after FT8, the microphone goes
+  nowhere), **PTT**
   (*Hold to talk* or *Tap on / off*) and the transmit filter (low and high
   cut). **Mic level** with this device's
   microphone is the app's own gain, −20 to +30 dB: the radio has no gain
@@ -493,8 +496,8 @@ them back into the drawer.
 - **Log** — quick QSO logging into a log on this device (an ADIF file,
   `oksasdr-log.adi`). Type the **callsign**, or tap the call of the spot
   you tuned to last. A card shows who it is: with a **QRZ.com** account
-  (user and password at the bottom; their full records need QRZ.com's XML
-  subscription) the name, QTH, grid, distance and bearing and whether the
+  (user and password at the bottom; *Save* signs in and says below whether
+  it worked; their full records need QRZ.com's XML subscription) the name, QTH, grid, distance and bearing and whether the
   station uses LoTW, eQSL or paper cards; without one, the country,
   continent and CQ zone from the callsign's prefix. It also says when the
   call was **worked before** and when it would be a **dupe** on this band

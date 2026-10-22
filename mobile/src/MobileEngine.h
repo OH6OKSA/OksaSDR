@@ -168,6 +168,10 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QVariantMap callLookup READ callLookup NOTIFY callLookupChanged)
     Q_PROPERTY(QString lastSpotCall READ lastSpotCall NOTIFY lastSpotCallChanged)
     Q_PROPERTY(QString qrzUser READ qrzUser NOTIFY qrzChanged)
+    // The sign-in check after Save: the text, and "checking", "ok", "failed"
+    // or "" (not checked this session).
+    Q_PROPERTY(QString qrzStatus READ qrzStatus NOTIFY qrzChanged)
+    Q_PROPERTY(QString qrzStatusKind READ qrzStatusKind NOTIFY qrzChanged)
     Q_PROPERTY(QString myGrid READ myGrid WRITE setMyGrid NOTIFY qrzChanged)
     Q_PROPERTY(bool memoriesWritable READ memoriesWritable NOTIFY memoriesChanged)
     // The radio's tracking notch filters (Flex TNF): {id, freq (MHz),
@@ -364,6 +368,9 @@ class MobileEngine : public QObject {
     Q_PROPERTY(int procLevel READ procLevel WRITE setProcLevel NOTIFY txAudioChanged)
     Q_PROPERTY(int procLevelMax READ procLevelMax NOTIFY txAudioChanged)
     Q_PROPERTY(bool monitor READ monitor WRITE setMonitor NOTIFY txAudioChanged)
+    // The radio's DAX transmit audio (dax=1): a computer program's audio is
+    // sent instead of the microphone.
+    Q_PROPERTY(bool dax READ dax WRITE setDax NOTIFY txAudioChanged)
     Q_PROPERTY(int monitorGain READ monitorGain WRITE setMonitorGain NOTIFY txAudioChanged)
     Q_PROPERTY(int radioMicLevel READ radioMicLevel WRITE setRadioMicLevel NOTIFY txAudioChanged)
 
@@ -578,6 +585,8 @@ public:
     QVariantMap callLookup() const { return m_callLookup; }
     QString lastSpotCall() const { return m_lastSpotCall; }
     QString qrzUser() const;
+    QString qrzStatus() const;
+    QString qrzStatusKind() const;
     QString myGrid() const;
     void setMyGrid(const QString& grid);
     // Looks the call up (debounced by the caller); the answer arrives in
@@ -828,6 +837,8 @@ public:
     int procLevelMax() const;
     bool monitor() const;
     void setMonitor(bool on);
+    bool dax() const;
+    void setDax(bool on);
     int monitorGain() const;
     void setMonitorGain(int gain);
     int radioMicLevel() const;
@@ -1107,6 +1118,8 @@ private:
     std::unique_ptr<QsoLog> m_qsoLog;
     std::unique_ptr<CtyDatParser> m_cty;
     QString m_lookupCall;                // the call callLookup is for
+    QString m_qrzStatus;                 // QRZ.com sign-in check, as shown
+    QString m_qrzStatusKind;             // "checking", "ok", "failed" or ""
     QVariantMap m_callLookup;
     QString m_lastSpotCall;
     void applyCallInfo(const CallsignInfo& info);

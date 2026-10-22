@@ -271,6 +271,15 @@ MobileEngine::MobileEngine(QObject* parent)
                 emit callLookupChanged();
             }
         });
+        // The sign-in check after Save: shown under the account fields.
+        connect(&lookup, &CallsignLookupService::loginTestFinished, this, [this](bool ok, const QString& message) {
+            m_qrzStatusKind = ok ? QStringLiteral("ok") : QStringLiteral("failed");
+            m_qrzStatus = ok ? (message.isEmpty() ? tr("Signed in to QRZ.com.")
+                                                  : tr("Signed in to QRZ.com: %1").arg(message))
+                             : tr("QRZ.com sign-in failed: %1").arg(message);
+            qCInfo(lcMobile) << "QRZ.com sign-in" << (ok ? "ok" : "failed:") << (ok ? QString() : message);
+            emit qrzChanged();
+        });
     }
     qCInfo(lcMobile) << "QSO log:" << m_qsoLog->records().size() << "contacts in" << m_qsoLog->path();
 
@@ -2013,6 +2022,19 @@ void MobileEngine::setMonitor(bool on)
     }
 }
 
+bool MobileEngine::dax() const
+{
+    return m_session.radioModel().transmitModel().daxOn();
+}
+
+void MobileEngine::setDax(bool on)
+{
+    if (m_connected) {
+        qCInfo(lcMobile) << "TX: DAX" << (on ? "on" : "off") << "from the TX tab";
+        m_session.radioModel().transmitModel().setDax(on);
+    }
+}
+
 int MobileEngine::monitorGain() const
 {
     return m_session.radioModel().transmitModel().monGainSb();
@@ -3388,6 +3410,16 @@ QString MobileEngine::qrzUser() const
     return QrzLookupSettings::username();
 }
 
+QString MobileEngine::qrzStatus() const
+{
+    return m_qrzStatus;
+}
+
+QString MobileEngine::qrzStatusKind() const
+{
+    return m_qrzStatusKind;
+}
+
 QString MobileEngine::myGrid() const
 {
     const QString gps = m_session.radioModel().gpsGrid();
@@ -3419,6 +3451,19 @@ void MobileEngine::setQrzAccount(const QString& user, const QString& password)
     }
     lookup.reloadConfiguration();
     qCInfo(lcMobile) << "QRZ.com account" << (user.trimmed().isEmpty() ? "removed" : "set");
+    m_qrzStatus.clear();
+    m_qrzStatusKind.clear();
+    const QString pass = password.isEmpty() ? loadSecret(QStringLiteral("qrz_password")) : password;
+    if (!user.trimmed().isEmpty()) {
+        if (pass.isEmpty()) {
+            m_qrzStatusKind = QStringLiteral("failed");
+            m_qrzStatus = tr("Type the QRZ.com password too.");
+        } else {
+            m_qrzStatusKind = QStringLiteral("checking");
+            m_qrzStatus = tr("Signing in to QRZ.com…");
+            lookup.testLogin(user.trimmed(), pass);
+        }
+    }
     emit qrzChanged();
     if (!m_lookupCall.isEmpty()) {
         lookup.lookup(m_lookupCall, true);

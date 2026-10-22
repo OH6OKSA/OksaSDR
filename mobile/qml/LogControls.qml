@@ -336,6 +336,16 @@ ColumnLayout {
         }
     }
     Label {
+        objectName: "qrzStatus"
+        Layout.fillWidth: true
+        visible: Engine.qrzStatus.length > 0
+        text: Engine.qrzStatus
+        color: Engine.qrzStatusKind === "ok" ? "#00cc66"
+             : Engine.qrzStatusKind === "failed" ? Theme.transmit : Theme.textDim
+        font.pixelSize: 13
+        wrapMode: Text.WordWrap
+    }
+    Label {
         Layout.fillWidth: true
         text: qsTr("QRZ.com's full records (name, QTH, grid) need their XML subscription; without it the card shows the country from the prefix. The password stays in this device's secure store.")
         color: Theme.textDim

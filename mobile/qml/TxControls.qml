@@ -329,6 +329,32 @@ ColumnLayout {
         onClicked: Engine.useDeviceMicrophone()
     }
 
+    // DAX: the radio transmits the audio a program on a computer sends
+    // (FT8 and other digital modes) instead of the microphone. Left on, the
+    // microphone goes nowhere, so it is shown, and can be turned off, here.
+    RowLayout {
+        Layout.fillWidth: true
+        visible: !Engine.cwMode
+        AppButton {
+            objectName: "daxButton"
+            text: qsTr("DAX")
+            checked: Engine.dax
+            enabled: Engine.connectionState === "connected"
+            Layout.preferredWidth: 64
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.dax = !Engine.dax
+        }
+        Label {
+            Layout.fillWidth: true
+            text: Engine.dax
+                  ? qsTr("On: the radio sends the audio from DAX (a digital-mode program on a computer), not the microphone.")
+                  : qsTr("Off: the radio sends the microphone.")
+            color: Engine.dax ? Theme.text : Theme.textDim
+            font.pixelSize: 12
+            wrapMode: Text.WordWrap
+        }
+    }
+
     // PTT: hold to talk, or tap on / tap off (a latched transmission stops
     // by itself after 3 minutes).
     RowLayout {
