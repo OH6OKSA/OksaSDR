@@ -95,6 +95,9 @@ class Asc:
 
 # Apple's model identifiers (underscore form, as the API gives them).
 MODEL_NAMES = {
+    "iPhone12_1": "iPhone 11", "iPhone12_3": "iPhone 11 Pro", "iPhone12_5": "iPhone 11 Pro Max",
+    "iPhone12_8": "iPhone SE (2nd gen)", "iPhone13_1": "iPhone 12 mini", "iPhone13_2": "iPhone 12",
+    "iPhone13_3": "iPhone 12 Pro", "iPhone13_4": "iPhone 12 Pro Max",
     "iPhone14_4": "iPhone 13 mini", "iPhone14_5": "iPhone 13", "iPhone14_2": "iPhone 13 Pro",
     "iPhone14_3": "iPhone 13 Pro Max", "iPhone14_6": "iPhone SE (3rd gen)", "iPhone14_7": "iPhone 14",
     "iPhone14_8": "iPhone 14 Plus", "iPhone15_2": "iPhone 14 Pro", "iPhone15_3": "iPhone 14 Pro Max",
