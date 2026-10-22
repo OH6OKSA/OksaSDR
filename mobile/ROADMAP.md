@@ -5,7 +5,9 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. To verify in build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
+Queued: the mode chooser offers every mode the radio lists (DIGL, SAM, NFM,
+RTTY and waveform modes such as FreeDV's FDVU/FDVL), not only the common
+six; to verify with the FreeDV waveform by the tester who asked. To verify in build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
 (QRZ.com lookup with an account, the ADIF share sheet on iOS and Android);
 the 3D fallback on the tablet that froze; spot labels beside the RF GAIN
 badge. Still open from build 86: an FM repeater memory on the air, DAX
@@ -193,6 +195,8 @@ From the comparison with upstream main and tester requests:
 - More of the desktop's TX chain (de-esser, tube, exciter, reverb) and a
   chain order
 - CW profiles (new in SmartSDR 4.3)
+- Built-in FreeDV RADE, as in the AetherSDR desktop (asked by the FreeDV
+  team); the radio's FreeDV waveform modes come first, in the next build
 
 From other FlexRadio mobile clients (PocketSDR for Android, release of
 2026-10-20), to keep up with:
