@@ -613,6 +613,8 @@ public:
     // The 3D view fell behind the data on this GPU: back to the 2D
     // waterfall, with a notice.
     void disable3DTooSlow();
+    // Marks the 3D view running in front, for the hang check at start.
+    void update3DGuard();
     Q_INVOKABLE void recallMemory(int index);
     Q_INVOKABLE void saveMemory(const QString& name);
     Q_INVOKABLE void removeMemory(int index);

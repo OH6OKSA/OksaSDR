@@ -318,10 +318,30 @@ MobileEngine::MobileEngine(QObject* parent)
     wireTransmit();
     // Losing the foreground (call, app switch, lock) must never leave the
     // transmitter keyed.
+    // The 3D view on a weak GPU can hang the app (Android "isn't responding",
+    // seen on a Unisoc T606 tablet) before the slow-frame check can act. A
+    // mark is kept while the 3D view runs in front and cleared whenever the
+    // app leaves it or quits; found at start, the app was killed with 3D on,
+    // so it starts in 2D.
+    if (spectrum3D() && AppSettings::instance().value(QStringLiteral("Mobile3DRunning"), 0).toInt() != 0) {
+        qCWarning(lcMobile) << "3D view: the app stopped while it ran; starting with the 2D waterfall";
+        setSpectrum3D(false);
+        QTimer::singleShot(3000, this, [this] {
+            setLastError(tr("The app stopped while the 3D view was on, so it starts with the 2D waterfall. "
+                            "The 3D view can be turned on again in View."));
+        });
+    }
+    update3DGuard();
+    connect(this, &MobileEngine::displayLevelsChanged, this, &MobileEngine::update3DGuard);
+    connect(qApp, &QCoreApplication::aboutToQuit, this, [] {
+        AppSettings::instance().setValue(QStringLiteral("Mobile3DRunning"), 0);
+        AppSettings::instance().save();
+    });
     connect(qApp, &QGuiApplication::applicationStateChanged, this, [this](Qt::ApplicationState state) {
         if (state != Qt::ApplicationActive) {
             stopTransmit(QStringLiteral("application inactive"));
         }
+        update3DGuard();
         // Nobody sees the display while the app is not in front: stop feeding
         // the spectrum, waterfall and 3D view (audio keeps playing). iOS kills
         // an app whose main thread is busy when it moves to the background
@@ -3512,6 +3532,16 @@ void MobileEngine::applyCallInfo(const CallsignInfo& info)
     }
     m_callLookup = m;
     emit callLookupChanged();
+}
+
+void MobileEngine::update3DGuard()
+{
+    const int running = spectrum3D() && qApp->applicationState() == Qt::ApplicationActive ? 1 : 0;
+    AppSettings& settings = AppSettings::instance();
+    if (settings.value(QStringLiteral("Mobile3DRunning"), 0).toInt() != running) {
+        settings.setValue(QStringLiteral("Mobile3DRunning"), running);
+        settings.save();
+    }
 }
 
 void MobileEngine::disable3DTooSlow()
