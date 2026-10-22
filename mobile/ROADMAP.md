@@ -219,6 +219,10 @@ From other FlexRadio mobile clients (PocketSDR for Android, release of
   - [#6533](https://github.com/aethersdr/AetherSDR/issues/6533): closing the TX slice leaves no slice transmitting;
   - [#6534](https://github.com/aethersdr/AetherSDR/issues/6534): RFC, Opus under Auto over a VPN;
   - [PR #6535](https://github.com/aethersdr/AetherSDR/pull/6535) for #6051: VITA-49 loss counted net of reordering.
+- **Three meters while transmitting** (Power, SWR and Mic at once, asked in
+  the group by an Aurora user): waiting for his answer on the layout (two
+  bars stacked on one side, a third meter in the slice row's middle, or
+  three bars across).
 - **To verify:** LAN discovery on Android at the radio's own network (on the
   next visit to the cabin, where the radio is; SmartSDR 4.3.16 works: a
   tester's FLEX-6600 runs it).
