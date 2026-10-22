@@ -5284,9 +5284,16 @@ QStringList MobileEngine::modes() const
     if (available.isEmpty()) {
         return preferred;
     }
+    // The common modes first, then whatever else the radio offers in its own
+    // order (DIGL, SAM, NFM, RTTY, and waveform modes such as FreeDV's FDVU/FDVL).
     QStringList result;
     for (const QString& m : preferred) {
         if (available.contains(m)) {
+            result.append(m);
+        }
+    }
+    for (const QString& m : available) {
+        if (!result.contains(m)) {
             result.append(m);
         }
     }
