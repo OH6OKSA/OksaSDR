@@ -392,6 +392,8 @@ Item {
     Popup {
         id: volumePopup
         objectName: "volumePopup"
+        modal: true
+        dim: false
         y: info.height + 4
         width: Math.min(360, (info.parent ? info.parent.width : 360))
         margins: Theme.spacing

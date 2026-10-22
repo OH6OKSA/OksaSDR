@@ -105,6 +105,8 @@ RowLayout {
                     }
                     Menu {
                         id: sliceMenu
+                        modal: true
+                        dim: false
                         MenuItem {
                             text: qsTr("Make TX slice")
                             enabled: !chip.modelData.tx

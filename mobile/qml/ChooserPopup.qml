@@ -11,6 +11,10 @@ Popup {
     property var options: []
     property string current: ""
     signal picked(string name)
+    // Modal without dimming: a tap outside only closes it (on the button that
+    // opened it too), and never reaches the spectrum below to retune.
+    modal: true
+    dim: false
 
     margins: Theme.spacing
     padding: Theme.spacing

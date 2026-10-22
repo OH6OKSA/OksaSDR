@@ -31,6 +31,8 @@ Item {
     Popup {
         id: chooser
         objectName: "modeChooser"
+        modal: true
+        dim: false
         y: modeButton.height + 4
         margins: Theme.spacing
         padding: Theme.spacing

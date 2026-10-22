@@ -73,6 +73,8 @@ Page {
                 onClicked: moreMenu.popup(moreButton, 0, moreButton.height)
                 Menu {
                     id: moreMenu
+                    modal: true
+                    dim: false
                     MenuItem { text: qsTr("Radio Setup"); onTriggered: radioSetup.open() }
                     MenuItem { text: qsTr("Manual"); onTriggered: Qt.openUrlExternally(Engine.manualUrl) }
                     MenuItem { text: qsTr("Log"); onTriggered: logPage.open() }
@@ -348,10 +350,30 @@ Page {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
-            PttButton {
+            // Close where the Controls button was, so the same spot opens and
+            // closes the drawer without a tap on the spectrum.
+            RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: page.pttHeight
-                fontPx: 26
+                spacing: Theme.spacing / 2
+                AppButton {
+                    objectName: "closeControls"
+                    Accessible.name: qsTr("Close controls")
+                    Layout.preferredWidth: Math.max(110, page.width * 0.22)
+                    Layout.preferredHeight: page.pttHeight
+                    onClicked: controlsDrawer.close()
+                    contentItem: Label {
+                        text: qsTr("Close")
+                        color: Theme.buttonText
+                        font.pixelSize: 15
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                }
+                PttButton {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: page.pttHeight
+                    fontPx: 26
+                }
             }
         }
     }

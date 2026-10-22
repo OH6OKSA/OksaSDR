@@ -10,6 +10,8 @@ import AetherMobile
 Popup {
     id: chooser
     objectName: "filterChooser"
+    modal: true
+    dim: false
     readonly property real cellWidth: Math.max(Theme.buttonWidth * 0.8, 60)
     function label(hz) {
         if (hz >= 1000) {

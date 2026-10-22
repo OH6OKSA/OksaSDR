@@ -8,6 +8,8 @@ import AetherMobile
 Popup {
     id: chooser
     objectName: "agcChooser"
+    modal: true
+    dim: false
     margins: Theme.spacing
     padding: Theme.spacing
     width: Math.min(420, (parent ? parent.width : 420))
