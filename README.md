@@ -20,7 +20,7 @@ SmartLink (or your own VPN), it is a complete station control surface.
 > [discussion #6409](https://github.com/aethersdr/AetherSDR/discussions/6409).
 
 <p align="center">
-  <img src="docs/mobile/ipad-landscape.jpg" width="70%" alt="OksaSDR on an iPad (a screenshot from the device): 3D spectrum, waterfall and the pinned Audio and TX controls"/>
+  <img src="docs/mobile/ipad-landscape.jpg" width="70%" alt="OksaSDR on an iPad (a screenshot from the device): FT8 on four DIGU slices, the 3D spectrum and waterfall on 80 m and the Digi tab with decodes in WSJT-X colours"/>
   &nbsp;
   <img src="docs/mobile/iphone-portrait.jpg" width="22%" alt="OksaSDR on iPhone in portrait"/>
 </p>

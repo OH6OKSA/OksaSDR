@@ -5,7 +5,7 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. To verify in build 99: FT8 over SmartLink decoding every slot, the decode filter on a device. In build 98 (on the iPad: four slices decoding, an answer from slice D): no duplicate DAX channels after the fix. In build 97: the 3D view over SmartLink on the iPad (no switch to 2D). In build 96: dragging the TX band on a device. In build 94 (FT8 and FT4 QSOs on the iPad worked: OK2VCR, EA3FHP): RADE transmit with a device microphone and receive with a RADE station, the log in Files / Documents and the ADIF import on iOS and Android, the 2D start after a 3D hang. In build 93: FDVU / FDVL with the FreeDV waveform (by the tester who asked); menus closing on a second tap without retuning; the QRZ.com sign-in result with an account. In build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
+Nothing queued yet. To verify in build 100: FT8 power at TX level 0 dB on a 6600 (asked by a tester: 63 W of 88), four slices decoding for an hour without a hang, the tap flash and AGC by mode on a device. Build 99 on the iPad: four slices on their own DAX channels, decoding every slot. In build 97: the 3D view over SmartLink on the iPad (no switch to 2D). In build 96: dragging the TX band on a device. In build 94 (FT8 and FT4 QSOs on the iPad worked: OK2VCR, EA3FHP): RADE transmit with a device microphone and receive with a RADE station, the log in Files / Documents and the ADIF import on iOS and Android, the 2D start after a 3D hang. In build 93: FDVU / FDVL with the FreeDV waveform (by the tester who asked); menus closing on a second tap without retuning; the QRZ.com sign-in result with an account. In build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
 (QRZ.com lookup with an account, the ADIF share sheet on iOS and Android);
 the 3D fallback on the tablet that froze; spot labels beside the RF GAIN
 badge. Still open from build 86: an FM repeater memory on the air, DAX
@@ -51,6 +51,14 @@ to the radio (needs a listening server on the phone, not possible in the
 iOS background).
 
 ## Released
+
+**Build 100** (2026-10-24), iPhone and iPad, and Android beta 20:
+- The FT8 hashed-callsign table (256 entries, probed without bound under a lock) filled up with four busy slices: every decoder stopped and the app froze on the next transmit. Probes are bounded now, the oldest call gives way, 2048 entries, aged once a slot.
+- FT8 / FT4 audio at full scale (it was −6 dB: 5.6 W of 10 W on the FLEX, 8.5 W now) and a TX level (0 to −20 dB); the peak power of each transmission in the log.
+- A tapped decode flashes (kept across the list rebuild the answer causes).
+- AGC by mode on the app's own mode changes, also after the radio brings a band's AGC: fast for CW and data, slow for voice, the user's choice kept per kind.
+- The ft8-test removes leftover slices only with clean (it could take a user's slices).
+Tested on the FLEX: power at −6 / 0 dB, AGC on USB / DIGU and after a band change, the hash table with 3000 calls, the flash's timing.
 
 **Build 99** (2026-10-24), iPhone and iPad, and Android beta 19:
 - FT8 / FT4 decode filter: All, CQ, New, New DXCC (your call, TX and the QSO station always show).

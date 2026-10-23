@@ -9,12 +9,13 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- FT8 / FT4: Show filters the decode list: All, CQ, New (new continent, CQ zone or DXCC) or New DXCC. Your call, your TX and the station you are working always show.
-- FT8 / FT4 keep decoding every slot over SmartLink and slow links: before, the slots after the first could decode nothing when the audio came in bursts.
-- Every decoding slice gets its own DAX channel: a new slice that came with another slice's channel no longer shows the same stations twice.
+- Fixed: with several slices decoding on a busy band the app could stop decoding and then freeze after a few minutes.
+- FT8 / FT4 transmit at full power: the audio drove the radio 6 dB short, so the power out stayed well below the TX tab's power. TX level on the Digi tab (0 to -20 dB, default 0 dB) backs it off if you want.
+- A tapped decode flashes yellow, so you see the answer took even with the status line scrolled away.
+- AGC follows the mode when the app changes it: fast for CW and data, slow for voice; the app remembers your own choice per kind of mode.
 
-RECENT (builds 94–98)
-- FT8 and FT4 in the app (Controls > Digi): decoding on every DIGU slice with WSJT-X colours, tap a call to answer (TX moves to its slice), the TX band dragged on the display; RADE digital voice; the log in Files > On My iPhone / iPad > OksaSDR, ADIF import.
+RECENT (builds 94–99)
+- FT8 and FT4 in the app (Controls > Digi): decoding on every DIGU slice with WSJT-X colours and the New / New DXCC filter, tap a call to answer (TX moves to its slice), the TX band dragged on the display; RADE digital voice; the log in Files > On My iPhone / iPad > OksaSDR, ADIF import.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.

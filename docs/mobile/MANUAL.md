@@ -180,7 +180,12 @@ would remove the signal itself; back in a voice mode it returns as you left
 it.
 
 **AGC** — off / slow / med / fast, the AGC threshold (AGC-T) and the
-panadapter's RF gain (preamp or attenuator, in the radio's steps).
+panadapter's RF gain (preamp or attenuator, in the radio's steps). When
+the app changes the mode (the mode chooser, a band button, a Digi band
+button, RADE), AGC follows it: **fast** for CW and data (DIGU, DIGL,
+RTTY, FreeDV), **slow** for voice. Pick another AGC and the app keeps it
+for that kind of mode from then on. A mode change made by another program
+on the radio leaves the AGC alone.
 
 ![AGC, AGC-T and RF gain](manual/agc.jpg)
 
@@ -552,8 +557,9 @@ them back into the drawer.
   working always show. The line above the list says how many of the last
   decodes the filter shows.
 
-  **Tap a decode** to answer that station: TX, the active slice and the
-  display move to the slice it was heard on, and the app starts calling.
+  **Tap a decode** to answer that station: the row flashes yellow, TX,
+  the active slice and the display move to the slice it was heard on, and
+  the app starts calling.
   **CQ** calls CQ in the next slot on the **TX slice** (the one with the
   red TX badge). Timing and transmitting follow the TX slice: move the TX
   badge, press a band button with another slice active, or tap inside
@@ -576,7 +582,10 @@ them back into the drawer.
   with a four-letter suffix) is sent as WSJT-X sends it: in full in CQ and
   in RRR / RR73 / 73, as <CALL> in the messages with a report. The transmit
   audio goes to the radio past the TX processing (no gate, EQ or
-  compression); power is the TX tab's power. Decoding copes with audio
+  compression). **TX level** (0 to −20 dB, default 0 dB, as WSJT-X's
+  Pwr) sets how hard that audio drives the radio: at 0 dB it is fully
+  driven and the power out follows the TX tab's RF power; lower it to back
+  off. The log shows the peak power of each transmission. Decoding copes with audio
   that arrives in bursts (SmartLink, a VPN over a mobile link).
 
   **RADE digital voice** (FreeDV's Radio Autoencoder, in the app itself, no
