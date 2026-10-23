@@ -1964,6 +1964,10 @@ AudioEngine::AudioEngine(QObject* parent)
     m_wsprPumpTimer->setInterval(5);
     connect(m_wsprPumpTimer, &QTimer::timeout,
             this, &AudioEngine::pumpWsprBeacon);
+    m_txDigitalTimer = new QTimer(this);
+    m_txDigitalTimer->setTimerType(Qt::PreciseTimer);
+    m_txDigitalTimer->setInterval(5);
+    connect(m_txDigitalTimer, &QTimer::timeout, this, &AudioEngine::pumpTxDigital);
     loadClientEqSettings();      // restore persisted bands before first audio
     loadClientCompSettings();    // restore persisted comp params + chain order
     loadClientGateSettings();    // restore persisted gate params
@@ -9549,8 +9553,24 @@ void AudioEngine::playTxClip(const QByteArray& floatMono, int sampleRate)
     m_txClipPos = 0.0;
 }
 
+void AudioEngine::playTxDigital(const QByteArray& floatMono24k)
+{
+    m_txClipRecording = false;
+    m_txClipPlaying.clear();
+    m_txDigitalPlaying = floatMono24k;
+    m_txDigitalPos = 0;
+    m_txDigitalClock.start();
+    m_txDigitalTimer->start();
+}
+
 void AudioEngine::stopTxClip()
 {
+    if (!m_txDigitalPlaying.isEmpty()) {
+        m_txDigitalTimer->stop();
+        m_txDigitalClock.invalidate();
+        m_txDigitalPlaying.clear();
+        emit txClipFinished();
+    }
     if (!m_txClipPlaying.isEmpty()) {
         m_txClipPlaying.clear();
         emit txClipFinished();
@@ -9884,35 +9904,50 @@ void AudioEngine::onTxAudioReady()
     // boundary. That is final for Flex Opus/VITA. Host-modulating backends
     // currently consume the same Int16 seam and may convert onward.
     // Radio-authoritative mode/passband filtering remains downstream.
-    m_txVoiceProcessor->setStageOrder(
-        m_txChainPacked.load(std::memory_order_acquire));
-    m_txVoiceProcessor->setMicGain(m_pcMicGain.load());
-    m_txVoiceProcessor->setRnnoiseEnabled(m_rn2TxEnabled.load());
-    // Both routes return the same transport Int16 in `data`, so every tap,
-    // monitor, meter and the Opus encoder below are untouched by this branch.
-    const bool voiceProcessed = capturedFloat32
-        ? m_txVoiceProcessor->processCapturedFloat32(data)
-        : m_txVoiceProcessor->processCapturedInt16(data);
-    if (m_txVoiceProcessor->egressRecoveryPending()
-        && !m_txVoiceEgressRecoveryQueued) {
-        m_txVoiceEgressRecoveryQueued = true;
-        const bool queued = QMetaObject::invokeMethod(
-            this,
-            [this]() {
-                m_txVoiceProcessor->recoverEgressAfterMismatch();
+    // Generated digital-mode audio (FT8/FT4, playTxDigital) replaces the
+    // microphone: gate, EQ, compression and mic gain must not touch it.
+    bool voiceProcessed = false;
+    if (!m_txDigitalPlaying.isEmpty()) {
+        // pumpTxDigital() sends the generated audio on its own clock.
+        return;
+    } else {
+        m_txVoiceProcessor->setStageOrder(
+            m_txChainPacked.load(std::memory_order_acquire));
+        m_txVoiceProcessor->setMicGain(m_pcMicGain.load());
+        m_txVoiceProcessor->setRnnoiseEnabled(m_rn2TxEnabled.load());
+        // Both routes return the same transport Int16 in `data`, so every tap,
+        // monitor, meter and the Opus encoder below are untouched by this branch.
+        voiceProcessed = capturedFloat32
+            ? m_txVoiceProcessor->processCapturedFloat32(data)
+            : m_txVoiceProcessor->processCapturedInt16(data);
+        if (m_txVoiceProcessor->egressRecoveryPending()
+            && !m_txVoiceEgressRecoveryQueued) {
+            m_txVoiceEgressRecoveryQueued = true;
+            const bool queued = QMetaObject::invokeMethod(
+                this,
+                [this]() {
+                    m_txVoiceProcessor->recoverEgressAfterMismatch();
+                    m_txVoiceEgressRecoveryQueued = false;
+                },
+                Qt::QueuedConnection);
+            if (!queued) {
                 m_txVoiceEgressRecoveryQueued = false;
-            },
-            Qt::QueuedConnection);
-        if (!queued) {
-            m_txVoiceEgressRecoveryQueued = false;
-            qCWarning(lcAudio)
-                << "AudioEngine: failed to queue TX egress SRC recovery";
+                qCWarning(lcAudio)
+                    << "AudioEngine: failed to queue TX egress SRC recovery";
+            }
         }
     }
     if (!voiceProcessed) {
         return;
     }
 
+    deliverTxVoicePcm(data);
+}
+
+// The 24 kHz Int16 stereo leaving the voice chain (or generated digital
+// audio) on its way to the monitors, meters and the radio.
+void AudioEngine::deliverTxVoicePcm(QByteArray data)
+{
     // The legacy pre-tail monitor currently has no active GUI owner. Keep its
     // feed alive at the stable 24 kHz representation until it is replaced by
     // the explicit 48 kHz postChannelStripFloat48Stereo() measurement seam.
@@ -10049,6 +10084,42 @@ void AudioEngine::onTxAudioReady()
         emit txPacketReady(packet, context);
 
         m_txAccumulator.remove(0, TX_PCM_BYTES_PER_PACKET);
+    }
+}
+
+void AudioEngine::pumpTxDigital()
+{
+    if (m_txDigitalPlaying.isEmpty() || !m_txDigitalClock.isValid()) {
+        m_txDigitalTimer->stop();
+        return;
+    }
+    const qint64 target = m_txDigitalClock.nsecsElapsed() * DEFAULT_SAMPLE_RATE / 1000000000LL;
+    // A stalled thread catches up in steps of at most 100 ms.
+    const int frames = static_cast<int>(std::min<qint64>(target - m_txDigitalPos, DEFAULT_SAMPLE_RATE / 10));
+    if (frames <= 0) {
+        return;
+    }
+    const auto* src = reinterpret_cast<const float*>(m_txDigitalPlaying.constData());
+    const int srcFrames = m_txDigitalPlaying.size() / static_cast<int>(sizeof(float));
+    QByteArray out(frames * 2 * static_cast<int>(sizeof(int16_t)), Qt::Uninitialized);
+    auto* d = reinterpret_cast<int16_t*>(out.data());
+    bool ended = false;
+    for (int i = 0; i < frames; ++i) {
+        float v = 0.0f;
+        if (m_txDigitalPos < srcFrames) {
+            v = src[m_txDigitalPos];
+        } else {
+            ended = true;
+        }
+        ++m_txDigitalPos;
+        d[i * 2] = d[i * 2 + 1] = static_cast<int16_t>(std::clamp(v * 32768.0f, -32768.0f, 32767.0f));
+    }
+    deliverTxVoicePcm(out);
+    if (ended) {
+        m_txDigitalTimer->stop();
+        m_txDigitalClock.invalidate();
+        m_txDigitalPlaying.clear();
+        emit txClipFinished();
     }
 }
 

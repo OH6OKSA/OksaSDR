@@ -156,6 +156,11 @@ public:
     Q_INVOKABLE void stopTxClipRecording();
     Q_INVOKABLE void playTxClip(const QByteArray& floatMono, int sampleRate);
     Q_INVOKABLE void stopTxClip();
+    // Generated digital-mode audio (FT8/FT4), 24 kHz mono float, sent in the
+    // microphone's place after the voice chain (no gate, EQ, compression or
+    // mic gain), on its own 24 kHz clock. Ends with txClipFinished;
+    // stopTxClip stops it. Audio thread.
+    Q_INVOKABLE void playTxDigital(const QByteArray& floatMono24k);
     // Microphone frames actually delivered since the TX stream started, and
     // the first/last delivery times (ms, monotonic): the real capture rate,
     // to check against the format's nominal one. Any thread.
@@ -1335,6 +1340,12 @@ private:
     QByteArray m_txClipPlaying;           // float mono
     int        m_txClipRate{0};
     double     m_txClipPos{0.0};          // in clip frames
+    QByteArray m_txDigitalPlaying;        // float mono, 24 kHz
+    qint64     m_txDigitalPos{0};         // frames sent
+    QTimer*    m_txDigitalTimer{nullptr};
+    QElapsedTimer m_txDigitalClock;
+    void pumpTxDigital();
+    void deliverTxVoicePcm(QByteArray data);
     // TX: actual negotiated input sample format. Float32 now leads the mic
     // ladder on Windows and Linux, so the 48 kHz float voice strip is fed
     // without an Int16 round trip; Int16 remains the next rung there, and stays
