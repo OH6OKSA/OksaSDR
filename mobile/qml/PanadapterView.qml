@@ -63,7 +63,8 @@ Rectangle {
     Item {
         id: digiOverlay
         anchors.fill: parent
-        visible: panArea.digiPick && Engine.panBandwidthMhz > 0
+        // The scale in any DIGU / DIGL; the TX band while FT8 / FT4 decodes.
+        visible: panArea.digiMode && Engine.panBandwidthMhz > 0
         readonly property real pxPerMhz: width / Math.max(1e-6, Engine.panBandwidthMhz)
         function xForHz(hz) {
             const rf = Engine.frequencyMhz + (Engine.mode === "DIGL" ? -hz : hz) / 1e6
@@ -92,6 +93,7 @@ Rectangle {
         }
         Rectangle {
             objectName: "digiTxMarker"
+            visible: panArea.digiPick
             readonly property real hzWidth: Engine.digiProtocol === "FT4" ? 90 : 50
             x: Math.min(digiOverlay.xForHz(Engine.digiTxHz), digiOverlay.xForHz(Engine.digiTxHz + hzWidth))
             width: Math.max(2, hzWidth / 1e6 * digiOverlay.pxPerMhz)
@@ -1034,7 +1036,8 @@ Rectangle {
     // FT8 / FT4 decoding in DIGU / DIGL: the passband is the audio band the
     // tones are in, so a tap there picks the transmit audio frequency
     // instead of retuning (outside it, a tap tunes as always).
-    readonly property bool digiPick: Engine.digiRunning && (Engine.mode === "DIGU" || Engine.mode === "DIGL")
+    readonly property bool digiMode: (Engine.mode === "DIGU" || Engine.mode === "DIGL") && !Engine.rade
+    readonly property bool digiPick: Engine.digiRunning && digiMode
     function digiHzAt(x) {
         const hz = (mhzAt(x) - Engine.frequencyMhz) * 1e6
         return Engine.mode === "DIGL" ? -hz : hz

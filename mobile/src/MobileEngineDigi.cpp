@@ -236,6 +236,10 @@ void MobileEngine::digiTune(double mhz)
     // pan is refused by the radio).
     m_slice->tuneAndRecenter(mhz);
     qCInfo(lcMobile) << "digi: tuned" << mhz << "MHz DIGU";
+    // A band picked on the Digi tab means FT8 / FT4: decoding starts.
+    if (!digiRunning() && !radeActive()) {
+        setDigiRunning(true);
+    }
     // Then the audio band fills the display, once the pan has followed.
     QTimer::singleShot(800, this, [this] { digiZoom(); });
 }
