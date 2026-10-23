@@ -340,7 +340,9 @@ Page {
             visible: Engine.controlsVisible
             Layout.row: page.twoColumns ? 0 : 1
             Layout.column: page.twoColumns ? 1 : 0
-            Layout.rowSpan: page.twoColumns ? 2 : 1
+            // Beside the display and PTT; with PTT hidden (FT8 / FT4) the
+            // display's row only, so the empty PTT row does not take height.
+            Layout.rowSpan: page.twoColumns && ptt.visible ? 2 : 1
             Layout.preferredWidth: page.portrait ? -1 : page.sideWidth
             Layout.maximumWidth: page.portrait ? Number.POSITIVE_INFINITY : page.sideWidth
             Layout.fillWidth: page.portrait

@@ -169,6 +169,8 @@ private:
     // item, which falls back to the 2D waterfall.
     int m_slowFrames{0};
     bool m_reportedSlow{false};
+    qint64 m_lastFrameMs{0};
+    qint64 m_warmUpUntilMs{0};
     bool m_halfFloat{true};
 
     // Texture rows (RGBA: FFT dBm, coverage, tile dBm, tile coverage) and
@@ -444,7 +446,23 @@ void Spectrum3DRenderer::synchronize(QQuickRhiItem* rhiItem)
                                .count();
         const qint64 waited = item->m_pendingSinceMs > 0 ? now - item->m_pendingSinceMs : 0;
         item->m_pendingSinceMs = 0;
-        if (waited > kSlowFrameMs && waited < 30000) {
+        // Not judged while warming up: the first frames after the view
+        // starts or the app comes back (shaders, the first data, the
+        // window's surface) are slow on any GPU (an iPad tripped this 6 s
+        // after connecting).
+        constexpr qint64 kWarmUpMs = 10000;
+        if (m_lastFrameMs == 0 || now - m_lastFrameMs > 2000) {
+            m_warmUpUntilMs = now + kWarmUpMs;
+            m_slowFrames = 0;
+        }
+        m_lastFrameMs = now;
+        if (qEnvironmentVariableIsSet("AETHER_3D_WAIT_LOG") && waited > 0) {
+            qCInfo(lcSpectrum3D) << "3D row waited" << waited << "ms, slow frames" << m_slowFrames
+                                 << (now < m_warmUpUntilMs ? "(warm-up)" : "");
+        }
+        if (now < m_warmUpUntilMs) {
+            // still warming up
+        } else if (waited > kSlowFrameMs && waited < 30000) {
             ++m_slowFrames;
         } else if (waited > 0 && waited < 100) {
             m_slowFrames = 0;

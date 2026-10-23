@@ -454,9 +454,14 @@ void MobileEngine::startDigiTx(qint64 slotMs)
     // Digital-mode audio from this device: allowed in DIGU like RADE (voice
     // PTT is refused there).
     RadioModel& rm = m_session.radioModel();
-    // The decoding slice transmits (another slice may hold TX).
+    // The decoding slice transmits. Another slice holding TX is moved, and
+    // the key waits for the radio to confirm it (PTT is checked against the
+    // TX slice), within this slot's start.
     if (SliceModel* own = digiSlice(); own && !own->isTxSlice()) {
         own->setTxSlice(true);
+        qCInfo(lcMobile) << "digi: TX moved to slice" << own->letter();
+        QTimer::singleShot(150, this, [this, slotMs] { startDigiTx(slotMs); });
+        return;
     }
     if (SliceModel* tx = digiSlice()) {
         rm.setDigitalVoiceTxSlice(tx->sliceId());

@@ -1338,6 +1338,64 @@ int main(int argc, char* argv[])
                 engine.selectSlice(*firstId);
             });
         }
+        if (spec.contains(QStringLiteral("rebind"))) {
+            // Slice B added and made TX; a tap in B's passband moves FT8 to
+            // B; then a CQ must go out on B (the FT8 slice), not elsewhere.
+            auto ids = std::make_shared<std::pair<int, int>>(-1, -1);
+            const auto activeId = [&engine] {
+                for (const QVariant& v : engine.slices()) {
+                    if (v.toMap().value(QStringLiteral("active")).toBool()) {
+                        return v.toMap().value(QStringLiteral("id")).toInt();
+                    }
+                }
+                return -1;
+            };
+            QTimer::singleShot(30000, &app, [&engine, ids, activeId] {
+                ids->first = activeId();
+                engine.addSlice();
+            });
+            QTimer::singleShot(36000, &app, [&engine, ids, activeId] {
+                ids->second = activeId();
+                // TX to A, so the CQ later has to move it to B.
+                engine.makeTxSlice(ids->first);
+                qInfo() << "rebind-test: A" << ids->first << "B" << ids->second << "digi on"
+                        << engine.digi().value(QStringLiteral("sliceLetter")) << "B at" << engine.frequencyMhz() << engine.mode();
+            });
+            QTimer::singleShot(40000, &app, [&qml, &engine] {
+                for (QObject* root : qml.rootObjects()) {
+                    auto* window = qobject_cast<QQuickWindow*>(root);
+                    if (!window) {
+                        continue;
+                    }
+                    // B's passband: 600 Hz above B's dial, on the display.
+                    const double centre = engine.panCenterMhz();
+                    const double span = engine.panBandwidthMhz();
+                    const double mhz = engine.frequencyMhz() + 0.0006;
+                    const double fx = 0.5 + (mhz - centre) / span;
+                    const QPointF p(fx * window->width(), 0.62 * window->height());
+                    QWindowSystemInterface::handleMouseEvent(window, p, window->mapToGlobal(p), Qt::LeftButton,
+                                                             Qt::LeftButton, QEvent::MouseButtonPress);
+                    QWindowSystemInterface::handleMouseEvent(window, p, window->mapToGlobal(p), Qt::NoButton,
+                                                             Qt::LeftButton, QEvent::MouseButtonRelease);
+                    QWindowSystemInterface::flushWindowSystemEvents();
+                    qInfo() << "rebind-test: tapped at" << fx << "digi on" << engine.digi().value(QStringLiteral("sliceLetter"))
+                            << "tx Hz" << engine.digiTxHz();
+                }
+            });
+            QTimer::singleShot(46000, &app, [&engine] {
+                engine.setRfPower(10);
+                engine.digiCallCq();
+            });
+            QTimer::singleShot(46000 + 34000, &app, [&engine] {
+                engine.digiHalt();
+                qInfo() << "rebind-test: CQ done, digi on" << engine.digi().value(QStringLiteral("sliceLetter"))
+                        << engine.digi().value(QStringLiteral("sliceMhz"));
+            });
+            QTimer::singleShot(84000, &app, [&engine, ids] {
+                engine.selectSlice(ids->first);
+                engine.removeSlice(ids->second);
+            });
+        }
         if (cq && !qso) {
             // Two CQs, then stop calling (one slot pair is 30 s in FT8, 15 s in FT4).
             QTimer::singleShot(8000 + (ft4 ? 33000 : 63000), &app, [&engine] { engine.digiHalt(); });
@@ -1572,7 +1630,8 @@ int main(int argc, char* argv[])
     // one for this run and put the user's choice back on exit.
     if (parser.value(controlsOption) != QLatin1String("drawer") && parser.isSet(controlsTabOption)) {
         static const QStringList names{QStringLiteral("DSP"), QStringLiteral("Audio"), QStringLiteral("TX"),
-            QStringLiteral("CW"), QStringLiteral("View"), QStringLiteral("Profiles"), QStringLiteral("Memory")};
+            QStringLiteral("CW"), QStringLiteral("View"), QStringLiteral("Profiles"), QStringLiteral("Memory"),
+            QStringLiteral("Log"), QStringLiteral("Digi")};
         QStringList pinned;
         for (const QString& index : parser.value(controlsTabOption).split(QLatin1Char(','), Qt::SkipEmptyParts)) {
             if (const QString name = names.value(index.toInt()); !name.isEmpty()) {
