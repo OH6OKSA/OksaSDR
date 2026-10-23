@@ -23,6 +23,8 @@
 #include <QTimeZone>
 #include <QTimer>
 
+#include <cmath>
+
 Q_DECLARE_LOGGING_CATEGORY(lcMobile)
 
 using namespace AetherSDR;
@@ -70,6 +72,7 @@ void MobileEngine::setupDigi()
                            ? Ft8Engine::Protocol::Ft4
                            : Ft8Engine::Protocol::Ft8);
     m_digiTxHz = std::clamp(AppSettings::instance().value(QStringLiteral("MobileDigiTxHz"), 1200).toInt(), 200, 3000);
+    m_digiTxLevelDb = std::clamp(AppSettings::instance().value(QStringLiteral("MobileDigiTxLevelDb"), 0).toInt(), -20, 0);
     m_digiFilter = AppSettings::instance().value(QStringLiteral("MobileDigiFilter"), QStringLiteral("all")).toString();
     connect(m_ft8.get(), &Ft8Engine::slotStarted, this, &MobileEngine::onDigiSlot);
     connect(this, &MobileEngine::qsoLogChanged, this, [this] { m_wkDirty = true; });
@@ -398,6 +401,18 @@ void MobileEngine::setDigiProtocol(const QString& protocol)
     emit digiChanged();
 }
 
+void MobileEngine::setDigiTxLevelDb(int db)
+{
+    db = std::clamp(db, -20, 0);
+    if (db == m_digiTxLevelDb) {
+        return;
+    }
+    m_digiTxLevelDb = db;
+    AppSettings::instance().setValue(QStringLiteral("MobileDigiTxLevelDb"), db);
+    AppSettings::instance().save();
+    emit digiChanged();
+}
+
 void MobileEngine::setDigiTxHz(int hz)
 {
     hz = std::clamp(hz, 200, 3000);
@@ -500,7 +515,9 @@ void MobileEngine::digiTune(double mhz)
     } else if (!m_slice->isTxSlice()) {
         m_slice->setTxSlice(true);
     }
+    armModeAgc();
     m_slice->setMode(QStringLiteral("DIGU"));
+    applyModeAgc();  // also when it was in DIGU already
     // Usually another band: the pan moves with it (a plain tune outside the
     // pan is refused by the radio).
     m_slice->tuneAndRecenter(mhz);
@@ -649,6 +666,14 @@ void MobileEngine::startDigiTx(qint64 slotMs)
         digiEnd(error);
         return;
     }
+    // The TX level: the tone is made at full scale.
+    {
+        const float gain = float(std::pow(10.0, m_digiTxLevelDb / 20.0));
+        auto* f = reinterpret_cast<float*>(audio.data());
+        for (qsizetype i = 0, n = audio.size() / qsizetype(sizeof(float)); i < n; ++i) {
+            f[i] *= gain;
+        }
+    }
     const double lead = std::max(0.0, 0.5 - elapsed - kTxLatencyS);
     audio.prepend(QByteArray(int(lead * Ft8Engine::kTxSampleRate) * int(sizeof(float)), '\0'));
     // Digital-mode audio from this device: allowed in DIGU like RADE (voice
@@ -671,6 +696,7 @@ void MobileEngine::startDigiTx(qint64 slotMs)
         return;
     }
     m_digiTransmitting = true;
+    m_digiTxPeakW = 0.0;
     ++m_digiTries;
     // Our own transmission in the list (yellow, as WSJT-X).
     {
@@ -712,6 +738,9 @@ void MobileEngine::startDigiTx(qint64 slotMs)
 void MobileEngine::onDigiTxFinished()
 {
     m_digiTransmitting = false;
+    qCInfo(lcMobile).noquote() << QStringLiteral("digi: TX ended, peak %1 W at TX level %2 dB")
+                                      .arg(m_digiTxPeakW, 0, 'f', 1)
+                                      .arg(m_digiTxLevelDb);
     releasePtt(QStringLiteral("FT8 sent"));
     m_session.radioModel().setDigitalVoiceTxSlice(-1);
     if (m_digiEndAfterTx) {

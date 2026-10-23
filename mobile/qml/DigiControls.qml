@@ -126,6 +126,35 @@ ColumnLayout {
             onClicked: Engine.digiTxHz = Engine.digiTxHz + 1
         }
     }
+    // The transmit audio level (WSJT-X's Pwr): 0 dB drives the radio fully,
+    // so the power out is the TX tab's power; lower it to back off.
+    RowLayout {
+        Layout.fillWidth: true
+        Label {
+            text: qsTr("TX level %1 dB").arg(Engine.digiTxLevelDb)
+            color: Theme.textDim
+            font.pixelSize: 14
+            Layout.fillWidth: true
+        }
+        AppButton {
+            objectName: "digiTxLevelDown"
+            text: "−"
+            Accessible.name: qsTr("Lower the TX level by 1 dB")
+            Layout.preferredWidth: Theme.touchTarget
+            focusPolicy: Qt.NoFocus
+            enabled: Engine.digiTxLevelDb > -20
+            onClicked: Engine.digiTxLevelDb = Engine.digiTxLevelDb - 1
+        }
+        AppButton {
+            objectName: "digiTxLevelUp"
+            text: "+"
+            Accessible.name: qsTr("Raise the TX level by 1 dB")
+            Layout.preferredWidth: Theme.touchTarget
+            focusPolicy: Qt.NoFocus
+            enabled: Engine.digiTxLevelDb < 0
+            onClicked: Engine.digiTxLevelDb = Engine.digiTxLevelDb + 1
+        }
+    }
 
     Label {
         objectName: "digiStatus"
@@ -217,6 +246,15 @@ ColumnLayout {
         default: return true
         }
     }
+    // The row tapped last flashes for a second. Kept here, not in the row:
+    // the answer changes the QSO, the list is rebuilt and the rows made anew.
+    property string flashKey: ""
+    property real flashAt: 0
+    Timer {
+        interval: 1400
+        running: digi.flashKey !== ""
+        onTriggered: digi.flashKey = ""
+    }
     // The shown rows with their index in Engine.digiDecodes (a tap answers
     // by that index).
     readonly property var shown: {
@@ -277,6 +315,14 @@ ColumnLayout {
         delegate: ItemDelegate {
             required property var modelData
             readonly property var row: modelData.row
+            readonly property string key: row.utc + "|" + row.freq + "|" + row.text
+            Component.onCompleted: {
+                const left = 1350 - (Date.now() - digi.flashAt)
+                if (digi.flashKey === key && left > 0) {
+                    flashAnim.loops = Math.max(1, Math.ceil(left / 450))
+                    flashAnim.restart()
+                }
+            }
             readonly property color ground: digi.hlColor(row.hl)
             readonly property bool lit: row.hl && row.hl !== "b4"
             Layout.fillWidth: true
@@ -286,6 +332,24 @@ ColumnLayout {
             background: Rectangle {
                 color: parent.ground
                 radius: 4
+                // A tapped row flashes, so the answer shows where the
+                // finger is even with the status line scrolled away.
+                Rectangle {
+                    id: flash
+                    anchors.fill: parent
+                    radius: 4
+                    color: "#ffff00"
+                    border.color: "#ffffff"
+                    border.width: 2
+                    opacity: 0
+                }
+            }
+            SequentialAnimation {
+                id: flashAnim
+                loops: 3
+                NumberAnimation { target: flash; property: "opacity"; to: 0.9; duration: 80 }
+                PauseAnimation { duration: 170 }
+                NumberAnimation { target: flash; property: "opacity"; to: 0; duration: 200 }
             }
             contentItem: Label {
                 id: decodeText
@@ -300,7 +364,13 @@ ColumnLayout {
                 font.pixelSize: 13
                 elide: Text.ElideRight
             }
-            onClicked: Engine.digiAnswer(modelData.index)
+            onClicked: {
+                digi.flashKey = key
+                digi.flashAt = Date.now()
+                flashAnim.loops = 3
+                flashAnim.restart()
+                Engine.digiAnswer(modelData.index)
+            }
         }
     }
 }

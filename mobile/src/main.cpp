@@ -29,6 +29,7 @@
 #include <QQuickWindow>
 #include <QQuickItem>
 #include <QTimer>
+#include <QElapsedTimer>
 #include <QEventLoop>
 #include <QWheelEvent>
 
@@ -182,6 +183,9 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: the FT8 / FT4 decode list filter for this run (all, cq, new, dxcc; it is saved)."),
         QStringLiteral("filter"));
     parser.addOption(digiFilterOption);
+    const QCommandLineOption digiTxLevelOption(QStringLiteral("digi-tx-level"),
+        QStringLiteral("Development: the FT8 / FT4 TX level in dB (-20 to 0; it is saved)."), QStringLiteral("db"));
+    parser.addOption(digiTxLevelOption);
     const QCommandLineOption tapAtOption(QStringLiteral("tap-at"),
         QStringLiteral("Development: a mouse click at <x,y,ms>: window fractions 0-1, ms after start (e.g. 0.6,0.5,20000)."),
         QStringLiteral("x,y,ms"));
@@ -1252,6 +1256,26 @@ int main(int argc, char* argv[])
                                   << (decodes.isEmpty() ? QStringLiteral("(nothing)") : decodes.first().text);
             }
         }
+        {
+            // More hashed calls than the table holds (it once hung when full),
+            // then one of the newest still resolves.
+            Ft8Engine ft8;
+            QElapsedTimer timer;
+            timer.start();
+            for (int i = 0; i < 3000; ++i) {
+                const QString call = QStringLiteral("OH%1%2").arg(i % 10).arg(QString::number(10000 + i, 36).toUpper());
+                ft8.encode(QStringLiteral("<%1> OH6OKSA").arg(call), 1500.0);
+            }
+            const QByteArray audio = ft8.encode(QStringLiteral("K1ABC <OH2%1> -05").arg(QString::number(12999, 36).toUpper()), 1500.0);
+            const auto* f = reinterpret_cast<const float*>(audio.constData());
+            std::vector<float> s12(size_t(14.0 * 12000), 0.0f);
+            for (int i = 0; i + 1 < int(audio.size() / sizeof(float)) && size_t(6000 + i / 2) < s12.size(); i += 2) {
+                s12[size_t(6000 + i / 2)] = f[i];
+            }
+            const auto decodes = ft8.decodeSamples(s12, 0);
+            qInfo().noquote() << "ft8-selftest hash table: 3000 calls in" << timer.elapsed() << "ms, then"
+                              << (decodes.isEmpty() ? QStringLiteral("(nothing)") : decodes.first().text);
+        }
         return 0;
     }
     if (parser.isSet(ft8TestOption)) {
@@ -1262,8 +1286,12 @@ int main(int argc, char* argv[])
         const bool cq = qso || spec.contains(QStringLiteral("cq"));
         const bool ft4 = spec.contains(QStringLiteral("ft4"));
         auto saved = std::make_shared<std::tuple<double, QString, int, QString>>();
-        // Slices a cut-short run left behind: all but the first go.
-        QTimer::singleShot(6000, &app, [&engine] {
+        // Slices a cut-short run left behind: with clean, all but the first
+        // go (only then: they can be another client's or the user's own).
+        QTimer::singleShot(6000, &app, [&engine, spec] {
+            if (!spec.contains(QStringLiteral("clean"))) {
+                return;
+            }
             int first = 1 << 30;
             for (const QVariant& v : engine.slices()) {
                 first = std::min(first, v.toMap().value(QStringLiteral("id")).toInt());
@@ -1529,6 +1557,9 @@ int main(int argc, char* argv[])
     }
     if (parser.isSet(digiFilterOption)) {
         engine.setDigiFilter(parser.value(digiFilterOption));
+    }
+    if (parser.isSet(digiTxLevelOption)) {
+        engine.setDigiTxLevelDb(parser.value(digiTxLevelOption).toInt());
     }
     if (parser.isSet(tapAtOption)) {
         const QStringList t = parser.value(tapAtOption).split(QLatin1Char(','));

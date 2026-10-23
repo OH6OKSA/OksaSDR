@@ -1071,6 +1071,9 @@ void MobileEngine::wireTransmit()
     connect(&rm.meterModel(), &MeterModel::txMetersChanged, this,
             [this](float fwdPower, float swr, bool swrValid) {
         m_forwardPowerW = fwdPower;
+        if (m_digiTransmitting) {
+            m_digiTxPeakW = std::max(m_digiTxPeakW, double(fwdPower));
+        }
         m_swr = swr;
         m_swrValid = swrValid;
         emit txMetersChanged();
@@ -2549,6 +2552,7 @@ void MobileEngine::selectBand(const QString& band)
         setLastError(result.unsupportedReason);
         return;
     }
+    armModeAgc();
     rm.requestPanBand(m_pan->panId(), result.key);
 }
 
@@ -4828,6 +4832,34 @@ void MobileEngine::setAgcMode(const QString& mode)
 {
     if (m_slice && mode != m_slice->agcMode()) {
         m_slice->setAgcMode(mode);
+        AppSettings::instance().setValue(QStringLiteral("MobileAgc_") + agcModeClass(m_slice->mode()), mode);
+        AppSettings::instance().save();
+    }
+}
+
+QString MobileEngine::agcModeClass(const QString& mode)
+{
+    static const QStringList data{QStringLiteral("DIGU"), QStringLiteral("DIGL"), QStringLiteral("RTTY"),
+                                  QStringLiteral("DFM"), QStringLiteral("FDVU"), QStringLiteral("FDVL")};
+    if (mode.startsWith(QLatin1String("CW"))) {
+        return QStringLiteral("cw");
+    }
+    return data.contains(mode) ? QStringLiteral("data") : QStringLiteral("voice");
+}
+
+void MobileEngine::applyModeAgc()
+{
+    if (!m_slice || QDateTime::currentMSecsSinceEpoch() > m_modeAgcUntilMs) {
+        return;
+    }
+    const QString kind = agcModeClass(m_slice->mode());
+    const QString agc = AppSettings::instance()
+                            .value(QStringLiteral("MobileAgc_") + kind,
+                                   kind == QLatin1String("voice") ? QStringLiteral("slow") : QStringLiteral("fast"))
+                            .toString();
+    if (agcModes().contains(agc) && agc != m_slice->agcMode()) {
+        qCInfo(lcMobile) << "AGC" << agc << "for" << m_slice->mode();
+        m_slice->setAgcMode(agc);
     }
 }
 
@@ -5312,6 +5344,9 @@ void MobileEngine::bindSlice(SliceModel* slice)
         m_sliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::dspChanged));
         // Beat cancel only on voice: it would notch CW and data tones.
         m_sliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::applyBeatCancel));
+        m_sliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::applyModeAgc));
+        // A band change brings the band's own AGC from the radio after ours.
+        m_sliceConnections.append(connect(slice, &SliceModel::agcModeChanged, this, &MobileEngine::applyModeAgc));
         m_sliceConnections.append(connect(slice, &SliceModel::agcModeChanged, this, &MobileEngine::dspChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::agcThresholdChanged, this, &MobileEngine::dspChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::stepChanged, this, &MobileEngine::stepChanged));
@@ -5466,6 +5501,7 @@ QString MobileEngine::mode() const
 void MobileEngine::setMode(const QString& mode)
 {
     if (m_slice && mode != m_slice->mode()) {
+        armModeAgc();
         m_slice->setMode(mode);
     }
 }

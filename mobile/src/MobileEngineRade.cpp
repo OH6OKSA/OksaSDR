@@ -95,6 +95,7 @@ void MobileEngine::activateRade()
     m_radePrevMode = s->mode();
     m_radePrevFilterLow = s->filterLow();
     m_radePrevFilterHigh = s->filterHigh();
+    armModeAgc();
     s->setMode(mode);
     if (mode == QLatin1String("DIGL")) {
         s->setFilterWidth(-2250, -750);
@@ -308,6 +309,7 @@ void MobileEngine::deactivateRade()
             }
             if (!m_radePrevMode.isEmpty() && m_radePrevMode != QLatin1String("DIGU") && m_radePrevMode != QLatin1String("DIGL")
                 && (s->mode() == QLatin1String("DIGU") || s->mode() == QLatin1String("DIGL"))) {
+                armModeAgc();
                 s->setMode(m_radePrevMode);
                 s->setFilterWidth(m_radePrevFilterLow, m_radePrevFilterHigh);
             }

@@ -175,6 +175,10 @@ class MobileEngine : public QObject {
     Q_PROPERTY(bool digiRunning READ digiRunning WRITE setDigiRunning NOTIFY digiChanged)
     Q_PROPERTY(QString digiProtocol READ digiProtocol WRITE setDigiProtocol NOTIFY digiChanged)
     Q_PROPERTY(int digiTxHz READ digiTxHz WRITE setDigiTxHz NOTIFY digiChanged)
+    // The transmit audio level in dB below full scale (-20 to 0), as WSJT-X's
+    // Pwr: below the radio's full drive the power out falls short of the
+    // TX tab's power.
+    Q_PROPERTY(int digiTxLevelDb READ digiTxLevelDb WRITE setDigiTxLevelDb NOTIFY digiChanged)
     // The QSO: state ("idle", "cq", "answer"), dx, next message, status line,
     // transmitting, seconds into the slot, slot parity of our transmissions.
     Q_PROPERTY(QVariantMap digi READ digi NOTIFY digiChanged)
@@ -520,6 +524,14 @@ public:
     bool beatCancelSetting() const;
     bool beatCancelMode() const;
     void applyBeatCancel();
+    // AGC by mode: when this app changes the mode (mode chooser, band
+    // button, FT8 band, RADE), the slice takes the AGC kept for that kind of
+    // mode: fast for data and CW, slow for voice, until the user picks
+    // another one for it. Another client's mode changes are left alone.
+    static QString agcModeClass(const QString& mode);
+    void armModeAgc() { m_modeAgcUntilMs = QDateTime::currentMSecsSinceEpoch() + 4000; }
+    void applyModeAgc();
+    qint64 m_modeAgcUntilMs{0};
     QString agcMode() const;
     void setAgcMode(const QString& mode);
     QStringList agcModes() const;
@@ -636,6 +648,8 @@ public:
     void setDigiProtocol(const QString& protocol);
     int digiTxHz() const { return m_digiTxHz; }
     void setDigiTxHz(int hz);
+    int digiTxLevelDb() const { return m_digiTxLevelDb; }
+    void setDigiTxLevelDb(int db);
     QVariantMap digi() const;
     QVariantList digiDecodes() const { return m_digiDecodes; }
     QString digiFilter() const { return m_digiFilter; }
@@ -1372,6 +1386,8 @@ private:
     double m_micLevelDbfs{-100.0};
     double m_micPeakDbfs{-100.0};
     double m_forwardPowerW{0.0};
+    int m_digiTxLevelDb{0};
+    double m_digiTxPeakW{0.0};
     double m_swr{1.0};
     bool m_swrValid{false};
     QPointer<SliceModel> m_slice;
