@@ -243,7 +243,7 @@ Page {
                 // and on some devices (Android insets) this one would peek out
                 // under it as a second PTT.
                 PttButton {
-                    visible: page.landscape && !controlsDrawer.visible
+                    visible: page.landscape && !controlsDrawer.visible && !digiHidden
                     Layout.preferredWidth: Math.max(150, page.width * 0.2)
                     Layout.preferredHeight: Theme.touchTarget
                     fontPx: 22
@@ -280,8 +280,11 @@ Page {
                 spacing: Theme.spacing / 2
                 AppButton {
                     Accessible.name: qsTr("Controls")
+                    // Without PTT (FT8 / FT4) a plain full-width row, so the
+                    // waterfall gets the height.
                     Layout.preferredWidth: Math.max(110, page.width * 0.22)
-                    Layout.preferredHeight: page.pttHeight
+                    Layout.fillWidth: ptt.digiHidden
+                    Layout.preferredHeight: ptt.digiHidden ? Theme.touchTarget : page.pttHeight
                     onClicked: controlsDrawer.open()
                     contentItem: Item {
                         Row {
@@ -299,7 +302,7 @@ Page {
                 }
                 PttButton {
                     id: ptt
-                    visible: !controlsDrawer.visible
+                    visible: !controlsDrawer.visible && !digiHidden
                     Layout.fillWidth: true
                     Layout.preferredHeight: page.pttHeight
                     fontPx: 26
@@ -357,9 +360,10 @@ Page {
                 spacing: Theme.spacing / 2
                 AppButton {
                     objectName: "closeControls"
+                    Layout.fillWidth: Engine.digiRunning && !Engine.rade
                     Accessible.name: qsTr("Close controls")
                     Layout.preferredWidth: Math.max(110, page.width * 0.22)
-                    Layout.preferredHeight: page.pttHeight
+                    Layout.preferredHeight: Engine.digiRunning && !Engine.rade ? Theme.touchTarget : page.pttHeight
                     onClicked: controlsDrawer.close()
                     contentItem: Label {
                         text: qsTr("Close")
@@ -370,6 +374,7 @@ Page {
                     }
                 }
                 PttButton {
+                    visible: !digiHidden
                     Layout.fillWidth: true
                     Layout.preferredHeight: page.pttHeight
                     fontPx: 26

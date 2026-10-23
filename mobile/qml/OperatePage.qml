@@ -362,7 +362,7 @@ Page {
         // so no second PTT peeks out under the drawer.
         PttButton {
             id: ptt
-            visible: !(controlsDrawer.visible && page.portrait)
+            visible: !(controlsDrawer.visible && page.portrait) && !digiHidden
             Layout.row: page.twoColumns ? 1 : (Engine.controlsVisible ? 2 : 1)
             Layout.column: 0
             Layout.fillWidth: true
@@ -418,7 +418,7 @@ Page {
                 }
             }
             PttButton {
-                visible: page.portrait
+                visible: page.portrait && !digiHidden
                 Layout.fillWidth: true
                 Layout.preferredHeight: page.pttHeight
                 fontPx: 32

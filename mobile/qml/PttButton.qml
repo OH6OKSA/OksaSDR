@@ -17,6 +17,10 @@ AppButton {
     // CW paddles (CW tab > Key): dit and dah side by side over the button,
     // each its own touch so both can be held (iambic squeeze).
     readonly property bool paddleMode: keyMode && Engine.cwPaddles
+    // FT8 / FT4 decoding keys the radio itself: the pages hide PTT then, so
+    // the display gets the room (Halt TX is on the Digi tab). RADE is voice
+    // and keeps it.
+    readonly property bool digiHidden: Engine.digiRunning && !Engine.rade
     enabled: (keyMode ? Engine.cwKeyAvailable : Engine.transmitAvailable) || Engine.tuning || pressed
     text: Engine.tuning ? qsTr("TUNE") : keyMode ? (Engine.cwKeyDown ? qsTr("KEY ●") : qsTr("KEY"))
           : Engine.pttLatched ? qsTr("TX ■") : Engine.transmitting ? qsTr("TX") : qsTr("PTT")
