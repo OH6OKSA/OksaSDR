@@ -5,11 +5,7 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Queued: **FT8 and FT4 in the app** (Digi tab: decoding, CQ / answer, the
-WSJT-X QSO sequence, logging; tested on 20 m with PSKReporter spots and a
-QSO), **RADE digital voice in the app** (receive path tested on the radio;
-transmit to try on a device), and a start in 2D after a hang with the 3D
-view on. To verify in build 93: FDVU / FDVL with the FreeDV waveform (by the tester who asked); menus closing on a second tap without retuning; the QRZ.com sign-in result with an account. In build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
+Nothing queued yet. To verify in build 94: FT8 / FT4 QSOs from a device (the R-report often needed repeats in the first test), RADE transmit with a device microphone and receive with a RADE station, the log in Files / Documents and the ADIF import on iOS and Android, the 2D start after a 3D hang. In build 93: FDVU / FDVL with the FreeDV waveform (by the tester who asked); menus closing on a second tap without retuning; the QRZ.com sign-in result with an account. In build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
 (QRZ.com lookup with an account, the ADIF share sheet on iOS and Android);
 the 3D fallback on the tablet that froze; spot labels beside the RF GAIN
 badge. Still open from build 86: an FM repeater memory on the air, DAX
@@ -55,6 +51,12 @@ to the radio (needs a listening server on the phone, not possible in the
 iOS background).
 
 ## Released
+
+**Build 94** (2026-10-23), iPhone and iPad, and Android beta 14:
+- FT8 and FT4 in the app (Digi tab): ft8_lib decoding with WSJT-X SNR, CQ / answer, the WSJT-X QSO sequence with type 4 and <hashed> messages for nonstandard calls, logging; transmit audio past the voice chain on its own clock, allowed in DIGU. On the FLEX on 20 m: two 10 W CQs gave 157 PSKReporter spots, a QSO with DB2VS was run and logged, FT4 CQs gave 17 spots.
+- RADE digital voice in the app, on any Flex (the desktop's RADE wiring, DAX RX / dax_tx).
+- The log in Documents (iOS Files, Android shared Documents copy, desktop Documents/OksaSDR); ADIF import.
+- A start in 2D after the app was killed with the 3D view on (a Unisoc T606 tablet hung).
 
 **Build 93** (2026-10-22), iPhone and iPad, and Android beta 13:
 - The mode chooser offers every mode the radio lists (DIGL, SAM, NFM, DFM, RTTY, and FreeDV's FDVU / FDVL with the waveform), not only six (asked by the FreeDV team).
