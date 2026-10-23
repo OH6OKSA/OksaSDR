@@ -5,7 +5,7 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. To verify in build 98: FT8 decoding on several slices and the tap-to-answer slice move on a device. In build 97: the 3D view over SmartLink on the iPad (no switch to 2D). In build 96: dragging the TX band on a device. In build 94 (FT8 and FT4 QSOs on the iPad worked: OK2VCR, EA3FHP): RADE transmit with a device microphone and receive with a RADE station, the log in Files / Documents and the ADIF import on iOS and Android, the 2D start after a 3D hang. In build 93: FDVU / FDVL with the FreeDV waveform (by the tester who asked); menus closing on a second tap without retuning; the QRZ.com sign-in result with an account. In build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
+Nothing queued yet. To verify in build 99: FT8 over SmartLink decoding every slot, the decode filter on a device. In build 98 (on the iPad: four slices decoding, an answer from slice D): no duplicate DAX channels after the fix. In build 97: the 3D view over SmartLink on the iPad (no switch to 2D). In build 96: dragging the TX band on a device. In build 94 (FT8 and FT4 QSOs on the iPad worked: OK2VCR, EA3FHP): RADE transmit with a device microphone and receive with a RADE station, the log in Files / Documents and the ADIF import on iOS and Android, the 2D start after a 3D hang. In build 93: FDVU / FDVL with the FreeDV waveform (by the tester who asked); menus closing on a second tap without retuning; the QRZ.com sign-in result with an account. In build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
 (QRZ.com lookup with an account, the ADIF share sheet on iOS and Android);
 the 3D fallback on the tablet that froze; spot labels beside the RF GAIN
 badge. Still open from build 86: an FM repeater memory on the air, DAX
@@ -51,6 +51,12 @@ to the radio (needs a listening server on the phone, not possible in the
 iOS background).
 
 ## Released
+
+**Build 99** (2026-10-24), iPhone and iPad, and Android beta 19:
+- FT8 / FT4 decode filter: All, CQ, New, New DXCC (your call, TX and the QSO station always show).
+- Bursty audio no longer pads the slot buffer with silence (only a lateness lasting 2 s counts as a gap); the slots after the first decoded nothing on a busy PC and could over SmartLink.
+- A decoding slice sharing a DAX channel with another moves to a free one (two slices on channel 2 on the iPad in build 98); the old channel comes back after.
+Tested on the FLEX on 40 m: A and B decoding every slot for two minutes, an answer from B, the filters on iPad and iPhone sizes.
 
 **Build 98** (2026-10-23), iPhone and iPad, and Android beta 18:
 - FT8 / FT4 decode every DIGU / DIGL slice (a decoder and DAX channel each), rows marked with the slice letter; timing and TX follow the TX slice (adding slices took TX from a running CQ on the iPad in build 97).

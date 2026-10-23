@@ -9,13 +9,12 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- FT8 / FT4 decode every slice in DIGU / DIGL at once (each on its own DAX channel); every row starts with its slice letter.
-- The decode list uses WSJT-X's colours: green CQ, red your call, yellow your own TX, pink to magenta a new DXCC, amber a new CQ zone, red-pink a new continent (lighter = new on this band). A CQ from a station already in your log on this band and mode is grey.
-- Tap a call to answer it: TX, the active slice and the display move to that slice and the app starts calling.
-- FT8 / FT4 follow the TX slice: adding slices no longer takes TX away from a running CQ.
+- FT8 / FT4: Show filters the decode list: All, CQ, New (new continent, CQ zone or DXCC) or New DXCC. Your call, your TX and the station you are working always show.
+- FT8 / FT4 keep decoding every slot over SmartLink and slow links: before, the slots after the first could decode nothing when the audio came in bursts.
+- Every decoding slice gets its own DAX channel: a new slice that came with another slice's channel no longer shows the same stations twice.
 
-RECENT (builds 94–97)
-- FT8 and FT4 in the app (Controls > Digi) with the TX band dragged on the display, RADE digital voice, the log in Files > On My iPhone / iPad > OksaSDR, ADIF import, the 3D view fixed over SmartLink.
+RECENT (builds 94–98)
+- FT8 and FT4 in the app (Controls > Digi): decoding on every DIGU slice with WSJT-X colours, tap a call to answer (TX moves to its slice), the TX band dragged on the display; RADE digital voice; the log in Files > On My iPhone / iPad > OksaSDR, ADIF import.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
