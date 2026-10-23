@@ -5207,6 +5207,8 @@ void MobileEngine::wireRxAudio()
 
 void MobileEngine::onSliceAdded(SliceModel* slice)
 {
+    // FT8 / FT4 follow the TX slice.
+    connect(slice, &SliceModel::txSliceChanged, this, &MobileEngine::updateDigiSlice);
     // Any audible slice's mode or mute decides whether BC may run.
     connect(slice, &SliceModel::modeChanged, this, &MobileEngine::applyBeatCancel);
     connect(slice, &SliceModel::audioMuteChanged, this, &MobileEngine::applyBeatCancel);

@@ -113,7 +113,11 @@ void MobileEngine::setDigiRunning(bool on)
         digiHalt();
     }
     if (on) {
-        bindDigiSlice(m_slice.data());
+        // The TX slice; none yet: the active slice takes TX.
+        if (!m_session.radioModel().txSlice() && m_slice) {
+            m_slice->setTxSlice(true);
+        }
+        bindDigiSlice(m_session.radioModel().txSlice() ? m_session.radioModel().txSlice() : m_slice.data());
     }
     m_ft8->setRunning(on);
     qCInfo(lcMobile) << "digi:" << (on ? "decoding on" : "decoding off") << digiProtocol()
@@ -187,9 +191,31 @@ void MobileEngine::digiBindActiveSlice()
     if (!m_slice || m_slice.data() == m_digiSlice.data()) {
         return;
     }
+    // FT8 follows TX: the active slice takes it, and updateDigiSlice binds
+    // it when the radio confirms. Bound now too, so a tone set right after
+    // lands on this slice.
     digiHalt();
+    m_slice->setTxSlice(true);
     m_ft8->resetAudio();
     bindDigiSlice(m_slice.data());
+}
+
+void MobileEngine::updateDigiSlice()
+{
+    if (!digiRunning()) {
+        return;
+    }
+    SliceModel* tx = m_session.radioModel().txSlice();
+    if (!tx || tx == m_digiSlice.data()) {
+        return;
+    }
+    // TX moved (the badge, another client, a profile): FT8 goes with it,
+    // and a QSO under way on the old slice ends.
+    if (m_digiState != QLatin1String("idle") || m_digiTransmitting) {
+        digiHalt();
+    }
+    m_ft8->resetAudio();
+    bindDigiSlice(tx);
 }
 
 QString MobileEngine::digiProtocol() const
@@ -307,9 +333,12 @@ void MobileEngine::digiTune(double mhz)
     if (!m_slice || mhz <= 0.0) {
         return;
     }
-    // A band picked on the Digi tab works on the active slice.
+    // A band picked on the Digi tab works on the active slice, which takes
+    // TX (FT8 follows the TX slice).
     if (digiRunning()) {
         digiBindActiveSlice();
+    } else if (!m_slice->isTxSlice()) {
+        m_slice->setTxSlice(true);
     }
     m_slice->setMode(QStringLiteral("DIGU"));
     // Usually another band: the pan moves with it (a plain tune outside the
@@ -454,12 +483,10 @@ void MobileEngine::startDigiTx(qint64 slotMs)
     // Digital-mode audio from this device: allowed in DIGU like RADE (voice
     // PTT is refused there).
     RadioModel& rm = m_session.radioModel();
-    // The decoding slice transmits. Another slice holding TX is moved, and
-    // the key waits for the radio to confirm it (PTT is checked against the
-    // TX slice), within this slot's start.
+    // FT8 is on the TX slice; just after a band button or a tap moved TX
+    // the radio may not have confirmed it yet: the key waits for that
+    // (PTT is checked against the TX slice), within this slot's start.
     if (SliceModel* own = digiSlice(); own && !own->isTxSlice()) {
-        own->setTxSlice(true);
-        qCInfo(lcMobile) << "digi: TX moved to slice" << own->letter();
         QTimer::singleShot(150, this, [this, slotMs] { startDigiTx(slotMs); });
         return;
     }
