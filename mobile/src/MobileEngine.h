@@ -178,8 +178,13 @@ class MobileEngine : public QObject {
     // The QSO: state ("idle", "cq", "answer"), dx, next message, status line,
     // transmitting, seconds into the slot, slot parity of our transmissions.
     Q_PROPERTY(QVariantMap digi READ digi NOTIFY digiChanged)
-    // Decodes, newest first: utc, snr, dt, freq, text, call, cq, toMe, slotOdd.
+    // Decodes, newest first: utc, snr, dt, freq, text, call, cq, toMe, slotOdd,
+    // hl (the WSJT-X highlight), newDxcc (CQ from a DXCC not in the log: 2,
+    // not on this band: 1), sliceId, slice.
     Q_PROPERTY(QVariantList digiDecodes READ digiDecodes NOTIFY digiDecodesChanged)
+    // Which decodes the list shows: "all", "cq", "new" (a new continent, CQ
+    // zone or DXCC, also per band) or "dxcc" (a new DXCC, also per band).
+    Q_PROPERTY(QString digiFilter READ digiFilter WRITE setDigiFilter NOTIFY digiFilterChanged)
     // RADE digital voice in the app (FreeDV Radio Autoencoder): on or off,
     // whether this build has it, and its receive state (synced, snr,
     // callsign of the last end of over).
@@ -633,6 +638,8 @@ public:
     void setDigiTxHz(int hz);
     QVariantMap digi() const;
     QVariantList digiDecodes() const { return m_digiDecodes; }
+    QString digiFilter() const { return m_digiFilter; }
+    void setDigiFilter(const QString& filter);
     QVariantList digiFrequencies() const;
     // Calls CQ in the next slot, and keeps calling until someone answers.
     Q_INVOKABLE void digiCallCq();
@@ -1048,6 +1055,7 @@ signals:
     void digiChanged();
     void radeChanged();
     void digiDecodesChanged();
+    void digiFilterChanged();
     void callLookupChanged();
     void lastSpotCallChanged();
     void qrzChanged();
@@ -1217,7 +1225,9 @@ private:
     bool m_wkDirty{true};
     void rebuildWorked();
     QString digiHighlight(const QString& call, bool cq, bool toMe, const QString& band, const QString& modeKey);
+    int digiNewDxcc(const QString& call, bool cq, const QString& band);
     QVariantList m_digiDecodes;
+    QString m_digiFilter{QStringLiteral("all")};
     QString m_digiState{QStringLiteral("idle")};
     QString m_digiDx;
     QString m_digiDxGrid;

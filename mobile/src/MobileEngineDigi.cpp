@@ -59,6 +59,7 @@ struct MobileEngine::DigiDecoder {
     std::unique_ptr<Ft8Engine> ft8;
     std::unique_ptr<DecoderAudioModel> audio;
     bool assignedDax{false};
+    int savedDax{0};
 };
 
 void MobileEngine::setupDigi()
@@ -69,6 +70,7 @@ void MobileEngine::setupDigi()
                            ? Ft8Engine::Protocol::Ft4
                            : Ft8Engine::Protocol::Ft8);
     m_digiTxHz = std::clamp(AppSettings::instance().value(QStringLiteral("MobileDigiTxHz"), 1200).toInt(), 200, 3000);
+    m_digiFilter = AppSettings::instance().value(QStringLiteral("MobileDigiFilter"), QStringLiteral("all")).toString();
     connect(m_ft8.get(), &Ft8Engine::slotStarted, this, &MobileEngine::onDigiSlot);
     connect(this, &MobileEngine::qsoLogChanged, this, [this] { m_wkDirty = true; });
 }
@@ -122,7 +124,7 @@ void MobileEngine::syncDigiAudio()
             d->audio->setEnabled(false);
             d->audio->setSlice(nullptr);
             if (d->slice && d->assignedDax) {
-                d->slice->setDaxChannel(0);
+                d->slice->setDaxChannel(d->savedDax);
             }
             qCInfo(lcMobile) << "digi: decoder off for slice" << it->first;
             it = m_digiDecoders.erase(it);
@@ -141,16 +143,20 @@ void MobileEngine::syncDigiAudio()
         auto d = std::make_shared<DigiDecoder>();
         d->slice = slice;
         // Its own DAX channel, so the other slices' audio is not mixed in
-        // (without one the decoder hears every audible slice).
-        if (slice->daxChannel() < 1 || slice->daxChannel() > 8) {
-            QSet<int> used;
-            for (SliceModel* other : rm.slices()) {
-                if (other && other != slice) {
-                    used.insert(other->daxChannel());
-                }
+        // (without one the decoder hears every audible slice; a new slice
+        // can come with the channel of the slice it was made from, and two
+        // slices on one channel are mixed too). The old one comes back when
+        // the decoder goes.
+        QSet<int> used;
+        for (SliceModel* other : rm.slices()) {
+            if (other && other != slice) {
+                used.insert(other->daxChannel());
             }
+        }
+        if (slice->daxChannel() < 1 || slice->daxChannel() > 8 || used.contains(slice->daxChannel())) {
             for (int ch = 1; ch <= 8; ++ch) {
                 if (!used.contains(ch)) {
+                    d->savedDax = slice->daxChannel();
                     slice->setDaxChannel(ch);
                     d->assignedDax = true;
                     break;
@@ -183,6 +189,7 @@ void MobileEngine::syncDigiAudio()
                                         {QStringLiteral("cq"), p.cq},
                                         {QStringLiteral("toMe"), toMe},
                                         {QStringLiteral("hl"), digiHighlight(p.de, p.cq, toMe, band, modeKey)},
+                                        {QStringLiteral("newDxcc"), digiNewDxcc(p.de, p.cq, band)},
                                         {QStringLiteral("sliceId"), id},
                                         {QStringLiteral("slice"), sl ? sl->letter() : QString()},
                                         {QStringLiteral("slotOdd"), (slotMs / slotLen) % 2 == 1}});
@@ -281,6 +288,37 @@ QString MobileEngine::digiHighlight(const QString& call, bool cq, bool toMe, con
         return QStringLiteral("b4");
     }
     return QStringLiteral("cq");
+}
+
+int MobileEngine::digiNewDxcc(const QString& call, bool cq, const QString& band)
+{
+    // Apart from the highlight, which a new continent or zone outranks.
+    if (!cq || call.isEmpty() || !m_cty) {
+        return 0;
+    }
+    if (m_wkDirty) {
+        rebuildWorked();
+    }
+    const DxccEntity* e = m_cty->entityForCallsign(call);
+    if (!e) {
+        return 0;
+    }
+    if (!m_wkDxcc.contains(e->primaryPrefix)) {
+        return 2;
+    }
+    return m_wkDxccBand.contains(e->primaryPrefix + QLatin1Char('|') + band.toLower()) ? 0 : 1;
+}
+
+void MobileEngine::setDigiFilter(const QString& filter)
+{
+    static const QStringList known{QStringLiteral("all"), QStringLiteral("cq"), QStringLiteral("new"), QStringLiteral("dxcc")};
+    if (filter == m_digiFilter || !known.contains(filter)) {
+        return;
+    }
+    m_digiFilter = filter;
+    AppSettings::instance().setValue(QStringLiteral("MobileDigiFilter"), filter);
+    AppSettings::instance().save();
+    emit digiFilterChanged();
 }
 
 void MobileEngine::bindDigiSlice(SliceModel* slice)

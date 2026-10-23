@@ -178,6 +178,10 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: 7 s after start tune the slice to <mhz,mode> (the pan follows), e.g. 1.9,USB."),
         QStringLiteral("mhz,mode"));
     parser.addOption(tuneToOption);
+    const QCommandLineOption digiFilterOption(QStringLiteral("digi-filter"),
+        QStringLiteral("Development: the FT8 / FT4 decode list filter for this run (all, cq, new, dxcc; it is saved)."),
+        QStringLiteral("filter"));
+    parser.addOption(digiFilterOption);
     const QCommandLineOption tapAtOption(QStringLiteral("tap-at"),
         QStringLiteral("Development: a mouse click at <x,y,ms>: window fractions 0-1, ms after start (e.g. 0.6,0.5,20000)."),
         QStringLiteral("x,y,ms"));
@@ -1522,6 +1526,9 @@ int main(int argc, char* argv[])
             qInfo() << "adif-import:" << engine.importAdif(QUrl::fromLocalFile(file));
             app.quit();
         });
+    }
+    if (parser.isSet(digiFilterOption)) {
+        engine.setDigiFilter(parser.value(digiFilterOption));
     }
     if (parser.isSet(tapAtOption)) {
         const QStringList t = parser.value(tapAtOption).split(QLatin1Char(','));

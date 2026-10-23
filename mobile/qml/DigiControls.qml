@@ -204,6 +204,62 @@ ColumnLayout {
         default: return "transparent"
         }
     }
+    // What the list shows; your call, your TX and the station in the QSO
+    // always show.
+    function passes(row) {
+        if (row.hl === "mycall" || row.hl === "tx" || (qso.dx && row.call === qso.dx)) {
+            return true
+        }
+        switch (Engine.digiFilter) {
+        case "cq": return row.cq === true
+        case "new": return ["continent", "continentBand", "cqzone", "cqzoneBand", "dxcc", "dxccBand"].indexOf(row.hl) >= 0
+        case "dxcc": return row.newDxcc > 0
+        default: return true
+        }
+    }
+    // The shown rows with their index in Engine.digiDecodes (a tap answers
+    // by that index).
+    readonly property var shown: {
+        const rows = Engine.digiDecodes
+        const out = []
+        for (let i = 0; i < rows.length && out.length < 40; ++i) {
+            if (passes(rows[i])) {
+                out.push({ row: rows[i], index: i })
+            }
+        }
+        return out
+    }
+
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 4
+        Label {
+            text: qsTr("Show")
+            color: Theme.textDim
+        }
+        Repeater {
+            model: [{ key: "all", text: qsTr("All") }, { key: "cq", text: qsTr("CQ") },
+                    { key: "new", text: qsTr("New") }, { key: "dxcc", text: qsTr("New DXCC") }]
+            delegate: AppButton {
+                required property var modelData
+                objectName: "digiFilter_" + modelData.key
+                text: modelData.text
+                checked: Engine.digiFilter === modelData.key
+                Layout.fillWidth: true
+                focusPolicy: Qt.NoFocus
+                onClicked: Engine.digiFilter = modelData.key
+            }
+        }
+    }
+    Label {
+        Layout.fillWidth: true
+        visible: Engine.digiFilter !== "all" && Engine.digiDecodes.length > 0
+        text: digi.shown.length > 0
+              ? qsTr("%1 of the last %2 decodes").arg(digi.shown.length).arg(Engine.digiDecodes.length)
+              : qsTr("None of the last %1 decodes match").arg(Engine.digiDecodes.length)
+        color: Theme.textDim
+        font.pixelSize: 11
+    }
     Label {
         Layout.fillWidth: true
         visible: Engine.digiDecodes.length > 0
@@ -217,34 +273,34 @@ ColumnLayout {
     // audio Hz, message. A tap answers (TX and the display move to that
     // slice).
     Repeater {
-        model: Engine.digiDecodes.slice(0, 40)
+        model: digi.shown
         delegate: ItemDelegate {
-            required property int index
             required property var modelData
-            readonly property color ground: digi.hlColor(modelData.hl)
-            readonly property bool lit: modelData.hl && modelData.hl !== "b4"
+            readonly property var row: modelData.row
+            readonly property color ground: digi.hlColor(row.hl)
+            readonly property bool lit: row.hl && row.hl !== "b4"
             Layout.fillWidth: true
             implicitHeight: Math.max(32, decodeText.implicitHeight + 8)
             padding: 2
-            Accessible.name: modelData.text
+            Accessible.name: row.text
             background: Rectangle {
                 color: parent.ground
                 radius: 4
             }
             contentItem: Label {
                 id: decodeText
-                text: "%1 %2 %3 %4 %5  %6".arg(modelData.slice || " ")
-                                          .arg(modelData.utc.substring(0, 4))
-                                          .arg(modelData.snr === "" ? "   " : ((modelData.snr >= 0 ? "+" : "") + modelData.snr))
-                                          .arg(modelData.dt === "" ? "   " : modelData.dt)
-                                          .arg(modelData.freq)
-                                          .arg(modelData.text)
-                color: parent.lit ? "#101010" : modelData.hl === "b4" ? Theme.textDim : Theme.text
+                text: "%1 %2 %3 %4 %5  %6".arg(row.slice || " ")
+                                          .arg(row.utc.substring(0, 4))
+                                          .arg(row.snr === "" ? "   " : ((row.snr >= 0 ? "+" : "") + row.snr))
+                                          .arg(row.dt === "" ? "   " : row.dt)
+                                          .arg(row.freq)
+                                          .arg(row.text)
+                color: parent.lit ? "#101010" : row.hl === "b4" ? Theme.textDim : Theme.text
                 font.family: "monospace"
                 font.pixelSize: 13
                 elide: Text.ElideRight
             }
-            onClicked: Engine.digiAnswer(index)
+            onClicked: Engine.digiAnswer(modelData.index)
         }
     }
 }
