@@ -5,7 +5,7 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. To verify in build 97: the 3D view over SmartLink on the iPad (no switch to 2D), FT8 with several slices on a device. In build 96: dragging the TX band on a device. In build 94 (FT8 and FT4 QSOs on the iPad worked: OK2VCR, EA3FHP): RADE transmit with a device microphone and receive with a RADE station, the log in Files / Documents and the ADIF import on iOS and Android, the 2D start after a 3D hang. In build 93: FDVU / FDVL with the FreeDV waveform (by the tester who asked); menus closing on a second tap without retuning; the QRZ.com sign-in result with an account. In build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
+Nothing queued yet. To verify in build 98: FT8 decoding on several slices and the tap-to-answer slice move on a device. In build 97: the 3D view over SmartLink on the iPad (no switch to 2D). In build 96: dragging the TX band on a device. In build 94 (FT8 and FT4 QSOs on the iPad worked: OK2VCR, EA3FHP): RADE transmit with a device microphone and receive with a RADE station, the log in Files / Documents and the ADIF import on iOS and Android, the 2D start after a 3D hang. In build 93: FDVU / FDVL with the FreeDV waveform (by the tester who asked); menus closing on a second tap without retuning; the QRZ.com sign-in result with an account. In build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
 (QRZ.com lookup with an account, the ADIF share sheet on iOS and Android);
 the 3D fallback on the tablet that froze; spot labels beside the RF GAIN
 badge. Still open from build 86: an FM repeater memory on the air, DAX
@@ -51,6 +51,12 @@ to the radio (needs a listening server on the phone, not possible in the
 iOS background).
 
 ## Released
+
+**Build 98** (2026-10-23), iPhone and iPad, and Android beta 18:
+- FT8 / FT4 decode every DIGU / DIGL slice (a decoder and DAX channel each), rows marked with the slice letter; timing and TX follow the TX slice (adding slices took TX from a running CQ on the iPad in build 97).
+- WSJT-X decode colours (CQ, my call, TX, new DXCC / CQ zone / continent, per band) and grey for worked before on the band and mode.
+- Tapping a call heard on another slice moves TX, the active slice and the display there and calls it.
+Tested on the FLEX on 40 m: A and B decoding at once, a CQ heard on B answered from B at B + 637 Hz; colours checked live on iPad and iPhone sizes.
 
 **Build 97** (2026-10-23), iPhone and iPad, and Android beta 17:
 - FT8 / FT4 bound to one slice (DAX channel of its own, made TX before keying, the log's frequency); a tap in another DIGU slice's passband moves it (two slices broke decoding on the iPad in build 96).

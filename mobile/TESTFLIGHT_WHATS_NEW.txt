@@ -9,13 +9,13 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- FT8 / FT4 stay on their own slice with several slices open: switching the active slice no longer breaks decoding. That slice gets its own DAX channel and becomes the TX slice when the app transmits. Tap inside another DIGU slice's passband (or press a band button there) to move FT8 to it.
-- The filter edge lines are back in FT8 / FT4 (only the shading is left out). On iPad the waterfall now fills the space PTT left.
-- The 3D view no longer switches itself to 2D after connecting over SmartLink. If yours went to 2D, turn 3D on again in View.
-- CQ rows in the decode list are bold blue (the green ground was hard to read).
+- FT8 / FT4 decode every slice in DIGU / DIGL at once (each on its own DAX channel); every row starts with its slice letter.
+- The decode list uses WSJT-X's colours: green CQ, red your call, yellow your own TX, pink to magenta a new DXCC, amber a new CQ zone, red-pink a new continent (lighter = new on this band). A CQ from a station already in your log on this band and mode is grey.
+- Tap a call to answer it: TX, the active slice and the display move to that slice and the app starts calling.
+- FT8 / FT4 follow the TX slice: adding slices no longer takes TX away from a running CQ.
 
-RECENT (builds 94–96)
-- FT8 and FT4 in the app (Controls > Digi) with the TX band dragged on the display, RADE digital voice, the log in Files > On My iPhone / iPad > OksaSDR, ADIF import.
+RECENT (builds 94–97)
+- FT8 and FT4 in the app (Controls > Digi) with the TX band dragged on the display, RADE digital voice, the log in Files > On My iPhone / iPad > OksaSDR, ADIF import, the 3D view fixed over SmartLink.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
@@ -24,7 +24,7 @@ PLEASE TRY
 - Voice transmit with the device mic or a Bluetooth headset, and tell me how it sounds at the other end. [TX]
 - CW keying, CWX memories (F1–F12 on a keyboard) and the decoder. [TX]
 - The Log tab: log a few contacts, save your QRZ.com account (it now says if the sign-in worked), and share the ADIF file to your logbook.
-- New: FT8 / FT4 on the Digi tab: decode on 20 m (14.074), drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
+- New: FT8 / FT4 on the Digi tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - New: RADE on the Digi tab, if you know a RADE station (14.236 MHz, qso.freedv.org). [TX]
 - New: the log in Files > On My iPhone / iPad > OksaSDR, and Import contacts (ADIF).
 - Spots and the DX cluster, a notch on a carrier, the TX processing at low power with a second receiver. [TX]
