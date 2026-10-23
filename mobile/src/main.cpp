@@ -1257,11 +1257,26 @@ int main(int argc, char* argv[])
         const bool cq = qso || spec.contains(QStringLiteral("cq"));
         const bool ft4 = spec.contains(QStringLiteral("ft4"));
         auto saved = std::make_shared<std::tuple<double, QString, int, QString>>();
-        QTimer::singleShot(8000, &app, [&engine, saved, cq, ft4] {
+        // Slices a cut-short run left behind: all but the first go.
+        QTimer::singleShot(6000, &app, [&engine] {
+            int first = 1 << 30;
+            for (const QVariant& v : engine.slices()) {
+                first = std::min(first, v.toMap().value(QStringLiteral("id")).toInt());
+            }
+            for (const QVariant& v : engine.slices()) {
+                const int id = v.toMap().value(QStringLiteral("id")).toInt();
+                if (id != first) {
+                    engine.removeSlice(id);
+                    qInfo() << "ft8-test: removed leftover slice" << id;
+                }
+            }
+            engine.selectSlice(first);
+        });
+        QTimer::singleShot(8000, &app, [&engine, saved, cq, ft4, spec] {
             *saved = {engine.frequencyMhz(), engine.mode(), engine.rfPower(), engine.digiProtocol()};
             qInfo() << "ft8-test: saved" << std::get<0>(*saved) << std::get<1>(*saved) << std::get<2>(*saved) << "W";
             engine.setDigiProtocol(ft4 ? QStringLiteral("FT4") : QStringLiteral("FT8"));
-            engine.digiTune(ft4 ? 14.080 : 14.074);
+            engine.digiTune(spec.contains(QStringLiteral("40")) ? (ft4 ? 7.0475 : 7.074) : (ft4 ? 14.080 : 14.074));
             engine.setDigiRunning(true);
             if (cq) {
                 engine.setRfPower(10);
@@ -1336,6 +1351,65 @@ int main(int argc, char* argv[])
                     }
                 }
                 engine.selectSlice(*firstId);
+            });
+        }
+        if (spec.contains(QStringLiteral("multi"))) {
+            // Slice B in DIGU 1.5 kHz up: both slices decode, rows marked
+            // A / B; then a CQ heard on B is answered: TX, the active slice
+            // and the display move to B and one call goes out (then halt).
+            auto ids = std::make_shared<std::pair<int, int>>(-1, -1);
+            const auto activeId = [&engine] {
+                for (const QVariant& v : engine.slices()) {
+                    if (v.toMap().value(QStringLiteral("active")).toBool()) {
+                        return v.toMap().value(QStringLiteral("id")).toInt();
+                    }
+                }
+                return -1;
+            };
+            QTimer::singleShot(25000, &app, [&engine, ids, activeId] {
+                ids->first = activeId();
+                engine.addSlice();
+            });
+            QTimer::singleShot(30000, &app, [&engine, ids, activeId] {
+                ids->second = activeId();
+                engine.setMode(QStringLiteral("DIGU"));
+                engine.setFrequencyMhz(engine.digi().value(QStringLiteral("sliceMhz")).toDouble() + 0.0015);
+                engine.selectSlice(ids->first);
+                qInfo() << "multi-test: A" << ids->first << "B" << ids->second;
+            });
+            QTimer::singleShot(80000, &app, [&engine, ids, activeId] {
+                const QVariantList list = engine.digiDecodes();
+                QMap<QString, int> perSlice;
+                QMap<QString, int> perHl;
+                int pick = -1;
+                for (int i = 0; i < list.size(); ++i) {
+                    const QVariantMap d = list.at(i).toMap();
+                    perSlice[d.value(QStringLiteral("slice")).toString()]++;
+                    perHl[d.value(QStringLiteral("hl")).toString()]++;
+                    const QStringList t = d.value(QStringLiteral("text")).toString().split(QLatin1Char(' '));
+                    if (pick < 0 && d.value(QStringLiteral("sliceId")).toInt() == ids->second && d.value(QStringLiteral("cq")).toBool()
+                        && t.size() == 3) {
+                        pick = i;
+                    }
+                }
+                qInfo() << "multi-test: decodes per slice" << perSlice << "highlights" << perHl;
+                if (pick >= 0) {
+                    qInfo() << "multi-test: answering" << list.at(pick).toMap().value(QStringLiteral("text")).toString() << "from slice B";
+                    engine.setRfPower(10);
+                    engine.digiAnswer(pick);
+                    QTimer::singleShot(1500, &engine, [&engine, activeId] {
+                        qInfo() << "multi-test: after answer, TX slice" << engine.digi().value(QStringLiteral("sliceLetter"))
+                                << "active" << activeId() << "pan centre" << engine.panCenterMhz() << engine.panBandwidthMhz();
+                    });
+                } else {
+                    qInfo() << "multi-test: no plain CQ heard on B";
+                }
+            });
+            QTimer::singleShot(125000, &app, [&engine, ids] {
+                engine.digiHalt();
+                engine.selectSlice(ids->first);
+                engine.removeSlice(ids->second);
+                qInfo() << "multi-test: halted, B removed";
             });
         }
         if (spec.contains(QStringLiteral("rebind"))) {
