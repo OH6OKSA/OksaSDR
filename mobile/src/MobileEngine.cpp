@@ -13,6 +13,8 @@
 
 #include "AudioSession.h"
 #include "QsoLog.h"
+#include <QSet>
+#include <QUrl>
 #include "Ft8Engine.h"
 #include "ShareText.h"
 
@@ -3565,6 +3567,57 @@ void MobileEngine::disable3DTooSlow()
     setSpectrum3D(false);
     setLastError(tr("The 3D view was too slow on this device and was switched off; "
                     "the 2D waterfall is shown. It can be turned on again in View."));
+}
+
+QVariantMap MobileEngine::importAdif(const QUrl& url)
+{
+    // Android hands a content:// URL, which QFile reads as it is; iOS and
+    // the desktop a file URL.
+    QFile file(url.isLocalFile() ? url.toLocalFile() : url.toString());
+    if (!file.open(QIODevice::ReadOnly)) {
+        qCWarning(lcMobile) << "ADIF import: cannot open" << url << file.errorString();
+        return {{QStringLiteral("error"), tr("The file could not be opened.")}};
+    }
+    const QString text = QString::fromUtf8(file.readAll());
+    const QList<QVariantMap> records = QsoLog::parseAdif(text);
+    if (records.isEmpty()) {
+        return {{QStringLiteral("error"), tr("No contacts found in the file (is it ADIF?).")}};
+    }
+    const auto key = [](const QVariantMap& r) {
+        return QStringList{r.value(QStringLiteral("CALL")).toString().toUpper(), r.value(QStringLiteral("QSO_DATE")).toString(),
+                           r.value(QStringLiteral("TIME_ON")).toString().left(4), r.value(QStringLiteral("BAND")).toString().toLower(),
+                           r.value(QStringLiteral("MODE")).toString().toUpper()}
+            .join(QLatin1Char('|'));
+    };
+    QSet<QString> have;
+    for (const QVariantMap& r : m_qsoLog->records()) {
+        have.insert(key(r));
+    }
+    int imported = 0;
+    int duplicates = 0;
+    for (QVariantMap r : records) {
+        if (r.value(QStringLiteral("CALL")).toString().trimmed().isEmpty()) {
+            continue;
+        }
+        if (!r.contains(QStringLiteral("BAND")) && r.contains(QStringLiteral("FREQ"))) {
+            r.insert(QStringLiteral("BAND"), QsoLog::bandOf(r.value(QStringLiteral("FREQ")).toDouble()));
+        }
+        const QString k = key(r);
+        if (have.contains(k)) {
+            ++duplicates;
+            continue;
+        }
+        if (!m_qsoLog->append(r)) {
+            return {{QStringLiteral("error"), tr("The log file could not be written.")},
+                    {QStringLiteral("imported"), imported},
+                    {QStringLiteral("duplicates"), duplicates}};
+        }
+        have.insert(k);
+        ++imported;
+    }
+    qCInfo(lcMobile) << "ADIF import:" << imported << "imported," << duplicates << "already in the log";
+    emit qsoLogChanged();
+    return {{QStringLiteral("imported"), imported}, {QStringLiteral("duplicates"), duplicates}};
 }
 
 bool MobileEngine::shareQsoLog()

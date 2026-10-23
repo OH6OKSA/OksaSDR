@@ -2,7 +2,8 @@
 # the radio directly (no PC or aetherd in between). Configured from the root
 # CMakeLists.txt only when AETHER_MOBILE is ON. See mobile/README.md.
 
-find_package(Qt6 6.12 REQUIRED COMPONENTS Quick QuickControls2 GuiPrivate)
+# QuickDialogs2: the Log tab's file picker (ADIF import).
+find_package(Qt6 6.12 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 GuiPrivate)
 
 qt_standard_project_setup(REQUIRES 6.12)
 

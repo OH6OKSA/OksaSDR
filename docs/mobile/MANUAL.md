@@ -510,8 +510,10 @@ them back into the drawer.
   **Log** writes the contact; the newest ten are listed. **Share the log
   (ADIF)** opens the share sheet with the whole log as an `.adi` file: mail
   it, save it to Files or Drive, AirDrop it, or open it in your logbook
-  program or TQSL for LoTW. The QRZ.com password is kept in this device's
-  secure store.
+  program or TQSL for LoTW. **Import contacts (ADIF)** adds the contacts of
+  an ADIF file (from another logbook, or another device's OksaSDR log);
+  those already in the log (same call, date, time, band and mode) are
+  skipped. The QRZ.com password is kept in this device's secure store.
 - **Digi** — FT8 and FT4 in the app itself, no computer or DAX needed.
   **Decode** turns decoding on (*FT8* or *FT4*); the band buttons tune to the
   mode's dial frequency in DIGU. The bar shows where in the 15 s (FT4: 7.5 s)

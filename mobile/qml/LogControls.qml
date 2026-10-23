@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import AetherMobile
 
@@ -272,6 +273,35 @@ ColumnLayout {
         text: qsTr("Share the log (ADIF)")
         focusPolicy: Qt.NoFocus
         onClicked: Engine.shareQsoLog()
+    }
+    // Contacts from another logbook (or another device's OksaSDR log): an
+    // ADIF file; contacts already in the log are skipped.
+    AppButton {
+        objectName: "importAdif"
+        Layout.fillWidth: true
+        Layout.preferredHeight: Theme.touchTarget
+        text: qsTr("Import contacts (ADIF)")
+        focusPolicy: Qt.NoFocus
+        onClicked: importDialog.open()
+    }
+    Label {
+        id: importResult
+        Layout.fillWidth: true
+        visible: text.length > 0
+        color: Theme.textDim
+        font.pixelSize: 12
+        wrapMode: Text.WordWrap
+    }
+    FileDialog {
+        id: importDialog
+        title: qsTr("Import contacts (ADIF)")
+        fileMode: FileDialog.OpenFile
+        nameFilters: [qsTr("ADIF files (*.adi *.adif *.ADI)"), qsTr("All files (*)")]
+        onAccepted: {
+            const r = Engine.importAdif(selectedFile)
+            importResult.text = r.error ? r.error
+                : qsTr("Imported %1 contact(s); %2 already in the log.").arg(r.imported).arg(r.duplicates)
+        }
     }
     Repeater {
         model: Engine.recentQsos.slice(0, 10)

@@ -171,6 +171,10 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: 7 s after start tune the slice to <mhz,mode> (the pan follows), e.g. 1.9,USB."),
         QStringLiteral("mhz,mode"));
     parser.addOption(tuneToOption);
+    const QCommandLineOption adifImportOption(QStringLiteral("adif-import"),
+        QStringLiteral("Development: import the ADIF <file> into the log at start, log the result and quit."),
+        QStringLiteral("file"));
+    parser.addOption(adifImportOption);
     const QCommandLineOption radeTestOption(QStringLiteral("rade-test"),
         QStringLiteral("Development: 8 s after start tune to <mhz> (default 14.236), turn RADE on for <s> seconds "
                        "and log its sync, SNR and callsigns; then RADE off and the slice restored. E.g. 180,14.236."),
@@ -1319,6 +1323,12 @@ int main(int argc, char* argv[])
             engine.setMode(saved->second);
             qInfo() << "rade-test: restored" << saved->first << saved->second;
             QTimer::singleShot(3000, &app, &QCoreApplication::quit);
+        });
+    }
+    if (parser.isSet(adifImportOption)) {
+        QTimer::singleShot(1000, &app, [&app, &engine, file = parser.value(adifImportOption)] {
+            qInfo() << "adif-import:" << engine.importAdif(QUrl::fromLocalFile(file));
+            app.quit();
         });
     }
     if (parser.isSet(tuneToOption)) {
