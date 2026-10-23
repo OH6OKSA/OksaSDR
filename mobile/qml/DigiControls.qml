@@ -188,31 +188,58 @@ ColumnLayout {
         }
     }
 
-    // Decodes, newest first: UTC, SNR, DT, audio Hz, message. A tap answers.
+    // WSJT-X's highlighting colours (its defaults, in its priority order):
+    // a light ground with dark text, so a row reads at a glance.
+    function hlColor(hl) {
+        switch (hl) {
+        case "mycall": return "#ff6666"
+        case "continent": return "#ff0063"
+        case "continentBand": return "#ff99c2"
+        case "cqzone": return "#ffbf00"
+        case "cqzoneBand": return "#ffe499"
+        case "dxcc": return "#ff00ff"
+        case "dxccBand": return "#ffaaff"
+        case "cq": return "#66ff66"
+        case "tx": return "#ffff00"
+        default: return "transparent"
+        }
+    }
+    Label {
+        Layout.fillWidth: true
+        visible: Engine.digiDecodes.length > 0
+        text: qsTr("Green CQ · pink / magenta new DXCC · amber new CQ zone · red new continent or your call · yellow your TX · grey worked before on this band and mode")
+        color: Theme.textDim
+        font.pixelSize: 11
+        wrapMode: Text.WordWrap
+    }
+
+    // Decodes from every DIGU slice, newest first: slice, UTC, SNR, DT,
+    // audio Hz, message. A tap answers (TX and the display move to that
+    // slice).
     Repeater {
         model: Engine.digiDecodes.slice(0, 40)
         delegate: ItemDelegate {
             required property int index
             required property var modelData
+            readonly property color ground: digi.hlColor(modelData.hl)
+            readonly property bool lit: modelData.hl && modelData.hl !== "b4"
             Layout.fillWidth: true
             implicitHeight: Math.max(32, decodeText.implicitHeight + 8)
             padding: 2
             Accessible.name: modelData.text
-            // To you: orange on a light orange ground; CQ: the accent blue,
-            // bold (a green ground read poorly on the dark theme).
             background: Rectangle {
-                color: modelData.toMe ? Qt.rgba(0.96, 0.65, 0.14, 0.18) : "transparent"
+                color: parent.ground
                 radius: 4
             }
             contentItem: Label {
                 id: decodeText
-                text: "%1 %2 %3 %4  %5".arg(modelData.utc.substring(0, 4))
-                                       .arg((modelData.snr >= 0 ? "+" : "") + modelData.snr)
-                                       .arg(modelData.dt)
-                                       .arg(modelData.freq)
-                                       .arg(modelData.text)
-                color: modelData.toMe ? Theme.warning : modelData.cq ? Theme.accent : Theme.text
-                font.bold: modelData.cq || modelData.toMe
+                text: "%1 %2 %3 %4 %5  %6".arg(modelData.slice || " ")
+                                          .arg(modelData.utc.substring(0, 4))
+                                          .arg(modelData.snr === "" ? "   " : ((modelData.snr >= 0 ? "+" : "") + modelData.snr))
+                                          .arg(modelData.dt === "" ? "   " : modelData.dt)
+                                          .arg(modelData.freq)
+                                          .arg(modelData.text)
+                color: parent.lit ? "#101010" : modelData.hl === "b4" ? Theme.textDim : Theme.text
                 font.family: "monospace"
                 font.pixelSize: 13
                 elide: Text.ElideRight

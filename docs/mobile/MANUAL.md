@@ -523,7 +523,7 @@ them back into the drawer.
   **Decode** turns decoding on (*FT8* or *FT4*); the band buttons tune to the
   mode's dial frequency in DIGU. The bar shows where in the 15 s (FT4: 7.5 s)
   slot you are; the decodes come at the end of each slot, newest first: UTC,
-  SNR, DT, audio frequency and the message (blue: CQ; orange: to you).
+  SNR, DT, audio frequency and the message, from every DIGU / DIGL slice, each row marked with its slice letter. The colours are WSJT-X's: green a CQ, red your call, yellow your own transmission, pink to magenta a new DXCC (on the band / at all), amber a new CQ zone, red-pink a new continent; a CQ from a station already in the log on this band and mode is grey. Tapping a call moves TX and the display to its slice and starts calling it.
   **Tap a decode** to answer that station; **CQ** calls CQ in the next slot.
   FT8 / FT4 run on the **TX slice** (the one with the red TX badge), as
   with SmartSDR and WSJT-X: whichever slice is active, and however many

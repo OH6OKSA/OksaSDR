@@ -11,6 +11,7 @@
 #include "models/TxController.h"
 
 #include <QHash>
+#include <QSet>
 #include <QObject>
 #include <QPointer>
 #include <QStringList>
@@ -23,6 +24,7 @@
 #include <QVector>
 #include <QtQml/qqmlregistration.h>
 
+#include <map>
 #include <memory>
 
 class QJSEngine;
@@ -1201,8 +1203,20 @@ private:
     SliceModel* digiSlice() const { return m_digiSlice ? m_digiSlice.data() : m_slice.data(); }
     void bindDigiSlice(SliceModel* slice);
     void updateDigiSlice();
+    // Slot timing and the transmit audio (fed no receive audio itself).
     std::unique_ptr<Ft8Engine> m_ft8;
-    std::unique_ptr<DecoderAudioModel> m_digiAudio;
+    // One decoder per DIGU / DIGL slice (and the TX slice), each on that
+    // slice's own DAX channel; their decodes go into one list marked with
+    // the slice.
+    struct DigiDecoder;
+    std::map<int, std::shared_ptr<DigiDecoder>> m_digiDecoders;
+    bool m_digiOn{false};
+    // What the log has worked, for WSJT-X's highlighting: calls per band and
+    // mode, DXCC entities, continents and CQ zones (each also per band).
+    QSet<QString> m_wkCallBandMode, m_wkDxcc, m_wkDxccBand, m_wkCont, m_wkContBand, m_wkZone, m_wkZoneBand;
+    bool m_wkDirty{true};
+    void rebuildWorked();
+    QString digiHighlight(const QString& call, bool cq, bool toMe, const QString& band, const QString& modeKey);
     QVariantList m_digiDecodes;
     QString m_digiState{QStringLiteral("idle")};
     QString m_digiDx;
