@@ -198,9 +198,10 @@ ColumnLayout {
             implicitHeight: Math.max(32, decodeText.implicitHeight + 8)
             padding: 2
             Accessible.name: modelData.text
+            // To you: orange on a light orange ground; CQ: the accent blue,
+            // bold (a green ground read poorly on the dark theme).
             background: Rectangle {
-                color: modelData.toMe ? Qt.rgba(0.96, 0.65, 0.14, 0.18)
-                     : modelData.cq ? Qt.rgba(0, 0.8, 0.4, 0.10) : "transparent"
+                color: modelData.toMe ? Qt.rgba(0.96, 0.65, 0.14, 0.18) : "transparent"
                 radius: 4
             }
             contentItem: Label {
@@ -210,7 +211,8 @@ ColumnLayout {
                                        .arg(modelData.dt)
                                        .arg(modelData.freq)
                                        .arg(modelData.text)
-                color: modelData.toMe ? Theme.warning : Theme.text
+                color: modelData.toMe ? Theme.warning : modelData.cq ? Theme.accent : Theme.text
+                font.bold: modelData.cq || modelData.toMe
                 font.family: "monospace"
                 font.pixelSize: 13
                 elide: Text.ElideRight

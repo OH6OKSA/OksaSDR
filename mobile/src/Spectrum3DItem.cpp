@@ -1,5 +1,7 @@
 #include "Spectrum3DItem.h"
 
+#include <chrono>
+
 #include <QElapsedTimer>
 
 #include "MobileEngine.h"
@@ -165,7 +167,6 @@ private:
     // more than kSlowFrameMs. A GPU too slow for the 3D view (a tester's
     // Android tablet stalled the app into "not responding") is told to the
     // item, which falls back to the 2D waterfall.
-    QElapsedTimer m_frameClock;
     int m_slowFrames{0};
     bool m_reportedSlow{false};
     bool m_halfFloat{true};
@@ -332,6 +333,11 @@ void Spectrum3DItem::pushRow(const QVector<float>& tile, double tileLowMhz, doub
     }
     m_count = std::min(m_count + 1, kRows);
     ++m_rowGeneration;
+    if (m_pendingSinceMs == 0) {
+        m_pendingSinceMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+                               std::chrono::steady_clock::now().time_since_epoch())
+                               .count();
+    }
 
     // Pace the glide by the measured line interval.
     const float interval = static_cast<float>(m_rowClock.restart());
@@ -428,17 +434,25 @@ void Spectrum3DRenderer::synchronize(QQuickRhiItem* rhiItem)
     // New rows since the last frame (normally one).
     const quint64 generation = item->m_rowGeneration;
     {
+        // How long the oldest new row waited for this frame. A GPU too slow
+        // for 3D keeps rows waiting frame after frame; a pause in the data
+        // (SmartLink sends in bursts, the app was in the background) does
+        // not count, as no row was waiting.
         constexpr qint64 kSlowFrameMs = 500;
-        const qint64 sinceLast = m_frameClock.isValid() ? m_frameClock.restart() : (m_frameClock.start(), 0);
-        const quint64 pending = m_uploadedGeneration == ~0ull ? 0 : generation - m_uploadedGeneration;
-        if (sinceLast > kSlowFrameMs && sinceLast < 30000 && pending >= 3) {
+        const qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                               std::chrono::steady_clock::now().time_since_epoch())
+                               .count();
+        const qint64 waited = item->m_pendingSinceMs > 0 ? now - item->m_pendingSinceMs : 0;
+        item->m_pendingSinceMs = 0;
+        if (waited > kSlowFrameMs && waited < 30000) {
             ++m_slowFrames;
-        } else if (sinceLast < 100) {
+        } else if (waited > 0 && waited < 100) {
             m_slowFrames = 0;
         }
-        if (m_slowFrames >= 3 && !m_reportedSlow) {
+        // Five frames in a row, each late by over half a second.
+        if (m_slowFrames >= 5 && !m_reportedSlow) {
             m_reportedSlow = true;
-            QMetaObject::invokeMethod(item, [item, sinceLast] { item->onGpuTooSlow(sinceLast); }, Qt::QueuedConnection);
+            QMetaObject::invokeMethod(item, [item, waited] { item->onGpuTooSlow(waited); }, Qt::QueuedConnection);
         }
     }
     if (generation != m_uploadedGeneration) {

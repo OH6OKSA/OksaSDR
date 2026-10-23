@@ -104,6 +104,10 @@ private:
     int m_head{0};
     int m_count{0};
     quint64 m_rowGeneration{0};
+    // When the oldest row not yet drawn arrived (steady-clock ms; 0: none):
+    // the slow-GPU check measures from here, not from the last frame, so a
+    // pause in the data (SmartLink sends in bursts) is not a slow frame.
+    qint64 m_pendingSinceMs{0};
     // Smoothing state (median of three raw rows, then the temporal blend).
     Row m_rawPrev1{};
     Row m_rawPrev2{};

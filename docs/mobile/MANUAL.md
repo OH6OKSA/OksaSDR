@@ -523,7 +523,7 @@ them back into the drawer.
   **Decode** turns decoding on (*FT8* or *FT4*); the band buttons tune to the
   mode's dial frequency in DIGU. The bar shows where in the 15 s (FT4: 7.5 s)
   slot you are; the decodes come at the end of each slot, newest first: UTC,
-  SNR, DT, audio frequency and the message (green: CQ; orange: to you).
+  SNR, DT, audio frequency and the message (blue: CQ; orange: to you).
   **Tap a decode** to answer that station; **CQ** calls CQ in the next slot.
   The app then runs the QSO as WSJT-X does (report, R-report, RR73 or RRR,
   73), stops after six tries without the reply it waits for, and writes the
