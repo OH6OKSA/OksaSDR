@@ -514,6 +514,11 @@ them back into the drawer.
   an ADIF file (from another logbook, or another device's OksaSDR log);
   those already in the log (same call, date, time, band and mode) are
   skipped. The QRZ.com password is kept in this device's secure store.
+  **Where the log is** (shown on the Log tab): on an iPhone or iPad in
+  Files › On My iPhone / iPad › OksaSDR › `oksasdr-log.adi`, from where it
+  can be moved to iCloud Drive or opened in a logbook; on Android a copy is
+  kept in Files › Documents › OksaSDR; on a computer in
+  Documents/OksaSDR. A log from an earlier build moves there by itself.
 - **Digi** — FT8 and FT4 in the app itself, no computer or DAX needed.
   **Decode** turns decoding on (*FT8* or *FT4*); the band buttons tune to the
   mode's dial frequency in DIGU. The bar shows where in the 15 s (FT4: 7.5 s)

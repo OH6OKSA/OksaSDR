@@ -166,6 +166,8 @@ class MobileEngine : public QObject {
     // is set, else cty.dat's country), the call of the spot tapped last, the
     // QRZ.com user name, and the operator's grid when the radio has no GPS.
     Q_PROPERTY(QVariantList recentQsos READ recentQsos NOTIFY qsoLogChanged)
+    // Where the log file can be found in the system's file app.
+    Q_PROPERTY(QString qsoLogLocation READ qsoLogLocation NOTIFY qsoLogChanged)
     // ---- Digi tab: FT8 / FT4 on this device ----
     // Decoding on or off; "FT8" or "FT4"; the transmit audio frequency (Hz).
     Q_PROPERTY(bool digiRunning READ digiRunning WRITE setDigiRunning NOTIFY digiChanged)
@@ -657,6 +659,7 @@ public:
     // picker) to the log, skipping those already in it (call, date, time,
     // band, mode). Returns imported, duplicates and error.
     Q_INVOKABLE QVariantMap importAdif(const QUrl& url);
+    QString qsoLogLocation() const;
     // The 3D view fell behind the data on this GPU: back to the 2D
     // waterfall, with a notice.
     void disable3DTooSlow();

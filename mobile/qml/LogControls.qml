@@ -274,6 +274,13 @@ ColumnLayout {
         focusPolicy: Qt.NoFocus
         onClicked: Engine.shareQsoLog()
     }
+    Label {
+        Layout.fillWidth: true
+        text: qsTr("Log file: %1").arg(Engine.qsoLogLocation)
+        color: Theme.textDim
+        font.pixelSize: 12
+        wrapMode: Text.WordWrap
+    }
     // Contacts from another logbook (or another device's OksaSDR log): an
     // ADIF file; contacts already in the log are skipped.
     AppButton {

@@ -6,6 +6,10 @@
 #include <QStandardPaths>
 #include <QTextStream>
 
+#ifdef Q_OS_ANDROID
+#include <QJniObject>
+#endif
+
 namespace AetherSDR::mobile {
 
 namespace {
@@ -19,6 +23,65 @@ const QStringList kFieldOrder = {
     QStringLiteral("MY_SIG_INFO"), QStringLiteral("STATION_CALLSIGN"), QStringLiteral("MY_GRIDSQUARE"),
     QStringLiteral("COMMENT")};
 } // namespace
+
+QString QsoLog::defaultPath()
+{
+    const QString name = QStringLiteral("oksasdr-log.adi");
+    const QString legacy = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath(name);
+#if defined(Q_OS_IOS)
+    const QString path = QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).filePath(name);
+#elif defined(Q_OS_ANDROID)
+    const QString path = legacy;
+#else
+    const QString path = QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
+                             .filePath(QStringLiteral("OksaSDR/") + name);
+#endif
+    // A log from before the move: copied once, the old file left as it was.
+    if (path != legacy && !QFile::exists(path) && QFile::exists(legacy)) {
+        QDir().mkpath(QFileInfo(path).absolutePath());
+        QFile::copy(legacy, path);
+    }
+    return path;
+}
+
+QString QsoLog::defaultMirrorPath()
+{
+#ifdef Q_OS_ANDROID
+    const QJniObject dirName = QJniObject::getStaticObjectField("android/os/Environment", "DIRECTORY_DOCUMENTS",
+                                                                "Ljava/lang/String;");
+    const QJniObject dir = QJniObject::callStaticObjectMethod("android/os/Environment",
+                                                              "getExternalStoragePublicDirectory",
+                                                              "(Ljava/lang/String;)Ljava/io/File;", dirName.object<jstring>());
+    if (!dir.isValid()) {
+        return {};
+    }
+    const QString docs = dir.callObjectMethod("getAbsolutePath", "()Ljava/lang/String;").toString();
+    return docs.isEmpty() ? QString() : QDir(docs).filePath(QStringLiteral("OksaSDR/oksasdr-log.adi"));
+#else
+    return {};
+#endif
+}
+
+void QsoLog::setMirrorPath(const QString& path)
+{
+    m_mirrorPath = path;
+    writeMirror();
+}
+
+void QsoLog::writeMirror()
+{
+    m_mirrorOk = false;
+    if (m_mirrorPath.isEmpty() || !QFile::exists(m_path)) {
+        return;
+    }
+    QDir().mkpath(QFileInfo(m_mirrorPath).absolutePath());
+    QFile in(m_path);
+    QFile out(m_mirrorPath);
+    if (!in.open(QIODevice::ReadOnly) || !out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        return;
+    }
+    m_mirrorOk = out.write(in.readAll()) >= 0 && out.error() == QFileDevice::NoError;
+}
 
 QsoLog::QsoLog(QString path)
     : m_path(std::move(path))
@@ -58,6 +121,7 @@ bool QsoLog::append(const QVariantMap& record)
         return false;
     }
     m_records.append(record);
+    writeMirror();
     return true;
 }
 

@@ -6,8 +6,10 @@
 
 namespace AetherSDR::mobile {
 
-// The app's own QSO log: one ADIF file in the app's data folder
-// (oksasdr-log.adi), appended to as contacts are logged, read back at start.
+// The app's own QSO log: one ADIF file (oksasdr-log.adi), appended to as
+// contacts are logged, read back at start. Where it lives is the caller's
+// choice (defaultPath(): a Documents folder the operator can reach), and a
+// mirror copy can be kept somewhere else (Android's shared Documents).
 // Each record is a map of ADIF field names (upper case) to values, e.g.
 // CALL, QSO_DATE, TIME_ON, FREQ, BAND, MODE, SUBMODE, RST_SENT, RST_RCVD,
 // TX_PWR, NAME, QTH, GRIDSQUARE, COUNTRY, CONT, CQZ, STATION_CALLSIGN,
@@ -15,6 +17,21 @@ namespace AetherSDR::mobile {
 class QsoLog {
 public:
     explicit QsoLog(QString path = QString());
+
+    // The log in a Documents folder the operator sees in the system's file
+    // app: iOS (and the iPad app on a Mac) the app's own Documents, shown
+    // in Files under On My iPhone / iPad › OksaSDR; Android the app's data
+    // folder (its shared Documents copy is the mirror); desktops
+    // Documents/OksaSDR. An older log in the app's data folder moves there.
+    static QString defaultPath();
+    // Android: Documents/OksaSDR/oksasdr-log.adi in the shared storage, kept
+    // as a copy of the log; empty elsewhere.
+    static QString defaultMirrorPath();
+
+    // A copy of the whole file written here after every change (empty: none).
+    void setMirrorPath(const QString& path);
+    QString mirrorPath() const { return m_mirrorPath; }
+    bool mirrorOk() const { return m_mirrorOk; }
 
     const QList<QVariantMap>& records() const { return m_records; }
     QString path() const { return m_path; }
@@ -40,8 +57,11 @@ public:
 
 private:
     void load();
+    void writeMirror();
 
     QString m_path;
+    QString m_mirrorPath;
+    bool m_mirrorOk{false};
     QList<QVariantMap> m_records;
 };
 

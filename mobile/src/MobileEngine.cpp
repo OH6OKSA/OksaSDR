@@ -13,6 +13,11 @@
 
 #include "AudioSession.h"
 #include "QsoLog.h"
+#ifdef Q_OS_ANDROID
+#include <QtCore/private/qandroidextras_p.h>
+#include <QtCore/qcoreapplication_platform.h>
+#include <QCoreApplication>
+#endif
 #include <QSet>
 #include <QUrl>
 #include "Ft8Engine.h"
@@ -257,7 +262,21 @@ MobileEngine::MobileEngine(QObject* parent)
     // QSO log and callsign lookup: the log file, cty.dat for the country of
     // any call, and QRZ.com with the account the Log tab stores (password in
     // the platform's secure store; the engine keeps it for the session).
-    m_qsoLog = std::make_unique<QsoLog>();
+    m_qsoLog = std::make_unique<QsoLog>(QsoLog::defaultPath());
+    m_qsoLog->setMirrorPath(QsoLog::defaultMirrorPath());
+#ifdef Q_OS_ANDROID
+    // Android 9 and 10 write the shared Documents copy only with storage
+    // permission; asked once, the copy is written when it is granted.
+    if (!m_qsoLog->mirrorPath().isEmpty() && !m_qsoLog->mirrorOk() && QNativeInterface::QAndroidApplication::sdkVersion() < 30) {
+        QtAndroidPrivate::requestPermission(QStringLiteral("android.permission.WRITE_EXTERNAL_STORAGE"))
+            .then(this, [this](QtAndroidPrivate::PermissionResult result) {
+                if (result == QtAndroidPrivate::Authorized) {
+                    m_qsoLog->setMirrorPath(m_qsoLog->mirrorPath());
+                    emit qsoLogChanged();
+                }
+            });
+    }
+#endif
     setupDigi();
     m_cty = std::make_unique<CtyDatParser>();
     m_cty->loadFromResource(QStringLiteral(":/cty.dat"));
@@ -3567,6 +3586,18 @@ void MobileEngine::disable3DTooSlow()
     setSpectrum3D(false);
     setLastError(tr("The 3D view was too slow on this device and was switched off; "
                     "the 2D waterfall is shown. It can be turned on again in View."));
+}
+
+QString MobileEngine::qsoLogLocation() const
+{
+#if defined(Q_OS_IOS)
+    return tr("Files › On My iPhone / iPad › OksaSDR › oksasdr-log.adi");
+#elif defined(Q_OS_ANDROID)
+    return m_qsoLog->mirrorOk() ? tr("Files › Documents › OksaSDR › oksasdr-log.adi")
+                                : tr("In the app only; Share the log gives a copy.");
+#else
+    return QDir::toNativeSeparators(m_qsoLog->path());
+#endif
 }
 
 QVariantMap MobileEngine::importAdif(const QUrl& url)
