@@ -30,7 +30,10 @@ constexpr int kMaxDecoded = 50;
 
 // The callsign hash table ft8_lib's message packing uses for <hashed> calls.
 // Its interface has no context pointer, so it is one table, shared and locked.
-constexpr int kHashSize = 256;
+// Every probe is bounded: a full table once looped for ever with the lock
+// held (four busy slices hear more than 256 calls in a few minutes), and
+// every decoder, then the app, stopped.
+constexpr int kHashSize = 2048;
 struct HashEntry {
     char callsign[12];
     uint32_t hash;  // 8 MSBs age, 22 LSBs hash
@@ -42,10 +45,19 @@ void hashAdd(const char* callsign, uint32_t hash)
 {
     const uint16_t hash10 = (hash >> 12) & 0x3FFu;
     int i = (hash10 * 23) % kHashSize;
+    int oldest = i;
+    int probes = 0;
     while (g_hash[i].callsign[0] != '\0') {
         if ((g_hash[i].hash & 0x3FFFFFu) == hash && std::strcmp(g_hash[i].callsign, callsign) == 0) {
             g_hash[i].hash &= 0x3FFFFFu;
             return;
+        }
+        if ((g_hash[i].hash >> 24) > (g_hash[oldest].hash >> 24)) {
+            oldest = i;
+        }
+        if (++probes >= kHashSize) {
+            i = oldest;  // full: the call heard longest ago gives way
+            break;
         }
         i = (i + 1) % kHashSize;
     }
@@ -59,7 +71,7 @@ bool hashLookup(ftx_callsign_hash_type_t type, uint32_t hash, char* callsign)
     const uint8_t shift = type == FTX_CALLSIGN_HASH_10_BITS ? 12 : (type == FTX_CALLSIGN_HASH_12_BITS ? 10 : 0);
     const uint16_t hash10 = (hash >> (12 - shift)) & 0x3FFu;
     int i = (hash10 * 23) % kHashSize;
-    while (g_hash[i].callsign[0] != '\0') {
+    for (int probes = 0; probes < kHashSize && g_hash[i].callsign[0] != '\0'; ++probes) {
         if (((g_hash[i].hash & 0x3FFFFFu) >> shift) == hash) {
             std::strcpy(callsign, g_hash[i].callsign);
             return true;
@@ -72,6 +84,13 @@ bool hashLookup(ftx_callsign_hash_type_t type, uint32_t hash, char* callsign)
 
 void hashAge()
 {
+    // Once a slot, however many slices decode (each decode calls this).
+    static qint64 lastMs = 0;
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (now - lastMs < 5000) {
+        return;
+    }
+    lastMs = now;
     for (auto& e : g_hash) {
         if (e.callsign[0] == '\0') {
             continue;
@@ -509,9 +528,6 @@ QByteArray Ft8Engine::encode(const QString& text, double audioHz, QString* error
     QByteArray out(samples * int(sizeof(float)), Qt::Uninitialized);
     auto* f = reinterpret_cast<float*>(out.data());
     synthGfsk(tones, nn, float(audioHz), bt, symbolPeriod, kTxSampleRate, f);
-    for (int i = 0; i < samples; ++i) {
-        f[i] *= 0.5f;
-    }
     return out;
 }
 
