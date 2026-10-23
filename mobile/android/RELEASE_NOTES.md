@@ -1,14 +1,16 @@
-**OksaSDR for Android — beta 15.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight build 95), from the same code.
+**OksaSDR for Android — beta 16.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight build 96), from the same code.
 
-### New in beta 15
-- **FT8 / FT4: pick your TX frequency on the waterfall**: tap inside the passband to set the TX audio frequency. A 500 Hz scale and a red TX band show where the tones go; the band buttons (and Zoom) fit the display to the 4 kHz audio band.
+### New in beta 16
+- **FT8 / FT4: drag the red TX band** on the display to any frequency (1 Hz, no steps), or tap where you want it; − / + on the Digi tab step 1 Hz.
+- A band button on the Digi tab **starts decoding** and zooms to the 4 kHz audio band.
+- While FT8 / FT4 decodes, **PTT is hidden** (the app keys the radio itself; Halt TX is on the Digi tab) and the display gets the room.
 
-Still new from beta 14: FT8 and FT4 in the app (Controls › Digi), RADE digital voice, the log in Files › Documents › OksaSDR, ADIF import, a 2D start after a 3D hang.
+Still new from betas 14–15: FT8 and FT4 in the app (Controls › Digi), RADE digital voice, the log in Files › Documents › OksaSDR, ADIF import.
 
 ### Install or update
-1. Download `OksaSDR-android-beta15.apk` below on the phone (about 150 MB).
+1. Download `OksaSDR-android-beta16.apk` below on the phone (about 150 MB).
 2. Open it; allow installing from your browser or file manager when Android asks. If Chrome keeps the download waiting, open ⋮ → *Downloads* → *Keep*.
-3. Beta 15 installs over earlier betas and keeps your settings. If you have one of the earlier hand-delivered test APKs, uninstall it first (different signing key).
+3. Beta 16 installs over earlier betas and keeps your settings. If you have one of the earlier hand-delivered test APKs, uninstall it first (different signing key).
 
 Android 9 or newer, 64-bit ARM. On the first connect, allow notifications, the microphone and "no battery optimization" so receive keeps going in the background and PTT can transmit.
 

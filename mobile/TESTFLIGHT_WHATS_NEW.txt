@@ -9,11 +9,12 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- FT8 / FT4: tap the waterfall inside the passband to set your TX audio frequency. A 500 Hz scale and a red TX band show where the tones go; the band buttons (and Zoom) fit the display to the 4 kHz audio band.
-- Fewer stray lines in the log on iPad with a trackpad or Pencil.
+- FT8 / FT4: drag the red TX band on the display to any frequency (1 Hz, no steps), or tap where you want it; − / + on the Digi tab step 1 Hz.
+- A band button on the Digi tab starts decoding and zooms to the 4 kHz audio band.
+- While FT8 / FT4 decodes, PTT is hidden (the app keys the radio itself; Halt TX is on the Digi tab) and the display gets the room. The scale and passband shading are left out there.
 
-RECENT (build 94)
-- FT8 and FT4 in the app (Controls > Digi), RADE digital voice, the log in Files > On My iPhone / iPad > OksaSDR, ADIF import, and a 2D start after a 3D hang.
+RECENT (builds 94–95)
+- FT8 and FT4 in the app (Controls > Digi), RADE digital voice, the log in Files > On My iPhone / iPad > OksaSDR, ADIF import.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
@@ -22,7 +23,7 @@ PLEASE TRY
 - Voice transmit with the device mic or a Bluetooth headset, and tell me how it sounds at the other end. [TX]
 - CW keying, CWX memories (F1–F12 on a keyboard) and the decoder. [TX]
 - The Log tab: log a few contacts, save your QRZ.com account (it now says if the sign-in worked), and share the ADIF file to your logbook.
-- New: FT8 / FT4 on the Digi tab: decode on 20 m (14.074), tap the waterfall to pick a free TX frequency, answer a CQ at low power and check the contact lands in the log. [TX]
+- New: FT8 / FT4 on the Digi tab: decode on 20 m (14.074), drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - New: RADE on the Digi tab, if you know a RADE station (14.236 MHz, qso.freedv.org). [TX]
 - New: the log in Files > On My iPhone / iPad > OksaSDR, and Import contacts (ADIF).
 - Spots and the DX cluster, a notch on a carrier, the TX processing at low power with a second receiver. [TX]
