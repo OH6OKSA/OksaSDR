@@ -34,6 +34,7 @@ qt_add_executable(aether-mobile
     src/Ft8Engine.cpp
     src/Ft8Engine.h
     src/MobileEngineDigi.cpp
+    src/MobileEngineRade.cpp
     src/TrackpadScrollPhases.h
     src/EchoAudit.h
     src/DevLink.h

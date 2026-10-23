@@ -171,6 +171,11 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: 7 s after start tune the slice to <mhz,mode> (the pan follows), e.g. 1.9,USB."),
         QStringLiteral("mhz,mode"));
     parser.addOption(tuneToOption);
+    const QCommandLineOption radeTestOption(QStringLiteral("rade-test"),
+        QStringLiteral("Development: 8 s after start tune to <mhz> (default 14.236), turn RADE on for <s> seconds "
+                       "and log its sync, SNR and callsigns; then RADE off and the slice restored. E.g. 180,14.236."),
+        QStringLiteral("s,mhz"));
+    parser.addOption(radeTestOption);
     const QCommandLineOption wheelIosTestOption(QStringLiteral("wheel-test-ios"),
         QStringLiteral("Development: scroll the shown controls from the top as iOS's trackpad does (wheel events "
                        "with pixel and angle deltas, no scroll phase) and log how far they get."));
@@ -1284,6 +1289,36 @@ int main(int argc, char* argv[])
             engine.setRfPower(std::get<2>(*saved));
             qInfo() << "ft8-test: restored" << std::get<0>(*saved) << std::get<1>(*saved) << std::get<2>(*saved) << "W";
             QTimer::singleShot(1500, &app, &QCoreApplication::quit);
+        });
+    }
+    if (parser.isSet(radeTestOption)) {
+        const QStringList spec = parser.value(radeTestOption).split(QLatin1Char(','));
+        const int seconds = std::clamp(spec.value(0).toInt(), 10, 3600);
+        const double mhz = spec.value(1, QStringLiteral("14.236")).toDouble();
+        auto saved = std::make_shared<std::pair<double, QString>>();
+        QTimer::singleShot(8000, &app, [&engine, saved, mhz] {
+            *saved = {engine.frequencyMhz(), engine.mode()};
+            engine.digiTune(mhz);
+            QTimer::singleShot(2000, &engine, [&engine] {
+                engine.setRadeActive(true);
+                qInfo() << "rade-test: on" << engine.radeStatus();
+            });
+        });
+        QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::radeChanged, &app, [&engine] {
+            static QVariantMap last;
+            const QVariantMap now = engine.radeStatus();
+            if (now.value(QStringLiteral("synced")) != last.value(QStringLiteral("synced"))
+                || now.value(QStringLiteral("callsign")) != last.value(QStringLiteral("callsign"))) {
+                qInfo() << "rade-test:" << now;
+            }
+            last = now;
+        });
+        QTimer::singleShot(10000 + seconds * 1000, &app, [&app, &engine, saved] {
+            engine.setRadeActive(false);
+            engine.digiTune(saved->first);
+            engine.setMode(saved->second);
+            qInfo() << "rade-test: restored" << saved->first << saved->second;
+            QTimer::singleShot(3000, &app, &QCoreApplication::quit);
         });
     }
     if (parser.isSet(tuneToOption)) {

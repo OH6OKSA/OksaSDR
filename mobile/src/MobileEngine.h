@@ -37,6 +37,7 @@ class CwRxModel;
 class CwxLocalKeyer;
 class IambicKeyer;
 class DecoderAudioModel;
+class RADEEngine;
 class PanadapterModel;
 class RadioDiscoverySource;
 class SliceModel;
@@ -175,6 +176,12 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QVariantMap digi READ digi NOTIFY digiChanged)
     // Decodes, newest first: utc, snr, dt, freq, text, call, cq, toMe, slotOdd.
     Q_PROPERTY(QVariantList digiDecodes READ digiDecodes NOTIFY digiDecodesChanged)
+    // RADE digital voice in the app (FreeDV Radio Autoencoder): on or off,
+    // whether this build has it, and its receive state (synced, snr,
+    // callsign of the last end of over).
+    Q_PROPERTY(bool rade READ radeActive WRITE setRadeActive NOTIFY radeChanged)
+    Q_PROPERTY(bool radeAvailable READ radeAvailable CONSTANT)
+    Q_PROPERTY(QVariantMap radeStatus READ radeStatus NOTIFY radeChanged)
     // Dial frequencies of the protocol on each band: band, mhz.
     Q_PROPERTY(QVariantList digiFrequencies READ digiFrequencies NOTIFY digiChanged)
     Q_PROPERTY(int qsoCount READ qsoCount NOTIFY qsoLogChanged)
@@ -631,6 +638,11 @@ public:
     Q_INVOKABLE void digiHalt();
     // Tunes to the protocol's dial frequency on a band, in DIGU.
     Q_INVOKABLE void digiTune(double mhz);
+
+    bool radeAvailable() const;
+    bool radeActive() const;
+    void setRadeActive(bool on);
+    QVariantMap radeStatus() const;
     // Contacts with this call before, and whether it is a dupe on this band
     // and mode: {worked, dupe}.
     Q_INVOKABLE QVariantMap workedInfo(const QString& call) const;
@@ -1020,6 +1032,7 @@ signals:
     void memoriesChanged();
     void qsoLogChanged();
     void digiChanged();
+    void radeChanged();
     void digiDecodesChanged();
     void callLookupChanged();
     void lastSpotCallChanged();
@@ -1184,6 +1197,29 @@ private:
     bool m_digiTransmitting{false};
     bool m_digiLogged{false};
     bool m_digiEndAfterTx{false};
+
+    // ---- RADE (MobileEngineRade.cpp) ----
+    void activateRade();
+    void deactivateRade();
+    QThread* m_radeThread{nullptr};
+    RADEEngine* m_radeEngine{nullptr};
+    int m_radeSliceId{-1};
+    bool m_radePrevMute{false};
+    QString m_radePrevMode;
+    int m_radePrevFilterLow{0};
+    int m_radePrevFilterHigh{0};
+    bool m_radeAssignedDax{false};
+    bool m_radePrevDax{false};
+    int m_radeDaxChannel{0};
+    TransmitModel::PttRelease m_radePttRelease;
+    quint64 m_radeEooRequestId{0};
+    bool m_radeEooPending{false};
+    bool m_radeTxActive{false};
+    std::shared_ptr<std::atomic<bool>> m_radeFallbackFence;
+    QList<QMetaObject::Connection> m_radeConnections;
+    bool m_radeSynced{false};
+    float m_radeSnr{0.0f};
+    QString m_radeRxCallsign;
     std::unique_ptr<CtyDatParser> m_cty;
     QString m_lookupCall;                // the call callLookup is for
     QString m_qrzStatus;                 // QRZ.com sign-in check, as shown

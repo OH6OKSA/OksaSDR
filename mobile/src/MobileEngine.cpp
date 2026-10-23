@@ -542,6 +542,9 @@ MobileEngine::~MobileEngine()
     m_cwxLocalKeyer.reset();
     m_iambicKeyer.reset();
     stopTransmit(QStringLiteral("shutdown"));
+    if (radeActive()) {
+        deactivateRade();
+    }
     setKeepScreenAwake(false);
     if (m_discovery) {
         m_discovery->stop();
@@ -2230,7 +2233,7 @@ void MobileEngine::setPtt(bool down, const QString& reason)
     TransmitModel& tm = m_session.radioModel().transmitModel();
     qCInfo(lcMobile).noquote() << QStringLiteral("PTT: mic input %1, DAX transmit %2")
                                       .arg(tm.micSelection(), tm.daxOn() ? QStringLiteral("on") : QStringLiteral("off"));
-    if (tm.micSelection() == kDeviceMicSelection && tm.daxOn()) {
+    if (tm.micSelection() == kDeviceMicSelection && tm.daxOn() && !radeActive()) {
         qCWarning(lcMobile) << "DAX transmit was on: turned off so this device's microphone is heard";
         tm.setDax(false);
     }
@@ -4973,6 +4976,10 @@ void MobileEngine::setFilterWidth(int widthHz)
 
 void MobileEngine::onConnectionStateChanged(bool connected)
 {
+    if (!connected && radeActive()) {
+        deactivateRade();
+        emit radeChanged();
+    }
     m_connected = connected;
     m_micDefaulted = false;
     m_netSampleMs = 0;

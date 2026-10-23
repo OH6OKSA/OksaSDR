@@ -527,6 +527,16 @@ them back into the drawer.
   RRR / RR73 / 73, as <CALL> in the messages with a report. The transmit
   audio goes to the radio past the TX processing (no gate, EQ or
   compression); power is the TX tab's power.
+  **RADE digital voice** (FreeDV's Radio Autoencoder, in the app itself, no
+  FreeDV waveform needed): *RADE* puts the slice in DIGU (DIGL where the
+  band's voice mode is LSB) with a 750–2250 Hz filter, mutes its ordinary
+  audio and plays the decoded speech instead; the line beside it shows
+  *Synced* and the SNR when a RADE signal is heard, and the callsign each
+  station sends at the end of its over. Talk with PTT as usual: this
+  device's microphone goes through the RADE encoder to the radio's DAX
+  transmit (turned on for RADE, off again after), and the end-of-over frame
+  with your callsign plays out before the carrier drops. *RADE* again, or
+  another mode, ends it and restores the mode and filter.
 
 ## 9. Radio Setup
 
