@@ -174,6 +174,10 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: 7 s after start tune the slice to <mhz,mode> (the pan follows), e.g. 1.9,USB."),
         QStringLiteral("mhz,mode"));
     parser.addOption(tuneToOption);
+    const QCommandLineOption tapAtOption(QStringLiteral("tap-at"),
+        QStringLiteral("Development: a mouse click at <x,y,ms>: window fractions 0-1, ms after start (e.g. 0.6,0.5,20000)."),
+        QStringLiteral("x,y,ms"));
+    parser.addOption(tapAtOption);
     const QCommandLineOption adifImportOption(QStringLiteral("adif-import"),
         QStringLiteral("Development: import the ADIF <file> into the log at start, log the result and quit."),
         QStringLiteral("file"));
@@ -1332,6 +1336,27 @@ int main(int argc, char* argv[])
         QTimer::singleShot(1000, &app, [&app, &engine, file = parser.value(adifImportOption)] {
             qInfo() << "adif-import:" << engine.importAdif(QUrl::fromLocalFile(file));
             app.quit();
+        });
+    }
+    if (parser.isSet(tapAtOption)) {
+        const QStringList t = parser.value(tapAtOption).split(QLatin1Char(','));
+        QTimer::singleShot(t.value(2, QStringLiteral("20000")).toInt(), &app, [&qml, &engine, t] {
+            for (QObject* root : qml.rootObjects()) {
+                auto* window = qobject_cast<QQuickWindow*>(root);
+                if (!window) {
+                    continue;
+                }
+                const QPointF p(t.value(0).toDouble() * window->width(), t.value(1).toDouble() * window->height());
+                const QPointF g = window->mapToGlobal(p);
+                QMouseEvent press(QEvent::MouseButtonPress, p, g, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+                QCoreApplication::sendEvent(window, &press);
+                QMouseEvent release(QEvent::MouseButtonRelease, p, g, Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+                QCoreApplication::sendEvent(window, &release);
+                qInfo() << "tap-at:" << p << "digiTxHz" << engine.digiTxHz() << "freq" << engine.frequencyMhz();
+                QTimer::singleShot(500, &engine, [&engine] {
+                    qInfo() << "tap-at: after, digiTxHz" << engine.digiTxHz() << "freq" << engine.frequencyMhz();
+                });
+            }
         });
     }
     if (parser.isSet(tuneToOption)) {

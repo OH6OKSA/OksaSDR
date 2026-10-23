@@ -101,7 +101,9 @@ Rectangle {
             border.color: Theme.transmit
             border.width: 1
             Label {
-                x: parent.width + 3
+                // Beside the band, on the side with room (clear of the
+                // RF GAIN badge at the right edge).
+                x: parent.x + parent.width + width + 90 > digiOverlay.width ? -width - 3 : parent.width + 3
                 y: 22
                 text: qsTr("TX %1").arg(Engine.digiTxHz)
                 color: Theme.transmit
