@@ -90,6 +90,7 @@ private:
     // Receive audio at 12 kHz and the on-air time of its first sample (s).
     std::vector<float> m_buf;
     double m_bufT0{0.0};
+    qint64 m_lateSinceMs{0};  // when the stream began running more than 1 s late
     std::vector<float> m_decimHistory;  // half-band FIR state (24 -> 12 kHz)
     bool m_decimOdd{false};
 

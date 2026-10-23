@@ -217,6 +217,7 @@ void Ft8Engine::resetAudio()
     m_buf.clear();
     m_decimHistory.clear();
     m_decimOdd = false;
+    m_lateSinceMs = 0;
 }
 
 void Ft8Engine::feed(const AetherSDR::DecoderPcmBlock& block)
@@ -252,13 +253,26 @@ void Ft8Engine::feed(const AetherSDR::DecoderPcmBlock& block)
     const double blockStart = nowMs() / 1000.0 - m_rxLatencyMs / 1000.0 - double(out.size()) / kRate;
     const double bufEnd = m_bufT0 + double(m_buf.size()) / kRate;
     const double diff = blockStart - bufEnd;
+    const qint64 now = nowMs();
     if (m_buf.empty() || diff < -2.0 || diff > 5.0) {
         m_buf.clear();
         m_bufT0 = blockStart;
+        m_lateSinceMs = 0;
     } else if (diff > 1.0) {
-        // A gap in the stream: silence in its place keeps the timing.
-        m_buf.insert(m_buf.end(), size_t(diff * kRate), 0.0f);
+        // More than a second late: a stall whose audio follows in a burst
+        // (SmartLink, a busy device) or audio lost. Only when it stays late
+        // for 2 s is it a gap, and silence in its place keeps the timing;
+        // silence for a burst would push everything after it out of the
+        // slot window (the buffer grew faster than the clock and the slots
+        // after the first decoded nothing).
+        if (m_lateSinceMs == 0) {
+            m_lateSinceMs = now;
+        } else if (now - m_lateSinceMs > 2000) {
+            m_buf.insert(m_buf.end(), size_t(diff * kRate), 0.0f);
+            m_lateSinceMs = 0;
+        }
     } else if (diff < 0.0) {
+        m_lateSinceMs = 0;
         // Audio cannot arrive early: an earlier arrival than the buffer
         // assumed means the buffer's clock was late (it had been set by a
         // delayed burst). Late arrivals (bursts after a stall, another
@@ -268,6 +282,7 @@ void Ft8Engine::feed(const AetherSDR::DecoderPcmBlock& block)
         // Creep forward slowly (5 ms a second at most), for the clocks'
         // drift and a buffer once set by an unusually early block.
         m_bufT0 += std::min(diff, 0.005 * double(out.size()) / kRate);
+        m_lateSinceMs = 0;
     }
     m_buf.insert(m_buf.end(), out.begin(), out.end());
     // Keep about two and a half FT8 slots.
