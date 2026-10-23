@@ -1,6 +1,6 @@
 # OksaSDR
 
-**A FlexRadio client for iPad, iPhone and Android, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine.**
+**A FlexRadio client for iPad, iPhone, Mac and Android, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine.**
 
 [![Mobile iOS build](https://github.com/OH6OKSA/OksaSDR/actions/workflows/mobile-ios.yml/badge.svg?branch=mobile/oksasdr)](https://github.com/OH6OKSA/OksaSDR/actions/workflows/mobile-ios.yml)
 [![Mobile Android build](https://github.com/OH6OKSA/OksaSDR/actions/workflows/mobile-android.yml/badge.svg?branch=mobile/oksasdr)](https://github.com/OH6OKSA/OksaSDR/actions/workflows/mobile-android.yml)
@@ -8,15 +8,15 @@
 ![Status](https://img.shields.io/badge/status-beta-orange)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-OksaSDR runs the AetherSDR engine (`libaethercore`) on the iPad, iPhone
-or an Android phone or tablet and talks to the radio directly. There is no PC, server, `aetherd` or
+OksaSDR runs the AetherSDR engine (`libaethercore`) on the iPad, iPhone,
+a Mac or an Android phone or tablet and talks to the radio directly. There is no PC, server, `aetherd` or
 SmartSDR in between: at home on the same network, or from anywhere over
 SmartLink (or your own VPN), it is a complete station control surface.
 
 > OksaSDR is maintained by Niko Oksa, OH6OKSA, and was called *AetherSDR
 > Mobile* until build 74. It is **not** an official AetherSDR app: the
-> AetherSDR project plans its own mobile app. Engine work is offered
-> upstream; see
+> AetherSDR project plans its own mobile app. Engine work was offered
+> upstream in
 > [discussion #6409](https://github.com/aethersdr/AetherSDR/discussions/6409).
 
 <p align="center">
@@ -165,6 +165,23 @@ radio interface, with no computer running alongside.
   transmitter unkeys on release, on disconnect, when the app loses focus,
   when the layout changes and when the mic input leaves the device.
 
+**Digital modes and logging**
+- **FT8 and FT4** in the app (Controls › Digi), no computer, DAX or
+  WSJT-X: every slice in DIGU decodes at once, rows marked with the slice
+  and coloured as in WSJT-X (CQ, your call, new DXCC, CQ zone or
+  continent, worked before), with a filter (All, CQ, New, New DXCC). Tap a
+  call to answer it (TX and the display move to its slice) or call CQ;
+  the app runs the QSO and logs it. Drag the red TX band to a free
+  frequency on the display.
+- **RADE digital voice** (FreeDV's Radio Autoencoder) in the app, on any
+  Flex: receive with the callsign each station sends, transmit with PTT as
+  usual.
+- **Log** tab: quick QSO logging with QRZ.com lookup (or the country from
+  the prefix), worked-before and dupe check, POTA / WWFF references, and
+  the log as an ADIF file in Files (iPhone, iPad) or Documents (Android,
+  computer): share it to your logbook or LoTW, or import contacts from
+  another logbook.
+
 **Remote (SmartLink)**
 - Sign in with your FlexRadio SmartLink account and connect to your radio
   from anywhere, with Opus-compressed audio. The sign-in is kept in the iOS
@@ -174,7 +191,7 @@ radio interface, with no computer running alongside.
 - A tablet layout and a phone layout. They switch live on rotation, Split
   View, Stage Manager and folding (iPhone Duo).
 - The waterfall gets the screen. On iPhone, the controls (DSP, Audio, TX,
-  CW, View, Profiles, Memory) live in a drawer that slides in over it when needed. On iPad the side
+  CW, View, Profiles, Memory, Log, Digi) live in a drawer that slides in over it when needed. On iPad the side
   panel can be hidden into the same drawer. PTT/KEY always stays on screen:
   the drawer carries it at the bottom, never covering it.
 - Apple Pencil drags tune 10× finer, for zero-beating.
@@ -227,7 +244,10 @@ refreshed with every user-interface change.</sub>
 | RX audio on device | ✅ In daily use by testers, also with Bluetooth headsets |
 | Voice transmit on air (device mic, Bluetooth headset) | ✅ Used on air by testers. Test at low power or into a dummy load first. |
 | SmartLink remote (sign in, connect from anywhere, Opus audio) | ✅ Supported |
-| Remote over your own VPN (connect by IP) | ✅ In use by testers (OpenVPN, WireGuard) |
+| Remote over your own VPN (connect by IP) | ✅ In use by testers (OpenVPN, WireGuard, Tailscale; also over 5G) |
+| FT8 / FT4 in the app | ✅ QSOs logged on the air from the iPad and a FLEX; 157 PSKReporter spots from two 10 W CQs; several slices decoding at once |
+| RADE digital voice | 🧪 Built in; reports with RADE stations welcome |
+| Log tab, ADIF export and import, QRZ.com lookup | ✅ In use by testers |
 | Several slices and panadapters, multiFLEX | ✅ Supported |
 | Spots and DX cluster, TNF, memory editing | ✅ Tested against a FLEX-6600M (build 77) |
 | TX processing (gate, EQ, compressor) | ✅ Measured on the FLEX with a test tone; testers' on-air reports welcome |
@@ -237,9 +257,8 @@ refreshed with every user-interface change.</sub>
 | LAN discovery on iOS | ⏳ Needs Apple's multicast entitlement. Connect by IP for now. |
 | LAN discovery on Android | 🧪 Built in; to be verified on the radio's own network |
 
-**Next:** CW on air, and offering the engine-side work
-(beat cancel, packet-loss tracking) upstream; see
-[discussion #6409](https://github.com/aethersdr/AetherSDR/discussions/6409).
+**Next:** see the [roadmap](mobile/ROADMAP.md): three TX meters,
+sending the log to Wavelog / Cloudlog, transverter setup.
 
 ## Try it
 
@@ -275,7 +294,7 @@ refreshed with every user-interface change.</sub>
   IOKit/CoreAudio code sits behind `Q_OS_MACOS`, process helpers behind
   `QT_CONFIG(process)`, and the unused FFmpeg media plugin is excluded.
 - **CI** ([`mobile-ios.yml`](.github/workflows/mobile-ios.yml)) builds on
-  GitHub's macOS 26 runners with Xcode 26. It cross-compiles FFTW, archives
+  GitHub's macOS runners with Xcode 26. It cross-compiles FFTW, archives
   the app and signs it with cloud-managed distribution signing through an App
   Store Connect API key. Each push uploads a build to TestFlight. No Mac is
   needed.
@@ -287,8 +306,9 @@ refreshed with every user-interface change.</sub>
 
 The radio, DSP and protocol engine is AetherSDR's: this fork adds a mobile
 build option, iOS platform guards and a new touch client on top, plus a few
-engine additions that are being offered upstream: beat cancel (BC) and
-per-stream VITA packet-loss tracking. For the
+engine additions that were offered upstream: beat cancel (BC) and
+per-stream VITA packet-loss tracking. FT8 / FT4 use the MIT-licensed
+[ft8_lib](https://github.com/kgoba/ft8_lib) (in `third_party/ft8_lib`). For the
 desktop application (Linux, macOS, Windows), downloads, supported radios and
 the full feature list, see the upstream project:
 **https://github.com/aethersdr/AetherSDR**

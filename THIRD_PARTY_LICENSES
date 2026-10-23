@@ -766,3 +766,16 @@ license text is in third_party/littlefs/LICENSE.md.
              Copyright (c) 2017, Arm Limited.
   License:   BSD-3-Clause
   Source:    https://github.com/littlefs-project/littlefs
+
+
+32. ft8_lib — FT8 / FT4 encoder and decoder (OksaSDR mobile app)
+-------------------------------------------------------------------------------
+Bundled at third_party/ft8_lib/, with its copy of KISS FFT (fft/). Used by
+the mobile app's FT8 / FT4 (mobile/src/Ft8Engine.cpp); the KISS FFT symbols
+are renamed with an ftx_ prefix at build time. The full license text is in
+third_party/ft8_lib/LICENSE.
+
+  Copyright: Copyright (c) 2018 Kārlis Goba
+             KISS FFT: Copyright (c) 2003-2010 Mark Borgerding
+  License:   MIT (ft8_lib), BSD-3-Clause (KISS FFT)
+  Source:    https://github.com/kgoba/ft8_lib

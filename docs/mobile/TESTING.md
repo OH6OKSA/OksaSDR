@@ -1,16 +1,18 @@
 # Joining the OksaSDR test group
 
-OksaSDR is tested through Apple's **TestFlight** (iPhone, iPad) by a small
+OksaSDR is tested through Apple's **TestFlight** (iPhone, iPad, Mac) by a small
 group of amateur radio operators, and as an Android beta anyone can download
 (see [Android](#android)). This page explains what you need, what to send,
 and what happens after you join.
 
 ## What you need
 
-- **An iPhone or iPad** with iOS or iPadOS 18 or newer, or an **Android**
-  phone or tablet (Android 9 or newer, 64-bit ARM; see [Android](#android)).
-- **A FlexRadio.** The FLEX-6400, FLEX-6600 and FLEX-6600M are tested so
-  far; other FLEX-6000/8000 models and Aurora should work. If yours is one of
+- **An iPhone or iPad** with iOS or iPadOS 18 or newer, a **Mac** with
+  Apple silicon (the iPad app runs there through TestFlight), or an
+  **Android** phone or tablet (Android 9 or newer, 64-bit ARM; see
+  [Android](#android)).
+- **A FlexRadio.** The FLEX-6400, FLEX-6600, FLEX-6600M and FLEX-8600
+  are in use by testers; other FLEX-6000/8000 models and Aurora should work. If yours is one of
   those, say so: reports on new models are especially welcome.
 - **A way for the device to reach the radio**, any of these:
   - the same home network (enter the radio's IP address in the app);
@@ -33,7 +35,8 @@ Send an email to **oh6oksa@gmail.com** with the subject
    4.2.18).
 5. **How you will connect**: home network, SmartLink, or a VPN (which one).
 6. **What you would like to test**: receive, phone (voice) transmit, CW,
-   Bluetooth headset, keyboard, iPad and iPhone layouts, …
+   FT8 / FT4, RADE digital voice, logging, Bluetooth headset, keyboard,
+   iPad and iPhone layouts, …
 
 Template to copy:
 
@@ -66,6 +69,9 @@ every function.
 - **Start with receive.** Connect, check the spectrum, waterfall and audio.
 - **Transmit at low power or into a dummy load first.** The app takes the
   radio's mic input to `PC` (this device's microphone) when it connects.
+- **FT8 / FT4** (Controls › Digi): decode first, then answer a CQ at low
+  power and check that the contact lands in the Log tab. Import your
+  logbook (ADIF) on the Log tab so the colours show what is new for you.
 - **Reporting a problem:** right after it happens, open **Log** in the top
   row, tap **Copy**, and paste the text into an email to oh6oksa@gmail.com.
   Add the device model and what you were doing. The build number is in the
@@ -90,9 +96,7 @@ The Android beta needs no invitation: download it and install it.
    manager: allow it, then *Install*.
 4. Open OksaSDR. On the first connect allow notifications, the microphone
    and "no battery optimization", so receive keeps going in the background
-   and PTT can transmit (see the [manual](MANUAL.md#13-android)). Beta 1
-   did not ask for the microphone: turn it on in Settings → Apps →
-   OksaSDR → Permissions, or update to beta 2.
+   and PTT can transmit (see the [manual](MANUAL.md#13-android)).
 
 You need Android 9 or newer on a 64-bit ARM phone or tablet. A newer beta
 installs over the old one. Report problems the same way as on the iPhone

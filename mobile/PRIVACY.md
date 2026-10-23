@@ -1,19 +1,21 @@
 # OksaSDR: privacy policy
 
-OksaSDR is a FlexRadio client for iPad and iPhone, built on the
+OksaSDR is a FlexRadio client for iPad, iPhone, Mac and Android, built on the
 [AetherSDR](https://github.com/aethersdr/AetherSDR) engine. It is
 maintained by Niko Oksa (OH6OKSA). This policy covers the app distributed
-through TestFlight from
+through TestFlight and as the Android beta from
 [this source](https://github.com/OH6OKSA/OksaSDR/tree/mobile/oksasdr).
 
 ## Summary
 
 The app collects no personal data. Nothing you do in the app is sent to the
-developer or to any third party.
+developer. It connects to a third-party service only when you use a feature
+that needs it (SmartLink, QRZ.com, a DX cluster), as listed below.
 
 ## Network use
 
-The app talks only to equipment on your own network:
+The app talks to your radio and, only for the features you turn on, to
+these services:
 
 - **Your radio.** It connects to the IP address you enter, or to a radio
   discovered on your local network. Control commands, spectrum, waterfall and
@@ -22,17 +24,29 @@ The app talks only to equipment on your own network:
 - **Local network discovery.** It listens for radio and accessory discovery
   broadcasts on the local network. iOS asks for permission ("Local Network")
   before this is allowed.
+- **SmartLink** (FlexRadio), if you sign in on the Connect page: your
+  FlexRadio account sign-in and the connection to your radio go through
+  FlexRadio's SmartLink service, under FlexRadio's terms.
+- **QRZ.com**, if you save a QRZ.com account on the Log tab: the callsign
+  you type is looked up there with your account.
+- **A DX cluster**, if you turn it on: the app connects to the cluster
+  server you choose, signs in with your callsign and receives its spots.
+- **Developer link** (Log tab), off unless turned on: for the developer's
+  own devices; it sends the app's log to the address set there.
 
 The app contains no analytics, advertising, tracking or crash-reporting SDKs,
-and it makes no other internet connections.
+and it makes no other internet connections. FT8 / FT4 decoding and RADE run
+on the device; nothing is sent to PSKReporter or similar services.
 
 ## Microphone
 
-The microphone is used only to transmit through your radio, and it is open
-only while you hold PTT. Transmitting from the device requires the radio's mic
+The microphone is used only to transmit through your radio (voice, RADE
+digital voice) and to record voice keyer messages you choose to record, and
+it is open only while you hold PTT or record. Transmitting from the device requires the radio's mic
 input to be set to this device ("Use this device's microphone"). The audio
-goes only to your radio and is not recorded or stored. iOS asks for
-microphone permission first.
+goes only to your radio and is not recorded or stored, except the voice
+keyer messages you record yourself, which stay on the device. iOS and
+Android ask for microphone permission first.
 
 ## Camera
 
@@ -44,10 +58,20 @@ library the app includes also contains camera functions.
 The app keeps its settings in its own storage on your device. These are the
 last radio address you entered, mic gain and similar operating preferences,
 and an identifier the radio uses to recognise this client. They never leave
-your device, except as part of the normal connection to your radio. The
-in-app Log is kept in memory only. It is shared only if you copy it yourself.
+your device, except as part of the normal connection to your radio.
 
-Deleting the app deletes all of this data.
+- **Your QSO log** (the Log tab and FT8 / FT4 contacts) is an ADIF file on
+  the device: in the app's folder in Files on iPhone and iPad, in
+  Documents › OksaSDR on Android and on a computer. It leaves the device
+  only when you share or move it yourself.
+- **Sign-ins**: the SmartLink sign-in and the QRZ.com password are kept in
+  the device's secure store (Keychain on Apple devices); a SmartLink
+  password is never stored.
+- The in-app diagnostic log is kept in memory only. It is shared only if
+  you copy or share it yourself.
+
+Deleting the app deletes all of this data (on Android the copy of the log
+in Documents › OksaSDR stays until you delete it).
 
 ## TestFlight
 
@@ -65,4 +89,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-10-12
+Last updated: 2026-10-24

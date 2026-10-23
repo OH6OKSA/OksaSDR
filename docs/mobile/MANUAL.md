@@ -1,9 +1,9 @@
 # OksaSDR — User Manual
 
-OksaSDR turns an iPad, iPhone or Android phone or tablet into a complete
-FlexRadio client:
-panadapter and waterfall, all receive controls, transmit (voice, CW, tune)
-and SmartLink remote operation, with no computer alongside.
+OksaSDR turns an iPad, iPhone, Mac or Android phone or tablet into a
+complete FlexRadio client: panadapter and waterfall, all receive controls,
+transmit (voice, CW, tune), FT8 / FT4 and RADE digital voice, a log, and
+SmartLink or VPN remote operation, with no computer alongside.
 
 This manual describes every function and how it works. The screenshots are
 taken from the app connected to a real FLEX radio. The app's **Manual**
@@ -493,6 +493,8 @@ them back into the drawer.
 
   ![Editing a memory](manual/memory-edit.jpg)
 
+![Log tab](manual/tab-log.jpg)
+
 - **Log** — quick QSO logging into a log on this device (an ADIF file,
   `oksasdr-log.adi`). Type the **callsign**, or tap the call of the spot
   you tuned to last. A card shows who it is: with a **QRZ.com** account
@@ -519,33 +521,64 @@ them back into the drawer.
   can be moved to iCloud Drive or opened in a logbook; on Android a copy is
   kept in Files › Documents › OksaSDR; on a computer in
   Documents/OksaSDR. A log from an earlier build moves there by itself.
-- **Digi** — FT8 and FT4 in the app itself, no computer or DAX needed.
-  **Decode** turns decoding on (*FT8* or *FT4*); the band buttons tune to the
-  mode's dial frequency in DIGU. The bar shows where in the 15 s (FT4: 7.5 s)
-  slot you are; the decodes come at the end of each slot, newest first: UTC,
-  SNR, DT, audio frequency and the message, from every DIGU / DIGL slice, each row marked with its slice letter. The colours are WSJT-X's: green a CQ, red your call, yellow your own transmission, pink to magenta a new DXCC (on the band / at all), amber a new CQ zone, red-pink a new continent; a CQ from a station already in the log on this band and mode is grey. Tapping a call moves TX and the display to its slice and starts calling it. **Show** filters the list: **All**, **CQ** (CQ calls only), **New** (a new continent, CQ zone or DXCC, overall or on this band) or **New DXCC** (a DXCC not yet in the log, overall or on this band); your call, your own transmissions and the station you are working always show. Each slice decodes on a DAX channel of its own; a slice that shares one with another slice is moved to a free channel while it decodes.
-  **Tap a decode** to answer that station; **CQ** calls CQ in the next slot.
-  FT8 / FT4 run on the **TX slice** (the one with the red TX badge), as
-  with SmartSDR and WSJT-X: whichever slice is active, and however many
-  slices are open, decoding and transmitting stay there. That slice gets a
-  DAX channel of its own if it had none, so other slices' audio stays out.
-  To move FT8 / FT4, move the TX badge, press a band button with another
-  slice active, or tap inside another DIGU / DIGL slice's passband; a QSO
-  under way stops when TX moves.
+- **Digi** — FT8 and FT4 in the app itself, no computer, DAX or WSJT-X
+  needed.
+
+  | Digi tab | Decodes in WSJT-X colours |
+  |---|---|
+  | ![Digi](manual/tab-digi.jpg) | ![Decodes](manual/digi-decodes.jpg) |
+
+  **Decode** turns decoding on (*FT8* or *FT4*); a band button makes the
+  active slice the TX slice, tunes it to the mode's dial frequency in DIGU,
+  starts decoding and zooms the display to the 4 kHz audio band (again with
+  *Zoom*). The bar shows where in the 15 s (FT4: 7.5 s) slot you are.
+
+  **Every slice in DIGU / DIGL decodes at once** (say 40 m on slice A and
+  20 m on slice B), each on a DAX channel of its own so the other slices'
+  audio stays out: a slice without one, or one sharing its channel with
+  another slice, gets a free channel while it decodes and its old one back
+  after. The decodes come at the end of each slot, newest first: slice
+  letter, UTC, SNR, DT, audio frequency and the message.
+
+  The colours are WSJT-X's: green a CQ, red your call, yellow your own
+  transmission, magenta a new DXCC (light pink: new on this band), amber a
+  new CQ zone (light amber: on this band), red-pink a new continent; a CQ
+  from a station already in the log on this band and mode is grey. "New"
+  is counted from the Log tab's log, so import your logbook there (ADIF)
+  to see what you still need. **Show** filters the list: **All**, **CQ**
+  (CQ calls only), **New** (a new continent, CQ zone or DXCC, overall or on
+  this band) or **New DXCC** (a DXCC not yet in the log, overall or on
+  this band); your call, your own transmissions and the station you are
+  working always show. The line above the list says how many of the last
+  decodes the filter shows.
+
+  **Tap a decode** to answer that station: TX, the active slice and the
+  display move to the slice it was heard on, and the app starts calling.
+  **CQ** calls CQ in the next slot on the **TX slice** (the one with the
+  red TX badge). Timing and transmitting follow the TX slice: move the TX
+  badge, press a band button with another slice active, or tap inside
+  another DIGU / DIGL slice's passband to move it; a QSO under way stops
+  when TX moves, and adding slices does not take TX away.
+
   The app then runs the QSO as WSJT-X does (report, R-report, RR73 or RRR,
   73), stops after six tries without the reply it waits for, and writes the
-  contact to the Log tab's log (MODE FT8, or MFSK / FT4). **Halt TX** stops at
-  once (PTT is hidden while FT8 / FT4 decodes: the app keys the radio itself, and the display gets the room). *TX audio* sets the transmit tone (200–3000 Hz, default 1200; − / + step
+  contact to the Log tab's log (MODE FT8, or MFSK / FT4) with the
+  frequency of the slice it was made on. **Halt TX** stops at once. PTT is
+  hidden while FT8 / FT4 decodes (the app keys the radio itself), and the
+  display gets the room.
+
+  *TX audio* sets the transmit tone (200–3000 Hz, default 1200; − / + step
   1 Hz and repeat while held). The red band on the display is the tone:
   **drag it** to any frequency, or **tap** the waterfall near the dial to
-  put it there (while decoding a tap there sets the tone instead of
-  retuning; the passband shading is left out in FT8 / FT4). A band button
-  zooms the display to the 4 kHz audio band (again with *Zoom*). A
-  callsign the standard messages cannot carry (such as OH6OKSA, with a
-  four-letter suffix) is sent as WSJT-X sends it: in full in CQ and in
-  RRR / RR73 / 73, as <CALL> in the messages with a report. The transmit
+  put it there (while decoding, a tap there sets the tone instead of
+  retuning; the passband shading is left out in FT8 / FT4, the filter edges
+  stay). A callsign the standard messages cannot carry (such as OH6OKSA,
+  with a four-letter suffix) is sent as WSJT-X sends it: in full in CQ and
+  in RRR / RR73 / 73, as <CALL> in the messages with a report. The transmit
   audio goes to the radio past the TX processing (no gate, EQ or
-  compression); power is the TX tab's power.
+  compression); power is the TX tab's power. Decoding copes with audio
+  that arrives in bursts (SmartLink, a VPN over a mobile link).
+
   **RADE digital voice** (FreeDV's Radio Autoencoder, in the app itself, no
   FreeDV waveform needed): *RADE* puts the slice in DIGU (DIGL where the
   band's voice mode is LSB) with a 750–2250 Hz filter, mutes its ordinary
