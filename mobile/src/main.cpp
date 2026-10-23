@@ -156,7 +156,8 @@ int main(int argc, char* argv[])
                        "tablet, the sections pinned for this run (e.g. 0,2,3)."), QStringLiteral("index"));
     parser.addOption(controlsTabOption);
     const QCommandLineOption controlsScrollOption(QStringLiteral("controls-scroll"),
-        QStringLiteral("With --controls drawer: scroll the shown tab down by <px> (screenshots)."), QStringLiteral("px"));
+        QStringLiteral("With --controls drawer: scroll the shown tab down by <px> (screenshots), "
+                       "<ms> after start (default 7000)."), QStringLiteral("px[,ms]"));
     parser.addOption(controlsScrollOption);
     const QCommandLineOption wheelTestOption(QStringLiteral("wheel-test"),
         QStringLiteral("Development: send trackpad scrolls across the shown controls and log where they do not "
@@ -1667,8 +1668,9 @@ int main(int argc, char* argv[])
         });
     }
     if (parser.isSet(controlsScrollOption)) {
-        const qreal px = parser.value(controlsScrollOption).toDouble();
-        QTimer::singleShot(7000, &app, [&qml, px] {
+        const QStringList scrollArgs = parser.value(controlsScrollOption).split(QLatin1Char(','));
+        const qreal px = scrollArgs.value(0).toDouble();
+        QTimer::singleShot(scrollArgs.value(1, QStringLiteral("7000")).toInt(), &app, [&qml, px] {
             for (QObject* root : qml.rootObjects()) {
                 for (QObject* scroll : findNamedObjects(root, QStringLiteral("controlsTabScroll"))
                                            + findNamedObjects(root, QStringLiteral("pinnedScroll"))) {
