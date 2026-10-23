@@ -27,6 +27,7 @@ ColumnLayout {
         { name: "Profiles", title: qsTr("Profiles"), component: profileSection },
         { name: "Memory", title: qsTr("Memory"), component: memorySection },
         { name: "Log", title: qsTr("Log"), component: logSection },
+        { name: "Digi", title: qsTr("Digi"), component: digiSection },
     ]
 
     function toggleSection(name) {
@@ -46,7 +47,7 @@ ColumnLayout {
 
     // ---- Drawer: one section at a time, chosen from a button grid ----
     // A grid rather than a tab bar: on an iPhone all seven sections show at
-    // once (4 x 2) instead of hiding behind a scrolling strip.
+    // once (5 + 4) instead of hiding behind a scrolling strip.
     Item {
         id: tabs
         objectName: "controlsTabs"
@@ -57,7 +58,7 @@ ColumnLayout {
         GridLayout {
             id: tabGrid
             width: parent.width
-            columns: panel.width >= 640 ? 8 : 4
+            columns: panel.width >= 640 ? 9 : 5
             columnSpacing: 4
             rowSpacing: 4
             Repeater {
@@ -237,4 +238,5 @@ ColumnLayout {
     Component { id: profileSection; ProfileControls {} }
     Component { id: memorySection; MemoryControls {} }
     Component { id: logSection; LogControls {} }
+    Component { id: digiSection; DigiControls {} }
 }

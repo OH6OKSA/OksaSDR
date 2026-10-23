@@ -28,6 +28,7 @@
 class QJSEngine;
 class QQmlEngine;
 class QThread;
+class Ft8Engine;
 
 namespace AetherSDR {
 class AudioEngine;
@@ -164,6 +165,18 @@ class MobileEngine : public QObject {
     // is set, else cty.dat's country), the call of the spot tapped last, the
     // QRZ.com user name, and the operator's grid when the radio has no GPS.
     Q_PROPERTY(QVariantList recentQsos READ recentQsos NOTIFY qsoLogChanged)
+    // ---- Digi tab: FT8 / FT4 on this device ----
+    // Decoding on or off; "FT8" or "FT4"; the transmit audio frequency (Hz).
+    Q_PROPERTY(bool digiRunning READ digiRunning WRITE setDigiRunning NOTIFY digiChanged)
+    Q_PROPERTY(QString digiProtocol READ digiProtocol WRITE setDigiProtocol NOTIFY digiChanged)
+    Q_PROPERTY(int digiTxHz READ digiTxHz WRITE setDigiTxHz NOTIFY digiChanged)
+    // The QSO: state ("idle", "cq", "answer"), dx, next message, status line,
+    // transmitting, seconds into the slot, slot parity of our transmissions.
+    Q_PROPERTY(QVariantMap digi READ digi NOTIFY digiChanged)
+    // Decodes, newest first: utc, snr, dt, freq, text, call, cq, toMe, slotOdd.
+    Q_PROPERTY(QVariantList digiDecodes READ digiDecodes NOTIFY digiDecodesChanged)
+    // Dial frequencies of the protocol on each band: band, mhz.
+    Q_PROPERTY(QVariantList digiFrequencies READ digiFrequencies NOTIFY digiChanged)
     Q_PROPERTY(int qsoCount READ qsoCount NOTIFY qsoLogChanged)
     Q_PROPERTY(QVariantMap callLookup READ callLookup NOTIFY callLookupChanged)
     Q_PROPERTY(QString lastSpotCall READ lastSpotCall NOTIFY lastSpotCallChanged)
@@ -600,6 +613,24 @@ public:
     // frequency, band, mode and power and the lookup's name, QTH, grid and
     // country are added. True when it was written to the log file.
     Q_INVOKABLE bool logQso(const QVariantMap& fields);
+
+    bool digiRunning() const;
+    void setDigiRunning(bool on);
+    QString digiProtocol() const;
+    void setDigiProtocol(const QString& protocol);
+    int digiTxHz() const { return m_digiTxHz; }
+    void setDigiTxHz(int hz);
+    QVariantMap digi() const;
+    QVariantList digiDecodes() const { return m_digiDecodes; }
+    QVariantList digiFrequencies() const;
+    // Calls CQ in the next slot, and keeps calling until someone answers.
+    Q_INVOKABLE void digiCallCq();
+    // Answers the station of a decode (an index into digiDecodes).
+    Q_INVOKABLE void digiAnswer(int index);
+    // Stops transmitting at once and ends the QSO.
+    Q_INVOKABLE void digiHalt();
+    // Tunes to the protocol's dial frequency on a band, in DIGU.
+    Q_INVOKABLE void digiTune(double mhz);
     // Contacts with this call before, and whether it is a dupe on this band
     // and mode: {worked, dupe}.
     Q_INVOKABLE QVariantMap workedInfo(const QString& call) const;
@@ -988,6 +1019,8 @@ signals:
     void rfGainChanged();
     void memoriesChanged();
     void qsoLogChanged();
+    void digiChanged();
+    void digiDecodesChanged();
     void callLookupChanged();
     void lastSpotCallChanged();
     void qrzChanged();
@@ -1118,6 +1151,39 @@ private:
     QList<QObject*> m_micCheckHolders;   // shown TX tabs
     bool m_micCheckOpen{false};          // the microphone is open for them
     std::unique_ptr<QsoLog> m_qsoLog;
+
+    // ---- FT8 / FT4 (MobileEngineDigi.cpp) ----
+    void setupDigi();
+    void syncDigiAudio();
+    void onDigiSlot(qint64 slotMs);
+    void handleDigiDecodes(const QVariantList& decodes, qint64 slotMs);
+    void startDigiTx(qint64 slotMs);
+    void onDigiTxFinished();
+    void digiLogQso();
+    void digiEnd(const QString& status);
+    void setDigiStatus(const QString& status);
+    QString digiMyCall() const;
+    QString digiReport(int snr) const;
+    // The next message of a kind: cq, call, report, rreport, rr73, 73.
+    QString digiMessage(const QString& kind) const;
+    std::unique_ptr<Ft8Engine> m_ft8;
+    std::unique_ptr<DecoderAudioModel> m_digiAudio;
+    QVariantList m_digiDecodes;
+    QString m_digiState{QStringLiteral("idle")};
+    QString m_digiDx;
+    QString m_digiDxGrid;
+    QString m_digiRptSent;
+    QString m_digiRptRcvd;
+    QString m_digiTxMsg;
+    QString m_digiStatus;
+    QString m_digiTimeOn;
+    int m_digiTxHz{1200};
+    int m_digiTxParity{0};
+    int m_digiTries{0};
+    int m_digiTxSeq{0};
+    bool m_digiTransmitting{false};
+    bool m_digiLogged{false};
+    bool m_digiEndAfterTx{false};
     std::unique_ptr<CtyDatParser> m_cty;
     QString m_lookupCall;                // the call callLookup is for
     QString m_qrzStatus;                 // QRZ.com sign-in check, as shown

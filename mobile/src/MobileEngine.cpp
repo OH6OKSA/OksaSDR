@@ -13,6 +13,7 @@
 
 #include "AudioSession.h"
 #include "QsoLog.h"
+#include "Ft8Engine.h"
 #include "ShareText.h"
 
 #include "ScreenAwake.h"
@@ -255,6 +256,7 @@ MobileEngine::MobileEngine(QObject* parent)
     // any call, and QRZ.com with the account the Log tab stores (password in
     // the platform's secure store; the engine keeps it for the session).
     m_qsoLog = std::make_unique<QsoLog>();
+    setupDigi();
     m_cty = std::make_unique<CtyDatParser>();
     m_cty->loadFromResource(QStringLiteral(":/cty.dat"));
     {
@@ -1821,6 +1823,10 @@ void MobileEngine::onVoiceClipRecorded(const QByteArray& clip, int rate)
 
 void MobileEngine::onVoiceClipFinished()
 {
+    if (m_digiTransmitting) {
+        onDigiTxFinished();
+        return;
+    }
     if (m_voiceState == QLatin1String("playback")) {
         m_voiceState = QStringLiteral("idle");
         releasePtt(QStringLiteral("voice macro done"));
@@ -2127,6 +2133,9 @@ void MobileEngine::atuPressed()
 
 void MobileEngine::stopTransmit(const QString& reason)
 {
+    if (m_digiTransmitting || m_digiState != QLatin1String("idle")) {
+        digiHalt();
+    }
     releasePtt(reason);
     setCwKey(false, reason);
     releasePaddles();
@@ -3092,6 +3101,7 @@ void MobileEngine::setCwDecoderSensitivity(int sens)
 
 void MobileEngine::updateCwDecoder()
 {
+    syncDigiAudio();
     if (!m_cwDecoder || !m_cwAudio) {
         return;
     }
@@ -3608,7 +3618,11 @@ bool MobileEngine::logQso(const QVariantMap& fields)
     if (timeOn.size() != 4) {
         timeOn = now.toString(QStringLiteral("HHmm"));
     }
-    const auto mode = QsoLog::adifMode(d.value(QStringLiteral("mode")).toString());
+    auto mode = QsoLog::adifMode(d.value(QStringLiteral("mode")).toString());
+    // FT8 / FT4 from the Digi tab name their ADIF mode themselves.
+    if (fields.contains(QStringLiteral("adifMode"))) {
+        mode = {fields.value(QStringLiteral("adifMode")).toString(), fields.value(QStringLiteral("adifSubmode")).toString()};
+    }
     QVariantMap r{{QStringLiteral("CALL"), call},
                   {QStringLiteral("QSO_DATE"), now.toString(QStringLiteral("yyyyMMdd"))},
                   {QStringLiteral("TIME_ON"), timeOn},
@@ -3627,6 +3641,9 @@ bool MobileEngine::logQso(const QVariantMap& fields)
                   {QStringLiteral("MY_SIG_INFO"), fields.value(QStringLiteral("mySigInfo")).toString().toUpper()},
                   {QStringLiteral("STATION_CALLSIGN"), d.value(QStringLiteral("myCall"))},
                   {QStringLiteral("MY_GRIDSQUARE"), d.value(QStringLiteral("myGrid"))}};
+    if (fields.contains(QStringLiteral("grid"))) {
+        r.insert(QStringLiteral("GRIDSQUARE"), fields.value(QStringLiteral("grid")));
+    }
     if (m_callLookup.value(QStringLiteral("call")).toString() == call) {
         r.insert(QStringLiteral("NAME"), m_callLookup.value(QStringLiteral("name")));
         r.insert(QStringLiteral("QTH"), m_callLookup.value(QStringLiteral("qth")));

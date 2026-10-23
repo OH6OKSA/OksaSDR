@@ -512,6 +512,21 @@ them back into the drawer.
   it, save it to Files or Drive, AirDrop it, or open it in your logbook
   program or TQSL for LoTW. The QRZ.com password is kept in this device's
   secure store.
+- **Digi** — FT8 and FT4 in the app itself, no computer or DAX needed.
+  **Decode** turns decoding on (*FT8* or *FT4*); the band buttons tune to the
+  mode's dial frequency in DIGU. The bar shows where in the 15 s (FT4: 7.5 s)
+  slot you are; the decodes come at the end of each slot, newest first: UTC,
+  SNR, DT, audio frequency and the message (green: CQ; orange: to you).
+  **Tap a decode** to answer that station; **CQ** calls CQ in the next slot.
+  The app then runs the QSO as WSJT-X does (report, R-report, RR73 or RRR,
+  73), stops after six tries without the reply it waits for, and writes the
+  contact to the Log tab's log (MODE FT8, or MFSK / FT4). **Halt TX** stops at
+  once. *TX audio* sets the transmit tone (200–3000 Hz, default 1200). A
+  callsign the standard messages cannot carry (such as OH6OKSA, with a
+  four-letter suffix) is sent as WSJT-X sends it: in full in CQ and in
+  RRR / RR73 / 73, as <CALL> in the messages with a report. The transmit
+  audio goes to the radio past the TX processing (no gate, EQ or
+  compression); power is the TX tab's power.
 
 ## 9. Radio Setup
 

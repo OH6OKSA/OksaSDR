@@ -31,6 +31,9 @@ qt_add_executable(aether-mobile
     src/TrackpadScrollPhases.cpp
     src/QsoLog.cpp
     src/QsoLog.h
+    src/Ft8Engine.cpp
+    src/Ft8Engine.h
+    src/MobileEngineDigi.cpp
     src/TrackpadScrollPhases.h
     src/EchoAudit.h
     src/DevLink.h
@@ -98,6 +101,7 @@ qt_add_qml_module(aether-mobile
         qml/ProfileControls.qml
         qml/MemoryControls.qml
         qml/LogControls.qml
+        qml/DigiControls.qml
         qml/PhoneOperatePage.qml
         qml/StationsDialog.qml
         qml/StepButton.qml
@@ -105,6 +109,39 @@ qt_add_qml_module(aether-mobile
 
 # The generated QML type registrations include the headers by bare name.
 target_include_directories(aether-mobile PRIVATE src)
+
+# FT8 / FT4 (ft8_lib, MIT; third_party/ft8_lib). Its KISS FFT exports the
+# same names as RADE's copy in libaethercore, so they are renamed here.
+set(FT8LIB_DIR ${CMAKE_SOURCE_DIR}/third_party/ft8_lib)
+add_library(ft8lib STATIC
+    ${FT8LIB_DIR}/ft8/constants.c
+    ${FT8LIB_DIR}/ft8/crc.c
+    ${FT8LIB_DIR}/ft8/decode.c
+    ${FT8LIB_DIR}/ft8/encode.c
+    ${FT8LIB_DIR}/ft8/ldpc.c
+    ${FT8LIB_DIR}/ft8/message.c
+    ${FT8LIB_DIR}/ft8/text.c
+    ${FT8LIB_DIR}/common/monitor.c
+    ${FT8LIB_DIR}/fft/kiss_fft.c
+    ${FT8LIB_DIR}/fft/kiss_fftr.c
+)
+target_include_directories(ft8lib PUBLIC ${FT8LIB_DIR})
+target_compile_definitions(ft8lib PRIVATE
+    kiss_fft=ftx_kiss_fft
+    kiss_fft_alloc=ftx_kiss_fft_alloc
+    kiss_fft_cleanup=ftx_kiss_fft_cleanup
+    kiss_fft_next_fast_size=ftx_kiss_fft_next_fast_size
+    kiss_fft_stride=ftx_kiss_fft_stride
+    kiss_fftr=ftx_kiss_fftr
+    kiss_fftr_alloc=ftx_kiss_fftr_alloc
+    kiss_fftri=ftx_kiss_fftri
+)
+if(MSVC)
+    target_compile_options(ft8lib PRIVATE /w)
+else()
+    target_compile_options(ft8lib PRIVATE -w)
+endif()
+target_link_libraries(aether-mobile PRIVATE ft8lib)
 
 target_link_libraries(aether-mobile PRIVATE
     aethercore

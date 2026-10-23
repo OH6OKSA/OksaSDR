@@ -3,6 +3,7 @@
 #include "EchoAudit.h"
 #include "LogBuffer.h"
 #include "MobileEngine.h"
+#include "Ft8Engine.h"
 #include "TrackpadScrollPhases.h"
 #ifdef Q_OS_ANDROID
 #include "../android/AndroidJni.h"
@@ -160,6 +161,16 @@ int main(int argc, char* argv[])
                        "start, logging the span after each (a real radio; the span ends where it began)."),
         QStringLiteral("n"));
     parser.addOption(zoomTestOption);
+    const QCommandLineOption ft8TestOption(QStringLiteral("ft8-test"),
+        QStringLiteral("Development: 8 s after start tune to 20 m FT8 (or FT4 with ft4), decode for <s> seconds "
+                       "and log the decodes; with cq also call CQ twice at 10 W. Frequency, mode and power are "
+                       "restored, then the app quits. E.g. 120 or 120,cq or 60,ft4."),
+        QStringLiteral("spec"));
+    parser.addOption(ft8TestOption);
+    const QCommandLineOption tuneToOption(QStringLiteral("tune-to"),
+        QStringLiteral("Development: 7 s after start tune the slice to <mhz,mode> (the pan follows), e.g. 1.9,USB."),
+        QStringLiteral("mhz,mode"));
+    parser.addOption(tuneToOption);
     const QCommandLineOption wheelIosTestOption(QStringLiteral("wheel-test-ios"),
         QStringLiteral("Development: scroll the shown controls from the top as iOS's trackpad does (wheel events "
                        "with pixel and angle deltas, no scroll phase) and log how far they get."));
@@ -1190,6 +1201,98 @@ int main(int argc, char* argv[])
                 qInfo() << "zoom-test: step" << i << "span" << engine.panBandwidthMhz() * 1e3 << "kHz";
             });
         }
+    }
+    if (parser.isSet(ft8TestOption) && parser.value(ft8TestOption).contains(QStringLiteral("selftest"))) {
+        // Our own transmit audio through our own decoder, no radio.
+        for (const bool ft4 : {false, true}) {
+            Ft8Engine ft8;
+            ft8.setProtocol(ft4 ? Ft8Engine::Protocol::Ft4 : Ft8Engine::Protocol::Ft8);
+            const QStringList messages{QStringLiteral("CQ OH6OKSA"), QStringLiteral("<K1ABC> OH6OKSA"),
+                                       QStringLiteral("K1ABC <OH6OKSA> -12"), QStringLiteral("K1ABC <OH6OKSA> R-09"),
+                                       QStringLiteral("<K1ABC> OH6OKSA RR73"), QStringLiteral("<K1ABC> OH6OKSA 73"),
+                                       QStringLiteral("CQ OH2XO KP20"), QStringLiteral("K1ABC OH2XO KP20")};
+            for (const QString& m : messages) {
+                const QByteArray audio = ft8.encode(m, 1500.0);
+                const auto* f = reinterpret_cast<const float*>(audio.constData());
+                const int n = int(audio.size() / sizeof(float));
+                std::vector<float> s12(size_t((ft4 ? 6.5 : 14.0) * 12000), 0.0f);
+                for (int i = 0; i + 1 < n && size_t(6000 + i / 2) < s12.size(); i += 2) {
+                    s12[size_t(6000 + i / 2)] = f[i];
+                }
+                const auto decodes = ft8.decodeSamples(s12, 0);
+                qInfo().noquote() << "ft8-selftest" << (ft4 ? "FT4" : "FT8") << m << "->"
+                                  << (decodes.isEmpty() ? QStringLiteral("(nothing)") : decodes.first().text);
+            }
+        }
+        return 0;
+    }
+    if (parser.isSet(ft8TestOption)) {
+        const QStringList spec = parser.value(ft8TestOption).split(QLatin1Char(','));
+        const int seconds = std::clamp(spec.value(0).toInt(), 20, 1800);
+        const bool answer = spec.contains(QStringLiteral("answer"));
+        const bool qso = spec.contains(QStringLiteral("qso"));
+        const bool cq = qso || spec.contains(QStringLiteral("cq"));
+        const bool ft4 = spec.contains(QStringLiteral("ft4"));
+        auto saved = std::make_shared<std::tuple<double, QString, int, QString>>();
+        QTimer::singleShot(8000, &app, [&engine, saved, cq, ft4] {
+            *saved = {engine.frequencyMhz(), engine.mode(), engine.rfPower(), engine.digiProtocol()};
+            qInfo() << "ft8-test: saved" << std::get<0>(*saved) << std::get<1>(*saved) << std::get<2>(*saved) << "W";
+            engine.setDigiProtocol(ft4 ? QStringLiteral("FT4") : QStringLiteral("FT8"));
+            engine.digiTune(ft4 ? 14.080 : 14.074);
+            engine.setDigiRunning(true);
+            if (cq) {
+                engine.setRfPower(10);
+                engine.digiCallCq();
+            }
+        });
+        if (answer) {
+            // Answer the strongest plain CQ, once the app is idle again.
+            QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::digiDecodesChanged, &app, [&engine] {
+                if (engine.digi().value(QStringLiteral("state")).toString() != QLatin1String("idle")) {
+                    return;
+                }
+                const QVariantList list = engine.digiDecodes();
+                int best = -1;
+                int bestSnr = -99;
+                for (int i = 0; i < list.size() && i < 40; ++i) {
+                    const QVariantMap d = list.at(i).toMap();
+                    const QStringList t = d.value(QStringLiteral("text")).toString().split(QLatin1Char(' '));
+                    if (!d.value(QStringLiteral("cq")).toBool() || t.size() != 3 || d.value(QStringLiteral("snr")).toInt() <= bestSnr
+                        || d.value(QStringLiteral("utc")) != list.first().toMap().value(QStringLiteral("utc"))) {
+                        continue;
+                    }
+                    best = i;
+                    bestSnr = d.value(QStringLiteral("snr")).toInt();
+                }
+                if (best >= 0) {
+                    qInfo().noquote() << "ft8-test: answering" << list.at(best).toMap().value(QStringLiteral("text")).toString();
+                    engine.setRfPower(10);
+                    engine.digiAnswer(best);
+                }
+            });
+        }
+        if (cq && !qso) {
+            // Two CQs, then stop calling (one slot pair is 30 s in FT8, 15 s in FT4).
+            QTimer::singleShot(8000 + (ft4 ? 33000 : 63000), &app, [&engine] { engine.digiHalt(); });
+        }
+        QTimer::singleShot(8000 + seconds * 1000, &app, [&app, &engine, saved] {
+            engine.digiHalt();
+            engine.setDigiRunning(false);
+            engine.setDigiProtocol(std::get<3>(*saved));
+            engine.digiTune(std::get<0>(*saved));
+            engine.setMode(std::get<1>(*saved));
+            engine.setRfPower(std::get<2>(*saved));
+            qInfo() << "ft8-test: restored" << std::get<0>(*saved) << std::get<1>(*saved) << std::get<2>(*saved) << "W";
+            QTimer::singleShot(1500, &app, &QCoreApplication::quit);
+        });
+    }
+    if (parser.isSet(tuneToOption)) {
+        const QStringList spec = parser.value(tuneToOption).split(QLatin1Char(','));
+        QTimer::singleShot(7000, &app, [&engine, spec] {
+            engine.digiTune(spec.value(0).toDouble());
+            engine.setMode(spec.value(1, QStringLiteral("USB")));
+            qInfo() << "tune-to:" << spec;
+        });
     }
     if (parser.isSet(wheelTestOption)) {
         QTimer::singleShot(9000, &app, [&qml] {
