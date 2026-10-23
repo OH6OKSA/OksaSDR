@@ -640,6 +640,8 @@ public:
     Q_INVOKABLE void digiHalt();
     // Tunes to the protocol's dial frequency on a band, in DIGU.
     Q_INVOKABLE void digiTune(double mhz);
+    // Fits the display to the audio band (4 kHz), for picking a TX tone.
+    Q_INVOKABLE void digiZoom();
 
     bool radeAvailable() const;
     bool radeActive() const;

@@ -57,6 +57,60 @@ Rectangle {
         colorGain: Engine.spectrum3DGain
     }
 
+    // FT8 / FT4: an audio-frequency scale over the passband (500 Hz steps)
+    // and the transmit tone's band in red, so the TX audio frequency can be
+    // set by eye and by a tap.
+    Item {
+        id: digiOverlay
+        anchors.fill: parent
+        visible: panArea.digiPick && Engine.panBandwidthMhz > 0
+        readonly property real pxPerMhz: width / Math.max(1e-6, Engine.panBandwidthMhz)
+        function xForHz(hz) {
+            const rf = Engine.frequencyMhz + (Engine.mode === "DIGL" ? -hz : hz) / 1e6
+            return (rf - Engine.panCenterMhz) * pxPerMhz + width / 2
+        }
+        readonly property real markTop: Engine.spectrum3D ? height * spectrum.spectrumFraction : 0
+        Repeater {
+            model: [500, 1000, 1500, 2000, 2500]
+            delegate: Item {
+                required property int modelData
+                x: digiOverlay.xForHz(modelData)
+                y: digiOverlay.markTop
+                Rectangle {
+                    width: 1
+                    height: 8
+                    color: Theme.passband
+                }
+                Label {
+                    x: -width / 2
+                    y: 8
+                    text: modelData
+                    color: Theme.passband
+                    font.pixelSize: 10
+                }
+            }
+        }
+        Rectangle {
+            objectName: "digiTxMarker"
+            readonly property real hzWidth: Engine.digiProtocol === "FT4" ? 90 : 50
+            x: Math.min(digiOverlay.xForHz(Engine.digiTxHz), digiOverlay.xForHz(Engine.digiTxHz + hzWidth))
+            width: Math.max(2, hzWidth / 1e6 * digiOverlay.pxPerMhz)
+            y: digiOverlay.markTop
+            height: digiOverlay.height - digiOverlay.markTop
+            color: Qt.rgba(0.9, 0.28, 0.3, 0.35)
+            border.color: Theme.transmit
+            border.width: 1
+            Label {
+                x: parent.width + 3
+                y: 22
+                text: qsTr("TX %1").arg(Engine.digiTxHz)
+                color: Theme.transmit
+                font.pixelSize: 11
+                font.bold: true
+            }
+        }
+    }
+
     // Filter passband between the slice's filter edges (Hz offsets from the
     // carrier, so it sits on the correct side for USB/LSB and centred for
     // CW/AM): a fill over the spectrum and bright edge lines through the
@@ -975,6 +1029,15 @@ Rectangle {
         return false
     }
 
+    // FT8 / FT4 decoding in DIGU / DIGL: the passband is the audio band the
+    // tones are in, so a tap there picks the transmit audio frequency
+    // instead of retuning (outside it, a tap tunes as always).
+    readonly property bool digiPick: Engine.digiRunning && (Engine.mode === "DIGU" || Engine.mode === "DIGL")
+    function digiHzAt(x) {
+        const hz = (mhzAt(x) - Engine.frequencyMhz) * 1e6
+        return Engine.mode === "DIGL" ? -hz : hz
+    }
+
     // Tap (finger, Pencil or pointer) tunes to the touched point on
     // the tuning-step grid.
     TapHandler {
@@ -982,6 +1045,13 @@ Rectangle {
         onTapped: (eventPoint) => {
             if (Engine.panBandwidthMhz > 0
                     && !panArea.overlayHit(eventPoint.position.x, eventPoint.position.y)) {
+                if (panArea.digiPick) {
+                    const hz = panArea.digiHzAt(eventPoint.position.x)
+                    if (hz >= 200 && hz <= 3000) {
+                        Engine.digiTxHz = Math.round(hz / 10) * 10
+                        return
+                    }
+                }
                 Engine.tuneToSnapped(panArea.mhzAt(eventPoint.position.x))
             }
         }

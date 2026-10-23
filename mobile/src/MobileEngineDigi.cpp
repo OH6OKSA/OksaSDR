@@ -11,6 +11,7 @@
 #include "core/DecoderPcmAdapter.h"
 #include "core/LogManager.h"
 #include "models/DecoderAudioModel.h"
+#include "models/PanadapterModel.h"
 #include "models/RadioModel.h"
 #include "models/SliceModel.h"
 
@@ -235,6 +236,22 @@ void MobileEngine::digiTune(double mhz)
     // pan is refused by the radio).
     m_slice->tuneAndRecenter(mhz);
     qCInfo(lcMobile) << "digi: tuned" << mhz << "MHz DIGU";
+    // Then the audio band fills the display, once the pan has followed.
+    QTimer::singleShot(800, this, [this] { digiZoom(); });
+}
+
+void MobileEngine::digiZoom()
+{
+    if (!m_slice || !m_pan) {
+        return;
+    }
+    // 4 kHz around the 0-3 kHz audio band, on its side of the dial.
+    const double sign = m_slice->mode() == QLatin1String("DIGL") ? -1.0 : 1.0;
+    double bandwidth = 0.004;
+    if (m_pan->bandwidthLimitsKnown() && m_pan->minBandwidthMhz() < m_pan->maxBandwidthMhz()) {
+        bandwidth = std::clamp(bandwidth, m_pan->minBandwidthMhz(), m_pan->maxBandwidthMhz());
+    }
+    m_session.radioModel().requestPanCenter(m_pan->panId(), m_slice->frequency() + sign * 0.0015, bandwidth);
 }
 
 void MobileEngine::digiCallCq()

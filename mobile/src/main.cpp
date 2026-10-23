@@ -122,6 +122,9 @@ int main(int argc, char* argv[])
     // keeps its own settings, apart from a desktop install on the same host.
     // They stay as they are after the rename to OksaSDR, so settings and
     // voice macros carry over.
+    // iPadOS reports every cancelled pointer hover (trackpad, Pencil) as an
+    // "Unknown hover state" line: noise in the operator's log.
+    QLoggingCategory::setFilterRules(QStringLiteral("qt.qpa.input.mouse=false"));
     QGuiApplication::setApplicationName(QStringLiteral("AetherSDR-Mobile"));
     QGuiApplication::setOrganizationName(QStringLiteral("AetherSDR"));
     QGuiApplication::setApplicationVersion(QStringLiteral(AETHERSDR_VERSION));

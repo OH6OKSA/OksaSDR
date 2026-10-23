@@ -103,6 +103,13 @@ ColumnLayout {
             Layout.fillWidth: true
         }
         AppButton {
+            objectName: "digiZoom"
+            text: qsTr("Zoom")
+            Accessible.name: qsTr("Fit the display to the audio band")
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.digiZoom()
+        }
+        AppButton {
             text: "−"
             Accessible.name: qsTr("Lower TX audio frequency")
             Layout.preferredWidth: Theme.touchTarget
@@ -136,7 +143,7 @@ ColumnLayout {
     Label {
         Layout.fillWidth: true
         visible: Engine.digiRunning && Engine.digiDecodes.length === 0
-        text: qsTr("Decodes appear at the end of each %1 s slot. Tap a CQ to answer it.").arg(digi.slotSeconds)
+        text: qsTr("Decodes appear at the end of each %1 s slot. Tap a CQ to answer it; tap the waterfall inside the passband to set the TX audio frequency.").arg(digi.slotSeconds)
         color: Theme.textDim
         font.pixelSize: 12
         wrapMode: Text.WordWrap
