@@ -1200,6 +1200,7 @@ private:
     QString m_digiStatus;
     QString m_digiTimeOn;
     int m_digiTxHz{1200};
+    bool m_digiTxHzSavePending{false};
     int m_digiTxParity{0};
     int m_digiTries{0};
     int m_digiTxSeq{0};

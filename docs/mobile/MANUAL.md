@@ -528,11 +528,12 @@ them back into the drawer.
   The app then runs the QSO as WSJT-X does (report, R-report, RR73 or RRR,
   73), stops after six tries without the reply it waits for, and writes the
   contact to the Log tab's log (MODE FT8, or MFSK / FT4). **Halt TX** stops at
-  once (PTT is hidden while FT8 / FT4 decodes: the app keys the radio itself, and the display gets the room). *TX audio* sets the transmit tone (200–3000 Hz, default 1200), or
-  **tap the waterfall inside the passband**: while decoding in DIGU / DIGL a
-  tap there sets the tone instead of retuning; a scale (500, 1000, 1500 …
-  Hz) and the red TX band show where it is. A band button zooms the
-  display to the 4 kHz audio band (again with *Zoom*). A
+  once (PTT is hidden while FT8 / FT4 decodes: the app keys the radio itself, and the display gets the room). *TX audio* sets the transmit tone (200–3000 Hz, default 1200; − / + step
+  1 Hz and repeat while held). The red band on the display is the tone:
+  **drag it** to any frequency, or **tap** the waterfall near the dial to
+  put it there (while decoding a tap there sets the tone instead of
+  retuning; the passband shading is left out in FT8 / FT4). A band button
+  zooms the display to the 4 kHz audio band (again with *Zoom*). A
   callsign the standard messages cannot carry (such as OH6OKSA, with a
   four-letter suffix) is sent as WSJT-X sends it: in full in CQ and in
   RRR / RR73 / 73, as <CALL> in the messages with a report. The transmit

@@ -57,43 +57,21 @@ Rectangle {
         colorGain: Engine.spectrum3DGain
     }
 
-    // FT8 / FT4: an audio-frequency scale over the passband (500 Hz steps)
-    // and the transmit tone's band in red, so the TX audio frequency can be
-    // set by eye and by a tap.
+    // FT8 / FT4: the transmit tone's band in red, dragged (1 Hz, no steps)
+    // or set by a tap to place the TX audio frequency by eye.
     Item {
         id: digiOverlay
         anchors.fill: parent
-        // The scale in any DIGU / DIGL; the TX band while FT8 / FT4 decodes.
-        visible: panArea.digiMode && Engine.panBandwidthMhz > 0
+        visible: panArea.digiPick && Engine.panBandwidthMhz > 0
         readonly property real pxPerMhz: width / Math.max(1e-6, Engine.panBandwidthMhz)
+        readonly property real hzSign: Engine.mode === "DIGL" ? -1 : 1
         function xForHz(hz) {
-            const rf = Engine.frequencyMhz + (Engine.mode === "DIGL" ? -hz : hz) / 1e6
+            const rf = Engine.frequencyMhz + hzSign * hz / 1e6
             return (rf - Engine.panCenterMhz) * pxPerMhz + width / 2
         }
         readonly property real markTop: Engine.spectrum3D ? height * spectrum.spectrumFraction : 0
-        Repeater {
-            model: [500, 1000, 1500, 2000, 2500]
-            delegate: Item {
-                required property int modelData
-                x: digiOverlay.xForHz(modelData)
-                y: digiOverlay.markTop
-                Rectangle {
-                    width: 1
-                    height: 8
-                    color: Theme.passband
-                }
-                Label {
-                    x: -width / 2
-                    y: 8
-                    text: modelData
-                    color: Theme.passband
-                    font.pixelSize: 10
-                }
-            }
-        }
         Rectangle {
             objectName: "digiTxMarker"
-            visible: panArea.digiPick
             readonly property real hzWidth: Engine.digiProtocol === "FT4" ? 90 : 50
             x: Math.min(digiOverlay.xForHz(Engine.digiTxHz), digiOverlay.xForHz(Engine.digiTxHz + hzWidth))
             width: Math.max(2, hzWidth / 1e6 * digiOverlay.pxPerMhz)
@@ -102,6 +80,27 @@ Rectangle {
             color: Qt.rgba(0.9, 0.28, 0.3, 0.35)
             border.color: Theme.transmit
             border.width: 1
+            // A finger-wide grab around the band: drag it to any Hz.
+            Item {
+                objectName: "digiTxGrab"
+                x: parent.width / 2 - width / 2
+                width: Math.max(44, parent.width)
+                height: parent.height
+                DragHandler {
+                    id: txDrag
+                    target: null
+                    xAxis.enabled: true
+                    yAxis.enabled: false
+                    grabPermissions: PointerHandler.CanTakeOverFromAnything
+                    property int startHz: 0
+                    onActiveChanged: if (active) startHz = Engine.digiTxHz
+                    onTranslationChanged: {
+                        if (!active) return
+                        const dHz = digiOverlay.hzSign * translation.x / digiOverlay.pxPerMhz * 1e6
+                        Engine.digiTxHz = Math.round(startHz + dHz)
+                    }
+                }
+            }
             Label {
                 // Beside the band, on the side with room (clear of the
                 // RF GAIN badge at the right edge).
@@ -121,7 +120,9 @@ Rectangle {
     // waterfall, where a fill would vanish into the colours.
     Item {
         id: passband
-        visible: Engine.panBandwidthMhz > 0 && Engine.filterHigh > Engine.filterLow
+        // Not in FT8 / FT4: there the TX band is what matters (and a drag
+        // in the passband must not retune).
+        visible: Engine.panBandwidthMhz > 0 && Engine.filterHigh > Engine.filterLow && !panArea.digiMode
         readonly property real pxPerMhz: parent.width / Engine.panBandwidthMhz
         x: (Engine.frequencyMhz + Engine.filterLow / 1e6 - Engine.panCenterMhz) * pxPerMhz
            + parent.width / 2
@@ -1053,7 +1054,7 @@ Rectangle {
                 if (panArea.digiPick) {
                     const hz = panArea.digiHzAt(eventPoint.position.x)
                     if (hz >= 200 && hz <= 3000) {
-                        Engine.digiTxHz = Math.round(hz / 10) * 10
+                        Engine.digiTxHz = Math.round(hz)
                         return
                     }
                 }

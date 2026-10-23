@@ -111,17 +111,19 @@ ColumnLayout {
         }
         AppButton {
             text: "−"
-            Accessible.name: qsTr("Lower TX audio frequency")
+            Accessible.name: qsTr("Lower TX audio frequency by 1 Hz")
             Layout.preferredWidth: Theme.touchTarget
             focusPolicy: Qt.NoFocus
-            onClicked: Engine.digiTxHz = Engine.digiTxHz - 50
+            autoRepeat: true
+            onClicked: Engine.digiTxHz = Engine.digiTxHz - 1
         }
         AppButton {
             text: "+"
-            Accessible.name: qsTr("Raise TX audio frequency")
+            Accessible.name: qsTr("Raise TX audio frequency by 1 Hz")
             Layout.preferredWidth: Theme.touchTarget
             focusPolicy: Qt.NoFocus
-            onClicked: Engine.digiTxHz = Engine.digiTxHz + 50
+            autoRepeat: true
+            onClicked: Engine.digiTxHz = Engine.digiTxHz + 1
         }
     }
 

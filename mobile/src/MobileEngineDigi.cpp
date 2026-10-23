@@ -154,8 +154,15 @@ void MobileEngine::setDigiTxHz(int hz)
         return;
     }
     m_digiTxHz = hz;
-    AppSettings::instance().setValue(QStringLiteral("MobileDigiTxHz"), hz);
-    AppSettings::instance().save();
+    // A drag sets it many times a second: saved once it settles.
+    if (!m_digiTxHzSavePending) {
+        m_digiTxHzSavePending = true;
+        QTimer::singleShot(800, this, [this] {
+            m_digiTxHzSavePending = false;
+            AppSettings::instance().setValue(QStringLiteral("MobileDigiTxHz"), m_digiTxHz);
+            AppSettings::instance().save();
+        });
+    }
     emit digiChanged();
 }
 

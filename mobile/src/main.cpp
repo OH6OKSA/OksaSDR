@@ -19,6 +19,9 @@
 #include <QFontDatabase>
 #include <QFontMetrics>
 #include <QLoggingCategory>
+#include <QThread>
+#include <qpa/qwindowsysteminterface.h>
+#include <QDateTime>
 #include <QGuiApplication>
 #include <QSysInfo>
 #include <QQmlApplicationEngine>
@@ -178,6 +181,10 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: a mouse click at <x,y,ms>: window fractions 0-1, ms after start (e.g. 0.6,0.5,20000)."),
         QStringLiteral("x,y,ms"));
     parser.addOption(tapAtOption);
+    const QCommandLineOption dragAtOption(QStringLiteral("drag-at"),
+        QStringLiteral("Development: a mouse drag <x1,y,x2,ms>: window fractions, ms after start."),
+        QStringLiteral("x1,y,x2,ms"));
+    parser.addOption(dragAtOption);
     const QCommandLineOption adifImportOption(QStringLiteral("adif-import"),
         QStringLiteral("Development: import the ADIF <file> into the log at start, log the result and quit."),
         QStringLiteral("file"));
@@ -1356,6 +1363,35 @@ int main(int argc, char* argv[])
                 QTimer::singleShot(500, &engine, [&engine] {
                     qInfo() << "tap-at: after, digiTxHz" << engine.digiTxHz() << "freq" << engine.frequencyMhz();
                 });
+            }
+        });
+    }
+    if (parser.isSet(dragAtOption)) {
+        const QStringList t = parser.value(dragAtOption).split(QLatin1Char(','));
+        QTimer::singleShot(t.value(3, QStringLiteral("20000")).toInt(), &app, [&qml, &engine, t] {
+            for (QObject* root : qml.rootObjects()) {
+                auto* window = qobject_cast<QQuickWindow*>(root);
+                if (!window) {
+                    continue;
+                }
+                const double y = t.value(1).toDouble() * window->height();
+                const double x1 = t.value(0).toDouble() * window->width();
+                const double x2 = t.value(2).toDouble() * window->width();
+                qInfo() << "drag-at: before, digiTxHz" << engine.digiTxHz() << "freq" << engine.frequencyMhz();
+                // Through the window system queue, as a real mouse: the
+                // handlers' drag tracking needs it.
+                const auto send = [window](QPointF p, Qt::MouseButtons buttons, Qt::MouseButton button, QEvent::Type type) {
+                    QWindowSystemInterface::handleMouseEvent(window, p, window->mapToGlobal(p), buttons, button, type);
+                    QWindowSystemInterface::flushWindowSystemEvents();
+                    QCoreApplication::processEvents();
+                };
+                send(QPointF(x1, y), Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
+                for (int i = 1; i <= 30; ++i) {
+                    QThread::msleep(10);
+                    send(QPointF(x1 + (x2 - x1) * i / 30.0, y), Qt::LeftButton, Qt::NoButton, QEvent::MouseMove);
+                }
+                send(QPointF(x2, y), Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+                qInfo() << "drag-at: after, digiTxHz" << engine.digiTxHz() << "freq" << engine.frequencyMhz();
             }
         });
     }
