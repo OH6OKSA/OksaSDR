@@ -9,12 +9,13 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- FT8 / FT4: drag the red TX band on the display to any frequency (1 Hz, no steps), or tap where you want it; − / + on the Digi tab step 1 Hz.
-- A band button on the Digi tab starts decoding and zooms to the 4 kHz audio band.
-- While FT8 / FT4 decodes, PTT is hidden (the app keys the radio itself; Halt TX is on the Digi tab) and the display gets the room. The scale and passband shading are left out there.
+- FT8 / FT4 stay on their own slice with several slices open: switching the active slice no longer breaks decoding. That slice gets its own DAX channel and becomes the TX slice when the app transmits. Tap inside another DIGU slice's passband (or press a band button there) to move FT8 to it.
+- The filter edge lines are back in FT8 / FT4 (only the shading is left out). On iPad the waterfall now fills the space PTT left.
+- The 3D view no longer switches itself to 2D after connecting over SmartLink. If yours went to 2D, turn 3D on again in View.
+- CQ rows in the decode list are bold blue (the green ground was hard to read).
 
-RECENT (builds 94–95)
-- FT8 and FT4 in the app (Controls > Digi), RADE digital voice, the log in Files > On My iPhone / iPad > OksaSDR, ADIF import.
+RECENT (builds 94–96)
+- FT8 and FT4 in the app (Controls > Digi) with the TX band dragged on the display, RADE digital voice, the log in Files > On My iPhone / iPad > OksaSDR, ADIF import.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
