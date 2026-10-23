@@ -1294,6 +1294,50 @@ int main(int argc, char* argv[])
                 }
             });
         }
+        if (spec.contains(QStringLiteral("slices"))) {
+            // A second slice: FT8 must stay on its slice while the active
+            // one changes, and come back intact when the slice goes.
+            auto firstId = std::make_shared<int>(-1);
+            auto activeId = [&engine] {
+                for (const QVariant& v : engine.slices()) {
+                    const QVariantMap m = v.toMap();
+                    if (m.value(QStringLiteral("active")).toBool()) {
+                        return m.value(QStringLiteral("id")).toInt();
+                    }
+                }
+                return -1;
+            };
+            QTimer::singleShot(40000, &app, [&engine, firstId, activeId] {
+                *firstId = activeId();
+                qInfo() << "slices-test: digi on" << engine.digi().value(QStringLiteral("sliceLetter")) << "active" << *firstId << "adding a slice";
+                engine.addSlice();
+            });
+            for (int i = 0; i < 6; ++i) {
+                QTimer::singleShot(48000 + i * 3000, &app, [&engine, firstId, activeId, i] {
+                    const QVariantList list = engine.slices();
+                    int other = -1;
+                    for (const QVariant& v : list) {
+                        const int id = v.toMap().value(QStringLiteral("id")).toInt();
+                        if (id != *firstId) {
+                            other = id;
+                        }
+                    }
+                    engine.selectSlice(i % 2 == 0 ? *firstId : other);
+                    qInfo() << "slices-test: active" << activeId() << "of" << list.size() << "digi on"
+                            << engine.digi().value(QStringLiteral("sliceLetter")) << engine.digi().value(QStringLiteral("sliceMhz"));
+                });
+            }
+            QTimer::singleShot(105000, &app, [&engine, firstId] {
+                for (const QVariant& v : engine.slices()) {
+                    const int id = v.toMap().value(QStringLiteral("id")).toInt();
+                    if (id != *firstId) {
+                        engine.removeSlice(id);
+                        qInfo() << "slices-test: removed slice" << id;
+                    }
+                }
+                engine.selectSlice(*firstId);
+            });
+        }
         if (cq && !qso) {
             // Two CQs, then stop calling (one slot pair is 30 s in FT8, 15 s in FT4).
             QTimer::singleShot(8000 + (ft4 ? 33000 : 63000), &app, [&engine] { engine.digiHalt(); });
@@ -1303,6 +1347,7 @@ int main(int argc, char* argv[])
             engine.setDigiRunning(false);
             engine.setDigiProtocol(std::get<3>(*saved));
             engine.digiTune(std::get<0>(*saved));
+            engine.setDigiRunning(false);
             engine.setMode(std::get<1>(*saved));
             engine.setRfPower(std::get<2>(*saved));
             qInfo() << "ft8-test: restored" << std::get<0>(*saved) << std::get<1>(*saved) << std::get<2>(*saved) << "W";

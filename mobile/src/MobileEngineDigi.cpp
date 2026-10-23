@@ -16,6 +16,7 @@
 #include "models/SliceModel.h"
 
 #include <QDateTime>
+#include <QSet>
 #include <QLoggingCategory>
 #include <QRegularExpression>
 #include <QTimeZone>
@@ -111,8 +112,15 @@ void MobileEngine::setDigiRunning(bool on)
     if (!on) {
         digiHalt();
     }
+    if (on) {
+        bindDigiSlice(m_slice.data());
+    }
     m_ft8->setRunning(on);
-    qCInfo(lcMobile) << "digi:" << (on ? "decoding on" : "decoding off") << digiProtocol();
+    qCInfo(lcMobile) << "digi:" << (on ? "decoding on" : "decoding off") << digiProtocol()
+                     << "slice" << (digiSlice() ? digiSlice()->letter() : QString());
+    if (!on) {
+        bindDigiSlice(nullptr);
+    }
     syncDigiAudio();
     emit digiChanged();
 }
@@ -122,9 +130,66 @@ void MobileEngine::syncDigiAudio()
     if (!m_digiAudio) {
         return;
     }
-    const bool run = m_connected && digiRunning() && m_slice;
-    m_digiAudio->setSlice(run ? m_slice.data() : nullptr);
+    SliceModel* slice = digiSlice();
+    const bool run = m_connected && digiRunning() && slice;
+    m_digiAudio->setSlice(run ? slice : nullptr);
     m_digiAudio->setEnabled(run);
+}
+
+void MobileEngine::bindDigiSlice(SliceModel* slice)
+{
+    if (slice == m_digiSlice.data()) {
+        return;
+    }
+    for (const QMetaObject::Connection& c : std::as_const(m_digiSliceConnections)) {
+        disconnect(c);
+    }
+    m_digiSliceConnections.clear();
+    // A DAX channel the app gave the old slice goes back.
+    if (m_digiSlice && m_digiAssignedDax) {
+        m_digiSlice->setDaxChannel(0);
+    }
+    m_digiAssignedDax = false;
+    m_digiSlice = slice;
+    if (slice) {
+        // Its own DAX channel, so another slice's audio is not mixed in
+        // (without one the decoder hears every audible slice).
+        if (slice->daxChannel() < 1 || slice->daxChannel() > 8) {
+            QSet<int> used;
+            for (SliceModel* other : m_session.radioModel().slices()) {
+                if (other && other != slice) {
+                    used.insert(other->daxChannel());
+                }
+            }
+            for (int ch = 1; ch <= 8; ++ch) {
+                if (!used.contains(ch)) {
+                    slice->setDaxChannel(ch);
+                    m_digiAssignedDax = true;
+                    break;
+                }
+            }
+        }
+        m_digiSliceConnections.append(connect(slice, &SliceModel::frequencyChanged, this, &MobileEngine::digiChanged));
+        m_digiSliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::digiChanged));
+        m_digiSliceConnections.append(connect(slice, &QObject::destroyed, this, [this] {
+            m_digiSliceConnections.clear();
+            m_digiAssignedDax = false;
+            setDigiRunning(false);
+        }));
+        qCInfo(lcMobile) << "digi: on slice" << slice->letter() << "DAX channel" << slice->daxChannel();
+    }
+    syncDigiAudio();
+    emit digiChanged();
+}
+
+void MobileEngine::digiBindActiveSlice()
+{
+    if (!m_slice || m_slice.data() == m_digiSlice.data()) {
+        return;
+    }
+    digiHalt();
+    m_ft8->resetAudio();
+    bindDigiSlice(m_slice.data());
 }
 
 QString MobileEngine::digiProtocol() const
@@ -175,7 +240,11 @@ QVariantMap MobileEngine::digi() const
             {QStringLiteral("transmitting"), m_digiTransmitting},
             {QStringLiteral("parity"), m_digiTxParity == 1 ? QStringLiteral("odd") : QStringLiteral("even")},
             {QStringLiteral("slotSeconds"), m_ft8 ? m_ft8->slotSeconds() : 15.0},
-            {QStringLiteral("myCall"), digiMyCall()}};
+            {QStringLiteral("myCall"), digiMyCall()},
+            {QStringLiteral("sliceMhz"), digiSlice() ? digiSlice()->frequency() : 0.0},
+            {QStringLiteral("sliceMode"), digiSlice() ? digiSlice()->mode() : QString()},
+            {QStringLiteral("sliceLetter"), digiSlice() ? digiSlice()->letter() : QString()},
+            {QStringLiteral("sliceActive"), digiSlice() == m_slice.data()}};
 }
 
 QVariantList MobileEngine::digiFrequencies() const
@@ -238,6 +307,10 @@ void MobileEngine::digiTune(double mhz)
     if (!m_slice || mhz <= 0.0) {
         return;
     }
+    // A band picked on the Digi tab works on the active slice.
+    if (digiRunning()) {
+        digiBindActiveSlice();
+    }
     m_slice->setMode(QStringLiteral("DIGU"));
     // Usually another band: the pan moves with it (a plain tune outside the
     // pan is refused by the radio).
@@ -253,16 +326,17 @@ void MobileEngine::digiTune(double mhz)
 
 void MobileEngine::digiZoom()
 {
-    if (!m_slice || !m_pan) {
+    SliceModel* slice = digiSlice();
+    if (!slice || !m_pan) {
         return;
     }
     // 4 kHz around the 0-3 kHz audio band, on its side of the dial.
-    const double sign = m_slice->mode() == QLatin1String("DIGL") ? -1.0 : 1.0;
+    const double sign = slice->mode() == QLatin1String("DIGL") ? -1.0 : 1.0;
     double bandwidth = 0.004;
     if (m_pan->bandwidthLimitsKnown() && m_pan->minBandwidthMhz() < m_pan->maxBandwidthMhz()) {
         bandwidth = std::clamp(bandwidth, m_pan->minBandwidthMhz(), m_pan->maxBandwidthMhz());
     }
-    m_session.radioModel().requestPanCenter(m_pan->panId(), m_slice->frequency() + sign * 0.0015, bandwidth);
+    m_session.radioModel().requestPanCenter(m_pan->panId(), slice->frequency() + sign * 0.0015, bandwidth);
 }
 
 void MobileEngine::digiCallCq()
@@ -380,7 +454,11 @@ void MobileEngine::startDigiTx(qint64 slotMs)
     // Digital-mode audio from this device: allowed in DIGU like RADE (voice
     // PTT is refused there).
     RadioModel& rm = m_session.radioModel();
-    if (SliceModel* tx = rm.txSlice()) {
+    // The decoding slice transmits (another slice may hold TX).
+    if (SliceModel* own = digiSlice(); own && !own->isTxSlice()) {
+        own->setTxSlice(true);
+    }
+    if (SliceModel* tx = digiSlice()) {
         rm.setDigitalVoiceTxSlice(tx->sliceId());
     }
     setPtt(true, QStringLiteral("FT8 transmit"));
@@ -430,6 +508,7 @@ void MobileEngine::digiLogQso()
     }
     const bool ft4 = digiProtocol() == QLatin1String("FT4");
     QVariantMap fields{{QStringLiteral("call"), m_digiDx},
+                       {QStringLiteral("freqMhz"), digiSlice() ? digiSlice()->frequency() : 0.0},
                        {QStringLiteral("rstSent"), m_digiRptSent},
                        {QStringLiteral("rstRcvd"), m_digiRptRcvd},
                        {QStringLiteral("timeOn"), m_digiTimeOn},

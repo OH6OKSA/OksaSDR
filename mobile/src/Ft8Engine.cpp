@@ -252,15 +252,22 @@ void Ft8Engine::feed(const AetherSDR::DecoderPcmBlock& block)
     const double blockStart = nowMs() / 1000.0 - m_rxLatencyMs / 1000.0 - double(out.size()) / kRate;
     const double bufEnd = m_bufT0 + double(m_buf.size()) / kRate;
     const double diff = blockStart - bufEnd;
-    if (m_buf.empty() || diff < -1.0 || diff > 5.0) {
+    if (m_buf.empty() || diff < -2.0 || diff > 5.0) {
         m_buf.clear();
         m_bufT0 = blockStart;
     } else if (diff > 1.0) {
         // A gap in the stream: silence in its place keeps the timing.
         m_buf.insert(m_buf.end(), size_t(diff * kRate), 0.0f);
+    } else if (diff < 0.0) {
+        // Audio cannot arrive early: an earlier arrival than the buffer
+        // assumed means the buffer's clock was late (it had been set by a
+        // delayed burst). Late arrivals (bursts after a stall, another
+        // slice added) leave it, so they cannot drag the slot window.
+        m_bufT0 += diff;
     } else {
-        // Network jitter: follow the arrival times slowly.
-        m_bufT0 += diff * 0.02;
+        // Creep forward slowly (5 ms a second at most), for the clocks'
+        // drift and a buffer once set by an unusually early block.
+        m_bufT0 += std::min(diff, 0.005 * double(out.size()) / kRate);
     }
     m_buf.insert(m_buf.end(), out.begin(), out.end());
     // Keep about two and a half FT8 slots.

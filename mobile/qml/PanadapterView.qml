@@ -64,9 +64,9 @@ Rectangle {
         anchors.fill: parent
         visible: panArea.digiPick && Engine.panBandwidthMhz > 0
         readonly property real pxPerMhz: width / Math.max(1e-6, Engine.panBandwidthMhz)
-        readonly property real hzSign: Engine.mode === "DIGL" ? -1 : 1
+        readonly property real hzSign: Engine.digi.sliceMode === "DIGL" ? -1 : 1
         function xForHz(hz) {
-            const rf = Engine.frequencyMhz + hzSign * hz / 1e6
+            const rf = Engine.digi.sliceMhz + hzSign * hz / 1e6
             return (rf - Engine.panCenterMhz) * pxPerMhz + width / 2
         }
         readonly property real markTop: Engine.spectrum3D ? height * spectrum.spectrumFraction : 0
@@ -120,9 +120,7 @@ Rectangle {
     // waterfall, where a fill would vanish into the colours.
     Item {
         id: passband
-        // Not in FT8 / FT4: there the TX band is what matters (and a drag
-        // in the passband must not retune).
-        visible: Engine.panBandwidthMhz > 0 && Engine.filterHigh > Engine.filterLow && !panArea.digiMode
+        visible: Engine.panBandwidthMhz > 0 && Engine.filterHigh > Engine.filterLow
         readonly property real pxPerMhz: parent.width / Engine.panBandwidthMhz
         x: (Engine.frequencyMhz + Engine.filterLow / 1e6 - Engine.panCenterMhz) * pxPerMhz
            + parent.width / 2
@@ -133,8 +131,10 @@ Rectangle {
         // the desktop's slice shadow), so the flat fill and the edges over
         // the 3D view go; the edges stay through the waterfall.
         readonly property real edgeTop: Engine.spectrum3D ? panArea.height * spectrum.spectrumFraction : 0
+        // The fill goes on the FT8 / FT4 slice (its red TX band shows the
+        // place); the edges stay.
         Rectangle {
-            visible: !Engine.spectrum3D
+            visible: !Engine.spectrum3D && !(panArea.digiMode && Engine.digi.sliceActive)
             width: parent.width
             height: parent.height * spectrum.spectrumFraction
             color: Theme.passband
@@ -1037,9 +1037,16 @@ Rectangle {
     // FT8 / FT4 decoding in DIGU / DIGL: the passband is the audio band the
     // tones are in, so a tap there picks the transmit audio frequency
     // instead of retuning (outside it, a tap tunes as always).
-    readonly property bool digiMode: (Engine.mode === "DIGU" || Engine.mode === "DIGL") && !Engine.rade
-    readonly property bool digiPick: Engine.digiRunning && digiMode
+    // FT8 / FT4 run on one slice (Engine.digi.slice*), not always the
+    // active one.
+    readonly property bool digiMode: Engine.digiRunning && !Engine.rade
+        && (Engine.digi.sliceMode === "DIGU" || Engine.digi.sliceMode === "DIGL")
+    readonly property bool digiPick: digiMode
     function digiHzAt(x) {
+        const hz = (mhzAt(x) - Engine.digi.sliceMhz) * 1e6
+        return Engine.digi.sliceMode === "DIGL" ? -hz : hz
+    }
+    function activeHzAt(x) {
         const hz = (mhzAt(x) - Engine.frequencyMhz) * 1e6
         return Engine.mode === "DIGL" ? -hz : hz
     }
@@ -1052,6 +1059,15 @@ Rectangle {
             if (Engine.panBandwidthMhz > 0
                     && !panArea.overlayHit(eventPoint.position.x, eventPoint.position.y)) {
                 if (panArea.digiPick) {
+                    // In another DIGU / DIGL slice's passband: FT8 / FT4
+                    // move there, the tone where tapped.
+                    const ahz = panArea.activeHzAt(eventPoint.position.x)
+                    if (!Engine.digi.sliceActive && (Engine.mode === "DIGU" || Engine.mode === "DIGL")
+                            && ahz >= 200 && ahz <= 3000) {
+                        Engine.digiBindActiveSlice()
+                        Engine.digiTxHz = Math.round(ahz)
+                        return
+                    }
                     const hz = panArea.digiHzAt(eventPoint.position.x)
                     if (hz >= 200 && hz <= 3000) {
                         Engine.digiTxHz = Math.round(hz)
@@ -1107,7 +1123,9 @@ Rectangle {
             const x = centroid.pressPosition.x
             const half = Math.max(passband.width, 48) / 2
             const mid = passband.x + passband.width / 2
+            // In the FT8 / FT4 slice's passband a drag never retunes.
             tuning = passband.visible && Math.abs(x - mid) <= half
+                     && !(panArea.digiMode && Engine.digi.sliceActive)
             startMhz = tuning ? Engine.frequencyMhz : Engine.panCenterMhz
             edgeMhz = 0
         }

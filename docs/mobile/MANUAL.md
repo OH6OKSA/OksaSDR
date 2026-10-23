@@ -525,6 +525,13 @@ them back into the drawer.
   slot you are; the decodes come at the end of each slot, newest first: UTC,
   SNR, DT, audio frequency and the message (blue: CQ; orange: to you).
   **Tap a decode** to answer that station; **CQ** calls CQ in the next slot.
+  FT8 / FT4 stay on the slice they started on (the active one when
+  decoding began or a band button was pressed), whichever slice is active
+  later; that slice gets a DAX channel of its own if it had none, so other
+  slices' audio stays out, and it becomes the TX slice when the app
+  transmits. To move FT8 / FT4 to another slice, make it active (tap its
+  letter in the slice row or its marker on the display) and press a band
+  button, or tap inside its passband if it is in DIGU / DIGL.
   The app then runs the QSO as WSJT-X does (report, R-report, RR73 or RRR,
   73), stops after six tries without the reply it waits for, and writes the
   contact to the Log tab's log (MODE FT8, or MFSK / FT4). **Halt TX** stops at

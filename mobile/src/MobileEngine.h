@@ -642,6 +642,9 @@ public:
     Q_INVOKABLE void digiTune(double mhz);
     // Fits the display to the audio band (4 kHz), for picking a TX tone.
     Q_INVOKABLE void digiZoom();
+    // Moves FT8 / FT4 to the active slice (a tap in its passband, a band
+    // button, Decode on).
+    Q_INVOKABLE void digiBindActiveSlice();
 
     bool radeAvailable() const;
     bool radeActive() const;
@@ -1188,6 +1191,14 @@ private:
     QString digiReport(int snr) const;
     // The next message of a kind: cq, call, report, rreport, rr73, 73.
     QString digiMessage(const QString& kind) const;
+    // The slice FT8 / FT4 decodes and transmits on: the active slice when
+    // decoding started (or a band was picked); switching the active slice
+    // leaves it, so two slices do not mix their audio or move the TX.
+    QPointer<SliceModel> m_digiSlice;
+    QList<QMetaObject::Connection> m_digiSliceConnections;
+    bool m_digiAssignedDax{false};
+    SliceModel* digiSlice() const { return m_digiSlice ? m_digiSlice.data() : m_slice.data(); }
+    void bindDigiSlice(SliceModel* slice);
     std::unique_ptr<Ft8Engine> m_ft8;
     std::unique_ptr<DecoderAudioModel> m_digiAudio;
     QVariantList m_digiDecodes;

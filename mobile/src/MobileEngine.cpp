@@ -566,6 +566,12 @@ MobileEngine::~MobileEngine()
     if (radeActive()) {
         deactivateRade();
     }
+    // The FT8 slice's handlers call back into the engine; the slices go
+    // after the engine's own members.
+    for (const QMetaObject::Connection& c : std::as_const(m_digiSliceConnections)) {
+        disconnect(c);
+    }
+    m_digiSliceConnections.clear();
     setKeepScreenAwake(false);
     if (m_discovery) {
         m_discovery->stop();
@@ -3699,7 +3705,13 @@ bool MobileEngine::logQso(const QVariantMap& fields)
     if (call.size() < 3) {
         return false;
     }
-    const QVariantMap d = qsoDefaults();
+    QVariantMap d = qsoDefaults();
+    // FT8 / FT4 log the frequency of the slice they ran on.
+    if (fields.value(QStringLiteral("freqMhz")).toDouble() > 0.0) {
+        const double mhz = fields.value(QStringLiteral("freqMhz")).toDouble();
+        d.insert(QStringLiteral("freq"), mhz);
+        d.insert(QStringLiteral("band"), QsoLog::bandOf(mhz));
+    }
     const QDateTime now = QDateTime::currentDateTimeUtc();
     QString timeOn = fields.value(QStringLiteral("timeOn")).toString().remove(QLatin1Char(':'));
     if (timeOn.size() != 4) {
