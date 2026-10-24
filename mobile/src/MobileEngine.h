@@ -1388,6 +1388,7 @@ private:
     double m_forwardPowerW{0.0};
     int m_digiTxLevelDb{0};
     double m_digiTxPeakW{0.0};
+    double m_digiTxPeakSwr{0.0};
     double m_swr{1.0};
     bool m_swrValid{false};
     QPointer<SliceModel> m_slice;

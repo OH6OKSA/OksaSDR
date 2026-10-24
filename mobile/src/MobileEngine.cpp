@@ -1073,6 +1073,9 @@ void MobileEngine::wireTransmit()
         m_forwardPowerW = fwdPower;
         if (m_digiTransmitting) {
             m_digiTxPeakW = std::max(m_digiTxPeakW, double(fwdPower));
+            if (swrValid) {
+                m_digiTxPeakSwr = std::max(m_digiTxPeakSwr, double(swr));
+            }
         }
         m_swr = swr;
         m_swrValid = swrValid;

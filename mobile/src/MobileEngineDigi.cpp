@@ -697,6 +697,7 @@ void MobileEngine::startDigiTx(qint64 slotMs)
     }
     m_digiTransmitting = true;
     m_digiTxPeakW = 0.0;
+    m_digiTxPeakSwr = 0.0;
     ++m_digiTries;
     // Our own transmission in the list (yellow, as WSJT-X).
     {
@@ -738,9 +739,13 @@ void MobileEngine::startDigiTx(qint64 slotMs)
 void MobileEngine::onDigiTxFinished()
 {
     m_digiTransmitting = false;
-    qCInfo(lcMobile).noquote() << QStringLiteral("digi: TX ended, peak %1 W at TX level %2 dB")
+    // The power and SWR say why the power out is short (the band's RF
+    // power, SWR foldback) when the TX level is not the reason.
+    qCInfo(lcMobile).noquote() << QStringLiteral("digi: TX ended, peak %1 W, SWR %2, TX level %3 dB, RF power %4 W")
                                       .arg(m_digiTxPeakW, 0, 'f', 1)
-                                      .arg(m_digiTxLevelDb);
+                                      .arg(m_digiTxPeakSwr > 0 ? QString::number(m_digiTxPeakSwr, 'f', 1) : QStringLiteral("-"))
+                                      .arg(m_digiTxLevelDb)
+                                      .arg(rfPower());
     releasePtt(QStringLiteral("FT8 sent"));
     m_session.radioModel().setDigitalVoiceTxSlice(-1);
     if (m_digiEndAfterTx) {
