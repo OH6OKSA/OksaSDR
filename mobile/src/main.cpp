@@ -192,6 +192,9 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: turn PSK Reporter on with <grid> as My grid (both saved; AETHER_PSKREPORTER_TEST=1 "
                        "sends to the checking port, every minute)."), QStringLiteral("grid"));
     parser.addOption(pskReporterOption);
+    const QCommandLineOption previewTxOption(QStringLiteral("preview-tx"),
+        QStringLiteral("Development: show the meters as while transmitting, nothing keyed (screenshots)."));
+    parser.addOption(previewTxOption);
     const QCommandLineOption digiTxLevelOption(QStringLiteral("digi-tx-level"),
         QStringLiteral("Development: the FT8 / FT4 TX level in dB (-20 to 0; it is saved)."), QStringLiteral("db"));
     parser.addOption(digiTxLevelOption);
@@ -1616,6 +1619,9 @@ int main(int argc, char* argv[])
             qInfo() << "adif-import:" << engine.importAdif(QUrl::fromLocalFile(file));
             app.quit();
         });
+    }
+    if (parser.isSet(previewTxOption)) {
+        engine.setProperty("previewTx", true);
     }
     if (parser.isSet(pskReporterOption)) {
         if (parser.value(pskReporterOption) == QLatin1String("off")) {

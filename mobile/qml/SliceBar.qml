@@ -35,11 +35,30 @@ RowLayout {
     readonly property real meterMaxWidth: Math.max(80, Math.min(240,
         ((bar.parent ? bar.parent.width : 0) - 2 * chipMinWidth - 4 - 4 * bar.spacing) / 2))
 
-    MeterBadge {
-        side: "left"
+    // While transmitting the left meter is two bars, its own choice over a
+    // second one, within the dial's height (three TX readings at once: by
+    // default SWR and Mic here, Power at the right).
+    readonly property bool txStacked: Engine.radioTransmitting || Engine.tuning || Engine.previewTx
+    readonly property real stackBarHeight: Math.max(22, (bar.dialHeight - 4) / 2 - 8)
+    ColumnLayout {
         Layout.alignment: Qt.AlignTop
-        dialHeight: bar.dialHeight
-        maxWidth: bar.meterMaxWidth
+        spacing: 4
+        MeterBadge {
+            side: "left"
+            dialHeight: bar.dialHeight
+            maxWidth: bar.meterMaxWidth
+            forceBar: bar.txStacked
+            barHeight: bar.txStacked ? bar.stackBarHeight : 0
+        }
+        MeterBadge {
+            objectName: "meterLeft2"
+            side: "left2"
+            visible: bar.txStacked
+            dialHeight: bar.dialHeight
+            maxWidth: bar.meterMaxWidth
+            forceBar: true
+            barHeight: bar.stackBarHeight
+        }
     }
 
     Item {

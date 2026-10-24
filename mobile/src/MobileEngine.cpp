@@ -1596,7 +1596,7 @@ QStringList MobileEngine::meterKindsFor(const QString& side, bool tx) const
             kinds.removeAll(QLatin1String(txOnly));
         }
     }
-    if (side != QLatin1String("left")) {
+    if (side == QLatin1String("right")) {
         kinds.removeAll(QStringLiteral("Mic"));
     }
     return kinds;
@@ -1616,8 +1616,9 @@ void MobileEngine::setMeter(const QString& side, bool tx, const QString& kind)
         side == QLatin1String("left") ? setMeterLeft(kind) : setMeterRight(kind);
         return;
     }
-    const QString key = side == QLatin1String("left") ? QStringLiteral("MobileMeterLeftTx")
-                                                      : QStringLiteral("MobileMeterRightTx");
+    const QString key = side == QLatin1String("left")    ? QStringLiteral("MobileMeterLeftTx")
+                        : side == QLatin1String("left2") ? QStringLiteral("MobileMeterLeft2Tx")
+                                                         : QStringLiteral("MobileMeterRightTx");
     if (meterKindsFor(side, true).contains(kind) && AppSettings::instance().value(key).toString() != kind) {
         AppSettings::instance().setValue(key, kind);
         AppSettings::instance().save();

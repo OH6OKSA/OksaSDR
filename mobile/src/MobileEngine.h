@@ -391,6 +391,12 @@ class MobileEngine : public QObject {
     // Power), so receive keeps S while transmit shows SWR.
     Q_PROPERTY(QString meterLeftTx READ meterLeftTx NOTIFY meterSelectionChanged)
     Q_PROPERTY(QString meterRightTx READ meterRightTx NOTIFY meterSelectionChanged)
+    // While transmitting the left meter splits into two bars: its own choice
+    // over this second one, so Power, SWR and Mic all show (asked by VA3MW).
+    Q_PROPERTY(QString meterLeft2Tx READ meterLeft2Tx NOTIFY meterSelectionChanged)
+    // Development (--preview-tx): the meters as while transmitting, nothing
+    // keyed (screenshots of the transmit layout).
+    Q_PROPERTY(bool previewTx MEMBER m_previewTx NOTIFY meterSelectionChanged)
     Q_PROPERTY(bool tuning READ tuning NOTIFY tuneStateChanged)
     Q_PROPERTY(bool tuneAvailable READ tuneAvailable NOTIFY tuneStateChanged)
     Q_PROPERTY(int tunePower READ tunePower WRITE setTunePower NOTIFY tuneStateChanged)
@@ -937,6 +943,7 @@ public:
     void setMeterRight(const QString& kind);
     QString meterLeftTx() const { return meterChoice("MobileMeterLeftTx", "SWR"); }
     QString meterRightTx() const { return meterChoice("MobileMeterRightTx", "Power"); }
+    QString meterLeft2Tx() const { return meterChoice("MobileMeterLeft2Tx", "Mic"); }
     // side "left"/"right", tx: the transmit choice instead of the receive one.
     Q_INVOKABLE void setMeter(const QString& side, bool tx, const QString& kind);
 
@@ -1445,6 +1452,7 @@ private:
     double m_micPeakDbfs{-100.0};
     double m_forwardPowerW{0.0};
     int m_digiTxLevelDb{0};
+    bool m_previewTx{false};
     bool m_digiAutoCq{false};
     bool m_pskReporterOn{false};
     class PskReporterUpload* m_psk{nullptr};

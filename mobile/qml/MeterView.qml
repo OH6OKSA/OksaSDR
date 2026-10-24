@@ -11,19 +11,25 @@ Item {
     property string side: "left"
     property bool compact: false
     // Receive and transmit each have their own choice (e.g. S / SWR).
-    readonly property bool txView: Engine.radioTransmitting || Engine.tuning
-    readonly property string kind: txView ? (side === "left" ? Engine.meterLeftTx : Engine.meterRightTx)
+    readonly property bool txView: Engine.radioTransmitting || Engine.tuning || Engine.previewTx
+    // "left2": the second bar under the left one while transmitting.
+    readonly property string kind: side === "left2" ? Engine.meterLeft2Tx
+                                 : txView ? (side === "left" ? Engine.meterLeftTx : Engine.meterRightTx)
                                           : (side === "left" ? Engine.meterLeft : Engine.meterRight)
-    readonly property string rxKind: side === "left" ? Engine.meterLeft : Engine.meterRight
-    readonly property string txKind: side === "left" ? Engine.meterLeftTx : Engine.meterRightTx
+    readonly property string rxKind: side === "left2" ? "" : side === "left" ? Engine.meterLeft : Engine.meterRight
+    readonly property string txKind: side === "left2" ? Engine.meterLeft2Tx
+                                   : side === "left" ? Engine.meterLeftTx : Engine.meterRightTx
 
     implicitWidth: compact ? 120 : 180
     // Where space is short (iPhone landscape) the host can ask for bars.
     property bool analogAllowed: true
-    readonly property bool analog: (side === "left" ? Engine.analogLeft : Engine.analogRight) && analogAllowed
+    readonly property bool analog: (side === "left" ? Engine.analogLeft : side === "right" ? Engine.analogRight : false)
+                                   && analogAllowed
+    // A slimmer bar where two share the left meter's height (0: the normal).
+    property real slimHeight: 0
     // Height of an analog face; the host sizes it to the space available.
     property real faceHeight: compact ? 66 : 92
-    implicitHeight: analog ? faceHeight : (compact ? 34 : 44)
+    implicitHeight: analog ? faceHeight : slimHeight > 0 ? slimHeight : (compact ? 34 : 44)
     // Width the analog face needs at its height (no empty sides).
     readonly property real analogFitWidth: gauge.fitWidth
 
@@ -182,8 +188,9 @@ Item {
         readonly property real cellWidth: Math.max(Theme.buttonWidth * 0.9, 64)
         contentItem: ColumnLayout {
             spacing: Theme.spacing / 2
-            Label { text: qsTr("Style"); color: Theme.textDim; font.pixelSize: Math.round(Theme.buttonFont * 0.85) }
+            Label { visible: meter.side !== "left2"; text: qsTr("Style"); color: Theme.textDim; font.pixelSize: Math.round(Theme.buttonFont * 0.85) }
             RowLayout {
+                visible: meter.side !== "left2"
                 spacing: 4
                 Repeater {
                     model: [{ label: qsTr("Bar"), analog: false }, { label: qsTr("Analog"), analog: true }]
@@ -224,7 +231,9 @@ Item {
                 Layout.preferredWidth: chooser.cellWidth * 4 + 8
             }
             Repeater {
-                model: [{ title: qsTr("Receive"), tx: false }, { title: qsTr("Transmit"), tx: true }]
+                // The second bar shows in transmit only.
+                model: meter.side === "left2" ? [{ title: qsTr("Transmit (second bar)"), tx: true }]
+                                              : [{ title: qsTr("Receive"), tx: false }, { title: qsTr("Transmit"), tx: true }]
                 delegate: ColumnLayout {
                     id: section
                     required property var modelData
