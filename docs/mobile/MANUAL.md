@@ -621,11 +621,16 @@ them back into the drawer.
   in RRR / RR73 / 73, as <CALL> in the messages with a report. The transmit
   audio goes to the radio past the TX processing (no gate, EQ or
   compression), and the radio's speech processor (PROC) is switched off
-  while FT8 / FT4 transmits and back on when decoding stops, so a PROC left
-  on cannot distort the tones. **TX level** (0 to −20 dB, default 0 dB, as WSJT-X's
+  for each FT8 / FT4 transmission and back on right after it, so a PROC
+  left on cannot distort the tones. **TX level** (0 to −20 dB, default 0 dB, as WSJT-X's
   Pwr) sets how hard that audio drives the radio: at 0 dB it is fully
   driven and the power out follows the TX tab's RF power; lower it to back
-  off. The log shows the peak power of each transmission. Decoding copes with audio
+  off. Under it, **Last TX** shows the last transmission's peak power and
+  SWR beside the band's RF power: well below it means the drive (TX level)
+  or the SWR; equal means the band's RF power is the limit. **Free** moves
+  the TX tone to the clearest spot between 200 and 2800 Hz among the
+  stations heard in the last minute on the TX slice (in the CQ slot's
+  period when Even or Odd is chosen); the status line says where. Decoding copes with audio
   that arrives in bursts (SmartLink, a VPN over a mobile link).
 
   **RADE digital voice** (FreeDV's Radio Autoencoder, in the app itself, no
