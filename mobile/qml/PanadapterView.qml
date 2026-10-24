@@ -123,8 +123,8 @@ Rectangle {
                 }
             }
         }
-        // Where the other station is heard (WSJT-X's green RX mark): the
-        // station in the QSO, or our own frequency while calling CQ.
+        // Where the other station is heard (WSJT-X's green RX mark), always
+        // shown: the station in or after the QSO, else our own TX frequency.
         Rectangle {
             objectName: "digiRxMarker"
             readonly property int rxHz: Engine.digi.rxHz || 0

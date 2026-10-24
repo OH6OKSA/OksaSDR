@@ -52,6 +52,9 @@ iOS background).
 
 ## Released
 
+**Build 105** (2026-10-24), iPhone and iPad only:
+- The FT8 / FT4 RX mark always shown (it showed only during a QSO; asked after build 104 on the iPad): the last station worked, else the TX tone.
+
 **Build 104** (2026-10-24), iPhone and iPad, and Android beta 22 (build 103 never ran: a wrong runner label):
 - iOS CI on the xcode-27 image (the label macos-27 does not exist: the first try sat queued for four hours) (iOS 27 SDK): built with the iOS 26 SDK the app stayed in compatibility mode on the iPhone Duo's inner screen even with the scene manifest.
 - FT8 / FT4 state banner at the top of the display (asked by a tester: the state box scrolled away with the decodes); the TX / RX labels moved under it.

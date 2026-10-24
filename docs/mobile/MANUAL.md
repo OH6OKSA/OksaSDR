@@ -575,8 +575,9 @@ them back into the drawer.
   same state also shows at the top of the display, where it stays in view
   however far the decode list is scrolled. On
   the display the red band is your TX tone and a green **RX** band shows
-  where the station you work is heard (your own TX tone while you call
-  CQ), as WSJT-X's markers; both labels sit on solid grounds over the
+  where the station you work is heard, as WSJT-X's markers. RX is
+  always shown: after a QSO it stays on the last station worked; before
+  the first one, and while you call CQ, it sits on your own TX tone; both labels sit on solid grounds over the
   waterfall.
 
   If the decodes' DT is off by more than 0.8 s on average, a red notice

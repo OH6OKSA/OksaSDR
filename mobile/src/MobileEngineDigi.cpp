@@ -520,9 +520,9 @@ QVariantMap MobileEngine::digi() const
             {QStringLiteral("clockWarn"), m_digiClockKnown && std::abs(m_digiClockOffset) > 0.8},
             // Where the other station is heard (WSJT-X's green RX mark): the
             // QSO's station, or while calling CQ our own TX audio frequency.
-            {QStringLiteral("rxHz"), m_digiState == QLatin1String("idle") ? 0
-                                     : m_digiRxHz > 0 ? m_digiRxHz
-                                     : m_digiState == QLatin1String("cq") ? m_digiTxHz : 0},
+            // Always shown, as WSJT-X's: the last station worked stays
+            // marked after the QSO; none yet, or calling CQ, our own TX Hz.
+            {QStringLiteral("rxHz"), m_digiRxHz > 0 ? m_digiRxHz : m_digiTxHz},
             {QStringLiteral("txMsg"), m_digiTxMsg},
             {QStringLiteral("status"), m_digiStatus},
             {QStringLiteral("transmitting"), m_digiTransmitting},
@@ -724,7 +724,6 @@ void MobileEngine::digiEnd(const QString& status)
 {
     m_digiState = QStringLiteral("idle");
     m_digiDx.clear();
-    m_digiRxHz = 0;
     m_digiTxMsg.clear();
     m_digiTries = 0;
     m_digiEndAfterTx = false;
