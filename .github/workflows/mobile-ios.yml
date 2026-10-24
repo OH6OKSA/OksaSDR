@@ -49,13 +49,13 @@ env:
 
 jobs:
   ios-engine:
-    # The iOS 27 SDK (Xcode 27, on the macos-27 image): built with the iOS 26
+    # The iOS 27 SDK (Xcode 27, on the xcode-27 preview image): built with the iOS 26
     # SDK the app ran in compatibility mode on the iPhone Duo's inner screen
     # (letterboxed, scaled, clipped). "Select Xcode" takes the newest release
     # Xcode 27, never a beta (App Store Connect refuses beta builds). Before
     # this, macos-15 with Xcode 26.3, as macos-26 runners went short in
     # October 2026.
-    runs-on: macos-27
+    runs-on: xcode-27
     timeout-minutes: 150
     env:
       # TestFlight signing switches on once these repository secrets exist:
