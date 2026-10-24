@@ -9,7 +9,7 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- The app fills the screen on the iPhone Duo's inner display (it ran letterboxed and scaled there) and in iPad windows; on the iPhone it also turns upside down. Please check that background/resume, SmartLink sign-in and sharing the log still work as before.
+- Built with the iOS 27 SDK, so the app fills the iPhone Duo's inner screen (build 102 still ran letterboxed there). Please check that everything else works as before: background/resume, SmartLink sign-in, sharing the log, the 3D view.
 
 RECENT (builds 94–101)
 - FT8 and FT4 in the app (Controls > Digi): every DIGU slice decodes with WSJT-X colours, RX / TX marks, Keep CQ and CQ slot and the New / New DXCC filter, tap a call to answer (it flashes, TX moves to its slice), full power with TX level, AGC by mode; RADE digital voice; the log in Files > On My iPhone / iPad > OksaSDR, ADIF import.

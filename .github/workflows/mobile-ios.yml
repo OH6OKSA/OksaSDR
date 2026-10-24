@@ -49,11 +49,13 @@ env:
 
 jobs:
   ios-engine:
-    # App Store Connect accepts only uploads built with Xcode 26 / the iOS 26 SDK.
-    # macos-15 carries Xcode 26 too (26.3, iOS 26.2 SDK; "Select Xcode" takes
-    # the newest 26.x): macos-26 runners went short for days in October 2026
-    # (jobs "not acquired" for hours), macos-15 ones start at once.
-    runs-on: macos-15
+    # The iOS 27 SDK (Xcode 27, on the macos-27 image): built with the iOS 26
+    # SDK the app ran in compatibility mode on the iPhone Duo's inner screen
+    # (letterboxed, scaled, clipped). "Select Xcode" takes the newest release
+    # Xcode 27, never a beta (App Store Connect refuses beta builds). Before
+    # this, macos-15 with Xcode 26.3, as macos-26 runners went short in
+    # October 2026.
+    runs-on: macos-27
     timeout-minutes: 150
     env:
       # TestFlight signing switches on once these repository secrets exist:
@@ -74,7 +76,7 @@ jobs:
       - name: Select Xcode
         run: |
           set -o pipefail
-          sudo xcode-select -s "$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)"
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_27*.app | grep -vi beta | sort -V | tail -1)"
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-path
 

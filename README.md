@@ -294,7 +294,7 @@ sending the log to Wavelog / Cloudlog, transverter setup.
   IOKit/CoreAudio code sits behind `Q_OS_MACOS`, process helpers behind
   `QT_CONFIG(process)`, and the unused FFmpeg media plugin is excluded.
 - **CI** ([`mobile-ios.yml`](.github/workflows/mobile-ios.yml)) builds on
-  GitHub's macOS runners with Xcode 26. It cross-compiles FFTW, archives
+  GitHub's macOS 27 runners with Xcode 27. It cross-compiles FFTW, archives
   the app and signs it with cloud-managed distribution signing through an App
   Store Connect API key. Each push uploads a build to TestFlight. No Mac is
   needed.
