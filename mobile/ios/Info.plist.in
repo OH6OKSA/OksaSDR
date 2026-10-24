@@ -47,11 +47,23 @@
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
         <string>UIInterfaceOrientationLandscapeLeft</string>
         <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
     <key>UILaunchScreen</key>
     <dict/>
+    <!-- The UIScene life cycle (Qt sets its scene delegate itself). Without
+         it iOS treats the app as a legacy one: on a resizable display, such
+         as the iPhone Duo's inner screen or iPadOS windows, it runs at a
+         fixed size, letterboxed and scaled. One window only. -->
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+        <key>UIApplicationSupportsMultipleScenes</key>
+        <false/>
+        <key>UISceneConfigurations</key>
+        <dict/>
+    </dict>
     <key>CFBundleIcons</key>
     <dict>
         <key>CFBundlePrimaryIcon</key>
