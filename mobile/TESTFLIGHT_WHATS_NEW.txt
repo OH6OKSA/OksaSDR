@@ -10,6 +10,7 @@ GETTING STARTED
 
 NEW IN THIS BUILD
 - FT8 / FT4: the green RX mark is always shown, as in WSJT-X: on the last station worked, or on your TX tone before the first QSO and while calling CQ.
+- iPhone Duo inner screen in landscape: the controls panel no longer runs off the right edge; where it does not fit beside the display it opens from Controls.
 
 RECENT (build 104)
 - Built with the iOS 27 SDK: the app fills the iPhone Duo's inner screen. The QSO state also shows at the top of the display; the radio's PROC is off while FT8 / FT4 transmits; a CQ right after a Digi band button no longer stops by itself.

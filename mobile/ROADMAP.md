@@ -54,6 +54,7 @@ iOS background).
 
 **Build 105** (2026-10-24), iPhone and iPad only:
 - The FT8 / FT4 RX mark always shown (it showed only during a QSO; asked after build 104 on the iPad): the last station worked, else the TX tone.
+- The tablet layout pins the controls at the side only where the band buttons still fit beside them (the iPhone Duo's inner screen in landscape pushed the panel off the right edge in build 104); else the drawer. The info row goes under the frequency by the left column's width.
 
 **Build 104** (2026-10-24), iPhone and iPad, and Android beta 22 (build 103 never ran: a wrong runner label):
 - iOS CI on the xcode-27 image (the label macos-27 does not exist: the first try sat queued for four hours) (iOS 27 SDK): built with the iOS 26 SDK the app stayed in compatibility mode on the iPhone Duo's inner screen even with the scene manifest.

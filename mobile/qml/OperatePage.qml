@@ -133,7 +133,8 @@ Page {
     readonly property bool compact: width < 1200
     // The info panel goes under the frequency only where the frequency row
     // has no room for it (narrow Split View).
-    readonly property bool infoUnder: width < 700
+    // Measured on the left column, which the pinned panel narrows.
+    readonly property bool infoUnder: leftWidth < 700
     // PTT height, shared with the drawer's copy of the button.
     // PTT runs the full width along the bottom in every orientation.
     readonly property real pttHeight: Math.round(Theme.touchTarget * 1.5)
@@ -141,10 +142,20 @@ Page {
     // Landscape with the panel pinned: two columns, the panel the full
     // height at the right, PTT under the display only. Otherwise one column
     // and PTT the full width.
-    readonly property bool twoColumns: !portrait && Engine.controlsVisible
+    readonly property bool twoColumns: !portrait && panelPinned
     // Landscape side column: the pinned control panel (none when hidden).
     // Fixed, so content can never widen it off screen.
     readonly property int sideWidth: Math.max(280, Math.min(360, width * 0.28))
+    // The room inside the safe area, and the left column's share of it.
+    readonly property real innerWidth: width - SafeArea.margins.left - SafeArea.margins.right - 2 * Theme.spacing
+    readonly property real leftWidth: twoColumns ? innerWidth - sideWidth - Theme.spacing : innerWidth
+    // In landscape the panel pins at the side only where the band buttons
+    // still fit beside it; else (the iPhone Duo's inner screen, a narrow
+    // window) it opens as the drawer. The grid could not shrink the left
+    // column below them and pushed the panel off the right edge.
+    readonly property bool sideFits: innerWidth - sideWidth - Theme.spacing
+                                     >= Math.max(560, Engine.bands.length * 40 + (Engine.bands.length - 1) * Theme.spacing / 2)
+    readonly property bool panelPinned: Engine.controlsVisible && (portrait || sideFits)
 
     function formatMhz(mhz) {
         // 14.074.500 style: MHz . kHz . Hz
@@ -182,10 +193,10 @@ Page {
             TopButton {
                 // Pinned panel: hide it. Hidden: open it as a drawer over the
                 // waterfall.
-                text: Engine.controlsVisible ? qsTr("Hide controls") : qsTr("Controls")
+                text: page.panelPinned ? qsTr("Hide controls") : qsTr("Controls")
                 focusPolicy: Qt.NoFocus
                 onClicked: {
-                    if (Engine.controlsVisible) {
+                    if (page.panelPinned) {
                         Engine.controlsVisible = false
                     } else {
                         controlsDrawer.open()
@@ -337,7 +348,7 @@ Page {
         // Right (bottom in portrait): the pinned controls, the full height
         // of the side; they scroll when they do not fit.
         ColumnLayout {
-            visible: Engine.controlsVisible
+            visible: page.panelPinned
             Layout.row: page.twoColumns ? 0 : 1
             Layout.column: page.twoColumns ? 1 : 0
             // Beside the display and PTT; with PTT hidden (FT8 / FT4) the
@@ -365,7 +376,7 @@ Page {
         PttButton {
             id: ptt
             visible: !(controlsDrawer.visible && page.portrait) && !digiHidden
-            Layout.row: page.twoColumns ? 1 : (Engine.controlsVisible ? 2 : 1)
+            Layout.row: page.twoColumns ? 1 : (page.panelPinned ? 2 : 1)
             Layout.column: 0
             Layout.fillWidth: true
             Layout.preferredHeight: page.pttHeight
@@ -413,7 +424,8 @@ Page {
             ControlsPanel {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                showPinButton: true
+                // Pinning would not show where the panel does not fit.
+                showPinButton: page.portrait || page.sideFits
                 onPinRequested: {
                     controlsDrawer.close()
                     Engine.controlsVisible = true
