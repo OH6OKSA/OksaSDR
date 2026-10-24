@@ -4948,10 +4948,9 @@ QStringList MobileEngine::dspKeys() const
     if (m_pan) {
         keys << QStringLiteral("WNB");
     }
-    // Client-side: beat cancel (this app's audio, not the radio).
-    if (beatCancelMode()) {
-        keys << QStringLiteral("BC");
-    }
+    // Client-side: beat cancel (this app's audio, not the radio): offered
+    // always, dimmed and idle while a slice that is heard is in CW or data.
+    keys << QStringLiteral("BC");
     return keys;
 }
 
@@ -4971,7 +4970,7 @@ bool MobileEngine::dspOn(const QString& key) const
     if (key == QLatin1String("RNN")) return m_slice->rnnOn();
     if (key == QLatin1String("NRF")) return m_slice->nrfOn();
     if (key == QLatin1String("WNB")) return m_pan && m_pan->wnbActive();
-    if (key == QLatin1String("BC")) return beatCancelSetting();
+    if (key == QLatin1String("BC")) return beatCancelSetting() && beatCancelMode();
     return false;
 }
 

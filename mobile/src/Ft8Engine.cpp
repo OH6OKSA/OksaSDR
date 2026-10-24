@@ -183,6 +183,10 @@ Ft8Engine::Ft8Engine(QObject* parent)
 {
     qRegisterMetaType<Ft8Engine::Decode>();
     m_pool.setMaxThreadCount(1);
+    // Tests: a wrong receive latency shifts every DT (the clock warning).
+    if (qEnvironmentVariableIsSet("AETHER_FT8_RX_LATENCY_MS")) {
+        m_rxLatencyMs = qEnvironmentVariableIntValue("AETHER_FT8_RX_LATENCY_MS");
+    }
     m_timer = new QTimer(this);
     m_timer->setInterval(100);
     m_timer->setTimerType(Qt::PreciseTimer);

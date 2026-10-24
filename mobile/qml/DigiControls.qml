@@ -94,6 +94,58 @@ ColumnLayout {
             onClicked: Engine.digiHalt()
         }
     }
+    // CQ's slot (even = 0 / 30 s, odd = 15 / 45 s in FT8; Auto = the next)
+    // and Keep CQ: back to CQ after each QSO our CQ brought.
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 4
+        Label {
+            text: qsTr("CQ slot")
+            color: Theme.textDim
+        }
+        Repeater {
+            model: [{ key: "auto", text: qsTr("Auto") }, { key: "even", text: qsTr("Even") },
+                    { key: "odd", text: qsTr("Odd") }]
+            delegate: AppButton {
+                required property var modelData
+                objectName: "digiCqParity_" + modelData.key
+                text: modelData.text
+                checked: Engine.digiCqParity === modelData.key
+                Layout.fillWidth: true
+                focusPolicy: Qt.NoFocus
+                onClicked: Engine.digiCqParity = modelData.key
+            }
+        }
+        AppButton {
+            objectName: "digiAutoCq"
+            text: qsTr("Keep CQ")
+            checked: Engine.digiAutoCq
+            Accessible.name: qsTr("Call CQ again after each QSO")
+            Layout.fillWidth: true
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.digiAutoCq = !Engine.digiAutoCq
+        }
+    }
+    // The device clock, judged from the decodes' DT: FT8 fails beyond about
+    // a second.
+    Rectangle {
+        Layout.fillWidth: true
+        visible: digi.qso.clockWarn === true
+        implicitHeight: clockText.implicitHeight + 12
+        radius: 6
+        color: "#7a1a1d"
+        border.color: "#ff5a5f"
+        Label {
+            id: clockText
+            anchors.fill: parent
+            anchors.margins: 6
+            text: qsTr("This device's clock looks %1 s off (the decodes' DT). FT8 needs it within a second: set Date & Time to automatic.")
+                  .arg((digi.qso.clockOffset > 0 ? "+" : "") + Number(digi.qso.clockOffset || 0).toFixed(1))
+            color: "#ffffff"
+            font.pixelSize: 13
+            wrapMode: Text.WordWrap
+        }
+    }
     RowLayout {
         Layout.fillWidth: true
         Label {
@@ -156,20 +208,35 @@ ColumnLayout {
         }
     }
 
-    Label {
-        objectName: "digiStatus"
+    // The QSO's state. While a QSO or CQ runs it is a box that stands out:
+    // amber while waiting, red while transmitting.
+    Rectangle {
         Layout.fillWidth: true
-        visible: text.length > 0
-        text: {
-            const s = digi.qso
-            let line = s.status || ""
-            if (s.state !== "idle" && s.txMsg)
-                line += (line ? " · " : "") + (s.transmitting ? qsTr("TX: ") : qsTr("Next (%1): ").arg(s.parity)) + s.txMsg
-            return line
+        readonly property bool active: digi.qso.state !== "idle"
+        visible: statusText.text.length > 0
+        implicitHeight: statusText.implicitHeight + (active ? 14 : 0)
+        radius: 6
+        color: !active ? "transparent" : digi.qso.transmitting ? "#d7262d" : "#ffbf00"
+        Label {
+            id: statusText
+            objectName: "digiStatus"
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.leftMargin: parent.active ? 8 : 0
+            anchors.rightMargin: parent.active ? 8 : 0
+            text: {
+                const s = digi.qso
+                let line = s.status || ""
+                if (s.state !== "idle" && s.txMsg)
+                    line += (line ? "\n" : "") + (s.transmitting ? qsTr("TX: ") : qsTr("Next (%1): ").arg(s.parity)) + s.txMsg
+                return line
+            }
+            color: !parent.active ? Theme.text : digi.qso.transmitting ? "#ffffff" : "#101010"
+            font.pixelSize: parent.active ? 15 : 13
+            font.bold: parent.active
+            wrapMode: Text.WordWrap
         }
-        color: digi.qso.transmitting ? Theme.transmit : Theme.text
-        font.pixelSize: 13
-        wrapMode: Text.WordWrap
     }
     Label {
         Layout.fillWidth: true

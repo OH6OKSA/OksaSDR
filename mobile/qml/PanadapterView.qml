@@ -77,9 +77,9 @@ Rectangle {
             width: Math.max(2, hzWidth / 1e6 * digiOverlay.pxPerMhz)
             y: digiOverlay.markTop
             height: digiOverlay.height - digiOverlay.markTop
-            color: Qt.rgba(0.9, 0.28, 0.3, 0.35)
-            border.color: Theme.transmit
-            border.width: 1
+            color: Qt.rgba(0.9, 0.28, 0.3, 0.45)
+            border.color: "#ff5a5f"
+            border.width: 2
             // A finger-wide grab around the band: drag it to any Hz.
             Item {
                 objectName: "digiTxGrab"
@@ -101,15 +101,59 @@ Rectangle {
                     }
                 }
             }
-            Label {
-                // Beside the band, on the side with room (clear of the
-                // RF GAIN badge at the right edge).
+            // Beside the band, on the side with room (clear of the RF GAIN
+            // badge at the right edge), on a solid ground so it reads over
+            // the waterfall's colours.
+            Rectangle {
                 x: parent.x + parent.width + width + 90 > digiOverlay.width ? -width - 3 : parent.width + 3
-                y: 22
-                text: qsTr("TX %1").arg(Engine.digiTxHz)
-                color: Theme.transmit
-                font.pixelSize: 11
-                font.bold: true
+                y: 20
+                width: txLabel.implicitWidth + 10
+                height: txLabel.implicitHeight + 4
+                radius: 4
+                color: "#d7262d"
+                border.color: "#ffffff"
+                border.width: 1
+                Label {
+                    id: txLabel
+                    anchors.centerIn: parent
+                    text: qsTr("TX %1").arg(Engine.digiTxHz)
+                    color: "#ffffff"
+                    font.pixelSize: 12
+                    font.bold: true
+                }
+            }
+        }
+        // Where the other station is heard (WSJT-X's green RX mark): the
+        // station in the QSO, or our own frequency while calling CQ.
+        Rectangle {
+            objectName: "digiRxMarker"
+            readonly property int rxHz: Engine.digi.rxHz || 0
+            readonly property real hzWidth: Engine.digiProtocol === "FT4" ? 90 : 50
+            visible: rxHz > 0
+            x: Math.min(digiOverlay.xForHz(rxHz), digiOverlay.xForHz(rxHz + hzWidth))
+            width: Math.max(2, hzWidth / 1e6 * digiOverlay.pxPerMhz)
+            y: digiOverlay.markTop
+            height: digiOverlay.height - digiOverlay.markTop
+            color: Qt.rgba(0.2, 0.85, 0.35, 0.25)
+            border.color: "#3ddc5a"
+            border.width: 2
+            Rectangle {
+                x: parent.x + parent.width + width + 90 > digiOverlay.width ? -width - 3 : parent.width + 3
+                y: 46
+                width: rxLabel.implicitWidth + 10
+                height: rxLabel.implicitHeight + 4
+                radius: 4
+                color: "#2fb84a"
+                border.color: "#ffffff"
+                border.width: 1
+                Label {
+                    id: rxLabel
+                    anchors.centerIn: parent
+                    text: qsTr("RX %1").arg(parent.parent.rxHz)
+                    color: "#0b1a0e"
+                    font.pixelSize: 12
+                    font.bold: true
+                }
             }
         }
     }

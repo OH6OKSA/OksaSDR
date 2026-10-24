@@ -1278,7 +1278,39 @@ int main(int argc, char* argv[])
         }
         return 0;
     }
-    if (parser.isSet(ft8TestOption)) {
+    if (parser.isSet(ft8TestOption) && parser.value(ft8TestOption).contains(QStringLiteral("keepcq"))) {
+        // Keep CQ and the CQ slot without RF: dry transmissions, a station
+        // answering our CQ fed in by hand, then CQ must start again.
+        engine.setDigiDryRun(true);
+        engine.setDigiAutoCq(true);
+        engine.setDigiCqParity(QStringLiteral("odd"));
+        QTimer::singleShot(9000, &app, [&engine] {
+            engine.setDigiRunning(true);
+            engine.digiCallCq();
+            qInfo() << "keepcq-test: CQ called, slot" << engine.digi().value(QStringLiteral("parity")).toString();
+        });
+        const auto feed = [&engine](const QString& text) {
+            engine.digiInjectDecodes({QVariantMap{{QStringLiteral("utc"), QStringLiteral("000000")},
+                                                  {QStringLiteral("snr"), -7}, {QStringLiteral("dt"), QStringLiteral("0.1")},
+                                                  {QStringLiteral("freq"), 1234}, {QStringLiteral("text"), text},
+                                                  {QStringLiteral("hl"), QString()}}});
+            qInfo().noquote() << "keepcq-test: fed" << text << "->" << engine.digi().value(QStringLiteral("status")).toString()
+                              << "| next" << engine.digi().value(QStringLiteral("txMsg")).toString()
+                              << "| rx" << engine.digi().value(QStringLiteral("rxHz")).toInt();
+        };
+        QTimer::singleShot(40000, &app, [feed] { feed(QStringLiteral("OH6OKSA K1ABC FN42")); });
+        QTimer::singleShot(70000, &app, [feed] { feed(QStringLiteral("OH6OKSA K1ABC R-10")); });
+        QTimer::singleShot(110000, &app, [&app, &engine] {
+            const QVariantMap d = engine.digi();
+            qInfo().noquote() << "keepcq-test: end state" << d.value(QStringLiteral("state")).toString() << "|"
+                              << d.value(QStringLiteral("status")).toString() << "| next" << d.value(QStringLiteral("txMsg")).toString();
+            engine.digiHalt();
+            engine.setDigiAutoCq(false);
+            engine.setDigiCqParity(QStringLiteral("auto"));
+            engine.setDigiRunning(false);
+            QTimer::singleShot(500, &app, &QCoreApplication::quit);
+        });
+    } else if (parser.isSet(ft8TestOption)) {
         const QStringList spec = parser.value(ft8TestOption).split(QLatin1Char(','));
         const int seconds = std::clamp(spec.value(0).toInt(), 20, 1800);
         const bool answer = spec.contains(QStringLiteral("answer"));

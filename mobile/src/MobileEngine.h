@@ -179,6 +179,13 @@ class MobileEngine : public QObject {
     // Pwr: below the radio's full drive the power out falls short of the
     // TX tab's power.
     Q_PROPERTY(int digiTxLevelDb READ digiTxLevelDb WRITE setDigiTxLevelDb NOTIFY digiChanged)
+    // Keep calling CQ after a QSO that answered our CQ (until Halt TX or
+    // the CQ watchdog); the slot CQ goes out in: "auto", "even" or "odd".
+    Q_PROPERTY(bool digiAutoCq READ digiAutoCq WRITE setDigiAutoCq NOTIFY digiChanged)
+    Q_PROPERTY(QString digiCqParity READ digiCqParity WRITE setDigiCqParity NOTIFY digiChanged)
+    // Beat cancel can run (every audible slice in a voice mode); the BC
+    // button shows dimmed when not.
+    Q_PROPERTY(bool beatCancelAvailable READ beatCancelMode NOTIFY dspChanged)
     // The QSO: state ("idle", "cq", "answer"), dx, next message, status line,
     // transmitting, seconds into the slot, slot parity of our transmissions.
     Q_PROPERTY(QVariantMap digi READ digi NOTIFY digiChanged)
@@ -650,6 +657,10 @@ public:
     void setDigiTxHz(int hz);
     int digiTxLevelDb() const { return m_digiTxLevelDb; }
     void setDigiTxLevelDb(int db);
+    bool digiAutoCq() const { return m_digiAutoCq; }
+    void setDigiAutoCq(bool on);
+    QString digiCqParity() const { return m_digiCqParity; }
+    void setDigiCqParity(const QString& parity);
     QVariantMap digi() const;
     QVariantList digiDecodes() const { return m_digiDecodes; }
     QString digiFilter() const { return m_digiFilter; }
@@ -657,6 +668,11 @@ public:
     QVariantList digiFrequencies() const;
     // Calls CQ in the next slot, and keeps calling until someone answers.
     Q_INVOKABLE void digiCallCq();
+    // Tests: transmissions only simulated (no PTT, no audio: the QSO logic
+    // runs against real decodes without RF), and decodes fed in by hand
+    // (on the TX slice unless they say otherwise).
+    void setDigiDryRun(bool on) { m_digiDryRun = on; }
+    void digiInjectDecodes(QVariantList rows);
     // Answers the station of a decode (an index into digiDecodes).
     Q_INVOKABLE void digiAnswer(int index);
     // Stops transmitting at once and ends the QSO.
@@ -1244,6 +1260,7 @@ private:
     QString m_digiFilter{QStringLiteral("all")};
     QString m_digiState{QStringLiteral("idle")};
     QString m_digiDx;
+    int m_digiRxHz{0};  // the audio Hz the station in the QSO is heard on
     QString m_digiDxGrid;
     QString m_digiRptSent;
     QString m_digiRptRcvd;
@@ -1387,6 +1404,15 @@ private:
     double m_micPeakDbfs{-100.0};
     double m_forwardPowerW{0.0};
     int m_digiTxLevelDb{0};
+    bool m_digiAutoCq{false};
+    QString m_digiCqParity{QStringLiteral("auto")};
+    bool m_digiFromCq{false};  // the QSO under way answered our CQ
+    bool m_digiDryRun{false};
+    // The decodes' median DT, smoothed: far from 0 means this device's
+    // clock is off (FT8 needs it within about a second).
+    double m_digiClockOffset{0.0};
+    bool m_digiClockKnown{false};
+    void digiFinishQso(const QString& status);
     double m_digiTxPeakW{0.0};
     double m_digiTxPeakSwr{0.0};
     double m_swr{1.0};

@@ -61,7 +61,7 @@ Item {
             if (keys.indexOf(k) < 0) continue
             const on = Engine.dspOn(k)
             if (info.singleLine && !on && base.indexOf(k) < 0) continue
-            out.push({ text: k, on: on })
+            out.push({ text: k, on: on, idle: k === "BC" && !Engine.beatCancelAvailable })
         }
         if (Engine.cwMode) out.push({ text: "QSK", on: Engine.cwBreakIn })
         return out
@@ -330,6 +330,7 @@ Item {
                             font.pixelSize: info.fontPx
                             font.bold: modelData.on
                             color: modelData.on ? Theme.text : info.dim
+                            opacity: modelData.idle ? 0.4 : 1
                         }
                     }
                 }

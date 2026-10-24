@@ -23,7 +23,9 @@
 #include <QTimeZone>
 #include <QTimer>
 
+#include <algorithm>
 #include <cmath>
+#include <vector>
 
 Q_DECLARE_LOGGING_CATEGORY(lcMobile)
 
@@ -72,6 +74,8 @@ void MobileEngine::setupDigi()
                            ? Ft8Engine::Protocol::Ft4
                            : Ft8Engine::Protocol::Ft8);
     m_digiTxHz = std::clamp(AppSettings::instance().value(QStringLiteral("MobileDigiTxHz"), 1200).toInt(), 200, 3000);
+    m_digiAutoCq = AppSettings::instance().value(QStringLiteral("MobileDigiAutoCq"), QStringLiteral("0")).toString() == QLatin1String("1");
+    m_digiCqParity = AppSettings::instance().value(QStringLiteral("MobileDigiCqParity"), QStringLiteral("auto")).toString();
     m_digiTxLevelDb = std::clamp(AppSettings::instance().value(QStringLiteral("MobileDigiTxLevelDb"), 0).toInt(), -20, 0);
     m_digiFilter = AppSettings::instance().value(QStringLiteral("MobileDigiFilter"), QStringLiteral("all")).toString();
     connect(m_ft8.get(), &Ft8Engine::slotStarted, this, &MobileEngine::onDigiSlot);
@@ -196,6 +200,23 @@ void MobileEngine::syncDigiAudio()
                                         {QStringLiteral("sliceId"), id},
                                         {QStringLiteral("slice"), sl ? sl->letter() : QString()},
                                         {QStringLiteral("slotOdd"), (slotMs / slotLen) % 2 == 1}});
+            }
+            // The device clock: a busy slot's median DT, smoothed.
+            if (decodes.size() >= 4) {
+                std::vector<double> dts;
+                for (const Ft8Engine::Decode& dec : decodes) {
+                    dts.push_back(dec.dt);
+                }
+                std::nth_element(dts.begin(), dts.begin() + dts.size() / 2, dts.end());
+                const double median = dts[dts.size() / 2];
+                const bool wasWarn = m_digiClockKnown && std::abs(m_digiClockOffset) > 0.8;
+                m_digiClockOffset = m_digiClockKnown ? 0.7 * m_digiClockOffset + 0.3 * median : median;
+                m_digiClockKnown = true;
+                const bool warn = std::abs(m_digiClockOffset) > 0.8;
+                if (warn != wasWarn) {
+                    qCInfo(lcMobile).noquote() << QStringLiteral("digi: clock offset %1 s").arg(m_digiClockOffset, 0, 'f', 2);
+                    emit digiChanged();
+                }
             }
             qCInfo(lcMobile).noquote() << QStringLiteral("digi: %1 %2 decodes").arg(utc).arg(list.size())
                                        << "slice" << (sl ? sl->letter() : QString::number(id));
@@ -401,6 +422,60 @@ void MobileEngine::setDigiProtocol(const QString& protocol)
     emit digiChanged();
 }
 
+void MobileEngine::setDigiAutoCq(bool on)
+{
+    if (on == m_digiAutoCq) {
+        return;
+    }
+    m_digiAutoCq = on;
+    AppSettings::instance().setValue(QStringLiteral("MobileDigiAutoCq"), on ? QStringLiteral("1") : QStringLiteral("0"));
+    AppSettings::instance().save();
+    emit digiChanged();
+}
+
+void MobileEngine::setDigiCqParity(const QString& parity)
+{
+    if (parity == m_digiCqParity
+        || !QStringList{QStringLiteral("auto"), QStringLiteral("even"), QStringLiteral("odd")}.contains(parity)) {
+        return;
+    }
+    m_digiCqParity = parity;
+    AppSettings::instance().setValue(QStringLiteral("MobileDigiCqParity"), parity);
+    AppSettings::instance().save();
+    // A CQ under way moves to that slot from the next one.
+    if (m_digiState == QLatin1String("cq") && m_digiDx.isEmpty() && parity != QLatin1String("auto")) {
+        m_digiTxParity = parity == QLatin1String("odd") ? 1 : 0;
+    }
+    emit digiChanged();
+}
+
+void MobileEngine::digiInjectDecodes(QVariantList rows)
+{
+    const int txId = digiSlice() ? digiSlice()->sliceId() : -1;
+    for (QVariant& v : rows) {
+        QVariantMap m = v.toMap();
+        if (!m.contains(QStringLiteral("sliceId"))) {
+            m.insert(QStringLiteral("sliceId"), txId);
+        }
+        v = m;
+    }
+    handleDigiDecodes(rows, Ft8Engine::nowMs());
+}
+
+void MobileEngine::digiFinishQso(const QString& status)
+{
+    // With Keep CQ on, a QSO that answered our CQ goes straight back to CQ
+    // in the same slot.
+    if (m_digiAutoCq && m_digiFromCq) {
+        const int parity = m_digiTxParity;
+        digiCallCq();
+        m_digiTxParity = parity;
+        setDigiStatus(tr("%1; calling CQ").arg(status));
+        return;
+    }
+    digiEnd(status);
+}
+
 void MobileEngine::setDigiTxLevelDb(int db)
 {
     db = std::clamp(db, -20, 0);
@@ -436,6 +511,13 @@ QVariantMap MobileEngine::digi() const
 {
     return {{QStringLiteral("state"), m_digiState},
             {QStringLiteral("dx"), m_digiDx},
+            {QStringLiteral("clockOffset"), m_digiClockOffset},
+            {QStringLiteral("clockWarn"), m_digiClockKnown && std::abs(m_digiClockOffset) > 0.8},
+            // Where the other station is heard (WSJT-X's green RX mark): the
+            // QSO's station, or while calling CQ our own TX audio frequency.
+            {QStringLiteral("rxHz"), m_digiState == QLatin1String("idle") ? 0
+                                     : m_digiRxHz > 0 ? m_digiRxHz
+                                     : m_digiState == QLatin1String("cq") ? m_digiTxHz : 0},
             {QStringLiteral("txMsg"), m_digiTxMsg},
             {QStringLiteral("status"), m_digiStatus},
             {QStringLiteral("transmitting"), m_digiTransmitting},
@@ -558,13 +640,17 @@ void MobileEngine::digiCallCq()
     const qint64 slotLen = qint64(m_ft8->slotSeconds() * 1000);
     m_digiState = QStringLiteral("cq");
     m_digiDx.clear();
+    m_digiRxHz = 0;
     m_digiDxGrid.clear();
     m_digiRptSent.clear();
     m_digiRptRcvd.clear();
     m_digiLogged = false;
     m_digiEndAfterTx = false;
     m_digiTxMsg = digiMessage(QStringLiteral("cq"));
-    m_digiTxParity = int((Ft8Engine::nowMs() / slotLen + 1) % 2);
+    m_digiFromCq = true;
+    m_digiTxParity = m_digiCqParity == QLatin1String("even") ? 0
+                     : m_digiCqParity == QLatin1String("odd") ? 1
+                     : int((Ft8Engine::nowMs() / slotLen + 1) % 2);
     m_digiTries = 0;
     setDigiStatus(tr("Calling CQ"));
 }
@@ -596,7 +682,9 @@ void MobileEngine::digiAnswer(int index)
         qCInfo(lcMobile) << "digi: answering on slice" << there->letter();
     }
     m_digiState = QStringLiteral("answer");
+    m_digiFromCq = false;
     m_digiDx = p.de;
+    m_digiRxHz = d.value(QStringLiteral("freq")).toInt();
     m_digiDxGrid = Ft8Engine::isGrid(p.extra) ? p.extra : QString();
     m_digiRptSent = digiReport(d.value(QStringLiteral("snr")).toInt());
     m_digiRptRcvd.clear();
@@ -627,6 +715,7 @@ void MobileEngine::digiEnd(const QString& status)
 {
     m_digiState = QStringLiteral("idle");
     m_digiDx.clear();
+    m_digiRxHz = 0;
     m_digiTxMsg.clear();
     m_digiTries = 0;
     m_digiEndAfterTx = false;
@@ -644,7 +733,11 @@ void MobileEngine::onDigiSlot(qint64 slotMs)
     }
     const int limit = m_digiState == QLatin1String("cq") && m_digiDx.isEmpty() ? kMaxCqCalls : kMaxTries;
     if (m_digiTries >= limit) {
-        digiEnd(m_digiDx.isEmpty() ? tr("No answer to CQ") : tr("No answer from %1").arg(m_digiDx));
+        if (m_digiDx.isEmpty()) {
+            digiEnd(tr("No answer to CQ"));  // the CQ watchdog, Keep CQ or not
+        } else {
+            digiFinishQso(tr("No answer from %1").arg(m_digiDx));
+        }
         return;
     }
     startDigiTx(slotMs);
@@ -684,6 +777,25 @@ void MobileEngine::startDigiTx(qint64 slotMs)
     // (PTT is checked against the TX slice), within this slot's start.
     if (SliceModel* own = digiSlice(); own && !own->isTxSlice()) {
         QTimer::singleShot(150, this, [this, slotMs] { startDigiTx(slotMs); });
+        return;
+    }
+    if (m_digiDryRun) {
+        m_digiTransmitting = true;
+        ++m_digiTries;
+        const int ms = int(qint64(audio.size() / int(sizeof(float))) * 1000 / Ft8Engine::kTxSampleRate);
+        qCInfo(lcMobile).noquote() << QStringLiteral("digi: dry TX \"%1\", try %2, %3 slot")
+                                          .arg(m_digiTxMsg)
+                                          .arg(m_digiTries)
+                                          .arg((slotMs / qint64(m_ft8->slotSeconds() * 1000)) % 2 ? QStringLiteral("odd") : QStringLiteral("even"));
+        QTimer::singleShot(ms, this, [this] {
+            m_digiTransmitting = false;
+            if (m_digiEndAfterTx) {
+                digiFinishQso(m_digiLogged ? tr("QSO with %1 logged").arg(m_digiDx) : tr("Done"));
+            } else {
+                emit digiChanged();
+            }
+        });
+        emit digiChanged();
         return;
     }
     if (SliceModel* tx = digiSlice()) {
@@ -749,7 +861,7 @@ void MobileEngine::onDigiTxFinished()
     releasePtt(QStringLiteral("FT8 sent"));
     m_session.radioModel().setDigitalVoiceTxSlice(-1);
     if (m_digiEndAfterTx) {
-        digiEnd(m_digiLogged ? tr("QSO with %1 logged").arg(m_digiDx) : tr("Done"));
+        digiFinishQso(m_digiLogged ? tr("QSO with %1 logged").arg(m_digiDx) : tr("Done"));
         return;
     }
     emit digiChanged();
@@ -758,6 +870,11 @@ void MobileEngine::onDigiTxFinished()
 void MobileEngine::digiLogQso()
 {
     if (m_digiLogged || m_digiDx.isEmpty()) {
+        return;
+    }
+    if (m_digiDryRun) {  // a test's made-up QSO stays out of the log
+        m_digiLogged = true;
+        qCInfo(lcMobile) << "digi: dry run, not logged:" << m_digiDx;
         return;
     }
     const bool ft4 = digiProtocol() == QLatin1String("FT4");
@@ -798,6 +915,10 @@ void MobileEngine::handleDigiDecodes(const QVariantList& decodes, qint64 slotMs)
             continue;
         }
         const Ft8Engine::Parsed p = Ft8Engine::parse(d.value(QStringLiteral("text")).toString());
+        if (!m_digiDx.isEmpty() && p.de == m_digiDx && d.value(QStringLiteral("freq")).toInt() != m_digiRxHz) {
+            m_digiRxHz = d.value(QStringLiteral("freq")).toInt();
+            emit digiChanged();
+        }
         if (p.to != my || p.de.isEmpty()) {
             continue;
         }
@@ -807,6 +928,7 @@ void MobileEngine::handleDigiDecodes(const QVariantList& decodes, qint64 slotMs)
         if (m_digiState == QLatin1String("cq") && m_digiDx.isEmpty()) {
             // Someone answered our CQ.
             m_digiDx = p.de;
+            m_digiRxHz = d.value(QStringLiteral("freq")).toInt();
             m_digiDxGrid = Ft8Engine::isGrid(extra) ? extra : QString();
             m_digiRptSent = digiReport(d.value(QStringLiteral("snr")).toInt());
             m_digiTimeOn = QDateTime::currentDateTimeUtc().toString(QStringLiteral("HHmm"));
@@ -845,7 +967,7 @@ void MobileEngine::handleDigiDecodes(const QVariantList& decodes, qint64 slotMs)
             setDigiStatus(tr("%1 from %2; sending 73").arg(extra, m_digiDx));
         } else if (extra == QLatin1String("73")) {
             digiLogQso();
-            digiEnd(tr("QSO with %1 logged").arg(p.de));
+            digiFinishQso(tr("QSO with %1 logged").arg(p.de));
         }
         return;
     }

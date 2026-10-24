@@ -71,6 +71,8 @@ Popup {
                     text: modelData
                     // Re-read on every DSP change (dspOn is a method).
                     checked: Engine.dspKeys.length >= 0 && Engine.dspOn(modelData)
+                    // BC only works on voice; in CW and data it shows idle.
+                    enabled: modelData !== "BC" || Engine.beatCancelAvailable
                     focusPolicy: Qt.NoFocus
                     Layout.preferredWidth: chooser.cellWidth
                     Layout.preferredHeight: Theme.touchTarget

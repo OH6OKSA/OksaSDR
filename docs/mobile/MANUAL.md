@@ -175,9 +175,9 @@ WNB) gets a slider under the toggles, sent to the radio when released.
 receive audio — someone tuning up on your frequency — and notches them out
 within about 0.15 s, leaving voice alone; it adds no delay to the audio. Up
 to four carriers at a time. Voice modes only: in CW and data modes (and
-whenever another audible slice is in one) it is off and not offered, since it
-would remove the signal itself; back in a voice mode it returns as you left
-it.
+whenever another audible slice is in one) it is off and its button shows
+dimmed, since it would remove the signal itself; back in a voice mode it
+returns as you left it.
 
 **AGC** — off / slow / med / fast, the AGC threshold (AGC-T) and the
 panadapter's RF gain (preamp or attenuator, in the radio's steps). When
@@ -560,11 +560,26 @@ them back into the drawer.
   **Tap a decode** to answer that station: the row flashes yellow, TX,
   the active slice and the display move to the slice it was heard on, and
   the app starts calling.
-  **CQ** calls CQ in the next slot on the **TX slice** (the one with the
-  red TX badge). Timing and transmitting follow the TX slice: move the TX
+  **CQ** calls CQ on the **TX slice** (the one with the red TX badge), in
+  the slot set by **CQ slot**: *Auto* (the next one), *Even* (FT8: 0 and
+  30 s, FT4: 0, 15, 30, 45 s) or *Odd* (15 and 45 s; FT4: 7.5, 22.5 …).
+  **Keep CQ** goes back to CQ after every QSO your CQ brought (and after a
+  station that answered goes quiet), until **Halt TX**; a CQ nobody
+  answers still stops after its tries. Timing and transmitting follow the TX slice: move the TX
   badge, press a band button with another slice active, or tap inside
   another DIGU / DIGL slice's passband to move it; a QSO under way stops
   when TX moves, and adding slices does not take TX away.
+
+  While a QSO or CQ runs, its state is a box under TX level: amber while
+  waiting (*Calling K1ABC*, *Next (odd): …*), red while transmitting. On
+  the display the red band is your TX tone and a green **RX** band shows
+  where the station you work is heard (your own TX tone while you call
+  CQ), as WSJT-X's markers; both labels sit on solid grounds over the
+  waterfall.
+
+  If the decodes' DT is off by more than 0.8 s on average, a red notice
+  says this device's clock looks off: FT8 needs it within about a second,
+  so set Date & Time to automatic.
 
   The app then runs the QSO as WSJT-X does (report, R-report, RR73 or RRR,
   73), stops after six tries without the reply it waits for, and writes the
