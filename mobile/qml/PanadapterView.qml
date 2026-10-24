@@ -106,7 +106,7 @@ Rectangle {
             // the waterfall's colours.
             Rectangle {
                 x: parent.x + parent.width + width + 90 > digiOverlay.width ? -width - 3 : parent.width + 3
-                y: 20
+                y: 58  // under the state banner
                 width: txLabel.implicitWidth + 10
                 height: txLabel.implicitHeight + 4
                 radius: 4
@@ -139,7 +139,7 @@ Rectangle {
             border.width: 2
             Rectangle {
                 x: parent.x + parent.width + width + 90 > digiOverlay.width ? -width - 3 : parent.width + 3
-                y: 46
+                y: 82
                 width: rxLabel.implicitWidth + 10
                 height: rxLabel.implicitHeight + 4
                 radius: 4
@@ -1236,6 +1236,36 @@ Rectangle {
             } else {
                 Engine.tuneBySteps(dy > 0 ? 1 : -1)
             }
+        }
+    }
+
+    // The QSO's state at the top of the display, where it stays in view
+    // however the Digi tab is scrolled (asked by a tester): amber while
+    // waiting, red while transmitting.
+    Rectangle {
+        objectName: "digiStateBanner"
+        readonly property var qso: Engine.digi
+        // Above the slice flags and marks (z), in FT8 / FT4 only.
+        z: 100
+        visible: panArea.digiMode && qso.state !== "idle" && (qso.status || qso.txMsg)
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: 30  // below the slice flags
+        width: Math.min(parent.width - 16, bannerText.implicitWidth + 16)
+        height: bannerText.implicitHeight + 8
+        radius: 6
+        color: qso.transmitting ? "#d7262d" : "#ffbf00"
+        border.color: "#ffffff"
+        border.width: 1
+        Label {
+            id: bannerText
+            anchors.centerIn: parent
+            width: Math.min(implicitWidth, parent.parent.width - 32)
+            text: parent.qso.transmitting && parent.qso.txMsg ? qsTr("TX: %1").arg(parent.qso.txMsg)
+                  : (parent.qso.status || "") + (parent.qso.txMsg ? "  ·  " + qsTr("Next: %1").arg(parent.qso.txMsg) : "")
+            color: parent.qso.transmitting ? "#ffffff" : "#101010"
+            font.pixelSize: 13
+            font.bold: true
+            elide: Text.ElideRight
         }
     }
 }

@@ -9,7 +9,10 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Built with the iOS 27 SDK, so the app fills the iPhone Duo's inner screen (build 102 still ran letterboxed there). Please check that everything else works as before: background/resume, SmartLink sign-in, sharing the log, the 3D view.
+- Built with the iOS 27 SDK, so the app fills the iPhone Duo's inner screen. Please check that everything else works as before: background/resume, SmartLink sign-in, sharing the log, the 3D view.
+- FT8 / FT4: the QSO state also shows at the top of the display, so it stays in view while you scroll the decode list.
+- The radio's speech processor (PROC) is switched off while FT8 / FT4 transmits and back on when decoding stops.
+- Fixed: a CQ pressed right after a Digi band button could stop by itself when TX moved to that slice.
 
 RECENT (builds 94–101)
 - FT8 and FT4 in the app (Controls > Digi): every DIGU slice decodes with WSJT-X colours, RX / TX marks, Keep CQ and CQ slot and the New / New DXCC filter, tap a call to answer (it flashes, TX moves to its slice), full power with TX level, AGC by mode; RADE digital voice; the log in Files > On My iPhone / iPad > OksaSDR, ADIF import.

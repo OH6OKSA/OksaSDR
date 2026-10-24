@@ -678,6 +678,10 @@ void MobileEngine::disconnectRadio()
     m_wanUserDisconnect = true;
     m_wanReconnectTimer.stop();
     stopTransmit(QStringLiteral("operator disconnect"));
+    if (m_digiProcRestore) {  // FT8 had switched it off
+        m_digiProcRestore = false;
+        setProcEnabled(true);
+    }
     m_session.radioModel().disconnectFromRadio();
 }
 

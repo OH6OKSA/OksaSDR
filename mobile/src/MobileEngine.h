@@ -1408,6 +1408,9 @@ private:
     QString m_digiCqParity{QStringLiteral("auto")};
     bool m_digiFromCq{false};  // the QSO under way answered our CQ
     bool m_digiDryRun{false};
+    // The radio's speech processor, switched off for FT8 / FT4 transmit
+    // (it would distort the tones) and back on when decoding stops.
+    bool m_digiProcRestore{false};
     // The decodes' median DT, smoothed: far from 0 means this device's
     // clock is off (FT8 needs it within about a second).
     double m_digiClockOffset{0.0};

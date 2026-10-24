@@ -571,7 +571,9 @@ them back into the drawer.
   when TX moves, and adding slices does not take TX away.
 
   While a QSO or CQ runs, its state is a box under TX level: amber while
-  waiting (*Calling K1ABC*, *Next (odd): …*), red while transmitting. On
+  waiting (*Calling K1ABC*, *Next (odd): …*), red while transmitting. The
+  same state also shows at the top of the display, where it stays in view
+  however far the decode list is scrolled. On
   the display the red band is your TX tone and a green **RX** band shows
   where the station you work is heard (your own TX tone while you call
   CQ), as WSJT-X's markers; both labels sit on solid grounds over the
@@ -597,7 +599,9 @@ them back into the drawer.
   with a four-letter suffix) is sent as WSJT-X sends it: in full in CQ and
   in RRR / RR73 / 73, as <CALL> in the messages with a report. The transmit
   audio goes to the radio past the TX processing (no gate, EQ or
-  compression). **TX level** (0 to −20 dB, default 0 dB, as WSJT-X's
+  compression), and the radio's speech processor (PROC) is switched off
+  while FT8 / FT4 transmits and back on when decoding stops, so a PROC left
+  on cannot distort the tones. **TX level** (0 to −20 dB, default 0 dB, as WSJT-X's
   Pwr) sets how hard that audio drives the radio: at 0 dB it is fully
   driven and the power out follows the TX tab's RF power; lower it to back
   off. The log shows the peak power of each transmission. Decoding copes with audio

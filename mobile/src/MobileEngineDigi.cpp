@@ -94,6 +94,11 @@ void MobileEngine::setDigiRunning(bool on)
     }
     if (!on) {
         digiHalt();
+        if (m_digiProcRestore) {
+            m_digiProcRestore = false;
+            setProcEnabled(true);
+            qCInfo(lcMobile) << "digi: speech processor back on";
+        }
     }
     if (on) {
         // The TX slice; none yet: the active slice takes TX.
@@ -607,6 +612,10 @@ void MobileEngine::digiTune(double mhz)
     // A band picked on the Digi tab means FT8 / FT4: decoding starts.
     if (!digiRunning() && !radeActive()) {
         setDigiRunning(true);
+        // On this slice, whose TX the radio has not confirmed yet: bound to
+        // the old TX slice, a CQ pressed meanwhile stopped when the move
+        // came through.
+        bindDigiSlice(m_slice.data());
     }
     // Then the audio band fills the display, once the pan has followed.
     QTimer::singleShot(800, this, [this] { digiZoom(); });
@@ -800,6 +809,14 @@ void MobileEngine::startDigiTx(qint64 slotMs)
     }
     if (SliceModel* tx = digiSlice()) {
         rm.setDigitalVoiceTxSlice(tx->sliceId());
+    }
+    // The radio's speech processor off while FT8 / FT4 runs (asked by a
+    // tester: a PROC left on would distort the tones); on again when
+    // decoding stops.
+    if (procEnabled()) {
+        m_digiProcRestore = true;
+        setProcEnabled(false);
+        qCInfo(lcMobile) << "digi: speech processor off for FT8 / FT4";
     }
     setPtt(true, QStringLiteral("FT8 transmit"));
     if (!m_pttHeld) {
