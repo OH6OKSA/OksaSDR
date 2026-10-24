@@ -17,6 +17,7 @@
 #include "models/RadioModel.h"
 #include "models/SliceModel.h"
 
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QSet>
 #include <QLoggingCategory>
@@ -77,6 +78,17 @@ void MobileEngine::setupDigi()
     m_digiTxHz = std::clamp(AppSettings::instance().value(QStringLiteral("MobileDigiTxHz"), 1200).toInt(), 200, 3000);
     m_pskReporterOn = AppSettings::instance().value(QStringLiteral("MobilePskReporter"), QStringLiteral("0")).toString() == QLatin1String("1");
     m_psk = new PskReporterUpload(this);
+    // Closing in the middle of a transmission: PROC back on, and what PSK
+    // Reporter has queued goes.
+    connect(qApp, &QCoreApplication::aboutToQuit, this, [this] {
+        if (m_digiProcRestore) {
+            m_digiProcRestore = false;
+            setProcEnabled(true);
+        }
+        if (m_psk) {
+            m_psk->flush();
+        }
+    });
     connect(m_psk, &PskReporterUpload::changed, this, &MobileEngine::digiChanged);
     // Its status names what is missing (the radio's callsign, a grid): it
     // follows them.
@@ -215,7 +227,8 @@ void MobileEngine::syncDigiAudio()
                                         {QStringLiteral("newDxcc"), digiNewDxcc(p.de, p.cq, band)},
                                         {QStringLiteral("sliceId"), id},
                                         {QStringLiteral("slice"), sl ? sl->letter() : QString()},
-                                        {QStringLiteral("slotOdd"), (slotMs / slotLen) % 2 == 1}});
+                                        {QStringLiteral("slotOdd"), (slotMs / slotLen) % 2 == 1},
+                                        {QStringLiteral("slotMs"), slotMs}});
             }
             // The device clock: a busy slot's median DT, smoothed.
             if (decodes.size() >= 4) {
@@ -577,6 +590,8 @@ QVariantMap MobileEngine::digi() const
     return {{QStringLiteral("state"), m_digiState},
             {QStringLiteral("dx"), m_digiDx},
             {QStringLiteral("clockOffset"), m_digiClockOffset},
+            {QStringLiteral("lastTxW"), m_digiLastTxW},
+            {QStringLiteral("lastTxSwr"), m_digiLastTxSwr},
             {QStringLiteral("clockWarn"), m_digiClockKnown && std::abs(m_digiClockOffset) > 0.8},
             // Where the other station is heard (WSJT-X's green RX mark): the
             // QSO's station, or while calling CQ our own TX audio frequency.
@@ -681,6 +696,57 @@ void MobileEngine::digiTune(double mhz)
     QTimer::singleShot(800, this, [this] { digiZoom(); });
 }
 
+void MobileEngine::digiFindFreeTx()
+{
+    if (!m_ft8) {
+        return;
+    }
+    const int txId = digiSlice() ? digiSlice()->sliceId() : -1;
+    const qint64 slotLen = qint64(m_ft8->slotSeconds() * 1000);
+    const qint64 since = Ft8Engine::nowMs() - 4 * slotLen;
+    // The slot CQ goes out in, when chosen: stations there are the ones a
+    // transmission would sit on top of.
+    const int parity = m_digiCqParity == QLatin1String("even") ? 0 : m_digiCqParity == QLatin1String("odd") ? 1 : -1;
+    const int width = digiProtocol() == QLatin1String("FT4") ? 90 : 50;
+    QVector<int> heard;
+    for (const QVariant& v : std::as_const(m_digiDecodes)) {
+        const QVariantMap d = v.toMap();
+        if (d.value(QStringLiteral("hl")) == QLatin1String("tx") || d.value(QStringLiteral("sliceId"), txId).toInt() != txId
+            || d.value(QStringLiteral("slotMs")).toLongLong() < since) {
+            continue;
+        }
+        if (parity >= 0 && int(d.value(QStringLiteral("slotOdd")).toBool()) != parity) {
+            continue;
+        }
+        heard.append(d.value(QStringLiteral("freq")).toInt());
+    }
+    if (heard.isEmpty()) {
+        setDigiStatus(tr("No stations heard in the last minute: TX stays at %1 Hz").arg(m_digiTxHz));
+        return;
+    }
+    // Each candidate's distance to the nearest signal (a signal is its
+    // tone plus the mode's width); the largest wins, the nearest to the
+    // current TX on a tie.
+    int best = m_digiTxHz;
+    int bestGap = -1;
+    for (int c = 200; c + width <= 2800; c += 5) {
+        int gap = 3000;
+        for (int f : std::as_const(heard)) {
+            const int d = c + width <= f ? f - (c + width) : (f + width <= c ? c - (f + width) : 0);
+            gap = std::min(gap, d);
+        }
+        // Also clear of the band's ends.
+        gap = std::min({gap, c - 200 + 50, 2800 - (c + width) + 50});
+        if (gap > bestGap || (gap == bestGap && std::abs(c - m_digiTxHz) < std::abs(best - m_digiTxHz))) {
+            bestGap = gap;
+            best = c;
+        }
+    }
+    setDigiTxHz(best);
+    qCInfo(lcMobile) << "digi: free TX" << best << "Hz, clear by" << bestGap << "Hz of" << heard.size() << "signals";
+    setDigiStatus(tr("TX moved to %1 Hz, %2 Hz clear of the %3 signals heard").arg(best).arg(bestGap).arg(heard.size()));
+}
+
 void MobileEngine::digiZoom()
 {
     SliceModel* slice = digiSlice();
@@ -783,6 +849,10 @@ void MobileEngine::digiHalt()
         QMetaObject::invokeMethod(m_audio, &AudioEngine::stopTxClip, Qt::QueuedConnection);
         m_digiTransmitting = false;
         releasePtt(QStringLiteral("FT8 halted"));
+        if (m_digiProcRestore) {
+            m_digiProcRestore = false;
+            setProcEnabled(true);
+        }
         m_session.radioModel().setDigitalVoiceTxSlice(-1);
     }
     if (m_digiState != QLatin1String("idle")) {
@@ -944,7 +1014,16 @@ void MobileEngine::onDigiTxFinished()
                                       .arg(m_digiTxPeakSwr > 0 ? QString::number(m_digiTxPeakSwr, 'f', 1) : QStringLiteral("-"))
                                       .arg(m_digiTxLevelDb)
                                       .arg(rfPower());
+    m_digiLastTxW = m_digiTxPeakW;
+    m_digiLastTxSwr = m_digiTxPeakSwr;
     releasePtt(QStringLiteral("FT8 sent"));
+    // PROC back on after each transmission: off only while the tones go
+    // out, so an app closed (or stopped by iOS) between them leaves it as
+    // it was.
+    if (m_digiProcRestore) {
+        m_digiProcRestore = false;
+        setProcEnabled(true);
+    }
     m_session.radioModel().setDigitalVoiceTxSlice(-1);
     if (m_digiEndAfterTx) {
         digiFinishQso(m_digiLogged ? tr("QSO with %1 logged").arg(m_digiDx) : tr("Done"));

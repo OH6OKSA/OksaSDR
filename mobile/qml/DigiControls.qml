@@ -183,7 +183,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         Label {
-            text: qsTr("TX audio %1 Hz").arg(Engine.digiTxHz)
+            text: qsTr("TX %1 Hz").arg(Engine.digiTxHz)
             color: Theme.textDim
             font.pixelSize: 14
             Layout.fillWidth: true
@@ -194,6 +194,13 @@ ColumnLayout {
             Accessible.name: qsTr("Fit the display to the audio band")
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiZoom()
+        }
+        AppButton {
+            objectName: "digiFreeTx"
+            text: qsTr("Free")
+            Accessible.name: qsTr("Move TX to the clearest frequency heard")
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.digiFindFreeTx()
         }
         AppButton {
             text: "−"
@@ -240,6 +247,20 @@ ColumnLayout {
             enabled: Engine.digiTxLevelDb < 0
             onClicked: Engine.digiTxLevelDb = Engine.digiTxLevelDb + 1
         }
+    }
+    // What the last transmission gave: the answer to "is the TX level
+    // right?" (below the TX tab's power: drive or the band's RF power).
+    Label {
+        objectName: "digiLastTx"
+        Layout.fillWidth: true
+        visible: (digi.qso.lastTxW || 0) > 0
+        text: qsTr("Last TX: %1 W%2 (RF power %3 W)")
+              .arg(Number(digi.qso.lastTxW || 0).toFixed(1))
+              .arg((digi.qso.lastTxSwr || 0) > 0 ? qsTr(", SWR %1").arg(Number(digi.qso.lastTxSwr).toFixed(1)) : "")
+              .arg(Engine.rfPower)
+        color: Theme.textDim
+        font.pixelSize: 13
+        wrapMode: Text.WordWrap
     }
 
     // The QSO's state. While a QSO or CQ runs it is a box that stands out:

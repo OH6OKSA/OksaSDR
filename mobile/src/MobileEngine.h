@@ -701,6 +701,10 @@ public:
     Q_INVOKABLE void digiTune(double mhz);
     // Fits the display to the audio band (4 kHz), for picking a TX tone.
     Q_INVOKABLE void digiZoom();
+    // Moves the TX audio frequency to the clearest spot (200-2800 Hz) among
+    // the stations heard in the last minute on the TX slice, in the slot CQ
+    // goes out in when one is chosen; says where on the status line.
+    Q_INVOKABLE void digiFindFreeTx();
     // Moves FT8 / FT4 to the active slice by making it the TX slice (a tap
     // in its passband, a band button).
     Q_INVOKABLE void digiBindActiveSlice();
@@ -1461,6 +1465,9 @@ private:
     bool digiNoReports() const;
     double m_digiTxPeakW{0.0};
     double m_digiTxPeakSwr{0.0};
+    // The last transmission's peak power and SWR, for the Digi tab.
+    double m_digiLastTxW{0.0};
+    double m_digiLastTxSwr{0.0};
     double m_swr{1.0};
     bool m_swrValid{false};
     QPointer<SliceModel> m_slice;

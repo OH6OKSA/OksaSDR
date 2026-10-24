@@ -1339,6 +1339,14 @@ int main(int argc, char* argv[])
         const bool qso = spec.contains(QStringLiteral("qso"));
         const bool cq = qso || spec.contains(QStringLiteral("cq"));
         const bool ft4 = spec.contains(QStringLiteral("ft4"));
+        if (spec.contains(QStringLiteral("free"))) {  // the free TX finder on real decodes
+            QTimer::singleShot(52000, &app, [&engine] {
+                const int before = engine.digiTxHz();
+                engine.digiFindFreeTx();
+                qInfo().noquote() << "free-test:" << before << "->" << engine.digiTxHz() << "|"
+                                  << engine.digi().value(QStringLiteral("status")).toString();
+            });
+        }
         auto saved = std::make_shared<std::tuple<double, QString, int, QString>>();
         // Slices a cut-short run left behind: with clean, all but the first
         // go (only then: they can be another client's or the user's own).
