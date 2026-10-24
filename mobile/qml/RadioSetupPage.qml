@@ -19,8 +19,9 @@ Popup {
     background: Rectangle { color: Theme.surface; radius: Theme.radius }
 
     property var d: ({})
+    property var xvtrs: []
     property int section: 0
-    function refresh() { d = Engine.radioSetup() }
+    function refresh() { d = Engine.radioSetup(); xvtrs = Engine.transverters() }
     function set(key, value) { Engine.setRadioSetup(key, value); refreshSoon.restart() }
     onOpened: refresh()
     Timer { interval: 1000; repeat: true; running: setup.opened; onTriggered: setup.refresh() }
@@ -128,11 +129,11 @@ Popup {
         }
         GridLayout {
             Layout.fillWidth: true
-            columns: 5
+            columns: 6
             columnSpacing: 4
             rowSpacing: 4
             Repeater {
-                model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("Network")]
+                model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("Network"), qsTr("XVTR")]
                 delegate: AppButton {
                     required property int index
                     required property string modelData
@@ -350,6 +351,98 @@ Popup {
                                 onClicked: setup.set("networkMtu", modelData)
                             }
                         }
+                    }
+                }
+
+                // ---- XVTR: the radio's transverters, as the desktop's tab ----
+                ColumnLayout {
+                    spacing: Theme.spacing / 2
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("Transverters: each adds a band with its name to the band buttons. RF is the band's frequency, IF the radio's (LO = RF − IF); the LO error corrects the converter's offset; max power is the drive to the transverter at its IF.")
+                        color: Theme.textDim
+                        font.pixelSize: 13
+                        wrapMode: Text.Wrap
+                    }
+                    Repeater {
+                        model: setup.xvtrs
+                        delegate: ColumnLayout {
+                            id: xv
+                            required property var modelData
+                            Layout.fillWidth: true
+                            spacing: 2
+                            function put(key, value) { Engine.setTransverter(xv.modelData.index, key, value); refreshSoon.restart() }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Heading {
+                                    text: (xv.modelData.name || qsTr("XVTR %1").arg(xv.modelData.index))
+                                          + "  ·  " + (xv.modelData.valid ? qsTr("valid") : qsTr("not valid yet"))
+                                    Layout.fillWidth: true
+                                }
+                                AppButton {
+                                    text: qsTr("Remove")
+                                    focusPolicy: Qt.NoFocus
+                                    onClicked: { Engine.removeTransverter(xv.modelData.index); refreshSoon.restart() }
+                                }
+                            }
+                            TextSetting {
+                                label: qsTr("Name  (%1)").arg(xv.modelData.name || "–")
+                                current: xv.modelData.name || ""
+                                hint: qsTr("e.g. 2m")
+                                upper: false
+                                onSaved: (t) => xv.put("name", t)
+                            }
+                            TextSetting {
+                                label: qsTr("RF frequency, MHz  (%1)").arg(Number(xv.modelData.rfMhz).toFixed(3))
+                                current: Number(xv.modelData.rfMhz).toFixed(3)
+                                hint: "144.000"
+                                onSaved: (t) => xv.put("rf_freq", t)
+                            }
+                            TextSetting {
+                                label: qsTr("IF frequency, MHz  (%1; LO %2)").arg(Number(xv.modelData.ifMhz).toFixed(3)).arg(Number(xv.modelData.loMhz).toFixed(3))
+                                current: Number(xv.modelData.ifMhz).toFixed(3)
+                                hint: "28.000"
+                                onSaved: (t) => xv.put("if_freq", t)
+                            }
+                            TextSetting {
+                                label: qsTr("LO error, MHz  (%1)").arg(Number(xv.modelData.loErrorMhz).toFixed(6))
+                                current: Number(xv.modelData.loErrorMhz).toFixed(6)
+                                hint: "0.000000"
+                                onSaved: (t) => xv.put("lo_error", t)
+                            }
+                            TextSetting {
+                                label: qsTr("RX gain, dB  (%1)").arg(Number(xv.modelData.rxGain).toFixed(1))
+                                current: Number(xv.modelData.rxGain).toFixed(1)
+                                hint: "0.0"
+                                onSaved: (t) => xv.put("rx_gain", t)
+                            }
+                            TextSetting {
+                                label: qsTr("Max power, dBm  (%1; %2 to %3)").arg(Number(xv.modelData.maxPowerDbm).toFixed(1))
+                                       .arg(Number(xv.modelData.maxPowerMin).toFixed(0)).arg(Number(xv.modelData.maxPowerMax).toFixed(0))
+                                current: Number(xv.modelData.maxPowerDbm).toFixed(1)
+                                hint: "0.0"
+                                onSaved: (t) => xv.put("max_power", t)
+                            }
+                            OnOff {
+                                label: qsTr("Receive only")
+                                on: xv.modelData.rxOnly === true
+                                onToggled: (v) => xv.put("rx_only", v)
+                            }
+                        }
+                    }
+                    Label {
+                        visible: setup.xvtrs.length === 0
+                        Layout.fillWidth: true
+                        text: qsTr("No transverters on this radio.")
+                        color: Theme.textDim
+                        font.pixelSize: 15
+                    }
+                    AppButton {
+                        objectName: "addTransverter"
+                        text: qsTr("Add transverter")
+                        focusPolicy: Qt.NoFocus
+                        Layout.fillWidth: true
+                        onClicked: { Engine.addTransverter(); refreshSoon.restart() }
                     }
                 }
             }

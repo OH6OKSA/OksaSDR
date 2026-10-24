@@ -460,6 +460,15 @@ public:
     // setRadioSetup() writes one by key. They change the radio, not the app.
     Q_INVOKABLE QVariantMap radioSetup() const;
     Q_INVOKABLE void setRadioSetup(const QString& key, const QVariant& value);
+    // The radio's transverters (Radio Setup › XVTR, as the desktop's tab):
+    // index, name, rfMhz, ifMhz, loMhz, loErrorMhz, rxGain, maxPowerDbm,
+    // maxPowerMin/Max (the radio's range for that IF), rxOnly, valid.
+    // set keys: name, rf_freq, if_freq, lo_error, rx_gain, max_power,
+    // rx_only.
+    Q_INVOKABLE QVariantList transverters() const;
+    Q_INVOKABLE void addTransverter();
+    Q_INVOKABLE void setTransverter(int index, const QString& key, const QVariant& value);
+    Q_INVOKABLE void removeTransverter(int index);
     // A radio with no callsign looks new: offer setup once per radio.
     Q_INVOKABLE bool setupSuggested() const;
     Q_INVOKABLE void dismissSetupSuggestion();

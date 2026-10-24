@@ -2385,6 +2385,81 @@ QVector<XvtrPolicy::Transverter> transvertersOf(const RadioModel& rm)
 }
 } // namespace
 
+QVariantList MobileEngine::transverters() const
+{
+    QVariantList out;
+    if (!m_connected) {
+        return out;
+    }
+    const RadioModel& rm = m_session.radioModel();
+    for (const RadioModel::XvtrInfo& x : rm.xvtrList()) {
+        const XvtrPolicy::MaxPowerRange range = XvtrPolicy::maxPowerRangeFor(x.ifFreq, rm.model());
+        out.append(QVariantMap{{QStringLiteral("index"), x.index},
+                               {QStringLiteral("name"), x.name},
+                               {QStringLiteral("rfMhz"), x.rfFreq},
+                               {QStringLiteral("ifMhz"), x.ifFreq},
+                               {QStringLiteral("loMhz"), x.rfFreq - x.ifFreq},
+                               {QStringLiteral("loErrorMhz"), x.loError},
+                               {QStringLiteral("rxGain"), x.rxGain},
+                               {QStringLiteral("maxPowerDbm"), x.maxPower},
+                               {QStringLiteral("maxPowerMin"), range.minimumDbm},
+                               {QStringLiteral("maxPowerMax"), range.maximumDbm},
+                               {QStringLiteral("rxOnly"), x.rxOnly},
+                               {QStringLiteral("valid"), x.isValid}});
+    }
+    return out;
+}
+
+void MobileEngine::addTransverter()
+{
+    if (m_connected) {
+        m_session.radioModel().sendCommand(QStringLiteral("xvtr create"));
+    }
+}
+
+void MobileEngine::setTransverter(int index, const QString& key, const QVariant& value)
+{
+    if (!m_connected) {
+        return;
+    }
+    RadioModel& rm = m_session.radioModel();
+    const auto it = rm.xvtrList().constFind(index);
+    if (it == rm.xvtrList().cend()) {
+        return;
+    }
+    QString v;
+    if (key == QLatin1String("name")) {
+        v = value.toString().trimmed().remove(QLatin1Char(' '));
+        if (v.isEmpty()) {
+            return;
+        }
+    } else if (key == QLatin1String("rx_only")) {
+        v = value.toBool() ? QStringLiteral("1") : QStringLiteral("0");
+    } else if (key == QLatin1String("max_power")) {
+        // Within what the radio allows at this IF (the desktop's clamp).
+        v = QString::number(XvtrPolicy::clampMaxPowerDbm(value.toDouble(), it->ifFreq, rm.model()), 'f', 1);
+    } else if (key == QLatin1String("rf_freq") || key == QLatin1String("if_freq") || key == QLatin1String("lo_error")
+               || key == QLatin1String("rx_gain")) {
+        bool ok = false;
+        const double d = value.toString().replace(QLatin1Char(','), QLatin1Char('.')).toDouble(&ok);
+        if (!ok) {
+            setLastError(tr("Not a number: %1").arg(value.toString()));
+            return;
+        }
+        v = QString::number(d, 'f', key == QLatin1String("lo_error") ? 6 : (key == QLatin1String("rx_gain") ? 1 : 6));
+    } else {
+        return;
+    }
+    rm.sendCommand(QStringLiteral("xvtr set %1 %2=%3").arg(index).arg(key, v));
+}
+
+void MobileEngine::removeTransverter(int index)
+{
+    if (m_connected) {
+        m_session.radioModel().sendCommand(QStringLiteral("xvtr remove %1").arg(index));
+    }
+}
+
 bool MobileEngine::fmMode() const
 {
     if (!m_slice) {

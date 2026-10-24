@@ -217,7 +217,8 @@ int main(int argc, char* argv[])
         QStringLiteral("Open the frequency entry dialog (screenshots)."));
     parser.addOption(frequencyDialogOption);
     const QCommandLineOption meterChooserOption(QStringLiteral("popup"),
-        QStringLiteral("Open a chooser popup by object name, e.g. meterChooser or modeChooser (screenshots)."),
+        QStringLiteral("Open a chooser popup by object name, e.g. meterChooser or modeChooser (screenshots); "
+                       "name:N also sets its section, e.g. radioSetup:5."),
         QStringLiteral("name"));
     parser.addOption(meterChooserOption);
     const QCommandLineOption previewNoSliceOption(QStringLiteral("preview-no-slice"),
@@ -1158,9 +1159,11 @@ int main(int argc, char* argv[])
         });
     }
     if (parser.isSet(meterChooserOption)) {
-        const QString name = parser.value(meterChooserOption);
+        const QStringList popupArgs = parser.value(meterChooserOption).split(QLatin1Char(':'));
+        const QString name = popupArgs.value(0);
+        const int section = popupArgs.value(1, QStringLiteral("-1")).toInt();
         // After --controls drawer (6 s) has shown its tab.
-        QTimer::singleShot(7000, &app, [&qml, name] {
+        QTimer::singleShot(7000, &app, [&qml, name, section] {
             for (QObject* root : qml.rootObjects()) {
                 // Every match: a page can hold a hidden twin (e.g. the info
                 // panel's one-line copy); only the visible one shows.
@@ -1170,6 +1173,9 @@ int main(int argc, char* argv[])
                         // A dialog that needs content offers preview() with sample data.
                         const bool hasPreview = chooser->metaObject()->indexOfMethod("preview()") >= 0;
                         QMetaObject::invokeMethod(chooser, hasPreview ? "preview" : "open");
+                        if (section >= 0) {
+                            chooser->setProperty("section", section);
+                        }
                     }
                 }
             }
