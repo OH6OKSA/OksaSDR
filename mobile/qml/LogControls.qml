@@ -389,4 +389,62 @@ ColumnLayout {
         font.pixelSize: 12
         wrapMode: Text.WordWrap
     }
+
+    // ---- Wavelog / Cloudlog: each logged QSO to the online logbook ----
+    Label { text: qsTr("Wavelog / Cloudlog"); color: Theme.textDim; font.pixelSize: 14; Layout.topMargin: Theme.spacing }
+    TextField {
+        id: onlineUrlField
+        objectName: "onlineLogUrl"
+        Layout.fillWidth: true
+        placeholderText: qsTr("Logbook address, e.g. https://log.example.com")
+        font.pixelSize: 15
+        text: Engine.onlineLog.url || ""
+        inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+    }
+    RowLayout {
+        Layout.fillWidth: true
+        TextField {
+            id: onlineKeyField
+            Layout.fillWidth: true
+            placeholderText: Engine.onlineLog.hasKey ? qsTr("API key (saved)") : qsTr("API key (read & write)")
+            font.pixelSize: 15
+            echoMode: TextInput.Password
+            inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+        }
+        TextField {
+            id: onlineStationField
+            Layout.preferredWidth: 90
+            placeholderText: qsTr("Station ID")
+            font.pixelSize: 15
+            text: Engine.onlineLog.stationId || ""
+            inputMethodHints: Qt.ImhDigitsOnly
+        }
+        AppButton {
+            text: qsTr("Save")
+            focusPolicy: Qt.NoFocus
+            onClicked: {
+                Engine.setOnlineLog(onlineUrlField.text, onlineKeyField.text, onlineStationField.text)
+                onlineKeyField.text = ""
+            }
+        }
+    }
+    Label {
+        objectName: "onlineLogStatus"
+        Layout.fillWidth: true
+        visible: text.length > 0
+        text: (Engine.onlineLog.status || "")
+              + (Engine.onlineLog.pending > 0 && (Engine.onlineLog.status || "").indexOf("wait") < 0
+                 ? "  (" + qsTr("%1 waiting").arg(Engine.onlineLog.pending) + ")" : "")
+        color: Engine.onlineLog.statusKind === "ok" ? "#00cc66"
+             : Engine.onlineLog.statusKind === "failed" ? Theme.transmit : Theme.textDim
+        font.pixelSize: 13
+        wrapMode: Text.WordWrap
+    }
+    Label {
+        Layout.fillWidth: true
+        text: qsTr("Every QSO you log (and FT8 / FT4 logs) also goes to your Wavelog or Cloudlog logbook. The station ID is the station location's number there (Station Locations). QSOs that cannot be sent wait and go later. Clear the address to stop. The key stays in this device's secure store.")
+        color: Theme.textDim
+        font.pixelSize: 12
+        wrapMode: Text.WordWrap
+    }
 }

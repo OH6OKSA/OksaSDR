@@ -183,6 +183,11 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: the FT8 / FT4 decode list filter for this run (all, cq, new, dxcc; it is saved)."),
         QStringLiteral("filter"));
     parser.addOption(digiFilterOption);
+    const QCommandLineOption onlineLogTestOption(QStringLiteral("online-log-test"),
+        QStringLiteral("Development: set the Wavelog / Cloudlog logbook to <url,key,station>, log a test QSO "
+                       "(call TEST1) 4 s later and log the logbook's state; an empty url at the end clears it."),
+        QStringLiteral("url,key,station"));
+    parser.addOption(onlineLogTestOption);
     const QCommandLineOption digiTxLevelOption(QStringLiteral("digi-tx-level"),
         QStringLiteral("Development: the FT8 / FT4 TX level in dB (-20 to 0; it is saved)."), QStringLiteral("db"));
     parser.addOption(digiTxLevelOption);
@@ -1599,6 +1604,15 @@ int main(int argc, char* argv[])
             qInfo() << "adif-import:" << engine.importAdif(QUrl::fromLocalFile(file));
             app.quit();
         });
+    }
+    if (parser.isSet(onlineLogTestOption)) {
+        const QStringList a = parser.value(onlineLogTestOption).split(QLatin1Char(','));
+        QTimer::singleShot(2000, &app, [&engine, a] { engine.setOnlineLog(a.value(0), a.value(1), a.value(2)); });
+        QTimer::singleShot(6000, &app, [&engine] {
+            qInfo() << "online-log-test: logging TEST1 ->" << engine.logQso({{QStringLiteral("call"), QStringLiteral("TEST1")},
+                                                                            {QStringLiteral("rstSent"), QStringLiteral("59")}});
+        });
+        QTimer::singleShot(12000, &app, [&engine] { qInfo() << "online-log-test: state" << engine.onlineLog(); });
     }
     if (parser.isSet(digiFilterOption)) {
         engine.setDigiFilter(parser.value(digiFilterOption));

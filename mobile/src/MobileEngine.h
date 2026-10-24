@@ -213,6 +213,10 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QString qrzStatus READ qrzStatus NOTIFY qrzChanged)
     Q_PROPERTY(QString qrzStatusKind READ qrzStatusKind NOTIFY qrzChanged)
     Q_PROPERTY(QString myGrid READ myGrid WRITE setMyGrid NOTIFY qrzChanged)
+    // Sending each logged QSO to a Wavelog or Cloudlog logbook (the same
+    // API): url, stationId, hasKey, enabled, pending (queued, unsent),
+    // status and statusKind ("checking", "ok", "failed" or "").
+    Q_PROPERTY(QVariantMap onlineLog READ onlineLog NOTIFY onlineLogChanged)
     Q_PROPERTY(bool memoriesWritable READ memoriesWritable NOTIFY memoriesChanged)
     // The radio's tracking notch filters (Flex TNF): {id, freq (MHz),
     // width (Hz), depth 1-3, permanent}; tnfEnabled is the global switch.
@@ -704,6 +708,10 @@ public:
     // QRZ.com account for the lookup: the password goes to the platform's
     // secure store, never to the settings. Empty user removes it.
     Q_INVOKABLE void setQrzAccount(const QString& user, const QString& password);
+    // Saves the logbook (an empty url turns it off; an empty key keeps the
+    // saved one), checks the key and sends what is queued.
+    Q_INVOKABLE void setOnlineLog(const QString& url, const QString& key, const QString& stationId);
+    QVariantMap onlineLog() const;
     // Opens the share sheet with the log as an ADIF file
     // ("OksaSDR-log-<date>.adi"): mail, Files, AirDrop, a logbook app, or
     // TQSL for LoTW. False when there is nothing to share.
@@ -1098,6 +1106,7 @@ signals:
     void callLookupChanged();
     void lastSpotCallChanged();
     void qrzChanged();
+    void onlineLogChanged();
     void tnfsChanged();
     void txChainChanged();
     void spotsChanged();
@@ -1228,6 +1237,17 @@ private:
 
     // ---- FT8 / FT4 (MobileEngineDigi.cpp) ----
     void setupDigi();
+    void setupOnlineLog();
+    // Queue an ADIF record for the logbook and send the queue.
+    void onlineLogQueue(const QString& adif);
+    void onlineLogFlush();
+    QString onlineLogBase() const;
+    class QNetworkAccessManager* m_onlineLogNet{nullptr};
+    QString m_onlineLogKey;  // from the secure store, or set this session
+    QStringList m_onlineLogPending;
+    bool m_onlineLogSending{false};
+    QString m_onlineLogStatus;
+    QString m_onlineLogStatusKind;
     void syncDigiAudio();
     void onDigiSlot(qint64 slotMs);
     void handleDigiDecodes(const QVariantList& decodes, qint64 slotMs);

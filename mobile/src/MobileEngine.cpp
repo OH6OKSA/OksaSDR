@@ -278,6 +278,7 @@ MobileEngine::MobileEngine(QObject* parent)
     }
 #endif
     setupDigi();
+    setupOnlineLog();
     m_cty = std::make_unique<CtyDatParser>();
     m_cty->loadFromResource(QStringLiteral(":/cty.dat"));
     {
@@ -3846,6 +3847,7 @@ bool MobileEngine::logQso(const QVariantMap& fields)
     }
     qCInfo(lcMobile).noquote() << QStringLiteral("logged %1 %2 %3 %4").arg(call, r.value(QStringLiteral("BAND")).toString(),
                                                                          mode.first, timeOn);
+    onlineLogQueue(QsoLog::adifRecord(r));
     emit qsoLogChanged();
     return true;
 }
