@@ -9,7 +9,9 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Mac: a new way to type into the text fields: they now take the Mac's key presses directly. If typing still does nothing, please open Log, tap Copy and send me the text.
+- Mac: clicking a text field opens a small text box; type there and press Return (or OK) to put the text in the field. The Mac's keyboard does not reach the app's own fields. If no box opens, or typing in it does nothing, please open Log, tap Copy and send me the text.
+
+RECENT (build 109)
 - A sideways swipe inside the open controls drawer no longer tunes the radio or moves the display under it; the part of the display still in view works as before. Thanks Wayne WA2N.
 
 RECENT (builds 107–108)

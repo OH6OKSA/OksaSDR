@@ -712,11 +712,12 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 
 ## 11. Keyboard and Apple Pencil
 
-On a **Mac** (the iPad app, through TestFlight) the text fields take the
-Mac's key presses directly, in the Mac's keyboard layout; accents typed
-with dead keys and input methods (e.g. Japanese) may not work there. Space
-PTT and the Ctrl paddles come from the keys as on a computer (the iPad's
-GameController keyboard reading is not used on a Mac).
+On a **Mac** (the iPad app, through TestFlight) the Mac's keyboard does not
+reach the app's own text fields, so clicking one opens a small text box
+(Apple's own) with the field's text: type there and press Return or OK to
+put the text in the field, as if typed there and Return pressed; Esc or
+Cancel leaves the field as it was. The iPad's GameController keyboard
+reading is not used on a Mac.
 
 With a Magic Keyboard or trackpad:
 

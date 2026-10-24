@@ -2,6 +2,8 @@
 
 #include <functional>
 
+#include <QString>
+
 namespace AetherSDR::mobile {
 
 // Hardware keyboard keys Qt's key events do not report well enough. On iOS
@@ -26,5 +28,21 @@ void setSideKeysSuspended(bool suspended);
 int sideKeysSeen();
 // The iPad app running on a Mac (Apple silicon).
 bool runningAsIosAppOnMac();
+
+// On a Mac no typed key reached Qt at all (builds 107-109: no key or text
+// event anywhere, whatever the input method). There a focused text field
+// opens Apple's own text box, which takes the Mac's keyboard; OK or Return
+// calls back with its text (ok false on Cancel). macTextEntryAvailable() is
+// true on a Mac, and on a desktop with AETHER_MAC_ENTRY_TEST set (its value
+// is "typed" at once, for testing the rest of the path).
+bool macTextEntryAvailable();
+void showMacTextEntry(const QString& title, const QString& message, const QString& text, bool secret,
+                      const QString& okLabel, const QString& cancelLabel,
+                      std::function<void(bool ok, const QString& text)> done);
+// Mac only: logs the key presses UIKit hands the app (the first few, no
+// characters) and describes the key window and the first responder, so a
+// log tells where the Mac's keys go. Empty elsewhere.
+void startMacKeyDiagnostics();
+QString macKeyRouting();
 
 } // namespace AetherSDR::mobile

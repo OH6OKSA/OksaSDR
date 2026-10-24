@@ -67,6 +67,9 @@
 #include <QGuiApplication>
 #include <QInputMethodQueryEvent>
 #include <QQuickItem>
+#include <QElapsedTimer>
+#include <QKeyEvent>
+#include <QPointer>
 #include <QHostAddress>
 #include <QPermissions>
 #include <QJSEngine>
@@ -141,10 +144,11 @@ public:
             if (t == QEvent::KeyPress) {
                 ++keys;
                 if (keys <= 3) {
+                    // Not the key itself: what is typed may be a password.
                     const auto* k = static_cast<QKeyEvent*>(event);
-                    qCInfo(lcMobile).noquote() << QStringLiteral("keyboard: key 0x%1 text \"%2\" to %3")
-                                                      .arg(k->key(), 0, 16)
-                                                      .arg(k->text(), QString::fromLatin1(receiver->metaObject()->className()));
+                    qCInfo(lcMobile).noquote() << QStringLiteral("keyboard: a key (%1) reached %2")
+                                                      .arg(k->text().isEmpty() ? QStringLiteral("no text") : QStringLiteral("with text"),
+                                                           QString::fromLatin1(receiver->metaObject()->className()));
                 }
             } else {
                 ++inputMethod;
@@ -185,6 +189,80 @@ public:
         return true;
     }
 };
+
+// Puts text into a Qt text field as typing does: the old text selected and
+// replaced key by key (validators and textEdited see a user's edit), then
+// Return for a one-line field (accepted, editingFinished).
+void typeIntoField(QQuickItem* field, const QString& text)
+{
+    const auto send = [field](int key, const QString& keyText) {
+        QKeyEvent press(QEvent::KeyPress, key, Qt::NoModifier, keyText);
+        QCoreApplication::sendEvent(field, &press);
+        QKeyEvent release(QEvent::KeyRelease, key, Qt::NoModifier, keyText);
+        QCoreApplication::sendEvent(field, &release);
+    };
+    QMetaObject::invokeMethod(field, "selectAll");
+    send(Qt::Key_Backspace, QString());
+    for (const QChar ch : text) {
+        send(ch.toUpper().unicode(), QString(ch));
+    }
+    if (field->inherits("QQuickTextInput")) {
+        send(Qt::Key_Return, QString());
+    }
+}
+
+// On a Mac a focused text field opens Apple's text box (no typed key reaches
+// Qt there). Once per focus: the field lets go of focus afterwards, so the
+// box does not come back when the window takes focus again.
+void offerMacTextEntry(QObject* obj)
+{
+    static bool open = false;
+    static QElapsedTimer openedAt;
+    static QPointer<QObject> lastField;
+    static QElapsedTimer closedAt;
+    // A box that never showed must not block the rest for good.
+    if (open && openedAt.elapsed() < 30000) {
+        return;
+    }
+    auto* field = qobject_cast<QQuickItem*>(obj);
+    if (!field || field->property("readOnly").toBool()) {
+        return;
+    }
+    if (field == lastField && closedAt.isValid() && closedAt.elapsed() < 1500) {
+        return;
+    }
+    open = true;
+    openedAt.start();
+    qCInfo(lcMobile).noquote() << "keyboard: key routing:" << macKeyRouting();
+    QString title = field->property("placeholderText").toString();
+    if (title.isEmpty()) {
+        title = MobileEngine::tr("Text");
+    }
+    const bool secret = field->property("echoMode").toInt() != 0;  // TextInput.Normal is 0
+    const QPointer<QQuickItem> guard(field);
+    QTimer::singleShot(0, qApp, [guard, title, secret] {
+        if (!guard) {
+            open = false;
+            return;
+        }
+        showMacTextEntry(title, MobileEngine::tr("Type here; Return puts the text in the field."),
+                         guard->property("text").toString(), secret, MobileEngine::tr("OK"),
+                         MobileEngine::tr("Cancel"), [guard](bool ok, const QString& typed) {
+                             open = false;
+                             lastField = guard.data();
+                             closedAt.start();
+                             qCInfo(lcMobile).noquote() << "keyboard: text box" << (ok ? "OK," : "cancelled,")
+                                                        << typed.size() << "characters";
+                             if (!guard) {
+                                 return;
+                             }
+                             if (ok) {
+                                 typeIntoField(guard, typed);
+                             }
+                             guard->setFocus(false);
+                         });
+    });
+}
 }  // namespace
 
 MobileEngine::MobileEngine(QObject* parent)
@@ -627,7 +705,9 @@ MobileEngine::MobileEngine(QObject* parent)
         qCInfo(lcMobile) << "keyboard: iPad app on a Mac:" << (runningAsIosAppOnMac() ? "yes" : "no");
         if (runningAsIosAppOnMac()) {
             qApp->installEventFilter(new MacTextKeys(this));
-            qCInfo(lcMobile) << "keyboard: text fields take the key presses directly (no input method)";
+            startMacKeyDiagnostics();
+            qCInfo(lcMobile) << "keyboard: text fields take the key presses directly (no input method); "
+                                "a focused field opens a text box";
         }
         auto textItem = std::make_shared<QPointer<QObject>>();
         auto seenAtFocus = std::make_shared<int>(0);
@@ -648,6 +728,9 @@ MobileEngine::MobileEngine(QObject* parent)
                 diag->inputMethod = 0;
                 *seenAtFocus = sideKeysSeen();
                 qCInfo(lcMobile).noquote() << "keyboard: text field focused:" << obj->metaObject()->className() << obj->objectName();
+                if (macTextEntryAvailable()) {
+                    offerMacTextEntry(obj);
+                }
             }
         });
     }
