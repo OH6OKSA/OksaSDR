@@ -323,6 +323,8 @@ Page {
                 // Close under the slice row: the meters at its top corners
                 // sit right below the buttons.
                 Layout.topMargin: -Math.round(Theme.spacing / 2)
+                // A swipe in the open drawer must not tune.
+                covers: [controlsDrawer.background]
             }
 
             // Step buttons: land on round frequencies (tuneByHz).

@@ -1678,7 +1678,8 @@ int main(int argc, char* argv[])
                 const double y = t.value(1).toDouble() * window->height();
                 const double x1 = t.value(0).toDouble() * window->width();
                 const double x2 = t.value(2).toDouble() * window->width();
-                qInfo() << "drag-at: before, digiTxHz" << engine.digiTxHz() << "freq" << engine.frequencyMhz();
+                qInfo() << "drag-at: before, digiTxHz" << engine.digiTxHz() << "freq" << engine.frequencyMhz()
+                        << "pan" << engine.panCenterMhz();
                 // Through the window system queue, as a real mouse: the
                 // handlers' drag tracking needs it.
                 const auto send = [window](QPointF p, Qt::MouseButtons buttons, Qt::MouseButton button, QEvent::Type type) {
@@ -1692,7 +1693,12 @@ int main(int argc, char* argv[])
                     send(QPointF(x1 + (x2 - x1) * i / 30.0, y), Qt::LeftButton, Qt::NoButton, QEvent::MouseMove);
                 }
                 send(QPointF(x2, y), Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
-                qInfo() << "drag-at: after, digiTxHz" << engine.digiTxHz() << "freq" << engine.frequencyMhz();
+                qInfo() << "drag-at: after, digiTxHz" << engine.digiTxHz() << "freq" << engine.frequencyMhz()
+                        << "pan" << engine.panCenterMhz();
+                // A pan move shows once the radio has answered.
+                QTimer::singleShot(1500, &engine, [&engine] {
+                    qInfo() << "drag-at: 1.5 s later, freq" << engine.frequencyMhz() << "pan" << engine.panCenterMhz();
+                });
             }
         });
     }

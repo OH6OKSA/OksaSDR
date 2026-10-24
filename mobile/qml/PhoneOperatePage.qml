@@ -206,6 +206,8 @@ Page {
                 Layout.fillHeight: true
                 rfLabelWidth: sliceBar.rightMeterWidth
                 Layout.minimumHeight: page.landscape ? 90 : 160
+                // A swipe in the open drawer must not tune.
+                covers: [controlsDrawer.background]
             }
 
             RowLayout {

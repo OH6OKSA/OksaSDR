@@ -11,6 +11,28 @@ Rectangle {
     // Width of the right meter above (from the page): the RF GAIN label
     // matches it; 0 sizes the label to its text.
     property real rfLabelWidth: 0
+    // Items over the display (from the page: the controls drawer). Qt passes
+    // a drag inside a popup on to the drag handlers under it (taps it
+    // blocks), so a sideways swipe in the open drawer tuned the radio (a
+    // tester's report). The display and each drag area below leave the
+    // covered part out of their area; the part still in view works as usual.
+    property var covers: []
+    function uncovered(item, point) {
+        for (const c of covers) {
+            if (c && c.visible && c.contains(item.mapToItem(c, point.x, point.y)))
+                return false
+        }
+        return true
+    }
+    // An item's own rectangle less the covers, as its containmentMask.
+    component CoverMask: QtObject {
+        required property Item owner
+        function contains(point: point): bool {
+            return point.x >= 0 && point.y >= 0 && point.x < owner.width && point.y < owner.height
+                   && panArea.uncovered(owner, point)
+        }
+    }
+    containmentMask: CoverMask { owner: panArea }
     color: Theme.surface
     radius: Theme.radius
     clip: true
@@ -82,7 +104,9 @@ Rectangle {
             border.width: 2
             // A finger-wide grab around the band: drag it to any Hz.
             Item {
+                id: txGrab
                 objectName: "digiTxGrab"
+                containmentMask: CoverMask { owner: txGrab }
                 x: parent.width / 2 - width / 2
                 width: Math.max(44, parent.width)
                 height: parent.height
@@ -209,6 +233,7 @@ Rectangle {
             property bool high: false
             readonly property bool active: edgeDrag.active
             visible: passband.width >= 60
+            containmentMask: CoverMask { owner: edge }
             width: 28
             height: passband.height
             x: (high ? passband.width : 0) - width / 2
@@ -369,6 +394,8 @@ Rectangle {
             // Drag it along the spectrum (the handle's part; on the waterfall a
             // drag still moves the view), in 10 Hz steps.
             Item {
+                id: notchGrab
+                containmentMask: CoverMask { owner: notchGrab }
                 width: parent.width
                 height: panArea.height * spectrum.spectrumFraction
                 property real startMhz: 0

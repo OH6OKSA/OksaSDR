@@ -66,6 +66,7 @@
 
 #include <QGuiApplication>
 #include <QInputMethodQueryEvent>
+#include <QQuickItem>
 #include <QHostAddress>
 #include <QPermissions>
 #include <QJSEngine>
@@ -153,6 +154,36 @@ public:
     }
     int keys{0};
     int inputMethod{0};
+};
+
+// On a Mac an iPad app gets the keyboard as key presses only: the typed text
+// never reached Qt's text responder (build 108, a tester's MacBook: no key or
+// text event at the focused field, the GameController handler already off).
+// There the text fields report no input method, so Qt's view sends each press
+// with its text (from the Mac's layout: ä, ö, /) as a key event, the way the
+// desktop types.
+class MacTextKeys : public QObject {
+public:
+    explicit MacTextKeys(QObject* parent) : QObject(parent) {}
+    bool eventFilter(QObject* receiver, QEvent* event) override
+    {
+        if (event->type() != QEvent::InputMethodQuery
+            || !(receiver->inherits("QQuickTextInput") || receiver->inherits("QQuickTextEdit"))) {
+            return false;
+        }
+        // Answered as QQuickItem::event does, ImEnabled excepted.
+        const auto* item = static_cast<QQuickItem*>(receiver);
+        auto* query = static_cast<QInputMethodQueryEvent*>(event);
+        const uint queries = uint(query->queries());
+        for (uint i = 0; i < 32; ++i) {
+            const auto q = static_cast<Qt::InputMethodQuery>(int(queries & (1u << i)));
+            if (q) {
+                query->setValue(q, q == Qt::ImEnabled ? QVariant(false) : item->inputMethodQuery(q));
+            }
+        }
+        query->accept();
+        return true;
+    }
 };
 }  // namespace
 
@@ -589,12 +620,15 @@ MobileEngine::MobileEngine(QObject* parent)
         });
     }
     // A text field with focus gets the keyboard to itself (GameController's
-    // keyboard handler off: on a Mac it kept the typed keys from the
-    // fields), with a short record of what reached it.
+    // keyboard handler off), with a short record of what reached it.
     {
         auto* diag = new KeyboardDiag(this);
         qApp->installEventFilter(diag);
         qCInfo(lcMobile) << "keyboard: iPad app on a Mac:" << (runningAsIosAppOnMac() ? "yes" : "no");
+        if (runningAsIosAppOnMac()) {
+            qApp->installEventFilter(new MacTextKeys(this));
+            qCInfo(lcMobile) << "keyboard: text fields take the key presses directly (no input method)";
+        }
         auto textItem = std::make_shared<QPointer<QObject>>();
         auto seenAtFocus = std::make_shared<int>(0);
         connect(qGuiApp, &QGuiApplication::focusObjectChanged, this, [diag, textItem, seenAtFocus](QObject* obj) {

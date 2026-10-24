@@ -72,7 +72,8 @@ mode, a DSP that runs, the shown tab) is **lit blue**; the others are dark.
 On an iPad or tablet the controls can stay pinned at the side (as above) or
 open as a drawer. On a phone they open as a drawer from the **Controls**
 button beside PTT (three bars in landscape); the drawer carries its own PTT
-in the same place.
+in the same place. A swipe inside the open drawer never tunes; the part of
+the display still in view tunes as usual.
 
 | iPhone, portrait | iPhone, landscape |
 |---|---|
@@ -711,10 +712,11 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 
 ## 11. Keyboard and Apple Pencil
 
-On a **Mac** (the iPad app, through TestFlight) the Mac's keyboard types
-into the fields, and Space PTT and the Ctrl paddles come from the keys as
-on a computer (the iPad's GameController keyboard reading is not used
-there: it kept the typed keys from the fields).
+On a **Mac** (the iPad app, through TestFlight) the text fields take the
+Mac's key presses directly, in the Mac's keyboard layout; accents typed
+with dead keys and input methods (e.g. Japanese) may not work there. Space
+PTT and the Ctrl paddles come from the keys as on a computer (the iPad's
+GameController keyboard reading is not used on a Mac).
 
 With a Magic Keyboard or trackpad:
 
