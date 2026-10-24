@@ -1248,6 +1248,7 @@ private:
     // Queue an ADIF record for the logbook and send the queue.
     void onlineLogQueue(const QString& adif);
     void onlineLogFlush();
+    void onlineLogCheck();  // the API key, shown on the Log tab
     QString onlineLogBase() const;
     class QNetworkAccessManager* m_onlineLogNet{nullptr};
     QString m_onlineLogKey;  // from the secure store, or set this session

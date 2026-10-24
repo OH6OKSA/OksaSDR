@@ -304,6 +304,15 @@ MobileEngine::MobileEngine(QObject* parent)
             qCInfo(lcMobile) << "QRZ.com sign-in" << (ok ? "ok" : "failed:") << (ok ? QString() : message);
             emit qrzChanged();
         });
+        // A saved account is checked at start too, so the Log tab says
+        // whether it still signs in (it said nothing after a restart).
+        const QString user = QrzLookupSettings::username();
+        const QString pass = user.isEmpty() ? QString() : loadSecret(QStringLiteral("qrz_password"));
+        if (!pass.isEmpty()) {
+            m_qrzStatusKind = QStringLiteral("checking");
+            m_qrzStatus = tr("Signing in to QRZ.com…");
+            QTimer::singleShot(3000, this, [user, pass] { CallsignLookupService::instance().testLogin(user, pass); });
+        }
     }
     qCInfo(lcMobile) << "QSO log:" << m_qsoLog->records().size() << "contacts in" << m_qsoLog->path();
 

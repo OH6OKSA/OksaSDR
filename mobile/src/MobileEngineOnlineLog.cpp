@@ -37,9 +37,44 @@ void MobileEngine::setupOnlineLog()
     if (!pending.isEmpty()) {
         m_onlineLogPending = pending.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
     }
-    if (!m_onlineLogPending.isEmpty()) {
-        QTimer::singleShot(5000, this, &MobileEngine::onlineLogFlush);
+    // A saved logbook is checked at start (and the queue sent), so the Log
+    // tab says whether it is connected (it said nothing after a restart).
+    if (!onlineLogBase().isEmpty() && !m_onlineLogKey.isEmpty()) {
+        QTimer::singleShot(3000, this, &MobileEngine::onlineLogCheck);
     }
+}
+
+void MobileEngine::onlineLogCheck()
+{
+    if (onlineLogBase().isEmpty() || m_onlineLogKey.isEmpty()) {
+        return;
+    }
+    m_onlineLogStatusKind = QStringLiteral("checking");
+    m_onlineLogStatus = tr("Checking the API key…");
+    emit onlineLogChanged();
+    QNetworkRequest req(QUrl(onlineLogBase() + QStringLiteral("/api/auth/") + m_onlineLogKey));
+    req.setTransferTimeout(15000);
+    QNetworkReply* reply = m_onlineLogNet->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply] {
+        reply->deleteLater();
+        const QString body = QString::fromUtf8(reply->readAll());
+        if (reply->error() != QNetworkReply::NoError) {
+            m_onlineLogStatusKind = QStringLiteral("failed");
+            m_onlineLogStatus = tr("No answer from the logbook: %1").arg(reply->errorString());
+        } else if (!body.contains(QLatin1String("<status>Valid</status>"), Qt::CaseInsensitive)) {
+            m_onlineLogStatusKind = QStringLiteral("failed");
+            m_onlineLogStatus = tr("The logbook does not accept this API key.");
+        } else if (!body.contains(QLatin1String("<rights>rw</rights>"), Qt::CaseInsensitive)) {
+            m_onlineLogStatusKind = QStringLiteral("failed");
+            m_onlineLogStatus = tr("This API key is read-only: make a read & write key.");
+        } else {
+            m_onlineLogStatusKind = QStringLiteral("ok");
+            m_onlineLogStatus = tr("Key accepted: each QSO goes to the logbook too.");
+            onlineLogFlush();
+        }
+        qCInfo(lcMobile).noquote() << "online log:" << m_onlineLogStatus;
+        emit onlineLogChanged();
+    });
 }
 
 QString MobileEngine::onlineLogBase() const
@@ -97,32 +132,7 @@ void MobileEngine::setOnlineLog(const QString& url, const QString& key, const QS
         emit onlineLogChanged();
         return;
     }
-    m_onlineLogStatusKind = QStringLiteral("checking");
-    m_onlineLogStatus = tr("Checking the API key…");
-    emit onlineLogChanged();
-    QNetworkRequest req(QUrl(onlineLogBase() + QStringLiteral("/api/auth/") + m_onlineLogKey));
-    req.setTransferTimeout(15000);
-    QNetworkReply* reply = m_onlineLogNet->get(req);
-    connect(reply, &QNetworkReply::finished, this, [this, reply] {
-        reply->deleteLater();
-        const QString body = QString::fromUtf8(reply->readAll());
-        if (reply->error() != QNetworkReply::NoError) {
-            m_onlineLogStatusKind = QStringLiteral("failed");
-            m_onlineLogStatus = tr("No answer from the logbook: %1").arg(reply->errorString());
-        } else if (!body.contains(QLatin1String("<status>Valid</status>"), Qt::CaseInsensitive)) {
-            m_onlineLogStatusKind = QStringLiteral("failed");
-            m_onlineLogStatus = tr("The logbook does not accept this API key.");
-        } else if (!body.contains(QLatin1String("<rights>rw</rights>"), Qt::CaseInsensitive)) {
-            m_onlineLogStatusKind = QStringLiteral("failed");
-            m_onlineLogStatus = tr("This API key is read-only: make a read & write key.");
-        } else {
-            m_onlineLogStatusKind = QStringLiteral("ok");
-            m_onlineLogStatus = tr("Key accepted: each QSO goes to the logbook too.");
-            onlineLogFlush();
-        }
-        qCInfo(lcMobile).noquote() << "online log:" << m_onlineLogStatus;
-        emit onlineLogChanged();
-    });
+    onlineLogCheck();
 }
 
 void MobileEngine::onlineLogQueue(const QString& adif)

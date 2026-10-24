@@ -52,6 +52,9 @@ iOS background).
 
 ## Released
 
+**Build 106** (2026-10-24), iPhone and iPad only:
+- A saved QRZ.com account and Wavelog / Cloudlog key are checked at start, so the Log tab shows whether they sign in (it was blank after a restart; asked after build 105).
+
 **Build 105** (2026-10-24), iPhone and iPad, and Android beta 23:
 - Wavelog / Cloudlog: each logged QSO to the online logbook (API v1: auth check, POST api/qso, a queue kept in the settings for offline). Checked against loki.oksa.fi (key valid rw; a dry-run QSO with station 1 accepted).
 - PSK Reporter: decoded stations reported over IPFIX (report.pskreporter.info:4739), off by default; packets checked byte by byte (templates, receiver and 55 sender records in two packets).

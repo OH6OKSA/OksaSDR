@@ -9,13 +9,16 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
+- The Log tab checks a saved QRZ.com account and Wavelog / Cloudlog key at every start and says whether they still sign in (after a restart it said nothing).
+
+RECENT (build 105)
 - iPhone Duo: the app fills the inner screen (since build 104), and in landscape the controls no longer run off the right edge: where they do not fit beside the display they open from Controls. Thank you Vesa OH6HPS, the first Duo user, who made testing on the device possible!
 - Wavelog / Cloudlog (Log tab): every QSO you log, by hand or FT8 / FT4, also goes to your online logbook; queued while offline. Save checks the API key and says whether it was accepted.
 - PSK Reporter (Digi tab, off by default): reports the stations you decode, as WSJT-X does.
 - Transverters in Radio Setup > XVTR: add, edit and remove them.
 - FT8 / FT4: a QSO between two nonstandard calls (such as OH6OKSA and SN9Q/QRP) now completes, without reports, as FT8 allows; the green RX mark is always shown.
 
-RECENT (build 104)
+RECENT (build 104, earlier)
 - Built with the iOS 27 SDK: the app fills the iPhone Duo's inner screen. The QSO state also shows at the top of the display; the radio's PROC is off while FT8 / FT4 transmits; a CQ right after a Digi band button no longer stops by itself.
 
 RECENT (builds 94–101)
