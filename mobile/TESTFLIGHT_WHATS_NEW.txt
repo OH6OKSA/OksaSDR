@@ -9,23 +9,15 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
+- Fixed: build 107 could close itself when a text field was tapped with a hardware keyboard attached (Macs, iPads with a keyboard). Sorry about that!
+- Mac: the keyboard now goes to the text fields (the iPad's game-controller keyboard reading is no longer used on a Mac).
 - PTT on a slice in DIGU / DIGL now says why it does not transmit (PTT is for voice; use USB / LSB, or the Digi tab for FT8 / FT4) instead of "the radio did not accept the transmit request", and the radio's own reason for a refused transmit stays on screen. Thanks Charlie KB8CR.
 
 RECENT (build 107)
 - Three meters while transmitting: the left meter becomes two bars (SWR and Mic by default) and Power stays at the right; tap the lower bar to choose what it shows. Asked by Mike VA3MW.
-- Mac: typing into the text fields should work now (the keyboard went to the paddle / PTT keys). If it still does not, please send the log after trying: it now records where the keys go.
 
-RECENT (build 106)
-- FT8 / FT4 Last TX and Free; the Log tab checks QRZ.com and Wavelog / Cloudlog at start.
-
-RECENT (build 105)
-- iPhone Duo full screen and landscape layout (thanks Vesa OH6HPS!), Wavelog / Cloudlog, PSK Reporter, transverters in Radio Setup > XVTR, FT8 between two nonstandard calls, the RX mark always shown.
-
-RECENT (build 104, earlier)
-- Built with the iOS 27 SDK: the app fills the iPhone Duo's inner screen. The QSO state also shows at the top of the display; the radio's PROC is off while FT8 / FT4 transmits; a CQ right after a Digi band button no longer stops by itself.
-
-RECENT (builds 94–101)
-- FT8 and FT4 in the app (Controls > Digi): every DIGU slice decodes with WSJT-X colours, RX / TX marks, Keep CQ and CQ slot and the New / New DXCC filter, tap a call to answer (it flashes, TX moves to its slice), full power with TX level, AGC by mode; RADE digital voice; the log in Files > On My iPhone / iPad > OksaSDR, ADIF import.
+RECENT (builds 94–106)
+- FT8 and FT4 in the app (Controls > Digi): every DIGU slice decodes with WSJT-X colours, RX / TX marks, Keep CQ, Last TX and Free, PSK Reporter; Wavelog / Cloudlog; transverters in Radio Setup; RADE digital voice; the log in Files > On My iPhone / iPad > OksaSDR.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.

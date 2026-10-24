@@ -53,6 +53,8 @@ iOS background).
 ## Released
 
 **Build 108** (not yet pushed), iPhone and iPad only:
+- Fixed the build 107 crash on focusing a text field with a hardware keyboard attached: the keyboard table was autoreleased in a non-ARC file and freed ("-[NSBundle allObjects]: unrecognized selector", a tester's MacBook Pro); now an owned array.
+- On a Mac the GameController keyboard handler is not started at all (Pentti's log: 0 key events reached the field, GameController saw every key); Qt's key events serve there, as on a desktop.
 - Voice PTT with the TX slice in DIGU / DIGL: a plain message and no key or microphone (an Aurora tester saw only "did not accept"; the radio refuses voice in DIGU); the radio's own refusal reason no longer overwritten by the generic one.
 
 **Build 107** (2026-10-24), iPhone and iPad, and Android beta 25:

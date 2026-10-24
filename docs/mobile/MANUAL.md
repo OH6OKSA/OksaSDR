@@ -711,9 +711,10 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 
 ## 11. Keyboard and Apple Pencil
 
-On a **Mac** (the iPad app, through TestFlight) type into the fields with
-the Mac's keyboard; Ctrl paddles and Space PTT pause while a text field
-has focus, so the keys reach the field.
+On a **Mac** (the iPad app, through TestFlight) the Mac's keyboard types
+into the fields, and Space PTT and the Ctrl paddles come from the keys as
+on a computer (the iPad's GameController keyboard reading is not used
+there: it kept the typed keys from the fields).
 
 With a Magic Keyboard or trackpad:
 
