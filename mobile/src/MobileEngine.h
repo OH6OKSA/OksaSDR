@@ -1416,6 +1416,10 @@ private:
     double m_digiClockOffset{0.0};
     bool m_digiClockKnown{false};
     void digiFinishQso(const QString& status);
+    // Both our call and the other station's are nonstandard (OH6OKSA and,
+    // say, SN9Q/QRP): FT8 has no message for a report between them, so the
+    // QSO is calls and RR73 only (type 4 messages).
+    bool digiNoReports() const;
     double m_digiTxPeakW{0.0};
     double m_digiTxPeakSwr{0.0};
     double m_swr{1.0};

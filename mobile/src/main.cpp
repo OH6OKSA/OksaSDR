@@ -1242,7 +1242,8 @@ int main(int argc, char* argv[])
             const QStringList messages{QStringLiteral("CQ OH6OKSA"), QStringLiteral("<K1ABC> OH6OKSA"),
                                        QStringLiteral("K1ABC <OH6OKSA> -12"), QStringLiteral("K1ABC <OH6OKSA> R-09"),
                                        QStringLiteral("<K1ABC> OH6OKSA RR73"), QStringLiteral("<K1ABC> OH6OKSA 73"),
-                                       QStringLiteral("CQ OH2XO KP20"), QStringLiteral("K1ABC OH2XO KP20")};
+                                       QStringLiteral("CQ OH2XO KP20"), QStringLiteral("K1ABC OH2XO KP20"),
+                                       QStringLiteral("<SN9Q/QRP> OH6OKSA RR73"), QStringLiteral("<SN9Q/QRP> OH6OKSA")};
             for (const QString& m : messages) {
                 const QByteArray audio = ft8.encode(m, 1500.0);
                 const auto* f = reinterpret_cast<const float*>(audio.constData());
@@ -1298,8 +1299,14 @@ int main(int argc, char* argv[])
                               << "| next" << engine.digi().value(QStringLiteral("txMsg")).toString()
                               << "| rx" << engine.digi().value(QStringLiteral("rxHz")).toInt();
         };
-        QTimer::singleShot(40000, &app, [feed] { feed(QStringLiteral("OH6OKSA K1ABC FN42")); });
-        QTimer::singleShot(70000, &app, [feed] { feed(QStringLiteral("OH6OKSA K1ABC R-10")); });
+        // nonstd: a nonstandard call answers (no reports between two of them).
+        const bool nonstd = parser.value(ft8TestOption).contains(QStringLiteral("nonstd"));
+        QTimer::singleShot(40000, &app, [feed, nonstd] {
+            feed(nonstd ? QStringLiteral("<OH6OKSA> SN9Q/QRP") : QStringLiteral("OH6OKSA K1ABC FN42"));
+        });
+        if (!nonstd) {
+            QTimer::singleShot(70000, &app, [feed] { feed(QStringLiteral("OH6OKSA K1ABC R-10")); });
+        }
         QTimer::singleShot(110000, &app, [&app, &engine] {
             const QVariantMap d = engine.digi();
             qInfo().noquote() << "keepcq-test: end state" << d.value(QStringLiteral("state")).toString() << "|"

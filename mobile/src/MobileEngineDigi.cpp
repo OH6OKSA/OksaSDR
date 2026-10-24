@@ -467,6 +467,12 @@ void MobileEngine::digiInjectDecodes(QVariantList rows)
     handleDigiDecodes(rows, Ft8Engine::nowMs());
 }
 
+bool MobileEngine::digiNoReports() const
+{
+    return !m_digiDx.isEmpty() && !m_digiDx.startsWith(QLatin1Char('<')) && !Ft8Engine::isStandardCall(digiMyCall())
+           && !Ft8Engine::isStandardCall(m_digiDx);
+}
+
 void MobileEngine::digiFinishQso(const QString& status)
 {
     // With Keep CQ on, a QSO that answered our CQ goes straight back to CQ
@@ -701,8 +707,18 @@ void MobileEngine::digiAnswer(int index)
     m_digiEndAfterTx = false;
     m_digiTimeOn = QDateTime::currentDateTimeUtc().toString(QStringLiteral("HHmm"));
     m_digiTxParity = d.value(QStringLiteral("slotOdd")).toBool() ? 0 : 1;
-    // They called us: answer with the report; else call them.
-    m_digiTxMsg = digiMessage(p.to == my ? QStringLiteral("report") : QStringLiteral("call"));
+    // They called us: answer with the report; else call them. With two
+    // nonstandard calls there is no report: the call, then RR73.
+    if (digiNoReports()) {
+        m_digiRptSent.clear();
+        m_digiTxMsg = digiMessage(p.to == my ? QStringLiteral("rr73") : QStringLiteral("call"));
+        if (p.to == my) {
+            digiLogQso();
+            m_digiEndAfterTx = true;
+        }
+    } else {
+        m_digiTxMsg = digiMessage(p.to == my ? QStringLiteral("report") : QStringLiteral("call"));
+    }
     m_digiTries = 0;
     setDigiStatus(tr("Calling %1").arg(m_digiDx));
 }
@@ -949,6 +965,16 @@ void MobileEngine::handleDigiDecodes(const QVariantList& decodes, qint64 slotMs)
             m_digiRptSent = digiReport(d.value(QStringLiteral("snr")).toInt());
             m_digiTimeOn = QDateTime::currentDateTimeUtc().toString(QStringLiteral("HHmm"));
             m_digiLogged = false;
+            if (digiNoReports()) {
+                // Their answer is the contact: no report can follow.
+                m_digiRptSent.clear();
+                digiLogQso();
+                m_digiTxMsg = digiMessage(QStringLiteral("rr73"));
+                m_digiEndAfterTx = true;
+                m_digiTries = 0;
+                setDigiStatus(tr("%1 answered; two nonstandard calls, no reports: sending RR73").arg(m_digiDx));
+                return;
+            }
             if (report) {
                 m_digiRptRcvd = extra;
             }
@@ -959,6 +985,20 @@ void MobileEngine::handleDigiDecodes(const QVariantList& decodes, qint64 slotMs)
         }
         if (p.de != m_digiDx) {
             continue;
+        }
+        if (digiNoReports()) {
+            // Calls and RR73 only: whatever they send us means they hear us.
+            m_digiRptSent.clear();
+            digiLogQso();
+            if (extra == QLatin1String("RR73") || extra == QLatin1String("RRR") || extra == QLatin1String("73")) {
+                m_digiTxMsg = digiMessage(QStringLiteral("73"));
+            } else {
+                m_digiTxMsg = digiMessage(QStringLiteral("rr73"));
+            }
+            m_digiEndAfterTx = true;
+            m_digiTries = 0;
+            setDigiStatus(tr("%1 heard us; two nonstandard calls, no reports").arg(m_digiDx));
+            return;
         }
         if (report) {
             m_digiRptRcvd = extra;
