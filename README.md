@@ -180,7 +180,11 @@ radio interface, with no computer running alongside.
   the prefix), worked-before and dupe check, POTA / WWFF references, and
   the log as an ADIF file in Files (iPhone, iPad) or Documents (Android,
   computer): share it to your logbook or LoTW, or import contacts from
-  another logbook.
+  another logbook. Every QSO can also go straight to your **Wavelog** or
+  **Cloudlog** logbook, queued while offline.
+- **PSK Reporter**: report the stations you decode, as WSJT-X does (off by
+  default).
+- **Transverters** set up in Radio Setup (XVTR).
 
 **Remote (SmartLink)**
 - Sign in with your FlexRadio SmartLink account and connect to your radio
@@ -257,8 +261,7 @@ refreshed with every user-interface change.</sub>
 | LAN discovery on iOS | ⏳ Needs Apple's multicast entitlement. Connect by IP for now. |
 | LAN discovery on Android | 🧪 Built in; to be verified on the radio's own network |
 
-**Next:** see the [roadmap](mobile/ROADMAP.md): three TX meters,
-sending the log to Wavelog / Cloudlog, transverter setup.
+**Next:** see the [roadmap](mobile/ROADMAP.md): three TX meters.
 
 ## Try it
 

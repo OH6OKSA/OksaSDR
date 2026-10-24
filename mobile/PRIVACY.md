@@ -10,7 +10,8 @@ through TestFlight and as the Android beta from
 
 The app collects no personal data. Nothing you do in the app is sent to the
 developer. It connects to a third-party service only when you use a feature
-that needs it (SmartLink, QRZ.com, a DX cluster), as listed below.
+that needs it (SmartLink, QRZ.com, a DX cluster, PSK Reporter, your own
+Wavelog or Cloudlog logbook), as listed below.
 
 ## Network use
 
@@ -31,12 +32,21 @@ these services:
   you type is looked up there with your account.
 - **A DX cluster**, if you turn it on: the app connects to the cluster
   server you choose, signs in with your callsign and receives its spots.
+- **PSK Reporter**, only if you turn on *Report to PSK Reporter* on the
+  Digi tab (off by default): the callsigns, locators, frequencies, SNR and
+  times of the FT8 / FT4 stations this device decodes are sent to
+  report.pskreporter.info with your callsign, your grid and the app's name
+  and version, and are published there, as WSJT-X does.
+- **Wavelog or Cloudlog**, only if you enter your logbook's address and API
+  key on the Log tab: each QSO you log is sent to that logbook (your own
+  server, or the one you use) with its ADIF fields. QSOs that could not be
+  sent wait on the device until they can.
 - **Developer link** (Log tab), off unless turned on: for the developer's
   own devices; it sends the app's log to the address set there.
 
 The app contains no analytics, advertising, tracking or crash-reporting SDKs,
 and it makes no other internet connections. FT8 / FT4 decoding and RADE run
-on the device; nothing is sent to PSKReporter or similar services.
+on the device.
 
 ## Microphone
 
@@ -64,7 +74,8 @@ your device, except as part of the normal connection to your radio.
   the device: in the app's folder in Files on iPhone and iPad, in
   Documents › OksaSDR on Android and on a computer. It leaves the device
   only when you share or move it yourself.
-- **Sign-ins**: the SmartLink sign-in and the QRZ.com password are kept in
+- **Sign-ins**: the SmartLink sign-in, the QRZ.com password and the
+  Wavelog / Cloudlog API key are kept in
   the device's secure store (Keychain on Apple devices); a SmartLink
   password is never stored.
 - The in-app diagnostic log is kept in memory only. It is shared only if
@@ -89,4 +100,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-10-24
+Last updated: 2026-10-24 (PSK Reporter, Wavelog / Cloudlog)

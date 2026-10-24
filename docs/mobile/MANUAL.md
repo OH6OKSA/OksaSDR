@@ -521,6 +521,15 @@ them back into the drawer.
   an ADIF file (from another logbook, or another device's OksaSDR log);
   those already in the log (same call, date, time, band and mode) are
   skipped. The QRZ.com password is kept in this device's secure store.
+  **Wavelog / Cloudlog**: with your logbook's address (as its API page
+  shows it, e.g. `https://log.example.com/index.php`), a read & write
+  **API key** (Wavelog: *API* › *Legacy API Keys (API v1)*, starting
+  `wl…`; Cloudlog: *API Keys*) and the **station ID** (the number of your
+  station location there), *Save* checks the key and says whether the
+  logbook accepted it; from then on every QSO you log, by hand or from FT8 /
+  FT4, also goes to the logbook. QSOs that cannot be sent (offline, server
+  away) wait on the device and go with the next QSO or start; the line
+  under the fields says how many wait. Clear the address to stop.
   **Where the log is** (shown on the Log tab): on an iPhone or iPad in
   Files › On My iPhone / iPad › OksaSDR › `oksasdr-log.adi`, from where it
   can be moved to iCloud Drive or opened in a logbook; on Android a copy is
@@ -579,6 +588,17 @@ them back into the drawer.
   always shown: after a QSO it stays on the last station worked; before
   the first one, and while you call CQ, it sits on your own TX tone; both labels sit on solid grounds over the
   waterfall.
+
+  **Report to PSK Reporter** (off by default) sends the stations this
+  device decodes, with their locators, frequency and SNR, to
+  pskreporter.info under your callsign and grid (set the grid on the Log
+  tab if the radio has no GPS), as WSJT-X does: each station at most once
+  per band in five minutes, sent every five minutes and when decoding stops.
+  The line under it counts what was reported.
+
+  A QSO between two **nonstandard calls** (yours with a four-letter suffix,
+  and theirs with a / suffix such as /QRP) has no FT8 message for a report:
+  the app makes it with the calls and RR73 only, and logs it without RST.
 
   If the decodes' DT is off by more than 0.8 s on average, a red notice
   says this device's clock looks off: FT8 needs it within about a second,
@@ -644,6 +664,13 @@ radio.
   (1450 by default, as in SmartSDR and the desktop). Lower it if the
   waterfall or audio break up over a VPN or tunnel; over Tailscale at most
   1200 is used.
+- **XVTR** — the radio's transverters, as the desktop's XVTR tab: *Add
+  transverter* creates one; for each, its name (shown on the band buttons),
+  RF frequency (the band, MHz), IF frequency (the radio's, MHz; LO = RF −
+  IF is shown), LO error (MHz, for the converter's offset), RX gain (dB),
+  max power (dBm of drive to the transverter at its IF, kept within what the
+  radio allows) and *Receive only*; *Remove* deletes it. The radio says when
+  a transverter is valid.
 
 **A new radio.** When the app connects to a radio that has no callsign yet —
 a new or reset radio — it offers *Set up* once, a few seconds after

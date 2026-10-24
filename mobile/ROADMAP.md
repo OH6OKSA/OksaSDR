@@ -5,7 +5,7 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. To verify in build 103: the iPhone Duo inner screen full size with the iOS 27 SDK (build 102 with the scene manifest alone still ran letterboxed), and on other iPhones and iPads background/resume, SmartLink sign-in and the share sheet under the UIScene life cycle. In build 101: Keep CQ with a real answer on the air, the RX mark following a station, the clock notice on a device with a wrong clock. In build 100 (on the iPad: full drive at 0 dB; 15 W on 15 m was the band's RF power): four slices decoding for an hour without a hang, the tap flash. Build 99 on the iPad: four slices on their own DAX channels, decoding every slot. In build 97: the 3D view over SmartLink on the iPad (no switch to 2D). In build 96: dragging the TX band on a device. In build 94 (FT8 and FT4 QSOs on the iPad worked: OK2VCR, EA3FHP): RADE transmit with a device microphone and receive with a RADE station, the log in Files / Documents and the ADIF import on iOS and Android, the 2D start after a 3D hang. In build 93: FDVU / FDVL with the FreeDV waveform (by the tester who asked); menus closing on a second tap without retuning; the QRZ.com sign-in result with an account. In build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
+Three TX meters wait for VA3MW. To verify in build 105: Wavelog sending from a device, PSK Reporter spots on pskreporter.info, a transverter on a device, the Duo landscape layout. Build 104 confirmed the Duo inner screen full size (Vesa OH6HPS). Still from 102/103: on other iPhones and iPads background/resume, SmartLink sign-in and the share sheet under the UIScene life cycle. In build 101: Keep CQ with a real answer on the air, the RX mark following a station, the clock notice on a device with a wrong clock. In build 100 (on the iPad: full drive at 0 dB; 15 W on 15 m was the band's RF power): four slices decoding for an hour without a hang, the tap flash. Build 99 on the iPad: four slices on their own DAX channels, decoding every slot. In build 97: the 3D view over SmartLink on the iPad (no switch to 2D). In build 96: dragging the TX band on a device. In build 94 (FT8 and FT4 QSOs on the iPad worked: OK2VCR, EA3FHP): RADE transmit with a device microphone and receive with a RADE station, the log in Files / Documents and the ADIF import on iOS and Android, the 2D start after a 3D hang. In build 93: FDVU / FDVL with the FreeDV waveform (by the tester who asked); menus closing on a second tap without retuning; the QRZ.com sign-in result with an account. In build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
 (QRZ.com lookup with an account, the ADIF share sheet on iOS and Android);
 the 3D fallback on the tablet that froze; spot labels beside the RF GAIN
 badge. Still open from build 86: an FM repeater memory on the air, DAX
@@ -52,7 +52,12 @@ iOS background).
 
 ## Released
 
-**Build 105** (2026-10-24), iPhone and iPad only:
+**Build 105** (2026-10-24), iPhone and iPad, and Android beta 23:
+- Wavelog / Cloudlog: each logged QSO to the online logbook (API v1: auth check, POST api/qso, a queue kept in the settings for offline). Checked against loki.oksa.fi (key valid rw; a dry-run QSO with station 1 accepted).
+- PSK Reporter: decoded stations reported over IPFIX (report.pskreporter.info:4739), off by default; packets checked byte by byte (templates, receiver and 55 sender records in two packets).
+- Transverter setup in Radio Setup › XVTR (tested on the FLEX: created, set, removed).
+- FT8 QSOs between two nonstandard calls without reports (stalled with SN9Q/QRP on the air).
+- Thanks to Vesa OH6HPS, the first iPhone Duo user, for testing builds 102–105 on the device.
 - The FT8 / FT4 RX mark always shown (it showed only during a QSO; asked after build 104 on the iPad): the last station worked, else the TX tone.
 - The tablet layout pins the controls at the side only where the band buttons still fit beside them (the iPhone Duo's inner screen in landscape pushed the panel off the right edge in build 104); else the drawer. The info row goes under the frequency by the left column's width.
 

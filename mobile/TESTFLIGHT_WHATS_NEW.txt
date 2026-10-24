@@ -9,8 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- FT8 / FT4: the green RX mark is always shown, as in WSJT-X: on the last station worked, or on your TX tone before the first QSO and while calling CQ.
-- iPhone Duo inner screen in landscape: the controls panel no longer runs off the right edge; where it does not fit beside the display it opens from Controls.
+- iPhone Duo: the app fills the inner screen (since build 104), and in landscape the controls no longer run off the right edge: where they do not fit beside the display they open from Controls. Thank you Vesa OH6HPS, the first Duo user, who made testing on the device possible!
+- Wavelog / Cloudlog (Log tab): every QSO you log, by hand or FT8 / FT4, also goes to your online logbook; queued while offline. Save checks the API key and says whether it was accepted.
+- PSK Reporter (Digi tab, off by default): reports the stations you decode, as WSJT-X does.
+- Transverters in Radio Setup > XVTR: add, edit and remove them.
+- FT8 / FT4: a QSO between two nonstandard calls (such as OH6OKSA and SN9Q/QRP) now completes, without reports, as FT8 allows; the green RX mark is always shown.
 
 RECENT (build 104)
 - Built with the iOS 27 SDK: the app fills the iPhone Duo's inner screen. The QSO state also shows at the top of the display; the radio's PROC is off while FT8 / FT4 transmits; a CQ right after a Digi band button no longer stops by itself.
