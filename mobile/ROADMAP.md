@@ -5,7 +5,7 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Nothing queued yet. To verify in build 101: Keep CQ with a real answer on the air, the RX mark following a station, the clock notice on a device with a wrong clock. In build 100 (on the iPad: full drive at 0 dB; 15 W on 15 m was the band's RF power): four slices decoding for an hour without a hang, the tap flash. Build 99 on the iPad: four slices on their own DAX channels, decoding every slot. In build 97: the 3D view over SmartLink on the iPad (no switch to 2D). In build 96: dragging the TX band on a device. In build 94 (FT8 and FT4 QSOs on the iPad worked: OK2VCR, EA3FHP): RADE transmit with a device microphone and receive with a RADE station, the log in Files / Documents and the ADIF import on iOS and Android, the 2D start after a 3D hang. In build 93: FDVU / FDVL with the FreeDV waveform (by the tester who asked); menus closing on a second tap without retuning; the QRZ.com sign-in result with an account. In build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
+Nothing queued yet. To verify in build 102: the iPhone Duo inner screen full size (a tester's iPhone19_4 ran letterboxed), and on other iPhones and iPads background/resume, SmartLink sign-in and the share sheet under the UIScene life cycle. In build 101: Keep CQ with a real answer on the air, the RX mark following a station, the clock notice on a device with a wrong clock. In build 100 (on the iPad: full drive at 0 dB; 15 W on 15 m was the band's RF power): four slices decoding for an hour without a hang, the tap flash. Build 99 on the iPad: four slices on their own DAX channels, decoding every slot. In build 97: the 3D view over SmartLink on the iPad (no switch to 2D). In build 96: dragging the TX band on a device. In build 94 (FT8 and FT4 QSOs on the iPad worked: OK2VCR, EA3FHP): RADE transmit with a device microphone and receive with a RADE station, the log in Files / Documents and the ADIF import on iOS and Android, the 2D start after a 3D hang. In build 93: FDVU / FDVL with the FreeDV waveform (by the tester who asked); menus closing on a second tap without retuning; the QRZ.com sign-in result with an account. In build 92: zoom in CW down to the minimum and back out; in build 91: the Log tab on the devices
 (QRZ.com lookup with an account, the ADIF share sheet on iOS and Android);
 the 3D fallback on the tablet that froze; spot labels beside the RF GAIN
 badge. Still open from build 86: an FM repeater memory on the air, DAX
@@ -51,6 +51,9 @@ to the radio (needs a listening server on the phone, not possible in the
 iOS background).
 
 ## Released
+
+**Build 102** (2026-10-24), iPhone and iPad only:
+- The UIScene life cycle (a scene manifest; Qt 6.12 sets its delegate) so resizable displays (iPhone Duo inner screen, iPad windows) no longer run the app in compatibility mode; portrait upside down on the iPhone.
 
 **Build 101** (2026-10-24), iPhone and iPad, and Android beta 21:
 - FT8 / FT4 RX mark (green, the QSO station's audio Hz, or the TX Hz while calling CQ) beside the TX mark; both labels on solid grounds (the TX label vanished into the waterfall on the iPad).

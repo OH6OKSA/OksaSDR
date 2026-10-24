@@ -9,14 +9,10 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- FT8 / FT4: a green RX mark shows where the station you work is heard, next to the red TX mark; both labels now stand out over the waterfall.
-- The QSO state is a box that stands out: amber while waiting (Calling ...), red while transmitting.
-- Keep CQ: back to CQ after every QSO your CQ brought, until Halt TX. CQ slot: Auto, Even or Odd.
-- A red notice when this device's clock looks off (FT8 needs it within a second).
-- BC shows dimmed in CW and data modes instead of disappearing.
+- The app fills the screen on the iPhone Duo's inner display (it ran letterboxed and scaled there) and in iPad windows; on the iPhone it also turns upside down. Please check that background/resume, SmartLink sign-in and sharing the log still work as before.
 
-RECENT (builds 94–100)
-- FT8 and FT4 in the app (Controls > Digi): every DIGU slice decodes with WSJT-X colours and the New / New DXCC filter, tap a call to answer (it flashes, TX moves to its slice), full power with TX level, AGC by mode; RADE digital voice; the log in Files > On My iPhone / iPad > OksaSDR, ADIF import.
+RECENT (builds 94–101)
+- FT8 and FT4 in the app (Controls > Digi): every DIGU slice decodes with WSJT-X colours, RX / TX marks, Keep CQ and CQ slot and the New / New DXCC filter, tap a call to answer (it flashes, TX moves to its slice), full power with TX level, AGC by mode; RADE digital voice; the log in Files > On My iPhone / iPad > OksaSDR, ADIF import.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
