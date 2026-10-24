@@ -173,7 +173,8 @@ void MobileEngine::onlineLogFlush()
         } else if (http == 401 || http == 403) {
             // The key: nothing is dropped, the queue waits for a good one.
             m_onlineLogStatusKind = QStringLiteral("failed");
-            m_onlineLogStatus = tr("The logbook refused the API key: %1 QSO(s) wait").arg(m_onlineLogPending.size());
+            // Wavelog answers 401 for a wrong station ID too.
+            m_onlineLogStatus = tr("The logbook refused the API key or the station ID: %1 QSO(s) wait").arg(m_onlineLogPending.size());
             qCWarning(lcMobile).noquote() << "online log:" << m_onlineLogStatus;
         } else if (reply->error() == QNetworkReply::NoError || http == 400) {
             // This record refused (a bad or duplicate QSO): out of the
