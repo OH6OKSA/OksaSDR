@@ -52,7 +52,7 @@ iOS background).
 
 ## Released
 
-**Build 107** (2026-10-24), iPhone and iPad only:
+**Build 107** (2026-10-24), iPhone and iPad, and Android beta 25:
 - Three TX meters (asked by VA3MW; layout B of three shown): while transmitting the left meter splits into two bars, its own TX choice over a second one (default Mic), Power at the right; the second bar has its own chooser. --preview-tx shows the layout without keying.
 - Mac: text fields take the keyboard (the GameController keyboard handler for Ctrl paddles / Space PTT is off while a field has focus); keyboard diagnostics in the log (Mac or not, the focused field, key and input-method events that reached it, keys GameController saw).
 
