@@ -188,6 +188,10 @@ int main(int argc, char* argv[])
                        "(call TEST1) 4 s later and log the logbook's state; an empty url at the end clears it."),
         QStringLiteral("url,key,station"));
     parser.addOption(onlineLogTestOption);
+    const QCommandLineOption pskReporterOption(QStringLiteral("psk-reporter"),
+        QStringLiteral("Development: turn PSK Reporter on with <grid> as My grid (both saved; AETHER_PSKREPORTER_TEST=1 "
+                       "sends to the checking port, every minute)."), QStringLiteral("grid"));
+    parser.addOption(pskReporterOption);
     const QCommandLineOption digiTxLevelOption(QStringLiteral("digi-tx-level"),
         QStringLiteral("Development: the FT8 / FT4 TX level in dB (-20 to 0; it is saved)."), QStringLiteral("db"));
     parser.addOption(digiTxLevelOption);
@@ -1604,6 +1608,14 @@ int main(int argc, char* argv[])
             qInfo() << "adif-import:" << engine.importAdif(QUrl::fromLocalFile(file));
             app.quit();
         });
+    }
+    if (parser.isSet(pskReporterOption)) {
+        if (parser.value(pskReporterOption) == QLatin1String("off")) {
+            engine.setPskReporter(false);
+        } else {
+            engine.setMyGrid(parser.value(pskReporterOption));
+            engine.setPskReporter(true);
+        }
     }
     if (parser.isSet(onlineLogTestOption)) {
         const QStringList a = parser.value(onlineLogTestOption).split(QLatin1Char(','));

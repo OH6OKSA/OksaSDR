@@ -126,6 +126,40 @@ ColumnLayout {
             onClicked: Engine.digiAutoCq = !Engine.digiAutoCq
         }
     }
+    // PSK Reporter: the stations decoded here, reported (off by default).
+    RowLayout {
+        Layout.fillWidth: true
+        Label {
+            text: qsTr("Report to PSK Reporter")
+            color: Theme.text
+            Layout.fillWidth: true
+            wrapMode: Text.WordWrap
+        }
+        AppButton {
+            objectName: "pskReporterOff"
+            text: qsTr("Off")
+            checked: !Engine.pskReporter
+            focusPolicy: Qt.NoFocus
+            Layout.preferredWidth: 64
+            onClicked: Engine.pskReporter = false
+        }
+        AppButton {
+            objectName: "pskReporterOn"
+            text: qsTr("On")
+            checked: Engine.pskReporter
+            focusPolicy: Qt.NoFocus
+            Layout.preferredWidth: 64
+            onClicked: Engine.pskReporter = true
+        }
+    }
+    Label {
+        Layout.fillWidth: true
+        visible: Engine.pskReporter && Engine.pskReporterStatus.length > 0
+        text: Engine.pskReporterStatus
+        color: Theme.textDim
+        font.pixelSize: 12
+        wrapMode: Text.WordWrap
+    }
     // The device clock, judged from the decodes' DT: FT8 fails beyond about
     // a second.
     Rectangle {

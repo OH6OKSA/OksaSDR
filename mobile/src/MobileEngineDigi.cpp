@@ -4,6 +4,7 @@
 #include "MobileEngine.h"
 
 #include "Ft8Engine.h"
+#include "PskReporterUpload.h"
 #include "QsoLog.h"
 
 #include "core/AppSettings.h"
@@ -74,6 +75,13 @@ void MobileEngine::setupDigi()
                            ? Ft8Engine::Protocol::Ft4
                            : Ft8Engine::Protocol::Ft8);
     m_digiTxHz = std::clamp(AppSettings::instance().value(QStringLiteral("MobileDigiTxHz"), 1200).toInt(), 200, 3000);
+    m_pskReporterOn = AppSettings::instance().value(QStringLiteral("MobilePskReporter"), QStringLiteral("0")).toString() == QLatin1String("1");
+    m_psk = new PskReporterUpload(this);
+    connect(m_psk, &PskReporterUpload::changed, this, &MobileEngine::digiChanged);
+    // Its status names what is missing (the radio's callsign, a grid): it
+    // follows them.
+    connect(&m_session.radioModel(), &RadioModel::infoChanged, this, &MobileEngine::digiChanged);
+    connect(this, &MobileEngine::qrzChanged, this, &MobileEngine::digiChanged);
     m_digiAutoCq = AppSettings::instance().value(QStringLiteral("MobileDigiAutoCq"), QStringLiteral("0")).toString() == QLatin1String("1");
     m_digiCqParity = AppSettings::instance().value(QStringLiteral("MobileDigiCqParity"), QStringLiteral("auto")).toString();
     m_digiTxLevelDb = std::clamp(AppSettings::instance().value(QStringLiteral("MobileDigiTxLevelDb"), 0).toInt(), -20, 0);
@@ -94,6 +102,9 @@ void MobileEngine::setDigiRunning(bool on)
     }
     if (!on) {
         digiHalt();
+        if (m_psk) {
+            m_psk->flush();
+        }
         if (m_digiProcRestore) {
             m_digiProcRestore = false;
             setProcEnabled(true);
@@ -233,6 +244,20 @@ void MobileEngine::syncDigiAudio()
                                                    .arg(m.value(QStringLiteral("dt")).toString())
                                                    .arg(m.value(QStringLiteral("freq")).toInt(), 4)
                                                    .arg(m.value(QStringLiteral("text")).toString());
+            }
+            // PSK Reporter: every station heard by its own call (not <hashed>),
+            // at the dial frequency plus the audio offset.
+            if (m_pskReporterOn && m_psk && sl && !my.isEmpty() && myGrid().size() >= 4) {
+                m_psk->setReceiver(my, myGrid(), QStringLiteral("OksaSDR %1").arg(appVersion()));
+                const double sign = sl->mode() == QLatin1String("DIGL") ? -1.0 : 1.0;
+                for (const Ft8Engine::Decode& dec : decodes) {
+                    const Ft8Engine::Parsed p = Ft8Engine::parse(dec.text);
+                    if (p.de.isEmpty() || p.de.startsWith(QLatin1Char('<')) || p.de == my) {
+                        continue;
+                    }
+                    const qint64 hz = qint64(std::llround(sl->frequency() * 1e6 + sign * dec.freq));
+                    m_psk->addSpot(p.de, Ft8Engine::isGrid(p.extra) ? p.extra : QString(), hz, dec.snr, modeKey);
+                }
             }
             handleDigiDecodes(list, slotMs);
         });
@@ -425,6 +450,35 @@ void MobileEngine::setDigiProtocol(const QString& protocol)
     m_digiDecodes.clear();
     emit digiDecodesChanged();
     emit digiChanged();
+}
+
+void MobileEngine::setPskReporter(bool on)
+{
+    if (on == m_pskReporterOn) {
+        return;
+    }
+    m_pskReporterOn = on;
+    if (!on && m_psk) {
+        m_psk->flush();  // what was heard so far still goes
+    }
+    AppSettings::instance().setValue(QStringLiteral("MobilePskReporter"), on ? QStringLiteral("1") : QStringLiteral("0"));
+    AppSettings::instance().save();
+    qCInfo(lcMobile) << "pskreporter:" << (on ? "on" : "off");
+    emit digiChanged();
+}
+
+QString MobileEngine::pskReporterStatus() const
+{
+    if (!m_pskReporterOn || !m_psk) {
+        return {};
+    }
+    if (digiMyCall().isEmpty()) {
+        return tr("Needs the radio's callsign (Radio Setup).");
+    }
+    if (myGrid().size() < 4) {
+        return tr("Needs your grid (Log tab › My grid, or the radio's GPS).");
+    }
+    return tr("%1 stations reported, %2 waiting (sent every 5 minutes)").arg(m_psk->spotsSent()).arg(m_psk->spotsQueued());
 }
 
 void MobileEngine::setDigiAutoCq(bool on)

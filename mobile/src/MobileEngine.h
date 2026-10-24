@@ -182,6 +182,10 @@ class MobileEngine : public QObject {
     // Keep calling CQ after a QSO that answered our CQ (until Halt TX or
     // the CQ watchdog); the slot CQ goes out in: "auto", "even" or "odd".
     Q_PROPERTY(bool digiAutoCq READ digiAutoCq WRITE setDigiAutoCq NOTIFY digiChanged)
+    // Report decoded stations to PSK Reporter (off by default); the status
+    // line under it: what was sent, or why nothing can be.
+    Q_PROPERTY(bool pskReporter READ pskReporter WRITE setPskReporter NOTIFY digiChanged)
+    Q_PROPERTY(QString pskReporterStatus READ pskReporterStatus NOTIFY digiChanged)
     Q_PROPERTY(QString digiCqParity READ digiCqParity WRITE setDigiCqParity NOTIFY digiChanged)
     // Beat cancel can run (every audible slice in a voice mode); the BC
     // button shows dimmed when not.
@@ -671,6 +675,9 @@ public:
     int digiTxLevelDb() const { return m_digiTxLevelDb; }
     void setDigiTxLevelDb(int db);
     bool digiAutoCq() const { return m_digiAutoCq; }
+    bool pskReporter() const { return m_pskReporterOn; }
+    void setPskReporter(bool on);
+    QString pskReporterStatus() const;
     void setDigiAutoCq(bool on);
     QString digiCqParity() const { return m_digiCqParity; }
     void setDigiCqParity(const QString& parity);
@@ -1434,6 +1441,8 @@ private:
     double m_forwardPowerW{0.0};
     int m_digiTxLevelDb{0};
     bool m_digiAutoCq{false};
+    bool m_pskReporterOn{false};
+    class PskReporterUpload* m_psk{nullptr};
     QString m_digiCqParity{QStringLiteral("auto")};
     bool m_digiFromCq{false};  // the QSO under way answered our CQ
     bool m_digiDryRun{false};
