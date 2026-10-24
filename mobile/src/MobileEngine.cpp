@@ -470,6 +470,7 @@ MobileEngine::MobileEngine(QObject* parent)
     connect(&rm, &RadioModel::interlockNotificationRequested, this,
             [this](const QString& message, const QString& key, const QString&) {
         qCWarning(lcMobile).noquote() << "transmit refused:" << message << "(" + key + ")";
+        m_lastInterlockMs = QDateTime::currentMSecsSinceEpoch();
         setLastError(message);
     });
     // Which slice transmits changes what PTT/TUNE can do.
@@ -2323,6 +2324,21 @@ void MobileEngine::setPtt(bool down, const QString& reason)
         qCInfo(lcMobile) << "PTT press ignored:" << transmitUnavailableReason();
         return;
     }
+    // Voice PTT on a TX slice in DIGU / DIGL: the radio refuses it ("You
+    // cannot transmit voice in DIGU/DIGL mode"), and the app said only that
+    // the request was not accepted (an Aurora tester). Said plainly, and
+    // the microphone stays shut. RADE transmits there on purpose.
+    if (!radeActive()) {
+        for (SliceModel* s : m_session.radioModel().slices()) {
+            if (s && s->isTxSlice() && (s->mode() == QLatin1String("DIGU") || s->mode() == QLatin1String("DIGL"))) {
+                const QString why = tr("The TX slice is in %1: PTT is for voice. Switch it to USB / LSB to talk; FT8 / FT4 run from the Digi tab.")
+                                        .arg(s->mode());
+                qCInfo(lcMobile).noquote() << "PTT press ignored:" << why;
+                setLastError(why);
+                return;
+            }
+        }
+    }
     // The microphone opens first, so its audio is flowing when the radio
     // keys: opened after keying, the first ~0.6 s went out as silence or the
     // capture's start-up noise.
@@ -2352,7 +2368,10 @@ void MobileEngine::setPtt(bool down, const QString& reason)
         m_pttInput.stop();
         stopDeviceMicrophoneCapture();
         qCWarning(lcMobile) << "PTT start refused by the TX controller";
-        setLastError(tr("The radio did not accept the transmit request."));
+        // The radio's own reason, when it gave one just now, stays shown.
+        if (QDateTime::currentMSecsSinceEpoch() - m_lastInterlockMs > 1000) {
+            setLastError(tr("The radio did not accept the transmit request."));
+        }
         return;
     }
     qCInfo(lcMobile) << "PTT keyed";

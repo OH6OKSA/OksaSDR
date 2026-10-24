@@ -346,6 +346,10 @@ offers **Off**.
 ## 7. Transmitting: PTT, KEY and TUNE
 
 - **PTT** — hold to transmit from the device's microphone; release to stop.
+  PTT is for voice: with the TX slice in DIGU or DIGL it says so and does
+  not key (the radio refuses voice there); switch to USB / LSB, or use the
+  Digi tab for FT8 / FT4. When the radio refuses transmit, its own reason
+  is shown.
   The microphone is open only while transmitting. **Tap on / off** (Controls
   → TX → PTT) makes it a switch: tap to transmit, tap again to stop (TX ■
   while it is on); as a safety it stops by itself after 3 minutes. Space on

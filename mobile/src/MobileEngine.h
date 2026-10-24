@@ -1453,6 +1453,7 @@ private:
     double m_forwardPowerW{0.0};
     int m_digiTxLevelDb{0};
     bool m_previewTx{false};
+    qint64 m_lastInterlockMs{0};  // when the radio last gave a reason for refusing transmit
     bool m_digiAutoCq{false};
     bool m_pskReporterOn{false};
     class PskReporterUpload* m_psk{nullptr};

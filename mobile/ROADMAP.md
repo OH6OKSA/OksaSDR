@@ -52,6 +52,9 @@ iOS background).
 
 ## Released
 
+**Build 108** (not yet pushed), iPhone and iPad only:
+- Voice PTT with the TX slice in DIGU / DIGL: a plain message and no key or microphone (an Aurora tester saw only "did not accept"; the radio refuses voice in DIGU); the radio's own refusal reason no longer overwritten by the generic one.
+
 **Build 107** (2026-10-24), iPhone and iPad, and Android beta 25:
 - Three TX meters (asked by VA3MW; layout B of three shown): while transmitting the left meter splits into two bars, its own TX choice over a second one (default Mic), Power at the right; the second bar has its own chooser. --preview-tx shows the layout without keying.
 - Mac: text fields take the keyboard (the GameController keyboard handler for Ctrl paddles / Space PTT is off while a field has focus); keyboard diagnostics in the log (Mac or not, the focused field, key and input-method events that reached it, keys GameController saw).
