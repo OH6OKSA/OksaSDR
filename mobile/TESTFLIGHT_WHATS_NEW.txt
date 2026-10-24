@@ -9,10 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- The Log tab checks a saved QRZ.com account and Wavelog / Cloudlog key at every start and says whether they still sign in (after a restart it said nothing).
-- FT8 / FT4: Last TX shows the last transmission's power and SWR beside the band's RF power, so you see whether the TX level is right.
-- FT8 / FT4: Free moves your TX tone to the clearest frequency among the stations heard.
-- The radio's PROC is now off only during each FT8 / FT4 transmission, back on right after it.
+- Three meters while transmitting: the left meter becomes two bars (SWR and Mic by default) and Power stays at the right; tap the lower bar to choose what it shows. Asked by Mike VA3MW.
+- Mac: typing into the text fields should work now (the keyboard went to the paddle / PTT keys). If it still does not, please send the log after trying: it now records where the keys go.
+
+RECENT (build 106)
+- FT8 / FT4 Last TX power and SWR, Free TX frequency, PROC off only during each transmission; the Log tab checks QRZ.com and Wavelog / Cloudlog at start.
 
 RECENT (build 105)
 - iPhone Duo full screen and landscape layout (thanks Vesa OH6HPS!), Wavelog / Cloudlog, PSK Reporter, transverters in Radio Setup > XVTR, FT8 between two nonstandard calls, the RX mark always shown.

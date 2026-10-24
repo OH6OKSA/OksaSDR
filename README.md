@@ -261,7 +261,7 @@ refreshed with every user-interface change.</sub>
 | LAN discovery on iOS | ⏳ Needs Apple's multicast entitlement. Connect by IP for now. |
 | LAN discovery on Android | 🧪 Built in; to be verified on the radio's own network |
 
-**Next:** see the [roadmap](mobile/ROADMAP.md): three TX meters.
+**Next:** see the [roadmap](mobile/ROADMAP.md).
 
 ## Try it
 

@@ -202,12 +202,20 @@ what it shows — separately for receive and for transmit (e.g. S and Power,
 then SWR and Power on the air) — and its style, bar or analog. Choices are
 remembered.
 
+**While transmitting** the left meter becomes two bars, its own transmit
+choice over a second one, so three readings show at once: by default SWR
+and Mic at the left and Power at the right. The slice buttons stay. Tap the
+lower bar to choose what it shows (Power, SWR, ALC, Mic, Comp, PA
+temperature, Volts); back in receive the left meter returns to its own face.
+
+![Meters while transmitting](manual/tx-meters.jpg)
+
 ![Meter chooser](manual/meter.jpg)
 
 Receive offers S, Mic, PA temperature and supply voltage; transmit adds
 Power, SWR, ALC and Compression, which the radio reads only while
-transmitting. **Mic** is on the left meter only (on a tablet the side
-panel covers the right one). With this device's microphone it shows the
+transmitting. **Mic** is on the left meter and its lower transmit bar
+(on a tablet the side panel covers the right one). With this device's microphone it shows the
 level of the audio as it is sent (after the processing in Controls → TX):
 while you transmit, and in receive too while Controls → TX is open, so the
 level can be set before going on the air; with a microphone on the radio
@@ -698,6 +706,10 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 | *The radio has no callsign for {CALL}* | No callsign in the radio | Setup → Radio → Callsign |
 
 ## 11. Keyboard and Apple Pencil
+
+On a **Mac** (the iPad app, through TestFlight) type into the fields with
+the Mac's keyboard; Ctrl paddles and Space PTT pause while a text field
+has focus, so the keys reach the field.
 
 With a Magic Keyboard or trackpad:
 
