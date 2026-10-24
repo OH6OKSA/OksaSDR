@@ -1640,8 +1640,8 @@ int main(int argc, char* argv[])
     if (parser.isSet(digiTxLevelOption)) {
         engine.setDigiTxLevelDb(parser.value(digiTxLevelOption).toInt());
     }
-    if (parser.isSet(tapAtOption)) {
-        const QStringList t = parser.value(tapAtOption).split(QLatin1Char(','));
+    for (const QString& tapSpec : parser.values(tapAtOption)) {  // each --tap-at in turn
+        const QStringList t = tapSpec.split(QLatin1Char(','));
         QTimer::singleShot(t.value(2, QStringLiteral("20000")).toInt(), &app, [&qml, &engine, t] {
             for (QObject* root : qml.rootObjects()) {
                 auto* window = qobject_cast<QQuickWindow*>(root);

@@ -126,6 +126,36 @@ constexpr double kDbPerSUnit = 6.0;
 
 } // namespace
 
+namespace {
+// Keyboard diagnostics (Pentti's MacBook: no typing into any field): which
+// item has focus, and whether Qt sees key or input-method events for it;
+// summed up when a text field lets go. A few lines per field, not per key.
+class KeyboardDiag : public QObject {
+public:
+    explicit KeyboardDiag(QObject* parent) : QObject(parent) {}
+    bool eventFilter(QObject* receiver, QEvent* event) override
+    {
+        const QEvent::Type t = event->type();
+        if ((t == QEvent::KeyPress || t == QEvent::InputMethod) && receiver == QGuiApplication::focusObject()) {
+            if (t == QEvent::KeyPress) {
+                ++keys;
+                if (keys <= 3) {
+                    const auto* k = static_cast<QKeyEvent*>(event);
+                    qCInfo(lcMobile).noquote() << QStringLiteral("keyboard: key 0x%1 text \"%2\" to %3")
+                                                      .arg(k->key(), 0, 16)
+                                                      .arg(k->text(), QString::fromLatin1(receiver->metaObject()->className()));
+                }
+            } else {
+                ++inputMethod;
+            }
+        }
+        return false;
+    }
+    int keys{0};
+    int inputMethod{0};
+};
+}  // namespace
+
 MobileEngine::MobileEngine(QObject* parent)
     : QObject(parent)
 {
@@ -554,6 +584,35 @@ MobileEngine::MobileEngine(QObject* parent)
         startSideKeys([self](SideKey key, bool pressed) {
             if (self) {
                 self->onSideKey(static_cast<int>(key), pressed);
+            }
+        });
+    }
+    // A text field with focus gets the keyboard to itself (GameController's
+    // keyboard handler off: on a Mac it kept the typed keys from the
+    // fields), with a short record of what reached it.
+    {
+        auto* diag = new KeyboardDiag(this);
+        qApp->installEventFilter(diag);
+        qCInfo(lcMobile) << "keyboard: iPad app on a Mac:" << (runningAsIosAppOnMac() ? "yes" : "no");
+        auto textItem = std::make_shared<QPointer<QObject>>();
+        auto seenAtFocus = std::make_shared<int>(0);
+        connect(qGuiApp, &QGuiApplication::focusObjectChanged, this, [diag, textItem, seenAtFocus](QObject* obj) {
+            if (*textItem && *textItem != obj) {
+                qCInfo(lcMobile).noquote() << QStringLiteral("keyboard: %1 \"%2\" let go: %3 key and %4 input-method events reached it; GCKeyboard saw %5 keys")
+                                                  .arg(QString::fromLatin1((*textItem)->metaObject()->className()), (*textItem)->objectName())
+                                                  .arg(diag->keys)
+                                                  .arg(diag->inputMethod)
+                                                  .arg(sideKeysSeen() - *seenAtFocus);
+                *textItem = nullptr;
+            }
+            const bool text = obj && (obj->inherits("QQuickTextInput") || obj->inherits("QQuickTextEdit"));
+            setSideKeysSuspended(text);
+            if (text && *textItem != obj) {
+                *textItem = obj;
+                diag->keys = 0;
+                diag->inputMethod = 0;
+                *seenAtFocus = sideKeysSeen();
+                qCInfo(lcMobile).noquote() << "keyboard: text field focused:" << obj->metaObject()->className() << obj->objectName();
             }
         });
     }
