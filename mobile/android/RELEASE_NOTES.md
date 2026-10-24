@@ -1,18 +1,16 @@
-**OksaSDR for Android — beta 21.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight build 101), from the same code.
+**OksaSDR for Android — beta 22.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight build 104), from the same code.
 
-### New in beta 21
-- **FT8 / FT4: green RX mark** where the station you work is heard, next to the red TX mark; both labels stand out over the waterfall.
-- The QSO state is a box that stands out: amber while waiting, red while transmitting.
-- **Keep CQ**: back to CQ after every QSO your CQ brought, until Halt TX. **CQ slot**: Auto, Even or Odd.
-- A red notice when the device's clock looks off (FT8 needs it within a second).
-- BC shows dimmed in CW and data modes.
+### New in beta 22
+- **FT8 / FT4 state at the top of the display**, so it stays in view while you scroll the decode list.
+- The radio's **speech processor (PROC) is switched off** while FT8 / FT4 transmits and back on when decoding stops.
+- Fixed: a CQ pressed right after a Digi band button could stop by itself when TX moved to that slice.
 
-Still new from betas 14–20: FT8 and FT4 in the app (Controls › Digi) on every DIGU slice with WSJT-X colours, the New / New DXCC filter and tap-to-answer, full power with TX level, AGC by mode, RADE digital voice, the log in Files › Documents › OksaSDR, ADIF import.
+Still new from betas 14–21: FT8 and FT4 in the app (Controls › Digi) on every DIGU slice with WSJT-X colours, RX / TX marks, Keep CQ and CQ slot, the New / New DXCC filter, tap-to-answer, full power with TX level, AGC by mode, RADE digital voice, the log in Files › Documents › OksaSDR, ADIF import.
 
 ### Install or update
-1. Download `OksaSDR-android-beta21.apk` below on the phone (about 150 MB).
+1. Download `OksaSDR-android-beta22.apk` below on the phone (about 150 MB).
 2. Open it; allow installing from your browser or file manager when Android asks. If Chrome keeps the download waiting, open ⋮ → *Downloads* → *Keep*.
-3. Beta 21 installs over earlier betas and keeps your settings. If you have one of the earlier hand-delivered test APKs, uninstall it first (different signing key).
+3. Beta 22 installs over earlier betas and keeps your settings. If you have one of the earlier hand-delivered test APKs, uninstall it first (different signing key).
 
 Android 9 or newer, 64-bit ARM. On the first connect, allow notifications, the microphone and "no battery optimization" so receive keeps going in the background and PTT can transmit.
 
