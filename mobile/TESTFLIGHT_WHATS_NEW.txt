@@ -9,6 +9,9 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
+- Fixed: FT8 / FT4 did not transmit since build 108 ("Transmit refused"): the check that stops voice PTT in DIGU / DIGL stopped FT8 / FT4 too. Sorry! Thanks Wayne WA2N.
+
+RECENT (build 112)
 - FreeDV tab: RADE moved here from the old Digi tab, with FreeDV Reporter: report your station to qso.freedv.org while RADE is on (off by default), and see who is on it, on this band or all bands; tap one to tune there (RADE comes on for a RADE station). Asked by Scott W5SLS.
 - The Digi tab is now FTx (FT8 / FT4), and the control buttons are all one size (Prof, Mem).
 - RADE: a band button, a frequency on another band or another mode ends RADE first, so no band is left muted in the radio's memory; a band that comes back muted says so (tap the speaker). Thanks Michel F5GNM.

@@ -2451,8 +2451,9 @@ void MobileEngine::setPtt(bool down, const QString& reason)
     // Voice PTT on a TX slice in DIGU / DIGL: the radio refuses it ("You
     // cannot transmit voice in DIGU/DIGL mode"), and the app said only that
     // the request was not accepted (an Aurora tester). Said plainly, and
-    // the microphone stays shut. RADE transmits there on purpose.
-    if (!radeActive()) {
+    // the microphone stays shut. RADE and FT8 / FT4 transmit there on
+    // purpose.
+    if (!radeActive() && !m_digiKeying) {
         for (SliceModel* s : m_session.radioModel().slices()) {
             if (s && s->isTxSlice() && (s->mode() == QLatin1String("DIGU") || s->mode() == QLatin1String("DIGL"))) {
                 const QString why = tr("The TX slice is in %1: PTT is for voice. Switch it to USB / LSB to talk; FT8 / FT4 run from the FTx tab, RADE from the FreeDV tab.")

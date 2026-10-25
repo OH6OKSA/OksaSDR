@@ -52,7 +52,10 @@ iOS background).
 
 ## Released
 
-**Next build** (not yet pushed):
+**Next build** (not yet pushed), a fix release, iPhone and iPad, and Android beta 28:
+- FT8 / FT4 transmit was refused from build 108 / beta 26 on (WA2N's log on beta 27: "PTT press ignored: The TX slice is in DIGU … digi: Transmit refused"): the voice-PTT check added in build 108 exempted RADE but not FT8 / FT4, which keys through the same setPtt. FT8 / FT4 keying now passes it. Checked on the FLEX: a CQ went out at 8.4 W (SWR 1.2) and DL1EGU's answer got the report; voice PTT in DIGU is still refused (nothing keyed).
+
+**Build 112** (2026-10-25), iPhone and iPad, and Android beta 27:
 - FreeDV tab: RADE moved from the Digi tab (now FTx), FreeDV Reporter for the app's RADE (asked by W5SLS: his station never showed on qso.freedv.org) through the engine's FreeDvClient, as the desktop: off by default; while RADE is on it reports callsign, grid, version, frequency (once tuning settles), transmit (not tune / ATU) and RADE's SNR and end-of-over calls; the message field; the os field now says ios / android. The station list (fetched only while a FreeDV tab shows; the drawer's and the pinned panel's counted apart) lists this band or all bands by frequency with grid, distance, mode, TX now, whom each hears and its message; a tap tunes there and turns RADE on for a RADEV1 station. Checked on the FLEX, receive only: qso.freedv.org listed OH6OKSA KP32EQ OksaSDR 14.2360 Receiving, the app's own list showed it outlined, and it left the site when RADE went off; a tap on the demo tuned to 14.236 and turned RADE on.
 - The control buttons are one size, in a grid of five (or one row on a wide panel), with short labels (Prof, Mem, FTx, FreeDV); the sections' headings keep the full names.
 - The display (spectrum, waterfall, 3D) paused whenever the app was not Active; iOS reports Inactive while the app is still on screen (a system prompt, Control Center), and a tester's iPhone Duo (build 111, iOS 27.2) stayed Inactive for three minutes while in use, its display frozen. It now pauses only when the app is suspended (in the background); every app state change is in the log. Transmit still stops on Inactive.

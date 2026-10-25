@@ -957,7 +957,9 @@ void MobileEngine::startDigiTx(qint64 slotMs)
         setProcEnabled(false);
         qCInfo(lcMobile) << "digi: speech processor off for FT8 / FT4";
     }
+    m_digiKeying = true;
     setPtt(true, QStringLiteral("FT8 transmit"));
+    m_digiKeying = false;
     if (!m_pttHeld) {
         rm.setDigitalVoiceTxSlice(-1);
         digiEnd(tr("Transmit refused"));

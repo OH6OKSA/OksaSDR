@@ -1518,6 +1518,9 @@ private:
     bool m_previewTx{false};
     qint64 m_lastInterlockMs{0};  // when the radio last gave a reason for refusing transmit
     bool m_digiAutoCq{false};
+    // FT8 / FT4 keying its own tones: past setPtt's voice-only check (DIGU
+    // is where they transmit; builds 108-112 refused them there).
+    bool m_digiKeying{false};
     bool m_pskReporterOn{false};
     class PskReporterUpload* m_psk{nullptr};
     QString m_digiCqParity{QStringLiteral("auto")};
