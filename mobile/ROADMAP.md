@@ -54,6 +54,7 @@ iOS background).
 
 **Next build** (not yet pushed):
 - The display (spectrum, waterfall, 3D) paused whenever the app was not Active; iOS reports Inactive while the app is still on screen (a system prompt, Control Center), and a tester's iPhone Duo (build 111, iOS 27.2) stayed Inactive for three minutes while in use, its display frozen. It now pauses only when the app is suspended (in the background); every app state change is in the log. Transmit still stops on Inactive.
+- Android shows the beta's number in brackets (release.env's TAG android-beta-N shows N; the tester saw (39) for beta 26, a run counter, and the compile check's run at that). versionCode stays the workflow's run number, which only grows.
 - DX cluster status line (View tab), as the logbook's and PSK Reporter's: connected to which server as whom, the spots so far and the latest one's time (UTC), connecting, or the reason it failed (its own property and signal, so arriving spots do not refresh the server fields being edited).
 
 **Build 111** (2026-10-25), iPhone and iPad (Mac only), Android unchanged (run 110 was the unsigned compile check on mobile/ci-check, never on TestFlight):

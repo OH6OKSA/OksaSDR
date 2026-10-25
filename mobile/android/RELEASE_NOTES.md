@@ -1,15 +1,16 @@
-**OksaSDR for Android — beta 26.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight build 109), from the same code.
+**OksaSDR for Android — beta 27.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
-### New in beta 26
-- **A swipe inside the open controls drawer** no longer tunes the radio or moves the display under it; the part of the display still in view works as before. Thanks Wayne WA2N.
-- **PTT on a slice in DIGU / DIGL** says why it does not transmit (PTT is for voice; use USB / LSB, or the Digi tab for FT8 / FT4), and the radio's own reason for a refused transmit stays on screen. Thanks Charlie KB8CR.
+### New in beta 27
+- **The app shows its beta number:** the version in the top row, on the Connect page and in the log ends in (27) for beta 27, as the release is called (before, a build counter).
+- **DX cluster status:** a line under the DX cluster button (View tab) says whether it is connected, to which server and as whom, with the spots so far and the latest one's time.
+- **The display keeps going** while the app is on screen but not in focus (an unfocused split-screen or DeX window, a system prompt); it pauses only in the background.
 
-Still new from betas 14–25: three meters while transmitting (asked by Mike VA3MW); FT8 and FT4 in the app (Controls › Digi) on every DIGU slice with WSJT-X colours, Keep CQ, Last TX and Free, PSK Reporter; Wavelog / Cloudlog; transverter setup; RADE digital voice; the log in Files › Documents › OksaSDR.
+Still new from betas 14–26: a swipe in the open controls drawer no longer tunes, PTT in DIGU / DIGL says why it does not transmit, three meters while transmitting (asked by Mike VA3MW); FT8 and FT4 in the app (Controls › Digi) on every DIGU slice with WSJT-X colours, Keep CQ, Last TX and Free, PSK Reporter; Wavelog / Cloudlog; transverter setup; RADE digital voice; the log in Files › Documents › OksaSDR.
 
 ### Install or update
-1. Download `OksaSDR-android-beta26.apk` below on the phone (about 150 MB).
+1. Download `OksaSDR-android-beta27.apk` below on the phone (about 150 MB).
 2. Open it; allow installing from your browser or file manager when Android asks. If Chrome keeps the download waiting, open ⋮ → *Downloads* → *Keep*.
-3. Beta 26 installs over earlier betas and keeps your settings. If you have one of the earlier hand-delivered test APKs, uninstall it first (different signing key).
+3. Beta 27 installs over earlier betas and keeps your settings. If you have one of the earlier hand-delivered test APKs, uninstall it first (different signing key).
 
 Android 9 or newer, 64-bit ARM. On the first connect, allow notifications, the microphone and "no battery optimization" so receive keeps going in the background and PTT can transmit.
 

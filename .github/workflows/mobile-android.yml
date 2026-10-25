@@ -151,6 +151,18 @@ jobs:
         run: |
           set -o pipefail
           export PKG_CONFIG_LIBDIR="$RUNNER_TEMP/fftw-android/lib/pkgconfig"
+          # The app shows the beta's number in brackets (release.env's TAG
+          # android-beta-N shows N), as the release is called; versionCode
+          # stays this run's number, which only grows (Android installs no
+          # lower one over another).
+          shown="${{ github.run_number }}"
+          if [ -f mobile/android/release.env ]; then
+            # shellcheck disable=SC1091
+            . mobile/android/release.env
+            n="${TAG##*-}"
+            case "$n" in ''|*[!0-9]*) ;; *) shown="$n" ;; esac
+          fi
+          echo "Shows build ($shown); versionCode ${{ github.run_number }}." >> "$GITHUB_STEP_SUMMARY"
           "$QT_ANDROID/bin/qt-cmake" -S . -B build-android -G Ninja \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
@@ -162,7 +174,8 @@ jobs:
             -DCMAKE_FIND_ROOT_PATH="$RUNNER_TEMP/fftw-android" \
             -DAETHER_USE_PINNED_QT=OFF \
             -DAETHER_MOBILE=ON \
-            -DAETHER_MOBILE_BUILD_NUMBER="${{ github.run_number }}" \
+            -DAETHER_MOBILE_BUILD_NUMBER="$shown" \
+            -DAETHER_MOBILE_VERSION_CODE="${{ github.run_number }}" \
             -DAETHER_ANDROID_OPENSSL_DIR="$RUNNER_TEMP/android_openssl" \
             2>&1 | tee configure.log
 

@@ -178,17 +178,24 @@ endif()
 set(AETHER_MOBILE_BUNDLE_ID "com.aethersdr.mobile" CACHE STRING "iOS bundle identifier of aether-mobile")
 set(AETHER_MOBILE_BUILD_NUMBER "1" CACHE STRING "iOS CFBundleVersion of aether-mobile")
 set(AETHER_MOBILE_TEAM_ID "" CACHE STRING "Apple Developer Team ID that signs aether-mobile (empty: unsigned)")
+# Android's versionCode must grow with every APK, while the number the app
+# shows is the beta's there (android-beta-N shows N), so the two are apart.
+set(AETHER_MOBILE_VERSION_CODE "" CACHE STRING "Android versionCode of aether-mobile (empty: the build number)")
 # The build number in the app too (Log, developer link), to tell builds apart.
 target_compile_definitions(aether-mobile PRIVATE AETHER_MOBILE_BUILD_NUMBER="${AETHER_MOBILE_BUILD_NUMBER}")
 
 if(ANDROID)
+    set(_aether_version_code "${AETHER_MOBILE_VERSION_CODE}")
+    if(NOT _aether_version_code)
+        set(_aether_version_code "${AETHER_MOBILE_BUILD_NUMBER}")
+    endif()
     # Manifest (package fi.oh6oksa.oksasdr, permissions) and later Java glue.
     set_target_properties(aether-mobile PROPERTIES
         QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android"
         QT_ANDROID_APP_NAME "OksaSDR"
         QT_ANDROID_MIN_SDK_VERSION 28
         QT_ANDROID_TARGET_SDK_VERSION 35
-        QT_ANDROID_VERSION_CODE "${AETHER_MOBILE_BUILD_NUMBER}"
+        QT_ANDROID_VERSION_CODE "${_aether_version_code}"
         QT_ANDROID_VERSION_NAME "${PROJECT_VERSION}"
     )
     # Qt loads OpenSSL at run time for TLS (SmartLink, FlexRadio release
