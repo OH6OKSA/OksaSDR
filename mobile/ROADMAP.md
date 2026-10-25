@@ -52,7 +52,7 @@ iOS background).
 
 ## Released
 
-**Next build** (not yet pushed), iPhone and iPad, and Android:
+**Build 114** (2026-10-25), iPhone and iPad, and Android beta 30 (also brings beta 29's sliders, keypads, ⋯ menu and text fields to the iPhone and iPad):
 - ADIF import of a big logbook: about 20 000 contacts froze the display, iOS closed the app (the contacts written by then were kept: 19 324 on the iPad) and Android hung with a black screen until force-stopped (17 912 written). Each contact was appended with its own file open and, on Android, followed by a copy of the whole growing log to Documents/OksaSDR (QsoLog::append → writeMirror), all on the GUI thread. The import now reads the file on the GUI thread (Android content:// URLs), then parses, skips duplicates and writes all new contacts in one append and one mirror copy in a worker thread (QsoLog::writeRecords, one writer at a time under a mutex); the GUI thread adds them to the list and adifImported() reports the counts ("Importing…" meanwhile). Measured on the desktop: 20 000 contacts in 0.85 s, the same file again (all duplicates) in 0.4 s; a 20 001-contact log loads in about 0.3 s more at start and takes about 54 MB more memory.
 - SmartLink Sign out takes two taps (the first arms it as "Sign out?" for 3 s): after the force stop, Android signed in from the kept token and 0.8 s later went to signedOut with no failure logged, which only the Sign out button does; the account row appears where the "Signing in" line was, as the page grows.
 
