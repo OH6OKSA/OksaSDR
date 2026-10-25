@@ -79,17 +79,22 @@ the display still in view tunes as usual.
 |---|---|
 | ![iPhone portrait](manual/phone-portrait.jpg) | ![iPhone landscape](manual/phone-landscape.jpg) |
 
+On a phone, **⋯** at the top right holds Radio Setup, Manual, Log and
+Disconnect:
+
+![The phone's ⋯ menu](manual/phone-menu.jpg)
+
 The layout follows the device: rotation, Split View, Stage Manager and
 folding switch it live. On a very low screen in landscape (a phone's outer
-screen, the smaller iPhones) the band buttons give way to the display; the
-**Band** button on the waterfall picks bands there.
+screen, the smaller iPhones) the band buttons give way to the display;
+change band there by typing a frequency (tap the frequency).
 
 ### Network quality
 
 The dot in the top row (with the app's CPU next to it) rates the connection as the desktop AetherSDR does —
 **Excellent / Very Good** (green), **Good** (blue), **Fair** (amber),
-**Poor** (red) — with the round-trip time. On an iPhone only the dot and
-the time show. Tap it for the details:
+**Poor** (red) — with the round-trip time. On an iPhone the dot, the time
+and the CPU show. Tap it for the details:
 
 ![Network details](manual/network.jpg)
 
@@ -117,10 +122,13 @@ a hardware keyboard), then *Tune*. *14.074* and *14074* both tune
 
 **Mode.** Tap the mode (e.g. *USB ▼*) and choose another.
 
-**STEP** (under the mode, e.g. *STEP 100 Hz*) is the tuning step: tap it to
-choose from the radio's list. Tap-tune, arrow keys and the Pencil use it.
-
 ![Mode chooser](manual/mode.jpg)
+
+**STEP** (under the mode, e.g. *STEP 100 Hz*) is the tuning step: tap it to
+choose from the radio's list. Tap-tune and the arrow keys use it; Apple
+Pencil drags tune exactly, off the step's grid.
+
+![Tuning step chooser](manual/step.jpg)
 
 **Band buttons.** Each band returns to the frequency and mode you last used
 there. The radio keeps these in its *band stack*, which is part of the
@@ -133,8 +141,8 @@ radio tunes the RF frequency, uses the transverter port and does the IF
 itself. On a phone the band row scrolls sideways.
 
 **Step buttons.** ±1 Hz … ±1 kHz, landing on round frequencies: +10 Hz from
-14.100 002 goes to 14.100 010, not 14.100 012. With an FM channel step of
-5 kHz or more (STEP, e.g. 12.5 kHz on 70 cm) they become ±STEP, ±100 kHz,
+14.100 002 goes to 14.100 010, not 14.100 012. With a step of 5 kHz or
+more (STEP, e.g. an FM channel step of 12.5 kHz on 70 cm) they become ±STEP, ±100 kHz,
 ±1 MHz and ±10 MHz, all on the step's grid. The band button of the band
 you are on is lit.
 
@@ -155,8 +163,13 @@ is a touch target with its choices behind it:
 | **AGC-M** | AGC mode | AGC mode, AGC threshold and RF gain |
 | Speaker | Audio on (blue) / muted (red) | Every slice's volume (AF gain), Mute and pan (left–right, read as C, L n or R n; it snaps to centre near the middle, and double-tap centres) |
 | Lock | Tuning lock open / locked | Lock or unlock tuning (flashes when a tune is refused) |
-| **SPLIT** | Split on (amber) or off (grey) | Start or end [split](#6-split); hold to pick the offset |
+| **SPLIT** | Split on (amber) or off (grey); shown while the radio can transmit and has a slice free for it | Start or end [split](#6-split); hold to pick the offset |
+| **QSK** | In CW modes: break-in on (bright) or off | — |
 | **NB NR ANF NRL …** | Every DSP the radio offers, bright when on (on an iPhone the rarer ones only while on) | Filters and DSP |
+
+The speaker opens every slice's volume, mute and pan:
+
+![Volume, mute and pan of every slice](manual/volume.jpg)
 
 The settings that are always there come first; split and the DSP flags
 follow on a second row. On an iPhone in portrait STEP and the antennas, width and AGC sit beside the
@@ -237,7 +250,8 @@ chooser sets it for all meters, as the desktop S meter's decay: *Off*,
 default) or *Slow* (1 s, then 5 dB/s); other scales fall in the same time
 for their span.
 
-**Slices.** Each slice is a button between the meters ("A 14.100 USB"); the
+**Slices.** Each slice is a button between the meters ("A 14.100 USB"; on a
+phone without the mode, which is beside the frequency); the
 transmit slice carries a red **TX** tag. Two fit side by side, four make
 2 × 2.
 
@@ -266,7 +280,8 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
   again to return to the slice.
 - The **frequency scale** runs along the top of the waterfall.
 - The **dBm scale** at the left: drag it up or down to move the trace (the
-  reference level). In 3D, as on the desktop, the 3D levels stay automatic:
+  reference level; this turns the spectrum's *Auto* off, View gives it
+  back). In 3D, as on the desktop, the 3D levels stay automatic:
   the floor (the 3D zero) follows the noise and the scale runs from it to
   the top. Dragging sets **3D floor**, how far under the noise the zero
   sits (0–24 dB, default 6): drag up and the noise rises, down and it
@@ -292,8 +307,8 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
   the spots the radio holds, from this app's DX cluster connection and
   from any other program on the radio. Tap one to tune to it (the mode
   follows the spot, as on the desktop). Close ones stack in up to four
-  rows; zoom in to see more. *Spots* in View turns them off and connects
-  the DX cluster.
+  rows; zoom in to see more. In View, *Spots* shows or hides them, and
+  *DX cluster* connects the app to a cluster of your choice.
 - **Notches (TNF)** — **press and hold** on the display to put a notch
   there, or *+ TNF* in Controls → DSP for one in the middle of the
   passband. A notch shows as a band through spectrum and waterfall
@@ -336,7 +351,14 @@ stacked trace and sets the levels. They work as on the desktop AetherSDR:
   Range; **3D floor** sets how far under the noise its zero sits and
   **3D gain** how far down the colours reach. In portrait the 3D keeps
   landscape's shape and the waterfall gets the rest of the height. It keeps
-  its history while you are in 2D.
+  its history while you are in 2D. If the app stopped while the 3D view was
+  on, or the 3D view runs too slowly on the device, the app starts or goes
+  on with the 2D waterfall and says so; turn 3D on again in View.
+
+**Panadapters.** The display shows one panadapter at a time: the one of
+the active slice. Selecting a slice on another panadapter (its chip in the
+slice row) switches the display to it. With more than one open, **Close N
+other pans** on the display closes the others.
 
 ## 6. Split
 
@@ -354,6 +376,8 @@ slice closes and transmit returns to the receive slice.
 **Press and hold SPLIT** to choose the offset: **+1 kHz**, **+5 kHz** or
 **+10 kHz** above the receive frequency. While split is on, the same menu
 offers **Off**.
+
+![Split offset chooser](manual/split.jpg)
 
 ## 7. Transmitting: PTT, KEY and TUNE
 
@@ -390,8 +414,13 @@ offers **Off**.
 - **TUNE** (Controls → TX) sends a carrier at the tune power; while it is on,
   the big button reads TUNE and pressing it stops the carrier.
 
-The button is always on top: an open controls drawer carries its own copy at
-the bottom, so nothing ever covers it.
+The button is always on top. On a phone an open controls drawer carries its
+own copy at the bottom, beside **Close** (which closes the drawer); on a
+tablet the drawer stops above the page's PTT, so nothing ever covers it.
+When transmit is not possible (no TX slice, the radio's mic input not
+this device, a refusal), the reason shows above PTT and under the
+controls; on a phone the power and SWR show beside PTT while you
+transmit.
 
 Safety: transmit goes through AetherSDR's TX controller. The transmitter
 unkeys on release, on disconnect, when the app leaves the screen, when the
@@ -409,13 +438,15 @@ them back into the drawer. The buttons are all one size: **DSP**, **Audio**,
 **FTx** (FT8 / FT4) and **FreeDV** (RADE digital voice and FreeDV
 Reporter).
 
+![iPad in portrait with the controls pinned under the display](manual/ipad-portrait.jpg)
+
 | DSP | Audio | TX |
 |---|---|---|
 | ![DSP](manual/tab-dsp.jpg) | ![Audio](manual/tab-audio.jpg) | ![TX](manual/tab-tx.jpg) |
 
 - **DSP** — RIT and XIT (on/off; − and + step 10 Hz and run while held,
-  faster the longer: 10, then 50, then 100 Hz; tap the value to reset),
-  squelch, and **TNF** (the radio's notch filters on/off, *+ TNF* for a
+  faster the longer: 10, then 50, then 100 Hz; tap the value to reset;
+  not in FM), squelch (where the radio has it), and **TNF** (the radio's notch filters on/off, *+ TNF* for a
   notch in the passband; see [Panadapter and waterfall](#5-panadapter-and-waterfall)).
 - **Audio** — **Receive audio**: *Auto* uses Opus (compressed, made for
   the internet) over SmartLink or when the radio is reached through a VPN,
@@ -440,7 +471,9 @@ Reporter).
   expander, on/off and level) in voice modes — shown only when the radio's
   own microphone input is selected, as they do nothing with this device's
   microphone — the AM **carrier** level in
-  AM/SAM/DSB, monitor (MON), **Mic level**, microphone choice, **DAX**
+  AM/SAM/DSB, monitor (MON), **Mic level**, microphone choice (when the
+  radio's mic input is not this device, **Use this device's microphone**
+  sets it and the line beside it says why PTT waits), **DAX**
   (on: the radio sends the audio of a digital-mode program on a computer
   instead of the microphone; left on after FT8, the microphone goes
   nowhere), **PTT**
@@ -454,7 +487,7 @@ Reporter).
   on). Phone microphones often need +10 to +20 dB; a limiter at
   −1 dBFS keeps the loudest peaks from clipping. With a microphone on the
   radio it is the radio's mic level (0–100), as SmartSDR's MIC.
-  - **This device's microphone: processing** (voice modes, with this
+  - **This device's microphone: processing before it is sent** (voice modes, with this
     device's microphone) — AetherSDR's client-side transmit chain, run on
     the phone or tablet before the audio is sent: **Gate** (mutes the
     background between words below the threshold), **EQ** (low cut
@@ -500,7 +533,9 @@ Reporter).
     from 8 to 45 WPM. Decoded text shows
     here and along the top of the waterfall; what you send shows there too,
     marked `[TX]`.
-- **View** — band plan, **Spots** (shown or hidden) and the **DX cluster**,
+- **View** — **Band plan** (the strip at the foot of the spectrum: *Off*,
+  *ARRL (US)*, *IARU Region 1 / 2 / 3*, *RAC (Canada)* or *SSA
+  (Sweden)*), **Spots** (shown or hidden) and the **DX cluster**,
   2D waterfall or 3D, waterfall levels, spectrum range, 3D floor, smoothing
   and gain.
   - **Spot filters** — which spots show: *All*, *CW*, *Phone* or *Digital*
@@ -544,7 +579,9 @@ Reporter).
   comes from the radio's GPS, or from *My grid*. **Their park** and **My
   park** (POTA or WWFF with the reference) go into ADIF's SIG / MY_SIG
   fields; your own park stays for every contact while you activate.
-  **Log** writes the contact; the newest ten are listed. **Share the log
+  *Sent* and *Rcvd* hold the reports and *Comment* a note for the
+  contact. **Log CALL** (the button names the call) writes the contact;
+  the newest ten are listed. **Share the log
   (ADIF)** opens the share sheet with the whole log as an `.adi` file: mail
   it, save it to Files or Drive, AirDrop it, or open it in your logbook
   program or TQSL for LoTW. **Import contacts (ADIF)** adds the contacts of
@@ -586,7 +623,8 @@ Reporter).
 
   The colours are WSJT-X's: green a CQ, red your call, yellow your own
   transmission, magenta a new DXCC (light pink: new on this band), amber a
-  new CQ zone (light amber: on this band), red-pink a new continent; a CQ
+  new CQ zone (light amber: on this band), red-pink a new continent (light
+  pink-red: on this band); a CQ
   from a station already in the log on this band and mode is grey. "New"
   is counted from the Log tab's log, so import your logbook there (ADIF)
   to see what you still need. **Show** filters the list: **All**, **CQ**
@@ -614,7 +652,13 @@ Reporter).
   same state also shows at the top of the display, where it stays in view
   however far the decode list is scrolled. On
   the display the red band is your TX tone and a green **RX** band shows
-  where the station you work is heard, as WSJT-X's markers. RX is
+  where the station you work is heard, as WSJT-X's markers (below, FT8
+  decoding on 20 m: the 4 kHz FT8 view, the TX and RX bands, and Controls
+  in PTT's place).
+
+  ![FT8 decoding on the display](manual/ft8-running.jpg)
+
+  RX is
   always shown: after a QSO it stays on the last station worked; before
   the first one, and while you call CQ, it sits on your own TX tone; both labels sit on solid grounds over the
   waterfall.
@@ -644,7 +688,7 @@ Reporter).
   USB) ends decoding: PTT comes back and the display returns from the
   4 kHz FT8 view to the width it had before.
 
-  *TX audio* sets the transmit tone (200–3000 Hz, default 1200; − / + step
+  **TX … Hz** sets the transmit tone (200–3000 Hz, default 1200; − / + step
   1 Hz and repeat while held). The red band on the display is the tone:
   **drag it** to any frequency, or **tap** the waterfall near the dial to
   put it there (while decoding, a tap there sets the tone instead of
@@ -690,6 +734,8 @@ Reporter).
   connection unmutes the slice RADE had muted. When a band comes back muted
   anyway (the radio remembers each band's slice), the app says so: tap the
   speaker on the info panel.
+
+  ![RADE on 14.236 MHz: DIGU with RADE's filter, 750–2250 Hz above the slice line](manual/rade-on.jpg)
 
   **Report to FreeDV Reporter** (off by default) puts this station on
   [qso.freedv.org](https://qso.freedv.org), as FreeDV does, while RADE is
@@ -757,6 +803,14 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 | *Interlock / did not accept the transmit request* | The radio refused to transmit; its reason is shown | Check TX antenna, band, other clients |
 | A band button opens another band | The radio's band stack (in its global profile) holds that frequency | Tune the band where you want it and save the profile |
 | *The radio has no callsign for {CALL}* | No callsign in the radio | Setup → Radio → Callsign |
+| *The TX slice is in DIGU: PTT is for voice …* | PTT pressed with the transmit slice in DIGU / DIGL | Switch it to USB / LSB to talk; FT8 / FT4 run from the FTx tab, RADE from the FreeDV tab |
+| *Break-in is off …* | CW keyed with Break-in off: the key does not put the radio on air | Controls → CW → Break-in |
+| *This slice is muted on this band …* | The radio remembers the band's slice muted | Tap the speaker on the info panel |
+| *Microphone access is off …* | The device does not let the app use the microphone | Allow it in the device's settings (Settings › OksaSDR › Microphone) |
+| *No free slice for the transmit side of a split* | All the radio's slices are in use | Close a slice (press and hold its chip, or Stations…) |
+| *Set the radio's callsign first* / *The DX cluster needs a callsign* | FT8 / FT4, or the DX cluster, needs a callsign | Setup → Radio → Callsign (the DX cluster can also take one under Spots) |
+| *The radio takes transmit audio from its … input* | PTT would send the radio's own microphone | Controls → TX → **Use this device's microphone** |
+| *The 3D view was too slow …* / *The app stopped while the 3D view was on …* | The app went back to the 2D waterfall | View → 3D to try again |
 
 ## 11. Keyboard and Apple Pencil
 
@@ -767,25 +821,31 @@ put the text in the field, as if typed there and Return pressed; Esc or
 Cancel leaves the field as it was. The iPad's GameController keyboard
 reading is not used on a Mac.
 
-With a Magic Keyboard or trackpad:
+With a Magic Keyboard or trackpad, in the tablet layout (iPad, Mac; the
+phone layout takes only the CW paddle keys):
 
 | Key | Action |
 |---|---|
-| ← / → | Tune |
+| ← / → | Tune one step |
+| ↑ / ↓ | Tune ten steps |
+| Shift + arrows | Ten times as far |
 | Space | PTT (hold) |
 | + / − | Zoom |
 | F | Frequency entry |
 | F1–F12 | CW memories (CW modes) or voice macros (voice modes) |
 | Esc | Stop CW text or a voice macro |
-| Scroll | Tune; ⌘-scroll zooms |
+| Scroll | Tune; ⌘- or Ctrl-scroll zooms |
 
 **Apple Pencil** drags tune ten times finer, for zero-beating.
 
 ## 12. Reporting a problem
 
-Open **Log** right after the problem, tap **Copy** (or **Share**) and send
-the text together with your device model. The log header shows the app
-version and build.
+Open **Log** right after the problem (on an iPhone behind **⋯**), tap
+**Copy** (or **Share**) and send the text to oh6oksa@gmail.com together with
+your device model and what you were doing. The log header shows the app
+version and build. **Clear** empties the log, so the next copy starts from
+a known point. **Developer link** (with a PC address) is only for the
+developer's own devices: leave it off.
 
 
 ## 13. Android
