@@ -64,6 +64,7 @@ shot volume 1366x1024 "${src[@]}" --controls visible --popup volumePopup
 shot split 1366x1024 "${src[@]}" --controls visible --popup splitChooser
 shot ipad-portrait 1024x1366 "${src[@]}" --controls visible
 shot phone-menu 440x956 "${src[@]}" --tap-at 0.93,0.03,9000
+shot bandchooser 844x390 "${src[@]}" --popup bandChooser
 shot noslice 1366x1024 "${src[@]}" --controls visible --preview-no-slice
 shot network 1366x1024 "${src[@]}" --controls visible --popup networkDialog
 shot setup 1366x1024 "${src[@]}" --controls visible --popup radioSetup
@@ -99,6 +100,7 @@ jpg volume 390x350+500+130
 jpg split 520x240+470+40
 jpg ipad-portrait "" 600x
 jpg phone-menu 440x230+0+0
+jpg bandchooser "" 700x
 jpg cw-paddles 440x200+0+756
 jpg rade-on 440x620+0+0
 jpg ft8-running "" 330x

@@ -89,7 +89,10 @@ Disconnect:
 The layout follows the device: rotation, Split View, Stage Manager and
 folding switch it live. On a very low screen in landscape (a phone's outer
 screen, the smaller iPhones) the band buttons give way to the display;
-change band there by typing a frequency (tap the frequency).
+there the **Band** button on the waterfall opens the bands, with *Whole
+band* (the band zoom) under them.
+
+![The bands from the Band button in a low landscape window](manual/bandchooser.jpg)
 
 ### Network quality
 
@@ -297,11 +300,13 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
 - **RF GAIN +8 dB** (top right) shows the RF gain; tap it for AGC, AGC-T and
   RF gain. A gain step shows on the
   waterfall and trace, as on the desktop.
-- The **slice** is a white dashed line at its frequency, with the
-  frequency beside it at the foot of the spectrum. The **filter passband**
-  is the shaded band between two solid yellow edges, on the correct side
-  for USB/LSB (in LSB the slice line is at its right edge, in USB at its
-  left) and centred for CW/AM. Other slices are marked with their letter;
+- The **slice** is a white dashed line at its frequency in data, CW and
+  RTTY modes, with the frequency beside it at the foot of the spectrum; in
+  voice modes (USB, LSB, AM, FM) the line is left out, as the passband's
+  edge marks the carrier there, and the frequency stays beside it. The
+  **filter passband** is the shaded band between two solid yellow edges,
+  on the correct side for USB/LSB (in LSB the carrier is at its right edge,
+  in USB at its left) and centred for CW/AM. Other slices are marked with their letter;
   tap one to select it.
 - Your own transmission shows in the waterfall.
 - In CW, decoded text runs along the top of the waterfall.
@@ -589,8 +594,10 @@ Reporter).
   program or TQSL for LoTW. **Import contacts (ADIF)** adds the contacts of
   an ADIF file (from another logbook, or another device's OksaSDR log);
   those already in the log (same call, date, time, band and mode) are
-  skipped. A big logbook (tens of thousands of contacts) imports in a few
-  seconds while the display goes on; the line under the button says
+  skipped. A big logbook (tens of thousands of contacts, tested with
+  120 000) imports in a few seconds while the display goes on, and the log
+  is read in the background at start (worked-before colours follow when
+  it is in); the line under the button says
   *Importing…* and then how many came in. The QRZ.com password is kept in this device's secure store.
   **Wavelog / Cloudlog**: with your logbook's address (as its API page
   shows it, e.g. `https://log.example.com/index.php`), a read & write
@@ -628,13 +635,15 @@ Reporter).
   The colours are WSJT-X's: green a CQ, red your call, yellow your own
   transmission, magenta a new DXCC (light pink: new on this band), amber a
   new CQ zone (light amber: on this band), red-pink a new continent (light
-  pink-red: on this band); a CQ
+  pink-red: on this band), cyan a call never worked (light cyan: not on
+  this band; WSJT-X's New Call and New Call on Band); a CQ
   from a station already in the log on this band and mode is grey. "New"
   is counted from the Log tab's log, so import your logbook there (ADIF)
   to see what you still need. **Show** filters the list: **All**, **CQ**
   (CQ calls only), **New** (a new continent, CQ zone or DXCC, overall or on
-  this band) or **New DXCC** (a DXCC not yet in the log, overall or on
-  this band); your call, your own transmissions and the station you are
+  this band), **New DXCC** (a DXCC not yet in the log, overall or on
+  this band) or **New call** (a call not yet in the log, or not on this
+  band); your call, your own transmissions and the station you are
   working always show. The line above the list says how many of the last
   decodes the filter shows.
 
@@ -749,10 +758,13 @@ Reporter).
   or what it needs; the text field sets the short message shown there.
 
   **Stations** lists who is on FreeDV Reporter now, on this band or on all
-  bands, by frequency: callsign, grid and distance, frequency, mode, *TX
-  now* in red while one transmits, whom it hears and the message it shows.
-  Your own station is outlined. A tap tunes there; for a RADE station
-  (mode RADEV1) RADE comes on too. The list is fetched only while the tab
+  bands, the stations on the air first: those transmitting now (*TX now*
+  in red), then the most recently heard (*TX 3 min ago*), then the others
+  by frequency. Each shows its callsign, grid and distance, frequency,
+  mode, whom it hears and the message it shows. Your own station is
+  outlined. A tap tunes there; for a RADE station (mode RADEV1) RADE comes
+  on too, and for an SSB station (LSB / USB) RADE goes off and the slice
+  takes the station's sideband, so you hear it. The list is fetched only while the tab
   is open.
 
 ## 9. Radio Setup
@@ -825,8 +837,8 @@ put the text in the field, as if typed there and Return pressed; Esc or
 Cancel leaves the field as it was. The iPad's GameController keyboard
 reading is not used on a Mac.
 
-With a Magic Keyboard or trackpad, in the tablet layout (iPad, Mac; the
-phone layout takes only the CW paddle keys):
+With a Magic Keyboard, trackpad or any hardware keyboard (also a
+Bluetooth keyboard on a phone, or Android's DeX):
 
 | Key | Action |
 |---|---|
