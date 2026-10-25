@@ -1,5 +1,6 @@
 #include "AudioSession.h"
 #include "DevLink.h"
+#include "ShotPlan.h"
 #include "EchoAudit.h"
 #include "LogBuffer.h"
 #include "MobileEngine.h"
@@ -370,6 +371,14 @@ int main(int argc, char* argv[])
                        "(names as in Qt::Key without Key_); logs the frequency after each."),
         QStringLiteral("keys"));
     parser.addOption(keysOption);
+    const QCommandLineOption shotPlanOption(QStringLiteral("shot-plan"),
+        QStringLiteral("Development: run this screenshot plan (ShotPlan.h: wait, shot, popup, close, drawer, scroll, pin, "
+                       "controls, frequency-dialog, no-slice, preview-tx, meter-style, tap), saving into --shot-dir, then quit."),
+        QStringLiteral("file"));
+    parser.addOption(shotPlanOption);
+    const QCommandLineOption shotDirOption(QStringLiteral("shot-dir"),
+        QStringLiteral("Development: where --shot-plan saves its shots."), QStringLiteral("dir"));
+    parser.addOption(shotDirOption);
     const QCommandLineOption metersOption(QStringLiteral("meters"),
         QStringLiteral("Receive meter choices <left>,<right>, e.g. S,Volts (remembered)."), QStringLiteral("kinds"));
     parser.addOption(metersOption);
@@ -1891,6 +1900,17 @@ int main(int argc, char* argv[])
             QObject::connect(&app, &QCoreApplication::aboutToQuit, &engine,
                              [&engine, saved] { engine.setPinnedSections(saved); });
         }
+    }
+
+    if (parser.isSet(shotPlanOption)) {
+        // As --screenshot: against a real radio, change nothing on it.
+        engine.setMicDefaultEnabled(false);
+        engine.setRedactIdentity(true);
+        QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::connectionStateChanged, &engine,
+                         [&engine] { engine.setMuted(true); });
+        auto* plan = new AetherSDR::mobile::ShotPlan(qml, engine, parser.value(shotPlanOption),
+                                                    parser.value(shotDirOption), &app);
+        plan->start();
     }
 
     if (parser.isSet(screenshotOption)) {

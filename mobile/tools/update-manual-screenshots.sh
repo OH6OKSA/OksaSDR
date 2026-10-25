@@ -4,11 +4,13 @@
 #   mobile/tools/update-manual-screenshots.sh [RADIO_IP]
 #
 # As update-screenshots.sh: with RADIO_IP the pages show that FlexRadio,
-# receive only (nothing is keyed); without it the built-in demo. The last
-# three shots change this app's own slice on the radio, receive only: CW
-# (the paddles), RADE on 14.236 and FT8 decoding, which leaves the slice on
-# 14.074 DIGU. Choosers are opened with --popup, drawer tabs with
-# --controls-tab. Needs a configured AETHER_MOBILE build in build-mobile/.
+# receive only (nothing is keyed); without it the built-in demo. Most
+# pictures come from one run per window size (--shot-plan, ShotPlan.h:
+# connect once, let the display fill, then open each chooser, take it and
+# close it), a few minutes in all instead of 45 s a picture. The last three
+# runs change this app's own slice on the radio, receive only: CW (the
+# paddles), RADE on 14.236 and FT8 decoding, which leaves the slice on
+# 14.074 DIGU. Needs a configured AETHER_MOBILE build in build-mobile/.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -16,6 +18,8 @@ BUILD="${BUILD_DIR:-$ROOT/build-mobile}"
 OUT="$ROOT/docs/mobile/manual"
 RADIO="${1:-}"
 DELAY="${SCREENSHOT_DELAY_MS:-40000}"
+# How long a plan lets the display fill before its first picture.
+FILL="${SCREENSHOT_FILL_MS:-30000}"
 APP="$BUILD/mobile/aether-mobile"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -29,12 +33,20 @@ else
     src=(--demo)
 fi
 
-shot() { # name size args...
+shot() { # name size args...: one picture, one run
     local name="$1" size="$2"
     shift 2
     QT_QPA_PLATFORM=offscreen timeout 90 "$APP" --size "$size" \
         --screenshot "$TMP/$name.png" --screenshot-delay "$DELAY" "$@" >/dev/null 2>&1
     echo "  $name ($size)"
+}
+plan() { # name size args...: the plan on stdin, many pictures in one run
+    local name="$1" size="$2"
+    shift 2
+    cat > "$TMP/$name.plan"
+    QT_QPA_PLATFORM=offscreen timeout 300 "$APP" --size "$size" \
+        --shot-plan "$TMP/$name.plan" --shot-dir "$TMP" "$@" >/dev/null 2>&1
+    echo "  $name: $(grep -c '^shot ' "$TMP/$name.plan") pictures ($size)"
 }
 # jpg NAME [CROP] [RESIZE]: write docs/mobile/manual/NAME.jpg
 jpg() {
@@ -46,35 +58,85 @@ jpg() {
 }
 
 echo "Rendering manual screenshots (${RADIO:-demo radio})..."
-shot connect 1366x1024
-shot overview 1366x1024 "${src[@]}" --controls visible
-shot phone-portrait 440x956 "${src[@]}" --controls visible
-shot phone-landscape 956x440 "${src[@]}" --controls visible
-shot filter 1366x1024 "${src[@]}" --controls visible --popup filterChooser
-shot agc 1366x1024 "${src[@]}" --controls visible --popup agcChooser
-shot antenna 1366x1024 "${src[@]}" --controls visible --popup rxAntennaChooser
-shot mode 1366x1024 "${src[@]}" --controls visible --popup modeChooser
+printf 'wait 3000\nshot connect\n' | plan connect 1366x1024
+
+plan ipad 1366x1024 "${src[@]}" --controls visible <<PLAN
+wait $FILL
+shot overview
+popup filterChooser
+shot filter
+close
+popup agcChooser
+shot agc
+close
+popup rxAntennaChooser
+shot antenna
+close
+popup modeChooser
+shot mode
+close
+frequency-dialog
+shot frequency
+close
+popup stepChooser
+shot step
+close
+popup volumePopup
+shot volume
+close
+popup splitChooser
+shot split
+close
+popup networkDialog
+shot network
+close
+popup radioSetup
+shot setup
+close
+popup tnfPopup
+shot tnf
+close
+no-slice on
+shot noslice
+no-slice off
 # Two bars at the left, analog at the right, as while transmitting; the
 # meter chooser after it with both analog (styles are remembered).
-shot tx-meters 1366x1024 "${src[@]}" --controls visible --preview-tx --meter-style two,analog
-shot meter 1366x1024 "${src[@]}" --controls visible --meter-style analog,analog --popup meterChooser
-shot frequency 1366x1024 "${src[@]}" --controls visible --frequency-dialog
-shot step 1366x1024 "${src[@]}" --controls visible --popup stepChooser
-shot volume 1366x1024 "${src[@]}" --controls visible --popup volumePopup
-shot split 1366x1024 "${src[@]}" --controls visible --popup splitChooser
-shot ipad-portrait 1024x1366 "${src[@]}" --controls visible
-shot phone-menu 440x956 "${src[@]}" --tap-at 0.93,0.03,9000
-shot bandchooser 844x390 "${src[@]}" --popup bandChooser
-shot noslice 1366x1024 "${src[@]}" --controls visible --preview-no-slice
-shot network 1366x1024 "${src[@]}" --controls visible --popup networkDialog
-shot setup 1366x1024 "${src[@]}" --controls visible --popup radioSetup
-shot tnf 1366x1024 "${src[@]}" --controls visible --popup tnfPopup
-shot memory-edit 440x956 "${src[@]}" --controls drawer --controls-tab 6 --popup memoryEditDialog
-shot tx-processing 440x956 "${src[@]}" --controls drawer --controls-tab 2 --controls-scroll 580
+meter-style two,analog
+preview-tx on
+shot tx-meters
+preview-tx off
+meter-style analog,analog
+popup meterChooser
+shot meter
+close
+PLAN
+
+printf 'wait %s\nshot ipad-portrait\n' "$FILL" | plan ipad-portrait 1024x1366 "${src[@]}" --controls visible
+
 tabs=(dsp audio tx cw view profiles memory log digi freedv)
-for i in "${!tabs[@]}"; do
-    shot "tab-${tabs[$i]}" 440x956 "${src[@]}" --controls drawer --controls-tab "$i"
-done
+{
+    echo "wait $FILL"
+    echo "shot phone-portrait"
+    echo "tap 0.93,0.03"
+    echo "shot phone-menu"
+    echo "close"
+    echo "drawer 6"
+    echo "popup memoryEditDialog"
+    echo "shot memory-edit"
+    echo "close"
+    echo "drawer 2"
+    echo "scroll 580"
+    echo "shot tx-processing"
+    echo "scroll 0"
+    for i in "${!tabs[@]}"; do
+        echo "drawer $i"
+        echo "shot tab-${tabs[$i]}"
+    done
+} | plan phone 440x956 "${src[@]}"
+
+printf 'wait %s\nshot phone-landscape\n' "$FILL" | plan phone-landscape 956x440 "${src[@]}" --controls visible
+printf 'wait %s\npopup bandChooser\nshot bandchooser\n' "$FILL" | plan bandchooser 844x390 "${src[@]}"
+
 # Situations (they change this app's slice; FT8 last, back on 14.074 DIGU).
 shot cw-paddles 440x956 "${src[@]}" --set-mode CW --cw-paddles on
 shot rade-on 440x956 "${src[@]}" --rade-test 60,14.236

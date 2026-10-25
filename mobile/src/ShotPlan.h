@@ -1,0 +1,56 @@
+#pragma once
+
+#include <QObject>
+#include <QStringList>
+
+class QQmlApplicationEngine;
+
+namespace AetherSDR::mobile {
+
+class MobileEngine;
+
+// Development (--shot-plan): many screenshots in one run, so the manual's
+// pictures need one connection and one filled waterfall per window size
+// instead of one run of about 45 s per picture. A plan is a text file of
+// commands, one a line (# starts a comment):
+//
+//   wait MS                 wait (the first one lets the display fill)
+//   shot NAME               save the window as DIR/NAME.png
+//   popup NAME[:SECTION]    open the chooser or dialog with this objectName
+//                           (its preview() when it has one)
+//   close                   close every open popup and the controls drawer
+//   drawer TAB              open the controls drawer on tab TAB
+//   scroll PX               scroll the open controls to PX
+//   pin I[,J...]            pin these sections in the tablet's panel (the
+//                           operator's choice is put back at the end)
+//   controls visible|hidden show or hide the tablet's controls
+//   frequency-dialog        open frequency entry
+//   no-slice on|off         the No slice notice's preview
+//   preview-tx on|off       the meters as while transmitting
+//   meter-style L,R         analog, bar or two, each side (remembered)
+//   tap FX,FY               tap at this fraction of the window
+//
+// The run quits after the last command (exit status 2 if a shot failed).
+class ShotPlan : public QObject {
+    Q_OBJECT
+public:
+    ShotPlan(QQmlApplicationEngine& qml, MobileEngine& engine, const QString& planFile, const QString& outDir,
+             QObject* parent = nullptr);
+    void start();
+
+private:
+    void step();
+    void run(const QString& command, const QStringList& args, int* delayMs);
+    void closePopups();
+
+    QQmlApplicationEngine& m_qml;
+    MobileEngine& m_engine;
+    QStringList m_lines;
+    QString m_outDir;
+    int m_next{0};
+    bool m_failed{false};
+    QStringList m_savedPinned;
+    bool m_pinned{false};
+};
+
+} // namespace AetherSDR::mobile

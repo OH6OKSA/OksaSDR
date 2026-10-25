@@ -1034,6 +1034,8 @@ Rectangle {
         }
         // Gone (removed here or by another client): close.
         onTnfChanged: if (opened && !tnf) close()
+        // The screenshot's sample notch goes with its popup.
+        onClosed: panArea.previewTnfs = []
         // Screenshots (--popup tnfPopup): the first notch in view, or a
         // sample one in the passband (the radio's notches can all be on
         // other bands; the manual's picture showed none).

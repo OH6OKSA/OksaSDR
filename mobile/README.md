@@ -38,7 +38,10 @@ tabs, receive-only tests and the transmit tests, which key the radio).
 the README's iPad mini portrait and iPhone portrait and landscape shots
 (`docs/mobile/*.jpg`), plus the LSB passband from the demo radio;
 `mobile/tools/update-manual-screenshots.sh [RADIO_IP]` renders the
-manual's (`docs/mobile/manual/*.jpg`). The iPad landscape and Android
+manual's (`docs/mobile/manual/*.jpg`), most of them with `--shot-plan`
+(`src/ShotPlan.h`): one run per window size connects once, lets the display
+fill and then opens each chooser, takes it and closes it, so the whole set
+takes about 6 minutes instead of 45 s a picture. The iPad landscape and Android
 pictures are taken on the devices (the developer link below). Run them
 with every user-interface change and commit the images with it.
 
