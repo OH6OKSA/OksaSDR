@@ -84,6 +84,7 @@ qt_add_qml_module(aether-mobile
         qml/MeterView.qml
         qml/AnalogGauge.qml
         qml/BarGauge.qml
+        qml/BackspaceIcon.qml
         qml/MeterMarks.js
         qml/TxControls.qml
         qml/RxControls.qml

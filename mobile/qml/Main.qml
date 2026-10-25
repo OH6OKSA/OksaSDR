@@ -9,6 +9,20 @@ ApplicationWindow {
     visible: true
     title: qsTr("OksaSDR")
     color: Theme.background
+    // The Basic style takes sliders' fill and track, switches, menus, text
+    // fields and default label text from the palette, which differs by
+    // platform (Android's drew a slider's filled part dark and the rest
+    // bright; a light system palette made the ⋯ menu and the text fields
+    // white, while an iPad in dark mode has them black): the same
+    // everywhere, the app's blue left of a slider's handle on a dark track.
+    palette.dark: Theme.accent
+    palette.midlight: Theme.surfaceRaised
+    palette.light: "#2d3947"
+    palette.window: Theme.surface
+    palette.windowText: Theme.text
+    palette.base: "#05080b"
+    palette.text: Theme.text
+    palette.placeholderText: Theme.textDim
 
     // Phone-sized windows (iPhone, folded iPhone Duo, narrow Split View)
     // get the phone layout; it switches live on rotation or fold/unfold.

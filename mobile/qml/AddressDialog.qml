@@ -83,13 +83,18 @@ Dialog {
             columns: 3
             Layout.fillWidth: true
             Repeater {
-                model: ["7", "8", "9", "4", "5", "6", "1", "2", "3", ".", "0", "⌫"]
+                // Phone order (1 2 3 on top), as the devices' own number pads.
+                model: ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "⌫"]
                 delegate: AppButton {
                     required property string modelData
-                    text: modelData
+                    text: modelData === "⌫" ? "" : modelData
                     font.pixelSize: 26
                     Layout.fillWidth: true
                     Layout.preferredHeight: dialog.keyHeight
+                    BackspaceIcon {
+                        anchors.centerIn: parent
+                        visible: parent.modelData === "⌫"
+                    }
                     onClicked: modelData === "⌫" ? dialog.entry = dialog.entry.slice(0, -1) : dialog.add(modelData)
                 }
             }

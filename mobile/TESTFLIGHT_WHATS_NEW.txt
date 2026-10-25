@@ -9,15 +9,16 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Meters: each meter is Analog, Bar or Two bars (tap a meter > Style). Analog stays analog while transmitting; with Two bars each bar has its own receive and transmit choice, up to four readings. Bars have a scale like the analog meter and a clear amber peak hold marker. Thanks Mike VA3MW.
-- The slice is a white dashed line with its frequency, apart from the yellow filter edges.
-- FT8 / FT4: switching the FT8 slice to LSB / USB (by hand or by a band button) ends decoding, so PTT comes back and the view widens again. Thanks Mike VA3MW.
-- Fixed: FT8 / FT4 did not transmit since build 108 ("Transmit refused"). Sorry! Thanks Wayne WA2N.
-- RADE: filter widths centre on RADE's 1500 Hz; Disconnect, an FTx band button and Decode end RADE first; a slice left muted by RADE (app closed, link lost) is unmuted on the next connection; RADE off always restores a voice mode and filter. Thanks Michel F5GNM.
+- Sliders look the same on every device: the part left of the handle filled in blue, the rest a dark track (Android had them the other way round); the ⋯ menu and text fields are dark on every device. Thanks Richard EI9JE.
+- The IP address and frequency keypads have the phone order, 1 2 3 on top, and a drawn delete key. Thanks Richard EI9JE.
+
+RECENT (build 113)
+- Meters: each meter is Analog, Bar or Two bars (tap a meter > Style); analog stays analog while transmitting; with Two bars each bar has its own receive and transmit choice; bars have a scale and an amber peak marker. Thanks Mike VA3MW.
+- The slice is a white dashed line with its frequency. FT8 / FT4 transmit again (refused since build 108, thanks Wayne WA2N), and the FT8 slice back to LSB / USB ends decoding, so PTT returns.
+- RADE: filter widths centre on its 1500 Hz; Disconnect, FTx band buttons and Decode end RADE first; a slice left muted by RADE is unmuted on the next connection. Thanks Michel F5GNM.
 
 RECENT (build 112)
-- FreeDV tab with FreeDV Reporter: report your station to qso.freedv.org while RADE is on, and see who is on; tap one to tune there. Thanks Scott W5SLS.
-- Digi is now FTx; one-size control buttons; DX cluster status line; no display freeze on iPhone Duo (thanks Vesa OH6HPS).
+- FreeDV tab with FreeDV Reporter (thanks Scott W5SLS); Digi is now FTx; one-size control buttons; DX cluster status line; no display freeze on iPhone Duo (thanks Vesa OH6HPS).
 
 RECENT (builds 94–111)
 - Mac text box for typing (111); FT8 / FT4 with PSK Reporter; Wavelog / Cloudlog; transverters; RADE; the log in Files > On My iPhone / iPad > OksaSDR.
