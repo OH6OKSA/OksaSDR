@@ -412,7 +412,7 @@ int MobileEngine::digiNewDxcc(const QString& call, bool cq, const QString& band)
 
 void MobileEngine::setDigiFilter(const QString& filter)
 {
-    static const QStringList known{QStringLiteral("all"), QStringLiteral("cq"), QStringLiteral("new"), QStringLiteral("dxcc"),
+    static const QStringList known{QStringLiteral("all"), QStringLiteral("cq"), QStringLiteral("pota"), QStringLiteral("new"), QStringLiteral("dxcc"),
                                    QStringLiteral("newcall")};
     if (filter == m_digiFilter || !known.contains(filter)) {
         return;
@@ -866,6 +866,7 @@ void MobileEngine::digiCallCq()
     m_digiDx.clear();
     m_digiRxHz = 0;
     m_digiDxGrid.clear();
+    m_digiDxSig.clear();
     m_digiRptSent.clear();
     m_digiRptRcvd.clear();
     m_digiLogged = false;
@@ -910,6 +911,11 @@ void MobileEngine::digiAnswer(int index)
     m_digiDx = p.de;
     m_digiRxHz = d.value(QStringLiteral("freq")).toInt();
     m_digiDxGrid = Ft8Engine::isGrid(p.extra) ? p.extra : QString();
+    // A park activator (CQ POTA ...): the log gets SIG POTA; the park itself
+    // is not in the message.
+    m_digiDxSig = p.cq && d.value(QStringLiteral("text")).toString().simplified().toUpper().startsWith(QLatin1String("CQ POTA "))
+                      ? QStringLiteral("POTA")
+                      : QString();
     m_digiRptSent = digiReport(d.value(QStringLiteral("snr")).toInt());
     m_digiRptRcvd.clear();
     m_digiLogged = false;
@@ -1144,6 +1150,9 @@ void MobileEngine::digiLogQso()
     if (!m_digiDxGrid.isEmpty()) {
         fields.insert(QStringLiteral("grid"), m_digiDxGrid);
     }
+    if (!m_digiDxSig.isEmpty()) {
+        fields.insert(QStringLiteral("sig"), m_digiDxSig);
+    }
     m_digiLogged = logQso(fields);
 }
 
@@ -1186,6 +1195,7 @@ void MobileEngine::handleDigiDecodes(const QVariantList& decodes, qint64 slotMs)
             m_digiDx = p.de;
             m_digiRxHz = d.value(QStringLiteral("freq")).toInt();
             m_digiDxGrid = Ft8Engine::isGrid(extra) ? extra : QString();
+            m_digiDxSig.clear();
             m_digiRptSent = digiReport(d.value(QStringLiteral("snr")).toInt());
             m_digiTimeOn = QDateTime::currentDateTimeUtc().toString(QStringLiteral("HHmm"));
             m_digiLogged = false;

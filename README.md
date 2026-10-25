@@ -175,7 +175,8 @@ radio interface, with no computer running alongside.
 - **FT8 and FT4** in the app (Controls › FTx), no computer, DAX or
   WSJT-X: every slice in DIGU / DIGL decodes at once, rows marked with the slice
   and coloured as in WSJT-X (CQ, your call, new DXCC, CQ zone or
-  continent, worked before), with a filter (All, CQ, New, New DXCC). Tap a
+  continent, new call, worked before), with a filter (All, CQ, CQ POTA,
+  New, New DXCC, New call). Tap a
   call to answer it (TX and the display move to its slice) or call CQ;
   the app runs the QSO and logs it. Drag the red TX band to a free
   frequency on the display.
@@ -185,7 +186,8 @@ radio interface, with no computer running alongside.
   and see who is on it, on this band or all bands, with a tap to tune
   there.
 - **Log** tab: quick QSO logging with QRZ.com lookup (or the country from
-  the prefix), worked-before and dupe check, POTA / WWFF references, and
+  the prefix), worked-before and dupe check, POTA / WWFF references, the
+  calls the CW decoder heard offered for the Call field, and
   the log as an ADIF file in Files (iPhone, iPad) or Documents (Android,
   computer): share it to your logbook or LoTW, or import contacts from
   another logbook. Every QSO can also go straight to your **Wavelog** or

@@ -67,6 +67,36 @@ ColumnLayout {
             onClicked: callField.text = Engine.lastSpotCall
         }
     }
+    // Calls the CW decoder heard (after DE, or twice), newest first: a tap
+    // puts one in the Call field.
+    RowLayout {
+        id: cwCallRow
+        Layout.fillWidth: true
+        visible: Engine.cwDecoderEnabled && cwCallRepeater.count > 0
+        spacing: 4
+        Label {
+            text: qsTr("Heard in CW")
+            color: Theme.textDim
+            font.pixelSize: 12
+        }
+        Repeater {
+            id: cwCallRepeater
+            // Two where three long portable calls would not fit (the iPad's pinned
+            // panel).
+            model: Engine.cwCalls.filter(c => c !== callField.text.toUpperCase() && c !== Engine.lastSpotCall)
+                   .slice(0, cwCallRow.width >= 420 ? 3 : 2)
+            delegate: AppButton {
+                required property string modelData
+                objectName: "cwCall_" + modelData
+                text: modelData
+                font.family: "monospace"
+                focusPolicy: Qt.NoFocus
+                Layout.preferredWidth: Math.max(implicitWidth + 12, 76)
+                onClicked: callField.text = modelData
+            }
+        }
+        Item { Layout.fillWidth: true }
+    }
     Timer {
         id: lookupDelay
         interval: 600

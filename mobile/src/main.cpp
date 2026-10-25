@@ -308,6 +308,11 @@ int main(int argc, char* argv[])
                        "60 s, logging what it decodes; mode, frequency and decoder restored after."),
         QStringLiteral("MHz"));
     parser.addOption(cwDecodeTestOption);
+    const QCommandLineOption cwTextOption(QStringLiteral("cw-text"),
+        QStringLiteral("Development: text shown as if the CW decoder had received it (with the decoder on, "
+                       "remembered), for the Log tab's heard-in-CW calls."),
+        QStringLiteral("text"));
+    parser.addOption(cwTextOption);
     const QCommandLineOption paddleTestOption(QStringLiteral("paddle-test"),
         QStringLiteral("Development: paddles on 14.045 MHz CW at 10 W (only if this app's slice transmits): dit "
                        "0.6 s, dah 0.6 s, both 0.8 s; logs the elements; power, mode, frequency restored after."));
@@ -946,6 +951,14 @@ int main(int argc, char* argv[])
             });
         });
     }
+    if (parser.isSet(cwTextOption)) {
+        const QString text = parser.value(cwTextOption);
+        QTimer::singleShot(6000, &app, [&engine, text] {
+            engine.setCwDecoderEnabled(true);
+            engine.addCwDecodedForTest(text);
+            qInfo() << "cw-text: calls" << engine.cwCalls();
+        });
+    }
     if (parser.isSet(cwDecodeTestOption)) {
         const double mhz = parser.value(cwDecodeTestOption).toDouble();
         auto* saved = new QVariantMap;
@@ -960,9 +973,10 @@ int main(int argc, char* argv[])
         });
         for (int s = 20; s <= 70; s += 10) {
             QTimer::singleShot(8000 + s * 1000, &app, [&engine, s] {
-                qInfo().noquote() << QStringLiteral("cw-decode-test %1 s: %2, sens %3, %4 | %5")
+                qInfo().noquote() << QStringLiteral("cw-decode-test %1 s: %2, sens %3, %4 | %5 | calls %6")
                                          .arg(s).arg(engine.cwDecoderStats()).arg(engine.cwDecoderSensitivity())
-                                         .arg(engine.cwDecoderCounts(), engine.cwDecodedText().right(160).simplified());
+                                         .arg(engine.cwDecoderCounts(), engine.cwDecodedText().right(160).simplified(),
+                                              engine.cwCalls().join(QLatin1Char(' ')));
             });
         }
         QTimer::singleShot(8000 + 71000, &app, [&engine, saved] {

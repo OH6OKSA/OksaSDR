@@ -328,6 +328,7 @@ ColumnLayout {
         }
         switch (Engine.digiFilter) {
         case "cq": return row.cq === true
+        case "pota": return row.cq === true && /^CQ POTA /i.test(row.text)
         case "new": return ["continent", "continentBand", "cqzone", "cqzoneBand", "dxcc", "dxccBand"].indexOf(row.hl) >= 0
         case "dxcc": return row.newDxcc > 0
         case "newcall": return row.newCall > 0
@@ -356,13 +357,13 @@ ColumnLayout {
         return out
     }
 
-    // Five choices: one row where they fit, else two (the iPad's pinned
-    // panel cut "New DXCC" and "New call" short).
+    // Six choices: one row where they fit, else two of three (the iPad's
+    // pinned panel cut "New DXCC" and "New call" short).
     GridLayout {
         id: showRow
         Layout.fillWidth: true
-        readonly property bool oneRow: width >= 420
-        columns: oneRow ? 6 : 4
+        readonly property bool oneRow: width >= 560
+        columns: oneRow ? 7 : 4
         columnSpacing: 4
         rowSpacing: 4
         Label {
@@ -372,7 +373,7 @@ ColumnLayout {
         }
         Repeater {
             model: [{ key: "all", text: qsTr("All") }, { key: "cq", text: qsTr("CQ") },
-                    { key: "new", text: qsTr("New") }, { key: "dxcc", text: qsTr("New DXCC") },
+                    { key: "pota", text: qsTr("CQ POTA") }, { key: "new", text: qsTr("New") }, { key: "dxcc", text: qsTr("New DXCC") },
                     { key: "newcall", text: qsTr("New call") }]
             delegate: AppButton {
                 required property var modelData
@@ -381,8 +382,8 @@ ColumnLayout {
                 text: modelData.text
                 checked: Engine.digiFilter === modelData.key
                 Layout.fillWidth: true
-                // Two rows: All, CQ, New over New DXCC and New call.
-                Layout.columnSpan: !showRow.oneRow && index >= 3 ? (index === 3 ? 2 : 1) : 1
+                // Two rows: All, CQ, CQ POTA over New, New DXCC, New call.
+                Layout.preferredWidth: 1
                 focusPolicy: Qt.NoFocus
                 onClicked: Engine.digiFilter = modelData.key
             }

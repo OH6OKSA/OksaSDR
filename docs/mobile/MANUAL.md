@@ -539,7 +539,8 @@ Reporter).
     confidence, so band noise stays out. It reads hand-sent and keyer CW
     from 8 to 45 WPM. Decoded text shows
     here and along the top of the waterfall; what you send shows there too,
-    marked `[TX]`.
+    marked `[TX]`. A callsign the decoder hears after *DE*, or twice, is
+    offered on the Log tab (*Heard in CW*).
 - **View** — **Band plan** (the strip at the foot of the spectrum: *Off*,
   *ARRL (US)*, *IARU Region 1 / 2 / 3*, *RAC (Canada)* or *SSA
   (Sweden)*), **Spots** (shown or hidden) and the **DX cluster**,
@@ -574,7 +575,10 @@ Reporter).
 
 - **Log** — quick QSO logging into a log on this device (an ADIF file,
   `oksasdr-log.adi`). Type the **callsign**, or tap the call of the spot
-  you tuned to last. A card shows who it is: with a **QRZ.com** account
+  you tuned to last. With the CW decoder on, **Heard in CW** offers the
+  calls it heard (after *DE*, or twice; the newest first, up to three):
+  a tap puts one in the field, handy when a park activator sends
+  `CQ POTA DE` and the call. A card shows who it is: with a **QRZ.com** account
   (user and password at the bottom; *Save* signs in and says below whether
   it worked; their full records need QRZ.com's XML subscription) the name, QTH, grid, distance and bearing and whether the
   station uses LoTW, eQSL or paper cards; without one, the country,
@@ -640,7 +644,9 @@ Reporter).
   from a station already in the log on this band and mode is grey. "New"
   is counted from the Log tab's log, so import your logbook there (ADIF)
   to see what you still need. **Show** filters the list: **All**, **CQ**
-  (CQ calls only), **New** (a new continent, CQ zone or DXCC, overall or on
+  (CQ calls only), **CQ POTA** (park activators calling `CQ POTA`; a
+  contact with one goes into the log with SIG POTA, the park itself is not
+  in the message), **New** (a new continent, CQ zone or DXCC, overall or on
   this band), **New DXCC** (a DXCC not yet in the log, overall or on
   this band) or **New call** (a call not yet in the log, or not on this
   band); your call, your own transmissions and the station you are

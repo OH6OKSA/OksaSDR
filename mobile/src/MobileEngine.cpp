@@ -19,6 +19,7 @@
 #include <QCoreApplication>
 #endif
 #include <QSet>
+#include <QRegularExpression>
 #include <QUrl>
 #include "Ft8Engine.h"
 #include "ShareText.h"
@@ -4871,6 +4872,46 @@ void MobileEngine::setCwDecoderEnabled(bool on)
     AppSettings::instance().save();
     updateCwDecoder();
     emit cwDecoderChanged();
+}
+
+QStringList MobileEngine::cwCalls() const
+{
+    // What was received, not sent ([TX] lines are this station's own).
+    QStringList words;
+    for (const QString& line : m_cwDecodedText.split(QLatin1Char('\n'))) {
+        if (!line.startsWith(QLatin1String("[TX]"))) {
+            words += line.toUpper().split(QRegularExpression(QStringLiteral("[^A-Z0-9/]+")), Qt::SkipEmptyParts);
+        }
+    }
+    // A prefix, a digit, a suffix ending in a letter, a portable part either
+    // side; 5NN, 599, TU and the like do not match. A decoding error rarely
+    // makes the same call twice, and a call after DE is meant as one.
+    static const QRegularExpression call(
+        QStringLiteral("^([A-Z0-9]{1,3}/)?[A-Z0-9]{1,3}[0-9][A-Z0-9]{0,3}[A-Z](/[A-Z0-9]{1,4})?$"));
+    const QString my = m_session.radioModel().callsign().trimmed().toUpper();
+    QHash<QString, int> seen;
+    QHash<QString, int> last;
+    QSet<QString> afterDe;
+    for (int i = 0; i < words.size(); ++i) {
+        const QString& w = words.at(i);
+        if (w.size() < 3 || w.size() > 12 || w == my || !call.match(w).hasMatch()
+            || (m_cty && !m_cty->entityForCallsign(w))) {
+            continue;
+        }
+        ++seen[w];
+        last[w] = i;
+        if (i > 0 && words.at(i - 1) == QLatin1String("DE")) {
+            afterDe.insert(w);
+        }
+    }
+    QStringList out;
+    for (auto it = last.cbegin(); it != last.cend(); ++it) {
+        if (seen.value(it.key()) >= 2 || afterDe.contains(it.key())) {
+            out << it.key();
+        }
+    }
+    std::sort(out.begin(), out.end(), [&last](const QString& a, const QString& b) { return last.value(a) > last.value(b); });
+    return out.mid(0, 3);
 }
 
 void MobileEngine::clearCwDecoded()

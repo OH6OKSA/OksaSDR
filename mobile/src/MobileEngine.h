@@ -382,6 +382,9 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QStringList pinnedSections READ pinnedSections WRITE setPinnedSections NOTIFY displayLevelsChanged)
     Q_PROPERTY(QString cwDecodedText READ cwDecodedText NOTIFY cwDecoderChanged)
     Q_PROPERTY(QString cwDecoderStats READ cwDecoderStats NOTIFY cwDecoderChanged)
+    // Callsigns in the decoded CW (after DE, or heard twice), newest first,
+    // at most three: the Log tab offers them for its Call field.
+    Q_PROPERTY(QStringList cwCalls READ cwCalls NOTIFY cwDecoderChanged)
     Q_PROPERTY(int rfPower READ rfPower WRITE setRfPower NOTIFY rfPowerChanged)
     // This device's microphone gain in dB (-20 .. +30), applied before the
     // audio is sent: the radio has no gain stage for its PC input, so its
@@ -910,6 +913,13 @@ public:
     void setPinnedSections(const QStringList& sections);
     void setCwDecoderEnabled(bool on);
     QString cwDecodedText() const { return m_cwDecodedText; }
+    QStringList cwCalls() const;
+    // Development (--cw-text): text as if the CW decoder had received it.
+    void addCwDecodedForTest(const QString& text)
+    {
+        m_cwDecodedText += text;
+        emit cwDecoderChanged();
+    }
     int cwDecoderSensitivity() const;
     void setCwDecoderSensitivity(int sens);
     // Development: letters shown / dropped by the sensitivity since start.
@@ -1375,6 +1385,7 @@ private:
     QString m_digiDx;
     int m_digiRxHz{0};  // the audio Hz the station in the QSO is heard on
     QString m_digiDxGrid;
+    QString m_digiDxSig;  // "POTA" when they called CQ POTA (the log's SIG)
     QString m_digiRptSent;
     QString m_digiRptRcvd;
     QString m_digiTxMsg;

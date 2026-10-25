@@ -9,16 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- RADE receive fixed: it decoded nothing on a slice whose DAX channel was 2 or 3, and a quick RADE off / on could leave it without audio. Checked on the FLEX: DL5AI synced at up to 11 dB SNR and his callsign came through.
-- FreeDV station list: stations on the air first (TX now, then "TX 3 min ago"), so you can go and listen while they are active. A tap on an SSB station turns RADE off, so you hear it.
-- FTx: New call colours (cyan: never worked; light: not on this band) and a New call filter, as WSJT-X.
-- Big logbooks: only a small index stays in memory (120 000 contacts: about 17 MB) and the log is read in the background at start.
-- RADE: a quick PTT tap now sends its end of over with your callsign.
-- Phone: a keyboard tunes and keys as on the iPad (arrows, Space PTT, F, F-keys); in a very low landscape window the Band button opens the bands.
-- The slice line is left out in voice modes; the frequency stays. The CW callsign notice points to Radio Setup.
+- FTx: a CQ POTA filter in Show, for park activators (thanks Ryland WW4GA). A contact with one goes into the log with SIG POTA.
+- Log: Heard in CW. With the CW decoder on, the calls it heard (after DE, or twice) are offered under the Call field; a tap fills it in.
 
-RECENT (builds 113–114)
-- Big ADIF imports in seconds; two-tap SmartLink Sign out; sliders, keypads (1 2 3 on top), ⋯ menu and text fields the same on every device (thanks Richard EI9JE); meters Analog / Bar / Two bars (thanks Mike VA3MW); FT8 transmit fixed (thanks Wayne WA2N); RADE filter and mute fixes (thanks Michel F5GNM).
+RECENT (builds 113–115)
+- RADE receive fixed on DAX channels 2 and 3, and a quick PTT tap sends RADE's end of over; FreeDV station list by activity; New call colours and filter in FTx; big logbooks in little memory and big ADIF imports in seconds; a keyboard on the phone; two-tap SmartLink Sign out; sliders, keypads (1 2 3 on top), ⋯ menu and text fields the same on every device (thanks Richard EI9JE); meters Analog / Bar / Two bars (thanks Mike VA3MW); FT8 transmit fixed (thanks Wayne WA2N); RADE filter and mute fixes (thanks Michel F5GNM).
 RECENT (builds 94–112)
 - FreeDV tab with FreeDV Reporter; FTx (FT8 / FT4) with PSK Reporter; Wavelog / Cloudlog; transverters; the Mac text box.
 
