@@ -9,7 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Mac: clicking a text field opens a small text box; type there and press Return (or OK) to put the text in the field. The Mac's keyboard does not reach the app's own fields. If no box opens, or typing in it does nothing, please open Log, tap Copy and send me the text.
+- iPhone Duo and others: the display no longer freezes while iOS reports the app as inactive but it is still on screen (a system prompt, Control Center); it pauses only in the background. Thanks Vesa OH6HPS.
+- DX cluster (View tab): a line under the button says whether it is connected, to which server and as whom, with the spots so far and the latest one's time.
+
+RECENT (build 111)
+- Mac: clicking a text field opens a small text box; type there and press Return (or OK) to put the text in the field. If no box opens, or typing in it does nothing, please send the log (Log, Copy).
 
 RECENT (build 109)
 - A sideways swipe inside the open controls drawer no longer tunes the radio or moves the display under it; the part of the display still in view works as before. Thanks Wayne WA2N.

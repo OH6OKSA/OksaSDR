@@ -89,12 +89,22 @@ ColumnLayout {
         }
         Label {
             Layout.fillWidth: true
-            text: Engine.dxCluster.error && Engine.dxCluster.state !== "connected" ? Engine.dxCluster.error
-                : (Engine.dxCluster.host || "") + ":" + (Engine.dxCluster.port || "")
-            color: Engine.dxCluster.error && Engine.dxCluster.state !== "connected" ? Theme.warning : Theme.textDim
+            text: (Engine.dxCluster.host || "") + ":" + (Engine.dxCluster.port || "")
+            color: Theme.textDim
             font.pixelSize: 13
             elide: Text.ElideRight
         }
+    }
+    // Whether the cluster is on, as the logbook's and PSK Reporter's lines.
+    Label {
+        objectName: "dxClusterStatus"
+        Layout.fillWidth: true
+        visible: Engine.connectionState === "connected" || Engine.dxClusterStatusKind === "failed"
+        text: Engine.dxClusterStatus
+        color: Engine.dxClusterStatusKind === "ok" ? "#00cc66"
+             : Engine.dxClusterStatusKind === "failed" ? Theme.transmit : Theme.textDim
+        font.pixelSize: 13
+        wrapMode: Text.WordWrap
     }
     RowLayout {
         Layout.fillWidth: true

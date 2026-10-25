@@ -497,7 +497,10 @@ them back into the drawer.
     port (default dxc.nc7j.com 7300) and the callsign it logs in with (the
     radio's own when left empty); **Auto** connects whenever the radio
     does. Its spots go to the radio, so SmartSDR and every other program
-    on it show them too; they expire after 30 minutes.
+    on it show them too; they expire after 30 minutes. The line under the
+    button tells whether it is on: green *Connected to … as …* with the
+    spots so far and the latest one's time (UTC), *Connecting…*, or red
+    with the reason when it could not connect.
 - **Profiles** — the radio's global, TX and mic profiles: load, save,
   delete, as in SmartSDR.
 - **Memory** — the radio's memory channels: tap to tune, *Save* stores the

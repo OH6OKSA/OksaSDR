@@ -52,6 +52,10 @@ iOS background).
 
 ## Released
 
+**Next build** (not yet pushed):
+- The display (spectrum, waterfall, 3D) paused whenever the app was not Active; iOS reports Inactive while the app is still on screen (a system prompt, Control Center), and a tester's iPhone Duo (build 111, iOS 27.2) stayed Inactive for three minutes while in use, its display frozen. It now pauses only when the app is suspended (in the background); every app state change is in the log. Transmit still stops on Inactive.
+- DX cluster status line (View tab), as the logbook's and PSK Reporter's: connected to which server as whom, the spots so far and the latest one's time (UTC), connecting, or the reason it failed (its own property and signal, so arriving spots do not refresh the server fields being edited).
+
 **Build 111** (2026-10-25), iPhone and iPad (Mac only), Android unchanged (run 110 was the unsigned compile check on mobile/ci-check, never on TestFlight):
 - Mac typing, third step: build 109's log showed no input-method event (the filter worked) and still no key event anywhere in Qt for the whole session, while build 107's GameController had seen the keys: the Mac hands the app the keys, but UIKit passes none to Qt's view (another Qt iPad app on a Mac has the same, unsolved). A focused text field on a Mac now opens Apple's own text box (UIAlertController with a UITextField) holding the field's text; OK or Return types it into the field key by key and presses Return (validators, textEdited, accepted and editingFinished as for typing), then the field lets go of focus so the box does not reopen. Tested on the desktop with AETHER_MAC_ENTRY_TEST (the Log tab's comment field: "Test 123 äö/" in, focus released, one box). The log now notes the first key presses UIKit hands the app (UIApplication sendEvent:, no characters), the windows, the key window and the first responder, so the next log tells where the keys go if the box does not take them either. The key-event log no longer shows the typed text (a password could be typed).
 

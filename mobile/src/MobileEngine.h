@@ -242,6 +242,13 @@ class MobileEngine : public QObject {
     // DX cluster: {host, port, callsign (the radio's when not set),
     // callsignFromRadio, autoConnect, state off/connecting/connected, error}.
     Q_PROPERTY(QVariantMap dxCluster READ dxCluster NOTIFY dxClusterChanged)
+    // The cluster connection in words (connected to which server as whom,
+    // the spots so far and the latest one's time), as the logbook's and PSK
+    // Reporter's status lines; kind "ok", "failed" or "" (on the way, off).
+    // Its own signal: spots arrive often, and the server fields must not be
+    // refreshed under the user's fingers each time.
+    Q_PROPERTY(QString dxClusterStatus READ dxClusterStatus NOTIFY dxClusterStatusChanged)
+    Q_PROPERTY(QString dxClusterStatusKind READ dxClusterStatusKind NOTIFY dxClusterStatusChanged)
     Q_PROPERTY(QStringList agcModes READ agcModes CONSTANT)
     Q_PROPERTY(int stepHz READ stepHz NOTIFY stepChanged)
     // The slice's step list from the radio (Hz), for the step chooser.
@@ -773,6 +780,8 @@ public:
     int spotMaxAgeMin() const;
     void setSpotMaxAgeMin(int minutes);
     QVariantMap dxCluster() const;
+    QString dxClusterStatus() const;
+    QString dxClusterStatusKind() const;
     // key: host, port, callsign or autoConnect.
     Q_INVOKABLE void setDxCluster(const QString& key, const QVariant& value);
     Q_INVOKABLE void connectDxCluster();
@@ -1129,6 +1138,7 @@ signals:
     void txChainChanged();
     void spotsChanged();
     void dxClusterChanged();
+    void dxClusterStatusChanged();
     void profilesChanged();
     void txFilterChanged();
     void eqChanged();
@@ -1378,6 +1388,8 @@ private:
     bool m_dxWanted{false};
     QString m_dxState{QStringLiteral("off")};
     QString m_dxError;
+    int m_dxSpotCount{0};
+    QDateTime m_dxLastSpotUtc;
     QHash<QString, QPair<double, qint64>> m_dxSeen;
     QStringList m_dxQueue;
     QTimer m_dxSendTimer;

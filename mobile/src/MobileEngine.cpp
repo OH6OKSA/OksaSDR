@@ -514,11 +514,17 @@ MobileEngine::MobileEngine(QObject* parent)
             stopTransmit(QStringLiteral("application inactive"));
         }
         update3DGuard();
-        // Nobody sees the display while the app is not in front: stop feeding
-        // the spectrum, waterfall and 3D view (audio keeps playing). iOS kills
-        // an app whose main thread is busy when it moves to the background
-        // (scene-update watchdog, seen on testers' iPads), and it saves power.
+        qCInfo(lcMobile) << "app state:" << state;
+        // Nobody sees the display once the app is in the background: stop
+        // feeding the spectrum, waterfall and 3D view (audio keeps playing).
+        // iOS kills an app whose main thread is busy when it moves to the
+        // background (scene-update watchdog, seen on testers' iPads), and it
+        // saves power. Inactive is still on screen (a system prompt or Control
+        // Center over it, an unfocused split-screen window): the display keeps
+        // going there. A tester's iPhone Duo stayed inactive for minutes while
+        // in use, and its display froze.
         const bool active = state == Qt::ApplicationActive;
+        const bool onScreen = active || state == Qt::ApplicationInactive;
         // Back in front signed in but without the SmartLink server (it
         // drops in the background): reconnect, so the radio list is live.
         if (active && m_smartLink.isAuthenticated() && !m_smartLink.isConnected()) {
@@ -532,9 +538,9 @@ MobileEngine::MobileEngine(QObject* parent)
             m_sideDah = false;
             m_spacePtt = false;
         }
-        if (active != m_displayActive) {
-            m_displayActive = active;
-            qCInfo(lcMobile) << "display" << (active ? "resumed" : "paused (app not in front)");
+        if (onScreen != m_displayActive) {
+            m_displayActive = onScreen;
+            qCInfo(lcMobile) << "display" << (onScreen ? "resumed" : "paused (app in the background)");
         }
     });
     connect(&rm, &RadioModel::sliceAdded, this, &MobileEngine::onSliceAdded);
@@ -4272,6 +4278,7 @@ void MobileEngine::setupDxCluster()
 {
     m_dx = new DxClusterClient(this);
     m_dx->initialize();
+    connect(this, &MobileEngine::dxClusterChanged, this, &MobileEngine::dxClusterStatusChanged);
     connect(m_dx, &DxClusterClient::connected, this, [this] {
         m_dxState = QStringLiteral("connected");
         m_dxError.clear();
@@ -4291,6 +4298,9 @@ void MobileEngine::setupDxCluster()
         emit dxClusterChanged();
     });
     connect(m_dx, &DxClusterClient::spotReceived, this, [this](const DxSpot& spot) {
+        ++m_dxSpotCount;
+        m_dxLastSpotUtc = QDateTime::currentDateTimeUtc();
+        emit dxClusterStatusChanged();
         RadioModel& rm = m_session.radioModel();
         if (!m_connected || spot.dxCall.trimmed().isEmpty() || spot.freqMhz <= 0.0) {
             return;
@@ -4509,6 +4519,32 @@ QVariantMap MobileEngine::dxCluster() const
     };
 }
 
+QString MobileEngine::dxClusterStatus() const
+{
+    const QVariantMap cfg = dxCluster();
+    const QString server = QStringLiteral("%1:%2").arg(cfg.value(QStringLiteral("host")).toString())
+                               .arg(cfg.value(QStringLiteral("port")).toInt());
+    if (m_dxState == QLatin1String("connected")) {
+        const QString spots = m_dxSpotCount > 0
+            ? tr("%1 spots so far, the latest at %2 UTC").arg(m_dxSpotCount).arg(m_dxLastSpotUtc.toString(QStringLiteral("HH:mm")))
+            : tr("no spots yet");
+        return tr("Connected to %1 as %2; %3.").arg(server, cfg.value(QStringLiteral("callsign")).toString(), spots);
+    }
+    if (m_dxState == QLatin1String("connecting")) {
+        return m_dxError.isEmpty() ? tr("Connecting to %1…").arg(server)
+                                   : tr("Connecting to %1 again (%2)").arg(server, m_dxError);
+    }
+    return m_dxError.isEmpty() ? tr("Not connected.") : tr("Not connected: %1").arg(m_dxError);
+}
+
+QString MobileEngine::dxClusterStatusKind() const
+{
+    if (m_dxState == QLatin1String("connected")) {
+        return QStringLiteral("ok");
+    }
+    return m_dxState == QLatin1String("off") && !m_dxError.isEmpty() ? QStringLiteral("failed") : QString();
+}
+
 void MobileEngine::setDxCluster(const QString& key, const QVariant& value)
 {
     AppSettings& settings = AppSettings::instance();
@@ -4540,6 +4576,7 @@ void MobileEngine::connectDxCluster()
     m_dxWanted = true;
     m_dxState = QStringLiteral("connecting");
     m_dxError.clear();
+    m_dxSpotCount = 0;
     qCInfo(lcMobile) << "DX cluster connect" << cfg.value(QStringLiteral("host")).toString()
                      << cfg.value(QStringLiteral("port")).toInt();
     m_dx->connectToCluster(cfg.value(QStringLiteral("host")).toString(),
