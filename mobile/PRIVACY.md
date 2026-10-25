@@ -49,7 +49,8 @@ these services:
   server, or the one you use) with its ADIF fields. QSOs that could not be
   sent wait on the device until they can.
 - **Developer link** (Log tab), off unless turned on: for the developer's
-  own devices; it sends the app's log to the address set there.
+  own devices; it sends the app's log, and screenshots when asked, to the
+  address set there.
 
 The app contains no analytics, advertising, tracking or crash-reporting SDKs,
 and it makes no other internet connections. FT8 / FT4 decoding and RADE run
@@ -107,4 +108,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-10-24 (PSK Reporter, Wavelog / Cloudlog)
+Last updated: 2026-10-25 (FreeDV Reporter, developer link screenshots)

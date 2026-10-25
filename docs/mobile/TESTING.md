@@ -11,9 +11,10 @@ and what happens after you join.
   Apple silicon (the iPad app runs there through TestFlight), or an
   **Android** phone or tablet (Android 9 or newer, 64-bit ARM; see
   [Android](#android)).
-- **A FlexRadio.** The FLEX-6400, FLEX-6600, FLEX-6600M and FLEX-8600
-  are in use by testers; other FLEX-6000/8000 models and Aurora should work. If yours is one of
-  those, say so: reports on new models are especially welcome.
+- **A FlexRadio.** The FLEX-6400, FLEX-6600, FLEX-6600M, FLEX-8600 and
+  Aurora AU-510 are in use by testers; other FLEX-6000/8000 models and
+  Auroras should work. If yours is one of those, say so: reports on new
+  models are especially welcome.
 - **A way for the device to reach the radio**, any of these:
   - the same home network (enter the radio's IP address in the app);
   - **SmartLink**, from anywhere (sign in with your FlexRadio account);
@@ -76,7 +77,7 @@ every function.
   Reporter; tap one to tune there and listen. *Report to FreeDV Reporter*
   puts you on qso.freedv.org while RADE is on.
 - **Reporting a problem:** right after it happens, open **Log** in the top
-  row, tap **Copy**, and paste the text into an email to oh6oksa@gmail.com.
+  row (on an iPhone behind **⋯**), tap **Copy**, and paste the text into an email to oh6oksa@gmail.com.
   Add the device model and what you were doing. The build number is in the
   app's top row. Screenshots or a screen recording help a lot.
 - **Questions, tips and new builds:** the

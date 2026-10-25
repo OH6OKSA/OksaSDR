@@ -4,7 +4,7 @@
 
 [![Mobile iOS build](https://github.com/OH6OKSA/OksaSDR/actions/workflows/mobile-ios.yml/badge.svg?branch=mobile/oksasdr)](https://github.com/OH6OKSA/OksaSDR/actions/workflows/mobile-ios.yml)
 [![Mobile Android build](https://github.com/OH6OKSA/OksaSDR/actions/workflows/mobile-android.yml/badge.svg?branch=mobile/oksasdr)](https://github.com/OH6OKSA/OksaSDR/actions/workflows/mobile-android.yml)
-![Platform](https://img.shields.io/badge/platform-iPadOS%20%7C%20iOS%2018%2B%20%7C%20Android%209%2B-blue)
+![Platform](https://img.shields.io/badge/platform-iPadOS%20%7C%20iOS%2018%2B%20%7C%20macOS%20(Apple%20silicon)%20%7C%20Android%209%2B-blue)
 ![Status](https://img.shields.io/badge/status-beta-orange)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
@@ -20,12 +20,12 @@ SmartLink (or your own VPN), it is a complete station control surface.
 > [discussion #6409](https://github.com/aethersdr/AetherSDR/discussions/6409).
 
 <p align="center">
-  <img src="docs/mobile/ipad-landscape.jpg" width="70%" alt="OksaSDR on an iPad (a screenshot from the device): FT8 on four DIGU slices, the 3D spectrum and waterfall on 80 m and the FT8 tab with decodes in WSJT-X colours"/>
+  <img src="docs/mobile/ipad-landscape.jpg" width="70%" alt="OksaSDR on an iPad (a screenshot from the device): FT8 on four DIGU slices, the 3D spectrum and waterfall on 80 m and the FTx tab with decodes in WSJT-X colours"/>
   &nbsp;
   <img src="docs/mobile/iphone-portrait.jpg" width="22%" alt="OksaSDR on iPhone in portrait"/>
 </p>
 
-**[Join the TestFlight test group](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md)** (iPhone, iPad): what you need and how to join.
+**[Join the TestFlight test group](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md)** (iPhone, iPad, Mac with Apple silicon): what you need and how to join.
 
 **[Android beta: download the APK](https://github.com/OH6OKSA/OksaSDR/releases/latest)** (Android 9 or newer, 64-bit ARM): see the
 [tester guide](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md#android) for installing it.
@@ -64,7 +64,8 @@ radio interface, with no computer running alongside.
 
 **Receive**
 - Live panadapter and waterfall, or the 3D stacked trace: the desktop's
-  3DSS renderer and shaders, drawn on the GPU through Metal. Spectrum,
+  3DSS renderer and shaders, drawn on the GPU (Metal on Apple devices,
+  OpenGL ES on Android). Spectrum,
   waterfall and 3D levels follow the noise floor as on the desktop. Tap to tune (snapped to the tuning step). Drag inside the
   filter passband to tune, anywhere else to move the view, as on the
   desktop; while tuning, holding the finger at either edge keeps scrolling,
@@ -83,7 +84,8 @@ radio interface, with no computer running alongside.
   frequency and mode, delete).
 - **Spots and DX cluster**: the radio's spots (from every program on it)
   as callsigns on the display, tap to tune; the app's own DX cluster
-  connection sends its spots to the radio, as the desktop does.
+  connection sends its spots to the radio, as the desktop does; a status
+  line says whether it is connected, to which server and as whom.
 - **Notch filters (TNF)**: press and hold on the display for a notch, tap
   it for width, depth, permanent or remove; drawn through spectrum and
   waterfall as on the desktop.
@@ -118,18 +120,22 @@ radio interface, with no computer running alongside.
 - Notices and refusals pop up in the middle of the display.
 - Two meters on the slice row, SmartSDR style. Tap either one to choose S,
   Power, SWR, ALC, Mic, Compression, PA temperature or supply voltage,
-  separately for receive and transmit (e.g. S and Power, then SWR and Power
-  on the air). Each one a bar or an analog gauge (arc, needle, S1–S9 and
-  +20…+60 in red). The choices are remembered. Each meter holds its
-  peak for 1.5 s (amber needle or tick).
-- Band buttons (160 m … 6 m, WWV, GEN) use the radio's own band stack, so
-  each band comes back to its last frequency and mode.
+  separately for receive and transmit (e.g. S, then SWR on the air). Each
+  meter is **Analog** (arc, needle, S1–S9 and +20…+60 in red; also while
+  transmitting), **Bar** or **Two bars**, each bar with its own receive and
+  transmit choice, so up to four readings show at once. Bars carry the
+  analog scale; peak hold is Off, Fast, Medium or Slow (an amber needle or
+  marker). The choices are remembered.
+- Band buttons (160 m … 6 m, WWV, GEN and the radio's transverter bands)
+  use the radio's own band stack, so each band comes back to its last
+  frequency and mode.
 - Step buttons from ±1 Hz to ±1 kHz land on round frequencies: +10 Hz from
   14.100002 goes to 14.100010, not 14.100012.
 - RIT and XIT, squelch (FM/AM).
 - Several slices and panadapters: add, select, close, choose the TX slice
-  (marked with a red TX tag); other slices are marked on the display and tap
-  to select.
+  (marked with a red TX tag). The active slice is a white dashed line with
+  its frequency; other slices are marked with their letter and tap to
+  select.
 - Direct frequency entry from a keypad or a hardware keyboard.
 - RX audio on the device, also in the background (home screen, other
   apps). The screen stays awake while connected.
@@ -167,7 +173,7 @@ radio interface, with no computer running alongside.
 
 **Digital modes and logging**
 - **FT8 and FT4** in the app (Controls › FTx), no computer, DAX or
-  WSJT-X: every slice in DIGU decodes at once, rows marked with the slice
+  WSJT-X: every slice in DIGU / DIGL decodes at once, rows marked with the slice
   and coloured as in WSJT-X (CQ, your call, new DXCC, CQ zone or
   continent, worked before), with a filter (All, CQ, New, New DXCC). Tap a
   call to answer it (TX and the display move to its slice) or call CQ;
@@ -191,7 +197,8 @@ radio interface, with no computer running alongside.
 **Remote (SmartLink)**
 - Sign in with your FlexRadio SmartLink account and connect to your radio
   from anywhere, with Opus-compressed audio. The sign-in is kept in the iOS
-  Keychain on this device only; the password is never stored.
+  Keychain or the Android Keystore on this device only; the password is
+  never stored.
 
 **Made for the device**
 - A tablet layout and a phone layout. They switch live on rotation, Split
@@ -204,6 +211,8 @@ radio interface, with no computer running alongside.
 - Magic Keyboard and trackpad: arrows tune, Space is PTT, +/− zoom, F opens
   frequency entry, scroll tunes and ⌘-scroll zooms.
 - Safe-area aware: notch, Dynamic Island and the home indicator.
+- On a Mac with Apple silicon the iPad app runs from TestFlight; a click
+  in a text field opens a text box to type in.
 - Network quality in the top row (as the desktop's indicator), with
   link timing, packet loss per stream and traffic on tap.
 - **Radio Setup** (top row): callsign, radio name, remote, transmit limits
@@ -212,7 +221,7 @@ radio interface, with no computer running alongside.
 - App version and build in the top row; **Manual** opens the
   [user manual](docs/mobile/MANUAL.md).
 - Built-in demo radio, so you can try it without a radio.
-- In-app **Log** with Copy, so testers can report exactly what happened.
+- In-app **Log** with Copy and Share, so testers can report exactly what happened.
 
 <p align="center">
   <img src="docs/mobile/iphone-landscape.jpg" width="56%" alt="iPhone landscape layout"/>
@@ -234,9 +243,10 @@ radio interface, with no computer running alongside.
 </p>
 <p align="center"><sub>Android beta on a OnePlus Open: inner screen, controls open, outer screen. Taken from the device over the developer link.</sub></p>
 
-<sub>Screenshots are rendered by
-[`mobile/tools/update-screenshots.sh`](mobile/tools/update-screenshots.sh) and
-refreshed with every user-interface change.</sub>
+<sub>The iPhone, iPad mini and passband screenshots are rendered by
+[`mobile/tools/update-screenshots.sh`](mobile/tools/update-screenshots.sh)
+against a FLEX and refreshed with every user-interface change; the iPad
+landscape and Android pictures are taken from the devices.</sub>
 
 ## Status
 
@@ -253,6 +263,10 @@ refreshed with every user-interface change.</sub>
 | Remote over your own VPN (connect by IP) | ✅ In use by testers (OpenVPN, WireGuard, Tailscale; also over 5G) |
 | FT8 / FT4 in the app | ✅ QSOs logged on the air from the iPad and a FLEX; 157 PSKReporter spots from two 10 W CQs; several slices decoding at once |
 | RADE digital voice | 🧪 Built in; reports with RADE stations welcome |
+| FreeDV Reporter (qso.freedv.org) | ✅ The app's RADE listed on qso.freedv.org (build 112) |
+| PSK Reporter, Wavelog / Cloudlog | ✅ Spots on pskreporter.info; QSOs sent to a Wavelog logbook |
+| Transverters (XVTR) in Radio Setup | 🧪 Built in; reports with a transverter welcome |
+| Mac (Apple silicon), the iPad app from TestFlight | ✅ In use by testers; typing through the text box since build 111 |
 | Log tab, ADIF export and import, QRZ.com lookup | ✅ In use by testers |
 | Several slices and panadapters, multiFLEX | ✅ Supported |
 | Spots and DX cluster, TNF, memory editing | ✅ Tested against a FLEX-6600M (build 77) |
@@ -269,7 +283,7 @@ refreshed with every user-interface change.</sub>
 
 - **TestFlight beta.** Ask for an invitation at oh6oksa@gmail.com; see
   **[how to join the test group](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md)** for what to send.
-  You need iPadOS or iOS 18 or newer and a FlexRadio: on the same network,
+  You need iPadOS or iOS 18 or newer (or a Mac with Apple silicon) and a FlexRadio: on the same network,
   through SmartLink from anywhere, or over your own VPN.
 - **Android beta.** Download the APK from
   **[the latest release](https://github.com/OH6OKSA/OksaSDR/releases/latest)** and install it
@@ -299,10 +313,12 @@ refreshed with every user-interface change.</sub>
   IOKit/CoreAudio code sits behind `Q_OS_MACOS`, process helpers behind
   `QT_CONFIG(process)`, and the unused FFmpeg media plugin is excluded.
 - **CI** ([`mobile-ios.yml`](.github/workflows/mobile-ios.yml)) builds on
-  GitHub's macOS 27 runners with Xcode 27. It cross-compiles FFTW, archives
-  the app and signs it with cloud-managed distribution signing through an App
-  Store Connect API key. Each push uploads a build to TestFlight. No Mac is
-  needed.
+  GitHub's macOS runners (the xcode-27 image, iOS 27 SDK). It cross-compiles
+  FFTW, archives the app and signs it with cloud-managed distribution signing
+  through an App Store Connect API key. Each push to `mobile/oksasdr` that
+  changes the app uploads a build to TestFlight; the Android workflow
+  ([`mobile-android.yml`](.github/workflows/mobile-android.yml)) builds the
+  signed APK from the same code. No Mac is needed.
 - Developed with Claude Code, following the upstream
   [constitution](CONSTITUTION.md) and [AGENTS.md](AGENTS.md) conventions.
   Commits are signed.
@@ -319,8 +335,8 @@ the full feature list, see the upstream project:
 **https://github.com/aethersdr/AetherSDR**
 
 Upstream issue [#3128](https://github.com/aethersdr/AetherSDR/issues/3128)
-plans a mobile client (AetherLink). This port is a standalone alternative,
-and its QML client could also become an AetherLink thin client later.
+plans a mobile client (AetherLink). OksaSDR is a standalone alternative and
+goes its own way, taking upstream engine changes when they are useful.
 
 ## Privacy, license, contact
 

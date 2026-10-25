@@ -1,41 +1,27 @@
-name: Feature Request
-description: Suggest a new feature or improvement
+name: Feature request
+description: An idea or an improvement for OksaSDR
 labels: [enhancement]
 body:
   - type: markdown
     attributes:
       value: |
-        ## Thank you for your feature idea! 🙏
-
-        AetherSDR is maintained by a solo developer with AI assistance. To help us evaluate and implement your request as quickly as possible, **we strongly encourage using an AI assistant to help structure your request.**
-
-        ### How to create a great feature request in 2 minutes:
-
-        1. Go to [claude.ai](https://claude.ai) (free) or any AI assistant
-        2. Paste the prompt from our [Contributing Guide](https://github.com/aethersdr/AetherSDR/blob/main/CONTRIBUTING.md#ai-assisted-feature-requests)
-        3. Describe your idea in plain English — the AI will structure it with protocol hints and implementation details
-        4. Paste the AI's output into the form below
-
-        **Why this matters:** AI-structured requests include the "What / Why / How / Protocol Hints" sections that let us go straight to implementation. They are resolved significantly faster than unstructured requests. We appreciate your support of the project, and we want to implement your ideas — helping us with a structured request is the best way to make that happen quickly.
-
-        Unstructured requests will still be reviewed, but will be prioritized behind well-structured ones as we work through the backlog.
-
-  - type: checkboxes
-    id: ai_assisted
-    attributes:
-      label: Request preparation
-      options:
-        - label: "I used an AI assistant to help structure this request"
-          required: false
-        - label: "I checked for existing issues covering the same feature"
-          required: false
-
+        Thank you for the idea! Check the [roadmap](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/mobile/ROADMAP.md)
+        first: it may be planned already. Ideas are also welcome in the
+        [OksaSDR Users group](https://www.facebook.com/groups/1468327561855382).
   - type: textarea
-    id: description
+    id: what
     attributes:
-      label: What would you like?
-      description: |
-        Describe the feature. If you used the AI-assisted prompt, paste its output here.
-        Screenshots of SmartSDR are helpful if you're requesting parity with the Windows client.
+      label: What you would like
+      description: What the app should do, and where (which page, tab or button).
     validations:
       required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: How you operate and what it would help with; how SmartSDR, AetherSDR or another program does it, if one does.
+  - type: input
+    id: device
+    attributes:
+      label: Device and radio
+      description: e.g. iPad mini, FLEX-6400
