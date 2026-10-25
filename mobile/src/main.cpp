@@ -26,6 +26,8 @@
 #include <QSysInfo>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
+#include <QMetaEnum>
+#include <QKeyEvent>
 #include <QQuickWindow>
 #include <QQuickItem>
 #include <QTimer>
@@ -363,6 +365,11 @@ int main(int argc, char* argv[])
         QStringLiteral("Meter styles <left>,<right>: analog, bar or two (two bars), e.g. two,analog (remembered)."),
         QStringLiteral("styles"));
     parser.addOption(meterStyleOption);
+    const QCommandLineOption keysOption(QStringLiteral("keys"),
+        QStringLiteral("Development: 8 s after start press these keys on the window, 0.4 s apart, e.g. Right,Right,Up "
+                       "(names as in Qt::Key without Key_); logs the frequency after each."),
+        QStringLiteral("keys"));
+    parser.addOption(keysOption);
     const QCommandLineOption metersOption(QStringLiteral("meters"),
         QStringLiteral("Receive meter choices <left>,<right>, e.g. S,Volts (remembered)."), QStringLiteral("kinds"));
     parser.addOption(metersOption);
@@ -485,6 +492,27 @@ int main(int argc, char* argv[])
     }
     if (parser.isSet(analogMetersOption)) {
         engine.setAnalogMeters(parser.value(analogMetersOption) == QLatin1String("on"));
+    }
+    if (parser.isSet(keysOption)) {
+        const QStringList names = parser.value(keysOption).split(QLatin1Char(','), Qt::SkipEmptyParts);
+        for (int i = 0; i < names.size(); ++i) {
+            QTimer::singleShot(8000 + i * 400, &app, [&qml, &engine, name = names.at(i).trimmed()] {
+                const QMetaEnum keyEnum = QMetaEnum::fromType<Qt::Key>();
+                bool ok = false;
+                const int key = keyEnum.keyToValue(("Key_" + name).toLatin1().constData(), &ok);
+                for (QObject* root : qml.rootObjects()) {
+                    auto* window = qobject_cast<QQuickWindow*>(root);
+                    if (!window || !ok) {
+                        continue;
+                    }
+                    QKeyEvent press(QEvent::KeyPress, key, Qt::NoModifier);
+                    QKeyEvent release(QEvent::KeyRelease, key, Qt::NoModifier);
+                    QCoreApplication::sendEvent(window, &press);
+                    QCoreApplication::sendEvent(window, &release);
+                }
+                qInfo() << "keys:" << name << (ok ? "" : "(unknown)") << "frequency" << engine.frequencyMhz();
+            });
+        }
     }
     if (parser.isSet(meterStyleOption)) {
         const QStringList styles = parser.value(meterStyleOption).split(QLatin1Char(','));

@@ -121,7 +121,8 @@ ColumnLayout {
         wrapMode: Text.WordWrap
     }
 
-    // ---- Stations on FreeDV Reporter ----
+    // ---- Stations on FreeDV Reporter: transmitting now first, then the
+    // most recently on the air ----
     RowLayout {
         Layout.fillWidth: true
         Layout.topMargin: Theme.spacing
@@ -202,7 +203,10 @@ ColumnLayout {
                 Label {
                     Layout.fillWidth: true
                     visible: text.length > 0
-                    text: [station.modelData.tx ? qsTr("TX now") : (station.modelData.rxOnly ? qsTr("receive only") : ""),
+                    text: [station.modelData.tx ? qsTr("TX now")
+                               : station.modelData.txAgoMin !== undefined
+                                 ? (station.modelData.txAgoMin < 1 ? qsTr("TX just now") : qsTr("TX %1 min ago").arg(station.modelData.txAgoMin))
+                               : (station.modelData.rxOnly ? qsTr("receive only") : ""),
                            station.modelData.mode || "",
                            station.modelData.heard ? qsTr("hears %1 (%2 dB)").arg(station.modelData.heard).arg(station.modelData.snr) : "",
                            station.modelData.message || ""]

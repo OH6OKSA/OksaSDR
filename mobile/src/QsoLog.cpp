@@ -5,8 +5,11 @@
 #include <QFileInfo>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QSet>
 #include <QStandardPaths>
 #include <QTextStream>
+
+#include <algorithm>
 
 #ifdef Q_OS_ANDROID
 #include <QJniObject>
@@ -102,23 +105,55 @@ void QsoLog::writeMirror()
     m_mirrorOk = copyMirror(m_path, m_mirrorPath);
 }
 
-QsoLog::QsoLog(QString path)
+QsoLog::QsoLog(QString path, bool load)
     : m_path(std::move(path))
 {
     if (m_path.isEmpty()) {
         const QString dir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
         m_path = QDir(dir).filePath(QStringLiteral("oksasdr-log.adi"));
     }
-    load();
+    if (load) {
+        adopt(read(m_path));
+    }
 }
 
-void QsoLog::load()
+QsoLog::Loaded QsoLog::read(const QString& path)
 {
-    QFile file(m_path);
-    if (!file.open(QIODevice::ReadOnly)) {
-        return;
+    Loaded loaded;
+    QByteArray data;
+    {
+        QMutexLocker lock(&fileMutex());
+        QFile file(path);
+        if (!file.open(QIODevice::ReadOnly)) {
+            return loaded;
+        }
+        data = file.readAll();
     }
-    m_records = parseAdif(QString::fromUtf8(file.readAll()));
+    // Entries as they come, the newest full records kept.
+    parseAdifEach(data, [&loaded](QVariantMap&& r) {
+        loaded.entries.append(entryOf(r));
+        loaded.recent.append(std::move(r));
+        if (loaded.recent.size() > 2 * kRecent) {
+            loaded.recent.remove(0, loaded.recent.size() - kRecent);
+        }
+    });
+    if (loaded.recent.size() > kRecent) {
+        loaded.recent.remove(0, loaded.recent.size() - kRecent);
+    }
+    return loaded;
+}
+
+void QsoLog::adopt(Loaded loaded)
+{
+    // Contacts appended while the file was being read come after it.
+    loaded.entries.append(m_entries);
+    loaded.recent.append(m_recent);
+    m_entries = std::move(loaded.entries);
+    m_recent = std::move(loaded.recent);
+    if (m_recent.size() > kRecent) {
+        m_recent.remove(0, m_recent.size() - kRecent);
+    }
+    m_loaded = true;
 }
 
 bool QsoLog::append(const QVariantMap& record)
@@ -131,17 +166,26 @@ bool QsoLog::append(const QVariantMap& record)
 // file per contact), which held the app for minutes.
 bool QsoLog::appendAll(const QList<QVariantMap>& records)
 {
+    if (records.isEmpty()) {
+        return true;
+    }
+    QString adif;
+    QList<QsoEntry> entries;
+    for (const QVariantMap& r : records) {
+        adif += adifRecord(r) + QLatin1Char('\n');
+        entries.append(entryOf(r));
+    }
     bool mirrorOk = false;
-    if (!writeRecords(m_path, m_mirrorPath, records, &mirrorOk)) {
+    if (!writeText(m_path, m_mirrorPath, adif, &mirrorOk)) {
         return false;
     }
-    addWritten(records, mirrorOk);
+    addWritten(entries, records, mirrorOk);
     return true;
 }
 
-bool QsoLog::writeRecords(const QString& path, const QString& mirror, const QList<QVariantMap>& records, bool* mirrorOk)
+bool QsoLog::writeText(const QString& path, const QString& mirror, const QString& adif, bool* mirrorOk)
 {
-    if (records.isEmpty()) {
+    if (adif.isEmpty()) {
         return true;
     }
     QMutexLocker lock(&fileMutex());
@@ -156,9 +200,7 @@ bool QsoLog::writeRecords(const QString& path, const QString& mirror, const QLis
     if (fresh) {
         out << "OksaSDR log\n<ADIF_VER:5>3.1.4 <PROGRAMID:7>OksaSDR <EOH>\n";
     }
-    for (const QVariantMap& record : records) {
-        out << adifRecord(record) << "\n";
-    }
+    out << adif;
     out.flush();
     if (file.error() != QFileDevice::NoError) {
         return false;
@@ -171,18 +213,27 @@ bool QsoLog::writeRecords(const QString& path, const QString& mirror, const QLis
     return true;
 }
 
-void QsoLog::addWritten(const QList<QVariantMap>& records, bool mirrorOk)
+void QsoLog::addWritten(const QList<QsoEntry>& entries, const QList<QVariantMap>& newest, bool mirrorOk)
 {
-    m_records.append(records);
+    addEntries(entries, newest);
     m_mirrorOk = mirrorOk;
+}
+
+void QsoLog::addEntries(const QList<QsoEntry>& entries, const QList<QVariantMap>& newest)
+{
+    m_entries.append(entries);
+    m_recent.append(newest.size() > kRecent ? newest.mid(newest.size() - kRecent) : newest);
+    if (m_recent.size() > kRecent) {
+        m_recent.remove(0, m_recent.size() - kRecent);
+    }
 }
 
 int QsoLog::workedCount(const QString& call) const
 {
     const QString c = call.trimmed().toUpper();
     int n = 0;
-    for (const QVariantMap& r : m_records) {
-        if (r.value(QStringLiteral("CALL")).toString().toUpper() == c) {
+    for (const QsoEntry& e : m_entries) {
+        if (e.call == c) {
             ++n;
         }
     }
@@ -192,15 +243,44 @@ int QsoLog::workedCount(const QString& call) const
 bool QsoLog::isDupe(const QString& call, const QString& band, const QString& mode) const
 {
     const QString c = call.trimmed().toUpper();
+    const QString b = band.toLower();
     const QString group = modeGroup(mode);
-    for (const QVariantMap& r : m_records) {
-        if (r.value(QStringLiteral("CALL")).toString().toUpper() == c
-            && r.value(QStringLiteral("BAND")).toString().compare(band, Qt::CaseInsensitive) == 0
-            && modeGroup(r.value(QStringLiteral("MODE")).toString()) == group) {
+    for (const QsoEntry& e : m_entries) {
+        if (e.call == c && e.band == b && modeGroup(e.mode) == group) {
             return true;
         }
     }
     return false;
+}
+
+QsoEntry QsoLog::entryOf(const QVariantMap& r)
+{
+    // Band and mode names shared between entries (a few dozen in a log).
+    static thread_local QSet<QString> pool;
+    const auto shared = [](QString s) {
+        const auto it = pool.constFind(s);
+        if (it != pool.cend()) {
+            return *it;
+        }
+        pool.insert(s);
+        return s;
+    };
+    QsoEntry e;
+    e.call = r.value(QStringLiteral("CALL")).toString().trimmed().toUpper();
+    e.band = shared(r.value(QStringLiteral("BAND")).toString().trimmed().toLower());
+    e.mode = shared(r.value(QStringLiteral("MODE")).toString().trimmed().toUpper());
+    e.submode = shared(r.value(QStringLiteral("SUBMODE")).toString().trimmed().toUpper());
+    e.date = r.value(QStringLiteral("QSO_DATE")).toString().trimmed().left(8).toUInt();
+    e.time = r.value(QStringLiteral("TIME_ON")).toString().trimmed().left(4).toUShort();
+    e.cqz = quint8(std::clamp(r.value(QStringLiteral("CQZ")).toInt(), 0, 255));
+    return e;
+}
+
+QString QsoLog::dedupeKey(const QsoEntry& e)
+{
+    return e.call + QLatin1Char('|') + QString::number(e.date) + QLatin1Char('|')
+           + QStringLiteral("%1").arg(e.time, 4, 10, QLatin1Char('0')) + QLatin1Char('|') + e.band
+           + QLatin1Char('|') + e.mode;
 }
 
 QString QsoLog::adifRecord(const QVariantMap& record)
@@ -234,14 +314,18 @@ QString QsoLog::adifRecord(const QVariantMap& record)
 QList<QVariantMap> QsoLog::parseAdif(const QString& text)
 {
     QList<QVariantMap> records;
-    int pos = 0;
-    const int eoh = text.indexOf(QStringLiteral("<EOH>"), 0, Qt::CaseInsensitive);
-    if (eoh >= 0) {
-        pos = eoh + 5;
-    }
-    const QByteArray bytes = text.mid(pos).toUtf8();
-    QVariantMap current;
+    parseAdifEach(text.toUtf8(), [&records](QVariantMap&& r) { records.append(std::move(r)); });
+    return records;
+}
+
+void QsoLog::parseAdifEach(const QByteArray& bytes, const std::function<void(QVariantMap&&)>& each)
+{
     qsizetype i = 0;
+    const qsizetype eoh = bytes.indexOf("<EOH>") >= 0 ? bytes.indexOf("<EOH>") : bytes.indexOf("<eoh>");
+    if (eoh >= 0) {
+        i = eoh + 5;
+    }
+    QVariantMap current;
     while (i < bytes.size()) {
         const qsizetype lt = bytes.indexOf('<', i);
         if (lt < 0) {
@@ -251,16 +335,16 @@ QList<QVariantMap> QsoLog::parseAdif(const QString& text)
         if (gt < 0) {
             break;
         }
-        const QString tag = QString::fromUtf8(bytes.mid(lt + 1, gt - lt - 1));
+        const QByteArray tag = bytes.mid(lt + 1, gt - lt - 1);
         i = gt + 1;
-        if (tag.compare(QStringLiteral("EOR"), Qt::CaseInsensitive) == 0) {
+        if (tag.compare("EOR", Qt::CaseInsensitive) == 0) {
             if (!current.isEmpty()) {
-                records.append(current);
+                each(std::move(current));
             }
-            current.clear();
+            current = QVariantMap();
             continue;
         }
-        const QStringList parts = tag.split(QLatin1Char(':'));
+        const QList<QByteArray> parts = tag.split(':');
         if (parts.size() < 2) {
             continue;
         }
@@ -269,10 +353,9 @@ QList<QVariantMap> QsoLog::parseAdif(const QString& text)
         if (!ok || len < 0 || i + len > bytes.size()) {
             continue;
         }
-        current.insert(parts.at(0).toUpper(), QString::fromUtf8(bytes.mid(i, len)));
+        current.insert(QString::fromLatin1(parts.at(0)).toUpper(), QString::fromUtf8(bytes.mid(i, len)));
         i += len;
     }
-    return records;
 }
 
 QString QsoLog::bandOf(double mhz)

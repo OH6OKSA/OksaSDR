@@ -11,120 +11,20 @@ Page {
     // +/- zoom, F opens direct entry, F1-F12 send the CW memories, Esc stops
     // CW text. Space is hold-to-talk: press keys,
     // release unkeys, auto-repeat is ignored, and losing focus unkeys.
-    property bool spacePtt: false
-    // CW paddles on the keyboard ([ ] or left/right Ctrl), before the rest.
-    CwKeyboardPaddles { id: kbPaddles }
-    Keys.onPressed: (event) => {
-        if (kbPaddles.handlePress(event)) {
-            event.accepted = true
-            return
-        }
-        if (event.isAutoRepeat && event.key === Qt.Key_Space) {
-            event.accepted = true
-            return
-        }
-        const mult = (event.modifiers & Qt.ShiftModifier) ? 10 : 1
-        switch (event.key) {
-        case Qt.Key_Left: Engine.tuneBySteps(-mult); break
-        case Qt.Key_Right: Engine.tuneBySteps(mult); break
-        case Qt.Key_Down: Engine.tuneBySteps(-10 * mult); break
-        case Qt.Key_Up: Engine.tuneBySteps(10 * mult); break
-        case Qt.Key_Plus:
-        case Qt.Key_Equal: Engine.zoom(0.5); break
-        case Qt.Key_Minus: Engine.zoom(2.0); break
-        case Qt.Key_F: freqDialog.open(); break
-        // CW memories M1-M12 and abort, as the desktop's CWX F-keys and Esc.
-        case Qt.Key_F1: case Qt.Key_F2: case Qt.Key_F3: case Qt.Key_F4:
-        case Qt.Key_F5: case Qt.Key_F6: case Qt.Key_F7: case Qt.Key_F8:
-        case Qt.Key_F9: case Qt.Key_F10: case Qt.Key_F11: case Qt.Key_F12:
-            // CW modes send the CW memories, voice modes the voice keyer.
-            if (Engine.cwMode) Engine.sendCwMemory(event.key - Qt.Key_F1)
-            else Engine.dvkPlay(event.key - Qt.Key_F1 + 1)
-            break
-        case Qt.Key_Escape: Engine.stopCwx(); Engine.dvkStop(); break
-        case Qt.Key_Space:
-            // iOS: Space comes from GameController (the engine), as UIKit
-            // ends a held Space after about 0.1 s.
-            if (Engine.nativeKeyboardSides) break
-            // Tap on/off mode: Space switches, as the button does.
-            if (Engine.pttToggle && !Engine.cwMode) {
-                Engine.togglePtt()
-                break
-            }
-            page.spacePtt = true
-            Engine.setPtt(true)
-            break
-        default: return
-        }
-        event.accepted = true
+    // A hardware keyboard: tuning, zoom, frequency entry, F-key macros,
+    // Space PTT and the CW paddles (shared with the phone page).
+    OperateKeys {
+        id: operateKeys
+        page: page
+        freqDialog: freqDialog
+        drawer: controlsDrawer
     }
-    Keys.onReleased: (event) => {
-        if (kbPaddles.handleRelease(event)) {
-            event.accepted = true
-            return
-        }
-        if (event.key === Qt.Key_Space && Engine.nativeKeyboardSides) {
-            event.accepted = true
-            return
-        }
-        if (event.key === Qt.Key_Space && !event.isAutoRepeat) {
-            page.spacePtt = false
-            Engine.setPtt(false, "space released")
-            event.accepted = true
-        }
-    }
+    Keys.onPressed: (event) => { if (operateKeys.press(event)) event.accepted = true }
+    Keys.onReleased: (event) => { if (operateKeys.release(event)) event.accepted = true }
     // The engine keys Space PTT from GameController (iOS) only while the
     // page has the keyboard.
     Binding { target: Engine; property: "keyboardOnPage"; value: page.activeFocus }
-    onActiveFocusChanged: {
-        if (!activeFocus) kbPaddles.releaseAll()
-        if (kbPaddles.active) Engine.logKeyboardPaddles("page keyboard focus " + (activeFocus ? "in" : "out"))
-        if (!activeFocus && spacePtt) {
-            spacePtt = false
-            Engine.setPtt(false, "page lost keyboard focus")
-        }
-    }
-    // Keyboard focus returns to the page whenever a control (a slider, a
-    // switch, a popup that closed) took it, so Space and the arrows keep
-    // working; text entry and the digit dialogs keep it.
-    // An open popup (a ComboBox list, a dialog) keeps it too: taking focus
-    // from a ComboBox's list closed it before a choice could be made.
-    // The controls drawer is a popup as well, but it stays open while
-    // operating: it does not count.
-    function popupOpen() {
-        const kids = page.Overlay.overlay ? page.Overlay.overlay.children : []
-        for (let i = 0; i < kids.length; ++i) {
-            if (!kids[i].visible) continue
-            let drawerItem = false
-            for (let it = controlsDrawer.contentItem; it; it = it.parent) {
-                if (it === kids[i]) {
-                    drawerItem = true
-                    break
-                }
-            }
-            if (!drawerItem) return true
-        }
-        return false
-    }
-    function keepsKeyboard(item) {
-        return page.popupOpen()
-            || (item !== null && (item.cursorPosition !== undefined || item.keepsKeyboard === true))
-    }
-    Connections {
-        target: page.Window.window
-        function onActiveFocusItemChanged() {
-            const item = page.Window.window ? page.Window.window.activeFocusItem : null
-            if (!page.visible || page.activeFocus || page.keepsKeyboard(item)) {
-                return
-            }
-            Qt.callLater(() => {
-                const now = page.Window.window ? page.Window.window.activeFocusItem : null
-                if (page.visible && !page.activeFocus && !page.keepsKeyboard(now)) {
-                    page.forceActiveFocus()
-                }
-            })
-        }
-    }
+    onActiveFocusChanged: operateKeys.focusChanged(activeFocus)
     background: Rectangle { color: Theme.background }
 
     // Layout adapts from the 12.9" iPad Pro (1366x1024 pt) down to 1024x768

@@ -188,7 +188,7 @@ Rectangle {
     // waterfall, where a fill would vanish into the colours.
     Item {
         id: passband
-        visible: Engine.panBandwidthMhz > 0 && Engine.filterHigh > Engine.filterLow
+        visible: Engine.panBandwidthMhz > 0 && Engine.filterHigh > Engine.filterLow && !panArea.hideSlices
         readonly property real pxPerMhz: parent.width / Engine.panBandwidthMhz
         x: (Engine.frequencyMhz + Engine.filterLow / 1e6 - Engine.panCenterMhz) * pxPerMhz
            + parent.width / 2
@@ -284,6 +284,7 @@ Rectangle {
         delegate: Item {
             required property var modelData
             visible: !modelData.active && modelData.panId === panArea.activePanId && Engine.panBandwidthMhz > 0
+                     && !panArea.hideSlices
             x: (modelData.frequency - Engine.panCenterMhz) / Engine.panBandwidthMhz * panArea.width
                + panArea.width / 2 - width / 2
             width: 36
@@ -319,7 +320,7 @@ Rectangle {
     // Screenshots without a notch on the radio: a sample one, drawn here
     // only (tnfPopup.preview()); nothing is sent.
     property var previewTnfs: []
-    readonly property var shownTnfs: Engine.tnfs.length > 0 ? Engine.tnfs : previewTnfs
+    readonly property var shownTnfs: Engine.tnfs.concat(previewTnfs)
     Repeater {
         model: Engine.panBandwidthMhz > 0 ? panArea.shownTnfs : []
         delegate: Item {
@@ -520,7 +521,11 @@ Rectangle {
     // solid yellow edges (an orange line beside them read as a third edge).
     Item {
         id: sliceMarker
-        visible: Engine.panBandwidthMhz > 0
+        // Not in voice modes: the passband's edge is the carrier there (the
+        // user: the line is not needed in phone); the frequency stays.
+        readonly property bool voice: ["USB", "LSB", "AM", "SAM", "DSB", "FM", "NFM", "DFM"].indexOf(Engine.mode) >= 0
+        readonly property bool placed: Engine.panBandwidthMhz > 0 && !panArea.hideSlices
+        visible: placed && !voice
         z: 2
         readonly property real lineX: (Engine.frequencyMhz - Engine.panCenterMhz) / Engine.panBandwidthMhz * parent.width
                                       + parent.width / 2
@@ -548,7 +553,7 @@ Rectangle {
     // the top of the waterfall.
     Label {
         id: sliceFlag
-        visible: sliceMarker.visible && sliceMarker.lineX >= 0 && sliceMarker.lineX <= panArea.width
+        visible: sliceMarker.placed && sliceMarker.lineX >= 0 && sliceMarker.lineX <= panArea.width
         z: 2
         readonly property bool passbandLeft: Engine.filterHigh <= 0
         x: Math.max(scaleStrip.width, Math.min(panArea.width - width,
@@ -730,8 +735,10 @@ Rectangle {
             }
         }
         // Band zoom (the desktop's): the radio fits the pan to the whole
-        // band; tap again to leave it.
+        // band; tap again to leave it. Where the page has no band row (very
+        // low landscape) it opens the bands, with the band zoom there too.
         AppButton {
+            id: bandButton
             objectName: "bandZoomButton"
             text: qsTr("Band")
             checked: !!Engine.panDisplay.bandZoom
@@ -740,7 +747,60 @@ Rectangle {
             leftPadding: 8
             rightPadding: 8
             opacity: 0.85
-            onClicked: Engine.setPanDisplay("bandZoom", checked ? 0 : 1)
+            onClicked: panArea.bandPicker ? bandChooser.open() : Engine.setPanDisplay("bandZoom", checked ? 0 : 1)
+        }
+    }
+
+    // Set by a page that leaves its band row out (no band could be picked
+    // there before).
+    property bool bandPicker: false
+    Popup {
+        id: bandChooser
+        objectName: "bandChooser"
+        modal: true
+        dim: false
+        x: 6
+        y: Math.max(0, panArea.height - height - Theme.touchTarget - 16)
+        margins: Theme.spacing
+        padding: Theme.spacing
+        background: Rectangle {
+            color: Theme.surface
+            border.color: Theme.surfaceRaised
+            radius: Theme.radius
+        }
+        contentItem: ColumnLayout {
+            spacing: 4
+            GridLayout {
+                columns: Math.min(8, Math.max(4, Math.floor((panArea.width - 40) / (Theme.buttonWidth + 4))))
+                columnSpacing: 4
+                rowSpacing: 4
+                Repeater {
+                    model: Engine.bands
+                    delegate: AppButton {
+                        required property string modelData
+                        text: modelData
+                        checked: Engine.activeBand === modelData
+                        focusPolicy: Qt.NoFocus
+                        Layout.preferredWidth: Theme.buttonWidth
+                        Layout.preferredHeight: Theme.touchTarget
+                        onClicked: {
+                            Engine.selectBand(modelData)
+                            bandChooser.close()
+                        }
+                    }
+                }
+            }
+            AppButton {
+                text: qsTr("Whole band")
+                checked: !!Engine.panDisplay.bandZoom
+                focusPolicy: Qt.NoFocus
+                Layout.fillWidth: true
+                Layout.preferredHeight: Theme.touchTarget
+                onClicked: {
+                    Engine.setPanDisplay("bandZoom", checked ? 0 : 1)
+                    bandChooser.close()
+                }
+            }
         }
     }
 
@@ -888,6 +948,8 @@ Rectangle {
     // slices held by other programs): nothing can tune, so say so over the
     // display, with a retry. A moment's grace while the first slice arrives.
     readonly property bool sliceless: Engine.connectionState === "connected" && Engine.slices.length === 0
+    // The No slice preview (screenshots) draws no slice behind its notice.
+    readonly property bool hideSlices: noSliceNotice.preview
     Timer {
         id: slicelessGrace
         interval: 4000
@@ -972,14 +1034,17 @@ Rectangle {
         }
         // Gone (removed here or by another client): close.
         onTnfChanged: if (opened && !tnf) close()
-        // Screenshots (--popup tnfPopup): the first notch, or a sample one
-        // in the passband when the radio has none.
+        // Screenshots (--popup tnfPopup): the first notch in view, or a
+        // sample one in the passband (the radio's notches can all be on
+        // other bands; the manual's picture showed none).
         function preview() {
-            if (Engine.tnfs.length === 0) {
+            const half = Engine.panBandwidthMhz / 2
+            let first = Engine.tnfs.find(t => Math.abs(t.freq - Engine.panCenterMhz) < half)
+            if (!first) {
                 panArea.previewTnfs = [{ id: -1, width: 200, depth: 2, permanent: false,
                                          freq: Engine.frequencyMhz + (Engine.filterLow + Engine.filterHigh) / 2e6 }]
+                first = panArea.previewTnfs[0]
             }
-            const first = panArea.shownTnfs[0]
             tnfId = first.id
             anchorX = (first.freq - Engine.panCenterMhz) / Engine.panBandwidthMhz * panArea.width + panArea.width / 2
             open()

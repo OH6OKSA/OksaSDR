@@ -352,6 +352,13 @@ void FreeDvClient::onTxReport(const QJsonObject& data)
     // tx_report carries transmitting=true (on-air now) or transmitting=false
     // (mode metadata for a currently-RX station, or TX ended).
     const bool transmitting = data["transmitting"].toBool();
+    // The server's own time of the station's last transmission (also in the
+    // bulk_update snapshot, so stations that transmitted before this client
+    // connected get their real time, not the time the snapshot arrived).
+    const QDateTime serverLastTx = QDateTime::fromString(data["last_tx"].toString(), Qt::ISODate);
+    if (serverLastTx.isValid() && (!info.lastTxTime.isValid() || serverLastTx.toUTC() > info.lastTxTime)) {
+        info.lastTxTime = serverLastTx.toUTC();
+    }
 
     // ── Reporter path — no spot-emission gates ────────────────────────────
     // Emit stationUpdated unconditionally so the reporter window sees mode
@@ -360,7 +367,9 @@ void FreeDvClient::onTxReport(const QJsonObject& data)
     if (info.status != QStringLiteral("RX Only")) {
         if (transmitting) {
             info.status     = QStringLiteral("TX");
-            info.lastTxTime = QDateTime::currentDateTimeUtc();
+            if (!serverLastTx.isValid()) {
+                info.lastTxTime = QDateTime::currentDateTimeUtc();
+            }
             info.lastUpdate = QDateTime::currentDateTimeUtc();
         } else if (info.status == QStringLiteral("TX")) {
             // Stop-TX: revert to RX. Applies to both live events and bulk_update

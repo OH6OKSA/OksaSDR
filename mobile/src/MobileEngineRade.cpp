@@ -205,12 +205,22 @@ void MobileEngine::activateRade()
         m_radePttRelease = release;
         const quint64 requestId = ++m_radeEooRequestId;
         m_radeEooPending = true;
-        RADEEngine* e = m_radeEngine;
-        QMetaObject::invokeMethod(e, [e, release, requestId] {
-            if (release.current()) {
-                e->setEooRequested(true, requestId);
-            }
-        }, Qt::QueuedConnection);
+        // A quick tap: released before the radio's MOX came back, while the
+        // audio gate (opened by MOX) is still shut, so the last frames and
+        // the end-of-over with the callsign were dropped ("PTT gate closed,
+        // EOO race?"). The end of over then waits for MOX (or 3 s, if the
+        // radio never keys, so the release still completes).
+        if (!m_session.radioModel().transmitModel().isTransmitting()) {
+            m_radeEooAfterMox = true;
+            QTimer::singleShot(3000, this, [this, requestId] {
+                if (m_radeEooAfterMox && requestId == m_radeEooRequestId) {
+                    m_radeEooAfterMox = false;
+                    requestRadeEoo(requestId);
+                }
+            });
+            return;
+        }
+        requestRadeEoo(requestId);
     });
     connect(engine, &RADEEngine::eooFinished, this, [this](quint64 requestId) {
         if (requestId != m_radeEooRequestId) {
@@ -237,6 +247,7 @@ void MobileEngine::activateRade()
             return;
         }
         ++m_radeEooRequestId;
+        m_radeEooAfterMox = false;
         if (m_radeFallbackFence) {
             m_radeFallbackFence->store(false, std::memory_order_release);
         }
@@ -260,7 +271,15 @@ void MobileEngine::activateRade()
         // The audio gate opens with MOX; it closes after the EOO (eooFinished).
         if (tx) {
             m_audio->setTransmitting(true);
-            beginOver();
+            // The MOX of an over already begun here (PTT) does not start it
+            // again: after a quick tap it came with the end of over pending.
+            if (!m_radeTxActive) {
+                beginOver();
+            }
+            if (m_radeEooAfterMox) {
+                m_radeEooAfterMox = false;
+                requestRadeEoo(m_radeEooRequestId);
+            }
         } else if (!m_radeEooPending && m_radeTxActive) {
             // The radio unkeyed without our release: finish the encoder only.
             m_radeEooPending = true;
@@ -283,6 +302,7 @@ void MobileEngine::activateRade()
     }));
     m_radeConnections.append(connect(&rm.transmitModel(), &TransmitModel::pttReleaseCancelled, this, [this] {
         ++m_radeEooRequestId;
+        m_radeEooAfterMox = false;
         m_radePttRelease = {};
         m_radeEooPending = false;
         m_radeTxActive = false;
@@ -300,9 +320,48 @@ void MobileEngine::activateRade()
         }
         SliceModel* sl = m_session.radioModel().slice(sliceId);
         if (sl && channel == sl->daxChannel()) {
-            engine->feedRxAudio(channel, pcm);
+            // For the 10 s summary: how much reached the decoder, how loud
+            // (float stereo samples; the peak kept in 1/32768 steps).
+            m_radeRxBytes.fetch_add(pcm.size(), std::memory_order_relaxed);
+            const auto* v = reinterpret_cast<const float*>(pcm.constData());
+            float fpeak = 0.0f;
+            for (qsizetype i = 0; i < pcm.size() / qsizetype(sizeof(float)); ++i) {
+                fpeak = std::max(fpeak, std::abs(v[i]));
+            }
+            const int peak = int(std::min(fpeak, 1.0f) * 32768.0f);
+            int seen = m_radeRxPeak.load(std::memory_order_relaxed);
+            while (peak > seen && !m_radeRxPeak.compare_exchange_weak(seen, peak, std::memory_order_relaxed)) {
+            }
+            // RADEEngine decodes only what it is handed as channel 1 (the
+            // desktop's DAX channel); the slice's own channel is picked
+            // here, so a slice on DAX 2 or 3 no longer fed it nothing (a
+            // strong RADE signal never synced).
+            engine->feedRxAudio(1, pcm);
+        } else {
+            m_radeRxOther.fetch_add(1, std::memory_order_relaxed);
         }
     }, Qt::QueuedConnection);
+    // Every 10 s while RADE runs: what reached the decoder, so a log tells
+    // whether RADE heard anything at all (a tester heard nothing and the
+    // log could not say why).
+    m_radeRxBytes = 0;
+    m_radeRxPeak = 0;
+    m_radeRxOther = 0;
+    m_radeDiagTimer.setInterval(10000);
+    m_radeConnections.append(connect(&m_radeDiagTimer, &QTimer::timeout, this, [this] {
+        const qint64 bytes = m_radeRxBytes.exchange(0);
+        const int peak = m_radeRxPeak.exchange(0);
+        const int other = m_radeRxOther.exchange(0);
+        const double dbfs = peak > 0 ? 20.0 * std::log10(peak / 32768.0) : -999.0;
+        qCInfo(lcMobile).noquote() << QStringLiteral("RADE rx: %1 kB from DAX channel %2 in 10 s, peak %3 dBFS, %4; "
+                                                     "%5 frames of other DAX channels")
+                                          .arg(bytes / 1024).arg(m_radeDaxChannel)
+                                          .arg(peak > 0 ? QString::number(dbfs, 'f', 1) : QStringLiteral("-inf"))
+                                          .arg(m_radeSynced ? QStringLiteral("synced, SNR %1 dB").arg(qRound(m_radeSnr))
+                                                            : QStringLiteral("not synced"))
+                                          .arg(other);
+    }));
+    m_radeDiagTimer.start();
     connect(engine, &RADEEngine::rxSpeechReady, m_audio, &AudioEngine::feedDecodedSpeech, Qt::QueuedConnection);
     m_radeDaxChannel = s->daxChannel();
     rm.acquireDaxChannel(m_radeDaxChannel, PanadapterStream::DaxConsumer::Rade);
@@ -332,6 +391,7 @@ void MobileEngine::activateRade()
     m_radeRxCallsign.clear();
     connect(engine, &RADEEngine::syncChanged, this, [this](bool synced) {
         m_radeSynced = synced;
+        qCInfo(lcMobile) << "RADE:" << (synced ? "synced" : "sync lost");
         emit radeChanged();
     });
     connect(engine, &RADEEngine::snrChanged, this, [this](float snr) {
@@ -344,6 +404,26 @@ void MobileEngine::activateRade()
         emit radeChanged();
     });
     qCInfo(lcMobile) << "RADE: on, slice" << sliceId << mode << "DAX channel" << m_radeDaxChannel << RADEEngine::versionString();
+#endif
+}
+
+// Asks the encoder for the end of over (the rest of the speech, then the
+// EOO frame with the callsign) for this release.
+void MobileEngine::requestRadeEoo(quint64 requestId)
+{
+#ifdef HAVE_RADE
+    RADEEngine* e = m_radeEngine;
+    if (!e) {
+        return;
+    }
+    const TransmitModel::PttRelease release = m_radePttRelease;
+    QMetaObject::invokeMethod(e, [e, release, requestId] {
+        if (release.current()) {
+            e->setEooRequested(true, requestId);
+        }
+    }, Qt::QueuedConnection);
+#else
+    Q_UNUSED(requestId);
 #endif
 }
 
@@ -413,6 +493,7 @@ void MobileEngine::healRadeMute()
 void MobileEngine::deactivateRade()
 {
 #ifdef HAVE_RADE
+    m_radeDiagTimer.stop();
     RadioModel& rm = m_session.radioModel();
     for (const QMetaObject::Connection& c : std::as_const(m_radeConnections)) {
         disconnect(c);

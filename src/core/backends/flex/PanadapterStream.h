@@ -153,6 +153,9 @@ public:
     // failure (DAX slots busy, connect-gap drop) cannot wedge the channel
     // with `createPending` stuck true (the #3669 wedge class).
     void notifyDaxCreateFailed(int channel);
+    // Command plane has sent the `stream remove` of a channel's old stream:
+    // a create that waited for it may go now (see acquireDaxChannel).
+    void notifyDaxRemoveSent(int channel);
     // Drop `who` as a holder. When the last holder leaves, stream removal is
     // requested after a grace window (cancelled by a re-acquire).
     void releaseDaxChannel(int channel, DaxConsumer who);
@@ -472,6 +475,11 @@ private:
         quint32 generation{0};
     };
     QHash<int, DaxChannelState> m_daxChannelStates;
+    // Channels whose old stream's removal is decided but its `stream
+    // remove` not yet sent. A create sent before it reached the radio got
+    // the old stream back, which the remove then took away: RADE taking a
+    // channel just after the FT8 decoders let it go had no audio at all.
+    QSet<int> m_daxRemovalInFlight;
     quint32 m_daxGenCounter{0};   // monotonic; entries never reuse a generation
     static constexpr int kDaxRemovalGraceMs  = 1500;  // ≫ the ~80 ms transient rebroadcast cycle (#3626)
     static constexpr int kDaxRecreateDelayMs = 500;   // radio-removed-but-still-held re-create backoff (#3476)

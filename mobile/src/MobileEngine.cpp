@@ -402,7 +402,27 @@ MobileEngine::MobileEngine(QObject* parent)
     // QSO log and callsign lookup: the log file, cty.dat for the country of
     // any call, and QRZ.com with the account the Log tab stores (password in
     // the platform's secure store; the engine keeps it for the session).
-    m_qsoLog = std::make_unique<QsoLog>(QsoLog::defaultPath());
+    // The file is read in a worker: a logbook of tens of thousands of
+    // contacts no longer holds the start (worked-before marks follow when
+    // it is in).
+    m_qsoLog = std::make_unique<QsoLog>(QsoLog::defaultPath(), false);
+    {
+        const QString path = m_qsoLog->path();
+        QThread* reader = QThread::create([this, path] {
+            QElapsedTimer timer;
+            timer.start();
+            QsoLog::Loaded loaded = QsoLog::read(path);
+            const qint64 ms = timer.elapsed();
+            QMetaObject::invokeMethod(this, [this, loaded = std::move(loaded), ms]() mutable {
+                m_qsoLog->adopt(std::move(loaded));
+                qCInfo(lcMobile) << "QSO log:" << m_qsoLog->count() << "contacts in" << m_qsoLog->path() << "read in"
+                                 << ms << "ms";
+                emit qsoLogChanged();
+            }, Qt::QueuedConnection);
+        });
+        connect(reader, &QThread::finished, reader, &QObject::deleteLater);
+        reader->start();
+    }
     m_qsoLog->setMirrorPath(QsoLog::defaultMirrorPath());
 #ifdef Q_OS_ANDROID
     // Android 9 and 10 write the shared Documents copy only with storage
@@ -454,7 +474,6 @@ MobileEngine::MobileEngine(QObject* parent)
             QTimer::singleShot(3000, this, [user, pass] { CallsignLookupService::instance().testLogin(user, pass); });
         }
     }
-    qCInfo(lcMobile) << "QSO log:" << m_qsoLog->records().size() << "contacts in" << m_qsoLog->path();
 
     // After a call, alarm or Siri: receive audio (and a microphone that was
     // open) could not reopen while iOS held the session (the RX sink's restart
@@ -3602,7 +3621,7 @@ void MobileEngine::sendCwMemory(int index)
     QString text = list.at(index);
     const QString call = m_session.radioModel().callsign().trimmed().toUpper();
     if (text.contains(QLatin1String("{CALL}")) && call.isEmpty()) {
-        setLastError(tr("The radio has no callsign for {CALL}. Set it in Controls → CW → Callsign."));
+        setLastError(tr("The radio has no callsign for {CALL}. Set it in Radio Setup (Setup › Radio › Callsign)."));
         return;
     }
     text.replace(QLatin1String("{CALL}"), call);
@@ -3824,8 +3843,8 @@ void MobileEngine::setRfGain(int gain)
 QVariantList MobileEngine::recentQsos() const
 {
     QVariantList out;
-    const QList<QVariantMap>& records = m_qsoLog->records();
-    for (qsizetype i = records.size() - 1; i >= 0 && out.size() < 50; --i) {
+    const QList<QVariantMap>& records = m_qsoLog->recent();
+    for (qsizetype i = records.size() - 1; i >= 0; --i) {
         out << records.at(i);
     }
     return out;
@@ -3833,7 +3852,7 @@ QVariantList MobileEngine::recentQsos() const
 
 int MobileEngine::qsoCount() const
 {
-    return static_cast<int>(m_qsoLog->records().size());
+    return static_cast<int>(m_qsoLog->count());
 }
 
 QString MobileEngine::qrzUser() const
@@ -3977,29 +3996,20 @@ QString MobileEngine::qsoLogLocation() const
 #endif
 }
 
-namespace {
-
-// What makes two contacts the same in an import: call, date, start minute,
-// band and mode.
-QString adifDedupeKey(const QVariantMap& r)
-{
-    return QStringList{r.value(QStringLiteral("CALL")).toString().toUpper(), r.value(QStringLiteral("QSO_DATE")).toString(),
-                       r.value(QStringLiteral("TIME_ON")).toString().left(4), r.value(QStringLiteral("BAND")).toString().toLower(),
-                       r.value(QStringLiteral("MODE")).toString().toUpper()}
-        .join(QLatin1Char('|'));
-}
-
-} // namespace
-
 // The file is read here (an Android content:// URL is read best on this
 // thread); parsing, the duplicate check and the write run in a worker, so
 // a logbook of tens of thousands of contacts does not hold the display
-// (an import of 20 000 froze it, and iOS closed the app). adifImported()
-// brings the result.
+// (an import of 20 000 froze it, and iOS closed the app). Records are
+// taken one at a time: only the new contacts' entries stay in memory.
+// adifImported() brings the result.
 void MobileEngine::importAdif(const QUrl& url)
 {
     if (m_importing) {
         emit adifImported({{QStringLiteral("error"), tr("An import is already running.")}});
+        return;
+    }
+    if (!m_qsoLog->isLoaded()) {
+        emit adifImported({{QStringLiteral("error"), tr("The log is still being read; try again in a moment.")}});
         return;
     }
     // Android hands a content:// URL, which QFile reads as it is; iOS and
@@ -4012,9 +4022,9 @@ void MobileEngine::importAdif(const QUrl& url)
     }
     QByteArray data = file.readAll();
     QSet<QString> have;
-    have.reserve(m_qsoLog->records().size());
-    for (const QVariantMap& r : m_qsoLog->records()) {
-        have.insert(adifDedupeKey(r));
+    have.reserve(m_qsoLog->count());
+    for (const QsoEntry& e : m_qsoLog->entries()) {
+        have.insert(QsoLog::dedupeKey(e));
     }
     m_importing = true;
     const QString path = m_qsoLog->path();
@@ -4022,31 +4032,41 @@ void MobileEngine::importAdif(const QUrl& url)
     QThread* worker = QThread::create([this, data = std::move(data), have = std::move(have), path, mirror]() mutable {
         QElapsedTimer timer;
         timer.start();
-        const QList<QVariantMap> records = QsoLog::parseAdif(QString::fromUtf8(data));
+        int found = 0;
         int duplicates = 0;
-        QList<QVariantMap> fresh;
-        for (QVariantMap r : records) {
+        QString adif;
+        QList<QsoEntry> entries;
+        QList<QVariantMap> newest;
+        QsoLog::parseAdifEach(data, [&](QVariantMap&& r) {
+            ++found;
             if (r.value(QStringLiteral("CALL")).toString().trimmed().isEmpty()) {
-                continue;
+                return;
             }
             if (!r.contains(QStringLiteral("BAND")) && r.contains(QStringLiteral("FREQ"))) {
                 r.insert(QStringLiteral("BAND"), QsoLog::bandOf(r.value(QStringLiteral("FREQ")).toDouble()));
             }
-            const QString k = adifDedupeKey(r);
+            const QsoEntry e = QsoLog::entryOf(r);
+            const QString k = QsoLog::dedupeKey(e);
             if (have.contains(k)) {
                 ++duplicates;
-                continue;
+                return;
             }
             have.insert(k);
-            fresh.append(r);
-        }
+            adif += QsoLog::adifRecord(r) + QLatin1Char('\n');
+            entries.append(e);
+            newest.append(std::move(r));
+            if (newest.size() > 2 * QsoLog::kRecent) {
+                newest.remove(0, newest.size() - QsoLog::kRecent);
+            }
+        });
+        data.clear();
         bool mirrorOk = false;
-        const bool written = records.isEmpty() || QsoLog::writeRecords(path, mirror, fresh, &mirrorOk);
+        const bool written = QsoLog::writeText(path, mirror, adif, &mirrorOk);
         const qint64 ms = timer.elapsed();
-        const bool none = records.isEmpty();
-        QMetaObject::invokeMethod(this, [this, fresh, duplicates, written, mirrorOk, none, ms] {
+        QMetaObject::invokeMethod(this, [this, entries = std::move(entries), newest = std::move(newest), found, duplicates,
+                                         written, mirrorOk, ms] {
             m_importing = false;
-            if (none) {
+            if (found == 0) {
                 emit adifImported({{QStringLiteral("error"), tr("No contacts found in the file (is it ADIF?).")}});
                 return;
             }
@@ -4056,11 +4076,11 @@ void MobileEngine::importAdif(const QUrl& url)
                                    {QStringLiteral("duplicates"), duplicates}});
                 return;
             }
-            m_qsoLog->addWritten(fresh, mirrorOk);
-            qCInfo(lcMobile) << "ADIF import:" << fresh.size() << "imported," << duplicates << "already in the log, in"
+            m_qsoLog->addWritten(entries, newest, mirrorOk);
+            qCInfo(lcMobile) << "ADIF import:" << entries.size() << "imported," << duplicates << "already in the log, in"
                              << ms << "ms";
             emit qsoLogChanged();
-            emit adifImported({{QStringLiteral("imported"), int(fresh.size())}, {QStringLiteral("duplicates"), duplicates}});
+            emit adifImported({{QStringLiteral("imported"), int(entries.size())}, {QStringLiteral("duplicates"), duplicates}});
         }, Qt::QueuedConnection);
     });
     connect(worker, &QThread::finished, worker, &QObject::deleteLater);
@@ -4069,7 +4089,7 @@ void MobileEngine::importAdif(const QUrl& url)
 
 bool MobileEngine::shareQsoLog()
 {
-    if (m_qsoLog->records().isEmpty() || !QFile::exists(m_qsoLog->path())) {
+    if (m_qsoLog->count() == 0 || !QFile::exists(m_qsoLog->path())) {
         setLastError(tr("No contacts in the log yet."));
         return false;
     }
@@ -4083,7 +4103,7 @@ bool MobileEngine::shareQsoLog()
         setLastError(tr("The log could not be prepared for sharing."));
         return false;
     }
-    qCInfo(lcMobile) << "share QSO log:" << m_qsoLog->records().size() << "contacts";
+    qCInfo(lcMobile) << "share QSO log:" << m_qsoLog->count() << "contacts";
     return shareFile(tr("OksaSDR log (ADIF)"), path, QStringLiteral("text/plain"));
 }
 

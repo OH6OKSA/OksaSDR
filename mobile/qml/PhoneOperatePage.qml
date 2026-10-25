@@ -9,16 +9,20 @@ import AetherMobile
 Page {
     id: page
     background: Rectangle { color: Theme.background }
-    // A hardware keyboard or a USB paddle adapter: CW paddles ([ ] or
-    // left/right Ctrl, CW tab).
+    // A hardware keyboard (Bluetooth on a phone, Android's DeX) or a USB
+    // paddle adapter: the same keys as on the tablet page (only the CW
+    // paddles worked here).
     focus: true
-    CwKeyboardPaddles { id: kbPaddles }
-    Keys.onPressed: (event) => { if (kbPaddles.handlePress(event)) event.accepted = true }
-    Keys.onReleased: (event) => { if (kbPaddles.handleRelease(event)) event.accepted = true }
-    onActiveFocusChanged: {
-        if (!activeFocus) kbPaddles.releaseAll()
-        if (kbPaddles.active) Engine.logKeyboardPaddles("page keyboard focus " + (activeFocus ? "in" : "out"))
+    OperateKeys {
+        id: operateKeys
+        page: page
+        freqDialog: freqDialog
+        drawer: controlsDrawer
     }
+    Keys.onPressed: (event) => { if (operateKeys.press(event)) event.accepted = true }
+    Keys.onReleased: (event) => { if (operateKeys.release(event)) event.accepted = true }
+    Binding { target: Engine; property: "keyboardOnPage"; value: page.activeFocus }
+    onActiveFocusChanged: operateKeys.focusChanged(activeFocus)
 
     readonly property bool landscape: width > height
     // PTT height, shared with the drawer's copy of the button. PTT runs
@@ -35,7 +39,11 @@ Page {
 
     // A layout switch (rotation, fold/unfold) destroys this page; a held
     // PTT must not outlive its button.
-    Component.onDestruction: Engine.stopTransmit("layout changed")
+    Component.onCompleted: page.forceActiveFocus()
+    Component.onDestruction: {
+        Engine.keyboardOnPage = false
+        Engine.stopTransmit("layout changed")
+    }
 
     header: ToolBar {
         background: Rectangle { color: Theme.surface }
@@ -205,6 +213,8 @@ Page {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 rfLabelWidth: sliceBar.rightMeterWidth
+                // The band row is left out there: Band picks the bands.
+                bandPicker: page.landscape && Theme.tightHeight
                 Layout.minimumHeight: page.landscape ? 90 : 160
                 // A swipe in the open drawer must not tune.
                 covers: [controlsDrawer.background]
@@ -389,5 +399,8 @@ Page {
     NetworkDialog { id: networkDialog }
     RadioSetupPage { id: radioSetup }
     SetupSuggestion { onSetupRequested: radioSetup.open() }
-    FrequencyDialog { id: freqDialog }
+    FrequencyDialog {
+        id: freqDialog
+        onClosed: page.forceActiveFocus()
+    }
 }

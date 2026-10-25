@@ -1792,7 +1792,9 @@ quint32 PanadapterStream::acquireDaxChannel(int channel, DaxConsumer who)
         st.generation = ++m_daxGenCounter;
         if (st.streamId == 0 && !st.createPending) {
             st.createPending = true;
-            needCreate = true;
+            // The old stream's remove is still on its way: create after it
+            // (notifyDaxRemoveSent), or the radio hands the old one back.
+            needCreate = !m_daxRemovalInFlight.contains(channel);
         }
         streamId = st.streamId;
         if (!alreadyHeld) {
@@ -1878,6 +1880,23 @@ void PanadapterStream::notifyDaxCreateFailed(int channel)
                         << (retryArmed ? "retry armed" : "channel unheld, entry dropped");
 }
 
+void PanadapterStream::notifyDaxRemoveSent(int channel)
+{
+    bool needCreate = false;
+    {
+        QMutexLocker lock(&m_streamMutex);
+        if (!m_daxRemovalInFlight.remove(channel)) {
+            return;
+        }
+        auto it = m_daxChannelStates.find(channel);
+        needCreate = it != m_daxChannelStates.end() && it->holders != 0 && it->createPending && it->streamId == 0;
+    }
+    if (needCreate) {
+        qCInfo(lcVita49) << "PanadapterStream: DAX ch" << channel << "creating its new stream after the old one's remove";
+        emit daxStreamCreateNeeded(channel);
+    }
+}
+
 void PanadapterStream::releaseAllDaxChannels(DaxConsumer who)
 {
     for (int ch = 1; ch <= 8; ++ch)
@@ -1924,6 +1943,7 @@ void PanadapterStream::resetDaxChannelsForDisconnect()
     // generation via the counter so in-flight deferred lambdas expire.
     ++m_daxGenCounter;
     m_daxChannelStates.clear();
+    m_daxRemovalInFlight.clear();
     qCDebug(lcVita49) << "PanadapterStream: DAX channel ownership reset for disconnect";
 }
 
@@ -1946,6 +1966,9 @@ void PanadapterStream::scheduleDaxRemovalLocked(int channel)
             if (it->holders != 0) return;           // re-acquired
             removeId = it->streamId;
             m_daxChannelStates.erase(it);
+            if (removeId) {
+                m_daxRemovalInFlight.insert(channel);
+            }
         }
         if (removeId) {
             qCInfo(lcVita49) << "PanadapterStream: DAX ch" << channel

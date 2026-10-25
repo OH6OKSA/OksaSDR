@@ -1360,10 +1360,15 @@ private:
     // What the log has worked, for WSJT-X's highlighting: calls per band and
     // mode, DXCC entities, continents and CQ zones (each also per band).
     QSet<QString> m_wkCallBandMode, m_wkDxcc, m_wkDxccBand, m_wkCont, m_wkContBand, m_wkZone, m_wkZoneBand;
+    // Calls worked at all, and on a band ("CALL|20m"): WSJT-X's New Call
+    // and New Call on Band.
+    QSet<QString> m_wkCall, m_wkCallBand;
     bool m_wkDirty{true};
     void rebuildWorked();
     QString digiHighlight(const QString& call, bool cq, bool toMe, const QString& band, const QString& modeKey);
     int digiNewDxcc(const QString& call, bool cq, const QString& band);
+    // 2 a call not in the log, 1 not on this band, 0 worked on it (CQs only).
+    int digiNewCall(const QString& call, bool cq, const QString& band);
     QVariantList m_digiDecodes;
     QString m_digiFilter{QStringLiteral("all")};
     QString m_digiState{QStringLiteral("idle")};
@@ -1390,6 +1395,7 @@ private:
     void stopRadeBeforeLeaving(const char* why);
     void restoreAfterRade(SliceModel* s);
     void healRadeMute();
+    void requestRadeEoo(quint64 requestId);
     void widenDigiFilter();
     QThread* m_radeThread{nullptr};
     RADEEngine* m_radeEngine{nullptr};
@@ -1403,6 +1409,13 @@ private:
     TransmitModel::PttRelease m_radePttRelease;
     quint64 m_radeEooRequestId{0};
     bool m_radeEooPending{false};
+    // Released before MOX came back: the end of over waits for it.
+    bool m_radeEooAfterMox{false};
+    // RADE receive summary every 10 s (written from the RADE thread).
+    QTimer m_radeDiagTimer;
+    std::atomic<qint64> m_radeRxBytes{0};
+    std::atomic<int> m_radeRxPeak{0};
+    std::atomic<int> m_radeRxOther{0};
     bool m_radeTxActive{false};
     std::shared_ptr<std::atomic<bool>> m_radeFallbackFence;
     QList<QMetaObject::Connection> m_radeConnections;
@@ -1425,6 +1438,7 @@ private:
     QString m_freedvError;
     QVariantList m_freedvStations;
     QTimer m_freedvRebuildTimer;     // at most two list updates a second
+    QTimer m_freedvAgeTimer;         // "TX n min ago" moves on
     QTimer m_freedvFreqTimer;        // a frequency is reported once tuning settles
     QMetaObject::Connection m_freedvMoxConnection;
     QMetaObject::Connection m_freedvFreqConnection;

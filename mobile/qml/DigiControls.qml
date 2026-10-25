@@ -313,6 +313,8 @@ ColumnLayout {
         case "cqzoneBand": return "#ffe499"
         case "dxcc": return "#ff00ff"
         case "dxccBand": return "#ffaaff"
+        case "newcall": return "#00ffff"
+        case "newcallBand": return "#99ffff"
         case "cq": return "#66ff66"
         case "tx": return "#ffff00"
         default: return "transparent"
@@ -328,6 +330,7 @@ ColumnLayout {
         case "cq": return row.cq === true
         case "new": return ["continent", "continentBand", "cqzone", "cqzoneBand", "dxcc", "dxccBand"].indexOf(row.hl) >= 0
         case "dxcc": return row.newDxcc > 0
+        case "newcall": return row.newCall > 0
         default: return true
         }
     }
@@ -353,22 +356,33 @@ ColumnLayout {
         return out
     }
 
-    RowLayout {
+    // Five choices: one row where they fit, else two (the iPad's pinned
+    // panel cut "New DXCC" and "New call" short).
+    GridLayout {
+        id: showRow
         Layout.fillWidth: true
-        spacing: 4
+        readonly property bool oneRow: width >= 420
+        columns: oneRow ? 6 : 4
+        columnSpacing: 4
+        rowSpacing: 4
         Label {
             text: qsTr("Show")
             color: Theme.textDim
+            Layout.rowSpan: showRow.oneRow ? 1 : 2
         }
         Repeater {
             model: [{ key: "all", text: qsTr("All") }, { key: "cq", text: qsTr("CQ") },
-                    { key: "new", text: qsTr("New") }, { key: "dxcc", text: qsTr("New DXCC") }]
+                    { key: "new", text: qsTr("New") }, { key: "dxcc", text: qsTr("New DXCC") },
+                    { key: "newcall", text: qsTr("New call") }]
             delegate: AppButton {
                 required property var modelData
+                required property int index
                 objectName: "digiFilter_" + modelData.key
                 text: modelData.text
                 checked: Engine.digiFilter === modelData.key
                 Layout.fillWidth: true
+                // Two rows: All, CQ, New over New DXCC and New call.
+                Layout.columnSpan: !showRow.oneRow && index >= 3 ? (index === 3 ? 2 : 1) : 1
                 focusPolicy: Qt.NoFocus
                 onClicked: Engine.digiFilter = modelData.key
             }
@@ -386,7 +400,7 @@ ColumnLayout {
     Label {
         Layout.fillWidth: true
         visible: Engine.digiDecodes.length > 0
-        text: qsTr("Green CQ · pink / magenta new DXCC · amber new CQ zone · red new continent or your call · yellow your TX · grey worked before on this band and mode")
+        text: qsTr("Green CQ · pink / magenta new DXCC · amber new CQ zone · red new continent or your call · cyan a new call (light: new on this band) · yellow your TX · grey worked before on this band and mode")
         color: Theme.textDim
         font.pixelSize: 11
         wrapMode: Text.WordWrap

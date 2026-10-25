@@ -1352,10 +1352,12 @@ void RadioModel::setupBackend(const QString& family)
     if (m_panStream)
     connect(m_panStream, &PanadapterStream::daxStreamRemoveNeeded,
             this, [this, generation](quint32 streamId, int ch) {
-        Q_UNUSED(ch);
-        if (generation != m_backendReceiverGeneration) return;
-        if (!isConnected()) return;
-        sendCommand(QString("stream remove 0x%1").arg(streamId, 0, 16));
+        if (generation == m_backendReceiverGeneration && isConnected()) {
+            sendCommand(QString("stream remove 0x%1").arg(streamId, 0, 16));
+        }
+        // A create that waited for this remove goes after it, in order (also
+        // when nothing was sent, so the channel never waits for good).
+        m_panStream->notifyDaxRemoveSent(ch);
     });
 
     // RadioConnection (created + owned by the backend above, on its own worker

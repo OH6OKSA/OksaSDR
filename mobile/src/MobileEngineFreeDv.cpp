@@ -37,6 +37,14 @@ void MobileEngine::setupFreeDv()
     m_freedvRebuildTimer.setSingleShot(true);
     m_freedvRebuildTimer.setInterval(500);
     connect(&m_freedvRebuildTimer, &QTimer::timeout, this, &MobileEngine::rebuildFreedvStations);
+    // "TX 3 min ago" moves on while the list is shown.
+    m_freedvAgeTimer.setInterval(30000);
+    connect(&m_freedvAgeTimer, &QTimer::timeout, this, [this] {
+        if (m_freedvViewers > 0) {
+            rebuildFreedvStations();
+        }
+    });
+    m_freedvAgeTimer.start();
     m_freedvFreqTimer.setSingleShot(true);
     m_freedvFreqTimer.setInterval(1000);
 #ifdef HAVE_WEBSOCKETS
@@ -242,7 +250,17 @@ void MobileEngine::rebuildFreedvStations()
         double myLon = 0.0;
         const bool located = MaidenheadLocator::toLatLon(myGrid(), myLat, myLon);
         const QString me = digiMyCall();
-        std::vector<std::pair<double, QVariantMap>> rows;
+        // Sorted for listening: transmitting now first, then the most
+        // recently on the air, then the others by frequency (a tester
+        // wanted to go and listen while a station is active).
+        struct Row {
+            bool tx;
+            qint64 ago;  // seconds since the last transmission, -1 none
+            double mhz;
+            QVariantMap map;
+        };
+        std::vector<Row> rows;
+        const QDateTime now = QDateTime::currentDateTimeUtc();
         const QHash<QString, FreeDvClient::StationInfo> stations = m_freedv->stations();
         for (auto it = stations.cbegin(); it != stations.cend(); ++it) {
             const FreeDvClient::StationInfo& st = it.value();
@@ -260,14 +278,17 @@ void MobileEngine::rebuildFreedvStations()
                 km = MaidenheadLocator::distanceKm(myLat, myLon, lat, lon);
             }
             const bool heard = !st.rxCallsign.isEmpty() && st.snr > -99.0f;
-            rows.push_back({st.freqMhz,
+            const bool tx = st.status == QLatin1String("TX");
+            const qint64 ago = st.lastTxTime.isValid() ? std::max<qint64>(0, st.lastTxTime.secsTo(now)) : -1;
+            rows.push_back({tx, ago, st.freqMhz,
                             {
+                                {QStringLiteral("txAgoMin"), !tx && ago >= 0 ? QVariant(int(ago / 60)) : QVariant()},
                                 {QStringLiteral("callsign"), st.callsign},
                                 {QStringLiteral("grid"), st.gridSquare},
                                 {QStringLiteral("km"), km >= 0.0 ? QVariant(int(std::lround(km))) : QVariant()},
                                 {QStringLiteral("mhz"), st.freqMhz},
                                 {QStringLiteral("mode"), st.mode},
-                                {QStringLiteral("tx"), st.status == QLatin1String("TX")},
+                                {QStringLiteral("tx"), tx},
                                 {QStringLiteral("rxOnly"), st.rxOnly},
                                 {QStringLiteral("heard"), heard ? st.rxCallsign : QString()},
                                 {QStringLiteral("snr"), heard ? QVariant(int(std::lround(st.snr))) : QVariant()},
@@ -275,14 +296,23 @@ void MobileEngine::rebuildFreedvStations()
                                 {QStringLiteral("you"), !me.isEmpty() && st.callsign.compare(me, Qt::CaseInsensitive) == 0},
                             }});
         }
-        std::sort(rows.begin(), rows.end(), [](const auto& a, const auto& b) {
-            if (a.first != b.first) {
-                return a.first < b.first;
+        std::sort(rows.begin(), rows.end(), [](const Row& a, const Row& b) {
+            if (a.tx != b.tx) {
+                return a.tx;
             }
-            return a.second.value(QStringLiteral("callsign")).toString() < b.second.value(QStringLiteral("callsign")).toString();
+            if ((a.ago >= 0) != (b.ago >= 0)) {
+                return a.ago >= 0;
+            }
+            if (a.ago >= 0 && a.ago != b.ago) {
+                return a.ago < b.ago;
+            }
+            if (a.mhz != b.mhz) {
+                return a.mhz < b.mhz;
+            }
+            return a.map.value(QStringLiteral("callsign")).toString() < b.map.value(QStringLiteral("callsign")).toString();
         });
-        for (const auto& row : rows) {
-            list.append(row.second);
+        for (const Row& row : rows) {
+            list.append(row.map);
         }
     }
 #endif
@@ -301,8 +331,25 @@ void MobileEngine::freedvTune(double mhz, const QString& mode)
     tuneTo(mhz);
     // RADE stations (mode RADEV1): RADE on, once the slice is there (its
     // band decides DIGU or DIGL).
-    if (mode.startsWith(QLatin1String("RADE"), Qt::CaseInsensitive) && radeAvailable() && !radeActive()) {
-        QTimer::singleShot(400, this, [this] { setRadeActive(true); });
+    if (mode.startsWith(QLatin1String("RADE"), Qt::CaseInsensitive)) {
+        if (radeAvailable() && !radeActive()) {
+            QTimer::singleShot(400, this, [this] { setRadeActive(true); });
+        }
+        return;
+    }
+    // Any other station (an SSB one, LSB / USB in the list): RADE off, or
+    // its mute kept the station unheard (a tester tapped an LSB station on
+    // 80 m and heard nothing); SSB in the station's sideband.
+    if (radeActive()) {
+        setRadeActive(false);
+    }
+    const QString m = mode.trimmed().toUpper();
+    if (m == QLatin1String("LSB") || m == QLatin1String("USB")) {
+        QTimer::singleShot(400, this, [this, m] {
+            if (m_slice && !radeActive() && m_slice->mode() != m) {
+                setMode(m);
+            }
+        });
     }
 }
 

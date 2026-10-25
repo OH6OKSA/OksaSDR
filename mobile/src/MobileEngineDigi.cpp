@@ -230,6 +230,7 @@ void MobileEngine::syncDigiAudio()
                                         {QStringLiteral("toMe"), toMe},
                                         {QStringLiteral("hl"), digiHighlight(p.de, p.cq, toMe, band, modeKey)},
                                         {QStringLiteral("newDxcc"), digiNewDxcc(p.de, p.cq, band)},
+                                        {QStringLiteral("newCall"), digiNewCall(p.de, p.cq, band)},
                                         {QStringLiteral("sliceId"), id},
                                         {QStringLiteral("slice"), sl ? sl->letter() : QString()},
                                         {QStringLiteral("slotOdd"), (slotMs / slotLen) % 2 == 1},
@@ -292,23 +293,26 @@ void MobileEngine::syncDigiAudio()
 void MobileEngine::rebuildWorked()
 {
     m_wkCallBandMode.clear();
+    m_wkCall.clear();
+    m_wkCallBand.clear();
     m_wkDxcc.clear();
     m_wkDxccBand.clear();
     m_wkCont.clear();
     m_wkContBand.clear();
     m_wkZone.clear();
     m_wkZoneBand.clear();
-    for (const QVariantMap& r : m_qsoLog->records()) {
-        const QString call = r.value(QStringLiteral("CALL")).toString().toUpper();
-        const QString band = r.value(QStringLiteral("BAND")).toString().toLower();
-        const QString sub = r.value(QStringLiteral("SUBMODE")).toString().toUpper();
-        const QString mode = sub.isEmpty() ? r.value(QStringLiteral("MODE")).toString().toUpper() : sub;
+    for (const QsoEntry& q : m_qsoLog->entries()) {
+        const QString& call = q.call;
+        const QString& band = q.band;
+        const QString& mode = q.submode.isEmpty() ? q.mode : q.submode;
         m_wkCallBandMode.insert(call + QLatin1Char('|') + band + QLatin1Char('|') + mode);
+        m_wkCall.insert(call);
+        m_wkCallBand.insert(call + QLatin1Char('|') + band);
         const DxccEntity* e = m_cty ? m_cty->entityForCallsign(call) : nullptr;
         if (!e) {
             continue;
         }
-        const int zone = r.value(QStringLiteral("CQZ")).toInt() > 0 ? r.value(QStringLiteral("CQZ")).toInt() : e->cqZone;
+        const int zone = q.cqz > 0 ? q.cqz : e->cqZone;
         m_wkDxcc.insert(e->primaryPrefix);
         m_wkDxccBand.insert(e->primaryPrefix + QLatin1Char('|') + band);
         m_wkCont.insert(e->continent);
@@ -356,10 +360,35 @@ QString MobileEngine::digiHighlight(const QString& call, bool cq, bool toMe, con
             return QStringLiteral("dxccBand");
         }
     }
-    if (m_wkCallBandMode.contains(call.toUpper() + QLatin1Char('|') + b + QLatin1Char('|') + modeKey)) {
+    // A call never worked, or not on this band (WSJT-X's New Call and New
+    // Call on Band), after the new continent, zone and DXCC.
+    const QString c = call.toUpper();
+    if (!m_wkCall.contains(c)) {
+        return QStringLiteral("newcall");
+    }
+    if (!m_wkCallBand.contains(c + QLatin1Char('|') + b)) {
+        return QStringLiteral("newcallBand");
+    }
+    if (m_wkCallBandMode.contains(c + QLatin1Char('|') + b + QLatin1Char('|') + modeKey)) {
         return QStringLiteral("b4");
     }
     return QStringLiteral("cq");
+}
+
+int MobileEngine::digiNewCall(const QString& call, bool cq, const QString& band)
+{
+    // Apart from the highlight, which a new DXCC, continent or zone outranks.
+    if (!cq || call.isEmpty()) {
+        return 0;
+    }
+    if (m_wkDirty) {
+        rebuildWorked();
+    }
+    const QString c = call.toUpper();
+    if (!m_wkCall.contains(c)) {
+        return 2;
+    }
+    return m_wkCallBand.contains(c + QLatin1Char('|') + band.toLower()) ? 0 : 1;
 }
 
 int MobileEngine::digiNewDxcc(const QString& call, bool cq, const QString& band)
@@ -383,7 +412,8 @@ int MobileEngine::digiNewDxcc(const QString& call, bool cq, const QString& band)
 
 void MobileEngine::setDigiFilter(const QString& filter)
 {
-    static const QStringList known{QStringLiteral("all"), QStringLiteral("cq"), QStringLiteral("new"), QStringLiteral("dxcc")};
+    static const QStringList known{QStringLiteral("all"), QStringLiteral("cq"), QStringLiteral("new"), QStringLiteral("dxcc"),
+                                   QStringLiteral("newcall")};
     if (filter == m_digiFilter || !known.contains(filter)) {
         return;
     }
