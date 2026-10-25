@@ -35,6 +35,7 @@ class Ft8Engine;
 namespace AetherSDR {
 class AudioEngine;
 class DxClusterClient;
+class FreeDvClient;
 class CwRxModel;
 class CwxLocalKeyer;
 class IambicKeyer;
@@ -206,6 +207,20 @@ class MobileEngine : public QObject {
     Q_PROPERTY(bool rade READ radeActive WRITE setRadeActive NOTIFY radeChanged)
     Q_PROPERTY(bool radeAvailable READ radeAvailable CONSTANT)
     Q_PROPERTY(QVariantMap radeStatus READ radeStatus NOTIFY radeChanged)
+    // FreeDV Reporter (qso.freedv.org, the FreeDV tab): report this station
+    // while RADE runs (off by default; callsign, grid, frequency, transmit
+    // and what RADE hears go to the public map), the message shown there,
+    // and the state in words.
+    Q_PROPERTY(bool freedvReporter READ freedvReporter WRITE setFreedvReporter NOTIFY freedvChanged)
+    Q_PROPERTY(QString freedvMessage READ freedvMessage WRITE setFreedvMessage NOTIFY freedvChanged)
+    Q_PROPERTY(QString freedvStatus READ freedvStatus NOTIFY freedvChanged)
+    // Reporting now: connected and reporting this station (status in green).
+    Q_PROPERTY(bool freedvLive READ freedvLive NOTIFY freedvChanged)
+    // The stations FreeDV Reporter lists, on this band or all bands, by
+    // frequency: {callsign, grid, km, mhz, mode, tx, rxOnly, heard, snr,
+    // message, you}. Fetched while the FreeDV tab shows or RADE reports.
+    Q_PROPERTY(QVariantList freedvStations READ freedvStations NOTIFY freedvStationsChanged)
+    Q_PROPERTY(bool freedvAllBands READ freedvAllBands WRITE setFreedvAllBands NOTIFY freedvStationsChanged)
     // Dial frequencies of the protocol on each band: band, mhz.
     Q_PROPERTY(QVariantList digiFrequencies READ digiFrequencies NOTIFY digiChanged)
     Q_PROPERTY(int qsoCount READ qsoCount NOTIFY qsoLogChanged)
@@ -726,6 +741,20 @@ public:
     bool radeActive() const;
     void setRadeActive(bool on);
     QVariantMap radeStatus() const;
+    bool freedvReporter() const { return m_freedvReporterOn; }
+    void setFreedvReporter(bool on);
+    QString freedvMessage() const { return m_freedvMessage; }
+    void setFreedvMessage(const QString& message);
+    QString freedvStatus() const;
+    QVariantList freedvStations() const { return m_freedvStations; }
+    bool freedvAllBands() const { return m_freedvAllBands; }
+    void setFreedvAllBands(bool all);
+    // A FreeDV tab shown or hidden (the drawer's and the pinned panel's
+    // counted apart): the station list is fetched only while one shows.
+    Q_INVOKABLE void freedvViewer(bool shown);
+    bool freedvLive() const;
+    // Tunes to a listed station; RADE comes on when the station uses it.
+    Q_INVOKABLE void freedvTune(double mhz, const QString& mode);
     // Contacts with this call before, and whether it is a dupe on this band
     // and mode: {worked, dupe}.
     Q_INVOKABLE QVariantMap workedInfo(const QString& call) const;
@@ -1128,6 +1157,8 @@ signals:
     void qsoLogChanged();
     void digiChanged();
     void radeChanged();
+    void freedvChanged();
+    void freedvStationsChanged();
     void digiDecodesChanged();
     void digiFilterChanged();
     void callLookupChanged();
@@ -1357,6 +1388,25 @@ private:
     bool m_radeSynced{false};
     float m_radeSnr{0.0f};
     QString m_radeRxCallsign;
+    // FreeDV Reporter (MobileEngineFreeDv.cpp).
+    void setupFreeDv();
+    void updateFreeDv();
+    void rebuildFreedvStations();
+    FreeDvClient* m_freedv{nullptr};
+    bool m_freedvReporterOn{false};
+    int m_freedvViewers{0};
+    bool m_freedvReporting{false};   // reporting enabled in the client now
+    bool m_freedvStarted{false};     // the client's connection wanted (it reconnects by itself)
+    QString m_freedvLastRxCall;      // RADE's end-of-over call last passed on
+    QString m_freedvLastStatus;      // freedvChanged only when the words change
+    bool m_freedvAllBands{false};
+    QString m_freedvMessage;
+    QString m_freedvError;
+    QVariantList m_freedvStations;
+    QTimer m_freedvRebuildTimer;     // at most two list updates a second
+    QTimer m_freedvFreqTimer;        // a frequency is reported once tuning settles
+    QMetaObject::Connection m_freedvMoxConnection;
+    QMetaObject::Connection m_freedvFreqConnection;
     std::unique_ptr<CtyDatParser> m_cty;
     QString m_lookupCall;                // the call callLookup is for
     QString m_qrzStatus;                 // QRZ.com sign-in check, as shown

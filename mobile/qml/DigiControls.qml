@@ -302,43 +302,6 @@ ColumnLayout {
         wrapMode: Text.WordWrap
     }
 
-    // ---- RADE digital voice (FreeDV) ----
-    Label {
-        visible: Engine.radeAvailable
-        text: qsTr("RADE digital voice")
-        color: Theme.textDim
-        font.pixelSize: 14
-        Layout.topMargin: Theme.spacing
-    }
-    RowLayout {
-        visible: Engine.radeAvailable
-        Layout.fillWidth: true
-        AppButton {
-            objectName: "radeButton"
-            text: qsTr("RADE")
-            checked: Engine.rade
-            enabled: Engine.connectionState === "connected"
-            Layout.preferredWidth: 80
-            focusPolicy: Qt.NoFocus
-            onClicked: Engine.rade = !Engine.rade
-        }
-        Label {
-            Layout.fillWidth: true
-            text: {
-                const r = Engine.radeStatus
-                if (!r.active)
-                    return qsTr("FreeDV RADE in the app: talk with PTT as usual; the radio goes to DIGU / DIGL.")
-                let line = r.synced ? qsTr("Synced, SNR %1 dB").arg(r.snr) : qsTr("Listening for RADE…")
-                if (r.callsign)
-                    line += " · " + qsTr("last: %1").arg(r.callsign)
-                return line
-            }
-            color: Engine.radeStatus.synced ? "#00cc66" : Theme.textDim
-            font.pixelSize: 12
-            wrapMode: Text.WordWrap
-        }
-    }
-
     // WSJT-X's highlighting colours (its defaults, in its priority order):
     // a light ground with dark text, so a row reads at a glance.
     function hlColor(hl) {

@@ -9,18 +9,17 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- iPhone Duo and others: the display no longer freezes while iOS reports the app as inactive but it is still on screen (a system prompt, Control Center); it pauses only in the background. Thanks Vesa OH6HPS.
-- DX cluster (View tab): a line under the button says whether it is connected, to which server and as whom, with the spots so far and the latest one's time.
-- RADE: a band button, a frequency on another band or another mode now ends RADE first, so the band is not left muted in the radio's memory. A band that comes back muted says so (tap the speaker). Thanks Michel F5GNM.
+- FreeDV tab: RADE moved here from the old Digi tab, with FreeDV Reporter: report your station to qso.freedv.org while RADE is on (off by default), and see who is on it, on this band or all bands; tap one to tune there (RADE comes on for a RADE station). Asked by Scott W5SLS.
+- The Digi tab is now FTx (FT8 / FT4), and the control buttons are all one size (Prof, Mem).
+- RADE: a band button, a frequency on another band or another mode ends RADE first, so no band is left muted in the radio's memory; a band that comes back muted says so (tap the speaker). Thanks Michel F5GNM.
+- iPhone Duo and others: the display no longer freezes while iOS reports the app as inactive but it is still on screen; it pauses only in the background. Thanks Vesa OH6HPS.
+- DX cluster (View tab): a line under the button says whether it is connected, to which server and as whom, with the spots so far.
 
-RECENT (build 111)
-- Mac: clicking a text field opens a small text box; type there and press Return (or OK) to put the text in the field. If no box opens, or typing in it does nothing, please send the log (Log, Copy).
-
-RECENT (builds 107–109)
-- A sideways swipe in the open controls drawer no longer tunes (thanks Wayne WA2N); PTT in DIGU / DIGL says why it does not transmit (thanks Charlie KB8CR); three meters while transmitting, SWR and Mic at the left, Power at the right (asked by Mike VA3MW).
+RECENT (builds 107–111)
+- Mac: clicking a text field opens a small text box to type in (build 111). A swipe in the open controls drawer no longer tunes; PTT in DIGU / DIGL says why it does not transmit; three meters while transmitting.
 
 RECENT (builds 94–106)
-- FT8 and FT4 in the app (Controls > Digi): every DIGU slice decodes with WSJT-X colours, RX / TX marks, Keep CQ, Last TX and Free, PSK Reporter; Wavelog / Cloudlog; transverters in Radio Setup; RADE digital voice; the log in Files > On My iPhone / iPad > OksaSDR.
+- FT8 and FT4 in the app (Controls > FTx): every DIGU slice decodes with WSJT-X colours, RX / TX marks, Keep CQ, Last TX and Free, PSK Reporter; Wavelog / Cloudlog; transverters in Radio Setup; RADE digital voice; the log in Files > On My iPhone / iPad > OksaSDR.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
@@ -29,8 +28,8 @@ PLEASE TRY
 - Voice transmit with the device mic or a Bluetooth headset, and tell me how it sounds at the other end. [TX]
 - CW keying, CWX memories (F1–F12 on a keyboard) and the decoder. [TX]
 - The Log tab: log a few contacts, save your QRZ.com account (it now says if the sign-in worked), and share the ADIF file to your logbook.
-- New: FT8 / FT4 on the Digi tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
-- New: RADE on the Digi tab, if you know a RADE station (14.236 MHz, qso.freedv.org). [TX]
+- FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
+- New: the FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
 - New: the log in Files > On My iPhone / iPad > OksaSDR, and Import contacts (ADIF).
 - Spots and the DX cluster, a notch on a carrier, the TX processing at low power with a second receiver. [TX]
 

@@ -182,7 +182,7 @@ returns as you left it.
 
 **AGC** — off / slow / med / fast, the AGC threshold (AGC-T) and the
 panadapter's RF gain (preamp or attenuator, in the radio's steps). When
-the app changes the mode (the mode chooser, a band button, a Digi band
+the app changes the mode (the mode chooser, a band button, an FTx band
 button, RADE), AGC follows it: **fast** for CW and data (DIGU, DIGL,
 RTTY, FreeDV), **slow** for voice. Pick another AGC and the app keeps it
 for that kind of mode from then on. A mode change made by another program
@@ -349,7 +349,7 @@ offers **Off**.
 - **PTT** — hold to transmit from the device's microphone; release to stop.
   PTT is for voice: with the TX slice in DIGU or DIGL it says so and does
   not key (the radio refuses voice there); switch to USB / LSB, or use the
-  Digi tab for FT8 / FT4. When the radio refuses transmit, its own reason
+  FTx tab for FT8 / FT4 and the FreeDV tab for RADE. When the radio refuses transmit, its own reason
   is shown.
   The microphone is open only while transmitting. **Tap on / off** (Controls
   → TX → PTT) makes it a switch: tap to transmit, tap again to stop (TX ■
@@ -393,7 +393,10 @@ assigned* or *The selected TX antenna cannot transmit on this frequency*).
 **Controls** (top row) opens the controls; on an iPad, *Pin Controls* keeps
 them in the page (at the right in landscape, under the display in portrait),
 with toggle buttons to show several sections at once; *Hide controls* puts
-them back into the drawer.
+them back into the drawer. The buttons are all one size: **DSP**, **Audio**,
+**TX**, **CW**, **View**, **Prof** (profiles), **Mem** (memory), **Log**,
+**FTx** (FT8 / FT4) and **FreeDV** (RADE digital voice and FreeDV
+Reporter).
 
 | DSP | Audio | TX |
 |---|---|---|
@@ -460,7 +463,7 @@ them back into the drawer.
     transmitting, so you can check it before naming it. Features that need
     SmartSDR+ appear only when the radio reports the subscription.
 
-| CW | View | Profiles | Memory |
+| CW | View | Prof | Mem |
 |---|---|---|---|
 | ![CW](manual/tab-cw.jpg) | ![View](manual/tab-view.jpg) | ![Profiles](manual/tab-profiles.jpg) | ![Memory](manual/tab-memory.jpg) |
 
@@ -501,9 +504,9 @@ them back into the drawer.
     button tells whether it is on: green *Connected to … as …* with the
     spots so far and the latest one's time (UTC), *Connecting…*, or red
     with the reason when it could not connect.
-- **Profiles** — the radio's global, TX and mic profiles: load, save,
+- **Prof** (profiles) — the radio's global, TX and mic profiles: load, save,
   delete, as in SmartSDR.
-- **Memory** — the radio's memory channels: tap to tune, *Save* stores the
+- **Mem** (memory) — the radio's memory channels: tap to tune, *Save* stores the
   current frequency under the name typed. **Press and hold** one to edit
   its name, frequency (MHz) and mode — *Current* takes the slice's
   frequency and mode — or to *Delete* it. In FM modes it also holds the
@@ -551,12 +554,12 @@ them back into the drawer.
   can be moved to iCloud Drive or opened in a logbook; on Android a copy is
   kept in Files › Documents › OksaSDR; on a computer in
   Documents/OksaSDR. A log from an earlier build moves there by itself.
-- **Digi** — FT8 and FT4 in the app itself, no computer, DAX or WSJT-X
+- **FTx** — FT8 and FT4 in the app itself, no computer, DAX or WSJT-X
   needed.
 
-  | Digi tab | Decodes in WSJT-X colours |
+  | FTx tab | Decodes in WSJT-X colours |
   |---|---|
-  | ![Digi](manual/tab-digi.jpg) | ![Decodes](manual/digi-decodes.jpg) |
+  | ![FTx](manual/tab-digi.jpg) | ![Decodes](manual/digi-decodes.jpg) |
 
   **Decode** turns decoding on (*FT8* or *FT4*); a band button makes the
   active slice the TX slice, tunes it to the mode's dial frequency in DIGU,
@@ -649,6 +652,10 @@ them back into the drawer.
   period when Even or Odd is chosen); the status line says where. Decoding copes with audio
   that arrives in bursts (SmartLink, a VPN over a mobile link).
 
+- **FreeDV** — RADE digital voice and FreeDV Reporter.
+
+  ![FreeDV tab](manual/tab-freedv.jpg)
+
   **RADE digital voice** (FreeDV's Radio Autoencoder, in the app itself, no
   FreeDV waveform needed): *RADE* puts the slice in DIGU (DIGL where the
   band's voice mode is LSB) with a 750–2250 Hz filter, mutes its ordinary
@@ -663,6 +670,20 @@ them back into the drawer.
   band as it was before RADE (not muted). When a band comes back muted
   anyway (the radio remembers each band's slice), the app says so: tap the
   speaker on the info panel.
+
+  **Report to FreeDV Reporter** (off by default) puts this station on
+  [qso.freedv.org](https://qso.freedv.org), as FreeDV does, while RADE is
+  on: your callsign and grid (the Log tab's *My grid* or the radio's GPS),
+  the frequency, when you transmit, and the stations RADE hears with their
+  SNR. The line under it says whether it reports (green: *Reporting as …*)
+  or what it needs; the text field sets the short message shown there.
+
+  **Stations** lists who is on FreeDV Reporter now, on this band or on all
+  bands, by frequency: callsign, grid and distance, frequency, mode, *TX
+  now* in red while one transmits, whom it hears and the message it shows.
+  Your own station is outlined. A tap tunes there; for a RADE station
+  (mode RADEV1) RADE comes on too. The list is fetched only while the tab
+  is open.
 
 ## 9. Radio Setup
 

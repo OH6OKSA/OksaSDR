@@ -18,17 +18,22 @@ ColumnLayout {
     property bool multiSelect: false
     signal pinRequested()
 
+    // name: kept in the settings (pinned sections); button: the short label,
+    // so every button can be the same size; title: the section's heading.
     readonly property var sections: [
-        { name: "DSP", title: qsTr("DSP"), component: dspSection },
-        { name: "Audio", title: qsTr("Audio"), component: audioSection },
-        { name: "TX", title: qsTr("TX"), component: txSection },
-        { name: "CW", title: qsTr("CW"), component: cwSection },
-        { name: "View", title: qsTr("View"), component: viewSection },
-        { name: "Profiles", title: qsTr("Profiles"), component: profileSection },
-        { name: "Memory", title: qsTr("Memory"), component: memorySection },
-        { name: "Log", title: qsTr("Log"), component: logSection },
-        { name: "Digi", title: qsTr("Digi"), component: digiSection },
+        { name: "DSP", button: qsTr("DSP"), title: qsTr("DSP"), component: dspSection },
+        { name: "Audio", button: qsTr("Audio"), title: qsTr("Audio"), component: audioSection },
+        { name: "TX", button: qsTr("TX"), title: qsTr("TX"), component: txSection },
+        { name: "CW", button: qsTr("CW"), title: qsTr("CW"), component: cwSection },
+        { name: "View", button: qsTr("View"), title: qsTr("View"), component: viewSection },
+        { name: "Profiles", button: qsTr("Prof"), title: qsTr("Profiles"), component: profileSection },
+        { name: "Memory", button: qsTr("Mem"), title: qsTr("Memory"), component: memorySection },
+        { name: "Log", button: qsTr("Log"), title: qsTr("Log"), component: logSection },
+        { name: "Digi", button: qsTr("FTx"), title: qsTr("FT8 / FT4"), component: digiSection },
+        { name: "FreeDV", button: qsTr("FreeDV"), title: qsTr("FreeDV"), component: freedvSection },
     ]
+    // One row of all on a wide panel, else rows of five.
+    readonly property int buttonColumns: panel.width >= 640 ? sections.length : 5
 
     function toggleSection(name) {
         const list = Engine.pinnedSections.slice()
@@ -58,7 +63,7 @@ ColumnLayout {
         GridLayout {
             id: tabGrid
             width: parent.width
-            columns: panel.width >= 640 ? 9 : 5
+            columns: panel.buttonColumns
             columnSpacing: 4
             rowSpacing: 4
             Repeater {
@@ -66,7 +71,7 @@ ColumnLayout {
                 delegate: AppButton {
                     required property int index
                     required property var modelData
-                    text: modelData.title
+                    text: modelData.button
                     checked: tabs.currentIndex === index
                     leftPadding: 2
                     rightPadding: 2
@@ -101,18 +106,23 @@ ColumnLayout {
     }
 
     // ---- Pinned: toggles, then every chosen section ----
-    Flow {
+    // A grid of equal buttons, as the drawer's.
+    GridLayout {
         visible: panel.multiSelect
         Layout.fillWidth: true
-        spacing: 4
+        columns: panel.buttonColumns
+        columnSpacing: 4
+        rowSpacing: 4
         Repeater {
             model: panel.sections
             delegate: AppButton {
                 required property var modelData
-                text: modelData.title
+                text: modelData.button
                 checked: Engine.pinnedSections.indexOf(modelData.name) >= 0
-                leftPadding: 8
-                rightPadding: 8
+                leftPadding: 2
+                rightPadding: 2
+                Layout.fillWidth: true
+                Layout.preferredWidth: 1
                 focusPolicy: Qt.NoFocus
                 onClicked: panel.toggleSection(modelData.name)
             }
@@ -239,4 +249,5 @@ ColumnLayout {
     Component { id: memorySection; MemoryControls {} }
     Component { id: logSection; LogControls {} }
     Component { id: digiSection; DigiControls {} }
+    Component { id: freedvSection; FreeDvControls {} }
 }

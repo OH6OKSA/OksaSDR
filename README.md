@@ -20,7 +20,7 @@ SmartLink (or your own VPN), it is a complete station control surface.
 > [discussion #6409](https://github.com/aethersdr/AetherSDR/discussions/6409).
 
 <p align="center">
-  <img src="docs/mobile/ipad-landscape.jpg" width="70%" alt="OksaSDR on an iPad (a screenshot from the device): FT8 on four DIGU slices, the 3D spectrum and waterfall on 80 m and the Digi tab with decodes in WSJT-X colours"/>
+  <img src="docs/mobile/ipad-landscape.jpg" width="70%" alt="OksaSDR on an iPad (a screenshot from the device): FT8 on four DIGU slices, the 3D spectrum and waterfall on 80 m and the FT8 tab with decodes in WSJT-X colours"/>
   &nbsp;
   <img src="docs/mobile/iphone-portrait.jpg" width="22%" alt="OksaSDR on iPhone in portrait"/>
 </p>
@@ -166,7 +166,7 @@ radio interface, with no computer running alongside.
   when the layout changes and when the mic input leaves the device.
 
 **Digital modes and logging**
-- **FT8 and FT4** in the app (Controls › Digi), no computer, DAX or
+- **FT8 and FT4** in the app (Controls › FTx), no computer, DAX or
   WSJT-X: every slice in DIGU decodes at once, rows marked with the slice
   and coloured as in WSJT-X (CQ, your call, new DXCC, CQ zone or
   continent, worked before), with a filter (All, CQ, New, New DXCC). Tap a
@@ -174,8 +174,10 @@ radio interface, with no computer running alongside.
   the app runs the QSO and logs it. Drag the red TX band to a free
   frequency on the display.
 - **RADE digital voice** (FreeDV's Radio Autoencoder) in the app, on any
-  Flex: receive with the callsign each station sends, transmit with PTT as
-  usual.
+  Flex (Controls › FreeDV): receive with the callsign each station sends,
+  transmit with PTT as usual, report to FreeDV Reporter (qso.freedv.org)
+  and see who is on it, on this band or all bands, with a tap to tune
+  there.
 - **Log** tab: quick QSO logging with QRZ.com lookup (or the country from
   the prefix), worked-before and dupe check, POTA / WWFF references, and
   the log as an ADIF file in Files (iPhone, iPad) or Documents (Android,
@@ -195,7 +197,7 @@ radio interface, with no computer running alongside.
 - A tablet layout and a phone layout. They switch live on rotation, Split
   View, Stage Manager and folding (iPhone Duo).
 - The waterfall gets the screen. On iPhone, the controls (DSP, Audio, TX,
-  CW, View, Profiles, Memory, Log, Digi) live in a drawer that slides in over it when needed. On iPad the side
+  CW, View, Prof, Mem, Log, FTx, FreeDV) live in a drawer that slides in over it when needed. On iPad the side
   panel can be hidden into the same drawer. PTT/KEY always stays on screen:
   the drawer carries it at the bottom, never covering it.
 - Apple Pencil drags tune 10× finer, for zero-beating.

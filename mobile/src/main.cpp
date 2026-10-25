@@ -1836,7 +1836,7 @@ int main(int argc, char* argv[])
     if (parser.value(controlsOption) != QLatin1String("drawer") && parser.isSet(controlsTabOption)) {
         static const QStringList names{QStringLiteral("DSP"), QStringLiteral("Audio"), QStringLiteral("TX"),
             QStringLiteral("CW"), QStringLiteral("View"), QStringLiteral("Profiles"), QStringLiteral("Memory"),
-            QStringLiteral("Log"), QStringLiteral("Digi")};
+            QStringLiteral("Log"), QStringLiteral("Digi"), QStringLiteral("FreeDV")};
         QStringList pinned;
         for (const QString& index : parser.value(controlsTabOption).split(QLatin1Char(','), Qt::SkipEmptyParts)) {
             if (const QString name = names.value(index.toInt()); !name.isEmpty()) {

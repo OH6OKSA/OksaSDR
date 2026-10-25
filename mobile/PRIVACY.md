@@ -33,10 +33,17 @@ these services:
 - **A DX cluster**, if you turn it on: the app connects to the cluster
   server you choose, signs in with your callsign and receives its spots.
 - **PSK Reporter**, only if you turn on *Report to PSK Reporter* on the
-  Digi tab (off by default): the callsigns, locators, frequencies, SNR and
+  FTx tab (off by default): the callsigns, locators, frequencies, SNR and
   times of the FT8 / FT4 stations this device decodes are sent to
   report.pskreporter.info with your callsign, your grid and the app's name
   and version, and are published there, as WSJT-X does.
+- **FreeDV Reporter** (qso.freedv.org): while the FreeDV tab is open the
+  app fetches the list of stations on it (nothing about you is sent). Only
+  if you turn on *Report to FreeDV Reporter* (off by default), while RADE
+  is on, your callsign, your grid, the app's name and version, the
+  frequency, when you transmit, the message you type there and the
+  callsigns and SNR of the stations RADE hears are sent to qso.freedv.org
+  and shown publicly there, as FreeDV does.
 - **Wavelog or Cloudlog**, only if you enter your logbook's address and API
   key on the Log tab: each QSO you log is sent to that logbook (your own
   server, or the one you use) with its ADIF fields. QSOs that could not be

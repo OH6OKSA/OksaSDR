@@ -285,6 +285,7 @@ MobileEngine::MobileEngine(QObject* parent)
     connect(m_audio, &AudioEngine::txClipRecorded, this, &MobileEngine::onVoiceClipRecorded);
     connect(m_audio, &AudioEngine::txClipFinished, this, &MobileEngine::onVoiceClipFinished);
     setupDxCluster();
+    setupFreeDv();
     // Network changes in the log (Wi-Fi <-> mobile data, offline): a remote
     // session that drops can then be told apart from the network switching
     // under it.
@@ -2454,7 +2455,7 @@ void MobileEngine::setPtt(bool down, const QString& reason)
     if (!radeActive()) {
         for (SliceModel* s : m_session.radioModel().slices()) {
             if (s && s->isTxSlice() && (s->mode() == QLatin1String("DIGU") || s->mode() == QLatin1String("DIGL"))) {
-                const QString why = tr("The TX slice is in %1: PTT is for voice. Switch it to USB / LSB to talk; FT8 / FT4 run from the Digi tab.")
+                const QString why = tr("The TX slice is in %1: PTT is for voice. Switch it to USB / LSB to talk; FT8 / FT4 run from the FTx tab, RADE from the FreeDV tab.")
                                         .arg(s->mode());
                 qCInfo(lcMobile).noquote() << "PTT press ignored:" << why;
                 setLastError(why);

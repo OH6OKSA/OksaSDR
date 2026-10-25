@@ -69,9 +69,12 @@ every function.
 - **Start with receive.** Connect, check the spectrum, waterfall and audio.
 - **Transmit at low power or into a dummy load first.** The app takes the
   radio's mic input to `PC` (this device's microphone) when it connects.
-- **FT8 / FT4** (Controls › Digi): decode first, then answer a CQ at low
+- **FT8 / FT4** (Controls › FTx): decode first, then answer a CQ at low
   power and check that the contact lands in the Log tab. Import your
   logbook (ADIF) on the Log tab so the colours show what is new for you.
+- **RADE** (Controls › FreeDV): the station list shows who is on FreeDV
+  Reporter; tap one to tune there and listen. *Report to FreeDV Reporter*
+  puts you on qso.freedv.org while RADE is on.
 - **Reporting a problem:** right after it happens, open **Log** in the top
   row, tap **Copy**, and paste the text into an email to oh6oksa@gmail.com.
   Add the device model and what you were doing. The build number is in the

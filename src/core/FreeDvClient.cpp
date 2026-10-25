@@ -186,6 +186,10 @@ void FreeDvClient::handleEngineIO(const QString& raw)
             auth["os"]               = QString("windows");
 #elif defined(Q_OS_MACOS)
             auth["os"]               = QString("macos");
+#elif defined(Q_OS_IOS)
+            auth["os"]               = QString("ios");
+#elif defined(Q_OS_ANDROID)
+            auth["os"]               = QString("android");
 #else
             auth["os"]               = QString("linux");
 #endif
