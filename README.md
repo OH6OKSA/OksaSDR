@@ -20,7 +20,7 @@ SmartLink (or your own VPN), it is a complete station control surface.
 > [discussion #6409](https://github.com/aethersdr/AetherSDR/discussions/6409).
 
 <p align="center">
-  <img src="docs/mobile/ipad-landscape.jpg" width="70%" alt="OksaSDR on an iPad (a screenshot from the device): FT8 on four DIGU slices, the 3D spectrum and waterfall on 80 m and the FTx tab with decodes in WSJT-X colours"/>
+  <img src="docs/mobile/ipad-landscape.jpg" width="70%" alt="OksaSDR on an iPad (a screenshot from the device, build 113): 80 m in the 3D spectrum and waterfall, the white dashed slice line with its frequency, analog meters, and the controls pinned at the right with the Audio and TX sections"/>
   &nbsp;
   <img src="docs/mobile/iphone-portrait.jpg" width="22%" alt="OksaSDR on iPhone in portrait"/>
 </p>
@@ -235,13 +235,13 @@ radio interface, with no computer running alongside.
 </p>
 
 <p align="center">
-  <img src="docs/mobile/android-foldable.jpg" width="40%" alt="OksaSDR on Android: a OnePlus Open's inner screen, 3D spectrum and waterfall"/>
+  <img src="docs/mobile/android-foldable.jpg" width="40%" alt="OksaSDR on Android (beta 29): a OnePlus Open's inner screen, 80 m in the 3D spectrum and waterfall"/>
   &nbsp;
-  <img src="docs/mobile/android-foldable-controls.jpg" width="40%" alt="OksaSDR on Android with the controls drawer open on the CW tab: memories, CW text, speed, break-in and the decoder"/>
+  <img src="docs/mobile/android-foldable-controls.jpg" width="40%" alt="OksaSDR on Android (beta 29) with the controls drawer open on the CW tab: memories, CW text, speed and pitch"/>
   &nbsp;
-  <img src="docs/mobile/android-phone.jpg" width="16%" alt="OksaSDR on Android: the OnePlus Open's outer screen in portrait"/>
+  <img src="docs/mobile/android-phone.jpg" width="16%" alt="OksaSDR on Android (beta 29): the OnePlus Open's outer screen in portrait, with bar meters"/>
 </p>
-<p align="center"><sub>Android beta on a OnePlus Open: inner screen, controls open, outer screen. Taken from the device over the developer link.</sub></p>
+<p align="center"><sub>Android beta 29 on a OnePlus Open: inner screen, controls open, outer screen. Taken from the device over the developer link.</sub></p>
 
 <sub>The iPhone, iPad mini and passband screenshots are rendered by
 [`mobile/tools/update-screenshots.sh`](mobile/tools/update-screenshots.sh)
