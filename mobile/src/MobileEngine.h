@@ -1337,6 +1337,7 @@ private:
     // ---- RADE (MobileEngineRade.cpp) ----
     void activateRade();
     void deactivateRade();
+    void stopRadeBeforeLeaving(const char* why);
     QThread* m_radeThread{nullptr};
     RADEEngine* m_radeEngine{nullptr};
     int m_radeSliceId{-1};

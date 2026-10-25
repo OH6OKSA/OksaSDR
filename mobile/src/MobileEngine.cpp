@@ -2550,6 +2550,9 @@ void MobileEngine::tuneTo(double mhz)
     if (!m_slice || mhz <= 0.0) {
         return;
     }
+    if (radeActive() && BandSettings::bandForFrequency(mhz) != BandSettings::bandForFrequency(m_slice->frequency())) {
+        stopRadeBeforeLeaving("move to another band");
+    }
     if (!m_pan || m_pan->bandwidthMhz() <= 0.0) {
         m_slice->tuneAndRecenter(mhz);
         return;
@@ -2846,8 +2849,30 @@ void MobileEngine::selectBand(const QString& band)
         setLastError(result.unsupportedReason);
         return;
     }
+    stopRadeBeforeLeaving("band change");
     armModeAgc();
     rm.requestPanBand(m_pan->panId(), result.key);
+    // A band the radio remembers muted (RADE's mute kept by earlier builds
+    // when the band changed under it: a tester heard nothing on 40 m until
+    // the app was reinstalled): say where the sound went.
+    QTimer::singleShot(2000, this, [this] {
+        if (m_slice && m_slice->audioMute() && !radeActive() && m_slice->sliceId() != m_splitTxId) {
+            setLastError(tr("This slice is muted on this band: tap the speaker on the info panel to hear it."));
+        }
+    });
+}
+
+// RADE mutes the slice and puts it in DIGU / DIGL; the radio keeps a band's
+// slice settings when the slice leaves the band, so RADE goes off first and
+// the band is remembered as it was before RADE.
+void MobileEngine::stopRadeBeforeLeaving(const char* why)
+{
+    if (!radeActive()) {
+        return;
+    }
+    qCInfo(lcMobile) << "RADE: off before the" << why << "(its mute and mode stay out of the band's memory)";
+    deactivateRade();
+    emit radeChanged();
 }
 
 void MobileEngine::tuneBySteps(int steps)
@@ -5826,6 +5851,14 @@ QString MobileEngine::mode() const
 void MobileEngine::setMode(const QString& mode)
 {
     if (m_slice && mode != m_slice->mode()) {
+        // Out of DIGU / DIGL RADE has nothing to decode; off first, which
+        // also unmutes the slice.
+        if (mode != QLatin1String("DIGU") && mode != QLatin1String("DIGL")) {
+            stopRadeBeforeLeaving("mode change");
+        }
+        if (mode == m_slice->mode()) {
+            return;  // RADE's own restore already set it
+        }
         armModeAgc();
         m_slice->setMode(mode);
     }

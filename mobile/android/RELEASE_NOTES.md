@@ -3,6 +3,7 @@
 ### New in beta 27
 - **The app shows its beta number:** the version in the top row, on the Connect page and in the log ends in (27) for beta 27, as the release is called (before, a build counter).
 - **DX cluster status:** a line under the DX cluster button (View tab) says whether it is connected, to which server and as whom, with the spots so far and the latest one's time.
+- **RADE no longer leaves a band muted:** a band button, a frequency on another band or another mode ends RADE first; a band that comes back muted says so (tap the speaker). Thanks Michel F5GNM.
 - **The display keeps going** while the app is on screen but not in focus (an unfocused split-screen or DeX window, a system prompt); it pauses only in the background.
 
 Still new from betas 14–26: a swipe in the open controls drawer no longer tunes, PTT in DIGU / DIGL says why it does not transmit, three meters while transmitting (asked by Mike VA3MW); FT8 and FT4 in the app (Controls › Digi) on every DIGU slice with WSJT-X colours, Keep CQ, Last TX and Free, PSK Reporter; Wavelog / Cloudlog; transverter setup; RADE digital voice; the log in Files › Documents › OksaSDR.

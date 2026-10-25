@@ -658,7 +658,11 @@ them back into the drawer.
   device's microphone goes through the RADE encoder to the radio's DAX
   transmit (turned on for RADE, off again after), and the end-of-over frame
   with your callsign plays out before the carrier drops. *RADE* again, or
-  another mode, ends it and restores the mode and filter.
+  another mode, ends it and restores the mode and filter; a band button or
+  a frequency on another band ends it first too, so the radio remembers the
+  band as it was before RADE (not muted). When a band comes back muted
+  anyway (the radio remembers each band's slice), the app says so: tap the
+  speaker on the info panel.
 
 ## 9. Radio Setup
 
