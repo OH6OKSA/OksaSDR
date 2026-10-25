@@ -779,7 +779,9 @@ public:
     // Adds the contacts of an ADIF file (a file or content URL from the file
     // picker) to the log, skipping those already in it (call, date, time,
     // band, mode). Returns imported, duplicates and error.
-    Q_INVOKABLE QVariantMap importAdif(const QUrl& url);
+    // Starts an import; adifImported(result) follows (imported, duplicates
+    // or error).
+    Q_INVOKABLE void importAdif(const QUrl& url);
     QString qsoLogLocation() const;
     // The 3D view fell behind the data on this GPU: back to the 2D
     // waterfall, with a notice.
@@ -1171,6 +1173,7 @@ signals:
     void rfGainChanged();
     void memoriesChanged();
     void qsoLogChanged();
+    void adifImported(const QVariantMap& result);
     void digiChanged();
     void radeChanged();
     void freedvChanged();
@@ -1550,6 +1553,7 @@ private:
     // The pan's width before FT8 / FT4 zoomed it to 4 kHz (0: not zoomed),
     // back when the slice leaves DIGU / DIGL for voice.
     double m_digiPrevPanBw{0.0};
+    bool m_importing{false};
     // The decodes' median DT, smoothed: far from 0 means this device's
     // clock is off (FT8 needs it within about a second).
     double m_digiClockOffset{0.0};

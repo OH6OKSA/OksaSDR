@@ -196,7 +196,27 @@ Page {
                                 elide: Text.ElideRight
                                 Layout.fillWidth: true
                             }
-                            AppButton { text: qsTr("Sign out"); onClicked: Engine.signOutSmartLink() }
+                            // Two taps: the row appears where the sign-in
+                            // form or the "Signing in" line was, and one
+                            // stray tap there signed a tester out (the kept
+                            // sign-in is removed with it).
+                            AppButton {
+                                id: signOut
+                                property bool armed: false
+                                text: armed ? qsTr("Sign out?") : qsTr("Sign out")
+                                checked: armed
+                                focusPolicy: Qt.NoFocus
+                                onClicked: {
+                                    if (armed) {
+                                        armed = false
+                                        Engine.signOutSmartLink()
+                                    } else {
+                                        armed = true
+                                        disarm.restart()
+                                    }
+                                }
+                                Timer { id: disarm; interval: 3000; onTriggered: signOut.armed = false }
+                            }
                         }
                         Label {
                             visible: Engine.smartLinkState === "offline"

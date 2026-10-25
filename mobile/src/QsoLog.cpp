@@ -3,6 +3,8 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QMutex>
+#include <QMutexLocker>
 #include <QStandardPaths>
 #include <QTextStream>
 
@@ -68,19 +70,36 @@ void QsoLog::setMirrorPath(const QString& path)
     writeMirror();
 }
 
+namespace {
+
+// One writer at a time: an import writes from a worker while a contact can
+// be logged.
+QMutex& fileMutex()
+{
+    static QMutex mutex;
+    return mutex;
+}
+
+bool copyMirror(const QString& path, const QString& mirror)
+{
+    if (mirror.isEmpty() || !QFile::exists(path)) {
+        return false;
+    }
+    QDir().mkpath(QFileInfo(mirror).absolutePath());
+    QFile in(path);
+    QFile out(mirror);
+    if (!in.open(QIODevice::ReadOnly) || !out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        return false;
+    }
+    return out.write(in.readAll()) >= 0 && out.error() == QFileDevice::NoError;
+}
+
+} // namespace
+
 void QsoLog::writeMirror()
 {
-    m_mirrorOk = false;
-    if (m_mirrorPath.isEmpty() || !QFile::exists(m_path)) {
-        return;
-    }
-    QDir().mkpath(QFileInfo(m_mirrorPath).absolutePath());
-    QFile in(m_path);
-    QFile out(m_mirrorPath);
-    if (!in.open(QIODevice::ReadOnly) || !out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        return;
-    }
-    m_mirrorOk = out.write(in.readAll()) >= 0 && out.error() == QFileDevice::NoError;
+    QMutexLocker lock(&fileMutex());
+    m_mirrorOk = copyMirror(m_path, m_mirrorPath);
 }
 
 QsoLog::QsoLog(QString path)
@@ -104,8 +123,30 @@ void QsoLog::load()
 
 bool QsoLog::append(const QVariantMap& record)
 {
-    QDir().mkpath(QFileInfo(m_path).absolutePath());
-    QFile file(m_path);
+    return appendAll({record});
+}
+
+// Several contacts in one write and one mirror copy: an import of 20 000
+// appended and mirrored each one (on Android a copy of the whole growing
+// file per contact), which held the app for minutes.
+bool QsoLog::appendAll(const QList<QVariantMap>& records)
+{
+    bool mirrorOk = false;
+    if (!writeRecords(m_path, m_mirrorPath, records, &mirrorOk)) {
+        return false;
+    }
+    addWritten(records, mirrorOk);
+    return true;
+}
+
+bool QsoLog::writeRecords(const QString& path, const QString& mirror, const QList<QVariantMap>& records, bool* mirrorOk)
+{
+    if (records.isEmpty()) {
+        return true;
+    }
+    QMutexLocker lock(&fileMutex());
+    QDir().mkpath(QFileInfo(path).absolutePath());
+    QFile file(path);
     const bool fresh = !file.exists() || file.size() == 0;
     if (!file.open(QIODevice::Append | QIODevice::Text)) {
         return false;
@@ -115,14 +156,25 @@ bool QsoLog::append(const QVariantMap& record)
     if (fresh) {
         out << "OksaSDR log\n<ADIF_VER:5>3.1.4 <PROGRAMID:7>OksaSDR <EOH>\n";
     }
-    out << adifRecord(record) << "\n";
+    for (const QVariantMap& record : records) {
+        out << adifRecord(record) << "\n";
+    }
     out.flush();
     if (file.error() != QFileDevice::NoError) {
         return false;
     }
-    m_records.append(record);
-    writeMirror();
+    file.close();
+    const bool copied = copyMirror(path, mirror);
+    if (mirrorOk) {
+        *mirrorOk = copied;
+    }
     return true;
+}
+
+void QsoLog::addWritten(const QList<QVariantMap>& records, bool mirrorOk)
+{
+    m_records.append(records);
+    m_mirrorOk = mirrorOk;
 }
 
 int QsoLog::workedCount(const QString& call) const

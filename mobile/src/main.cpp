@@ -1626,9 +1626,12 @@ int main(int argc, char* argv[])
         });
     }
     if (parser.isSet(adifImportOption)) {
-        QTimer::singleShot(1000, &app, [&app, &engine, file = parser.value(adifImportOption)] {
-            qInfo() << "adif-import:" << engine.importAdif(QUrl::fromLocalFile(file));
+        QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::adifImported, &app, [&app](const QVariantMap& r) {
+            qInfo() << "adif-import:" << r;
             app.quit();
+        });
+        QTimer::singleShot(1000, &app, [&engine, file = parser.value(adifImportOption)] {
+            engine.importAdif(QUrl::fromLocalFile(file));
         });
     }
     if (parser.isSet(previewTxOption)) {

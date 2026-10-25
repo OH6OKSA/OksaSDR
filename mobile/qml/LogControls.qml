@@ -305,7 +305,13 @@ ColumnLayout {
         fileMode: FileDialog.OpenFile
         nameFilters: [qsTr("ADIF files (*.adi *.adif *.ADI)"), qsTr("All files (*)")]
         onAccepted: {
-            const r = Engine.importAdif(selectedFile)
+            importResult.text = qsTr("Importing…")
+            Engine.importAdif(selectedFile)
+        }
+    }
+    Connections {
+        target: Engine
+        function onAdifImported(r) {
             importResult.text = r.error ? r.error
                 : qsTr("Imported %1 contact(s); %2 already in the log.").arg(r.imported).arg(r.duplicates)
         }

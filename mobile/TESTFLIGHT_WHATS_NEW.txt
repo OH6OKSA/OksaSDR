@@ -9,6 +9,8 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
+- Importing a big logbook (ADIF, tested with 20 000 contacts) takes seconds and the display keeps going; it froze the app before (iOS closed it, Android hung). Import the same file again to add what was missing; contacts already in the log are skipped.
+- SmartLink Sign out takes two taps, so a stray tap while the page settles does not sign you out.
 - Sliders look the same on every device: the part left of the handle filled in blue, the rest a dark track (Android had them the other way round); the ⋯ menu and text fields are dark on every device. Thanks Richard EI9JE.
 - The IP address and frequency keypads have the phone order, 1 2 3 on top, and a drawn delete key. Thanks Richard EI9JE.
 
@@ -17,11 +19,8 @@ RECENT (build 113)
 - The slice is a white dashed line with its frequency. FT8 / FT4 transmit again (refused since build 108, thanks Wayne WA2N), and the FT8 slice back to LSB / USB ends decoding, so PTT returns.
 - RADE: filter widths centre on its 1500 Hz; Disconnect, FTx band buttons and Decode end RADE first; a slice left muted by RADE is unmuted on the next connection. Thanks Michel F5GNM.
 
-RECENT (build 112)
-- FreeDV tab with FreeDV Reporter (thanks Scott W5SLS); Digi is now FTx; one-size control buttons; DX cluster status line; no display freeze on iPhone Duo (thanks Vesa OH6HPS).
-
-RECENT (builds 94–111)
-- Mac text box for typing (111); FT8 / FT4 with PSK Reporter; Wavelog / Cloudlog; transverters; RADE; the log in Files > On My iPhone / iPad > OksaSDR.
+RECENT (builds 94–112)
+- FreeDV tab with FreeDV Reporter; FTx; one-size buttons; DX cluster status; Mac text box; FT8 / FT4 with PSK Reporter; Wavelog / Cloudlog; transverters; RADE.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.

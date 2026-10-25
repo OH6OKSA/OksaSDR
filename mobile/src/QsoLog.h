@@ -39,6 +39,14 @@ public:
     // Appends one record to the file (writing the header first for a new
     // file) and to the list; false when the file cannot be written.
     bool append(const QVariantMap& record);
+    bool appendAll(const QList<QVariantMap>& records);
+    // The file part of appendAll, from any thread (one writer at a time):
+    // appends the records to the file at path and copies it to mirror
+    // (empty: none). An import writes in a worker, then addWritten() puts
+    // the records in the list on the log's thread.
+    static bool writeRecords(const QString& path, const QString& mirror, const QList<QVariantMap>& records,
+                             bool* mirrorOk = nullptr);
+    void addWritten(const QList<QVariantMap>& records, bool mirrorOk);
 
     // Contacts with this call; and with it on this band and mode group
     // (CW, PHONE, DATA), a dupe in the usual sense.

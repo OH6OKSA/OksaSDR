@@ -38,7 +38,9 @@ The first page lists the ways to reach a radio:
 - **SmartLink (remote)** — sign in with your FlexRadio SmartLink account
   to use your radio from anywhere. The sign-in is kept on this device only
   (the iOS Keychain; on Android, encrypted under a key in the Android
-  Keystore); the password is never stored.
+  Keystore); the password is never stored. **Sign out** takes two taps
+  (the first turns it into *Sign out?* for three seconds), so a stray tap
+  does not sign you out.
 - **By IP address** — tap the address field and enter your radio's IP
   address on the keypad (SmartSDR's radio chooser and your router's device
   list both show it), then *Connect*. A hardware keyboard works in the
@@ -587,7 +589,9 @@ Reporter).
   program or TQSL for LoTW. **Import contacts (ADIF)** adds the contacts of
   an ADIF file (from another logbook, or another device's OksaSDR log);
   those already in the log (same call, date, time, band and mode) are
-  skipped. The QRZ.com password is kept in this device's secure store.
+  skipped. A big logbook (tens of thousands of contacts) imports in a few
+  seconds while the display goes on; the line under the button says
+  *Importing…* and then how many came in. The QRZ.com password is kept in this device's secure store.
   **Wavelog / Cloudlog**: with your logbook's address (as its API page
   shows it, e.g. `https://log.example.com/index.php`), a read & write
   **API key** (Wavelog: *API* › *Legacy API Keys (API v1)*, starting
