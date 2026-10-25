@@ -1,5 +1,6 @@
 import QtQuick
 import AetherMobile
+import "MeterMarks.js" as MeterMarks
 
 // Analog meter face (SmartSDR/AetherSDR style): an arc scale with ticks and
 // labels, a needle and the reading. S-meter: S1…S9 then +20/+40 in red;
@@ -67,22 +68,8 @@ Item {
     onRedChanged: face.requestPaint()
 
     // Scale marks: [value, label, red?]
-    readonly property var marks: {
-        if (kind === "S") {
-            // S1 = -121 dBm, 6 dB per S unit; S9 = -73; +20 = -53; +40 = -33;
-            // +60 = -13, the scale's end, so the labels reach both ends.
-            return [[-121, "1", false], [-109, "3", false], [-97, "5", false], [-85, "7", false],
-                    [-73, "9", false], [-53, "+20", true], [-33, "+40", true], [-13, "+60", true]]
-        }
-        const out = []
-        for (let i = 0; i <= 4; ++i) {
-            const v = min + (max - min) * i / 4
-            const label = Math.abs(max - min) <= 10 ? v.toFixed(1) : Math.round(v).toString()
-            out.push([v, label, v >= red])
-        }
-        return out
-    }
-    readonly property real redFrom: kind === "S" ? -73 : red
+    readonly property var marks: MeterMarks.marks(kind, min, max, red)
+    readonly property real redFrom: MeterMarks.redFrom(kind, red)
 
     readonly property string title: kind === "S" ? qsTr("S-Meter") : kind
     // Inner scale under the arc (the desktop meter's second scale): dBm on
@@ -219,6 +206,14 @@ Item {
         if (kind === "S") return parts.slice(1).join(" ")
         return /^[A-Za-z]+$/.test(parts[0]) ? parts.slice(1).join(" ") : parts.join(" ")
     }
+    // Where "-91 dBm" does not fit beside the S unit: "-91" (not "… dBm").
+    readonly property string valueShort: kind === "S" ? valueText.replace(/\s*dBm$/, "") : valueText
+    TextMetrics {
+        id: valueMetrics
+        font.pixelSize: gauge.headerFont
+        font.bold: true
+        text: gauge.valueText
+    }
     Text {
         id: nameText
         x: 2; y: 0
@@ -240,10 +235,11 @@ Item {
         anchors.rightMargin: 12
         y: 0
         // Never over the name: at most the space left of it.
-        width: Math.min(implicitWidth, gauge.width - nameText.implicitWidth - 20)
+        readonly property real room: Math.max(0, gauge.width - nameText.implicitWidth - 20)
+        width: Math.min(implicitWidth, room)
         horizontalAlignment: Text.AlignRight
         elide: Text.ElideLeft
-        text: gauge.valueText
+        text: valueMetrics.advanceWidth <= room ? gauge.valueText : gauge.valueShort
         color: gauge.live && gauge.value >= gauge.red ? Theme.transmit : Theme.text
         font.pixelSize: gauge.headerFont
         font.bold: true

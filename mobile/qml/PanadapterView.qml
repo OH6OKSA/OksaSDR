@@ -515,16 +515,54 @@ Rectangle {
     }
 
     // Slice marker: where the active slice sits inside the pan (in 3D through
-    // the waterfall only; the surface draws its own cue in perspective).
-    Rectangle {
+    // the waterfall only; the surface draws its own cue in perspective). A
+    // white dashed line with the frequency on top, apart from the filter's
+    // solid yellow edges (an orange line beside them read as a third edge).
+    Item {
+        id: sliceMarker
         visible: Engine.panBandwidthMhz > 0
+        z: 2
+        readonly property real lineX: (Engine.frequencyMhz - Engine.panCenterMhz) / Engine.panBandwidthMhz * parent.width
+                                      + parent.width / 2
+        x: lineX - 1
         width: 2
         y: Engine.spectrum3D ? parent.height * spectrum.spectrumFraction : 0
         height: parent.height - y
-        color: Theme.warning
-        opacity: 0.8
-        x: (Engine.frequencyMhz - Engine.panCenterMhz) / Engine.panBandwidthMhz * parent.width
-           + parent.width / 2 - width / 2
+        // Painted when its height changes, not as it moves.
+        Canvas {
+            id: dashes
+            anchors.fill: parent
+            onHeightChanged: requestPaint()
+            onPaint: {
+                const ctx = getContext("2d")
+                ctx.reset()
+                ctx.fillStyle = "#ffffff"
+                for (let y = 0; y < height; y += 10) {
+                    ctx.fillRect(0, y, width, Math.min(6, height - y))
+                }
+            }
+        }
+    }
+    // The frequency beside the line, at the foot of the spectrum (clear of
+    // the spots along its top), on the side away from the passband; in 3D at
+    // the top of the waterfall.
+    Label {
+        id: sliceFlag
+        visible: sliceMarker.visible && sliceMarker.lineX >= 0 && sliceMarker.lineX <= panArea.width
+        z: 2
+        readonly property bool passbandLeft: Engine.filterHigh <= 0
+        x: Math.max(scaleStrip.width, Math.min(panArea.width - width,
+               passbandLeft ? sliceMarker.lineX + 4 : sliceMarker.lineX - width - 4))
+        y: Engine.spectrum3D ? sliceMarker.y + 20
+                             : panArea.height * spectrum.spectrumFraction - spectrum.bandPlanHeight - height - 4
+        text: Engine.frequencyMhz.toFixed(3)
+        color: "#ffffff"
+        font.pixelSize: 12
+        font.bold: true
+        padding: 2
+        leftPadding: 5
+        rightPadding: 5
+        background: Rectangle { color: "#0b1118"; opacity: 0.85; radius: 4; border.color: "#ffffff"; border.width: 1 }
     }
 
     // dBm scale on the left of the spectrum (the reference level control of

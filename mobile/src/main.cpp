@@ -359,6 +359,10 @@ int main(int argc, char* argv[])
     const QCommandLineOption analogMetersOption(QStringLiteral("analog-meters"),
         QStringLiteral("Meter faces: on (analog) or off (bars) (remembered)."), QStringLiteral("state"));
     parser.addOption(analogMetersOption);
+    const QCommandLineOption meterStyleOption(QStringLiteral("meter-style"),
+        QStringLiteral("Meter styles <left>,<right>: analog, bar or two (two bars), e.g. two,analog (remembered)."),
+        QStringLiteral("styles"));
+    parser.addOption(meterStyleOption);
     const QCommandLineOption metersOption(QStringLiteral("meters"),
         QStringLiteral("Receive meter choices <left>,<right>, e.g. S,Volts (remembered)."), QStringLiteral("kinds"));
     parser.addOption(metersOption);
@@ -481,6 +485,13 @@ int main(int argc, char* argv[])
     }
     if (parser.isSet(analogMetersOption)) {
         engine.setAnalogMeters(parser.value(analogMetersOption) == QLatin1String("on"));
+    }
+    if (parser.isSet(meterStyleOption)) {
+        const QStringList styles = parser.value(meterStyleOption).split(QLatin1Char(','));
+        if (styles.size() == 2) {
+            engine.setMeterStyle(QStringLiteral("left"), styles.at(0));
+            engine.setMeterStyle(QStringLiteral("right"), styles.at(1));
+        }
     }
     if (parser.isSet(spectrum3dOption)) {
         engine.setSpectrum3D(parser.value(spectrum3dOption) == QLatin1String("on"));

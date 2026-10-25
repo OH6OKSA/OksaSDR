@@ -199,15 +199,22 @@ on the radio leaves the AGC alone.
 ![Slice row](manual/slicerow.jpg)
 
 **Meters.** Two meters, at the ends of the slice row. Tap a meter to choose
-what it shows — separately for receive and for transmit (e.g. S and Power,
-then SWR and Power on the air) — and its style, bar or analog. Choices are
-remembered.
+its style and what it shows — separately for receive and for transmit (e.g.
+S, then SWR on the air). Choices are remembered. Each meter has one of
+three styles:
 
-**While transmitting** the left meter becomes two bars, its own transmit
-choice over a second one, so three readings show at once: by default SWR
-and Mic at the left and Power at the right. The slice buttons stay. Tap the
-lower bar to choose what it shows (Power, SWR, ALC, Mic, Comp, PA
-temperature, Volts); back in receive the left meter returns to its own face.
+- **Analog** — an arc and a needle; it stays analog while transmitting too.
+- **Bar** — one bar.
+- **Two bars** — two bars, one over the other, each with its own receive
+  and transmit choice: tap the upper or the lower bar to choose what that
+  bar shows. Two bars at the left give three readings on the air, e.g. SWR
+  and Mic at the left and Power at the right (four with two bars at both
+  ends).
+
+Each bar has the analog meter's scale under it — S1…S9 then +20/+40/+60 in
+red on the S meter, five values with the alarm range in red on the others —
+and the reading's name and value above it. A low bar (iPhone landscape)
+keeps the ticks and leaves out the numbers.
 
 ![Meters while transmitting](manual/tx-meters.jpg)
 
@@ -215,7 +222,7 @@ temperature, Volts); back in receive the left meter returns to its own face.
 
 Receive offers S, Mic, PA temperature and supply voltage; transmit adds
 Power, SWR, ALC and Compression, which the radio reads only while
-transmitting. **Mic** is on the left meter and its lower transmit bar
+transmitting. **Mic** is on the left meter and its lower bar
 (on a tablet the side panel covers the right one). With this device's microphone it shows the
 level of the audio as it is sent (after the processing in Controls → TX):
 while you transmit, and in receive too while Controls → TX is open, so the
@@ -223,9 +230,9 @@ level can be set before going on the air; with a microphone on the radio
 it is the radio's own meter.
 
 **Peak hold.** Each meter keeps its highest reading — an amber needle on
-the analog meter, an amber tick on the bar — then lets it fall back, so a
-voice peak or a burst of noise can be read. *Peak hold* in the meter's
-chooser sets it for both meters, as the desktop S meter's decay: *Off*,
+the analog meter, an amber marker across the bar — then lets it fall back,
+so a voice peak or a burst of noise can be read. *Peak hold* in the meter's
+chooser sets it for all meters, as the desktop S meter's decay: *Off*,
 *Fast* (0.2 s, then 20 dB/s), *Medium* (0.5 s, then 10 dB/s; the
 default) or *Slow* (1 s, then 5 dB/s); other scales fall in the same time
 for their span.
@@ -273,8 +280,12 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
 - **RF GAIN +8 dB** (top right) shows the RF gain; tap it for AGC, AGC-T and
   RF gain. A gain step shows on the
   waterfall and trace, as on the desktop.
-- The filter passband is drawn on the display, on the correct side for
-  USB/LSB and centred for CW/AM. Other slices are marked; tap one to select it.
+- The **slice** is a white dashed line at its frequency, with the
+  frequency beside it at the foot of the spectrum. The **filter passband**
+  is the shaded band between two solid yellow edges, on the correct side
+  for USB/LSB (in LSB the slice line is at its right edge, in USB at its
+  left) and centred for CW/AM. Other slices are marked with their letter;
+  tap one to select it.
 - Your own transmission shows in the waterfall.
 - In CW, decoded text runs along the top of the waterfall.
 - **Spots** — callsigns along the top of the spectrum at their frequency:
@@ -628,7 +639,10 @@ Reporter).
   contact to the Log tab's log (MODE FT8, or MFSK / FT4) with the
   frequency of the slice it was made on. **Halt TX** stops at once. PTT is
   hidden while FT8 / FT4 decodes (the app keys the radio itself), and the
-  display gets the room.
+  display gets the room. Switching the FT8 slice to a voice or CW mode
+  (by hand, or with a band button on a band the radio remembers in LSB /
+  USB) ends decoding: PTT comes back and the display returns from the
+  4 kHz FT8 view to the width it had before.
 
   *TX audio* sets the transmit tone (200–3000 Hz, default 1200; − / + step
   1 Hz and repeat while held). The red band on the display is the tone:
@@ -664,10 +678,16 @@ Reporter).
   station sends at the end of its over. Talk with PTT as usual: this
   device's microphone goes through the RADE encoder to the radio's DAX
   transmit (turned on for RADE, off again after), and the end-of-over frame
-  with your callsign plays out before the carrier drops. *RADE* again, or
-  another mode, ends it and restores the mode and filter; a band button or
-  a frequency on another band ends it first too, so the radio remembers the
-  band as it was before RADE (not muted). When a band comes back muted
+  with your callsign plays out before the carrier drops. While RADE is on,
+  the filter chooser's widths centre on RADE's 1500 Hz (the chooser says
+  so), not on the radio's DIGU / DIGL offset, so a narrower or wider filter
+  stays on the signal. *RADE* again, or another mode, ends it and restores
+  the mode and filter (unmuted; when the mode before RADE is not known, the
+  band's voice mode with a 2.7 kHz filter); a band button, a frequency on
+  another band, an FTx band button, *Decode* and *Disconnect* end it first
+  too, so the radio remembers the band as it was before RADE (not muted).
+  If the app was closed or the link lost while RADE was on, the next
+  connection unmutes the slice RADE had muted. When a band comes back muted
   anyway (the radio remembers each band's slice), the app says so: tap the
   speaker on the info panel.
 

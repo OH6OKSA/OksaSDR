@@ -872,6 +872,9 @@ void MobileEngine::disconnectRadio()
     m_wanUserDisconnect = true;
     m_wanReconnectTimer.stop();
     stopTransmit(QStringLiteral("operator disconnect"));
+    // RADE's unmute must reach the radio before the link goes, or the radio
+    // keeps the slice muted for this app.
+    stopRadeBeforeLeaving("disconnect");
     if (m_digiProcRestore) {  // FT8 had switched it off
         m_digiProcRestore = false;
         setProcEnabled(true);
@@ -1721,10 +1724,37 @@ QStringList MobileEngine::meterKindsFor(const QString& side, bool tx) const
             kinds.removeAll(QLatin1String(txOnly));
         }
     }
-    if (side == QLatin1String("right")) {
+    if (side.startsWith(QLatin1String("right"))) {
         kinds.removeAll(QStringLiteral("Mic"));
     }
     return kinds;
+}
+
+QString MobileEngine::meterStyle(const QString& side) const
+{
+    const bool right = side.startsWith(QLatin1String("right"));
+    // Stored 0 bar, 1 analog, 2 two bars. Until chosen: the analog setting
+    // (per side, else the older shared one); a left meter whose second
+    // transmit bar was chosen (builds 107-112 stacked it while
+    // transmitting) keeps two bars.
+    const bool analog = displayInt(right ? "MobileMeterAnalogRight" : "MobileMeterAnalogLeft",
+                                   displayInt("MobileMeterAnalog", 0)) != 0;
+    const int before = analog ? 1
+                     : (!right && AppSettings::instance().contains(QStringLiteral("MobileMeterLeft2Tx"))) ? 2 : 0;
+    switch (displayInt(right ? "MobileMeterStyleRight" : "MobileMeterStyleLeft", before)) {
+    case 1:
+        return QStringLiteral("analog");
+    case 2:
+        return QStringLiteral("two");
+    default:
+        return QStringLiteral("bar");
+    }
+}
+
+void MobileEngine::setMeterStyle(const QString& side, const QString& style)
+{
+    const int v = style == QLatin1String("analog") ? 1 : style == QLatin1String("two") ? 2 : 0;
+    setDisplayInt(side.startsWith(QLatin1String("right")) ? "MobileMeterStyleRight" : "MobileMeterStyleLeft", v);
 }
 
 QString MobileEngine::meterChoice(const char* key, const char* fallback) const
@@ -1735,16 +1765,32 @@ QString MobileEngine::meterChoice(const char* key, const char* fallback) const
     return meterKindsFor(side, k.endsWith(QLatin1String("Tx"))).contains(kind) ? kind : QString::fromLatin1(fallback);
 }
 
+QString MobileEngine::meterLeft2() const
+{
+    return meterChoice("MobileMeterLeft2", meterRight() == QLatin1String("Volts") ? "PA temp" : "Volts");
+}
+
+QString MobileEngine::meterRight2() const
+{
+    return meterChoice("MobileMeterRight2", meterRight() == QLatin1String("Volts") ? "PA temp" : "Volts");
+}
+
 void MobileEngine::setMeter(const QString& side, bool tx, const QString& kind)
 {
-    if (!tx) {
-        side == QLatin1String("left") ? setMeterLeft(kind) : setMeterRight(kind);
+    if (!tx && side == QLatin1String("left")) {
+        setMeterLeft(kind);
         return;
     }
-    const QString key = side == QLatin1String("left")    ? QStringLiteral("MobileMeterLeftTx")
-                        : side == QLatin1String("left2") ? QStringLiteral("MobileMeterLeft2Tx")
-                                                         : QStringLiteral("MobileMeterRightTx");
-    if (meterKindsFor(side, true).contains(kind) && AppSettings::instance().value(key).toString() != kind) {
+    if (!tx && side == QLatin1String("right")) {
+        setMeterRight(kind);
+        return;
+    }
+    const QString base = side == QLatin1String("left")     ? QStringLiteral("MobileMeterLeft")
+                         : side == QLatin1String("left2")  ? QStringLiteral("MobileMeterLeft2")
+                         : side == QLatin1String("right2") ? QStringLiteral("MobileMeterRight2")
+                                                           : QStringLiteral("MobileMeterRight");
+    const QString key = tx ? base + QStringLiteral("Tx") : base;
+    if (meterKindsFor(side, tx).contains(kind) && AppSettings::instance().value(key).toString() != kind) {
         AppSettings::instance().setValue(key, kind);
         AppSettings::instance().save();
         emit meterSelectionChanged();
@@ -5449,6 +5495,13 @@ void MobileEngine::setFilterWidth(int widthHz)
     ModeFilters::SliceContext ctx;
     ctx.diguOffset = m_slice->diguOffset();
     ctx.diglOffset = m_slice->diglOffset();
+    // Under RADE the widths centre on its signal (1500 Hz from the carrier),
+    // not the radio's DIGU / DIGL offset (2210 Hz on a tester's radio: a
+    // 1.5K pick cut RADE's 750-2250 Hz in half).
+    if (radeActive()) {
+        ctx.diguOffset = 1500;
+        ctx.diglOffset = 1500;
+    }
     ctx.rttyShift = m_slice->rttyShift();
     const ModeFilters::Edges e = ModeFilters::edgesForWidth(m_slice->mode(), widthHz, ctx);
     m_slice->setFilterWidth(e.lo, e.hi);
@@ -5514,6 +5567,8 @@ void MobileEngine::onConnectionStateChanged(bool connected)
         setKeepScreenAwake(true);
         setConnectionState(QStringLiteral("connected"));
         selectActiveSlice();
+        // A slice RADE left muted when the app last went away.
+        QTimer::singleShot(3000, this, [this] { healRadeMute(); });
         // The DX cluster, when it was on or is set to connect by itself
         // (after the radio's status has brought its callsign).
         QTimer::singleShot(3000, this, [this] {

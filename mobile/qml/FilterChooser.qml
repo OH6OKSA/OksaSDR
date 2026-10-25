@@ -30,7 +30,8 @@ Popup {
         spacing: Theme.spacing / 2
         Label {
             visible: Engine.filterPresets.length > 0
-            text: qsTr("%1 filter").arg(Engine.mode)
+            text: Engine.rade ? qsTr("%1 filter: RADE uses 750–2250 Hz; widths centre on it").arg(Engine.mode)
+                              : qsTr("%1 filter").arg(Engine.mode)
             color: Theme.textDim
             font.pixelSize: Math.round(Theme.buttonFont * 0.85)
         }

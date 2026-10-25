@@ -1,7 +1,11 @@
 **OksaSDR for Android — beta 28.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
 ### New in beta 28
+- **Meters: Analog, Bar or Two bars** for each meter (tap a meter › Style). Analog stays analog while transmitting; with Two bars each bar has its own receive and transmit choice, so up to four readings show. Bars have a scale like the analog meter (S1…S9, +20/+40/+60) and a clear amber peak hold marker. Thanks Mike VA3MW.
+- **The slice is a white dashed line** with its frequency beside it, apart from the yellow filter edges.
+- **FT8 / FT4 end when the slice goes back to voice:** switching the FT8 slice to LSB / USB (by hand or by a band button) ends decoding, so PTT comes back and the view widens from the 4 kHz FT8 view. Thanks Mike VA3MW.
 - **Fixed: FT8 / FT4 transmit again.** Since beta 26 the check that stops voice PTT in DIGU / DIGL also stopped FT8 / FT4's own transmissions ("Transmit refused"). Sorry about that! Thanks Wayne WA2N.
+- **RADE:** the filter widths centre on RADE's 1500 Hz while it is on; Disconnect, an FTx band button and Decode end RADE first; a slice RADE muted when the app closed or the link dropped is unmuted on the next connection; RADE off always restores a voice mode and filter. Thanks Michel F5GNM.
 
 ### Still new from beta 27
 - **FreeDV tab:** RADE moved here, with FreeDV Reporter: report your station to qso.freedv.org while RADE is on (off by default) and see who is on it, on this band or all bands; tap one to tune there (RADE comes on for a RADE station). Asked by Scott W5SLS.

@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 #include <vector>
 
 Q_DECLARE_LOGGING_CATEGORY(lcMobile)
@@ -124,6 +125,10 @@ void MobileEngine::setDigiRunning(bool on)
         }
     }
     if (on) {
+        if (radeActive()) {
+            stopRadeBeforeLeaving("FT8 / FT4 decoding");
+            QTimer::singleShot(700, this, [this] { widenDigiFilter(); });
+        }
         // The TX slice; none yet: the active slice takes TX.
         if (!m_session.radioModel().txSlice() && m_slice) {
             m_slice->setTxSlice(true);
@@ -401,6 +406,32 @@ void MobileEngine::bindDigiSlice(SliceModel* slice)
     if (slice) {
         m_digiSliceConnections.append(connect(slice, &SliceModel::frequencyChanged, this, &MobileEngine::digiChanged));
         m_digiSliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::digiChanged));
+        // The slice out of DIGU / DIGL (a band the radio remembers in LSB, the
+        // mode picked by hand) leaves FT8 / FT4: decoding ends, so PTT and
+        // the display come back (a tester in LSB found no PTT).
+        m_digiSliceConnections.append(connect(slice, &SliceModel::modeChanged, this, [this, slice] {
+            const QString mode = slice->mode();
+            if (mode == QLatin1String("DIGU") || mode == QLatin1String("DIGL") || !digiRunning() || radeActive()) {
+                return;
+            }
+            // Once settled: RADE's end restores LSB just before an FTx band
+            // button sets DIGU, and the radio's echoes come in that order.
+            QTimer::singleShot(1200, this, [this, slice = QPointer<SliceModel>(slice), mode] {
+                if (slice && slice == m_digiSlice && digiRunning() && slice->mode() == mode) {
+                    qCInfo(lcMobile) << "digi: decoding off: slice" << slice->letter() << "left DIGU / DIGL for" << mode;
+                    setDigiRunning(false);
+                    // Out of the 4 kHz FT8 view (a voice filter sat mostly
+                    // off its edge), once a band change has settled.
+                    const double width = std::exchange(m_digiPrevPanBw, 0.0);
+                    QTimer::singleShot(500, this, [this, slice, width] {
+                        if (slice && m_pan && width > 0.0 && m_pan->bandwidthMhz() <= 0.0045) {
+                            m_session.radioModel().requestPanCenter(m_pan->panId(), slice->frequency(), width);
+                            qCInfo(lcMobile) << "digi: pan back to" << width * 1000.0 << "kHz";
+                        }
+                    });
+                }
+            });
+        }));
         m_digiSliceConnections.append(connect(slice, &QObject::destroyed, this, [this] {
             m_digiSliceConnections.clear();
             digiHalt();
@@ -670,6 +701,9 @@ void MobileEngine::digiTune(double mhz)
     if (!m_slice || mhz <= 0.0) {
         return;
     }
+    // FT8 / FT4 instead of RADE: RADE ends first (its mute and DIGU / DIGL
+    // out of the old band's memory, decoding free to start).
+    stopRadeBeforeLeaving("change to FT8 / FT4");
     // A band picked on the Digi tab works on the active slice, which takes
     // TX (FT8 follows the TX slice).
     if (digiRunning()) {
@@ -684,6 +718,8 @@ void MobileEngine::digiTune(double mhz)
     // pan is refused by the radio).
     m_slice->tuneAndRecenter(mhz);
     qCInfo(lcMobile) << "digi: tuned" << mhz << "MHz DIGU";
+    // Once the radio has the mode: a filter too narrow for FT8 opens.
+    QTimer::singleShot(700, this, [this] { widenDigiFilter(); });
     // A band picked on the Digi tab means FT8 / FT4: decoding starts.
     if (!digiRunning() && !radeActive()) {
         setDigiRunning(true);
@@ -694,6 +730,26 @@ void MobileEngine::digiTune(double mhz)
     }
     // Then the audio band fills the display, once the pan has followed.
     QTimer::singleShot(800, this, [this] { digiZoom(); });
+}
+
+// FT8 / FT4 decode across about 200-3000 Hz: a filter left narrower (RADE's
+// 750-2250 Hz, a voice width) opens to the full band.
+void MobileEngine::widenDigiFilter()
+{
+    SliceModel* s = digiSlice() ? digiSlice() : m_slice.data();
+    if (!s) {
+        return;
+    }
+    const int lo = s->filterLow();
+    const int hi = s->filterHigh();
+    if (s->mode() == QLatin1String("DIGU") && (lo > 300 || hi < 2700)) {
+        s->setFilterWidth(0, 3000);
+    } else if (s->mode() == QLatin1String("DIGL") && (hi < -300 || lo > -2700)) {
+        s->setFilterWidth(-3000, 0);
+    } else {
+        return;
+    }
+    qCInfo(lcMobile) << "digi: filter" << lo << hi << "too narrow for FT8 / FT4: opened to 3000 Hz";
 }
 
 void MobileEngine::digiFindFreeTx()
@@ -758,6 +814,9 @@ void MobileEngine::digiZoom()
     double bandwidth = 0.004;
     if (m_pan->bandwidthLimitsKnown() && m_pan->minBandwidthMhz() < m_pan->maxBandwidthMhz()) {
         bandwidth = std::clamp(bandwidth, m_pan->minBandwidthMhz(), m_pan->maxBandwidthMhz());
+    }
+    if (m_pan->bandwidthMhz() > 0.0045) {
+        m_digiPrevPanBw = m_pan->bandwidthMhz();
     }
     m_session.radioModel().requestPanCenter(m_pan->panId(), slice->frequency() + sign * 0.0015, bandwidth);
 }

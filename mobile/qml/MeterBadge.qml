@@ -10,8 +10,7 @@ Rectangle {
     property alias side: meterView.side
     property real dialHeight: 66
     property real maxWidth: 240
-    // Bars only (the two stacked ones while transmitting), at this height.
-    property bool forceBar: false
+    // A bar face's height (0: the normal).
     property real barHeight: 0
     // An analog face keeps its proportions (about 1.6 : 1, as on a tablet):
     // where the width runs out it gets lower, not squarer.
@@ -24,7 +23,7 @@ Rectangle {
     MeterView {
         id: meterView
         compact: true
-        analogAllowed: badge.faceHeight >= 46 && !badge.forceBar
+        analogAllowed: badge.faceHeight >= 46
         slimHeight: badge.barHeight
         faceHeight: badge.faceHeight
         anchors.fill: parent

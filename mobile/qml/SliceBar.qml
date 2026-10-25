@@ -35,11 +35,12 @@ RowLayout {
     readonly property real meterMaxWidth: Math.max(80, Math.min(240,
         ((bar.parent ? bar.parent.width : 0) - 2 * chipMinWidth - 4 - 4 * bar.spacing) / 2))
 
-    // While transmitting the left meter is two bars, its own choice over a
-    // second one, within the dial's height (three TX readings at once: by
-    // default SWR and Mic here, Power at the right).
-    readonly property bool txStacked: Engine.radioTransmitting || Engine.tuning || Engine.previewTx
+    // A meter in the two-bar style is two bars, one over the other, within
+    // the dial's height (three or four readings at once: e.g. SWR and Mic
+    // at the left, Power at the right, in transmit). One bar uses the
+    // dial's height up to what its scale needs.
     readonly property real stackBarHeight: Math.max(22, (bar.dialHeight - 4) / 2 - 8)
+    readonly property real singleBarHeight: Math.max(22, Math.min(bar.dialHeight - 8, 52))
     ColumnLayout {
         Layout.alignment: Qt.AlignTop
         spacing: 4
@@ -47,16 +48,14 @@ RowLayout {
             side: "left"
             dialHeight: bar.dialHeight
             maxWidth: bar.meterMaxWidth
-            forceBar: bar.txStacked
-            barHeight: bar.txStacked ? bar.stackBarHeight : 0
+            barHeight: Engine.meterStyleLeft === "two" ? bar.stackBarHeight : bar.singleBarHeight
         }
         MeterBadge {
             objectName: "meterLeft2"
             side: "left2"
-            visible: bar.txStacked
+            visible: Engine.meterStyleLeft === "two"
             dialHeight: bar.dialHeight
             maxWidth: bar.meterMaxWidth
-            forceBar: true
             barHeight: bar.stackBarHeight
         }
     }
@@ -142,11 +141,23 @@ RowLayout {
         }
     }
 
-    MeterBadge {
-        id: rightMeter
-        side: "right"
+    ColumnLayout {
         Layout.alignment: Qt.AlignTop
-        dialHeight: bar.dialHeight
-        maxWidth: bar.meterMaxWidth
+        spacing: 4
+        MeterBadge {
+            id: rightMeter
+            side: "right"
+            dialHeight: bar.dialHeight
+            maxWidth: bar.meterMaxWidth
+            barHeight: Engine.meterStyleRight === "two" ? bar.stackBarHeight : bar.singleBarHeight
+        }
+        MeterBadge {
+            objectName: "meterRight2"
+            side: "right2"
+            visible: Engine.meterStyleRight === "two"
+            dialHeight: bar.dialHeight
+            maxWidth: bar.meterMaxWidth
+            barHeight: bar.stackBarHeight
+        }
     }
 }

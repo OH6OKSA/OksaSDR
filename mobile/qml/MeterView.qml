@@ -7,29 +7,32 @@ import AetherMobile
 // TX meters read only while the radio is on the air; otherwise they show "–".
 Item {
     id: meter
-    // "left" or "right": which remembered selection this face uses.
+    // Which remembered selection this face uses: "left" or "right", or
+    // "left2" / "right2", the lower bar under it in the two-bar style.
     property string side: "left"
+    readonly property string baseSide: side.startsWith("right") ? "right" : "left"
+    readonly property bool lower: side === "left2" || side === "right2"
+    // "analog", "bar" or "two" (two bars), the meter's own style.
+    readonly property string style: baseSide === "left" ? Engine.meterStyleLeft : Engine.meterStyleRight
     property bool compact: false
     // Receive and transmit each have their own choice (e.g. S / SWR).
     readonly property bool txView: Engine.radioTransmitting || Engine.tuning || Engine.previewTx
-    // "left2": the second bar under the left one while transmitting.
-    readonly property string kind: side === "left2" ? Engine.meterLeft2Tx
-                                 : txView ? (side === "left" ? Engine.meterLeftTx : Engine.meterRightTx)
-                                          : (side === "left" ? Engine.meterLeft : Engine.meterRight)
-    readonly property string rxKind: side === "left2" ? "" : side === "left" ? Engine.meterLeft : Engine.meterRight
-    readonly property string txKind: side === "left2" ? Engine.meterLeft2Tx
-                                   : side === "left" ? Engine.meterLeftTx : Engine.meterRightTx
+    readonly property string rxKind: side === "left" ? Engine.meterLeft : side === "right" ? Engine.meterRight
+                                   : side === "left2" ? Engine.meterLeft2 : Engine.meterRight2
+    readonly property string txKind: side === "left" ? Engine.meterLeftTx : side === "right" ? Engine.meterRightTx
+                                   : side === "left2" ? Engine.meterLeft2Tx : Engine.meterRight2Tx
+    readonly property string kind: txView ? txKind : rxKind
 
     implicitWidth: compact ? 120 : 180
     // Where space is short (iPhone landscape) the host can ask for bars.
     property bool analogAllowed: true
-    readonly property bool analog: (side === "left" ? Engine.analogLeft : side === "right" ? Engine.analogRight : false)
-                                   && analogAllowed
-    // A slimmer bar where two share the left meter's height (0: the normal).
+    // Analog stays analog while transmitting too.
+    readonly property bool analog: style === "analog" && !lower && analogAllowed
+    // The bar's height from the host (0: the normal).
     property real slimHeight: 0
     // Height of an analog face; the host sizes it to the space available.
     property real faceHeight: compact ? 66 : 92
-    implicitHeight: analog ? faceHeight : slimHeight > 0 ? slimHeight : (compact ? 34 : 44)
+    implicitHeight: analog ? faceHeight : slimHeight > 0 ? slimHeight : (compact ? 40 : 50)
     // Width the analog face needs at its height (no empty sides).
     readonly property real analogFitWidth: gauge.fitWidth
 
@@ -125,45 +128,28 @@ Item {
         text: meter.reading.text
     }
 
-    ColumnLayout {
+    BarGauge {
+        id: bars
         anchors.fill: parent
         visible: !meter.analog
-        spacing: 2
-        RowLayout {
-            Layout.fillWidth: true
-            Label {
-                text: meter.reading.live ? meter.reading.text : meter.kind + "  –"
-                color: meter.reading.live && meter.reading.v >= meter.reading.red ? Theme.transmit : Theme.text
-                font.pixelSize: meter.compact ? 12 : 15
-                elide: Text.ElideRight
-                Layout.fillWidth: true
-            }
-            Caret { color: Theme.textDim; size: meter.compact ? 9 : 11; Layout.alignment: Qt.AlignVCenter }
-        }
-        Rectangle {
-            Layout.fillWidth: true
-            height: meter.compact ? 6 : 8
-            radius: 3
-            color: Theme.surfaceRaised
-            Rectangle {
-                height: parent.height
-                radius: 3
-                width: meter.reading.live
-                       ? parent.width * Math.max(0, Math.min(1, (meter.reading.v - meter.reading.min)
-                                                              / (meter.reading.max - meter.reading.min)))
-                       : 0
-                color: meter.reading.v >= meter.reading.red ? Theme.transmit : Theme.accent
-            }
-            // Peak hold tick.
-            Rectangle {
-                visible: meter.peakOn && meter.reading.live && meter.peak > meter.currentValue
-                width: 2
-                height: parent.height
-                color: "#f0b429"
-                x: Math.max(0, Math.min(parent.width - width, parent.width
-                    * (meter.peak - meter.reading.min) / (meter.reading.max - meter.reading.min) - width / 2))
-            }
-        }
+        kind: meter.kind
+        value: meter.reading.v
+        min: meter.reading.min
+        max: meter.reading.max
+        red: meter.reading.red
+        live: meter.reading.live
+        text: meter.reading.text
+        peak: meter.peak
+        showPeak: meter.peakOn
+        headerRightInset: barCaret.width + 4
+    }
+    Caret {
+        id: barCaret
+        visible: !meter.analog
+        anchors.right: parent.right
+        y: Math.max(0, (bars.headerHeight - height) / 2)
+        color: Theme.textDim
+        size: meter.compact ? 9 : 11
     }
 
     // Open the chooser right under this meter; the popup's margins keep it
@@ -188,20 +174,27 @@ Item {
         readonly property real cellWidth: Math.max(Theme.buttonWidth * 0.9, 64)
         contentItem: ColumnLayout {
             spacing: Theme.spacing / 2
-            Label { visible: meter.side !== "left2"; text: qsTr("Style"); color: Theme.textDim; font.pixelSize: Math.round(Theme.buttonFont * 0.85) }
+            Label { text: qsTr("Style"); color: Theme.textDim; font.pixelSize: Math.round(Theme.buttonFont * 0.85) }
+            // Two bars: one over the other, each with its own receive and
+            // transmit choice (the lower bar's from a tap on it).
             RowLayout {
-                visible: meter.side !== "left2"
                 spacing: 4
                 Repeater {
-                    model: [{ label: qsTr("Bar"), analog: false }, { label: qsTr("Analog"), analog: true }]
+                    model: [{ label: qsTr("Analog"), style: "analog" }, { label: qsTr("Bar"), style: "bar" },
+                            { label: qsTr("Two bars"), style: "two" }]
                     delegate: AppButton {
                         required property var modelData
                         text: modelData.label
-                        checked: (meter.side === "left" ? Engine.analogLeft : Engine.analogRight) === modelData.analog
+                        checked: meter.style === modelData.style
                         focusPolicy: Qt.NoFocus
-                        Layout.preferredWidth: chooser.cellWidth * 2 + 4
+                        Layout.preferredWidth: (chooser.cellWidth * 4 + 4) / 3
                         Layout.preferredHeight: Theme.touchTarget
-                        onClicked: Engine.setMeterAnalog(meter.side, modelData.analog)
+                        onClicked: {
+                            // From the lower bar, which goes away with it.
+                            if (meter.lower && modelData.style !== "two")
+                                chooser.close()
+                            Engine.setMeterStyle(meter.baseSide, modelData.style)
+                        }
                     }
                 }
             }
@@ -223,7 +216,7 @@ Item {
                 }
             }
             Label {
-                visible: (meter.side === "left" ? Engine.analogLeft : Engine.analogRight) && !meter.analogAllowed
+                visible: meter.style === "analog" && !meter.lower && !meter.analogAllowed
                 text: qsTr("Bars here: an analog face needs more room. It returns where there is space.")
                 color: Theme.textDim
                 font.pixelSize: Math.round(Theme.buttonFont * 0.8)
@@ -231,9 +224,10 @@ Item {
                 Layout.preferredWidth: chooser.cellWidth * 4 + 8
             }
             Repeater {
-                // The second bar shows in transmit only.
-                model: meter.side === "left2" ? [{ title: qsTr("Transmit (second bar)"), tx: true }]
-                                              : [{ title: qsTr("Receive"), tx: false }, { title: qsTr("Transmit"), tx: true }]
+                // With two bars each has its own choices.
+                model: meter.lower ? [{ title: qsTr("Lower bar: receive"), tx: false }, { title: qsTr("Lower bar: transmit"), tx: true }]
+                     : meter.style === "two" ? [{ title: qsTr("Upper bar: receive"), tx: false }, { title: qsTr("Upper bar: transmit"), tx: true }]
+                     : [{ title: qsTr("Receive"), tx: false }, { title: qsTr("Transmit"), tx: true }]
                 delegate: ColumnLayout {
                     id: section
                     required property var modelData

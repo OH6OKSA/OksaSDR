@@ -52,7 +52,10 @@ shot filter 1366x1024 "${src[@]}" --controls visible --popup filterChooser
 shot agc 1366x1024 "${src[@]}" --controls visible --popup agcChooser
 shot antenna 1366x1024 "${src[@]}" --controls visible --popup rxAntennaChooser
 shot mode 1366x1024 "${src[@]}" --controls visible --popup modeChooser
-shot meter 1366x1024 "${src[@]}" --controls visible --popup meterChooser
+# Two bars at the left, analog at the right, as while transmitting; the
+# meter chooser after it with both analog (styles are remembered).
+shot tx-meters 1366x1024 "${src[@]}" --controls visible --preview-tx --meter-style two,analog
+shot meter 1366x1024 "${src[@]}" --controls visible --meter-style analog,analog --popup meterChooser
 shot frequency 1366x1024 "${src[@]}" --controls visible --frequency-dialog
 shot noslice 1366x1024 "${src[@]}" --controls visible --preview-no-slice
 shot network 1366x1024 "${src[@]}" --controls visible --popup networkDialog
@@ -80,6 +83,7 @@ jpg agc 560x270+470+40
 jpg antenna 620x270+470+40
 jpg mode 520x230+320+40
 jpg meter 380x600+0+200
+jpg tx-meters 985x140+0+200
 jpg frequency 700x720+333+150 500x
 jpg noslice 985x600+0+340 800x
 jpg network 470x450+448+288

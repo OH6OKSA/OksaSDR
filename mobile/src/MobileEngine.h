@@ -364,9 +364,13 @@ class MobileEngine : public QObject {
     Q_PROPERTY(int spectrum3DFloorDepth READ spectrum3DFloorDepth WRITE setSpectrum3DFloorDepth NOTIFY displayLevelsChanged)
     Q_PROPERTY(int spectrum3DGain READ spectrum3DGain WRITE setSpectrum3DGain NOTIFY displayLevelsChanged)
     Q_PROPERTY(int spectrum3DSmoothing READ spectrum3DSmoothing WRITE setSpectrum3DSmoothing NOTIFY displayLevelsChanged)
-    // Meter faces: analog gauges (arc and needle) instead of bars.
-    // Analog or bar, each meter on its own; analogMeters sets both (true
-    // only when both are analog).
+    // Each meter's style, remembered: "analog" (arc and needle, also while
+    // transmitting), "bar" (one bar) or "two" (two bars, one over the
+    // other, each with its own receive and transmit choice: three or four
+    // readings at once). analogMeters sets both to analog or bar (true only
+    // when both are analog).
+    Q_PROPERTY(QString meterStyleLeft READ meterStyleLeft NOTIFY displayLevelsChanged)
+    Q_PROPERTY(QString meterStyleRight READ meterStyleRight NOTIFY displayLevelsChanged)
     Q_PROPERTY(bool analogMeters READ analogMeters WRITE setAnalogMeters NOTIFY displayLevelsChanged)
     Q_PROPERTY(bool analogLeft READ analogLeft NOTIFY displayLevelsChanged)
     // Both meters' peak hold, as the desktop S meter's decay choice:
@@ -413,9 +417,12 @@ class MobileEngine : public QObject {
     // Power), so receive keeps S while transmit shows SWR.
     Q_PROPERTY(QString meterLeftTx READ meterLeftTx NOTIFY meterSelectionChanged)
     Q_PROPERTY(QString meterRightTx READ meterRightTx NOTIFY meterSelectionChanged)
-    // While transmitting the left meter splits into two bars: its own choice
-    // over this second one, so Power, SWR and Mic all show (asked by VA3MW).
+    // The lower bars of the two-bar style, receive and transmit: with two
+    // bars at the left, Power, SWR and Mic all show (asked by VA3MW).
+    Q_PROPERTY(QString meterLeft2 READ meterLeft2 NOTIFY meterSelectionChanged)
     Q_PROPERTY(QString meterLeft2Tx READ meterLeft2Tx NOTIFY meterSelectionChanged)
+    Q_PROPERTY(QString meterRight2 READ meterRight2 NOTIFY meterSelectionChanged)
+    Q_PROPERTY(QString meterRight2Tx READ meterRight2Tx NOTIFY meterSelectionChanged)
     // Development (--preview-tx): the meters as while transmitting, nothing
     // keyed (screenshots of the transmit layout).
     Q_PROPERTY(bool previewTx MEMBER m_previewTx NOTIFY meterSelectionChanged)
@@ -884,12 +891,16 @@ public:
     void setSpectrum3DSmoothing(int v) { setDisplayInt("Mobile3DSmoothing", std::clamp(v, 0, 2)); }
     bool analogMeters() const { return analogLeft() && analogRight(); }
     void setAnalogMeters(bool on) { setMeterAnalog(QStringLiteral("left"), on); setMeterAnalog(QStringLiteral("right"), on); }
-    // Each side falls back to the old shared setting.
-    bool analogLeft() const { return displayInt("MobileMeterAnalogLeft", displayInt("MobileMeterAnalog", 0)) != 0; }
-    bool analogRight() const { return displayInt("MobileMeterAnalogRight", displayInt("MobileMeterAnalog", 0)) != 0; }
+    // side "left" / "right" (or their lower bars "left2" / "right2").
+    QString meterStyle(const QString& side) const;
+    Q_INVOKABLE void setMeterStyle(const QString& side, const QString& style);
+    QString meterStyleLeft() const { return meterStyle(QStringLiteral("left")); }
+    QString meterStyleRight() const { return meterStyle(QStringLiteral("right")); }
+    bool analogLeft() const { return meterStyleLeft() == QLatin1String("analog"); }
+    bool analogRight() const { return meterStyleRight() == QLatin1String("analog"); }
     Q_INVOKABLE void setMeterAnalog(const QString& side, bool on)
     {
-        setDisplayInt(side == QLatin1String("left") ? "MobileMeterAnalogLeft" : "MobileMeterAnalogRight", on ? 1 : 0);
+        setMeterStyle(side, on ? QStringLiteral("analog") : QStringLiteral("bar"));
     }
     int meterPeakHold() const { return std::clamp(displayInt("MobileMeterPeakHold", 2), 0, 3); }
     void setMeterPeakHold(int mode) { setDisplayInt("MobileMeterPeakHold", std::clamp(mode, 0, 3)); }
@@ -981,8 +992,13 @@ public:
     void setMeterRight(const QString& kind);
     QString meterLeftTx() const { return meterChoice("MobileMeterLeftTx", "SWR"); }
     QString meterRightTx() const { return meterChoice("MobileMeterRightTx", "Power"); }
+    // The lower bars: by default what the other faces do not show.
+    QString meterLeft2() const;
     QString meterLeft2Tx() const { return meterChoice("MobileMeterLeft2Tx", "Mic"); }
-    // side "left"/"right", tx: the transmit choice instead of the receive one.
+    QString meterRight2() const;
+    QString meterRight2Tx() const { return meterChoice("MobileMeterRight2Tx", "ALC"); }
+    // side "left"/"right" (the lower bars "left2"/"right2"), tx: the
+    // transmit choice instead of the receive one.
     Q_INVOKABLE void setMeter(const QString& side, bool tx, const QString& kind);
 
     // Tune carrier and the radio's ATU. Both transmit, so both go through
@@ -1369,10 +1385,12 @@ private:
     void activateRade();
     void deactivateRade();
     void stopRadeBeforeLeaving(const char* why);
+    void restoreAfterRade(SliceModel* s);
+    void healRadeMute();
+    void widenDigiFilter();
     QThread* m_radeThread{nullptr};
     RADEEngine* m_radeEngine{nullptr};
     int m_radeSliceId{-1};
-    bool m_radePrevMute{false};
     QString m_radePrevMode;
     int m_radePrevFilterLow{0};
     int m_radePrevFilterHigh{0};
@@ -1529,6 +1547,9 @@ private:
     // The radio's speech processor, switched off for FT8 / FT4 transmit
     // (it would distort the tones) and back on when decoding stops.
     bool m_digiProcRestore{false};
+    // The pan's width before FT8 / FT4 zoomed it to 4 kHz (0: not zoomed),
+    // back when the slice leaves DIGU / DIGL for voice.
+    double m_digiPrevPanBw{0.0};
     // The decodes' median DT, smoothed: far from 0 means this device's
     // clock is off (FT8 needs it within about a second).
     double m_digiClockOffset{0.0};
