@@ -395,7 +395,7 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: 8 s after start press these keys on the window, 0.4 s apart, e.g. Right,Right,Up "
                        "(names as in Qt::Key without Key_; Space+ only presses, Space- only releases; Unfocus takes "
                        "the keyboard focus off the page; Away / Back as the app leaving / coming back to the "
-                       "front, for the CW decoder's marks; Text=CQ_DE_K4ABC as decoded CW; Stall=MS blocks the GUI thread); logs the frequency and transmit after each."),
+                       "front, for the CW decoder's marks; Text=CQ_DE_K4ABC as decoded CW; Stall=MS blocks the GUI thread; Worked=CALL, Memory=N:TEXT, SendMemory=N for the CW memories); logs the frequency and transmit after each."),
         QStringLiteral("keys"));
     parser.addOption(keysOption);
     const QCommandLineOption shotPlanOption(QStringLiteral("shot-plan"),
@@ -557,6 +557,24 @@ int main(int argc, char* argv[])
                     }
                     return held;
                 };
+                if (token.startsWith(QLatin1String("Worked="))) {
+                    engine.setWorkedCall(token.mid(7));
+                    qInfo() << "keys: worked call" << engine.workedCall();
+                    return;
+                }
+                if (token.startsWith(QLatin1String("Memory="))) {
+                    // Memory=N:TEXT (N from 0, _ for spaces); logs what it held.
+                    const int colon = token.indexOf(QLatin1Char(':'));
+                    const int index = token.mid(7, colon - 7).toInt();
+                    qInfo() << "keys: memory" << index << "was" << engine.cwMemories().value(index);
+                    engine.setCwMemory(index, token.mid(colon + 1).replace(QLatin1Char('_'), QLatin1Char(' ')));
+                    return;
+                }
+                if (token.startsWith(QLatin1String("SendMemory="))) {
+                    engine.sendCwMemory(token.mid(11).toInt());
+                    qInfo() << "keys: sent memory" << token.mid(11).toInt() << "error" << engine.lastError();
+                    return;
+                }
                 if (token.startsWith(QLatin1String("Stall="))) {
                     // Blocks the GUI thread, for the stall watcher.
                     QThread::msleep(token.mid(6).toULong());

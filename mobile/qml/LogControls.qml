@@ -51,7 +51,9 @@ ColumnLayout {
             font.family: "monospace"
             font.capitalization: Font.AllUppercase
             inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+            Component.onCompleted: text = Engine.workedCall
             onTextChanged: {
+                Engine.workedCall = text
                 if (text.length > 0 && logTab.timeOn.length === 0)
                     logTab.timeOn = Qt.formatDateTime(new Date(new Date().getTime() + new Date().getTimezoneOffset() * 60000), "HHmm")
                 if (text.length === 0) logTab.timeOn = ""
@@ -96,6 +98,14 @@ ColumnLayout {
             }
         }
         Item { Layout.fillWidth: true }
+    }
+    // The CW tab's pick (and another copy of this tab) lands here too.
+    Connections {
+        target: Engine
+        function onWorkedCallChanged() {
+            if (callField.text.toUpperCase() !== Engine.workedCall)
+                callField.text = Engine.workedCall
+        }
     }
     Timer {
         id: lookupDelay

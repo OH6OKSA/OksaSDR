@@ -3685,6 +3685,11 @@ void MobileEngine::sendCwMemory(int index)
         return;
     }
     text.replace(QLatin1String("{CALL}"), call);
+    if (text.contains(QLatin1String("{HIS}")) && m_workedCall.isEmpty()) {
+        setLastError(tr("No call for {HIS}: pick a heard call on the CW tab or type it in the Log tab's Call field."));
+        return;
+    }
+    text.replace(QLatin1String("{HIS}"), m_workedCall);
     sendCwx(text);
 }
 

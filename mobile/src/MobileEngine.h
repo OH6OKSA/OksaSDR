@@ -385,6 +385,9 @@ class MobileEngine : public QObject {
     // one space; cwStripStart is its first character's place in the whole
     // stream, so lines break at the same characters as text is dropped.
     Q_PROPERTY(QString cwStrip READ cwStrip NOTIFY cwDecoderChanged)
+    // The station being worked: the Log tab's Call field, which the CW tab
+    // sets too (a heard call); CW memories send it for {HIS}.
+    Q_PROPERTY(QString workedCall READ workedCall WRITE setWorkedCall NOTIFY workedCallChanged)
     Q_PROPERTY(qint64 cwStripStart READ cwStripStart NOTIFY cwDecoderChanged)
     Q_PROPERTY(QString cwDecoderStats READ cwDecoderStats NOTIFY cwDecoderChanged)
     // Callsigns in the decoded CW (after DE, or heard twice), newest first,
@@ -920,6 +923,15 @@ public:
     void markCwDecodedAway(bool away);
     QString cwDecodedText() const { return m_cwDecodedText; }
     QString cwStrip() const { return m_cwStrip; }
+    QString workedCall() const { return m_workedCall; }
+    void setWorkedCall(const QString& call)
+    {
+        const QString c = call.trimmed().toUpper();
+        if (c != m_workedCall) {
+            m_workedCall = c;
+            emit workedCallChanged();
+        }
+    }
     qint64 cwStripStart() const { return m_cwStripStart; }
     void appendCwDecoded(const QString& text);
     QStringList cwCalls() const;
@@ -1155,6 +1167,7 @@ signals:
     void sMeterChanged();
     void panGeometryChanged();
     void transmittingChanged();
+    void workedCallChanged();
     void transmitStateChanged();
     void filterChanged();
     void lastAddressChanged();
@@ -1543,6 +1556,7 @@ private:
     // The mark added when the app went to the background with the decoder on.
     QString m_cwAwayMark;
     QString m_cwStrip;
+    QString m_workedCall;
     qint64 m_cwStripStart{0};
     // The strip's end before and after the away mark (stream places).
     qint64 m_cwStripBeforeAway{0};

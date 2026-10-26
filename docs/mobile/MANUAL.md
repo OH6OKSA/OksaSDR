@@ -528,9 +528,14 @@ Reporter).
 - **CW**
   - **Callsign** — the callsign `{CALL}` sends, the radio's own. Set or
     change it in [Radio Setup](#9-radio-setup) → Radio.
+  - **Call** — the station you are working: the calls the decoder heard
+    (after *DE*, or twice) as buttons; a tap picks one, ✕ clears it. It is
+    the same call as the Log tab's Call field (typed or picked there shows
+    here too), and memories send it for `{HIS}`.
   - **Memories M1–M12** — tap to send (through the radio's CWX keyer at the
     set speed), press and hold to edit, or F1–F12 on a keyboard. `{CALL}`
-    becomes your callsign. They are the app's own; the radio's stored CWX
+    becomes your callsign and `{HIS}` the call being worked (e.g.
+    `{HIS} 5NN TU`). They are the app's own; the radio's stored CWX
     macros are left alone. What they send, and CW text below, plays as
     sidetone on this device too.
   - **CW text** — type and *Send*; with **Live** on, each letter goes as you
@@ -549,7 +554,7 @@ Reporter).
     is: the top line first, then the bottom one, broken between words); what you send shows there too, marked `[TX]`. The
     decoder keeps listening with the app in the background: `[away 20:55]`
     and `[back 21:12]` mark what came while you were away. A callsign the decoder hears after *DE*, or twice, is
-    offered on the Log tab (*Heard in CW*).
+    offered above the memories (*Call*) and on the Log tab (*Heard in CW*).
 - **View** — **Band plan** (the strip at the foot of the spectrum: *Off*,
   *ARRL (US)*, *IARU Region 1 / 2 / 3*, *RAC (Canada)* or *SSA
   (Sweden)*), **Spots** (shown or hidden) and the **DX cluster**,
@@ -834,6 +839,7 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 | *Interlock / did not accept the transmit request* | The radio refused to transmit; its reason is shown | Check TX antenna, band, other clients |
 | A band button opens another band | The radio's band stack (in its global profile) holds that frequency | Tune the band where you want it and save the profile |
 | *The radio has no callsign for {CALL}* | No callsign in the radio | Setup → Radio → Callsign |
+| *No call for {HIS} …* | A memory with `{HIS}` and no call being worked | Pick a heard call on the CW tab or type it in the Log tab's Call field |
 | *The TX slice is in DIGU: PTT is for voice …* | PTT pressed with the transmit slice in DIGU / DIGL | Switch it to USB / LSB to talk; FT8 / FT4 run from the FTx tab, RADE from the FreeDV tab |
 | *Break-in is off …* | CW keyed with Break-in off: the key does not put the radio on air | Controls → CW → Break-in |
 | *This slice is muted on this band …* | The radio remembers the band's slice muted | Tap the speaker on the info panel |

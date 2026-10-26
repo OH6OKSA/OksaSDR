@@ -128,9 +128,51 @@ ColumnLayout {
         wrapMode: Text.WordWrap
     }
 
+    // The station being worked, for the memories' {HIS} and the Log tab's
+    // Call field (the same call): the calls the decoder heard (after DE, or
+    // twice) as buttons, one tap picks; the pick shows first, ✕ clears it.
+    RowLayout {
+        id: workedRow
+        Layout.fillWidth: true
+        visible: Engine.workedCall.length > 0 || (Engine.cwDecoderEnabled && heardRepeater.count > 0)
+        spacing: 4
+        Label {
+            text: qsTr("Call")
+            color: Theme.textDim
+            font.pixelSize: 12
+        }
+        AppButton {
+            visible: Engine.workedCall.length > 0
+            text: Engine.workedCall + "  ✕"
+            font.family: "monospace"
+            font.bold: true
+            checked: true
+            focusPolicy: Qt.NoFocus
+            Layout.preferredWidth: Math.max(implicitWidth + 12, 76)
+            onClicked: Engine.workedCall = ""
+        }
+        Repeater {
+            id: heardRepeater
+            model: Engine.cwDecoderEnabled
+                   ? Engine.cwCalls.filter(c => c !== Engine.workedCall).slice(0, workedRow.width >= 420 ? 3 : 2)
+                   : []
+            delegate: AppButton {
+                required property string modelData
+                objectName: "cwWorked_" + modelData
+                text: modelData
+                font.family: "monospace"
+                focusPolicy: Qt.NoFocus
+                Layout.preferredWidth: Math.max(implicitWidth + 12, 76)
+                onClicked: Engine.workedCall = modelData
+            }
+        }
+        Item { Layout.fillWidth: true }
+    }
+
     // Memories M1-M12: tap sends (CWX), press and hold edits; F1-F12 on a
-    // keyboard send them too. {CALL} = the radio's callsign. The straight key
-    // is the KEY button in PTT's place.
+    // keyboard send them too. {CALL} = the radio's callsign, {HIS} = the
+    // call being worked (above). The straight key is the KEY button in PTT's
+    // place.
     GridLayout {
         Layout.fillWidth: true
         visible: Engine.cwxAvailable
@@ -327,6 +369,7 @@ ColumnLayout {
     // Edits one memory.
     Dialog {
         id: memoryEditor
+        objectName: "memoryEditor"
         property int index: 0
         property alias text: memoryField.text
         parent: Overlay.overlay
@@ -339,9 +382,12 @@ ColumnLayout {
         contentItem: ColumnLayout {
             spacing: Theme.spacing
             Label {
-                text: qsTr("Memory M%1   ({CALL} = your callsign)").arg(memoryEditor.index + 1)
+                text: qsTr("Memory M%1   ({CALL} = your callsign, {HIS} = the call being worked)").arg(memoryEditor.index + 1)
                 color: Theme.textDim
                 font.pixelSize: 14
+                // From the popup's fixed width: wrapped, not past its edge.
+                Layout.preferredWidth: memoryEditor.width - 2 * memoryEditor.padding
+                wrapMode: Text.WordWrap
             }
             TextField {
                 id: memoryField
