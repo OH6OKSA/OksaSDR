@@ -203,22 +203,22 @@ Item {
                 pad: info.singleLine ? 6 : 12
                 onTapped: agcChooser.open()
             }
-            // Speaker: tap for the volume (AF gain) and mute. Its ramp fills
-            // with the volume, as a battery icon with its charge (testers
-            // missed that a new slice plays at 50), in the icon's own room.
+            // Speaker: tap for the volume (AF gain) and mute. The slice's
+            // volume beside it, as a phone shows its battery charge (testers
+            // missed that a new slice plays at 50); written on the icon, the
+            // number was cramped and 100 did not fit.
             Item {
                 visible: info.showControls
-                implicitWidth: info.singleLine ? speaker.width + 10 : Math.max(info.rowH * 0.9, speaker.width + 12)
+                implicitWidth: (info.singleLine ? 10 : 12) + speaker.width + 3 + volumeText.implicitWidth
                 implicitHeight: info.rowH
                 Canvas {
                     id: speaker
-                    anchors.centerIn: parent
-                    width: Math.round(info.fontPx * 1.6)
+                    x: (parent.width - width - 3 - volumeText.implicitWidth) / 2
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.round(info.fontPx * 1.4)
                     height: Math.round(info.fontPx * 1.2)
                     property bool muted: Engine.muted
-                    property real level: Math.max(0, Math.min(100, Engine.afGain)) / 100
                     onMutedChanged: requestPaint()
-                    onLevelChanged: requestPaint()
                     onPaint: {
                         const ctx = getContext("2d")
                         ctx.reset()
@@ -234,24 +234,20 @@ Item {
                             ctx.beginPath(); ctx.moveTo(w * 0.62, h * 0.3); ctx.lineTo(w * 0.95, h * 0.7); ctx.stroke()
                             ctx.beginPath(); ctx.moveTo(w * 0.95, h * 0.3); ctx.lineTo(w * 0.62, h * 0.7); ctx.stroke()
                         } else {
-                            // A volume ramp beside the cone, lit from the left
-                            // up to the level, dim beyond: a filled shape
-                            // reads at a phone's icon size, thin waves did not.
-                            const x0 = w * 0.56, x1 = w, yb = h * 0.9, yt = h * 0.1
-                            const ramp = () => {
-                                ctx.beginPath(); ctx.moveTo(x0, yb); ctx.lineTo(x1, yb); ctx.lineTo(x1, yt); ctx.closePath()
-                            }
-                            ctx.globalAlpha = 0.25
-                            ramp(); ctx.fill()
-                            ctx.globalAlpha = 1
-                            if (level > 0) {
-                                ctx.save()
-                                ctx.beginPath(); ctx.rect(x0, 0, (x1 - x0) * level, h); ctx.clip()
-                                ramp(); ctx.fill()
-                                ctx.restore()
-                            }
+                            ctx.beginPath(); ctx.arc(w * 0.5, h / 2, w * 0.25, -0.8, 0.8); ctx.stroke()
+                            ctx.beginPath(); ctx.arc(w * 0.5, h / 2, w * 0.45, -0.8, 0.8); ctx.stroke()
                         }
                     }
+                }
+                Label {
+                    id: volumeText
+                    anchors.left: speaker.right
+                    anchors.leftMargin: 3
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Math.round(Math.max(0, Math.min(100, Engine.afGain)))
+                    color: speaker.muted ? Theme.transmit : info.rxColor
+                    font.pixelSize: Math.round(info.fontPx * 0.8)
+                    font.bold: true
                 }
                 MouseArea { anchors.fill: parent; onClicked: volumePopup.open() }
             }

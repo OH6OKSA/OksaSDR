@@ -166,7 +166,7 @@ is a touch target with its choices behind it:
 | **ANT1** (red) | Transmit antenna | Choose the TX antenna |
 | **2.7K** | Receive filter width | Filters and DSP |
 | **AGC-M** | AGC mode | AGC mode, AGC threshold and RF gain |
-| Speaker | Audio on (blue) / muted (red); the ramp beside it fills with this slice's volume (full at 100; a new slice starts at 50) | Every slice's volume (AF gain), Mute and pan (left–right, read as C, L n or R n; it snaps to centre near the middle, and double-tap centres) |
+| Speaker | Audio on (blue) / muted (red), with this slice's volume beside it (0–100; a new slice starts at 50) | Every slice's volume (AF gain), Mute and pan (left–right, read as C, L n or R n; it snaps to centre near the middle, and double-tap centres) |
 | Lock | Tuning lock open / locked | Lock or unlock tuning (flashes when a tune is refused) |
 | **SPLIT** | Split on (amber) or off (grey); shown while the radio can transmit and has a slice free for it | Start or end [split](#6-split); hold to pick the offset |
 | **QSK** | In CW modes: break-in on (bright) or off | — |
