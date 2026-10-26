@@ -495,10 +495,11 @@ Rectangle {
     // Latest decoded CW along the top of the waterfall (just under the
     // trace), where no layout's bottom bar can cover it. Two lines that fill
     // as writing does: the top line first, then the bottom one; when that is
-    // full, it moves up and a new bottom line starts. Lines break at fixed
-    // places of the whole stream (Engine.cwStripStart), cut by hand to the
-    // monospace font's width (the decoder's line breaks stacked a column of
-    // text over the spectrum, eliding works on single lines only).
+    // full, it moves up and a new bottom line starts. Lines break between
+    // words (a word longer than the line is cut), as the text comes in, so
+    // a line once written stays as it is; the monospace font's width gives
+    // the line's length (the decoder's line breaks stacked a column of text
+    // over the spectrum, eliding works on single lines only).
     Rectangle {
         visible: Engine.cwDecoderEnabled && Engine.cwMode && Engine.cwDecodedText.length > 0
         anchors.left: parent.left
@@ -527,15 +528,51 @@ Rectangle {
             anchors.leftMargin: 8
             anchors.rightMargin: 8
             readonly property int columns: Math.max(8, Math.floor(width / Math.max(1, cwChar.advanceWidth)))
-            text: {
+            // The line above (full) and the line being written; seen is the
+            // stream place up to which the strip has been read.
+            property string upper: ""
+            property string current: ""
+            property real seen: 0
+            text: upper.length > 0 ? upper + "\n" + current : current
+            function feed(chars) {
+                for (const c of chars) {
+                    if (c === " " && current.length === 0)
+                        continue
+                    current += c
+                    if (current.length > columns) {
+                        const cut = current.lastIndexOf(" ")
+                        upper = cut > 0 ? current.slice(0, cut) : current.slice(0, columns)
+                        current = cut > 0 ? current.slice(cut + 1) : current.slice(columns)
+                    }
+                }
+            }
+            // From scratch: the tail of the strip, from a word's start.
+            function rewrap() {
+                upper = ""
+                current = ""
                 const strip = Engine.cwStrip
+                let tail = strip.slice(-3 * columns)
+                if (tail.length < strip.length && tail.indexOf(" ") >= 0)
+                    tail = tail.slice(tail.indexOf(" ") + 1)
+                feed(tail)
+                seen = Engine.cwStripStart + strip.length
+            }
+            function follow() {
                 const start = Engine.cwStripStart
-                const end = start + strip.length
-                if (strip.length === 0)
-                    return ""
-                const lastRow = Math.floor((end - 1) / columns)
-                const row = r => strip.slice(Math.max(0, r * columns - start), Math.max(0, (r + 1) * columns - start))
-                return lastRow === 0 ? row(0) : row(lastRow - 1) + "\n" + row(lastRow)
+                const end = start + Engine.cwStrip.length
+                // Cleared, or the away mark taken back: start over.
+                if (end < seen || seen < start || Engine.cwStrip.length === 0) {
+                    rewrap()
+                    return
+                }
+                feed(Engine.cwStrip.slice(seen - start))
+                seen = end
+            }
+            onColumnsChanged: rewrap()
+            Component.onCompleted: rewrap()
+            Connections {
+                target: Engine
+                function onCwDecoderChanged() { cwLine.follow() }
             }
             wrapMode: Text.NoWrap
             maximumLineCount: 2
