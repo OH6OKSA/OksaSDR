@@ -395,7 +395,7 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: 8 s after start press these keys on the window, 0.4 s apart, e.g. Right,Right,Up "
                        "(names as in Qt::Key without Key_; Space+ only presses, Space- only releases; Unfocus takes "
                        "the keyboard focus off the page; Away / Back as the app leaving / coming back to the "
-                       "front, for the CW decoder's marks; Text=CQ_DE_K4ABC as decoded CW; Stall=MS blocks the GUI thread; Worked=CALL, Memory=N:TEXT, SendMemory=N for the CW memories); logs the frequency and transmit after each."),
+                       "front, for the CW decoder's marks; Text=CQ_DE_K4ABC as decoded CW; Stall=MS blocks the GUI thread; Worked=CALL, Memory=N:TEXT, SendMemory=N for the CW memories; LogDry=CALL[:GRID] an FT8 QSO printed, not logged); logs the frequency and transmit after each."),
         QStringLiteral("keys"));
     parser.addOption(keysOption);
     const QCommandLineOption shotPlanOption(QStringLiteral("shot-plan"),
@@ -557,6 +557,18 @@ int main(int argc, char* argv[])
                     }
                     return held;
                 };
+                if (token.startsWith(QLatin1String("LogDry="))) {
+                    // An FT8 QSO with CALL[:GRID], printed instead of logged.
+                    const QStringList parts = token.mid(7).split(QLatin1Char(':'));
+                    engine.setQsoLogDryRun(true);
+                    QVariantMap fields{{QStringLiteral("call"), parts.value(0)}, {QStringLiteral("rstSent"), QStringLiteral("-05")},
+                                       {QStringLiteral("rstRcvd"), QStringLiteral("-10")}, {QStringLiteral("adifMode"), QStringLiteral("FT8")}};
+                    if (!parts.value(1).isEmpty()) {
+                        fields.insert(QStringLiteral("grid"), parts.value(1));
+                    }
+                    engine.logQso(fields);
+                    return;
+                }
                 if (token.startsWith(QLatin1String("Worked="))) {
                     engine.setWorkedCall(token.mid(7));
                     qInfo() << "keys: worked call" << engine.workedCall();

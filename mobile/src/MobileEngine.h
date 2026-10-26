@@ -936,6 +936,8 @@ public:
     void appendCwDecoded(const QString& text);
     QStringList cwCalls() const;
     // Development (--cw-text): text as if the CW decoder had received it.
+    // Development: QSOs printed to the app log, not written or sent.
+    void setQsoLogDryRun(bool on) { m_qsoLogDryRun = on; }
     void addCwDecodedForTest(const QString& text)
     {
         appendCwDecoded(text);
@@ -1557,6 +1559,14 @@ private:
     QString m_cwAwayMark;
     QString m_cwStrip;
     QString m_workedCall;
+    // QSOs waiting for their call's lookup (name, QTH), by call.
+    QHash<QString, QVariantMap> m_pendingQsos;
+    bool m_qsoLogDryRun{false};
+    QVariantMap callInfoMap(const CallsignInfo& info) const;
+    QVariantMap ctyFields(const QString& call) const;
+    void addLookupFields(QVariantMap& r, const QVariantMap& info) const;
+    void completePendingQso(const QString& call, const QVariantMap& info);
+    bool writeQso(const QVariantMap& r);
     qint64 m_cwStripStart{0};
     // The strip's end before and after the away mark (stream places).
     qint64 m_cwStripBeforeAway{0};

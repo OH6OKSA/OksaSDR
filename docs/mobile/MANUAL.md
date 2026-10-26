@@ -596,7 +596,10 @@ Reporter).
   (user and password at the bottom; *Save* signs in and says below whether
   it worked; their full records need QRZ.com's XML subscription) the name, QTH, grid, distance and bearing and whether the
   station uses LoTW, eQSL or paper cards; without one, the country,
-  continent and CQ zone from the callsign's prefix. It also says when the
+  continent and CQ zone from the callsign's prefix. The same goes into
+  every logged QSO, however the call got there: typed, a heard CW call, a
+  spot, or an FT8 / FT4 QSO the app logs by itself (it waits a few seconds
+  for QRZ.com, then logs it with what it has). It also says when the
   call was **worked before** and when it would be a **dupe** on this band
   and mode. The reports start at 59 (599 in CW and data) and follow the
   mode until you type one. Frequency, band, mode, power, the UTC time the

@@ -451,7 +451,15 @@ MobileEngine::MobileEngine(QObject* parent)
         }
         connect(&lookup, &CallsignLookupService::infoReady, this,
                 [this](const CallsignInfo& info, bool) { applyCallInfo(info); });
+        // A QSO still waiting for its lookup when the app closes is written
+        // as it is, not lost.
+        connect(qApp, &QCoreApplication::aboutToQuit, this, [this] {
+            for (const QString& call : m_pendingQsos.keys()) {
+                completePendingQso(call, {});
+            }
+        });
         connect(&lookup, &CallsignLookupService::lookupFailed, this, [this](const QString& call, const QString& message) {
+            completePendingQso(call, {});
             if (call.compare(m_lookupCall, Qt::CaseInsensitive) == 0) {
                 m_callLookup = {{QStringLiteral("call"), call}, {QStringLiteral("error"), message}};
                 emit callLookupChanged();
@@ -4003,9 +4011,17 @@ void MobileEngine::lookupCallsign(const QString& call)
 
 void MobileEngine::applyCallInfo(const CallsignInfo& info)
 {
+    const QVariantMap m = callInfoMap(info);
+    completePendingQso(info.call, m);
     if (info.call.compare(m_lookupCall, Qt::CaseInsensitive) != 0) {
         return;
     }
+    m_callLookup = m;
+    emit callLookupChanged();
+}
+
+QVariantMap MobileEngine::callInfoMap(const CallsignInfo& info) const
+{
     QVariantMap m{{QStringLiteral("call"), info.call}, {QStringLiteral("name"), info.prefixOnly ? QString() : info.displayName()},
                   {QStringLiteral("qth"), info.prefixOnly ? QString() : info.displayLocation()},
                   {QStringLiteral("country"), info.country}, {QStringLiteral("grid"), info.grid},
@@ -4016,17 +4032,22 @@ void MobileEngine::applyCallInfo(const CallsignInfo& info)
         m.insert(QStringLiteral("distanceKm"), qRound(info.distanceKm));
         m.insert(QStringLiteral("bearing"), qRound(info.bearingDeg));
     }
-    if (info.prefixOnly || info.country.isEmpty()) {
+    // Country, continent and CQ zone from cty.dat where the lookup left
+    // them out (QRZ.com gives the country only).
+    if (info.prefixOnly || info.country.isEmpty() || info.continent.isEmpty() || info.cqZone <= 0) {
         if (const DxccEntity* e = m_cty->entityForCallsign(info.call)) {
             if (info.country.isEmpty()) {
                 m.insert(QStringLiteral("country"), e->name);
             }
-            m.insert(QStringLiteral("continent"), e->continent);
-            m.insert(QStringLiteral("cqZone"), e->cqZone);
+            if (info.continent.isEmpty()) {
+                m.insert(QStringLiteral("continent"), e->continent);
+            }
+            if (info.cqZone <= 0) {
+                m.insert(QStringLiteral("cqZone"), e->cqZone);
+            }
         }
     }
-    m_callLookup = m;
-    emit callLookupChanged();
+    return m;
 }
 
 void MobileEngine::update3DGuard()
@@ -4238,23 +4259,94 @@ bool MobileEngine::logQso(const QVariantMap& fields)
     if (fields.contains(QStringLiteral("grid"))) {
         r.insert(QStringLiteral("GRIDSQUARE"), fields.value(QStringLiteral("grid")));
     }
-    if (m_callLookup.value(QStringLiteral("call")).toString() == call) {
-        r.insert(QStringLiteral("NAME"), m_callLookup.value(QStringLiteral("name")));
-        r.insert(QStringLiteral("QTH"), m_callLookup.value(QStringLiteral("qth")));
-        r.insert(QStringLiteral("GRIDSQUARE"), m_callLookup.value(QStringLiteral("grid")));
-        r.insert(QStringLiteral("COUNTRY"), m_callLookup.value(QStringLiteral("country")));
-        r.insert(QStringLiteral("CONT"), m_callLookup.value(QStringLiteral("continent")));
-        const int cqz = m_callLookup.value(QStringLiteral("cqZone")).toInt();
-        if (cqz > 0) {
-            r.insert(QStringLiteral("CQZ"), cqz);
+    // Name, QTH and the rest from the lookup, however the call got in (typed,
+    // a heard CW call, a spot, FT8 / FT4 by itself): the Log tab's card when
+    // it is for this call, the lookup cache, or a QRZ.com lookup the QSO
+    // waits for (at most 8 s); without an account, cty.dat's country.
+    if (m_callLookup.value(QStringLiteral("call")).toString().compare(call, Qt::CaseInsensitive) == 0
+        && !m_callLookup.contains(QStringLiteral("error"))) {
+        addLookupFields(r, m_callLookup);
+        return writeQso(r);
+    }
+    CallsignLookupService& lookup = CallsignLookupService::instance();
+    const CallsignInfo cached = lookup.cachedEntry(call);
+    if (cached.isValid() && !cached.prefixOnly) {
+        addLookupFields(r, callInfoMap(cached));
+        return writeQso(r);
+    }
+    if (QrzLookupSettings::username().isEmpty()) {
+        addLookupFields(r, ctyFields(call));
+        return writeQso(r);
+    }
+    m_pendingQsos.insert(call, r);
+    qCInfo(lcMobile) << "QSO with" << call << "waits for its lookup";
+    lookup.lookup(call);
+    QTimer::singleShot(8000, this, [this, call] { completePendingQso(call, {}); });
+    return true;
+}
+
+QVariantMap MobileEngine::ctyFields(const QString& call) const
+{
+    QVariantMap m;
+    if (const DxccEntity* e = m_cty->entityForCallsign(call)) {
+        m.insert(QStringLiteral("country"), e->name);
+        m.insert(QStringLiteral("continent"), e->continent);
+        m.insert(QStringLiteral("cqZone"), e->cqZone);
+    }
+    return m;
+}
+
+// The lookup's fields into an ADIF record; an empty one leaves what the
+// record has (an FT8 grid stays when QRZ.com has none).
+void MobileEngine::addLookupFields(QVariantMap& r, const QVariantMap& info) const
+{
+    const auto put = [&r, &info](const char* adif, const char* key) {
+        const QString v = info.value(QLatin1String(key)).toString();
+        if (!v.isEmpty()) {
+            r.insert(QLatin1String(adif), v);
         }
+    };
+    put("NAME", "name");
+    put("QTH", "qth");
+    put("GRIDSQUARE", "grid");
+    put("COUNTRY", "country");
+    put("CONT", "continent");
+    const int cqz = info.value(QStringLiteral("cqZone")).toInt();
+    if (cqz > 0) {
+        r.insert(QStringLiteral("CQZ"), cqz);
+    }
+}
+
+// A QSO that waited for its lookup: written with what came (or cty.dat's
+// country when the lookup failed or took too long).
+void MobileEngine::completePendingQso(const QString& call, const QVariantMap& info)
+{
+    const QString key = call.trimmed().toUpper();
+    if (!m_pendingQsos.contains(key)) {
+        return;
+    }
+    QVariantMap r = m_pendingQsos.take(key);
+    const bool found = !info.isEmpty() && !info.value(QStringLiteral("prefixOnly")).toBool();
+    addLookupFields(r, found ? info : ctyFields(key));
+    qCInfo(lcMobile) << "QSO with" << key << (found ? "completed from its lookup" : "written without a lookup");
+    writeQso(r);
+}
+
+bool MobileEngine::writeQso(const QVariantMap& r)
+{
+    if (m_qsoLogDryRun) {  // a test: the record in the log, not in the logbook
+        qCInfo(lcMobile).noquote() << "logged (dry run):" << QsoLog::adifRecord(r);
+        return true;
     }
     if (!m_qsoLog->append(r)) {
         setLastError(tr("The QSO could not be written to the log file."));
         return false;
     }
-    qCInfo(lcMobile).noquote() << QStringLiteral("logged %1 %2 %3 %4").arg(call, r.value(QStringLiteral("BAND")).toString(),
-                                                                         mode.first, timeOn);
+    qCInfo(lcMobile).noquote() << QStringLiteral("logged %1 %2 %3 %4 %5")
+                                      .arg(r.value(QStringLiteral("CALL")).toString(), r.value(QStringLiteral("BAND")).toString(),
+                                           r.value(QStringLiteral("MODE")).toString(), r.value(QStringLiteral("TIME_ON")).toString(),
+                                           r.value(QStringLiteral("NAME")).toString().isEmpty() ? QStringLiteral("(no name)")
+                                                                                                : QStringLiteral("with name and QTH"));
     onlineLogQueue(QsoLog::adifRecord(r));
     emit qsoLogChanged();
     return true;
