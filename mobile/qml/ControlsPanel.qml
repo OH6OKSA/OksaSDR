@@ -235,6 +235,31 @@ ColumnLayout {
                 font.pixelSize: 12
                 wrapMode: Text.Wrap
             }
+            // Where receive audio plays.
+            Label { text: qsTr("Audio output"); color: Theme.textDim; Layout.topMargin: Theme.spacing / 2 }
+            RowLayout {
+                Layout.fillWidth: true
+                Repeater {
+                    model: [{ key: "Auto", label: qsTr("Auto") }, { key: "Speaker", label: qsTr("Speaker") },
+                            { key: "Bluetooth", label: qsTr("Bluetooth media") }]
+                    delegate: AppButton {
+                        required property var modelData
+                        objectName: "audioOutput" + modelData.key
+                        text: modelData.label
+                        checked: Engine.audioOutput === modelData.key
+                        focusPolicy: Qt.NoFocus
+                        Layout.fillWidth: true
+                        onClicked: Engine.audioOutput = modelData.key
+                    }
+                }
+            }
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Auto: a Bluetooth headset and its microphone when connected, else the speaker. Speaker: the device, even with Bluetooth on. Bluetooth media: better sound over the music link; the device's microphone transmits.")
+                color: Theme.textDim
+                font.pixelSize: 12
+                wrapMode: Text.Wrap
+            }
             // AF gain and mute are on the info panel's speaker.
             EqControls {
                 Layout.topMargin: Theme.spacing

@@ -84,6 +84,11 @@ class MobileEngine : public QObject {
     // 60 ms prebuffer after a gap) or "Smooth" (400 ms, 150 ms): steadier
     // audio over a jittery link for a little more delay.
     Q_PROPERTY(QString audioBuffer READ audioBuffer WRITE setAudioBuffer NOTIFY audioCompressionChanged)
+    // Where receive audio plays: "Auto" (a Bluetooth headset when one is
+    // connected, else the speaker), "Speaker" (even with Bluetooth connected)
+    // or "Bluetooth" (a Bluetooth device's media link, the device's own
+    // microphone). Remembered; applies at once.
+    Q_PROPERTY(QString audioOutput READ audioOutput WRITE setAudioOutput NOTIFY audioCompressionChanged)
     // Network quality as the desktop rates it (Excellent ... Poor, "Off"
     // when not connected) and the round trip in ms, for the header.
     Q_PROPERTY(QString networkQuality READ networkQuality NOTIFY networkChanged)
@@ -497,6 +502,8 @@ public:
     QString audioBuffer() const;
     void setAudioBuffer(const QString& mode);
     void applyAudioBuffer();
+    QString audioOutput() const;
+    void setAudioOutput(const QString& mode);
     QString networkQuality() const;
     double cpuPercent() const { return m_cpuPercent; }
     double cpuPercentOfCore() const { return m_cpuPercentOfCore; }

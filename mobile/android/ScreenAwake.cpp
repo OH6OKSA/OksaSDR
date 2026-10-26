@@ -1,6 +1,7 @@
 #include "ScreenAwake.h"
 
 #include "AndroidJni.h"
+#include "AudioSession.h"
 
 #include <QDebug>
 #include <QLoggingCategory>
@@ -23,10 +24,49 @@ void androidStartup()
     }
 }
 
+namespace {
+
+QString s_outputMode = QStringLiteral("Auto");
+bool s_connected = false;
+
+// The audio route while a radio is connected: Auto takes a connected
+// Bluetooth headset's hands-free link (receive and microphone), Speaker the
+// built-in speaker even with Bluetooth connected, Bluetooth leaves Android's
+// own media route (a Bluetooth device's media link, the device microphone).
+// Whatever was set before is ended first.
+void applyAudioRoute()
+{
+    const QJniObject context = androidContext();
+    QJniObject::callStaticObjectMethod(kPlatformClass, "useHeadset", "(Landroid/content/Context;Z)Ljava/lang/String;",
+                                       context.object(), jboolean(false));
+    if (!s_connected) {
+        return;
+    }
+    QString route;
+    if (s_outputMode == QLatin1String("Speaker")) {
+        route = QJniObject::callStaticObjectMethod(kPlatformClass, "useSpeaker",
+            "(Landroid/content/Context;)Ljava/lang/String;", context.object()).toString();
+        if (route.isEmpty()) {
+            route = QStringLiteral("device speaker not available, Android's own route");
+        }
+    } else if (s_outputMode == QLatin1String("Bluetooth")) {
+        route = QStringLiteral("Android's media route (a Bluetooth device's media link when connected)");
+    } else {
+        route = QJniObject::callStaticObjectMethod(kPlatformClass, "useHeadset",
+            "(Landroid/content/Context;Z)Ljava/lang/String;", context.object(), jboolean(true)).toString();
+        if (route.isEmpty()) {
+            route = QStringLiteral("no Bluetooth headset (Android's own route)");
+        }
+    }
+    qCInfo(lcAndroid).noquote() << "audio output" << s_outputMode << "->" << route;
+}
+
+} // namespace
+
 // Android, while a radio is connected: the window's keep-screen-on flag; the
 // RadioService foreground service (notification, wake and Wi-Fi locks) so
-// receive keeps running while another app is in front; and voice through a
-// connected Bluetooth headset's hands-free link, as on iOS.
+// receive keeps running while another app is in front; and the audio route
+// the operator chose (applyAudioRoute).
 void setKeepScreenAwake(bool awake)
 {
     static constexpr jint kFlagKeepScreenOn = 0x00000080;  // WindowManager.LayoutParams
@@ -54,12 +94,18 @@ void setKeepScreenAwake(bool awake)
         QJniObject::callStaticMethod<void>("fi/oh6oksa/oksasdr/RadioService", "stop",
                                            "(Landroid/content/Context;)V", androidContext().object());
     }
-    const QString headset = QJniObject::callStaticObjectMethod(kPlatformClass, "useHeadset",
-        "(Landroid/content/Context;Z)Ljava/lang/String;", androidContext().object(),
-        jboolean(awake)).toString();
-    if (awake) {
-        qCInfo(lcAndroid).noquote() << "Bluetooth headset:"
-                                    << (headset.isEmpty() ? QStringLiteral("none (device speaker and mic)") : headset);
+    s_connected = awake;
+    applyAudioRoute();
+}
+
+void setAudioOutputMode(const QString& mode)
+{
+    if (mode == s_outputMode) {
+        return;
+    }
+    s_outputMode = mode;
+    if (s_connected) {
+        applyAudioRoute();
     }
 }
 

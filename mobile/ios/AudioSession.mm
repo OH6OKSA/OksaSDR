@@ -16,17 +16,29 @@ namespace {
 // when the app comes to the front.
 bool g_active = false;
 std::function<void()> g_reactivated;
+QString g_outputMode = QStringLiteral("Auto");
+
+// Auto: Bluetooth hands-free (with the headset's microphone) or media,
+// else the speaker. Speaker: no Bluetooth route at all. Bluetooth: the media
+// link only, so the device's microphone with better receive sound.
+AVAudioSessionCategoryOptions categoryOptions()
+{
+    AVAudioSessionCategoryOptions options = AVAudioSessionCategoryOptionDefaultToSpeaker;
+    if (g_outputMode == QLatin1String("Auto")) {
+        options |= AVAudioSessionCategoryOptionAllowBluetooth | AVAudioSessionCategoryOptionAllowBluetoothA2DP;
+    } else if (g_outputMode == QLatin1String("Bluetooth")) {
+        options |= AVAudioSessionCategoryOptionAllowBluetoothA2DP;
+    }
+    return options;
+}
 
 void activate()
 {
     AVAudioSession* session = [AVAudioSession sharedInstance];
     NSError* error = nil;
-    const AVAudioSessionCategoryOptions options = AVAudioSessionCategoryOptionDefaultToSpeaker
-        | AVAudioSessionCategoryOptionAllowBluetooth
-        | AVAudioSessionCategoryOptionAllowBluetoothA2DP;
     if (![session setCategory:AVAudioSessionCategoryPlayAndRecord
                          mode:AVAudioSessionModeDefault
-                      options:options
+                      options:categoryOptions()
                         error:&error]) {
         qCWarning(lcAudioSession) << "setCategory failed:"
                                   << QString::fromNSString(error.localizedDescription);
@@ -59,6 +71,21 @@ void activate()
 }
 
 } // namespace
+
+void setAudioOutputMode(const QString& mode)
+{
+    if (mode == g_outputMode) {
+        return;
+    }
+    g_outputMode = mode;
+    // A session already running takes the new options now (the route is
+    // rebuilt once, on the operator's choice).
+    if (g_active) {
+        activate();
+    }
+    qCInfo(lcAudioSession).noquote() << "audio output" << mode << "route"
+        << QString::fromNSString([AVAudioSession sharedInstance].currentRoute.outputs.firstObject.portType);
+}
 
 void setAudioSessionReactivatedHandler(std::function<void()> handler)
 {

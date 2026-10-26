@@ -162,6 +162,7 @@ public final class Platform {
             } else {
                 am.stopBluetoothSco();
                 am.setBluetoothScoOn(false);
+                am.setSpeakerphoneOn(false);
             }
             am.setMode(AudioManager.MODE_NORMAL);
             return "";
@@ -189,6 +190,28 @@ public final class Platform {
             }
         }
         return "";
+    }
+
+    // ---- Device speaker (the operator's choice): receive on the built-in
+    // speaker even with Bluetooth audio connected. Android sends media to a
+    // connected Bluetooth device on its own, so the speaker is taken as the
+    // communication device, as the headset is above. useHeadset(false) ends
+    // it. Returns what is in use.
+
+    public static String useSpeaker(Context context) {
+        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        am.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        if (Build.VERSION.SDK_INT >= 31) {
+            for (AudioDeviceInfo d : am.getAvailableCommunicationDevices()) {
+                if (d.getType() == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER && am.setCommunicationDevice(d)) {
+                    return "device speaker";
+                }
+            }
+            am.setMode(AudioManager.MODE_NORMAL);
+            return "";
+        }
+        am.setSpeakerphoneOn(true);
+        return "device speaker (speakerphone)";
     }
 
     // Some phones give a Bluetooth route their own model name as product

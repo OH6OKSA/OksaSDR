@@ -343,6 +343,7 @@ MobileEngine::MobileEngine(QObject* parent)
     // playback buffer ran dry in the last 10 s (with what the link did), so
     // stutter can be told apart: late packets or too short a buffer.
     QTimer::singleShot(0, this, [this] { applyAudioBuffer(); });
+    setAudioOutputMode(audioOutput());
     m_audioDiagTimer.setInterval(10000);
     connect(&m_audioDiagTimer, &QTimer::timeout, this, [this] {
         if (!m_connected || !m_audio) {
@@ -6515,6 +6516,24 @@ void MobileEngine::setAudioBuffer(const QString& mode)
     AppSettings::instance().setValue(QStringLiteral("MobileAudioBuffer"), mode);
     AppSettings::instance().save();
     applyAudioBuffer();
+    emit audioCompressionChanged();
+}
+
+QString MobileEngine::audioOutput() const
+{
+    const QString v = AppSettings::instance().value(QStringLiteral("MobileAudioOutput"), QStringLiteral("Auto")).toString();
+    return (v == QLatin1String("Speaker") || v == QLatin1String("Bluetooth")) ? v : QStringLiteral("Auto");
+}
+
+void MobileEngine::setAudioOutput(const QString& mode)
+{
+    if (mode == audioOutput()) {
+        return;
+    }
+    AppSettings::instance().setValue(QStringLiteral("MobileAudioOutput"), mode);
+    AppSettings::instance().save();
+    setAudioOutputMode(audioOutput());
+    qCInfo(lcMobile).noquote() << "audio output:" << audioOutput();
     emit audioCompressionChanged();
 }
 
