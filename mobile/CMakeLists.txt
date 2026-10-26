@@ -29,7 +29,9 @@ qt_add_executable(aether-mobile
     src/LogBuffer.cpp
     src/DevLink.cpp
     src/ShotPlan.cpp
+    src/StallWatch.cpp
     src/ShotPlan.h
+    src/StallWatch.h
     src/EchoAudit.cpp
     src/TrackpadScrollPhases.cpp
     src/QsoLog.cpp

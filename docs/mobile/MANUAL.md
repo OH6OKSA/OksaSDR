@@ -465,7 +465,11 @@ Reporter).
   wired or very steady link only; on ordinary Wi-Fi it stutters. If Normal
   stutters, try Smooth. Every 10 s with stutter the log gets an
   "audio underrun" line (count, buffer, longest packet gap, buffer mode),
-  and once a minute a "performance" line (CPU, frames drawn). Below, the radio's
+  and once a minute a "performance" line (CPU, frames drawn). When the app
+  stops answering for a second or more, a "GUI thread stalled" line says
+  for how long and what was going on (transmit, the last touch, the last
+  frame); if Android closed the app during it, the next start logs it as
+  "previous run". Below, the radio's
   8-band receive and transmit equalizer
   (volume is on the info panel's speaker).
 - **TX** — in FM modes first **FM repeater**: **Offset** *Simplex*, *−*

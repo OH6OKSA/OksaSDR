@@ -1,6 +1,7 @@
 #include "AudioSession.h"
 #include "DevLink.h"
 #include "ShotPlan.h"
+#include "StallWatch.h"
 #include "EchoAudit.h"
 #include "LogBuffer.h"
 #include "MobileEngine.h"
@@ -32,6 +33,9 @@
 #include <QQuickWindow>
 #include <QQuickItem>
 #include <QTimer>
+#include <QRawFont>
+#include <QGlyphRun>
+#include <QTextLayout>
 #include <QElapsedTimer>
 #include <QEventLoop>
 #include <QWheelEvent>
@@ -98,17 +102,33 @@ static void addAndroidSymbolFallbacks()
             }
         }
     }
+    // Checked as the text is laid out, with every fallback the system
+    // gives: a symbol is missing only when no font draws it (the registered
+    // fonts alone named ☰ ▾ ⌫ missing on phones that drew them).
     QString missing;
+    QStringList drawnBy;
     for (const QChar c : symbols) {
-        bool found = false;
-        for (const QString& family : families) {
-            found = found || QFontMetrics(QFont(family)).inFont(c);
+        QTextLayout layout(QString(c), QGuiApplication::font());
+        layout.beginLayout();
+        layout.createLine();
+        layout.endLayout();
+        bool drawn = false;
+        for (const QGlyphRun& run : layout.glyphRuns()) {
+            const QList<quint32> glyphs = run.glyphIndexes();
+            if (!glyphs.isEmpty() && !glyphs.contains(0u)) {
+                drawn = true;
+                const QString family = run.rawFont().familyName();
+                if (!drawnBy.contains(family)) {
+                    drawnBy << family;
+                }
+            }
         }
-        if (!found) {
+        if (!drawn) {
             missing += c;
         }
     }
     qCInfo(lcFonts).noquote() << "symbol fonts:" << families.join(QStringLiteral(", "))
+                      << "drawn by:" << drawnBy.join(QStringLiteral(", "))
                       << "missing:" << (missing.isEmpty() ? QStringLiteral("none") : missing);
 }
 #endif
@@ -375,7 +395,7 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: 8 s after start press these keys on the window, 0.4 s apart, e.g. Right,Right,Up "
                        "(names as in Qt::Key without Key_; Space+ only presses, Space- only releases; Unfocus takes "
                        "the keyboard focus off the page; Away / Back as the app leaving / coming back to the "
-                       "front, for the CW decoder's marks; Text=CQ_DE_K4ABC as decoded CW); logs the frequency and transmit after each."),
+                       "front, for the CW decoder's marks; Text=CQ_DE_K4ABC as decoded CW; Stall=MS blocks the GUI thread); logs the frequency and transmit after each."),
         QStringLiteral("keys"));
     parser.addOption(keysOption);
     const QCommandLineOption shotPlanOption(QStringLiteral("shot-plan"),
@@ -466,8 +486,20 @@ int main(int argc, char* argv[])
         if (auto* window = qobject_cast<QQuickWindow*>(qml.rootObjects().constFirst())) {
             QObject::connect(window, &QQuickWindow::frameSwapped, &engine,
                              [&engine] { engine.countFrame(); }, Qt::DirectConnection);
+            AetherSDR::mobile::StallWatch::watch(window);
         }
     }
+    // Stalls: frames are expected while connected with the app in front.
+    AetherSDR::mobile::StallWatch::start();
+    auto* stallContext = new QTimer(&app);
+    stallContext->setInterval(500);
+    QObject::connect(stallContext, &QTimer::timeout, &engine, [&engine] {
+        AetherSDR::mobile::StallWatch::setExpectFrames(engine.connectionState() == QLatin1String("connected")
+                                                       && qApp->applicationState() == Qt::ApplicationActive);
+    });
+    stallContext->start();
+    QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::transmittingChanged, &engine,
+                     [&engine] { AetherSDR::mobile::StallWatch::setTransmitting(engine.transmitting()); });
     if (parser.isSet(sizeOption) && !qml.rootObjects().isEmpty()) {
         const QStringList wh = parser.value(sizeOption).split(QLatin1Char('x'));
         if (auto* window = qobject_cast<QQuickWindow*>(qml.rootObjects().constFirst()); window && wh.size() == 2) {
@@ -525,6 +557,11 @@ int main(int argc, char* argv[])
                     }
                     return held;
                 };
+                if (token.startsWith(QLatin1String("Stall="))) {
+                    // Blocks the GUI thread, for the stall watcher.
+                    QThread::msleep(token.mid(6).toULong());
+                    return;
+                }
                 if (token.startsWith(QLatin1String("Text="))) {
                     engine.addCwDecodedForTest(token.mid(5).replace(QLatin1Char('_'), QLatin1Char(' ')));
                     return;
