@@ -9,10 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- The decoded CW strip over the waterfall shows two lines, newest at the bottom right; text heard in the background no longer spreads over the spectrum (thanks Wayne WA2N). Marks [away 20:55] and [back 21:12] show what came while the app was in the background.
-- Turning a phone keeps the display: no dark seconds, and the waterfall keeps its history (thanks Wayne WA2N).
+- The slice volume is shown beside the speaker icon on the info panel (e.g. 50). A new slice plays at 50; tap the speaker to set it (thanks Jae and Jeff for the low-audio reports).
+- A log line when the app stops answering for a second or more, kept even if the app is closed during it, so freezes can be found (thanks Kurt DL5EAG).
 
-RECENT (builds 113–116)
+RECENT (builds 113–117)
+- Turning a phone keeps the display and the waterfall's history; the decoded CW strip stays on two lines with [away] / [back] marks (thanks Wayne WA2N).
 - FTx: a CQ POTA filter in Show (thanks Ryland WW4GA), SIG POTA in the log; Log: Heard in CW offers the calls the CW decoder heard.
 - RADE receive fixed on DAX channels 2 and 3, and a quick PTT tap sends RADE's end of over; FreeDV station list by activity; New call colours and filter in FTx; big logbooks in little memory and big ADIF imports in seconds; a keyboard on the phone; two-tap SmartLink Sign out; sliders, keypads (1 2 3 on top), ⋯ menu and text fields the same on every device (thanks Richard EI9JE); meters Analog / Bar / Two bars (thanks Mike VA3MW); FT8 transmit fixed (thanks Wayne WA2N); RADE filter and mute fixes (thanks Michel F5GNM).
 RECENT (builds 94–112)
