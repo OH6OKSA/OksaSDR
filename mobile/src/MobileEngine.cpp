@@ -3492,10 +3492,7 @@ void MobileEngine::wireCw()
             return;
         }
         m_cwShown += int(text.size());
-        m_cwDecodedText += text;
-        if (m_cwDecodedText.size() > kCwDecodedMaxChars) {
-            m_cwDecodedText = m_cwDecodedText.right(kCwDecodedMaxChars);
-        }
+        appendCwDecoded(text);
         emit cwDecoderChanged();
     });
     connect(m_cwDecoder.get(), &CwRxModel::statsUpdated, this, [this](float pitch, float speed) {
@@ -3534,21 +3531,52 @@ void MobileEngine::markCwDecodedAway(bool away)
             return;
         }
         m_cwAwayMark = QStringLiteral("\n[away %1]\n").arg(now);
-        m_cwDecodedText += m_cwAwayMark;
+        m_cwStripBeforeAway = m_cwStripStart + m_cwStrip.size();
+        appendCwDecoded(m_cwAwayMark);
+        m_cwStripAfterAway = m_cwStripStart + m_cwStrip.size();
     } else if (!m_cwAwayMark.isEmpty()) {
         if (m_cwDecodedText.endsWith(m_cwAwayMark)) {
             m_cwDecodedText.chop(m_cwAwayMark.size());
+            // The strip takes the mark back too, when nothing came after it.
+            if (m_cwStripStart + m_cwStrip.size() == m_cwStripAfterAway && m_cwStripBeforeAway >= m_cwStripStart) {
+                m_cwStrip.truncate(int(m_cwStripBeforeAway - m_cwStripStart));
+            }
         } else {
-            m_cwDecodedText += QStringLiteral("\n[back %1]\n").arg(now);
+            appendCwDecoded(QStringLiteral("\n[back %1]\n").arg(now));
         }
         m_cwAwayMark.clear();
     } else {
         return;
     }
+    emit cwDecoderChanged();
+}
+
+// Decoded (and sent) CW: the text as received, and the strip over the
+// waterfall: whitespace runs as one space, each character at a fixed place
+// in the whole stream (m_cwStripStart counts the ones dropped from its
+// front), so the strip's lines fill left to right, top then bottom, as
+// writing does, and do not shift when old text is dropped.
+void MobileEngine::appendCwDecoded(const QString& text)
+{
+    m_cwDecodedText += text;
     if (m_cwDecodedText.size() > kCwDecodedMaxChars) {
         m_cwDecodedText = m_cwDecodedText.right(kCwDecodedMaxChars);
     }
-    emit cwDecoderChanged();
+    for (const QChar c : text) {
+        if (c.isSpace()) {
+            if (!m_cwStrip.isEmpty() && !m_cwStrip.endsWith(QLatin1Char(' '))) {
+                m_cwStrip += QLatin1Char(' ');
+            }
+        } else {
+            m_cwStrip += c;
+        }
+    }
+    constexpr int kStripMaxChars = 600;
+    if (m_cwStrip.size() > kStripMaxChars) {
+        const int drop = int(m_cwStrip.size()) - kStripMaxChars;
+        m_cwStrip.remove(0, drop);
+        m_cwStripStart += drop;
+    }
 }
 
 void MobileEngine::updateCwDecoder()
@@ -4948,6 +4976,8 @@ QStringList MobileEngine::cwCalls() const
 void MobileEngine::clearCwDecoded()
 {
     m_cwDecodedText.clear();
+    m_cwStrip.clear();
+    m_cwStripStart = 0;
     emit cwDecoderChanged();
 }
 
@@ -5197,10 +5227,7 @@ void MobileEngine::sendCwx(const QString& text)
     m_cwxLiveInDecoder = false;
     // What we send shows in the decoder's text too, marked, so the exchange
     // reads both ways (the receiver hears nothing of it while transmitting).
-    m_cwDecodedText += QStringLiteral("\n[TX] %1\n").arg(trimmed.toUpper());
-    if (m_cwDecodedText.size() > kCwDecodedMaxChars) {
-        m_cwDecodedText = m_cwDecodedText.right(kCwDecodedMaxChars);
-    }
+    appendCwDecoded(QStringLiteral("\n[TX] %1\n").arg(trimmed.toUpper()));
     emit cwDecoderChanged();
 }
 
@@ -5224,13 +5251,10 @@ void MobileEngine::sendCwxChar(const QString& ch)
     }
     // Typed text joins the decoder's text under one [TX] mark per burst.
     if (!m_cwxLiveInDecoder) {
-        m_cwDecodedText += QStringLiteral("\n[TX] ");
+        appendCwDecoded(QStringLiteral("\n[TX] "));
         m_cwxLiveInDecoder = true;
     }
-    m_cwDecodedText += ch.toUpper();
-    if (m_cwDecodedText.size() > kCwDecodedMaxChars) {
-        m_cwDecodedText = m_cwDecodedText.right(kCwDecodedMaxChars);
-    }
+    appendCwDecoded(ch.toUpper());
     emit cwDecoderChanged();
 }
 

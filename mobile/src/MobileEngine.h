@@ -381,6 +381,11 @@ class MobileEngine : public QObject {
     // (as AetherSDR's applet buttons), remembered.
     Q_PROPERTY(QStringList pinnedSections READ pinnedSections WRITE setPinnedSections NOTIFY displayLevelsChanged)
     Q_PROPERTY(QString cwDecodedText READ cwDecodedText NOTIFY cwDecoderChanged)
+    // The decoded CW for the strip over the waterfall: whitespace runs as
+    // one space; cwStripStart is its first character's place in the whole
+    // stream, so lines break at the same characters as text is dropped.
+    Q_PROPERTY(QString cwStrip READ cwStrip NOTIFY cwDecoderChanged)
+    Q_PROPERTY(qint64 cwStripStart READ cwStripStart NOTIFY cwDecoderChanged)
     Q_PROPERTY(QString cwDecoderStats READ cwDecoderStats NOTIFY cwDecoderChanged)
     // Callsigns in the decoded CW (after DE, or heard twice), newest first,
     // at most three: the Log tab offers them for its Call field.
@@ -914,11 +919,14 @@ public:
     void setCwDecoderEnabled(bool on);
     void markCwDecodedAway(bool away);
     QString cwDecodedText() const { return m_cwDecodedText; }
+    QString cwStrip() const { return m_cwStrip; }
+    qint64 cwStripStart() const { return m_cwStripStart; }
+    void appendCwDecoded(const QString& text);
     QStringList cwCalls() const;
     // Development (--cw-text): text as if the CW decoder had received it.
     void addCwDecodedForTest(const QString& text)
     {
-        m_cwDecodedText += text;
+        appendCwDecoded(text);
         emit cwDecoderChanged();
     }
     int cwDecoderSensitivity() const;
@@ -1534,6 +1542,11 @@ private:
     QString m_cwDecodedText;
     // The mark added when the app went to the background with the decoder on.
     QString m_cwAwayMark;
+    QString m_cwStrip;
+    qint64 m_cwStripStart{0};
+    // The strip's end before and after the away mark (stream places).
+    qint64 m_cwStripBeforeAway{0};
+    qint64 m_cwStripAfterAway{0};
     QString m_cwDecoderStats;
     double m_atuTunedFreqMhz{-1.0};
     double m_compressionDb{0.0};

@@ -493,11 +493,12 @@ Rectangle {
     }
 
     // Latest decoded CW along the top of the waterfall (just under the
-    // trace), where no layout's bottom bar can cover it. Two lines, newest
-    // text at the bottom right; the decoder's line breaks (long pauses, e.g.
-    // with the app in the background) are spaces here, cut by hand into
-    // two full lines of the monospace font (they stacked a column of text
-    // over the spectrum, eliding works on single lines only).
+    // trace), where no layout's bottom bar can cover it. Two lines that fill
+    // as writing does: the top line first, then the bottom one; when that is
+    // full, it moves up and a new bottom line starts. Lines break at fixed
+    // places of the whole stream (Engine.cwStripStart), cut by hand to the
+    // monospace font's width (the decoder's line breaks stacked a column of
+    // text over the spectrum, eliding works on single lines only).
     Rectangle {
         visible: Engine.cwDecoderEnabled && Engine.cwMode && Engine.cwDecodedText.length > 0
         anchors.left: parent.left
@@ -521,15 +522,20 @@ Rectangle {
             id: cwLine
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 4
+            anchors.top: parent.top
+            anchors.topMargin: 4
             anchors.leftMargin: 8
             anchors.rightMargin: 8
             readonly property int columns: Math.max(8, Math.floor(width / Math.max(1, cwChar.advanceWidth)))
             text: {
-                const flat = Engine.cwDecodedText.replace(/\s+/g, " ").trim()
-                const tail = flat.slice(-2 * columns)
-                return tail.length > columns ? tail.slice(0, tail.length - columns) + "\n" + tail.slice(-columns) : tail
+                const strip = Engine.cwStrip
+                const start = Engine.cwStripStart
+                const end = start + strip.length
+                if (strip.length === 0)
+                    return ""
+                const lastRow = Math.floor((end - 1) / columns)
+                const row = r => strip.slice(Math.max(0, r * columns - start), Math.max(0, (r + 1) * columns - start))
+                return lastRow === 0 ? row(0) : row(lastRow - 1) + "\n" + row(lastRow)
             }
             wrapMode: Text.NoWrap
             maximumLineCount: 2
@@ -537,7 +543,7 @@ Rectangle {
             color: "white"
             font.family: "monospace"
             font.pixelSize: 15
-            verticalAlignment: Text.AlignBottom
+            verticalAlignment: Text.AlignTop
         }
     }
 
