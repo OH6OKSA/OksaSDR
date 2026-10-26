@@ -912,6 +912,7 @@ public:
     QStringList pinnedSections() const;
     void setPinnedSections(const QStringList& sections);
     void setCwDecoderEnabled(bool on);
+    void markCwDecodedAway(bool away);
     QString cwDecodedText() const { return m_cwDecodedText; }
     QStringList cwCalls() const;
     // Development (--cw-text): text as if the CW decoder had received it.
@@ -1531,6 +1532,8 @@ private:
     std::chrono::steady_clock::time_point m_cwxSidetoneDownAt;  // keyer thread only
     std::unique_ptr<DecoderAudioModel> m_cwAudio;
     QString m_cwDecodedText;
+    // The mark added when the app went to the background with the decoder on.
+    QString m_cwAwayMark;
     QString m_cwDecoderStats;
     double m_atuTunedFreqMhz{-1.0};
     double m_compressionDb{0.0};

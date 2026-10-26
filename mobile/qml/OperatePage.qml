@@ -24,7 +24,7 @@ Page {
     // The engine keys Space PTT from GameController (iOS) only while the
     // page has the keyboard.
     Binding { target: Engine; property: "keyboardOnPage"; value: page.activeFocus }
-    onActiveFocusChanged: operateKeys.focusChanged(activeFocus)
+    onActiveFocusChanged: operateKeys.pageFocusChanged(activeFocus)
     background: Rectangle { color: Theme.background }
 
     // Layout adapts from the 12.9" iPad Pro (1366x1024 pt) down to 1024x768

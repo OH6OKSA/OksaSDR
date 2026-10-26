@@ -76,7 +76,7 @@ Item {
         return false
     }
 
-    function focusChanged(active) {
+    function pageFocusChanged(active) {
         if (!active) paddles.releaseAll()
         if (paddles.active) Engine.logKeyboardPaddles("page keyboard focus " + (active ? "in" : "out"))
         if (!active && keys.spacePtt) {

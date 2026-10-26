@@ -22,7 +22,7 @@ Page {
     Keys.onPressed: (event) => { if (operateKeys.press(event)) event.accepted = true }
     Keys.onReleased: (event) => { if (operateKeys.release(event)) event.accepted = true }
     Binding { target: Engine; property: "keyboardOnPage"; value: page.activeFocus }
-    onActiveFocusChanged: operateKeys.focusChanged(activeFocus)
+    onActiveFocusChanged: operateKeys.pageFocusChanged(activeFocus)
 
     readonly property bool landscape: width > height
     // PTT height, shared with the drawer's copy of the button. PTT runs

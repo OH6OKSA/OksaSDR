@@ -29,6 +29,7 @@ class MobileEngine;
 //   preview-tx on|off       the meters as while transmitting
 //   meter-style L,R         analog, bar or two, each side (remembered)
 //   tap FX,FY               tap at this fraction of the window
+//   size WxH                resize the window (a phone turning: WxH swapped)
 //
 // The run quits after the last command (exit status 2 if a shot failed).
 class ShotPlan : public QObject {

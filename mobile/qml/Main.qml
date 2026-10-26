@@ -38,13 +38,21 @@ ApplicationWindow {
         value: pages.height - pages.SafeArea.margins.top - pages.SafeArea.margins.bottom
     }
     readonly property bool phoneSized: Theme.phoneLayout
+    // The page's layout, settled: the two bindings above update one after
+    // the other, so a phone turning passed through a square window that
+    // read as a tablet, and the page, its 3D view and waterfall were built
+    // twice (the display went dark for seconds on rotation, WA2N).
+    // The start value only: the assignment at completion ends the binding.
+    property bool pagePhone: phoneSized
+    Component.onCompleted: pagePhone = phoneSized
+    onPhoneSizedChanged: Qt.callLater(() => { window.pagePhone = window.phoneSized })
 
     // The page follows the connection: radio list until connected.
     Loader {
         id: pages
         anchors.fill: parent
         sourceComponent: Engine.connectionState !== "connected" ? connectPage
-                       : window.phoneSized ? phoneOperatePage : operatePage
+                       : window.pagePhone ? phoneOperatePage : operatePage
     }
 
     // A SmartLink radio presented a different TLS certificate than the one

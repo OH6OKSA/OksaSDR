@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QElapsedTimer>
 #include <QImage>
 #include <QPointer>
 #include <QQuickPaintedItem>
@@ -77,6 +78,9 @@ private:
     QPointer<MobileEngine> m_engine;
     QVector<float> m_spectrum;
     QImage m_waterfall;
+    // The waterfall as it was when a burst of resizes (a rotation) began.
+    QImage m_waterfallBeforeResize;
+    QElapsedTimer m_resizeBurst;
     std::array<QRgb, 256> m_palette{};
     NoiseFloorTracker m_noise;
     double m_frameCenterMhz{0.0};

@@ -98,12 +98,29 @@ void SpectrumItem::reportPixels()
     if (w <= 0 || specH <= 0 || wfH <= 0) {
         return;
     }
-    if (m_waterfall.width() != w || m_waterfall.height() != wfH) {
-        QImage resized(w, wfH, QImage::Format_RGB32);
+    // The waterfall keeps its rows at one pixel each and never loses height:
+    // a lower window shows its newest rows, a taller one the older rows
+    // again. A phone turning (WA2N: the display went dark for seconds)
+    // keeps the history; only the width is scaled, from the picture as it
+    // was when the burst of sizes of one turn began.
+    if (m_waterfall.width() != w || m_waterfall.height() < wfH) {
+        if (!m_resizeBurst.isValid() || m_resizeBurst.elapsed() > 1000) {
+            m_waterfallBeforeResize = m_waterfall;
+        }
+        m_resizeBurst.start();
+        const QImage& from = m_waterfallBeforeResize;
+        const int rows = std::max(wfH, from.isNull() ? 0 : from.height());
+        QImage resized(w, rows, QImage::Format_RGB32);
         resized.fill(Qt::black);
+        if (from.isNull()) {
+            m_viewLowMhz = 0.0;
+            m_viewHighMhz = 0.0;
+        } else {
+            QPainter painter(&resized);
+            painter.setRenderHint(QPainter::SmoothPixmapTransform);
+            painter.drawImage(QRectF(0, 0, w, from.height()), from);
+        }
         m_waterfall = resized;
-        m_viewLowMhz = 0.0;
-        m_viewHighMhz = 0.0;
     }
     if (m_engine) {
         m_engine->setPanPixels(w, specH);
@@ -450,7 +467,8 @@ void SpectrumItem::paint(QPainter* painter)
     const qreal specH = height() * m_spectrumFraction;
 
     if (!m_waterfall.isNull()) {
-        painter->drawImage(QPointF(0, specH), m_waterfall);
+        const int rows = std::min(m_waterfall.height(), static_cast<int>(height()) - static_cast<int>(specH));
+        painter->drawImage(QPointF(0, specH), m_waterfall, QRectF(0, 0, m_waterfall.width(), rows));
     }
     drawFrequencyAxis(painter, w, specH);
     drawBandPlan(painter, w, specH);

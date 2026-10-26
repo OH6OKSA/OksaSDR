@@ -20,6 +20,7 @@
 #endif
 #include <QSet>
 #include <QRegularExpression>
+#include <QTime>
 #include <QUrl>
 #include "Ft8Engine.h"
 #include "ShareText.h"
@@ -562,6 +563,7 @@ MobileEngine::MobileEngine(QObject* parent)
         if (onScreen != m_displayActive) {
             m_displayActive = onScreen;
             qCInfo(lcMobile) << "display" << (onScreen ? "resumed" : "paused (app in the background)");
+            markCwDecodedAway(!onScreen);
         }
     });
     connect(&rm, &RadioModel::sliceAdded, this, &MobileEngine::onSliceAdded);
@@ -3518,6 +3520,35 @@ void MobileEngine::setCwDecoderSensitivity(int sens)
         AppSettings::instance().save();
         emit cwDecoderChanged();
     }
+}
+
+// The decoder keeps listening with the app in the background (a tester left
+// it on CW decode): marks in its text show what came while away. Back with
+// nothing new, the away mark goes again.
+void MobileEngine::markCwDecodedAway(bool away)
+{
+    const QString now = QTime::currentTime().toString(QStringLiteral("HH:mm"));
+    if (away) {
+        if (!m_cwDecoder || !m_cwDecoder->isRunning()) {
+            m_cwAwayMark.clear();
+            return;
+        }
+        m_cwAwayMark = QStringLiteral("\n[away %1]\n").arg(now);
+        m_cwDecodedText += m_cwAwayMark;
+    } else if (!m_cwAwayMark.isEmpty()) {
+        if (m_cwDecodedText.endsWith(m_cwAwayMark)) {
+            m_cwDecodedText.chop(m_cwAwayMark.size());
+        } else {
+            m_cwDecodedText += QStringLiteral("\n[back %1]\n").arg(now);
+        }
+        m_cwAwayMark.clear();
+    } else {
+        return;
+    }
+    if (m_cwDecodedText.size() > kCwDecodedMaxChars) {
+        m_cwDecodedText = m_cwDecodedText.right(kCwDecodedMaxChars);
+    }
+    emit cwDecoderChanged();
 }
 
 void MobileEngine::updateCwDecoder()

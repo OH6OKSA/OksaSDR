@@ -373,12 +373,14 @@ int main(int argc, char* argv[])
     parser.addOption(meterStyleOption);
     const QCommandLineOption keysOption(QStringLiteral("keys"),
         QStringLiteral("Development: 8 s after start press these keys on the window, 0.4 s apart, e.g. Right,Right,Up "
-                       "(names as in Qt::Key without Key_); logs the frequency after each."),
+                       "(names as in Qt::Key without Key_; Space+ only presses, Space- only releases; Unfocus takes "
+                       "the keyboard focus off the page; Away / Back as the app leaving / coming back to the "
+                       "front, for the CW decoder's marks; Text=CQ_DE_K4ABC as decoded CW); logs the frequency and transmit after each."),
         QStringLiteral("keys"));
     parser.addOption(keysOption);
     const QCommandLineOption shotPlanOption(QStringLiteral("shot-plan"),
         QStringLiteral("Development: run this screenshot plan (ShotPlan.h: wait, shot, popup, close, drawer, scroll, pin, "
-                       "controls, frequency-dialog, no-slice, preview-tx, meter-style, tap), saving into --shot-dir, then quit."),
+                       "controls, frequency-dialog, no-slice, preview-tx, meter-style, tap, size), saving into --shot-dir, then quit."),
         QStringLiteral("file"));
     parser.addOption(shotPlanOption);
     const QCommandLineOption shotDirOption(QStringLiteral("shot-dir"),
@@ -510,7 +512,42 @@ int main(int argc, char* argv[])
     if (parser.isSet(keysOption)) {
         const QStringList names = parser.value(keysOption).split(QLatin1Char(','), Qt::SkipEmptyParts);
         for (int i = 0; i < names.size(); ++i) {
-            QTimer::singleShot(8000 + i * 400, &app, [&qml, &engine, name = names.at(i).trimmed()] {
+            QTimer::singleShot(8000 + i * 400, &app, [&qml, &engine, token = names.at(i).trimmed()] {
+                // The page keyboard's Space PTT, as it believes it held.
+                const auto spacePtt = [&qml] {
+                    QVariantList held;
+                    for (QObject* root : qml.rootObjects()) {
+                        for (QObject* child : root->findChildren<QObject*>()) {
+                            if (const QVariant v = child->property("spacePtt"); v.isValid()) {
+                                held << v;
+                            }
+                        }
+                    }
+                    return held;
+                };
+                if (token.startsWith(QLatin1String("Text="))) {
+                    engine.addCwDecodedForTest(token.mid(5).replace(QLatin1Char('_'), QLatin1Char(' ')));
+                    return;
+                }
+                if (token == QLatin1String("Away") || token == QLatin1String("Back")) {
+                    engine.markCwDecodedAway(token == QLatin1String("Away"));
+                    qInfo().noquote() << "keys:" << token << "CW text:"
+                                      << engine.cwDecodedText().right(80).replace(QLatin1Char('\n'), QLatin1String(" / "));
+                    return;
+                }
+                if (token == QLatin1String("Unfocus")) {
+                    for (QObject* root : qml.rootObjects()) {
+                        auto* window = qobject_cast<QQuickWindow*>(root);
+                        if (QQuickItem* item = window ? window->activeFocusItem() : nullptr) {
+                            item->setFocus(false);
+                        }
+                    }
+                    qInfo() << "keys: Unfocus transmitting" << engine.transmitting() << "space PTT" << spacePtt();
+                    return;
+                }
+                const bool pressOnly = token.endsWith(QLatin1Char('+'));
+                const bool releaseOnly = token.endsWith(QLatin1Char('-'));
+                const QString name = pressOnly || releaseOnly ? token.chopped(1) : token;
                 const QMetaEnum keyEnum = QMetaEnum::fromType<Qt::Key>();
                 bool ok = false;
                 const int key = keyEnum.keyToValue(("Key_" + name).toLatin1().constData(), &ok);
@@ -521,10 +558,15 @@ int main(int argc, char* argv[])
                     }
                     QKeyEvent press(QEvent::KeyPress, key, Qt::NoModifier);
                     QKeyEvent release(QEvent::KeyRelease, key, Qt::NoModifier);
-                    QCoreApplication::sendEvent(window, &press);
-                    QCoreApplication::sendEvent(window, &release);
+                    if (!releaseOnly) {
+                        QCoreApplication::sendEvent(window, &press);
+                    }
+                    if (!pressOnly) {
+                        QCoreApplication::sendEvent(window, &release);
+                    }
                 }
-                qInfo() << "keys:" << name << (ok ? "" : "(unknown)") << "frequency" << engine.frequencyMhz();
+                qInfo() << "keys:" << token << (ok ? "" : "(unknown)") << "frequency" << engine.frequencyMhz()
+                        << "transmitting" << engine.transmitting() << "space PTT" << spacePtt();
             });
         }
     }

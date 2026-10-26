@@ -221,6 +221,11 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             QMouseEvent release(QEvent::MouseButtonRelease, p, g, Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
             QCoreApplication::sendEvent(window, &release);
         }
+    } else if (command == QLatin1String("size")) {
+        const QStringList wh = arg.split(QLatin1Char('x'));
+        if (window && wh.size() == 2) {
+            window->resize(wh.at(0).toInt(), wh.at(1).toInt());
+        }
     } else {
         qWarning() << "shot-plan: unknown command" << command;
         m_failed = true;
