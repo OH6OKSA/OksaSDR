@@ -399,7 +399,10 @@ offers **Off**.
   a keyboard works the same way.
 - **KEY** — in CW modes the same button is a straight key, or **paddles**
   (Controls → CW → Key: *Paddles*): dit and dah side by side in its
-  place, each its own touch, so holding both gives iambic squeeze. The app
+  place, each its own touch, so holding both gives iambic squeeze. On a
+  phone they sit at the two edges, one for each thumb: dit at the left,
+  Controls between, dah at the right (in landscape the step buttons are
+  between). The app
   times the elements itself, sends them to the radio and plays the
   sidetone in step. **Iambic** in the CW tab sets **A** or **B** (B adds
   one more element after a squeeze) and **Swap ⇄** (dah on the left); they

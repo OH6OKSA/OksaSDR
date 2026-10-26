@@ -25,6 +25,17 @@ Page {
     onActiveFocusChanged: operateKeys.pageFocusChanged(activeFocus)
 
     readonly property bool landscape: width > height
+    // CW paddles on a phone: dit at the left edge and dah at the right, the
+    // Controls button between (portrait) or the step buttons (landscape), so
+    // each thumb keys its own paddle. The halves share this state.
+    readonly property bool splitPaddles: ptt.paddleMode && ptt.enabled
+    QtObject {
+        id: paddleState
+        property bool dit: false
+        property bool dah: false
+        onDitChanged: Engine.setCwPaddleState(dit, dah)
+        onDahChanged: Engine.setCwPaddleState(dit, dah)
+    }
     // PTT height, shared with the drawer's copy of the button. PTT runs
     // along the bottom in both orientations; lower in landscape.
     readonly property real pttHeight: landscape ? Math.round(Theme.touchTarget * 1.2) : 64
@@ -223,6 +234,14 @@ Page {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 4
+                PttButton {
+                    visible: page.landscape && page.splitPaddles && !controlsDrawer.visible
+                    paddleSide: "left"
+                    paddleState: paddleState
+                    Layout.preferredWidth: Math.max(110, page.width * 0.15)
+                    Layout.preferredHeight: Theme.touchTarget
+                    fontPx: 22
+                }
                 // Step buttons: land on round frequencies (tuneByHz); FM
                 // channel steps take the radio's STEP (Theme.stepButtons).
                 Repeater {
@@ -256,7 +275,9 @@ Page {
                 // under it as a second PTT.
                 PttButton {
                     visible: page.landscape && !controlsDrawer.visible && !digiHidden
-                    Layout.preferredWidth: Math.max(150, page.width * 0.2)
+                    paddleSide: page.splitPaddles ? "right" : "both"
+                    paddleState: page.splitPaddles ? paddleState : null
+                    Layout.preferredWidth: page.splitPaddles ? Math.max(110, page.width * 0.15) : Math.max(150, page.width * 0.2)
                     Layout.preferredHeight: Theme.touchTarget
                     fontPx: 22
                 }
@@ -290,6 +311,15 @@ Page {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
+                PttButton {
+                    visible: page.splitPaddles && !controlsDrawer.visible
+                    paddleSide: "left"
+                    paddleState: paddleState
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: page.pttHeight
+                    fontPx: 26
+                }
                 AppButton {
                     Accessible.name: qsTr("Controls")
                     // Without PTT (FT8 / FT4) a plain full-width row, so the
@@ -315,7 +345,10 @@ Page {
                 PttButton {
                     id: ptt
                     visible: !controlsDrawer.visible && !digiHidden
+                    paddleSide: page.splitPaddles ? "right" : "both"
+                    paddleState: page.splitPaddles ? paddleState : null
                     Layout.fillWidth: true
+                    Layout.preferredWidth: page.splitPaddles ? 1 : -1
                     Layout.preferredHeight: page.pttHeight
                     fontPx: 26
                 }
@@ -370,6 +403,15 @@ Page {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
+                PttButton {
+                    visible: page.splitPaddles
+                    paddleSide: "left"
+                    paddleState: paddleState
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: page.pttHeight
+                    fontPx: 26
+                }
                 AppButton {
                     objectName: "closeControls"
                     Layout.fillWidth: Engine.digiRunning && !Engine.rade
@@ -387,7 +429,10 @@ Page {
                 }
                 PttButton {
                     visible: !digiHidden
+                    paddleSide: page.splitPaddles ? "right" : "both"
+                    paddleState: page.splitPaddles ? paddleState : null
                     Layout.fillWidth: true
+                    Layout.preferredWidth: page.splitPaddles ? 1 : -1
                     Layout.preferredHeight: page.pttHeight
                     fontPx: 26
                 }

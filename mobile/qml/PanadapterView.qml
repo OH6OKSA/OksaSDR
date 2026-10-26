@@ -502,8 +502,11 @@ Rectangle {
     // over the spectrum, eliding works on single lines only).
     Rectangle {
         visible: Engine.cwDecoderEnabled && Engine.cwMode && Engine.cwDecodedText.length > 0
-        anchors.left: parent.left
-        anchors.right: parent.right
+        // In a low panadapter (a phone in landscape) it would lie under the
+        // zoom / Band and + Slice / + Pan buttons: then between them.
+        readonly property bool besideButtons: y + height > zoomRow.y - 2
+        x: besideButtons ? zoomRow.x + zoomRow.width + 4 : 0
+        width: (besideButtons ? addRow.x - 4 : parent.width) - x
         y: parent.height * spectrum.spectrumFraction
         // Room for two lines from the first letter, so the bar keeps its height.
         height: 2 * cwFont.height + 8

@@ -17,6 +17,11 @@ AppButton {
     // CW paddles (CW tab > Key): dit and dah side by side over the button,
     // each its own touch so both can be held (iambic squeeze).
     readonly property bool paddleMode: keyMode && Engine.cwPaddles
+    // "left" or "right": this button is one paddle only, and the page puts
+    // the other where the other thumb is (a phone: one at each edge, the
+    // Controls button between); both halves share paddleState (dit, dah).
+    property string paddleSide: "both"
+    property QtObject paddleState: null
     // FT8 / FT4 decoding keys the radio itself: the pages hide PTT then, so
     // the display gets the room (Halt TX is on the Digi tab). RADE is voice
     // and keeps it.
@@ -77,12 +82,20 @@ AppButton {
         // The keyer swaps the paddles itself (the radio's setting): the left
         // pad is always the "dit" input; only its label follows the swap.
         readonly property bool swapped: Engine.cwSwapPaddles
-        readonly property bool dit: leftPad.tap.pressed
-        readonly property bool dah: rightPad.tap.pressed
-        onDitChanged: Engine.setCwPaddleState(dit, dah)
-        onDahChanged: Engine.setCwPaddleState(dit, dah)
+        readonly property bool dit: leftPad.visible && leftPad.tap.pressed
+        readonly property bool dah: rightPad.visible && rightPad.tap.pressed
+        function report() {
+            if (ptt.paddleState) {
+                if (ptt.paddleSide !== "right") ptt.paddleState.dit = dit
+                if (ptt.paddleSide !== "left") ptt.paddleState.dah = dah
+            } else {
+                Engine.setCwPaddleState(dit, dah)
+            }
+        }
+        onDitChanged: report()
+        onDahChanged: report()
         // Hidden or disabled with a paddle down: let go.
-        onVisibleChanged: if (!visible) Engine.setCwPaddleState(false, false)
+        onVisibleChanged: if (!visible) report()
         component Pad: Rectangle {
             id: pad
             property alias tap: padTap
@@ -117,14 +130,16 @@ AppButton {
             spacing: 4
             Pad {
                 id: leftPad
-                width: (parent.width - 4) / 2
+                visible: ptt.paddleSide !== "right"
+                width: ptt.paddleSide === "both" ? (parent.width - 4) / 2 : parent.width
                 height: parent.height
                 symbol: paddles.swapped ? "–" : "•"
                 name: paddles.swapped ? qsTr("dah") : qsTr("dit")
             }
             Pad {
                 id: rightPad
-                width: (parent.width - 4) / 2
+                visible: ptt.paddleSide !== "left"
+                width: ptt.paddleSide === "both" ? (parent.width - 4) / 2 : parent.width
                 height: parent.height
                 symbol: paddles.swapped ? "•" : "–"
                 name: paddles.swapped ? qsTr("dit") : qsTr("dah")
