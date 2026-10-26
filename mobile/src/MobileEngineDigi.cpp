@@ -282,8 +282,9 @@ void MobileEngine::syncDigiAudio()
         });
         d->audio->setSlice(slice);
         d->audio->setEnabled(true);
-        connect(slice, &SliceModel::modeChanged, this, [this] { QTimer::singleShot(0, this, &MobileEngine::syncDigiAudio); },
-                Qt::UniqueConnection);
+        // A member function: Qt::UniqueConnection refuses a lambda (this was
+        // never connected).
+        connect(slice, &SliceModel::modeChanged, this, &MobileEngine::syncDigiAudioLater, Qt::UniqueConnection);
         connect(slice, &QObject::destroyed, this, [this] { QTimer::singleShot(0, this, &MobileEngine::syncDigiAudio); });
         qCInfo(lcMobile) << "digi: decoder on for slice" << slice->letter() << "DAX channel" << slice->daxChannel();
         m_digiDecoders.emplace(id, d);
@@ -1127,6 +1128,11 @@ void MobileEngine::onDigiTxFinished()
         return;
     }
     emit digiChanged();
+}
+
+void MobileEngine::syncDigiAudioLater()
+{
+    QTimer::singleShot(0, this, &MobileEngine::syncDigiAudio);
 }
 
 void MobileEngine::digiLogQso()

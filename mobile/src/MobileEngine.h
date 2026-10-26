@@ -1484,6 +1484,8 @@ private:
     QVariantMap m_callLookup;
     QString m_lastSpotCall;
     void applyCallInfo(const CallsignInfo& info);
+    void pttToggleLimitReached();
+    void syncDigiAudioLater();
     int m_dvkRecordSlot{0};
     static QString dvkStateName(int status);
     void ensurePanDbmRange(const QString& panId);

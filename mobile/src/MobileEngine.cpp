@@ -4961,15 +4961,20 @@ void MobileEngine::togglePtt()
     if (!m_pttToggleLimit.isActive()) {
         m_pttToggleLimit.setSingleShot(true);
         m_pttToggleLimit.setInterval(kPttToggleLimitS * 1000);
-        connect(&m_pttToggleLimit, &QTimer::timeout, this, [this] {
-            if (m_pttLatched) {
-                releasePtt(QStringLiteral("toggle time limit"));
-                setLastError(tr("Transmit stopped after %1 minutes (PTT in tap on/off mode).").arg(kPttToggleLimitS / 60));
-            }
-        }, Qt::UniqueConnection);
+        // A member function: Qt::UniqueConnection refuses a lambda, and the
+        // limit was never connected (a tester's log warned at every tap).
+        connect(&m_pttToggleLimit, &QTimer::timeout, this, &MobileEngine::pttToggleLimitReached, Qt::UniqueConnection);
     }
     m_pttToggleLimit.start();
     emit pttToggleChanged();
+}
+
+void MobileEngine::pttToggleLimitReached()
+{
+    if (m_pttLatched) {
+        releasePtt(QStringLiteral("toggle time limit"));
+        setLastError(tr("Transmit stopped after %1 minutes (PTT in tap on/off mode).").arg(kPttToggleLimitS / 60));
+    }
 }
 
 bool MobileEngine::locked() const
