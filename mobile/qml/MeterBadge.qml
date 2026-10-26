@@ -10,13 +10,16 @@ Rectangle {
     property alias side: meterView.side
     property real dialHeight: 66
     property real maxWidth: 240
+    // A bar face may reach further (into width the chips leave free): it
+    // keeps its height, where a wider analog face would grow taller.
+    property real barMaxWidth: maxWidth
     // A bar face's height (0: the normal).
     property real barHeight: 0
     // An analog face keeps its proportions (about 1.6 : 1, as on a tablet):
     // where the width runs out it gets lower, not squarer.
     readonly property real faceHeight: Math.min(dialHeight, (maxWidth - 8) / 1.6)
     implicitWidth: meterView.analog ? Math.min(maxWidth, meterView.analogFitWidth + 8)
-                            : Math.min(maxWidth, Math.max(110, dialHeight * 1.6))
+                            : barMaxWidth
     implicitHeight: meterView.implicitHeight + 8
     radius: Theme.radius
     color: Theme.surface

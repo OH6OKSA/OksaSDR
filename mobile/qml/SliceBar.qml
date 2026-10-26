@@ -30,10 +30,17 @@ RowLayout {
     // The chips' column keeps room for two chips side by side.
     readonly property real chipMinWidth: Theme.phoneLayout ? 96 : 150
     readonly property real chipMaxWidth: Theme.phoneLayout ? 140 : 210
-    // Room for each meter: what the two chip columns leave. From the column
-    // the row sits in: the row's own width is the layout's output.
-    readonly property real meterMaxWidth: Math.max(80, Math.min(240,
-        ((bar.parent ? bar.parent.width : 0) - 2 * chipMinWidth - 4 - 4 * bar.spacing) / 2))
+    // Room for each meter: what two chip columns leave (an analog face, so
+    // one slice does not make it taller), and for a bar face what the chip
+    // columns in use leave, so bars reach into the free width. From the
+    // column the row sits in: the row's own width is the layout's output.
+    readonly property int chipColumns: Engine.slices.length > 1 ? 2 : 1
+    function meterRoom(columns, cap) {
+        return Math.max(80, Math.min(cap,
+            ((bar.parent ? bar.parent.width : 0) - columns * chipMinWidth - (columns - 1) * 4 - 4 * bar.spacing) / 2))
+    }
+    readonly property real meterMaxWidth: meterRoom(2, 240)
+    readonly property real barMaxWidth: meterRoom(chipColumns, 320)
 
     // A meter in the two-bar style is two bars, one over the other, within
     // the dial's height (three or four readings at once: e.g. SWR and Mic
@@ -48,6 +55,7 @@ RowLayout {
             side: "left"
             dialHeight: bar.dialHeight
             maxWidth: bar.meterMaxWidth
+            barMaxWidth: bar.barMaxWidth
             barHeight: Engine.meterStyleLeft === "two" ? bar.stackBarHeight : bar.singleBarHeight
         }
         MeterBadge {
@@ -56,6 +64,7 @@ RowLayout {
             visible: Engine.meterStyleLeft === "two"
             dialHeight: bar.dialHeight
             maxWidth: bar.meterMaxWidth
+            barMaxWidth: bar.barMaxWidth
             barHeight: bar.stackBarHeight
         }
     }
@@ -68,10 +77,11 @@ RowLayout {
         GridLayout {
             id: chips
             anchors.horizontalCenter: parent.horizontalCenter
-            // Two columns of equal chips, centred between the meters.
+            // Two columns of equal chips (one for a single slice), centred
+            // between the meters.
             readonly property real cell: Math.max(0, Math.min(bar.chipMaxWidth,
-                                                              (chipArea.width - columnSpacing) / 2))
-            width: Engine.slices.length > 1 ? 2 * cell + columnSpacing : cell
+                (chipArea.width - (bar.chipColumns - 1) * columnSpacing) / bar.chipColumns))
+            width: bar.chipColumns * cell + (bar.chipColumns - 1) * columnSpacing
             columns: 2
             columnSpacing: 4
             rowSpacing: 4
@@ -149,6 +159,7 @@ RowLayout {
             side: "right"
             dialHeight: bar.dialHeight
             maxWidth: bar.meterMaxWidth
+            barMaxWidth: bar.barMaxWidth
             barHeight: Engine.meterStyleRight === "two" ? bar.stackBarHeight : bar.singleBarHeight
         }
         MeterBadge {
@@ -157,6 +168,7 @@ RowLayout {
             visible: Engine.meterStyleRight === "two"
             dialHeight: bar.dialHeight
             maxWidth: bar.meterMaxWidth
+            barMaxWidth: bar.barMaxWidth
             barHeight: bar.stackBarHeight
         }
     }
