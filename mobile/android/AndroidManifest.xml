@@ -43,7 +43,7 @@
         android:enableOnBackInvokedCallback="true"
         android:requestLegacyExternalStorage="true">
         <activity
-            android:name="org.qtproject.qt.android.bindings.QtActivity"
+            android:name="fi.oh6oksa.oksasdr.OksaActivity"
             android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
             android:label="OksaSDR"
             android:launchMode="singleTop"
