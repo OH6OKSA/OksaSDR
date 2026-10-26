@@ -241,6 +241,10 @@ Page {
                         Layout.preferredWidth: Theme.buttonWidth
                         Layout.preferredHeight: Theme.touchTarget
                         focusPolicy: Qt.NoFocus
+                        // Held: steps on (Larry Averbeck), from 0.4 s, 8 a second.
+                        autoRepeat: true
+                        autoRepeatDelay: 400
+                        autoRepeatInterval: 125
                         onClicked: Engine.tuneByHz(modelData)
                     }
                 }

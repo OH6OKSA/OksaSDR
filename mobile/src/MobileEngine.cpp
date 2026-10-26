@@ -2975,10 +2975,19 @@ void MobileEngine::tuneByHz(int hz)
         return;
     }
     const qint64 step = std::abs(static_cast<qint64>(hz));
-    const qint64 freq = std::llround(frequencyMhz() * 1e6);
+    qint64 freq = std::llround(frequencyMhz() * 1e6);
+    // Steps less than 0.5 s apart (a held button) go on from the last target,
+    // not from a frequency the radio has not confirmed yet (unless the
+    // slice has gone elsewhere meanwhile: a drag, a spot).
+    if (m_stepClock.isValid() && m_stepClock.elapsed() < 500 && m_stepTargetHz > 0
+        && std::abs(m_stepTargetHz - freq) <= 4 * step) {
+        freq = m_stepTargetHz;
+    }
     // Floor/ceil to the grid; on the grid, take a full step.
     qint64 target = hz > 0 ? (freq / step + 1) * step
                            : ((freq + step - 1) / step - 1) * step;
+    m_stepTargetHz = target;
+    m_stepClock.start();
     tuneTo(static_cast<double>(target) / 1e6);
 }
 

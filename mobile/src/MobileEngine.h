@@ -1529,6 +1529,10 @@ private:
     QString dxCallsign() const;
     QTimer m_voicePreviewTimer;
     QElapsedTimer m_voicePreviewClock;
+    // A held step button repeats faster than the radio confirms a tune
+    // over SmartLink: the next step counts from the last target.
+    qint64 m_stepTargetHz{0};
+    QElapsedTimer m_stepClock;
     QByteArray m_voicePreviewPcm;
     qsizetype m_voicePreviewPos{0};
     void feedVoicePreview();
