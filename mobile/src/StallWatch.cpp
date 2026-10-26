@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QEvent>
 #include <QFile>
+#include <QGuiApplication>
 #include <QLoggingCategory>
 #include <QMetaEnum>
 #include <QQuickWindow>
@@ -34,6 +35,9 @@ std::atomic<qint64> s_eventMs{0};
 std::atomic<int> s_eventType{0};
 std::atomic<bool> s_expectFrames{false};
 std::atomic<bool> s_transmitting{false};
+// The app in front: in the background (and on iOS, suspended) a silent GUI
+// thread is no stall.
+std::atomic<bool> s_active{true};
 // Start of the stall the GUI thread is in, 0 when it answers.
 std::atomic<qint64> s_stallSinceMs{0};
 std::thread s_thread;
@@ -89,6 +93,11 @@ void run()
     while (s_running.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
         const qint64 now = nowMs();
+        if (!s_active.load()) {
+            s_mainBeatMs = now;
+            s_frameMs = 0;
+            continue;
+        }
         if (!s_beatPending.exchange(true)) {
             QMetaObject::invokeMethod(qApp, [] { beatArrived(); }, Qt::QueuedConnection);
         }
@@ -144,8 +153,13 @@ void StallWatch::start()
         return;
     }
     s_mainBeatMs = nowMs();
+    s_active = qApp->applicationState() == Qt::ApplicationActive;
     s_thread = std::thread(run);
     QObject::connect(qApp, &QCoreApplication::aboutToQuit, qApp, [] { stop(); });
+    QObject::connect(qApp, &QGuiApplication::applicationStateChanged, qApp, [](Qt::ApplicationState state) {
+        s_mainBeatMs = nowMs();
+        s_active = state == Qt::ApplicationActive;
+    });
 }
 
 void StallWatch::stop()
