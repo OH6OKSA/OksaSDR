@@ -9,10 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- FTx: a CQ POTA filter in Show, for park activators (thanks Ryland WW4GA). A contact with one goes into the log with SIG POTA.
-- Log: Heard in CW. With the CW decoder on, the calls it heard (after DE, or twice) are offered under the Call field; a tap fills it in.
+- The decoded CW strip over the waterfall shows two lines, newest at the bottom right; text heard in the background no longer spreads over the spectrum (thanks Wayne WA2N). Marks [away 20:55] and [back 21:12] show what came while the app was in the background.
+- Turning a phone keeps the display: no dark seconds, and the waterfall keeps its history (thanks Wayne WA2N).
 
-RECENT (builds 113–115)
+RECENT (builds 113–116)
+- FTx: a CQ POTA filter in Show (thanks Ryland WW4GA), SIG POTA in the log; Log: Heard in CW offers the calls the CW decoder heard.
 - RADE receive fixed on DAX channels 2 and 3, and a quick PTT tap sends RADE's end of over; FreeDV station list by activity; New call colours and filter in FTx; big logbooks in little memory and big ADIF imports in seconds; a keyboard on the phone; two-tap SmartLink Sign out; sliders, keypads (1 2 3 on top), ⋯ menu and text fields the same on every device (thanks Richard EI9JE); meters Analog / Bar / Two bars (thanks Mike VA3MW); FT8 transmit fixed (thanks Wayne WA2N); RADE filter and mute fixes (thanks Michel F5GNM).
 RECENT (builds 94–112)
 - FreeDV tab with FreeDV Reporter; FTx (FT8 / FT4) with PSK Reporter; Wavelog / Cloudlog; transverters; the Mac text box.
