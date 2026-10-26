@@ -148,8 +148,10 @@ itself. On a phone the band row scrolls sideways.
 **Step buttons.** ±1 Hz … ±1 kHz, landing on round frequencies: +10 Hz from
 14.100 002 goes to 14.100 010, not 14.100 012. With a step of 5 kHz or
 more (STEP, e.g. an FM channel step of 12.5 kHz on 70 cm) they become ±STEP, ±100 kHz,
-±1 MHz and ±10 MHz, all on the step's grid. The band button of the band
-you are on is lit.
+±1 MHz and ±10 MHz, all on the step's grid. Hold a step button to keep
+stepping: after 0.4 s it repeats about eight times a second (also over
+SmartLink, where every step counts from the last one, not from a frequency
+the radio has not confirmed yet). The band button of the band you are on is lit.
 
 ### The info panel
 
@@ -232,7 +234,10 @@ three styles:
 Each bar has the analog meter's scale under it — S1…S9 then +20/+40/+60 in
 red on the S meter, five values with the alarm range in red on the others —
 and the reading's name and value above it. A low bar (iPhone landscape)
-keeps the ticks and leaves out the numbers.
+keeps the ticks and leaves out the numbers. Bar meters take the width the
+slice buttons leave free: in landscape they reach up to the slice buttons,
+and in portrait with one slice open they use the second slice column's room.
+An analog meter keeps its size, as a wider face would also grow taller.
 
 ![Meters while transmitting](manual/tx-meters.jpg)
 
@@ -464,7 +469,14 @@ Reporter).
   it. It shows what the current connection uses; a change applies from the
   next connection. **Audio buffer**: *Low latency* (100 ms), *Normal*
   (200 ms, the default) or *Smooth* (400 ms) — a longer buffer evens out a
-  jittery Wi-Fi or mobile link for a little more delay. Low latency is for a
+  jittery Wi-Fi or mobile link for a little more delay. **Audio output**:
+  *Auto* (the default) plays through a Bluetooth headset, with its
+  microphone, when one is connected, else through the speaker; *Speaker*
+  keeps receive audio and the microphone on the device even with Bluetooth
+  on (e.g. a car or a watch that takes the sound); *Bluetooth media* plays
+  through a Bluetooth device's music link, which sounds better than a
+  headset's call link, and the device's own microphone transmits. The
+  choice applies at once and is remembered. Low latency is for a
   wired or very steady link only; on ordinary Wi-Fi it stutters. If Normal
   stutters, try Smooth. Every 10 s with stutter the log gets an
   "audio underrun" line (count, buffer, longest packet gap, buffer mode),
@@ -920,6 +932,14 @@ last years).
 **Bluetooth headsets.** With a headset connected when you connect to the
 radio, receive audio and the microphone go through it (the hands-free link,
 as on the iPhone). Without one, the phone's speaker and microphone are used.
+Controls › Audio › **Audio output** changes this: *Speaker* or *Bluetooth
+media* (see [Controls](#8-controls)).
+
+**Accessibility services.** Unless a screen reader (TalkBack) is on, the
+app does not answer Android's accessibility queries: services such as a
+pen app or the accessibility menu asked about the screen all the time, and a
+held PTT froze the app into "not responding" on a Lenovo tablet. With
+TalkBack on, the app works with it as before.
 
 **Finding the radio.** On the radio's own network, *On this network* lists
 it. Over SmartLink or a VPN, use those sections instead (the radio's

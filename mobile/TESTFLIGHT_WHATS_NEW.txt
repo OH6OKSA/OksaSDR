@@ -9,13 +9,12 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- CW paddles at the phone's edges, one for each thumb: dit at the left, Controls (or the step buttons in landscape) between, dah at the right.
-- The call you are working on the CW tab: heard calls as buttons; the pick is also the Log tab's Call field, and CW memories send it for {HIS} (e.g. {HIS} 5NN TU; {CALL} stays your own).
-- Name, QTH and more from QRZ.com in every logged QSO, FT8 / FT4 too.
-- The CW strip fills like writing, top line first, breaking between words; in landscape it sits between the corner buttons.
-- Tap on / off PTT stops by itself after 3 minutes again (thanks Kurt DL5EAG for the log).
+- Audio output in Controls › Audio: Auto (a Bluetooth headset when connected), Speaker (stays on the device even with Bluetooth on) or Bluetooth media (better sound over the music link, the device's microphone transmits) (thanks Larry).
+- Hold a step button to keep stepping, about eight steps a second, also over SmartLink (thanks Larry).
+- Bar meters use the free width beside the slice buttons: much wider in landscape, and in portrait with one slice (thanks Juho).
 
-RECENT (builds 113–118)
+RECENT (builds 113–119)
+- CW paddles at the phone's edges; the call you are working on the CW tab ({HIS} in memories); QRZ.com details in every logged QSO; the CW strip fills like writing; tap on / off PTT stops after 3 minutes again (thanks Kurt DL5EAG).
 - The slice volume beside the speaker icon (a new slice plays at 50); a log line when the app stops answering.
 - Turning a phone keeps the display and the waterfall's history; the decoded CW strip stays on two lines with [away] / [back] marks (thanks Wayne WA2N).
 - FTx: a CQ POTA filter in Show (thanks Ryland WW4GA), SIG POTA in the log; Log: Heard in CW offers the calls the CW decoder heard.
