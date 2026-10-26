@@ -6,6 +6,7 @@
 #include <QDir>
 #include <QFile>
 #include <QMouseEvent>
+#include <QPointer>
 #include <QQmlApplicationEngine>
 #include <QQuickItem>
 #include <QQuickWindow>
@@ -221,6 +222,33 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             QMouseEvent release(QEvent::MouseButtonRelease, p, g, Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
             QCoreApplication::sendEvent(window, &release);
         }
+    } else if (command == QLatin1String("hold")) {
+        // Press, keep it down MS, release: a held button's auto-repeat. The
+        // frequency is logged before, at the release and when settled.
+        const QStringList xym = arg.split(QLatin1Char(','));
+        if (window && xym.size() == 3) {
+            const QPointF p(xym.at(0).toDouble() * window->width(), xym.at(1).toDouble() * window->height());
+            const QPointF g = window->mapToGlobal(p);
+            const int ms = xym.at(2).toInt();
+            qInfo() << "shot-plan: hold" << ms << "ms, frequency" << QString::number(m_engine.frequencyMhz(), 'f', 6);
+            QMouseEvent press(QEvent::MouseButtonPress, p, g, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+            QCoreApplication::sendEvent(window, &press);
+            QPointer<QQuickWindow> w(window);
+            QTimer::singleShot(ms, this, [this, w, p, g] {
+                if (!w) {
+                    return;
+                }
+                QMouseEvent release(QEvent::MouseButtonRelease, p, g, Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+                QCoreApplication::sendEvent(w, &release);
+                qInfo() << "shot-plan: released, frequency" << QString::number(m_engine.frequencyMhz(), 'f', 6);
+                QTimer::singleShot(1500, this, [this] {
+                    qInfo() << "shot-plan: settled, frequency" << QString::number(m_engine.frequencyMhz(), 'f', 6);
+                });
+            });
+            *delayMs = ms + 2000;
+        }
+    } else if (command == QLatin1String("freq")) {
+        m_engine.setFrequencyMhz(arg.toDouble());
     } else if (command == QLatin1String("size")) {
         const QStringList wh = arg.split(QLatin1Char('x'));
         if (window && wh.size() == 2) {

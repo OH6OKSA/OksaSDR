@@ -165,7 +165,8 @@ int main(int argc, char* argv[])
         QStringLiteral("Connect to the built-in demo radio as soon as it is listed."));
     parser.addOption(demoOption);
     const QCommandLineOption connectOption(QStringLiteral("connect"),
-        QStringLiteral("Connect to the FlexRadio at <address> on start."), QStringLiteral("address"));
+        QStringLiteral("Connect to the FlexRadio at <address> on start (\"smartlink\": the first SmartLink radio, signed in from the kept token)."),
+        QStringLiteral("address"));
     parser.addOption(connectOption);
     const QCommandLineOption modeOption(QStringLiteral("mode"),
         QStringLiteral("With --demo: set the demo slice to <mode> after connecting (screenshots)."),
@@ -516,7 +517,20 @@ int main(int argc, char* argv[])
         }
     } else if (parser.isSet(connectOption)) {
         const QString address = parser.value(connectOption);
-        engine.connectToAddress(address);
+        if (address == QLatin1String("smartlink")) {
+            auto done = std::make_shared<bool>(false);
+            const auto tryConnect = [&engine, done] {
+                if (!*done && !engine.smartLinkRadios().isEmpty()) {
+                    *done = true;
+                    qInfo() << "connect: SmartLink radio" << engine.smartLinkRadios().constFirst().toMap().value(QStringLiteral("name")).toString();
+                    engine.connectSmartLinkRadio(0);
+                }
+            };
+            QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::smartLinkRadiosChanged, &engine, tryConnect);
+            QTimer::singleShot(0, &engine, tryConnect);
+        } else {
+            engine.connectToAddress(address);
+        }
         if (parser.isSet(reconnectTestOption)) {
             // Disconnect at 8 s and connect again at 11 s (screenshot later).
             QTimer::singleShot(8000, &engine, [&engine] { engine.disconnectRadio(); });
