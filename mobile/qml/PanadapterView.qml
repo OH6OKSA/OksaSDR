@@ -493,30 +493,51 @@ Rectangle {
     }
 
     // Latest decoded CW along the top of the waterfall (just under the
-    // trace), where no layout's bottom bar can cover it.
+    // trace), where no layout's bottom bar can cover it. Two lines, newest
+    // text at the bottom right; the decoder's line breaks (long pauses, e.g.
+    // with the app in the background) are spaces here, cut by hand into
+    // two full lines of the monospace font (they stacked a column of text
+    // over the spectrum, eliding works on single lines only).
     Rectangle {
         visible: Engine.cwDecoderEnabled && Engine.cwMode && Engine.cwDecodedText.length > 0
         anchors.left: parent.left
         anchors.right: parent.right
         y: parent.height * spectrum.spectrumFraction
-        height: 28
+        // Room for two lines from the first letter, so the bar keeps its height.
+        height: 2 * cwFont.height + 8
         color: "#cc000000"
         z: 3
         clip: true
+        TextMetrics {
+            id: cwChar
+            font: cwLine.font
+            text: "M"
+        }
+        FontMetrics {
+            id: cwFont
+            font: cwLine.font
+        }
         Label {
-            anchors.fill: parent
+            id: cwLine
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 4
             anchors.leftMargin: 8
             anchors.rightMargin: 8
-            // One line: the decoder's line breaks (long pauses, e.g. with the
-            // app in the background) stacked lines over the spectrum, as
-            // eliding works on single lines only.
-            text: Engine.cwDecodedText.replace(/\s+/g, " ")
-            maximumLineCount: 1
+            readonly property int columns: Math.max(8, Math.floor(width / Math.max(1, cwChar.advanceWidth)))
+            text: {
+                const flat = Engine.cwDecodedText.replace(/\s+/g, " ").trim()
+                const tail = flat.slice(-2 * columns)
+                return tail.length > columns ? tail.slice(0, tail.length - columns) + "\n" + tail.slice(-columns) : tail
+            }
+            wrapMode: Text.NoWrap
+            maximumLineCount: 2
+            clip: true
             color: "white"
             font.family: "monospace"
             font.pixelSize: 15
-            elide: Text.ElideLeft
-            verticalAlignment: Text.AlignVCenter
+            verticalAlignment: Text.AlignBottom
         }
     }
 
