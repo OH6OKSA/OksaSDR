@@ -502,11 +502,16 @@ Rectangle {
         height: 28
         color: "#cc000000"
         z: 3
+        clip: true
         Label {
             anchors.fill: parent
             anchors.leftMargin: 8
             anchors.rightMargin: 8
-            text: Engine.cwDecodedText
+            // One line: the decoder's line breaks (long pauses, e.g. with the
+            // app in the background) stacked lines over the spectrum, as
+            // eliding works on single lines only.
+            text: Engine.cwDecodedText.replace(/\s+/g, " ")
+            maximumLineCount: 1
             color: "white"
             font.family: "monospace"
             font.pixelSize: 15
