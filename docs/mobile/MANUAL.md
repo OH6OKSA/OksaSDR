@@ -253,7 +253,7 @@ An analog meter keeps its size, as a wider face would also grow taller.
 
 Receive offers S, Mic, PA temperature and supply voltage; transmit adds
 Power, SWR, ALC and Compression, which the radio reads only while
-transmitting. **Mic** is on the left meter and its lower bar
+transmitting, and leaves S out (it has nothing to read on the air). **Mic** is on the left meter and its lower bar
 (on a tablet the side panel covers the right one). With this device's microphone it shows the
 level of the audio as it is sent (after the processing in Controls → TX):
 while you transmit, and in receive too while Controls → TX is open, so the

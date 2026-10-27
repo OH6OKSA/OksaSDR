@@ -1790,6 +1790,10 @@ QStringList MobileEngine::meterKindsFor(const QString& side, bool tx) const
         for (const char* txOnly : {"Power", "SWR", "ALC", "Comp"}) {
             kinds.removeAll(QLatin1String(txOnly));
         }
+    } else {
+        // The S meter has nothing to read while transmitting (the user); a
+        // transmit choice of S falls back to the side's default.
+        kinds.removeAll(QStringLiteral("S"));
     }
     if (side.startsWith(QLatin1String("right"))) {
         kinds.removeAll(QStringLiteral("Mic"));
