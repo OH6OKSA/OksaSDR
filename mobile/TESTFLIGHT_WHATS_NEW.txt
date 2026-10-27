@@ -9,10 +9,8 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Band takes you back to a band when the view is outside every band (the slice's band, or the nearest).
-- The decoded CW strip sits under the waterfall's frequency scale, so the scale stays readable.
-- Meters: S is no longer a transmit choice (nothing to read on the air).
-- Audio output's help says which speaker and microphone each choice uses.
+- FT8 / FT4 with Keep CQ: a station's 73 after your RR73 no longer starts a new QSO, which logged the contact twice. If they send their report again (our RR73 did not reach them), RR73 goes again, logged once.
+- From build 123: Band back to a band from outside every band; the CW strip under the frequency scale; no S among the transmit meters.
 
 RECENT (builds 113–122)
 - Less battery: the spectrum and waterfall drawn by the graphics chip (thanks Mike VA3MW); "2 analog" meters on iPad and Mac; the app's memory in the top row.
