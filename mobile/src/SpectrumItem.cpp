@@ -10,6 +10,16 @@
 #include <QLoggingCategory>
 #include <QPainter>
 #include <QPainterPath>
+#include <QQuickWindow>
+#include <QSGFlatColorMaterial>
+#include <QSGGeometryNode>
+#include <QSGImageNode>
+#include <QSGRectangleNode>
+#include <QSGRendererInterface>
+#include <QSGTexture>
+#include <QSGVertexColorMaterial>
+#include <QVarLengthArray>
+#include <rhi/qrhi.h>
 
 #include <algorithm>
 #include <cmath>
@@ -34,13 +44,148 @@ constexpr qint64 kTxRowIntervalMs = 100;
 // Waterfall rows dropped after a transmission while the AGC settles.
 constexpr qint64 kPostTxSettleMs = 400;
 
+const QColor kBackground(0x0b, 0x0f, 0x14);
+const QColor kTraceColor(63, 182, 255);
+constexpr qreal kTraceWidth = 1.5;
+constexpr int kGridLines = 9;
+
+// The trace fill's gradient, the desktop's: the trace colour at the top,
+// darker and fainter toward the bottom (fill alpha 0.70).
+QColor fillTop() { return QColor(63, 182, 255, 140); }
+QColor fillBottom()
+{
+    QColor bottom = kTraceColor.darker(300);
+    bottom.setAlpha(42);
+    return bottom;
+}
+
+} // namespace
+
+// The waterfall ring on the GPU. Rows written since the last frame are sent
+// on their own (a few hundred bytes each); the whole picture only after a
+// resize, a retune or zoom (the history moved) or a new texture. What the
+// item hands over (in its sync, the GUI thread waiting) is copied here, so
+// the render thread never reads the item's picture.
+class WaterfallTexture : public QSGTexture {
+public:
+    ~WaterfallTexture() override { delete m_texture; }
+
+    qint64 comparisonKey() const override { return qint64(reinterpret_cast<quintptr>(this)); }
+    QRhiTexture* rhiTexture() const override { return m_texture; }
+    QSize textureSize() const override { return m_size; }
+    bool hasAlphaChannel() const override { return false; }
+    bool hasMipmaps() const override { return false; }
+
+    void setImage(const QImage& image)
+    {
+        m_full = image;
+        m_size = image.size();
+        m_rows.clear();
+    }
+    void addRow(const QImage& image, int y)
+    {
+        m_rows.append({y, image.copy(0, y, image.width(), 1)});
+    }
+    qsizetype pendingRows() const { return m_rows.size(); }
+
+    void commitTextureOperations(QRhi* rhi, QRhiResourceUpdateBatch* batch) override
+    {
+        if (m_size.isEmpty()) {
+            return;
+        }
+        if (!m_texture || m_texture->pixelSize() != m_size) {
+            delete m_texture;
+            // QImage RGB32 is BGRA in memory: sent as it is where the GPU
+            // takes BGRA, else converted.
+            m_bgra = rhi->isTextureFormatSupported(QRhiTexture::BGRA8);
+            m_texture = rhi->newTexture(m_bgra ? QRhiTexture::BGRA8 : QRhiTexture::RGBA8, m_size);
+            if (!m_texture->create()) {
+                qCWarning(lcSpectrum) << "waterfall texture" << m_size << "could not be created";
+                delete m_texture;
+                m_texture = nullptr;
+                return;
+            }
+        }
+        if (!m_full.isNull()) {
+            batch->uploadTexture(m_texture, QRhiTextureUploadEntry(0, 0, QRhiTextureSubresourceUploadDescription(forGpu(m_full))));
+            m_full = QImage();
+            m_rows.clear();
+        } else if (!m_rows.isEmpty()) {
+            QVarLengthArray<QRhiTextureUploadEntry, 16> entries;
+            for (const Row& row : std::as_const(m_rows)) {
+                QRhiTextureSubresourceUploadDescription part(forGpu(row.image));
+                part.setDestinationTopLeft(QPoint(0, row.y));
+                entries.append(QRhiTextureUploadEntry(0, 0, part));
+            }
+            QRhiTextureUploadDescription upload;
+            upload.setEntries(entries.cbegin(), entries.cend());
+            batch->uploadTexture(m_texture, upload);
+            m_rows.clear();
+        }
+    }
+
+private:
+    QImage forGpu(const QImage& image) const
+    {
+        return m_bgra ? image : image.convertToFormat(QImage::Format_RGBA8888);
+    }
+
+    struct Row {
+        int y;
+        QImage image;
+    };
+    QRhiTexture* m_texture{nullptr};
+    QSize m_size;
+    bool m_bgra{true};
+    QImage m_full;
+    QVector<Row> m_rows;
+};
+
+namespace {
+
+// The item's nodes, back to front: background, the waterfall ring's two
+// parts, the scale strip, the trace (taken out in 3D, where Spectrum3DItem
+// draws the spectrum area). The textures are kept here, not by the nodes.
+class SpectrumNode : public QSGNode {
+public:
+    ~SpectrumNode() override
+    {
+        if (trace && !trace->parent()) {
+            delete trace;
+        }
+        delete wfTexture;
+        delete stripTexture;
+        delete traceTexture;
+        delete placeholder;
+    }
+
+    // Image nodes never go without a texture (the renderer compares them):
+    // a transparent pixel until there is a picture.
+    QSGTexture* placeholder{nullptr};
+
+    QSGRectangleNode* background{nullptr};
+    QSGImageNode* wfTop{nullptr};
+    QSGImageNode* wfBottom{nullptr};
+    QSGTexture* wfTexture{nullptr};
+    QSGImageNode* strip{nullptr};
+    QSGTexture* stripTexture{nullptr};
+    QSGNode* trace{nullptr};
+    // GPU: grid rectangles, fill, line, centre line.
+    std::array<QSGRectangleNode*, kGridLines - 1> grid{};
+    QSGGeometryNode* fill{nullptr};
+    QSGGeometryNode* line{nullptr};
+    QSGRectangleNode* centre{nullptr};
+    // Software renderer: the trace as one painted image.
+    QSGImageNode* traceImage{nullptr};
+    QSGTexture* traceTexture{nullptr};
+};
+
 } // namespace
 
 SpectrumItem::SpectrumItem(QQuickItem* parent)
-    : QQuickPaintedItem(parent)
+    : QQuickItem(parent)
 {
-    setOpaquePainting(true);
-    setFillColor(QColor(QStringLiteral("#0b0f14")));
+    setFlag(ItemHasContents);
     for (int i = 0; i < 256; ++i) {
         m_palette[i] = spectrumPaletteAt(i / 255.0f);
     }
@@ -58,11 +203,18 @@ void SpectrumItem::setEngine(MobileEngine* engine)
     if (m_engine) {
         connect(m_engine, &MobileEngine::spectrumFrame, this, &SpectrumItem::onSpectrum);
         connect(m_engine, &MobileEngine::waterfallRow, this, &SpectrumItem::onWaterfallRow);
-        connect(m_engine, &MobileEngine::panGeometryChanged, this, &SpectrumItem::followView);
-        connect(m_engine, &MobileEngine::displayLevelsChanged, this, [this] { update(); });
+        connect(m_engine, &MobileEngine::panGeometryChanged, this, [this] {
+            followView();
+            stripChanged();
+        });
+        connect(m_engine, &MobileEngine::displayLevelsChanged, this, [this] {
+            stripChanged();
+            traceChanged();
+            update();
+        });
         connect(m_engine, &MobileEngine::bandPlanChanged, this, [this] {
             emit bandPlanHeightChanged();
-            update();
+            stripChanged();
         });
         reportPixels();
     }
@@ -77,14 +229,19 @@ void SpectrumItem::setSpectrumFraction(double fraction)
     }
     m_spectrumFraction = fraction;
     reportPixels();
+    stripChanged();
+    traceChanged();
     update();
     emit spectrumFractionChanged();
 }
 
 void SpectrumItem::geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry)
 {
-    QQuickPaintedItem::geometryChange(newGeometry, oldGeometry);
+    QQuickItem::geometryChange(newGeometry, oldGeometry);
     reportPixels();
+    stripChanged();
+    traceChanged();
+    update();
     if (newGeometry.height() != oldGeometry.height()) {
         emit bandPlanHeightChanged();
     }
@@ -105,7 +262,7 @@ void SpectrumItem::reportPixels()
     // was when the burst of sizes of one turn began.
     if (m_waterfall.width() != w || m_waterfall.height() < wfH) {
         if (!m_resizeBurst.isValid() || m_resizeBurst.elapsed() > 1000) {
-            m_waterfallBeforeResize = m_waterfall;
+            m_waterfallBeforeResize = waterfallInOrder();
         }
         m_resizeBurst.start();
         const QImage& from = m_waterfallBeforeResize;
@@ -121,6 +278,10 @@ void SpectrumItem::reportPixels()
             painter.drawImage(QRectF(0, 0, w, from.height()), from);
         }
         m_waterfall = resized;
+        m_wfHead = 0;
+        m_wfDirtyRows.clear();
+        m_wfFullUpload = true;
+        update();
     }
     if (m_engine) {
         m_engine->setPanPixels(w, specH);
@@ -138,7 +299,7 @@ void SpectrumItem::onSpectrum(const QVector<float>& binsDbm)
         v = std::clamp(v, -200.0f, 50.0f);
     }
     if (raw.isEmpty()) {
-        update();
+        traceChanged();
         return;
     }
     const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
@@ -242,7 +403,7 @@ void SpectrumItem::onSpectrum(const QVector<float>& binsDbm)
         pushRow(m_spectrum, m_viewLowMhz, m_viewHighMhz, waterfallParams(noise));
         return;
     }
-    update();
+    traceChanged();
 }
 
 WaterfallLevelMap::Params SpectrumItem::waterfallParams(float autoBlack) const
@@ -274,7 +435,8 @@ void SpectrumItem::followView()
     }
     if (hadView) {
         // Old pixel x showed m_viewLow + x/w * oldSpan; place it at the same
-        // frequency in the new view. Uncovered parts turn black.
+        // frequency in the new view. Uncovered parts turn black. Every row
+        // moves alike, so the ring's order stays.
         const double w = m_waterfall.width();
         const double newSpan = high - low;
         const QRectF target((m_viewLowMhz - low) / newSpan * w, 0.0,
@@ -285,6 +447,8 @@ void SpectrumItem::followView()
         painter.drawImage(target, m_waterfall);
         painter.end();
         m_waterfall = moved;
+        m_wfDirtyRows.clear();
+        m_wfFullUpload = true;
         update();
     }
     m_viewLowMhz = low;
@@ -324,10 +488,9 @@ void SpectrumItem::pushRow(const QVector<float>& bins, double lowMhz, double hig
     }
     const int w = m_waterfall.width();
     const int h = m_waterfall.height();
-    const qsizetype rowBytes = m_waterfall.bytesPerLine();
-    uchar* bits = m_waterfall.bits();
-    std::memmove(bits + rowBytes, bits, rowBytes * (h - 1));
-    auto* row = reinterpret_cast<QRgb*>(bits);
+    // The newest row goes one place up the ring, over the oldest.
+    m_wfHead = (m_wfHead + h - 1) % h;
+    auto* row = reinterpret_cast<QRgb*>(m_waterfall.scanLine(m_wfHead));
     const qsizetype n = bins.size();
     // Place the row by frequency: it covers lowMhz..highMhz, which need not
     // be the pan's range (Flex rows lag a zoom or retune). Without a range,
@@ -349,6 +512,14 @@ void SpectrumItem::pushRow(const QVector<float>& bins, double lowMhz, double hig
             i = std::min<qsizetype>(n - 1, static_cast<qsizetype>(x) * n / w);
         }
         row[x] = m_palette[std::clamp(static_cast<int>(WaterfallLevelMap::level(bins.at(i), levels) * 255.0f + 0.5f), 0, 255)];
+    }
+    if (!m_wfFullUpload) {
+        m_wfDirtyRows.append(m_wfHead);
+        // Many rows waiting (the item hidden for a while): one picture.
+        if (m_wfDirtyRows.size() > h / 4) {
+            m_wfDirtyRows.clear();
+            m_wfFullUpload = true;
+        }
     }
     update();
 }
@@ -435,7 +606,7 @@ void SpectrumItem::drawFrequencyAxis(QPainter* painter, qreal w, qreal specH) co
             break;
         }
     }
-    const qreal axisH = std::clamp(height() * 0.03, 16.0, 22.0);
+    const qreal axisH = axisHeight();
     painter->fillRect(QRectF(0, specH, w, axisH), QColor(11, 15, 20, 215));
     QFont font = painter->font();
     font.setPixelSize(static_cast<int>(axisH * 0.62));
@@ -461,26 +632,11 @@ void SpectrumItem::drawFrequencyAxis(QPainter* painter, qreal w, qreal specH) co
     }
 }
 
-void SpectrumItem::paint(QPainter* painter)
+void SpectrumItem::drawTrace(QPainter* painter, qreal w, qreal specH) const
 {
-    const qreal w = width();
-    const qreal specH = height() * m_spectrumFraction;
-
-    if (!m_waterfall.isNull()) {
-        const int rows = std::min(m_waterfall.height(), static_cast<int>(height()) - static_cast<int>(specH));
-        painter->drawImage(QPointF(0, specH), m_waterfall, QRectF(0, 0, m_waterfall.width(), rows));
-    }
-    drawFrequencyAxis(painter, w, specH);
-    drawBandPlan(painter, w, specH);
-    // In 3D the spectrum area belongs to Spectrum3DItem (GPU), as on the
-    // desktop: the stacked trace replaces the trace, the waterfall stays.
-    if (m_engine && m_engine->spectrum3D()) {
-        return;
-    }
-
     painter->setPen(QColor(255, 255, 255, 25));
-    for (int i = 1; i < 9; ++i) {
-        const qreal y = specH * i / 9.0;
+    for (int i = 1; i < kGridLines; ++i) {
+        const qreal y = specH * i / kGridLines;
         painter->drawLine(QPointF(0, y), QPointF(w, y));
     }
 
@@ -501,21 +657,315 @@ void SpectrumItem::paint(QPainter* painter)
         fill.lineTo(w, specH);
         fill.lineTo(0, specH);
         fill.closeSubpath();
-        // The desktop's gradient fill: the trace colour at the top, darker
-        // and fainter toward the bottom (fill alpha 0.70).
         QLinearGradient gradient(0, 0, 0, specH);
-        QColor bottom = QColor(63, 182, 255).darker(300);
-        bottom.setAlpha(42);
-        gradient.setColorAt(0.0, QColor(63, 182, 255, 140));
-        gradient.setColorAt(1.0, bottom);
+        gradient.setColorAt(0.0, fillTop());
+        gradient.setColorAt(1.0, fillBottom());
         painter->fillPath(fill, gradient);
-        painter->setPen(QPen(QColor(63, 182, 255), 1.5));
+        painter->setPen(QPen(kTraceColor, kTraceWidth));
         painter->drawPath(path);
     }
 
     // Centre line marks the pan centre; the slice marker is drawn in QML.
     painter->setPen(QColor(255, 255, 255, 60));
     painter->drawLine(QPointF(0, specH), QPointF(w, specH));
+}
+
+QImage SpectrumItem::waterfallInOrder() const
+{
+    if (m_waterfall.isNull() || m_wfHead == 0) {
+        return m_waterfall;
+    }
+    const int h = m_waterfall.height();
+    const qsizetype rowBytes = m_waterfall.bytesPerLine();
+    QImage ordered(m_waterfall.size(), m_waterfall.format());
+    const qsizetype first = h - m_wfHead;
+    std::memcpy(ordered.bits(), m_waterfall.constScanLine(m_wfHead), rowBytes * first);
+    std::memcpy(ordered.scanLine(static_cast<int>(first)), m_waterfall.constBits(), rowBytes * m_wfHead);
+    return ordered;
+}
+
+void SpectrumItem::traceChanged()
+{
+    // In 3D the trace is not drawn: its frames change nothing here.
+    if (m_engine && m_engine->spectrum3D()) {
+        return;
+    }
+    m_traceDirty = true;
+    update();
+}
+
+void SpectrumItem::stripChanged()
+{
+    m_stripDirty = true;
+    polish();
+}
+
+void SpectrumItem::itemChange(ItemChange change, const ItemChangeData& value)
+{
+    QQuickItem::itemChange(change, value);
+    if (change == ItemDevicePixelRatioHasChanged || change == ItemSceneChange) {
+        stripChanged();
+        traceChanged();
+    }
+}
+
+void SpectrumItem::updatePolish()
+{
+    // The scale strip: the frequency axis at the top of the waterfall and
+    // the band plan along the bottom of the spectrum, painted at the
+    // screen's pixel density when the view, the plan or the size changed.
+    if (!m_stripDirty) {
+        return;
+    }
+    m_stripDirty = false;
+    m_stripNew = true;
+    m_strip = QImage();
+    const qreal w = width();
+    if (!m_engine || m_engine->panBandwidthMhz() <= 0.0 || w <= 0 || height() <= 0) {
+        update();
+        return;
+    }
+    const qreal dpr = window() ? window()->effectiveDevicePixelRatio() : 1.0;
+    const qreal specH = specHeight();
+    // On a device pixel, so the strip lands where the item drew it before.
+    const qreal top = std::floor((specH - bandPlanHeight()) * dpr) / dpr;
+    const qreal bottom = specH + axisHeight();
+    QImage strip(QSize(static_cast<int>(std::ceil(w * dpr)), static_cast<int>(std::ceil((bottom - top) * dpr))),
+                 QImage::Format_ARGB32_Premultiplied);
+    strip.setDevicePixelRatio(dpr);
+    strip.fill(Qt::transparent);
+    QPainter painter(&strip);
+    painter.translate(0, -top);
+    drawFrequencyAxis(&painter, w, specH);
+    drawBandPlan(&painter, w, specH);
+    painter.end();
+    m_strip = strip;
+    m_stripTop = top;
+    update();
+}
+
+QSGNode* SpectrumItem::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData*)
+{
+    QQuickWindow* win = window();
+    if (!win) {
+        delete oldNode;
+        return nullptr;
+    }
+    const bool software = !QSGRendererInterface::isApiRhiBased(win->rendererInterface()->graphicsApi());
+    auto* node = static_cast<SpectrumNode*>(oldNode);
+    if (!node) {
+        node = new SpectrumNode;
+        node->background = win->createRectangleNode();
+        node->background->setColor(kBackground);
+        node->appendChildNode(node->background);
+        QImage pixel(1, 1, QImage::Format_ARGB32_Premultiplied);
+        pixel.fill(Qt::transparent);
+        node->placeholder = win->createTextureFromImage(pixel);
+        node->wfTop = win->createImageNode();
+        node->wfBottom = win->createImageNode();
+        for (QSGImageNode* part : {node->wfTop, node->wfBottom}) {
+            part->setFiltering(QSGTexture::Nearest);
+            part->setOwnsTexture(false);
+            part->setTexture(node->placeholder);
+            node->appendChildNode(part);
+        }
+        node->strip = win->createImageNode();
+        node->strip->setFiltering(QSGTexture::Linear);
+        node->strip->setOwnsTexture(false);
+        node->strip->setTexture(node->placeholder);
+        node->appendChildNode(node->strip);
+        node->trace = new QSGNode;
+        if (software) {
+            node->traceImage = win->createImageNode();
+            node->traceImage->setFiltering(QSGTexture::Linear);
+            node->traceImage->setOwnsTexture(false);
+            node->traceImage->setTexture(node->placeholder);
+            node->trace->appendChildNode(node->traceImage);
+        } else {
+            for (QSGRectangleNode*& line : node->grid) {
+                line = win->createRectangleNode();
+                line->setColor(QColor(255, 255, 255, 25));
+                node->trace->appendChildNode(line);
+            }
+            node->fill = new QSGGeometryNode;
+            auto* fillGeometry = new QSGGeometry(QSGGeometry::defaultAttributes_ColoredPoint2D(), 0);
+            fillGeometry->setDrawingMode(QSGGeometry::DrawTriangleStrip);
+            node->fill->setGeometry(fillGeometry);
+            node->fill->setFlag(QSGNode::OwnsGeometry);
+            node->fill->setMaterial(new QSGVertexColorMaterial);
+            node->fill->setFlag(QSGNode::OwnsMaterial);
+            node->trace->appendChildNode(node->fill);
+            node->line = new QSGGeometryNode;
+            auto* lineGeometry = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), 0);
+            lineGeometry->setDrawingMode(QSGGeometry::DrawTriangleStrip);
+            node->line->setGeometry(lineGeometry);
+            node->line->setFlag(QSGNode::OwnsGeometry);
+            auto* lineMaterial = new QSGFlatColorMaterial;
+            lineMaterial->setColor(kTraceColor);
+            node->line->setMaterial(lineMaterial);
+            node->line->setFlag(QSGNode::OwnsMaterial);
+            node->trace->appendChildNode(node->line);
+            node->centre = win->createRectangleNode();
+            node->centre->setColor(QColor(255, 255, 255, 60));
+            node->trace->appendChildNode(node->centre);
+        }
+        m_wfFullUpload = true;
+        m_wfDirtyRows.clear();
+        m_traceDirty = true;
+        m_stripNew = true;
+    }
+
+    const qreal w = width();
+    const qreal specH = specHeight();
+    node->background->setRect(boundingRect());
+
+    // Waterfall: the ring's rows from the newest (m_wfHead) down to its
+    // end, then its top part, as many as the waterfall area shows.
+    if (m_waterfall.isNull()) {
+        node->wfTop->setRect(QRectF());
+        node->wfBottom->setRect(QRectF());
+    } else {
+        const int rows = m_waterfall.height();
+        if (software) {
+            if (m_wfFullUpload || !m_wfDirtyRows.isEmpty() || !node->wfTexture) {
+                QSGTexture* texture = win->createTextureFromImage(m_waterfall);
+                node->wfTop->setTexture(texture);
+                node->wfBottom->setTexture(texture);
+                delete node->wfTexture;
+                node->wfTexture = texture;
+            }
+        } else {
+            auto* texture = static_cast<WaterfallTexture*>(node->wfTexture);
+            if (!texture) {
+                texture = new WaterfallTexture;
+                node->wfTexture = texture;
+                m_wfFullUpload = true;
+            }
+            if (m_wfFullUpload || texture->textureSize() != m_waterfall.size()
+                || texture->pendingRows() + m_wfDirtyRows.size() > rows / 4) {
+                texture->setImage(m_waterfall);
+            } else {
+                for (int y : std::as_const(m_wfDirtyRows)) {
+                    texture->addRow(m_waterfall, y);
+                }
+            }
+            if (node->wfTop->texture() != texture) {
+                node->wfTop->setTexture(texture);
+                node->wfBottom->setTexture(texture);
+            }
+            if (m_wfFullUpload || !m_wfDirtyRows.isEmpty()) {
+                // The rows reach the GPU when the material is next prepared.
+                node->wfTop->markDirty(QSGNode::DirtyMaterial);
+                node->wfBottom->markDirty(QSGNode::DirtyMaterial);
+            }
+        }
+        m_wfFullUpload = false;
+        m_wfDirtyRows.clear();
+        const int shown = std::clamp(static_cast<int>(height()) - static_cast<int>(specH), 0, rows);
+        const int first = std::min(shown, rows - m_wfHead);
+        const int wfW = m_waterfall.width();
+        node->wfTop->setSourceRect(QRectF(0, m_wfHead, wfW, first));
+        node->wfTop->setRect(first > 0 ? QRectF(0, specH, wfW, first) : QRectF());
+        node->wfBottom->setSourceRect(QRectF(0, 0, wfW, shown - first));
+        node->wfBottom->setRect(shown > first ? QRectF(0, specH + first, wfW, shown - first) : QRectF());
+    }
+
+    // Scale strip, painted in updatePolish.
+    if (m_stripNew) {
+        m_stripNew = false;
+        QSGTexture* texture = m_strip.isNull() ? nullptr : win->createTextureFromImage(m_strip);
+        if (texture) {
+            node->strip->setTexture(texture);
+            node->strip->setRect(QRectF(QPointF(0, m_stripTop), m_strip.deviceIndependentSize()));
+        } else {
+            node->strip->setTexture(node->placeholder);
+            node->strip->setRect(QRectF());
+        }
+        delete node->stripTexture;
+        node->stripTexture = texture;
+    }
+
+    // Trace: out of the tree in 3D.
+    const bool show2D = !(m_engine && m_engine->spectrum3D());
+    if (show2D != (node->trace->parent() != nullptr)) {
+        if (show2D) {
+            node->appendChildNode(node->trace);
+            m_traceDirty = true;
+        } else {
+            node->removeChildNode(node->trace);
+        }
+    }
+    if (show2D && m_traceDirty) {
+        m_traceDirty = false;
+        if (software) {
+            const qreal dpr = win->effectiveDevicePixelRatio();
+            QImage image(QSize(static_cast<int>(std::ceil(w * dpr)), static_cast<int>(std::ceil((specH + 1) * dpr))),
+                         QImage::Format_ARGB32_Premultiplied);
+            image.setDevicePixelRatio(dpr);
+            image.fill(Qt::transparent);
+            QPainter painter(&image);
+            drawTrace(&painter, w, specH);
+            painter.end();
+            QSGTexture* texture = image.isNull() ? nullptr : win->createTextureFromImage(image);
+            if (texture) {
+                node->traceImage->setTexture(texture);
+                node->traceImage->setRect(QRectF(QPointF(0, 0), image.deviceIndependentSize()));
+            } else {
+                node->traceImage->setTexture(node->placeholder);
+                node->traceImage->setRect(QRectF());
+            }
+            delete node->traceTexture;
+            node->traceTexture = texture;
+        } else {
+            for (int i = 1; i < kGridLines; ++i) {
+                node->grid[i - 1]->setRect(QRectF(0, specH * i / kGridLines, w, 1));
+            }
+            node->centre->setRect(QRectF(0, specH, w, 1));
+            const qsizetype n = m_spectrum.size() > 1 ? m_spectrum.size() : 0;
+            QSGGeometry* fill = node->fill->geometry();
+            QSGGeometry* line = node->line->geometry();
+            fill->allocate(static_cast<int>(2 * n));
+            line->allocate(static_cast<int>(2 * n));
+            if (n > 0) {
+                QVarLengthArray<QPointF, 2048> points(n);
+                for (qsizetype i = 0; i < n; ++i) {
+                    const float norm = (m_spectrum.at(i) - m_traceBottom) / (m_traceTop - m_traceBottom);
+                    points[i] = QPointF(w * i / (n - 1), specH * (1.0 - std::clamp(norm, 0.0f, 1.0f)));
+                }
+                // Fill: a strip from the trace down to the bottom, each
+                // vertex in the gradient's colour at its height
+                // (premultiplied, as the material takes it).
+                const QColor top = fillTop();
+                const QColor bottom = fillBottom();
+                const auto gradientAt = [&](qreal t, QSGGeometry::ColoredPoint2D& v, float x, float y) {
+                    const qreal a = top.alpha() + (bottom.alpha() - top.alpha()) * t;
+                    const auto channel = [&](int from, int to) {
+                        return static_cast<uchar>(std::lround((from + (to - from) * t) * a / 255.0));
+                    };
+                    v.set(x, y, channel(top.red(), bottom.red()), channel(top.green(), bottom.green()),
+                          channel(top.blue(), bottom.blue()), static_cast<uchar>(std::lround(a)));
+                };
+                QSGGeometry::ColoredPoint2D* fv = fill->vertexDataAsColoredPoint2D();
+                QSGGeometry::Point2D* lv = line->vertexDataAsPoint2D();
+                const qreal half = kTraceWidth / 2.0;
+                for (qsizetype i = 0; i < n; ++i) {
+                    const QPointF p = points[i];
+                    gradientAt(specH > 0 ? p.y() / specH : 0.0, fv[2 * i], p.x(), p.y());
+                    gradientAt(1.0, fv[2 * i + 1], p.x(), specH);
+                    // Line: a ribbon kTraceWidth wide across the trace's
+                    // direction at each point.
+                    const QPointF d = points[std::min(i + 1, n - 1)] - points[std::max<qsizetype>(i - 1, 0)];
+                    const qreal len = std::hypot(d.x(), d.y());
+                    const QPointF normal = len > 0 ? QPointF(-d.y() / len, d.x() / len) * half : QPointF(0, half);
+                    lv[2 * i].set(p.x() + normal.x(), p.y() + normal.y());
+                    lv[2 * i + 1].set(p.x() - normal.x(), p.y() - normal.y());
+                }
+            }
+            node->fill->markDirty(QSGNode::DirtyGeometry);
+            node->line->markDirty(QSGNode::DirtyGeometry);
+        }
+    }
+    return node;
 }
 
 } // namespace AetherSDR::mobile

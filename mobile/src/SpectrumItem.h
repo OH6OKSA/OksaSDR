@@ -3,10 +3,11 @@
 #include <QElapsedTimer>
 #include <QImage>
 #include <QPointer>
-#include <QQuickPaintedItem>
+#include <QQuickItem>
 #include <QVector>
 #include <QtQml/qqmlregistration.h>
 
+#include <algorithm>
 #include <array>
 
 #include "NoiseFloorTracker.h"
@@ -17,10 +18,22 @@ namespace AetherSDR::mobile {
 
 class MobileEngine;
 
+class WaterfallTexture;
+
 // Panadapter trace (top) and scrolling waterfall (bottom) for the active pan.
 // The waterfall auto-ranges each row because Flex rows are radio intensities
 // while seam backends deliver dBm.
-class SpectrumItem : public QQuickPaintedItem {
+//
+// Drawn as scene graph nodes, so a frame redoes only what changed (battery:
+// the whole item repainted on the CPU each frame cost a phone or a tablet
+// much of its power, Mike VA3MW). The waterfall is a ring of rows in one
+// texture: a new row is written at the ring's next place and only that row
+// goes to the GPU, the picture shown as the ring's two parts one under the
+// other. The trace and its fill are vertex geometry, the grid rectangles;
+// the frequency scale and band plan strip are an image painted only when
+// the view or the plan changes. The software renderer (screenshots without
+// a GPU) has no vertex geometry: there the trace is painted into an image.
+class SpectrumItem : public QQuickItem {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(AetherSDR::mobile::MobileEngine* engine READ engine WRITE setEngine NOTIFY engineChanged)
@@ -49,8 +62,6 @@ public:
     double bandPlanHeight() const;
     void setSpectrumFraction(double fraction);
 
-    void paint(QPainter* painter) override;
-
 signals:
     void engineChanged();
     void spectrumFractionChanged();
@@ -59,6 +70,9 @@ signals:
 
 protected:
     void geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry) override;
+    QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data) override;
+    void updatePolish() override;
+    void itemChange(ItemChange change, const ItemChangeData& value) override;
 
 private:
     void onSpectrum(const QVector<float>& binsDbm);
@@ -74,10 +88,33 @@ private:
     WaterfallLevelMap::Params waterfallParams(float autoBlack) const;
     void drawFrequencyAxis(QPainter* painter, qreal w, qreal specH) const;
     void drawBandPlan(QPainter* painter, qreal w, qreal specH) const;
+    // The trace (grid, fill, line, centre line) painted, for the software
+    // renderer.
+    void drawTrace(QPainter* painter, qreal w, qreal specH) const;
+    // The waterfall rows, newest first (the ring unrolled).
+    QImage waterfallInOrder() const;
+    // Something the trace or the scale strip shows changed: draw it anew.
+    void traceChanged();
+    void stripChanged();
+    double specHeight() const { return height() * m_spectrumFraction; }
+    double axisHeight() const { return std::clamp(height() * 0.03, 16.0, 22.0); }
 
     QPointer<MobileEngine> m_engine;
     QVector<float> m_spectrum;
+    // The waterfall ring: m_wfHead is the newest row, older rows follow it
+    // (wrapping to the top). Rows written since the last frame wait in
+    // m_wfDirtyRows for the GPU; m_wfFullUpload sends the whole picture.
     QImage m_waterfall;
+    int m_wfHead{0};
+    QVector<int> m_wfDirtyRows;
+    bool m_wfFullUpload{true};
+    bool m_traceDirty{true};
+    // The scale strip (frequency axis and band plan) as last painted, and
+    // whether the view or the plan changed since.
+    QImage m_strip;
+    double m_stripTop{0.0};
+    bool m_stripDirty{true};
+    bool m_stripNew{false};
     // The waterfall as it was when a burst of resizes (a rotation) began.
     QImage m_waterfallBeforeResize;
     QElapsedTimer m_resizeBurst;
