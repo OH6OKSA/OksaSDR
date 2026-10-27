@@ -512,6 +512,7 @@ MobileEngine::MobileEngine(QObject* parent)
 #endif
     setupDigi();
     setupOnlineLog();
+    setupLogger32();
     m_cty = std::make_unique<CtyDatParser>();
     m_cty->loadFromResource(QStringLiteral(":/cty.dat"));
     {
@@ -4495,6 +4496,7 @@ bool MobileEngine::writeQso(const QVariantMap& r)
                                            r.value(QStringLiteral("NAME")).toString().isEmpty() ? QStringLiteral("(no name)")
                                                                                                 : QStringLiteral("with name and QTH"));
     onlineLogQueue(QsoLog::adifRecord(r));
+    logger32Queue(QsoLog::adifRecord(r));
     emit qsoLogChanged();
     return true;
 }

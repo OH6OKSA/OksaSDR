@@ -490,4 +490,44 @@ ColumnLayout {
         font.pixelSize: 12
         wrapMode: Text.WordWrap
     }
+
+    // ---- Logger32 on the operator's PC: each logged QSO over TCP (Juho
+    // Kontio) ----
+    Label { text: qsTr("Logger32"); color: Theme.textDim; font.pixelSize: 14; Layout.topMargin: Theme.spacing }
+    RowLayout {
+        Layout.fillWidth: true
+        TextField {
+            id: logger32Field
+            objectName: "logger32Host"
+            Layout.fillWidth: true
+            placeholderText: qsTr("PC address, e.g. 192.168.1.10:52001")
+            font.pixelSize: 15
+            text: Engine.logger32.host || ""
+            inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+        }
+        AppButton {
+            text: qsTr("Save")
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.setLogger32(logger32Field.text)
+        }
+    }
+    Label {
+        objectName: "logger32Status"
+        Layout.fillWidth: true
+        visible: text.length > 0
+        text: (Engine.logger32.status || "")
+              + (Engine.logger32.pending > 0 && (Engine.logger32.status || "").indexOf("wait") < 0
+                 ? "  (" + qsTr("%1 waiting").arg(Engine.logger32.pending) + ")" : "")
+        color: Engine.logger32.statusKind === "ok" ? "#00cc66"
+             : Engine.logger32.statusKind === "failed" ? Theme.transmit : Theme.textDim
+        font.pixelSize: 13
+        wrapMode: Text.WordWrap
+    }
+    Label {
+        Layout.fillWidth: true
+        text: qsTr("Every QSO you log (and FT8 / FT4 logs) also goes to Logger32 on your PC, over its TCP port (52001 unless you give another after a colon). Away from home this needs your VPN to reach the PC, and Windows' firewall must let the port in. QSOs that cannot be sent wait and go later. Clear the address to stop.")
+        color: Theme.textDim
+        font.pixelSize: 12
+        wrapMode: Text.WordWrap
+    }
 }

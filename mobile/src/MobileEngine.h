@@ -248,6 +248,9 @@ class MobileEngine : public QObject {
     // API): url, stationId, hasKey, enabled, pending (queued, unsent),
     // status and statusKind ("checking", "ok", "failed" or "").
     Q_PROPERTY(QVariantMap onlineLog READ onlineLog NOTIFY onlineLogChanged)
+    // Logger32 on the operator's PC: each logged QSO as an ADIF record over
+    // TCP (MobileEngineLogger32.cpp).
+    Q_PROPERTY(QVariantMap logger32 READ logger32 NOTIFY logger32Changed)
     Q_PROPERTY(bool memoriesWritable READ memoriesWritable NOTIFY memoriesChanged)
     // The radio's tracking notch filters (Flex TNF): {id, freq (MHz),
     // width (Hz), depth 1-3, permanent}; tnfEnabled is the global switch.
@@ -822,6 +825,9 @@ public:
     // saved one), checks the key and sends what is queued.
     Q_INVOKABLE void setOnlineLog(const QString& url, const QString& key, const QString& stationId);
     QVariantMap onlineLog() const;
+    // "host" or "host:port" (52001 when not given); empty turns it off.
+    Q_INVOKABLE void setLogger32(const QString& hostPort);
+    QVariantMap logger32() const;
     // Opens the share sheet with the log as an ADIF file
     // ("OksaSDR-log-<date>.adi"): mail, Files, AirDrop, a logbook app, or
     // TQSL for LoTW. False when there is nothing to share.
@@ -1261,6 +1267,7 @@ signals:
     void lastSpotCallChanged();
     void qrzChanged();
     void onlineLogChanged();
+    void logger32Changed();
     void tnfsChanged();
     void txChainChanged();
     void spotsChanged();
@@ -1410,6 +1417,17 @@ private:
     bool m_onlineLogSending{false};
     QString m_onlineLogStatus;
     QString m_onlineLogStatusKind;
+    // ---- Logger32 (MobileEngineLogger32.cpp) ----
+    void setupLogger32();
+    QString logger32Host() const;
+    void logger32Check();
+    void logger32Queue(const QString& adif);
+    void logger32Flush();
+    QStringList m_logger32Pending;
+    class QTcpSocket* m_logger32Socket{nullptr};  // the connection in progress
+    QTimer m_logger32Retry;
+    QString m_logger32Status;
+    QString m_logger32StatusKind;
     void syncDigiAudio();
     void onDigiSlot(qint64 slotMs);
     void handleDigiDecodes(const QVariantList& decodes, qint64 slotMs);

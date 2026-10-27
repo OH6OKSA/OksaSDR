@@ -11,7 +11,8 @@ through TestFlight and as the Android beta from
 The app collects no personal data. Nothing you do in the app is sent to the
 developer. It connects to a third-party service only when you use a feature
 that needs it (SmartLink, QRZ.com, a DX cluster, PSK Reporter, your own
-Wavelog or Cloudlog logbook, a time server for FT8 / FT4), as listed below.
+Wavelog or Cloudlog logbook, Logger32 on your PC, a time server for FT8 /
+FT4), as listed below.
 
 ## Network use
 
@@ -52,6 +53,10 @@ these services:
 - **Wavelog or Cloudlog**, only if you enter your logbook's address and API
   key on the Log tab: each QSO you log is sent to that logbook (your own
   server, or the one you use) with its ADIF fields. QSOs that could not be
+  sent wait on the device until they can.
+- **Logger32**, only if you enter your PC's address on the Log tab: each QSO
+  you log is sent with its ADIF fields to Logger32 on that PC (your own
+  computer, on your network or through your VPN). QSOs that could not be
   sent wait on the device until they can.
 - **Developer link** (Log tab), off unless turned on: for the developer's
   own devices; it sends the app's log, and screenshots when asked, to the

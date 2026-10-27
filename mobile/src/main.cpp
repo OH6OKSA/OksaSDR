@@ -231,6 +231,12 @@ int main(int argc, char* argv[])
                        "(call TEST1) 4 s later and log the logbook's state; an empty url at the end clears it."),
         QStringLiteral("url,key,station"));
     parser.addOption(onlineLogTestOption);
+    const QCommandLineOption logger32TestOption(QStringLiteral("logger32-test"),
+        QStringLiteral("Development: set Logger32 to <host:port>, log a test QSO (call TEST1) 4 s later, log the "
+                       "sender's state and put the earlier Logger32 setting back. Run it with its own HOME: the QSO "
+                       "log and the secure store (the Wavelog key) follow HOME, the settings do not."),
+        QStringLiteral("host:port"));
+    parser.addOption(logger32TestOption);
     const QCommandLineOption pskReporterOption(QStringLiteral("psk-reporter"),
         QStringLiteral("Development: turn PSK Reporter on with <grid> as My grid (both saved; AETHER_PSKREPORTER_TEST=1 "
                        "sends to the checking port, every minute)."), QStringLiteral("grid"));
@@ -1857,6 +1863,17 @@ int main(int argc, char* argv[])
                                                                             {QStringLiteral("rstSent"), QStringLiteral("59")}});
         });
         QTimer::singleShot(12000, &app, [&engine] { qInfo() << "online-log-test: state" << engine.onlineLog(); });
+    }
+    if (parser.isSet(logger32TestOption)) {
+        const QString target = parser.value(logger32TestOption);
+        const QString before = engine.logger32().value(QStringLiteral("host")).toString();
+        QTimer::singleShot(2000, &app, [&engine, target] { engine.setLogger32(target); });
+        QTimer::singleShot(13000, &app, [&engine, before] { engine.setLogger32(before); });
+        QTimer::singleShot(6000, &app, [&engine] {
+            qInfo() << "logger32-test: logging TEST1 ->" << engine.logQso({{QStringLiteral("call"), QStringLiteral("TEST1")},
+                                                                          {QStringLiteral("rstSent"), QStringLiteral("59")}});
+        });
+        QTimer::singleShot(12000, &app, [&engine] { qInfo() << "logger32-test: state" << engine.logger32(); });
     }
     if (parser.isSet(digiFilterOption)) {
         engine.setDigiFilter(parser.value(digiFilterOption));

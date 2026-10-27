@@ -663,6 +663,14 @@ Reporter).
   FT4, also goes to the logbook. QSOs that cannot be sent (offline, server
   away) wait on the device and go with the next QSO or start; the line
   under the fields says how many wait. Clear the address to stop.
+  **Logger32**: with your PC's address (e.g. `192.168.1.10`, or
+  `192.168.1.10:52001` for another port than Logger32's 52001), *Save*
+  checks that Logger32 answers there; from then on every QSO you log also
+  goes to Logger32 as an ADIF record over TCP. Away from home the phone
+  reaches the PC through your VPN; Windows' firewall must let the port in.
+  QSOs that cannot be sent wait on the device and go with the next QSO, the
+  next start or every two minutes; the line under the field says how many
+  wait. Clear the address to stop. (Asked by Juho Kontio.)
   **Where the log is** (shown on the Log tab): on an iPhone or iPad in
   Files › On My iPhone / iPad › OksaSDR › `oksasdr-log.adi`, from where it
   can be moved to iCloud Drive or opened in a logbook; on Android a copy is
