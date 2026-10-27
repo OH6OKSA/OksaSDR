@@ -30,10 +30,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: mobile-ios-${{ github.ref }}
-  cancel-in-progress: true
-
 # Same Qt pin as cmake/qt-pin.env (tools/check_qt_pin.py does not cover this
 # file yet; keep the two values in step by hand).
 env:
@@ -48,7 +44,58 @@ env:
   IOS_DEPLOYMENT_TARGET: '18.0'
 
 jobs:
+  # A push builds unless every commit in it that changes the paths above
+  # carries the trailer "iOS: unchanged (why)": a fix for the other
+  # platform alone then starts no iOS build, as the two get fixes at their
+  # own pace (beta 41 and 42 were Android-only, and their iOS runs had to be
+  # cancelled by hand). Each commit carries its own trailer, as with
+  # docs-check's waivers. On demand it always builds.
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'push'
+        with:
+          fetch-depth: 0
+          filter: blob:none
+      - id: check
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          build=true
+          if [ "$EVENT" = push ]; then
+            # The same list as on.push.paths.
+            paths=(src resources third_party cmake CMakeLists.txt mobile/CMakeLists.txt mobile/src mobile/qml mobile/ios mobile/shaders .github/workflows/mobile-ios.yml)
+            if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+              commits=$(git rev-list "$BEFORE..$GITHUB_SHA" -- "${paths[@]}")
+            else
+              commits=$GITHUB_SHA
+            fi
+            if [ -n "$commits" ]; then
+              build=false
+              for c in $commits; do
+                if git log -1 --format=%B "$c" | grep -qiE '^iOS:[[:space:]]*unchanged'; then
+                  echo "no iOS change: $(git log -1 --format='%h %s' "$c")"
+                else
+                  build=true
+                  echo "iOS build: $(git log -1 --format='%h %s' "$c")"
+                fi
+              done
+            fi
+          fi
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+
   ios-engine:
+    needs: gate
+    if: needs.gate.outputs.build == 'true'
+    # A push cancels a running build of the same branch (on the job, so a
+    # push that builds nothing for iOS leaves a running build alone).
+    concurrency:
+      group: mobile-ios-${{ github.ref }}
+      cancel-in-progress: true
     # The iOS 27 SDK (Xcode 27, on the xcode-27 preview image): built with the iOS 26
     # SDK the app ran in compatibility mode on the iPhone Duo's inner screen
     # (letterboxed, scaled, clipped). "Select Xcode" takes the newest release
@@ -326,7 +373,7 @@ jobs:
   # however long ago it ran). A failed or cancelled build prunes nothing.
   prune-artifacts:
     needs: ios-engine
-    if: success()
+    if: needs.ios-engine.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -348,7 +395,7 @@ jobs:
   # TestFlight "What to Test" for this build, from mobile/TESTFLIGHT_WHATS_NEW.txt.
   testflight-notes:
     needs: ios-engine
-    if: success() && github.ref == 'refs/heads/mobile/oksasdr'
+    if: needs.ios-engine.result == 'success' && github.ref == 'refs/heads/mobile/oksasdr'
     uses: ./.github/workflows/testflight-notes.yml
     with:
       build_number: ${{ github.run_number }}

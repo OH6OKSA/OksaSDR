@@ -27,10 +27,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: mobile-android-${{ github.ref }}
-  cancel-in-progress: true
-
 # Same Qt pin as cmake/qt-pin.env and mobile-ios.yml.
 env:
   QT_VERSION: '6.12.0'
@@ -46,7 +42,58 @@ env:
   ANDROID_OPENSSL_COMMIT: 'b71f147'
 
 jobs:
+  # A push builds unless every commit in it that changes the paths above
+  # carries the trailer "Android: unchanged (why)": a fix for the other
+  # platform alone then starts no Android build, as the two get fixes at their
+  # own pace (beta 41 and 42 were Android-only, and their iOS runs had to be
+  # cancelled by hand). Each commit carries its own trailer, as with
+  # docs-check's waivers. On demand it always builds.
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'push'
+        with:
+          fetch-depth: 0
+          filter: blob:none
+      - id: check
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          build=true
+          if [ "$EVENT" = push ]; then
+            # The same list as on.push.paths.
+            paths=(src resources third_party cmake CMakeLists.txt mobile/CMakeLists.txt mobile/src mobile/qml mobile/shaders mobile/android mobile/tools/build-fftw-android.sh .github/workflows/mobile-android.yml)
+            if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+              commits=$(git rev-list "$BEFORE..$GITHUB_SHA" -- "${paths[@]}")
+            else
+              commits=$GITHUB_SHA
+            fi
+            if [ -n "$commits" ]; then
+              build=false
+              for c in $commits; do
+                if git log -1 --format=%B "$c" | grep -qiE '^Android:[[:space:]]*unchanged'; then
+                  echo "no Android change: $(git log -1 --format='%h %s' "$c")"
+                else
+                  build=true
+                  echo "Android build: $(git log -1 --format='%h %s' "$c")"
+                fi
+              done
+            fi
+          fi
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+
   android-apk:
+    needs: gate
+    if: needs.gate.outputs.build == 'true'
+    # A push cancels a running build of the same branch (on the job, so a
+    # push that builds nothing for Android leaves a running build alone).
+    concurrency:
+      group: mobile-android-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 120
     outputs:
@@ -241,7 +288,7 @@ jobs:
   # and releases/latest leads to it; the title says beta.
   release:
     needs: android-apk
-    if: github.ref == 'refs/heads/mobile/oksasdr' && needs.android-apk.outputs.signed == 'true'
+    if: needs.android-apk.result == 'success' && github.ref == 'refs/heads/mobile/oksasdr' && needs.android-apk.outputs.signed == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write

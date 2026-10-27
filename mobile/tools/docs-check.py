@@ -25,6 +25,12 @@ must carry it:
     Roadmap: unchanged (...)
     Notes: unchanged (...)
 
+Two more trailers of the same kind are read by CI, not here: a commit that
+changes nothing for one platform carries "iOS: unchanged (...)" or
+"Android: unchanged (...)", and a push whose app commits all carry it
+starts no build for that platform (the gate jobs in mobile-ios.yml and
+mobile-android.yml).
+
 Run by the pre-push hook (mobile/tools/githooks/pre-push) and by CI
 (.github/workflows/mobile-docs.yml). Exit status 1 when something is stale.
 """
