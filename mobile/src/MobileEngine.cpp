@@ -1764,7 +1764,7 @@ QStringList MobileEngine::meterKindsFor(const QString& side, bool tx) const
 QString MobileEngine::meterStyle(const QString& side) const
 {
     const bool right = side.startsWith(QLatin1String("right"));
-    // Stored 0 bar, 1 analog, 2 two bars. Until chosen: the analog setting
+    // Stored 0 bar, 1 analog, 2 two bars, 3 two analog faces. Until chosen: the analog setting
     // (per side, else the older shared one); a left meter whose second
     // transmit bar was chosen (builds 107-112 stacked it while
     // transmitting) keeps two bars.
@@ -1777,6 +1777,8 @@ QString MobileEngine::meterStyle(const QString& side) const
         return QStringLiteral("analog");
     case 2:
         return QStringLiteral("two");
+    case 3:
+        return QStringLiteral("analog2");
     default:
         return QStringLiteral("bar");
     }
@@ -1784,7 +1786,8 @@ QString MobileEngine::meterStyle(const QString& side) const
 
 void MobileEngine::setMeterStyle(const QString& side, const QString& style)
 {
-    const int v = style == QLatin1String("analog") ? 1 : style == QLatin1String("two") ? 2 : 0;
+    const int v = style == QLatin1String("analog") ? 1 : style == QLatin1String("two") ? 2
+                : style == QLatin1String("analog2") ? 3 : 0;
     setDisplayInt(side.startsWith(QLatin1String("right")) ? "MobileMeterStyleRight" : "MobileMeterStyleLeft", v);
 }
 

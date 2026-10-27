@@ -15,6 +15,9 @@ Rectangle {
     property real barMaxWidth: maxWidth
     // A bar face's height (0: the normal).
     property real barHeight: 0
+    // False where the host's layout has no room for an analog face here
+    // (two analog faces that do not fit side by side show as bars).
+    property bool analogRoom: true
     // An analog face keeps its proportions (about 1.6 : 1, as on a tablet):
     // where the width runs out it gets lower, not squarer.
     readonly property real faceHeight: Math.min(dialHeight, (maxWidth - 8) / 1.6)
@@ -26,7 +29,7 @@ Rectangle {
     MeterView {
         id: meterView
         compact: true
-        analogAllowed: badge.faceHeight >= 46
+        analogAllowed: badge.analogRoom && badge.faceHeight >= 46
         slimHeight: badge.barHeight
         faceHeight: badge.faceHeight
         anchors.fill: parent

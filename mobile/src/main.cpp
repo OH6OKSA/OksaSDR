@@ -389,7 +389,7 @@ int main(int argc, char* argv[])
         QStringLiteral("Meter faces: on (analog) or off (bars) (remembered)."), QStringLiteral("state"));
     parser.addOption(analogMetersOption);
     const QCommandLineOption meterStyleOption(QStringLiteral("meter-style"),
-        QStringLiteral("Meter styles <left>,<right>: analog, bar or two (two bars), e.g. two,analog (remembered)."),
+        QStringLiteral("Meter styles <left>,<right>: analog, bar, two (two bars) or analog2 (two analog faces), e.g. two,analog (remembered)."),
         QStringLiteral("styles"));
     parser.addOption(meterStyleOption);
     const QCommandLineOption keysOption(QStringLiteral("keys"),

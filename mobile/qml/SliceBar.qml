@@ -13,7 +13,7 @@ RowLayout {
     spacing: Theme.spacing / 2
     property bool compact: false
     // The right meter's width: the RF GAIN label under it matches it.
-    readonly property real rightMeterWidth: rightMeter.width
+    readonly property real rightMeterWidth: rightMeters.width
     // The page gives the row its width (fillWidth); its contents must not
     // ask for more, as the meters size themselves from that width.
     Layout.preferredWidth: 0
@@ -41,6 +41,16 @@ RowLayout {
     }
     readonly property real meterMaxWidth: meterRoom(2, 240)
     readonly property real barMaxWidth: meterRoom(chipColumns, 320)
+    // Two analog faces side by side (the "analog2" style, on an iPad or a
+    // Mac): each gets half the room the chip columns leave. Where that would
+    // make the faces low, the same two readings are two bars, one over the
+    // other.
+    readonly property real pairMaxWidth: (meterRoom(chipColumns, 2 * 240 + 4) - 4) / 2
+    readonly property bool pairFits: Math.min(dialHeight, (pairMaxWidth - 8) / 1.6) >= 60
+    readonly property bool leftPair: Engine.meterStyleLeft === "analog2" && pairFits
+    readonly property bool rightPair: Engine.meterStyleRight === "analog2" && pairFits
+    readonly property bool leftStack: Engine.meterStyleLeft === "two" || Engine.meterStyleLeft === "analog2" && !pairFits
+    readonly property bool rightStack: Engine.meterStyleRight === "two" || Engine.meterStyleRight === "analog2" && !pairFits
 
     // A meter in the two-bar style is two bars, one over the other, within
     // the dial's height (three or four readings at once: e.g. SWR and Mic
@@ -48,23 +58,27 @@ RowLayout {
     // dial's height up to what its scale needs.
     readonly property real stackBarHeight: Math.max(22, (bar.dialHeight - 4) / 2 - 8)
     readonly property real singleBarHeight: Math.max(22, Math.min(bar.dialHeight - 8, 52))
-    ColumnLayout {
+    GridLayout {
         Layout.alignment: Qt.AlignTop
-        spacing: 4
+        columns: bar.leftPair ? 2 : 1
+        columnSpacing: 4
+        rowSpacing: 4
         MeterBadge {
             side: "left"
             dialHeight: bar.dialHeight
-            maxWidth: bar.meterMaxWidth
-            barMaxWidth: bar.barMaxWidth
-            barHeight: Engine.meterStyleLeft === "two" ? bar.stackBarHeight : bar.singleBarHeight
+            maxWidth: bar.leftPair ? bar.pairMaxWidth : bar.meterMaxWidth
+            barMaxWidth: bar.leftPair ? bar.pairMaxWidth : bar.barMaxWidth
+            analogRoom: Engine.meterStyleLeft !== "analog2" || bar.leftPair
+            barHeight: bar.leftStack ? bar.stackBarHeight : bar.singleBarHeight
         }
         MeterBadge {
             objectName: "meterLeft2"
             side: "left2"
-            visible: Engine.meterStyleLeft === "two"
+            visible: bar.leftStack || bar.leftPair
             dialHeight: bar.dialHeight
-            maxWidth: bar.meterMaxWidth
-            barMaxWidth: bar.barMaxWidth
+            maxWidth: bar.leftPair ? bar.pairMaxWidth : bar.meterMaxWidth
+            barMaxWidth: bar.leftPair ? bar.pairMaxWidth : bar.barMaxWidth
+            analogRoom: bar.leftPair
             barHeight: bar.stackBarHeight
         }
     }
@@ -151,24 +165,30 @@ RowLayout {
         }
     }
 
-    ColumnLayout {
+    // Mirrored: a pair's main face at the outer edge, as on the left.
+    GridLayout {
+        id: rightMeters
         Layout.alignment: Qt.AlignTop
-        spacing: 4
+        columns: bar.rightPair ? 2 : 1
+        columnSpacing: 4
+        rowSpacing: 4
+        layoutDirection: bar.rightPair ? Qt.RightToLeft : Qt.LeftToRight
         MeterBadge {
-            id: rightMeter
             side: "right"
             dialHeight: bar.dialHeight
-            maxWidth: bar.meterMaxWidth
-            barMaxWidth: bar.barMaxWidth
-            barHeight: Engine.meterStyleRight === "two" ? bar.stackBarHeight : bar.singleBarHeight
+            maxWidth: bar.rightPair ? bar.pairMaxWidth : bar.meterMaxWidth
+            barMaxWidth: bar.rightPair ? bar.pairMaxWidth : bar.barMaxWidth
+            analogRoom: Engine.meterStyleRight !== "analog2" || bar.rightPair
+            barHeight: bar.rightStack ? bar.stackBarHeight : bar.singleBarHeight
         }
         MeterBadge {
             objectName: "meterRight2"
             side: "right2"
-            visible: Engine.meterStyleRight === "two"
+            visible: bar.rightStack || bar.rightPair
             dialHeight: bar.dialHeight
-            maxWidth: bar.meterMaxWidth
-            barMaxWidth: bar.barMaxWidth
+            maxWidth: bar.rightPair ? bar.pairMaxWidth : bar.meterMaxWidth
+            barMaxWidth: bar.rightPair ? bar.pairMaxWidth : bar.barMaxWidth
+            analogRoom: bar.rightPair
             barHeight: bar.stackBarHeight
         }
     }

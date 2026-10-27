@@ -372,8 +372,10 @@ class MobileEngine : public QObject {
     // Each meter's style, remembered: "analog" (arc and needle, also while
     // transmitting), "bar" (one bar) or "two" (two bars, one over the
     // other, each with its own receive and transmit choice: three or four
-    // readings at once). analogMeters sets both to analog or bar (true only
-    // when both are analog).
+    // readings at once) or "analog2" (the same two readings as two analog
+    // faces side by side where the width allows, else two bars).
+    // analogMeters sets both to analog or bar (true only when both are
+    // analog).
     Q_PROPERTY(QString meterStyleLeft READ meterStyleLeft NOTIFY displayLevelsChanged)
     Q_PROPERTY(QString meterStyleRight READ meterStyleRight NOTIFY displayLevelsChanged)
     Q_PROPERTY(bool analogMeters READ analogMeters WRITE setAnalogMeters NOTIFY displayLevelsChanged)

@@ -8,11 +8,13 @@ import AetherMobile
 Item {
     id: meter
     // Which remembered selection this face uses: "left" or "right", or
-    // "left2" / "right2", the lower bar under it in the two-bar style.
+    // "left2" / "right2", the second reading: the lower bar in the two-bar
+    // style, the inner face in the two-analog style.
     property string side: "left"
     readonly property string baseSide: side.startsWith("right") ? "right" : "left"
     readonly property bool lower: side === "left2" || side === "right2"
-    // "analog", "bar" or "two" (two bars), the meter's own style.
+    // "analog", "bar", "two" (two bars) or "analog2" (two analog faces side
+    // by side), the meter's own style.
     readonly property string style: baseSide === "left" ? Engine.meterStyleLeft : Engine.meterStyleRight
     property bool compact: false
     // Receive and transmit each have their own choice (e.g. S / SWR).
@@ -27,7 +29,7 @@ Item {
     // Where space is short (iPhone landscape) the host can ask for bars.
     property bool analogAllowed: true
     // Analog stays analog while transmitting too.
-    readonly property bool analog: style === "analog" && !lower && analogAllowed
+    readonly property bool analog: (style === "analog" && !lower || style === "analog2") && analogAllowed
     // The bar's height from the host (0: the normal).
     property real slimHeight: 0
     // Height of an analog face; the host sizes it to the space available.
@@ -180,18 +182,23 @@ Item {
             RowLayout {
                 spacing: 4
                 Repeater {
+                    // Two analog faces side by side only where there can be
+                    // room for them (not on a phone).
                     model: [{ label: qsTr("Analog"), style: "analog" }, { label: qsTr("Bar"), style: "bar" },
-                            { label: qsTr("Two bars"), style: "two" }]
+                            { label: qsTr("2 bars"), style: "two" }]
+                           .concat(Theme.phoneLayout && meter.style !== "analog2" ? []
+                                   : [{ label: qsTr("2 analog"), style: "analog2" }])
                     delegate: AppButton {
                         required property var modelData
                         text: modelData.label
                         checked: meter.style === modelData.style
                         focusPolicy: Qt.NoFocus
-                        Layout.preferredWidth: (chooser.cellWidth * 4 + 4) / 3
+                        Layout.preferredWidth: (chooser.cellWidth * 4 + 12 - 4 * (count - 1)) / count
+                        readonly property int count: Theme.phoneLayout && meter.style !== "analog2" ? 3 : 4
                         Layout.preferredHeight: Theme.touchTarget
                         onClicked: {
                             // From the lower bar, which goes away with it.
-                            if (meter.lower && modelData.style !== "two")
+                            if (meter.lower && modelData.style !== "two" && modelData.style !== "analog2")
                                 chooser.close()
                             Engine.setMeterStyle(meter.baseSide, modelData.style)
                         }
@@ -216,8 +223,9 @@ Item {
                 }
             }
             Label {
-                visible: meter.style === "analog" && !meter.lower && !meter.analogAllowed
-                text: qsTr("Bars here: an analog face needs more room. It returns where there is space.")
+                visible: (meter.style === "analog" && !meter.lower || meter.style === "analog2") && !meter.analogAllowed
+                text: meter.style === "analog2" ? qsTr("Two bars here: two analog faces need more room. They return where there is space.")
+                                                : qsTr("Bars here: an analog face needs more room. It returns where there is space.")
                 color: Theme.textDim
                 font.pixelSize: Math.round(Theme.buttonFont * 0.8)
                 wrapMode: Text.Wrap
@@ -225,7 +233,10 @@ Item {
             }
             Repeater {
                 // With two bars each has its own choices.
-                model: meter.lower ? [{ title: qsTr("Lower bar: receive"), tx: false }, { title: qsTr("Lower bar: transmit"), tx: true }]
+                model: meter.lower ? (meter.style === "analog2"
+                                      ? [{ title: qsTr("Second meter: receive"), tx: false }, { title: qsTr("Second meter: transmit"), tx: true }]
+                                      : [{ title: qsTr("Lower bar: receive"), tx: false }, { title: qsTr("Lower bar: transmit"), tx: true }])
+                     : meter.style === "analog2" ? [{ title: qsTr("First meter: receive"), tx: false }, { title: qsTr("First meter: transmit"), tx: true }]
                      : meter.style === "two" ? [{ title: qsTr("Upper bar: receive"), tx: false }, { title: qsTr("Upper bar: transmit"), tx: true }]
                      : [{ title: qsTr("Receive"), tx: false }, { title: qsTr("Transmit"), tx: true }]
                 delegate: ColumnLayout {
