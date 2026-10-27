@@ -88,9 +88,9 @@
 #include <memory>
 #if defined(Q_OS_LINUX) || defined(Q_OS_ANDROID)
 #include <unistd.h>
+#endif
 #if defined(Q_OS_IOS) || defined(Q_OS_MACOS)
 #include <mach/mach.h>
-#endif
 #endif
 
 Q_LOGGING_CATEGORY(lcMobile, "aether.mobile")
