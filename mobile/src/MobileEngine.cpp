@@ -6613,37 +6613,49 @@ void MobileEngine::setAudioOutput(const QString& mode)
     emit audioCompressionChanged();
 }
 
-// Android: Qt opens the receive stream on one output device (an AAudio
-// stream with that device's id), and Android's routing (the communication
-// device, the speakerphone) does not move it afterwards: with Bluetooth on,
-// Speaker kept playing in the Bluetooth device (beta 37, the user's phone).
-// Speaker opens the stream on the built-in speaker; Auto and Bluetooth on
-// Qt's default output (a connected Bluetooth device first, else the
-// speaker). A running stream restarts on the new device.
+// Android: Qt opens the receive and microphone streams each on one device
+// (an AAudio stream with that device's id), and Android's routing (the
+// communication device, the speakerphone) does not move them afterwards:
+// with Bluetooth on, Speaker kept playing in the Bluetooth device and the
+// microphone was the headset's in every choice (beta 37, the user's phone;
+// a Bluetooth microphone also turns the link to hands-free, so Bluetooth
+// media lost its sound). Speaker opens the receive stream on the built-in
+// speaker; Auto and Bluetooth on Qt's default output (a connected Bluetooth
+// device first). The microphone: Auto Qt's default input (a Bluetooth
+// headset's first), Speaker and Bluetooth the device's own. Running streams
+// restart on the new device.
 void MobileEngine::applyAudioOutputDevice()
 {
 #ifdef Q_OS_ANDROID
     if (!m_audio) {
         return;
     }
-    QAudioDevice device;
-    if (audioOutput() == QLatin1String("Speaker")) {
-        for (const QAudioDevice& candidate : QMediaDevices::audioOutputs()) {
-            if (candidate.description() == QLatin1String("Built in speaker")) {
-                device = candidate;
-                break;
+    const auto named = [](const QList<QAudioDevice>& devices, QLatin1String description) {
+        for (const QAudioDevice& candidate : devices) {
+            if (candidate.description() == description) {
+                return candidate;
             }
         }
-    }
-    if (m_outputDeviceApplied && device.id() == m_outputDeviceId) {
+        return QAudioDevice{};
+    };
+    const QString mode = audioOutput();
+    const QAudioDevice output = mode == QLatin1String("Speaker")
+        ? named(QMediaDevices::audioOutputs(), QLatin1String("Built in speaker")) : QAudioDevice{};
+    const QAudioDevice input = mode == QLatin1String("Auto")
+        ? QAudioDevice{} : named(QMediaDevices::audioInputs(), QLatin1String("Built in microphone"));
+    if (m_outputDeviceApplied && output.id() == m_outputDeviceId && input.id() == m_inputDeviceId) {
         return;
     }
     m_outputDeviceApplied = true;
-    m_outputDeviceId = device.id();
-    qCInfo(lcMobile).noquote() << "audio output device:"
-                               << (device.isNull() ? QStringLiteral("the system default") : device.description());
-    QMetaObject::invokeMethod(m_audio, [audio = m_audio, device] {
-        audio->setOutputDevice(device, AudioDeviceSelection::Fallback);
+    m_outputDeviceId = output.id();
+    m_inputDeviceId = input.id();
+    const auto name = [](const QAudioDevice& device) {
+        return device.isNull() ? QStringLiteral("the system default") : device.description();
+    };
+    qCInfo(lcMobile).noquote() << "audio devices: output" << name(output) << "/ microphone" << name(input);
+    QMetaObject::invokeMethod(m_audio, [audio = m_audio, output, input] {
+        audio->setOutputDevice(output, AudioDeviceSelection::Fallback);
+        audio->setInputDevice(input, AudioDeviceSelection::Fallback);
     }, Qt::QueuedConnection);
 #endif
 }

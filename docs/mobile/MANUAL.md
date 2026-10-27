@@ -480,11 +480,12 @@ Reporter).
   (200 ms, the default) or *Smooth* (400 ms) — a longer buffer evens out a
   jittery Wi-Fi or mobile link for a little more delay. **Audio output**:
   *Auto* (the default) plays through a Bluetooth headset, with its
-  microphone, when one is connected, else through the speaker; *Speaker*
-  keeps receive audio and the microphone on the device even with Bluetooth
-  on (e.g. a car or a watch that takes the sound); *Bluetooth media* plays
-  through a Bluetooth device's music link, which sounds better than a
-  headset's call link, and the device's own microphone transmits. The
+  microphone, when one is connected, else through the device's speaker
+  and microphone; *Speaker* keeps receive audio and the microphone on the
+  device even with Bluetooth on (e.g. a car or a watch that takes the
+  sound); *Bluetooth media* plays through a Bluetooth device's music link,
+  which sounds better than a headset's call link, and the device's own
+  microphone transmits (without a Bluetooth device, the speaker plays). The
   choice applies at once and is remembered. Low latency is for a
   wired or very steady link only; on ordinary Wi-Fi it stutters. If Normal
   stutters, try Smooth. Every 10 s with stutter the log gets an
@@ -938,11 +939,12 @@ last years).
   (OnePlus, Xiaomi, Huawei) also have their own setting: Settings → Apps →
   OksaSDR → Battery → allow background activity.
 
-**Bluetooth headsets.** With a headset connected when you connect to the
-radio, receive audio and the microphone go through it (the hands-free link,
-as on the iPhone). Without one, the phone's speaker and microphone are used.
-Controls › Audio › **Audio output** changes this: *Speaker* or *Bluetooth
-media* (see [Controls](#8-controls)).
+**Bluetooth headsets.** With a headset connected, receive audio and the
+microphone go through it (the hands-free link, as on the iPhone). Without
+one, the phone's speaker and microphone are used. Controls › Audio ›
+**Audio output** changes this: *Speaker* keeps both on the phone, *Bluetooth
+media* plays over the music link with the phone's microphone (see
+[Controls](#8-controls)).
 
 **Accessibility services.** Unless a screen reader (TalkBack) is on, the
 app does not answer Android's accessibility queries: services such as a

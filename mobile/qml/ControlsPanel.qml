@@ -255,7 +255,7 @@ ColumnLayout {
             }
             Label {
                 Layout.fillWidth: true
-                text: qsTr("Auto: a Bluetooth headset and its microphone when connected, else the speaker. Speaker: the device, even with Bluetooth on. Bluetooth media: better sound over the music link; the device's microphone transmits.")
+                text: qsTr("Auto: a Bluetooth headset and its microphone when one is connected, else the device's speaker and microphone. Speaker: the device's speaker and microphone, even with Bluetooth on. Bluetooth media: a Bluetooth device's music link (better sound) and the device's microphone; without one, the speaker.")
                 color: Theme.textDim
                 font.pixelSize: 12
                 wrapMode: Text.Wrap
