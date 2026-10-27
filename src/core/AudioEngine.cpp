@@ -4448,6 +4448,12 @@ void AudioEngine::applyPendingRxSinkRate()
 
 void AudioEngine::restartRxSoon()
 {
+#ifdef Q_OS_ANDROID
+    // A route chosen: its own restarts after the route change (quick Audio
+    // output changes used them up, and Bluetooth stayed silent).
+    m_rxRouteRestarts = 0;
+    m_rxRouteRestartWindowMs = QDateTime::currentMSecsSinceEpoch();
+#endif
     retryRxStart(6);
 }
 

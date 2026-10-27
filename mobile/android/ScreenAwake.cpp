@@ -4,14 +4,56 @@
 #include "AudioSession.h"
 
 #include <QDebug>
+#include <QGuiApplication>
 #include <QLoggingCategory>
+#include <QTimer>
+#include <qpa/qwindowsysteminterface.h>
 
 Q_LOGGING_CATEGORY(lcAndroid, "aether.mobile.android")
 
 namespace AetherSDR::mobile {
 
+namespace {
+
+// Qt's application state against Android's: a return from the background
+// left Qt Suspended with the app on screen (beta 40: Active, then the
+// Suspended of the earlier stop), which kept the waterfall paused and key
+// PTT refused. While Qt says Suspended, the activity's own state
+// (OksaActivity) is read every second, and Qt's set from it when the
+// activity is on screen.
+void watchApplicationState()
+{
+    auto* check = new QTimer(qApp);
+    check->setInterval(1000);
+    QObject::connect(check, &QTimer::timeout, check, [check] {
+        if (qApp->applicationState() != Qt::ApplicationSuspended) {
+            check->stop();
+            return;
+        }
+        const jint android = QJniObject::callStaticMethod<jint>("fi/oh6oksa/oksasdr/OksaActivity", "lifecycleState");
+        if (android != Qt::ApplicationActive && android != Qt::ApplicationInactive) {
+            return;
+        }
+        check->stop();
+        qCInfo(lcAndroid) << "app on screen while Qt's state was Suspended: state set to"
+                          << Qt::ApplicationState(android);
+        QWindowSystemInterface::handleApplicationStateChanged<QWindowSystemInterface::SynchronousDelivery>(
+            Qt::ApplicationState(android));
+    });
+    QObject::connect(qApp, &QGuiApplication::applicationStateChanged, check, [check](Qt::ApplicationState state) {
+        if (state == Qt::ApplicationSuspended) {
+            check->start();
+        } else {
+            check->stop();
+        }
+    });
+}
+
+} // namespace
+
 void androidStartup()
 {
+    watchApplicationState();
     QJniObject::callStaticMethod<void>(kPlatformClass, "setMulticast", "(Landroid/content/Context;Z)V",
                                        androidContext().object(), jboolean(true));
     qCInfo(lcAndroid) << "multicast lock held for LAN discovery";

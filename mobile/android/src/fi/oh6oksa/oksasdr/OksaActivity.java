@@ -36,6 +36,42 @@ public class OksaActivity extends QtActivity {
         super.onCreate(savedInstanceState);
     }
 
+    // Android's own view of the activity, in Qt's application states:
+    // 4 resumed (Active), 2 started (Inactive, on screen), 0 stopped
+    // (Suspended). Qt's state can end up Suspended with the app on screen
+    // (beta 40: Active and the Suspended of the earlier stop came in that
+    // order on return, and the waterfall stayed paused); androidStartup's
+    // check sets it right from this.
+    private static volatile int lifecycle = 0;
+
+    public static int lifecycleState() {
+        return lifecycle;
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        lifecycle = 2;
+    }
+
+    @Override
+    protected void onResume() {
+        lifecycle = 4;
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        lifecycle = 2;
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        lifecycle = 0;
+        super.onStop();
+    }
+
     private static void follow(boolean screenReader) {
         try {
             if (screenReader) {
