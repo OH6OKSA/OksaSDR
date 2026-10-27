@@ -8,6 +8,7 @@
 #include <QtEndian>
 
 #include <cmath>
+#include <iterator>
 
 namespace AetherSDR::mobile {
 
@@ -23,6 +24,8 @@ constexpr int kDeadlineMs = 3000;
 constexpr qint64 kNtpEpochOffsetS = 2208988800LL;
 // A round trip longer than this says too little about the offset.
 constexpr double kMaxDelayMs = 1500.0;
+// Asked in turn until one answers.
+const char* const kHosts[] = {"time.cloudflare.com", "pool.ntp.org", "time.google.com"};
 
 // Unix milliseconds as an NTP timestamp (seconds since 1900, 32-bit fraction).
 void putTimestamp(uchar* at, qint64 unixMs)
@@ -58,16 +61,23 @@ NtpClock::NtpClock(QObject* parent)
     connect(&m_deadline, &QTimer::timeout, this, &NtpClock::finish);
 }
 
-void NtpClock::sync(const QString& host)
+void NtpClock::sync()
 {
     if (m_busy) {
         return;
     }
     m_busy = true;
-    m_host = host;
+    m_hostIndex = 0;
+    m_problems.clear();
+    tryHost();
+}
+
+void NtpClock::tryHost()
+{
+    m_host = QString::fromLatin1(kHosts[m_hostIndex]);
     m_sent = 0;
     m_haveBest = false;
-    QHostInfo::lookupHost(host, this, [this](const QHostInfo& info) {
+    QHostInfo::lookupHost(m_host, this, [this](const QHostInfo& info) {
         m_server = QHostAddress();
         for (const QHostAddress& address : info.addresses()) {
             if (address.protocol() == QAbstractSocket::IPv4Protocol) {
@@ -79,8 +89,9 @@ void NtpClock::sync(const QString& host)
             m_server = info.addresses().first();
         }
         if (m_server.isNull()) {
-            m_busy = false;
-            emit failed(tr("%1 did not resolve: %2").arg(m_host, info.errorString()));
+            m_problems << tr("%1 did not resolve (%2)").arg(m_host, info.errorString());
+            // On to the next server (finish counts this one as failed).
+            QTimer::singleShot(0, this, &NtpClock::finish);
             return;
         }
         if (!m_socket) {
@@ -152,11 +163,19 @@ void NtpClock::finish()
     if (!m_busy) {
         return;
     }
-    m_busy = false;
     if (!m_haveBest) {
-        emit failed(tr("no answer from %1 (%2)").arg(m_host, m_server.toString()));
+        if (m_problems.size() <= m_hostIndex) {
+            m_problems << tr("no answer from %1 (%2)").arg(m_host, m_server.toString());
+        }
+        if (++m_hostIndex < int(std::size(kHosts))) {
+            tryHost();
+            return;
+        }
+        m_busy = false;
+        emit failed(m_problems.join(QStringLiteral("; ")));
         return;
     }
+    m_busy = false;
     qCInfo(lcNtp).noquote() << QStringLiteral("%1 (%2): device clock %3 ms off, round trip %4 ms")
                                    .arg(m_host, m_server.toString())
                                    .arg(-m_bestOffsetMs, 0, 'f', 0)

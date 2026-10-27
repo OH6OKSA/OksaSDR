@@ -3,6 +3,7 @@
 #include <QHostAddress>
 #include <QObject>
 #include <QString>
+#include <QStringList>
 #include <QTimer>
 
 class QUdpSocket;
@@ -11,7 +12,9 @@ namespace AetherSDR::mobile {
 
 // How far the device clock is from a time server (SNTP, RFC 4330): four
 // requests a quarter second apart, the answer with the shortest round trip
-// counts. FT8 / FT4 run on the corrected time (Ft8Engine::nowMs), as an app
+// counts. Cloudflare's anycast time service first (its nearest site,
+// worldwide), then the NTP Pool and Google's when it does not answer (a
+// network that blocks one). FT8 / FT4 run on the corrected time (Ft8Engine::nowMs), as an app
 // cannot set Android's or iOS's clock (Kurt DL5EAG: his tablet drifted and
 // an NTP app could not fix it).
 class NtpClock : public QObject {
@@ -20,8 +23,9 @@ class NtpClock : public QObject {
 public:
     explicit NtpClock(QObject* parent = nullptr);
 
-    // Starts a measurement unless one is running; synced or failed follows.
-    void sync(const QString& host = QStringLiteral("pool.ntp.org"));
+    // Starts a measurement unless one is running; synced, or failed when no
+    // server answered, follows.
+    void sync();
     bool busy() const { return m_busy; }
     // The device clock in Unix ms. AETHER_CLOCK_SKEW_MS (development) puts it
     // off by that much, to check the correction without touching the system.
@@ -33,6 +37,7 @@ signals:
     void failed(const QString& reason);
 
 private:
+    void tryHost();
     void sendRequest();
     void readAnswers();
     void finish();
@@ -42,6 +47,8 @@ private:
     QTimer m_deadline;
     QHostAddress m_server;
     QString m_host;
+    int m_hostIndex{0};
+    QStringList m_problems;
     int m_sent{0};
     bool m_busy{false};
     bool m_haveBest{false};
