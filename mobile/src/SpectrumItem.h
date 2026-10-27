@@ -49,6 +49,9 @@ class SpectrumItem : public QQuickItem {
     // Height of the band plan strip at the bottom of the spectrum (0 when no
     // plan is shown): the 3D view ends above it.
     Q_PROPERTY(double bandPlanHeight READ bandPlanHeight NOTIFY bandPlanHeightChanged)
+    // Height of the frequency scale along the top of the waterfall: what is
+    // laid over the waterfall's top (the CW strip) starts under it.
+    Q_PROPERTY(double axisHeight READ axisHeight NOTIFY bandPlanHeightChanged)
 
 public:
     explicit SpectrumItem(QQuickItem* parent = nullptr);
@@ -60,6 +63,7 @@ public:
     double traceBottomDbm() const { return m_traceBottom; }
     double noiseFloorDbm() const { return m_autoNoise; }
     double bandPlanHeight() const;
+    double axisHeight() const { return std::clamp(height() * 0.03, 16.0, 22.0); }
     void setSpectrumFraction(double fraction);
 
 signals:
@@ -97,7 +101,6 @@ private:
     void traceChanged();
     void stripChanged();
     double specHeight() const { return height() * m_spectrumFraction; }
-    double axisHeight() const { return std::clamp(height() * 0.03, 16.0, 22.0); }
 
     QPointer<MobileEngine> m_engine;
     QVector<float> m_spectrum;

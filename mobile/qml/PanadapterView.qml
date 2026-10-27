@@ -492,8 +492,9 @@ Rectangle {
         }
     }
 
-    // Latest decoded CW along the top of the waterfall (just under the
-    // trace), where no layout's bottom bar can cover it. Two lines that fill
+    // Latest decoded CW along the top of the waterfall (just under its
+    // frequency scale, which stays readable), where no layout's bottom bar
+    // can cover it. Two lines that fill
     // as writing does: the top line first, then the bottom one; when that is
     // full, it moves up and a new bottom line starts. Lines break between
     // words (a word longer than the line is cut), as the text comes in, so
@@ -507,7 +508,7 @@ Rectangle {
         readonly property bool besideButtons: y + height > zoomRow.y - 2
         x: besideButtons ? zoomRow.x + zoomRow.width + 4 : 0
         width: (besideButtons ? addRow.x - 4 : parent.width) - x
-        y: parent.height * spectrum.spectrumFraction
+        y: parent.height * spectrum.spectrumFraction + spectrum.axisHeight
         // Room for two lines from the first letter, so the bar keeps its height.
         height: 2 * cwFont.height + 8
         color: "#cc000000"
