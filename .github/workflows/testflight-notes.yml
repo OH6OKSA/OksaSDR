@@ -11,11 +11,18 @@ on:
       build_number:
         type: string
         required: true
+      internal_only:
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       build_number:
         description: 'Build number (the iOS workflow run number); empty sets only the App Description'
         required: false
+      internal_only:
+        description: 'Internal TestFlight groups only (a preview build)'
+        type: boolean
+        default: false
   # A changed App Description reaches TestFlight without a build.
   push:
     branches: ['mobile/oksasdr']
@@ -49,5 +56,7 @@ jobs:
           # Beta groups each build goes to (comma separated); empty: every
           # group that does not get every build by itself.
           TESTFLIGHT_GROUPS: ${{ vars.TESTFLIGHT_GROUPS || '' }}
+          # A preview build (mobile/PREVIEW) goes to internal groups only.
+          TESTFLIGHT_INTERNAL_ONLY: ${{ inputs.internal_only && 'true' || '' }}
           DESCRIPTION_FILE: mobile/TESTFLIGHT_DESCRIPTION.txt
         run: python3 .github/scripts/testflight_whats_new.py

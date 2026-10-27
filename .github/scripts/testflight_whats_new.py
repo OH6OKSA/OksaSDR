@@ -10,7 +10,9 @@ primary locale. Then it waits for Apple to finish processing the build and
 adds it to the beta groups, the ones named in TESTFLIGHT_GROUPS (comma
 separated) or else every group that does not get each build by itself
 (external groups, and internal ones without access to all builds), and
-submits it for beta review when an external group got it.
+submits it for beta review when an external group got it. With
+TESTFLIGHT_INTERNAL_ONLY=true (a preview build, mobile/PREVIEW) only internal
+groups get it: the operator's own devices test it before the testers do.
 """
 import json
 import os
@@ -157,6 +159,9 @@ def distribute(app, build, build_number: str, deadline: float) -> bool:
         chosen = [g for g in groups
                   if not g["attributes"].get("isInternalGroup")
                   or not g["attributes"].get("hasAccessToAllBuilds")]
+    if os.environ.get("TESTFLIGHT_INTERNAL_ONLY") == "true":
+        chosen = [g for g in chosen if g["attributes"].get("isInternalGroup")]
+        print(f"preview build {build_number}: internal TestFlight groups only")
     if not chosen:
         print("no TestFlight group to add the build to (internal groups get every build by themselves)")
         return not wanted

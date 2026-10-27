@@ -68,6 +68,14 @@ Android releases) is checked and partly published automatically:
   on GitHub yet, the Android build of `mobile/oksasdr` publishes the
   release-signed APK as that release, marked Latest (so `releases/latest`
   is always the newest beta), with `mobile/android/RELEASE_NOTES.md`.
+- Preview before release: with a file `mobile/PREVIEW` in the tree, a push
+  builds as usual but the iOS build goes to the internal TestFlight group
+  only and the Android APK stays a run artifact (release-signed, so it
+  installs over the beta with `adb install -r`). Once the own iPad and
+  Android device have tested it, run the **Mobile release** workflow with
+  the iOS build number and the Mobile Android run number: the same builds go
+  to the TestFlight testers and the Android release. Then remove
+  `mobile/PREVIEW` (that starts no build).
 
 ## iOS
 

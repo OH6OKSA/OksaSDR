@@ -255,6 +255,13 @@ jobs:
           set -euo pipefail
           f=mobile/android/release.env
           if [ ! -f "$f" ]; then echo "publish=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          # A preview (mobile/PREVIEW) stays a run artifact for the
+          # operator's own device; mobile-release.yml publishes it.
+          if [ -f mobile/PREVIEW ]; then
+            echo "Preview: APK kept as this run's artifact, not published." >> "$GITHUB_STEP_SUMMARY"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           # shellcheck disable=SC1090
           . "$f"
           if gh release view "$TAG" >/dev/null 2>&1; then

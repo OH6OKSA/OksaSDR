@@ -57,6 +57,8 @@ jobs:
     # October 2026.
     runs-on: xcode-27
     timeout-minutes: 150
+    outputs:
+      preview: ${{ steps.preview.outputs.preview }}
     env:
       # TestFlight signing switches on once these repository secrets exist:
       # APPLE_TEAM_ID, APPSTORE_API_KEY_ID, APPSTORE_API_ISSUER_ID,
@@ -69,6 +71,17 @@ jobs:
       BUNDLE_ID: ${{ vars.AETHER_MOBILE_BUNDLE_ID || 'com.aethersdr.mobile' }}
     steps:
       - uses: actions/checkout@v4
+
+      # mobile/PREVIEW: this build goes to the internal TestFlight group only
+      # (the operator's own devices); mobile-release.yml hands the same build
+      # to the testers once it is tested.
+      - name: Preview build?
+        id: preview
+        run: |
+          if [ -f mobile/PREVIEW ]; then
+            echo "preview=true" >> "$GITHUB_OUTPUT"
+            echo "Preview build: internal TestFlight group only." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Install Ninja
         run: command -v ninja || brew install ninja
@@ -339,4 +352,5 @@ jobs:
     uses: ./.github/workflows/testflight-notes.yml
     with:
       build_number: ${{ github.run_number }}
+      internal_only: ${{ needs.ios-engine.outputs.preview == 'true' }}
     secrets: inherit

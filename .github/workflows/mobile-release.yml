@@ -1,0 +1,66 @@
+name: Mobile release
+
+# Hands a tested preview build to the testers. A push with mobile/PREVIEW in
+# the tree builds as usual, but the iOS build goes to the internal TestFlight
+# group only (the operator's own devices) and the Android APK stays a run
+# artifact. Once it is tested, run this with the iOS build number and the
+# Mobile Android run number: the same iOS build goes to the TestFlight groups
+# (beta review for external ones) and the same APK is published as the
+# release mobile/android/release.env names, with RELEASE_NOTES.md. Then
+# remove mobile/PREVIEW (it starts no build).
+on:
+  workflow_dispatch:
+    inputs:
+      ios_build:
+        description: 'iOS build number (the Mobile iOS engine run number); empty: no iOS'
+        required: false
+      android_run:
+        description: 'Mobile Android run number whose APK to publish; empty: no Android'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  testflight:
+    if: inputs.ios_build != ''
+    uses: ./.github/workflows/testflight-notes.yml
+    with:
+      build_number: ${{ inputs.ios_build }}
+      internal_only: false
+    secrets: inherit
+
+  android:
+    if: inputs.android_run != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish the tested APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_NUMBER: ${{ inputs.android_run }}
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC1091
+          . mobile/android/release.env
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::$TAG is already published: change TAG in mobile/android/release.env first."
+            exit 1
+          fi
+          run=$(gh run list --workflow mobile-android.yml --branch mobile/oksasdr --limit 200 \
+                  --json databaseId,number,conclusion,headSha \
+                  --jq ".[] | select(.number == $RUN_NUMBER and .conclusion == \"success\")")
+          if [ -z "$run" ]; then
+            echo "::error::No successful Mobile Android run number $RUN_NUMBER on mobile/oksasdr."
+            exit 1
+          fi
+          id=$(jq -r .databaseId <<<"$run")
+          sha=$(jq -r .headSha <<<"$run")
+          gh run download "$id" --name "OksaSDR-android-$RUN_NUMBER" --dir apk
+          mv "apk/OksaSDR-android-$RUN_NUMBER.apk" "$ASSET"
+          gh release create "$TAG" "$ASSET" --latest --target "$sha" --title "$TITLE" \
+            --notes-file mobile/android/RELEASE_NOTES.md
+          echo "Published $TAG with $ASSET from run $RUN_NUMBER (${sha::8})." >> "$GITHUB_STEP_SUMMARY"
