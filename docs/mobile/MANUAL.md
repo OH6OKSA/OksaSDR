@@ -96,10 +96,10 @@ band* (the band zoom) under them.
 
 ### Network quality
 
-The dot in the top row (with the app's CPU next to it) rates the connection as the desktop AetherSDR does —
+The dot in the top row (with the app's CPU and memory next to it) rates the connection as the desktop AetherSDR does —
 **Excellent / Very Good** (green), **Good** (blue), **Fair** (amber),
-**Poor** (red) — with the round-trip time. On an iPhone the dot, the time
-and the CPU show. Tap it for the details:
+**Poor** (red) — with the round-trip time. On an iPhone the dot, the time,
+the CPU and the memory (the number alone) show. Tap it for the details:
 
 ![Network details](manual/network.jpg)
 
@@ -113,8 +113,10 @@ and the CPU show. Tap it for the details:
   top row), the same added up over all its threads with one core = 100 %
   (102 % is about one core's worth spread over several threads, not one
   core full), on Android the **busiest threads** (UI, render, audio…; one
-  near 100 % is a core at its limit), and the screen frames drawn per
-  second. iOS and Android give apps no GPU load; frames drawn falling well
+  near 100 % is a core at its limit), the app's memory (**RAM** in the top
+  row: on iPhone, iPad and Mac the footprint the system's memory limit
+  counts, on Android the memory the app holds), and the screen frames drawn
+  per second. iOS and Android give apps no GPU load; frames drawn falling well
   below the display's rate means the graphics are not keeping up.
 
 ## 3. Frequency, mode and the info panel
@@ -221,7 +223,7 @@ on the radio leaves the AGC alone.
 **Meters.** Two meters, at the ends of the slice row. Tap a meter to choose
 its style and what it shows — separately for receive and for transmit (e.g.
 S, then SWR on the air). Choices are remembered. Each meter has one of
-three styles:
+these styles:
 
 - **Analog** — an arc and a needle; it stays analog while transmitting too.
 - **Bar** — one bar.
@@ -230,6 +232,12 @@ three styles:
   bar shows. Two bars at the left give three readings on the air, e.g. SWR
   and Mic at the left and Power at the right (four with two bars at both
   ends).
+- **2 analog** (iPad and Mac) — the same two readings as two analog meters
+  side by side, the first at the outer edge: tap either one to choose what
+  it shows. With 2 analog at both ends, transmit shows four needles, e.g.
+  SWR and Mic at the left, ALC and Power at the right. Where the window
+  leaves too little room for two faces, they show as two bars until there
+  is room again.
 
 Each bar has the analog meter's scale under it — S1…S9 then +20/+40/+60 in
 red on the S meter, five values with the alarm range in red on the others —
@@ -480,7 +488,7 @@ Reporter).
   wired or very steady link only; on ordinary Wi-Fi it stutters. If Normal
   stutters, try Smooth. Every 10 s with stutter the log gets an
   "audio underrun" line (count, buffer, longest packet gap, buffer mode),
-  and once a minute a "performance" line (CPU, frames drawn). When the app
+  and once a minute a "performance" line (CPU, frames drawn, memory). When the app
   stops answering for a second or more, a "GUI thread stalled" line says
   for how long and what was going on (transmit, the last touch, the last
   frame); if Android closed the app during it, the next start logs it as

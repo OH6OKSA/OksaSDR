@@ -9,16 +9,16 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Audio output in Controls › Audio: Auto (a Bluetooth headset when connected), Speaker (stays on the device even with Bluetooth on) or Bluetooth media (better sound over the music link, the device's microphone transmits) (thanks Larry).
-- Hold a step button to keep stepping, about eight steps a second, also over SmartLink (thanks Larry).
-- Bar meters use the free width beside the slice buttons: much wider in landscape, and in portrait with one slice (thanks Juho).
+- Less battery: the spectrum and waterfall are drawn by the graphics chip, and only what changed is redrawn (one new waterfall line, not the whole picture) (thanks Mike VA3MW).
+- Meters: a "2 analog" style on iPad and Mac, two analog meters side by side on each side (four readings in transmit).
+- The top row shows the app's memory beside its CPU.
 
-RECENT (builds 113–119)
-- CW paddles at the phone's edges; the call you are working on the CW tab ({HIS} in memories); QRZ.com details in every logged QSO; the CW strip fills like writing; tap on / off PTT stops after 3 minutes again (thanks Kurt DL5EAG).
-- The slice volume beside the speaker icon (a new slice plays at 50); a log line when the app stops answering.
-- Turning a phone keeps the display and the waterfall's history; the decoded CW strip stays on two lines with [away] / [back] marks (thanks Wayne WA2N).
-- FTx: a CQ POTA filter in Show (thanks Ryland WW4GA), SIG POTA in the log; Log: Heard in CW offers the calls the CW decoder heard.
-- RADE receive on DAX channels 2 and 3 and quick-tap end of over; FreeDV list by activity; New call in FTx; big logbooks; a keyboard on the phone; controls the same on every device (thanks Richard EI9JE); meters Analog / Bar / Two bars (thanks Mike VA3MW); FT8 transmit fixed (thanks Wayne WA2N); RADE fixes (thanks Michel F5GNM).
+RECENT (builds 113–120)
+- Audio output: Auto, Speaker or Bluetooth media; hold a step button to keep stepping (thanks Larry); wider bar meters (thanks Juho).
+- CW paddles at the phone's edges; {HIS} in CW memories; QRZ.com details in logged QSOs; tap on / off PTT stops after 3 minutes (thanks Kurt DL5EAG).
+- Slice volume beside the speaker icon; turning a phone keeps the waterfall's history (thanks Wayne WA2N).
+- FTx: CQ POTA filter (thanks Ryland WW4GA), SIG POTA in the log; Heard in CW for the log.
+- RADE on DAX 2 and 3; FreeDV list by activity; New call in FTx; a keyboard on the phone; same controls on every device (thanks Richard EI9JE); meters Analog / Bar / Two bars (thanks Mike VA3MW); FT8 transmit fixed (thanks Wayne WA2N); RADE fixes (thanks Michel F5GNM).
 RECENT (builds 94–112)
 - FreeDV tab with FreeDV Reporter; FTx (FT8 / FT4) with PSK Reporter; Wavelog / Cloudlog; transverters; the Mac text box.
 
