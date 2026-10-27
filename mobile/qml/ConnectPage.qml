@@ -155,12 +155,10 @@ Page {
                             inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
                             font.pixelSize: 17
                         }
-                        TextField {
+                        PasswordField {
                             id: passwordField
                             Layout.fillWidth: true
                             placeholderText: qsTr("Password")
-                            echoMode: TextInput.Password
-                            inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoPredictiveText
                             font.pixelSize: 17
                             onAccepted: signIn.clicked()
                         }

@@ -402,12 +402,11 @@ ColumnLayout {
             text: Engine.qrzUser
             inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
         }
-        TextField {
+        PasswordField {
             id: qrzPassField
             Layout.fillWidth: true
             placeholderText: Engine.qrzUser.length > 0 ? qsTr("password (saved)") : qsTr("password")
             font.pixelSize: 15
-            echoMode: TextInput.Password
         }
         AppButton {
             text: qsTr("Save")
@@ -449,13 +448,11 @@ ColumnLayout {
     }
     RowLayout {
         Layout.fillWidth: true
-        TextField {
+        PasswordField {
             id: onlineKeyField
             Layout.fillWidth: true
             placeholderText: Engine.onlineLog.hasKey ? qsTr("API key (saved)") : qsTr("API key (read & write)")
             font.pixelSize: 15
-            echoMode: TextInput.Password
-            inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
         }
         TextField {
             id: onlineStationField

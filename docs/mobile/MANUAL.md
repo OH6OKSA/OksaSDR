@@ -38,7 +38,9 @@ The first page lists the ways to reach a radio:
 - **SmartLink (remote)** — sign in with your FlexRadio SmartLink account
   to use your radio from anywhere. The sign-in is kept on this device only
   (the iOS Keychain; on Android, encrypted under a key in the Android
-  Keystore); the password is never stored. **Sign out** takes two taps
+  Keystore); the password is never stored. The eye in the password field
+  shows what you typed (dots again when you leave the field); the QRZ.com
+  password and the Wavelog / Cloudlog API key have the same eye. **Sign out** takes two taps
   (the first turns it into *Sign out?* for three seconds), so a stray tap
   does not sign you out.
 - **By IP address** — tap the address field and enter your radio's IP
