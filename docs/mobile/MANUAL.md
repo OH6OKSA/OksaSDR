@@ -733,7 +733,8 @@ Reporter).
   the app makes it with the calls and RR73 only, and logs it without RST.
 
   FT8 needs the time within about a second. When decoding starts, and every
-  30 minutes while it runs, the app asks a time server (pool.ntp.org) and
+  30 minutes while it runs, the app asks a time server (time.cloudflare.com,
+  or else pool.ntp.org or time.google.com) and
   runs FT8 / FT4, and the times in the log, on that time whatever the
   device's clock says (an app cannot set the device's clock); when the
   device's clock is off by 0.3 s or more, a line under PSK Reporter says

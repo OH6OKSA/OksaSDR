@@ -37,9 +37,10 @@ these services:
   times of the FT8 / FT4 stations this device decodes are sent to
   report.pskreporter.info with your callsign, your grid and the app's name
   and version, and are published there, as WSJT-X does.
-- **A time server** (pool.ntp.org), while FT8 / FT4 decoding runs: when it
-  starts and every 30 minutes, the app asks the time (a standard NTP
-  request, nothing about you is sent) and runs FT8 / FT4 on it, as an app
+- **A time server**, while FT8 / FT4 decoding runs: when it starts and
+  every 30 minutes, the app asks the time (a standard NTP request, nothing
+  about you is sent) from time.cloudflare.com, or when that does not answer
+  from pool.ntp.org or time.google.com, and runs FT8 / FT4 on it, as an app
   cannot set the device's clock.
 - **FreeDV Reporter** (qso.freedv.org): while the FreeDV tab is open the
   app fetches the list of stations on it (nothing about you is sent). Only
