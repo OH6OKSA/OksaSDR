@@ -40,7 +40,9 @@ bool worthKeeping(const QMessageLogContext& context, QtMsgType type, const QStri
     // Qt's Android window: the surface coming and going (enabled in main.cpp
     // on Android), to see where the GUI thread stops in the background.
     if (category == QLatin1StringView("qt.qpa.window")) {
-        return true;
+        // Repeated some 50 times a second for a window without a surface
+        // (beta 42 and 43: 100 000 lines an evening); the rest is rare.
+        return !message.startsWith(QLatin1String("Skipping create egl"));
     }
     // Commands sent to the radio, not its status stream.
     if (category == QLatin1StringView("aether.connection")) {

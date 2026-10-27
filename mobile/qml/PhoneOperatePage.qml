@@ -24,7 +24,11 @@ Page {
     Binding { target: Engine; property: "keyboardOnPage"; value: page.activeFocus }
     onActiveFocusChanged: operateKeys.pageFocusChanged(activeFocus)
 
-    readonly property bool landscape: width > height
+    // Landscape layout (one header line, the step row with PTT) only where
+    // the window is clearly wide: a near-square window (a split or pop-up
+    // window on a foldable's inner screen, beta 43) got it, its header line
+    // did not fit and pushed the page, PTT with it, off the right edge.
+    readonly property bool landscape: width > height * 1.3
     // CW paddles on a phone: dit at the left edge and dah at the right, the
     // Controls button between (portrait) or the step buttons (landscape), so
     // each thumb keys its own paddle. The halves share this state.
@@ -141,10 +145,15 @@ Page {
                     fontSize: 13
                     Layout.leftMargin: Theme.spacing / 2
                 }
+                // Clipped rather than widening the page when the line runs
+                // out of room (the rarer flags go first, at the right).
                 InfoPanel {
                     visible: page.landscape
                     singleLine: true
                     showStep: false
+                    clip: true
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                 }
                 // Portrait: the room right of the mode takes the always-on
                 // settings, left-aligned: the step, then antennas, filter
@@ -228,7 +237,9 @@ Page {
                 // picks the bands.
                 bandPicker: (page.landscape && Theme.tightHeight) || !Engine.tuneRowsShown
                 tuneRowsToggle: true
-                Layout.minimumHeight: page.landscape ? 90 : 160
+                // Lower in a short portrait window (a near-square split
+                // window), so PTT stays on screen.
+                Layout.minimumHeight: page.landscape ? 90 : page.height < 620 ? 100 : 160
                 // A swipe in the open drawer must not tune.
                 covers: [controlsDrawer.background]
             }
