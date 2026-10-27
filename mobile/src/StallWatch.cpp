@@ -93,24 +93,40 @@ void run()
     while (s_running.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
         const qint64 now = nowMs();
-        if (!s_active.load()) {
+        const bool active = s_active.load();
+#ifdef Q_OS_ANDROID
+        // Android keeps the GUI thread running in the background (receive,
+        // the radio connection): a stall there is watched too, from 4 s (beta
+        // 41: it stood still while another app was in front, and the radio
+        // dropped the SmartLink connection).
+        const qint64 stallMs = active ? 1000 : 4000;
+        if (!active) {
+            s_frameMs = 0;
+        }
+#else
+        const qint64 stallMs = 1000;
+        if (!active) {
             s_mainBeatMs = now;
             s_frameMs = 0;
             continue;
         }
+#endif
         if (!s_beatPending.exchange(true)) {
             QMetaObject::invokeMethod(qApp, [] { beatArrived(); }, Qt::QueuedConnection);
         }
         const qint64 silentMs = now - s_mainBeatMs.load();
-        if (silentMs >= 1000) {
+        if (silentMs >= stallMs) {
             if (!s_stallSinceMs.load()) {
                 s_stallSinceMs = s_mainBeatMs.load();
-                nextReportMs = 1000;
+                nextReportMs = stallMs;
             }
             // At 1, 2, 4, 8 ... s: the log line waits for the GUI thread, the
             // file does not.
             if (silentMs >= nextReportMs) {
-                const QString line = QStringLiteral("GUI thread stalled %1 ms: %2").arg(silentMs).arg(context(now));
+                const QString line = QStringLiteral("GUI thread stalled %1 ms%2: %3")
+                    .arg(silentMs)
+                    .arg(active ? QString() : QStringLiteral(" (app not in front)"))
+                    .arg(context(now));
                 qCWarning(lcStall).noquote() << line;
                 writeNote(QDateTime::currentDateTime().toString(QStringLiteral("HH:mm:ss ")) + line);
                 nextReportMs *= 2;

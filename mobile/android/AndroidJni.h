@@ -15,5 +15,8 @@ inline constexpr const char* kPlatformClass = "fi/oh6oksa/oksasdr/Platform";
 // Android services kept for the whole run: the multicast lock LAN discovery
 // needs. Called once at start.
 void androidStartup();
+// A frame drawn (QQuickWindow::frameSwapped, any thread): the app's
+// application state check counts them.
+void androidFrameDrawn();
 
 } // namespace AetherSDR::mobile

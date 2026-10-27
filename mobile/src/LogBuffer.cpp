@@ -37,6 +37,11 @@ bool worthKeeping(const QMessageLogContext& context, QtMsgType type, const QStri
     if (category == QLatin1StringView("aether.mobile") || category.startsWith(QLatin1StringView("aether.mobile."))) {
         return true;
     }
+    // Qt's Android window: the surface coming and going (enabled in main.cpp
+    // on Android), to see where the GUI thread stops in the background.
+    if (category == QLatin1StringView("qt.qpa.window")) {
+        return true;
+    }
     // Commands sent to the radio, not its status stream.
     if (category == QLatin1StringView("aether.connection")) {
         return message.startsWith(QLatin1String("TX:"));

@@ -164,7 +164,13 @@ int main(int argc, char* argv[])
     // voice macros carry over.
     // iPadOS reports every cancelled pointer hover (trackpad, Pencil) as an
     // "Unknown hover state" line: noise in the operator's log.
+    // Android: Qt's window surface created and destroyed, for the log (the
+    // GUI thread stood still in the background, beta 41).
+#ifdef Q_OS_ANDROID
+    QLoggingCategory::setFilterRules(QStringLiteral("qt.qpa.input.mouse=false\nqt.qpa.window.debug=true"));
+#else
     QLoggingCategory::setFilterRules(QStringLiteral("qt.qpa.input.mouse=false"));
+#endif
     QGuiApplication::setApplicationName(QStringLiteral("AetherSDR-Mobile"));
     QGuiApplication::setOrganizationName(QStringLiteral("AetherSDR"));
     QGuiApplication::setApplicationVersion(QStringLiteral(AETHERSDR_VERSION));
@@ -500,6 +506,10 @@ int main(int argc, char* argv[])
         if (auto* window = qobject_cast<QQuickWindow*>(qml.rootObjects().constFirst())) {
             QObject::connect(window, &QQuickWindow::frameSwapped, &engine,
                              [&engine] { engine.countFrame(); }, Qt::DirectConnection);
+#ifdef Q_OS_ANDROID
+            QObject::connect(window, &QQuickWindow::frameSwapped, &engine,
+                             [] { AetherSDR::mobile::androidFrameDrawn(); }, Qt::DirectConnection);
+#endif
             AetherSDR::mobile::StallWatch::watch(window);
         }
     }

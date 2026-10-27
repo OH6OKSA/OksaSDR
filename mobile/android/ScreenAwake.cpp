@@ -9,39 +9,57 @@
 #include <QTimer>
 #include <qpa/qwindowsysteminterface.h>
 
+#include <atomic>
+
 Q_LOGGING_CATEGORY(lcAndroid, "aether.mobile.android")
 
 namespace AetherSDR::mobile {
 
 namespace {
 
+std::atomic<int> s_framesDrawn{0};
+
 // Qt's application state against Android's: a return from the background
-// left Qt Suspended with the app on screen (beta 40: Active, then the
-// Suspended of the earlier stop), which kept the waterfall paused and key
-// PTT refused. While Qt says Suspended, the activity's own state
-// (OksaActivity) is read every second, and Qt's set from it when the
-// activity is on screen.
+// left Qt Suspended with the app on screen (beta 40 and 41: Active, then the
+// Suspended of the earlier stop, after the app had stood still in the
+// background), which kept the waterfall paused and key PTT refused. While
+// Qt says Suspended, every second: the activity's own state (OksaActivity)
+// and the frames drawn; on screen by either, Qt's state is set from it. The
+// first second's reading goes to the log.
 void watchApplicationState()
 {
     auto* check = new QTimer(qApp);
     check->setInterval(1000);
+    static int ticks = 0;
     QObject::connect(check, &QTimer::timeout, check, [check] {
+        const int frames = s_framesDrawn.exchange(0);
         if (qApp->applicationState() != Qt::ApplicationSuspended) {
             check->stop();
             return;
         }
         const jint android = QJniObject::callStaticMethod<jint>("fi/oh6oksa/oksasdr/OksaActivity", "lifecycleState");
-        if (android != Qt::ApplicationActive && android != Qt::ApplicationInactive) {
+        if (++ticks == 1) {
+            qCInfo(lcAndroid) << "Qt's state Suspended; the activity" << Qt::ApplicationState(android) << "," << frames
+                              << "frames drawn in the last second";
+        }
+        Qt::ApplicationState state = Qt::ApplicationSuspended;
+        if (android == Qt::ApplicationActive || android == Qt::ApplicationInactive) {
+            state = Qt::ApplicationState(android);
+        } else if (frames >= 10) {
+            state = Qt::ApplicationActive;
+        }
+        if (state == Qt::ApplicationSuspended) {
             return;
         }
         check->stop();
-        qCInfo(lcAndroid) << "app on screen while Qt's state was Suspended: state set to"
-                          << Qt::ApplicationState(android);
-        QWindowSystemInterface::handleApplicationStateChanged<QWindowSystemInterface::SynchronousDelivery>(
-            Qt::ApplicationState(android));
+        qCInfo(lcAndroid) << "app on screen while Qt's state was Suspended (the activity" << Qt::ApplicationState(android)
+                          << "," << frames << "frames in 1 s): state set to" << state;
+        QWindowSystemInterface::handleApplicationStateChanged<QWindowSystemInterface::SynchronousDelivery>(state);
     });
     QObject::connect(qApp, &QGuiApplication::applicationStateChanged, check, [check](Qt::ApplicationState state) {
         if (state == Qt::ApplicationSuspended) {
+            ticks = 0;
+            s_framesDrawn = 0;
             check->start();
         } else {
             check->stop();
@@ -50,6 +68,11 @@ void watchApplicationState()
 }
 
 } // namespace
+
+void androidFrameDrawn()
+{
+    s_framesDrawn.fetch_add(1, std::memory_order_relaxed);
+}
 
 void androidStartup()
 {
