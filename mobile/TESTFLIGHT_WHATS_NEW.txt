@@ -9,18 +9,15 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- FT8 / FT4 with Keep CQ: a station's 73 after your RR73 no longer starts a new QSO, which logged the contact twice. If they send their report again (our RR73 did not reach them), RR73 goes again, logged once.
-- FT8 / FT4 keep their own time: the app asks a time server when decoding starts and every 30 minutes, so a device clock that drifts no longer spoils decoding or transmit (thanks Kurt DL5EAG).
-- From build 123: Band back to a band from outside every band; the CW strip under the frequency scale; no S among the transmit meters.
+- Record the band and play it back: the dot and the triangle at the end of the slice row record the slice in the radio and play it back; hold PTT while it plays and it goes on the air.
+- F/R on the display hides the band and step buttons, so the waterfall gets their height; Band then opens the bands (now with Close). Step buttons can follow the radio's STEP: View › STEP ×1 ×10 ×100. Thanks Larry Averbeck.
+- The eye in a password field shows what you typed (thanks Larry).
+- From builds 124–125: FT8 Keep CQ no longer logs a contact twice; FT8 / FT4 on a time server's time (thanks Kurt DL5EAG).
 
-RECENT (builds 113–122)
-- Less battery: the spectrum and waterfall drawn by the graphics chip (thanks Mike VA3MW); "2 analog" meters on iPad and Mac; the app's memory in the top row.
-- Audio output: Auto, Speaker or Bluetooth media; hold a step button to keep stepping (thanks Larry); wider bar meters (thanks Juho).
-- CW paddles at the phone's edges; {HIS} in CW memories; QRZ.com details in logged QSOs; tap on / off PTT stops after 3 minutes (thanks Kurt DL5EAG).
-- Slice volume beside the speaker icon; turning a phone keeps the waterfall's history (thanks Wayne WA2N).
-- FTx: CQ POTA filter (thanks Ryland WW4GA); RADE on DAX 2 and 3; FreeDV list by activity; same controls on every device (thanks Richard EI9JE); meters Analog / Bar / Two bars (thanks Mike VA3MW); FT8 transmit fixed (thanks Wayne WA2N); RADE fixes (thanks Michel F5GNM).
-RECENT (builds 94–112)
-- FreeDV tab with FreeDV Reporter; FTx (FT8 / FT4) with PSK Reporter; Wavelog / Cloudlog; transverters; the Mac text box.
+RECENT (builds 94–123)
+- Less battery: the spectrum drawn by the graphics chip (thanks Mike VA3MW); "2 analog" meters; Audio output choice; held step buttons repeat (thanks Larry); wider bar meters (thanks Juho).
+- CW paddles at the phone's edges; QRZ.com details in logged QSOs; slice volume by the speaker icon (thanks Wayne WA2N); FTx CQ POTA filter (thanks Ryland WW4GA); same controls on every device (thanks Richard EI9JE).
+- FreeDV tab with FreeDV Reporter; FTx (FT8 / FT4) with PSK Reporter; Wavelog / Cloudlog; transverters.
 
 PLEASE TRY
 - Receive on a few bands, with zoom, the Band button and the 3D view.
@@ -31,7 +28,7 @@ PLEASE TRY
 - The Log tab: log a few contacts, save your QRZ.com account (it now says if the sign-in worked), and share the ADIF file to your logbook.
 - FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - The FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
-- New: RADE from the FreeDV list (pick a station that shows TX now), and New call on the FTx tab. [TX]
+- New: record a few seconds with the dot, play them back with the triangle, and F/R with Band on the display. [TX to send a recording]
 - Spots and the DX cluster, a notch on a carrier, the TX processing at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM
