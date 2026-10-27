@@ -295,7 +295,8 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
 - **Drag anywhere else** to move the view; the frequency stays.
 - **Pinch**, or **− / +** (bottom left), to zoom around the slice.
 - **Band** (beside − / +) zooms out to the whole band you are on; tap it
-  again to return to the slice.
+  again to return to the slice. Off every band (the view dragged or tuned
+  outside one), it goes back to the slice's band, or else the nearest one.
 - The **frequency scale** runs along the top of the waterfall.
 - The **dBm scale** at the left: drag it up or down to move the trace (the
   reference level; this turns the spectrum's *Auto* off, View gives it
@@ -570,7 +571,7 @@ Reporter).
     (0–100, default 70): higher shows only the letters decoded with
     confidence, so band noise stays out. It reads hand-sent and keyer CW
     from 8 to 45 WPM. Decoded text shows
-    here and along the top of the waterfall (two lines, filled as writing
+    here and along the top of the waterfall, under its frequency scale (two lines, filled as writing
     is: the top line first, then the bottom one, broken between words); what you send shows there too, marked `[TX]`. The
     decoder keeps listening with the app in the background: `[away 20:55]`
     and `[back 21:12]` mark what came while you were away. A callsign the decoder hears after *DE*, or twice, is

@@ -65,6 +65,7 @@
 #include "models/TransmitModel.h"
 #include "models/XvtrPolicy.h"
 #include "models/BandSettings.h"
+#include "models/BandDefs.h"
 
 #include <QGuiApplication>
 #include <QInputMethodQueryEvent>
@@ -85,6 +86,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <memory>
 #if defined(Q_OS_LINUX) || defined(Q_OS_ANDROID)
 #include <unistd.h>
@@ -3298,7 +3300,30 @@ void MobileEngine::setPanDisplay(const QString& key, int value)
             m_pan->setDisplayRates(0, v);
         }
     } else if (key == QLatin1String("bandZoom")) {
-        // FlexLib's per-pan band zoom: the radio fits the pan to the band.
+        // FlexLib's per-pan band zoom: the radio fits the pan to the band
+        // its centre is in, and does nothing outside every band (a pan
+        // dragged from 40 m down to 6.94 MHz: Band did nothing). Back to a
+        // band first: the slice's, else the nearest one.
+        if (value && BandSettings::bandForFrequency(m_pan->centerMhz()) == QLatin1String("GEN")) {
+            const double center = m_pan->centerMhz();
+            double target = 0.0;
+            if (m_slice && BandSettings::bandForFrequency(m_slice->frequency()) != QLatin1String("GEN")) {
+                target = m_slice->frequency();
+            } else {
+                double nearest = std::numeric_limits<double>::max();
+                for (const BandDef& band : kBands) {
+                    const double distance = center < band.lowMhz ? band.lowMhz - center : center - band.highMhz;
+                    if (distance < nearest) {
+                        nearest = distance;
+                        target = (band.lowMhz + band.highMhz) / 2.0;
+                    }
+                }
+            }
+            if (target > 0.0) {
+                rm.requestPanCenter(id, target);
+                qCInfo(lcMobile) << "band zoom: pan centre" << center << "is outside the bands, back to" << target;
+            }
+        }
         rm.sendCommand(QStringLiteral("display pan set %1 band_zoom=%2").arg(id).arg(value ? 1 : 0));
     }
     qCInfo(lcMobile) << "pan display" << key << value;
