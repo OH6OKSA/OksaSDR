@@ -1,6 +1,7 @@
 **OksaSDR for Android — beta 39.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
 ### New in beta 39
+- **FT8 / FT4 keep their own time:** the app asks a time server when decoding starts and every 30 minutes, so a phone or tablet whose clock drifts still decodes and transmits on time (an app cannot set Android's clock; thanks Kurt DL5EAG).
 - **FT8 / FT4 with Keep CQ:** a station's 73 after your RR73 no longer starts a new QSO, which logged the contact twice. If they send their report again (our RR73 did not reach them), RR73 goes again, logged once.
 
 ### Still new from beta 38

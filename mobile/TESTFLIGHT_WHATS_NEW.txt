@@ -10,6 +10,7 @@ GETTING STARTED
 
 NEW IN THIS BUILD
 - FT8 / FT4 with Keep CQ: a station's 73 after your RR73 no longer starts a new QSO, which logged the contact twice. If they send their report again (our RR73 did not reach them), RR73 goes again, logged once.
+- FT8 / FT4 keep their own time: the app asks a time server when decoding starts and every 30 minutes, so a device clock that drifts no longer spoils decoding or transmit (thanks Kurt DL5EAG).
 - From build 123: Band back to a band from outside every band; the CW strip under the frequency scale; no S among the transmit meters.
 
 RECENT (builds 113–122)
