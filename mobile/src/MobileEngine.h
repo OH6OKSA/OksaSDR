@@ -512,6 +512,9 @@ public:
     // Android: the devices the receive and microphone streams open on, from
     // the operator's Audio output choice (see the .cpp).
     void applyAudioOutputDevice();
+    // Android, Auto with a Bluetooth headset: receive opens again once the
+    // headset's hands-free link is up, when it opened before the link.
+    void watchHeadsetLink();
     QString audioOutput() const;
     void setAudioOutput(const QString& mode);
     QString networkQuality() const;
@@ -1316,6 +1319,8 @@ private:
     QByteArray m_outputDeviceId;
     QByteArray m_inputDeviceId;
     bool m_outputDeviceApplied{false};
+    QTimer m_headsetLinkTimer;
+    int m_headsetLinkTicks{0};
     // Per-thread CPU (Linux and Android, from /proc/self/task): ticks at
     // the last sample, by thread id.
     QHash<int, quint64> m_threadTicks;

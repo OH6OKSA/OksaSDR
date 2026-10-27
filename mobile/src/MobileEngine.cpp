@@ -17,6 +17,7 @@
 #include <QtCore/private/qandroidextras_p.h>
 #include <QtCore/qcoreapplication_platform.h>
 #include <QCoreApplication>
+#include <QJniObject>
 #endif
 #include <QSet>
 #include <QRegularExpression>
@@ -378,6 +379,37 @@ MobileEngine::MobileEngine(QObject* parent)
     QTimer::singleShot(0, this, [this] { applyAudioBuffer(); });
     setAudioOutputMode(audioOutput());
     applyAudioOutputDevice();
+#ifdef Q_OS_ANDROID
+    m_headsetLinkTimer.setInterval(250);
+    connect(&m_headsetLinkTimer, &QTimer::timeout, this, [this] {
+        if (!m_connected || !m_audio || audioOutput() != QLatin1String("Auto")) {
+            m_headsetLinkTimer.stop();
+            return;
+        }
+        const qint64 linkUpMs = QJniObject::callStaticMethod<jlong>("fi/oh6oksa/oksasdr/Platform", "scoUpAt");
+        const qint64 rxOpenedMs = m_audio->rxStartedAtMs();
+        const bool timedOut = ++m_headsetLinkTicks >= 16;
+        if (linkUpMs == 0 && !timedOut) {
+            return;
+        }
+        m_headsetLinkTimer.stop();
+        if (linkUpMs > 1 && rxOpenedMs > linkUpMs) {
+            return;  // receive opened on the link
+        }
+        if (linkUpMs == 0 && !QJniObject::callStaticMethod<jboolean>("fi/oh6oksa/oksasdr/Platform", "headsetRoute",
+                "(Landroid/content/Context;)Z", QNativeInterface::QAndroidApplication::context().object())) {
+            return;  // no headset
+        }
+        if (linkUpMs == 1) {
+            return;  // the link was up before
+        }
+        qCInfo(lcMobile).noquote() << (linkUpMs > 0
+            ? QStringLiteral("headset hands-free link up %1 ms after receive opened: receive opened again on it")
+                  .arg(linkUpMs - rxOpenedMs)
+            : QStringLiteral("no hands-free link state from Android in 4 s with the headset as the route: receive opened again"));
+        QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->reopenRx(); }, Qt::QueuedConnection);
+    });
+#endif
     m_audioDiagTimer.setInterval(10000);
     connect(&m_audioDiagTimer, &QTimer::timeout, this, [this] {
         if (!m_connected || !m_audio) {
@@ -5900,6 +5932,7 @@ void MobileEngine::onConnectionStateChanged(bool connected)
         wireTxPacketSink();
         startAudio();
         setKeepScreenAwake(true);
+        watchHeadsetLink();
         setConnectionState(QStringLiteral("connected"));
         selectActiveSlice();
         // A slice RADE left muted when the app last went away.
@@ -6611,6 +6644,7 @@ void MobileEngine::setAudioOutput(const QString& mode)
     AppSettings::instance().save();
     setAudioOutputMode(audioOutput());
     applyAudioOutputDevice();
+    watchHeadsetLink();
     qCInfo(lcMobile).noquote() << "audio output:" << audioOutput();
     emit audioCompressionChanged();
 }
@@ -6666,6 +6700,27 @@ void MobileEngine::applyAudioOutputDevice()
             audio->restartRxSoon();
         }
     }, Qt::QueuedConnection);
+#endif
+}
+
+// Android, Auto with a Bluetooth headset: Android brings the headset's
+// hands-free link up a moment after the route is asked for, and a receive
+// stream opened before it stays where it opened. From Speaker the route
+// change ended the stream and it reopened on the headset; from Bluetooth
+// media it stayed on the headset's music link, which the headset shuts while
+// hands-free is up: no sound in the headset until the next change (beta 41).
+// Every quarter second for 4 s: when the link came up after receive opened,
+// receive opens again; with no word from Android in 4 s but the headset as
+// the route, once anyway.
+void MobileEngine::watchHeadsetLink()
+{
+#ifdef Q_OS_ANDROID
+    if (!m_connected || audioOutput() != QLatin1String("Auto")) {
+        m_headsetLinkTimer.stop();
+        return;
+    }
+    m_headsetLinkTicks = 0;
+    m_headsetLinkTimer.start();
 #endif
 }
 

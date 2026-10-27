@@ -3,8 +3,10 @@ package fi.oh6oksa.oksasdr;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ApplicationExitInfo;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.AudioDeviceInfo;
@@ -167,6 +169,7 @@ public final class Platform {
             am.setMode(AudioManager.MODE_NORMAL);
             return "";
         }
+        watchSco(context);
         if (Build.VERSION.SDK_INT >= 31) {
             List<AudioDeviceInfo> devices = am.getAvailableCommunicationDevices();
             for (AudioDeviceInfo d : devices) {
@@ -190,6 +193,55 @@ public final class Platform {
             }
         }
         return "";
+    }
+
+    // When the headset's hands-free audio link last came up
+    // (System.currentTimeMillis()), 0 while it is down; 1 when it was up
+    // before the watch started. A receive stream opened while Android
+    // switched a headset from its music link to hands-free stayed on the
+    // music link, silent in the headset (Bluetooth media -> Auto, beta 41):
+    // MobileEngine opens it again when the link came up after it.
+    private static volatile long scoUpAt = 0;
+    private static boolean scoWatched = false;
+
+    private static synchronized void watchSco(Context context) {
+        if (scoWatched) {
+            return;
+        }
+        scoWatched = true;
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context c, Intent intent) {
+                int state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, AudioManager.SCO_AUDIO_STATE_ERROR);
+                if (state != AudioManager.SCO_AUDIO_STATE_CONNECTED) {
+                    scoUpAt = 0;
+                } else {
+                    scoUpAt = isInitialStickyBroadcast() ? 1 : System.currentTimeMillis();
+                }
+            }
+        };
+        IntentFilter filter = new IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED);
+        Context app = context.getApplicationContext();
+        if (Build.VERSION.SDK_INT >= 33) {
+            app.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            app.registerReceiver(receiver, filter);
+        }
+    }
+
+    public static long scoUpAt() {
+        return scoUpAt;
+    }
+
+    // Whether Android's communication route is a Bluetooth headset now.
+    public static boolean headsetRoute(Context context) {
+        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        if (Build.VERSION.SDK_INT >= 31) {
+            AudioDeviceInfo d = am.getCommunicationDevice();
+            return d != null && (d.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+                                 || d.getType() == AudioDeviceInfo.TYPE_BLE_HEADSET);
+        }
+        return am.isBluetoothScoOn();
     }
 
     // ---- Device speaker (the operator's choice): receive on the built-in

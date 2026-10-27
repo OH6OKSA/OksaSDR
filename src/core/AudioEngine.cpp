@@ -4355,6 +4355,7 @@ bool AudioEngine::openRxSinkDevice(int producerRate)
     });
     qCWarning(lcAudio) << "AudioEngine: RX stream started at" << m_rxOutputRate.load() << "Hz"
                        << "device:" << dev.description();
+    m_rxStartedAtMs.store(QDateTime::currentMSecsSinceEpoch());
     m_rxBufferSampleRate.store(m_rxOutputRate.load());
     AudioSummaryLogger::RxSinkSummary summary;
     summary.deviceDescription = dev.description();
@@ -4455,6 +4456,14 @@ void AudioEngine::restartRxSoon()
     m_rxRouteRestartWindowMs = QDateTime::currentMSecsSinceEpoch();
 #endif
     retryRxStart(6);
+}
+
+void AudioEngine::reopenRx()
+{
+    if (m_audioSink) {
+        stopRxStream();
+    }
+    restartRxSoon();
 }
 
 void AudioEngine::retryRxStart(int triesLeft)

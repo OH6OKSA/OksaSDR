@@ -126,6 +126,12 @@ public:
     // few seconds: while Android changes the route (a Bluetooth link starting
     // or ending) the first opens can fail on every format.
     Q_INVOKABLE void restartRxSoon();
+    // Opens RX again even when it runs: a route that came up after it opened
+    // does not move it (Android: a stream opened while a headset switched
+    // from its music link to hands-free stayed on the music link).
+    Q_INVOKABLE void reopenRx();
+    // When RX last opened (Unix ms; 0 before), any thread.
+    qint64 rxStartedAtMs() const { return m_rxStartedAtMs.load(); }
 
     // Dedicated low-latency sidetone sink — independent of the RX sink.
     // Started alongside the RX sink and on-demand when the user enables
@@ -1138,6 +1144,7 @@ private:
     // in a short time at most, so a sink that keeps failing stays stopped).
     int m_rxRouteRestarts{0};
     qint64 m_rxRouteRestartWindowMs{0};
+    std::atomic<qint64> m_rxStartedAtMs{0};
     void retryRxStart(int triesLeft);
     struct RxSinkRateRequest {
         int producerRate{DEFAULT_SAMPLE_RATE};
