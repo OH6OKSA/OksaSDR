@@ -9,16 +9,17 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Less battery: the spectrum and waterfall are drawn by the graphics chip, and only what changed is redrawn (one new waterfall line, not the whole picture) (thanks Mike VA3MW).
-- Meters: a "2 analog" style on iPad and Mac, two analog meters side by side on each side (four readings in transmit).
-- The top row shows the app's memory beside its CPU.
+- Band takes you back to a band when the view is outside every band (the slice's band, or the nearest).
+- The decoded CW strip sits under the waterfall's frequency scale, so the scale stays readable.
+- Meters: S is no longer a transmit choice (nothing to read on the air).
+- Audio output's help says which speaker and microphone each choice uses.
 
-RECENT (builds 113–120)
+RECENT (builds 113–122)
+- Less battery: the spectrum and waterfall drawn by the graphics chip (thanks Mike VA3MW); "2 analog" meters on iPad and Mac; the app's memory in the top row.
 - Audio output: Auto, Speaker or Bluetooth media; hold a step button to keep stepping (thanks Larry); wider bar meters (thanks Juho).
 - CW paddles at the phone's edges; {HIS} in CW memories; QRZ.com details in logged QSOs; tap on / off PTT stops after 3 minutes (thanks Kurt DL5EAG).
 - Slice volume beside the speaker icon; turning a phone keeps the waterfall's history (thanks Wayne WA2N).
-- FTx: CQ POTA filter (thanks Ryland WW4GA), SIG POTA in the log; Heard in CW for the log.
-- RADE on DAX 2 and 3; FreeDV list by activity; New call in FTx; a keyboard on the phone; same controls on every device (thanks Richard EI9JE); meters Analog / Bar / Two bars (thanks Mike VA3MW); FT8 transmit fixed (thanks Wayne WA2N); RADE fixes (thanks Michel F5GNM).
+- FTx: CQ POTA filter (thanks Ryland WW4GA); RADE on DAX 2 and 3; FreeDV list by activity; same controls on every device (thanks Richard EI9JE); meters Analog / Bar / Two bars (thanks Mike VA3MW); FT8 transmit fixed (thanks Wayne WA2N); RADE fixes (thanks Michel F5GNM).
 RECENT (builds 94–112)
 - FreeDV tab with FreeDV Reporter; FTx (FT8 / FT4) with PSK Reporter; Wavelog / Cloudlog; transverters; the Mac text box.
 
