@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import AetherMobile
 
-// Display: band plan, spots and the DX cluster, 2D waterfall or 3D,
+// Display: band plan, the band row and step buttons, spots and the DX cluster, 2D waterfall or 3D,
 // waterfall black level and colour gain (on
 // top of the auto-tracked noise floor; Auto off holds it), and the spectrum
 // trace's range (Auto, or reference level and range). Remembered on this
@@ -29,6 +29,40 @@ ColumnLayout {
                 focusPolicy: Qt.NoFocus
                 onClicked: Engine.bandPlan = modelData
             }
+        }
+    }
+    // The band row and the step buttons (also F/R on the display), and what
+    // the step buttons step by (Larry Averbeck).
+    RowLayout {
+        Layout.fillWidth: true
+        Layout.topMargin: Theme.spacing / 2
+        Label { text: qsTr("Bands and steps"); color: Theme.textDim; font.pixelSize: 16; Layout.fillWidth: true }
+        AppButton {
+            text: Engine.tuneRowsShown ? qsTr("Shown") : qsTr("Hidden")
+            checked: Engine.tuneRowsShown
+            leftPadding: 10
+            rightPadding: 10
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.tuneRowsShown = !Engine.tuneRowsShown
+        }
+    }
+    RowLayout {
+        Layout.fillWidth: true
+        AppButton {
+            text: qsTr("1 Hz – 1 kHz")
+            checked: !Engine.radioStepButtons
+            Layout.fillWidth: true
+            Layout.preferredWidth: 1
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.radioStepButtons = false
+        }
+        AppButton {
+            text: qsTr("STEP ×1 ×10 ×100")
+            checked: Engine.radioStepButtons
+            Layout.fillWidth: true
+            Layout.preferredWidth: 1
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.radioStepButtons = true
         }
     }
     // Spots on the display (the radio's, from every client) and this app's

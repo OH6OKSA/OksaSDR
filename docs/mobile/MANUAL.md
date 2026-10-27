@@ -70,7 +70,7 @@ mode, a DSP that runs, the shown tab) is **lit blue**; the others are dark.
 | Band buttons | 160 m … 6 m, the radio's transverter (XVTR) bands, WWV, GEN |
 | Slice row | The two [meters](#4-meters-and-slices) at the ends, the slices in between |
 | Panadapter and waterfall | The [spectrum display](#5-panadapter-and-waterfall) |
-| Step buttons | Tune by −1 kHz … +1 kHz (with an FM step: the step, 100 kHz, 1 MHz, 10 MHz) |
+| Step buttons | Tune by −1 kHz … +1 kHz, or by the radio's STEP ×1, ×10, ×100 (with an FM step: the step, 100 kHz, 1 MHz, 10 MHz) |
 | PTT / KEY | [Transmit](#7-transmitting-ptt-key-and-tune) |
 
 On an iPad or tablet the controls can stay pinned at the side (as above) or
@@ -92,7 +92,10 @@ The layout follows the device: rotation, Split View, Stage Manager and
 folding switch it live. On a very low screen in landscape (a phone's outer
 screen, the smaller iPhones) the band buttons give way to the display;
 there the **Band** button on the waterfall opens the bands, with *Whole
-band* (the band zoom) under them.
+band* (the band zoom) and *Close* under them. **F/R** beside it hides the
+band buttons and the step buttons on any device, so the waterfall gets
+their height; Band then opens the bands the same way, and F/R brings the
+rows back (also *View › Bands and steps*; remembered).
 
 ![The bands from the Band button in a low landscape window](manual/bandchooser.jpg)
 
@@ -150,7 +153,9 @@ radio tunes the RF frequency, uses the transverter port and does the IF
 itself. On a phone the band row scrolls sideways.
 
 **Step buttons.** ±1 Hz … ±1 kHz, landing on round frequencies: +10 Hz from
-14.100 002 goes to 14.100 010, not 14.100 012. With a step of 5 kHz or
+14.100 002 goes to 14.100 010, not 14.100 012. *View › STEP ×1 ×10 ×100*
+makes them the radio's STEP (as set with STEP at the top) and ten and a
+hundred of it: with a 500 Hz STEP, ±500 Hz, ±5 kHz and ±50 kHz. With a step of 5 kHz or
 more (STEP, e.g. an FM channel step of 12.5 kHz on 70 cm) they become ±STEP, ±100 kHz,
 ±1 MHz and ±10 MHz, all on the step's grid. Hold a step button to keep
 stepping: after 0.4 s it repeats about eight times a second (also over
@@ -299,6 +304,9 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
 - **Band** (beside − / +) zooms out to the whole band you are on; tap it
   again to return to the slice. Off every band (the view dragged or tuned
   outside one), it goes back to the slice's band, or else the nearest one.
+  With the band buttons hidden (F/R, or a very low landscape screen) it opens
+  the bands instead.
+- **F/R** hides the band buttons and the step buttons, or brings them back.
 - The **frequency scale** runs along the top of the waterfall.
 - The **dBm scale** at the left: drag it up or down to move the trace (the
   reference level; this turns the spectrum's *Auto* off, View gives it

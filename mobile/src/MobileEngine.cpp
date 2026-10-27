@@ -112,6 +112,8 @@ constexpr double kS9Dbm = -73.0;
 constexpr quint16 kRadioTxAudioPort = 4991;
 const QString kLastAddressKey = QStringLiteral("MobileLastRadioAddress");
 const QString kControlsVisibleKey = QStringLiteral("MobileControlsVisible");
+const QString kTuneRowsShownKey = QStringLiteral("MobileTuneRowsShown");
+const QString kRadioStepButtonsKey = QStringLiteral("MobileRadioStepButtons");
 const QString kDeviceMicSelection = QStringLiteral("PC");
 constexpr int kPanPixelsSettleMs = 400;
 // The radio's FFT vertical encoding, the same in every orientation and on
@@ -1235,6 +1237,36 @@ void MobileEngine::setControlsVisible(bool visible)
     AppSettings::instance().setValue(kControlsVisibleKey, visible ? QStringLiteral("True") : QStringLiteral("False"));
     AppSettings::instance().save();
     emit controlsVisibleChanged();
+}
+
+bool MobileEngine::tuneRowsShown() const
+{
+    return AppSettings::instance().value(kTuneRowsShownKey, QStringLiteral("True")).toString() == QLatin1String("True");
+}
+
+void MobileEngine::setTuneRowsShown(bool shown)
+{
+    if (shown == tuneRowsShown()) {
+        return;
+    }
+    AppSettings::instance().setValue(kTuneRowsShownKey, shown ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    emit tuneRowsChanged();
+}
+
+bool MobileEngine::radioStepButtons() const
+{
+    return AppSettings::instance().value(kRadioStepButtonsKey, QStringLiteral("False")).toString() == QLatin1String("True");
+}
+
+void MobileEngine::setRadioStepButtons(bool radio)
+{
+    if (radio == radioStepButtons()) {
+        return;
+    }
+    AppSettings::instance().setValue(kRadioStepButtonsKey, radio ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    emit tuneRowsChanged();
 }
 
 // ---- transmit -------------------------------------------------------------

@@ -153,6 +153,8 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QVariantList smartLinkRadios READ smartLinkRadios NOTIFY smartLinkRadiosChanged)
     Q_PROPERTY(bool remoteSession READ remoteSession NOTIFY connectionStateChanged)
     Q_PROPERTY(bool controlsVisible READ controlsVisible WRITE setControlsVisible NOTIFY controlsVisibleChanged)
+    Q_PROPERTY(bool tuneRowsShown READ tuneRowsShown WRITE setTuneRowsShown NOTIFY tuneRowsChanged)
+    Q_PROPERTY(bool radioStepButtons READ radioStepButtons WRITE setRadioStepButtons NOTIFY tuneRowsChanged)
     Q_PROPERTY(bool transmitAvailable READ transmitAvailable NOTIFY transmitStateChanged)
     Q_PROPERTY(QString transmitUnavailableReason READ transmitUnavailableReason NOTIFY transmitStateChanged)
     Q_PROPERTY(bool canUseDeviceMicrophone READ canUseDeviceMicrophone NOTIFY transmitStateChanged)
@@ -590,6 +592,14 @@ public:
     // the room (PTT always stays). Remembered on the device.
     bool controlsVisible() const;
     void setControlsVisible(bool visible);
+    // The band row and the step buttons, or hidden behind F/R on the display
+    // so the waterfall has their height (Larry Averbeck); remembered.
+    bool tuneRowsShown() const;
+    void setTuneRowsShown(bool shown);
+    // The step buttons from the radio's STEP (±STEP, ×10, ×100), or 1 Hz to
+    // 1 kHz (Larry Averbeck); remembered.
+    bool radioStepButtons() const;
+    void setRadioStepButtons(bool radio);
 
     // PTT is offered only when connected, the radio can transmit and its mic
     // input is this device (mic_selection=PC); the reason says which is missing.
@@ -1195,6 +1205,7 @@ signals:
     void filterChanged();
     void lastAddressChanged();
     void controlsVisibleChanged();
+    void tuneRowsChanged();
     void smartLinkChanged();
     void smartLinkRadiosChanged();
     // The radio presented a different TLS certificate than the one pinned

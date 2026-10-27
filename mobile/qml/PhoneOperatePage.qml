@@ -190,7 +190,7 @@ Page {
             // landscape (a phone's outer screen, small iPhones), where the
             // display needs the room; the Band button on it picks bands.
             RowLayout {
-                visible: !(page.landscape && Theme.tightHeight)
+                visible: !(page.landscape && Theme.tightHeight) && Engine.tuneRowsShown
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
                 ListView {
@@ -224,14 +224,19 @@ Page {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 rfLabelWidth: sliceBar.rightMeterWidth
-                // The band row is left out there: Band picks the bands.
-                bandPicker: page.landscape && Theme.tightHeight
+                // The band row is left out there, or hidden by F/R: Band
+                // picks the bands.
+                bandPicker: (page.landscape && Theme.tightHeight) || !Engine.tuneRowsShown
+                tuneRowsToggle: true
                 Layout.minimumHeight: page.landscape ? 90 : 160
                 // A swipe in the open drawer must not tune.
                 covers: [controlsDrawer.background]
             }
 
+            // Portrait: only the step buttons, gone with F/R. Landscape: the
+            // controls button and PTT stay when F/R hides the steps.
             RowLayout {
+                visible: page.landscape || Engine.tuneRowsShown
                 Layout.fillWidth: true
                 spacing: 4
                 PttButton {
@@ -245,7 +250,7 @@ Page {
                 // Step buttons: land on round frequencies (tuneByHz); FM
                 // channel steps take the radio's STEP (Theme.stepButtons).
                 Repeater {
-                    model: Theme.stepButtons(Engine.stepHz)
+                    model: Engine.tuneRowsShown ? Theme.stepButtons(Engine.stepHz, Engine.radioStepButtons) : []
                     delegate: AppButton {
                         required property int modelData
                         text: (modelData > 0 ? "+" : "−") + Theme.stepLabel(Math.abs(modelData))
@@ -261,6 +266,12 @@ Page {
                         autoRepeatInterval: 125
                         onClicked: Engine.tuneByHz(modelData)
                     }
+                }
+                // With the steps hidden the controls button and PTT stay at
+                // the right, where the thumb finds them.
+                Item {
+                    visible: !Engine.tuneRowsShown
+                    Layout.fillWidth: true
                 }
                 // Landscape: the controls button and PTT end this row, so
                 // the low screen keeps its height for the spectrum.

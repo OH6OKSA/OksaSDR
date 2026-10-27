@@ -192,7 +192,7 @@ Page {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
-                visible: Engine.bandsAvailable
+                visible: Engine.bandsAvailable && Engine.tuneRowsShown
                 Repeater {
                     model: Engine.bands
                     delegate: AppButton {
@@ -225,14 +225,19 @@ Page {
                 Layout.topMargin: -Math.round(Theme.spacing / 2)
                 // A swipe in the open drawer must not tune.
                 covers: [controlsDrawer.background]
+                // F/R hides the band row and the step buttons: Band then
+                // picks the bands.
+                bandPicker: !Engine.tuneRowsShown
+                tuneRowsToggle: true
             }
 
             // Step buttons: land on round frequencies (tuneByHz).
             RowLayout {
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
+                visible: Engine.tuneRowsShown
                 Repeater {
-                    model: Theme.stepButtons(Engine.stepHz)
+                    model: Theme.stepButtons(Engine.stepHz, Engine.radioStepButtons)
                     delegate: AppButton {
                         required property int modelData
                         text: (modelData > 0 ? "+" : "−") + Theme.stepLabel(Math.abs(modelData))

@@ -822,11 +822,30 @@ Rectangle {
             opacity: 0.85
             onClicked: panArea.bandPicker ? bandChooser.open() : Engine.setPanDisplay("bandZoom", checked ? 0 : 1)
         }
+        // F/R (frequency / resolution, Larry Averbeck's name): the band row
+        // and the step buttons, or hidden so the waterfall has their height;
+        // Band then opens the bands. On a page that has those rows.
+        AppButton {
+            objectName: "tuneRowsButton"
+            visible: panArea.tuneRowsToggle
+            text: qsTr("F/R")
+            Accessible.name: qsTr("Band row and step buttons")
+            checked: Engine.tuneRowsShown
+            font.pixelSize: Math.round(Theme.buttonFont * 0.85)
+            height: Theme.touchTarget
+            leftPadding: 8
+            rightPadding: 8
+            opacity: 0.85
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.tuneRowsShown = !Engine.tuneRowsShown
+        }
     }
 
     // Set by a page that leaves its band row out (no band could be picked
     // there before).
     property bool bandPicker: false
+    // Set by a page whose band row and step buttons F/R hides.
+    property bool tuneRowsToggle: false
     Popup {
         id: bandChooser
         objectName: "bandChooser"
@@ -863,15 +882,26 @@ Rectangle {
                     }
                 }
             }
-            AppButton {
-                text: qsTr("Whole band")
-                checked: !!Engine.panDisplay.bandZoom
-                focusPolicy: Qt.NoFocus
-                Layout.fillWidth: true
-                Layout.preferredHeight: Theme.touchTarget
-                onClicked: {
-                    Engine.setPanDisplay("bandZoom", checked ? 0 : 1)
-                    bandChooser.close()
+            RowLayout {
+                spacing: 4
+                AppButton {
+                    text: qsTr("Whole band")
+                    checked: !!Engine.panDisplay.bandZoom
+                    focusPolicy: Qt.NoFocus
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: {
+                        Engine.setPanDisplay("bandZoom", checked ? 0 : 1)
+                        bandChooser.close()
+                    }
+                }
+                // A tap outside closes it too; this says so (Larry Averbeck).
+                AppButton {
+                    text: qsTr("Close")
+                    focusPolicy: Qt.NoFocus
+                    Layout.preferredWidth: Theme.buttonWidth * 1.5
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: bandChooser.close()
                 }
             }
         }
