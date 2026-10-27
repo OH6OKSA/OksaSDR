@@ -2,7 +2,8 @@ import QtQuick
 import AetherMobile
 
 // Network quality at a glance: a coloured dot, the rating and the round
-// trip ("● Excellent 4 ms"), in the desktop's colours, then the app's CPU.
+// trip ("● Excellent 4 ms"), in the desktop's colours, then the app's CPU
+// and memory.
 // compact drops the word (phones).
 Row {
     id: badge
@@ -41,6 +42,14 @@ Row {
         leftPadding: 6
         text: "CPU " + Math.round(Engine.cpuPercent) + " %"
         color: Engine.cpuPercent >= 80 ? "#cc3333" : Engine.cpuPercent >= 50 ? "#cc9900" : "#8aa8c0"
+        font.pixelSize: 12
+    }
+    // The app's memory (phones: the number alone, beside the CPU).
+    Text {
+        anchors.verticalCenter: parent.verticalCenter
+        visible: Engine.memoryMB > 0
+        text: (badge.compact ? "" : "RAM ") + Math.round(Engine.memoryMB) + " MB"
+        color: "#8aa8c0"
         font.pixelSize: 12
     }
 }

@@ -88,6 +88,9 @@
 #include <memory>
 #if defined(Q_OS_LINUX) || defined(Q_OS_ANDROID)
 #include <unistd.h>
+#if defined(Q_OS_IOS) || defined(Q_OS_MACOS)
+#include <mach/mach.h>
+#endif
 #endif
 
 Q_LOGGING_CATEGORY(lcMobile, "aether.mobile")
@@ -129,6 +132,31 @@ constexpr int kPanMoveMs = 40;
 // How long a dragged pan centre is shown before the radio's echo rules again.
 constexpr int kPanPreviewHoldMs = 700;
 constexpr double kDbPerSUnit = 6.0;
+
+// The app's memory in MB: on iOS and macOS its physical footprint (what
+// Xcode shows, and what the system's memory limit for the app counts),
+// elsewhere the resident set; 0 where it cannot be read.
+double processMemoryMB()
+{
+#if defined(Q_OS_IOS) || defined(Q_OS_MACOS)
+    task_vm_info_data_t info{};
+    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+    if (task_info(mach_task_self(), TASK_VM_INFO, reinterpret_cast<task_info_t>(&info), &count) != KERN_SUCCESS) {
+        return 0.0;
+    }
+    return info.phys_footprint / (1024.0 * 1024.0);
+#elif defined(Q_OS_LINUX)
+    // /proc/self/statm: total and resident size in pages.
+    QFile statm(QStringLiteral("/proc/self/statm"));
+    if (!statm.open(QIODevice::ReadOnly)) {
+        return 0.0;
+    }
+    const QList<QByteArray> fields = statm.readAll().split(' ');
+    return fields.size() > 1 ? fields.at(1).toDouble() * sysconf(_SC_PAGESIZE) / (1024.0 * 1024.0) : 0.0;
+#else
+    return 0.0;
+#endif
+}
 
 } // namespace
 
@@ -387,6 +415,7 @@ MobileEngine::MobileEngine(QObject* parent)
             m_lastCpuUsecs = *cpu;
         }
         m_uiFps = elapsedUs > 0 ? qRound(m_framesThisPeriod.exchange(0) * 1e6 / double(elapsedUs)) : 0;
+        m_memoryMB = processMemoryMB();
         sampleThreads(elapsedUs);
         emit performanceChanged();
         // Once a minute in the log while connected (30 samples of 2 s).
@@ -394,9 +423,10 @@ MobileEngine::MobileEngine(QObject* parent)
         if (m_connected && ++samples >= 30) {
             samples = 0;
             qCInfo(lcMobile).noquote()
-                << QStringLiteral("performance: CPU %1 % of %2 cores (%3 % of one core), %4 frames/s%5")
+                << QStringLiteral("performance: CPU %1 % of %2 cores (%3 % of one core), %4 frames/s, memory %5 MB%6")
                        .arg(qRound(m_cpuPercent)).arg(cpuCores())
                        .arg(qRound(m_cpuPercentOfCore)).arg(m_uiFps)
+                       .arg(qRound(m_memoryMB))
                        .arg(m_busyThreads.isEmpty() ? QString()
                                                     : QStringLiteral("; busiest threads: ") + m_busyThreads.join(QStringLiteral(", ")));
         }

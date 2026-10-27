@@ -103,6 +103,11 @@ Popup {
                         ? Theme.warning : Theme.text
         }
         Row2 {
+            visible: Engine.memoryMB > 0
+            label: qsTr("App memory")
+            value: Math.round(Engine.memoryMB) + " MB"
+        }
+        Row2 {
             label: qsTr("Screen frames drawn")
             value: Engine.uiFps + " /s"
             valueColor: Engine.uiFps > 0 && Engine.uiFps < 20 ? Theme.warning : Theme.text
