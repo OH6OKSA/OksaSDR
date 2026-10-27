@@ -30,10 +30,12 @@ QString s_outputMode = QStringLiteral("Auto");
 bool s_connected = false;
 
 // The audio route while a radio is connected: Auto takes a connected
-// Bluetooth headset's hands-free link (receive and microphone), Speaker the
-// built-in speaker even with Bluetooth connected, Bluetooth leaves Android's
-// own media route (a Bluetooth device's media link, the device microphone).
-// Whatever was set before is ended first.
+// Bluetooth headset's hands-free link (receive and microphone); Speaker and
+// Bluetooth leave Android's own route, the receive and microphone streams
+// opening on the devices the choice names (MobileEngine::
+// applyAudioOutputDevice): taking the speaker as the communication device
+// too switched Android's audio mode, and the route change ended the speaker
+// stream just opened (beta 39). Whatever was set before is ended first.
 void applyAudioRoute()
 {
     const QJniObject context = androidContext();
@@ -44,11 +46,7 @@ void applyAudioRoute()
     }
     QString route;
     if (s_outputMode == QLatin1String("Speaker")) {
-        route = QJniObject::callStaticObjectMethod(kPlatformClass, "useSpeaker",
-            "(Landroid/content/Context;)Ljava/lang/String;", context.object()).toString();
-        if (route.isEmpty()) {
-            route = QStringLiteral("device speaker not available, Android's own route");
-        }
+        route = QStringLiteral("the device's speaker and microphone (the streams open on them)");
     } else if (s_outputMode == QLatin1String("Bluetooth")) {
         route = QStringLiteral("Android's media route (a Bluetooth device's media link when connected)");
     } else {

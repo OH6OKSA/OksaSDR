@@ -6655,9 +6655,16 @@ void MobileEngine::applyAudioOutputDevice()
         return device.isNull() ? QStringLiteral("the system default") : device.description();
     };
     qCInfo(lcMobile).noquote() << "audio devices: output" << name(output) << "/ microphone" << name(input);
-    QMetaObject::invokeMethod(m_audio, [audio = m_audio, output, input] {
-        audio->setOutputDevice(output, AudioDeviceSelection::Fallback);
+    // The microphone first: opening it can change Android's route, which
+    // ends a receive stream opened before it.
+    // Receive opens again if the change left it stopped (an open refused
+    // while Android changed the route, beta 39: it stayed silent).
+    QMetaObject::invokeMethod(m_audio, [audio = m_audio, output, input, connected = m_connected] {
         audio->setInputDevice(input, AudioDeviceSelection::Fallback);
+        audio->setOutputDevice(output, AudioDeviceSelection::Fallback);
+        if (connected) {
+            audio->restartRxSoon();
+        }
     }, Qt::QueuedConnection);
 #endif
 }

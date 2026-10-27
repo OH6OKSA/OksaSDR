@@ -4317,6 +4317,29 @@ bool AudioEngine::openRxSinkDevice(int producerRate)
         }
         const QAudio::Error error = m_audioSink->error();
         if (error != QAudio::NoError) {
+#ifdef Q_OS_ANDROID
+            // Android ends an AAudio stream when the route changes under it
+            // (a Bluetooth headset's call link closing, the microphone
+            // opening on another device): receive went silent after Audio
+            // output Auto -> Speaker. Open it again, three times in 10 s at
+            // most.
+            const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+            if (nowMs - m_rxRouteRestartWindowMs > 10000) {
+                m_rxRouteRestartWindowMs = nowMs;
+                m_rxRouteRestarts = 0;
+            }
+            if (++m_rxRouteRestarts <= 3) {
+                qCWarning(lcAudio) << "AudioEngine: QAudioSink stopped with error" << error
+                                   << "(the route changed): restarting RX";
+                QMetaObject::invokeMethod(this, [this, generation]() {
+                    if (!m_audioSink || generation != m_rxSinkGeneration) {
+                        return;
+                    }
+                    retryRxStart(6);
+                }, Qt::QueuedConnection);
+                return;
+            }
+#endif
             qCWarning(lcAudio) << "AudioEngine: QAudioSink stopped with error, not auto-restarting RX"
                                << error;
             return;
@@ -4421,6 +4444,37 @@ void AudioEngine::applyPendingRxSinkRate()
         qCWarning(lcAudio) << "AudioEngine: previous speaker policy also failed;"
                              " reconnect or select an output device to retry";
     }
+}
+
+void AudioEngine::restartRxSoon()
+{
+    retryRxStart(6);
+}
+
+void AudioEngine::retryRxStart(int triesLeft)
+{
+    if (m_audioSink && m_audioDevice) {
+        return;  // running
+    }
+    if (m_audioSink) {
+        stopRxStream();  // a sink whose route ended
+    }
+    if (startRxStream()) {
+        return;
+    }
+    if (triesLeft <= 0) {
+        qCWarning(lcAudio) << "AudioEngine: RX could not be opened again";
+        return;
+    }
+    // A stop (disconnect) or another open meanwhile ends the retries.
+    const quint64 generation = m_rxSinkGeneration;
+    QTimer::singleShot(500, this, [this, triesLeft, generation] {
+        if (generation != m_rxSinkGeneration || m_audioSink) {
+            return;
+        }
+        qCInfo(lcAudio) << "AudioEngine: opening RX again," << triesLeft << "tries left";
+        retryRxStart(triesLeft - 1);
+    });
 }
 
 void AudioEngine::stopRxStream()

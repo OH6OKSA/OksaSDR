@@ -122,6 +122,10 @@ public:
     // Q_INVOKABLE: must run on the audio worker thread (#502)
     Q_INVOKABLE bool startRxStream();
     Q_INVOKABLE void stopRxStream();
+    // Opens RX again when it is not running (or its sink died), trying for a
+    // few seconds: while Android changes the route (a Bluetooth link starting
+    // or ending) the first opens can fail on every format.
+    Q_INVOKABLE void restartRxSoon();
 
     // Dedicated low-latency sidetone sink — independent of the RX sink.
     // Started alongside the RX sink and on-demand when the user enables
@@ -1130,6 +1134,11 @@ private:
     // every packet or same-rate epoch. Zero means no managed speaker is open.
     int m_rxSinkProducerRate{0};
     quint64 m_rxSinkGeneration{0};
+    // Android: RX sinks reopened after the route changed under them (a few
+    // in a short time at most, so a sink that keeps failing stays stopped).
+    int m_rxRouteRestarts{0};
+    qint64 m_rxRouteRestartWindowMs{0};
+    void retryRxStart(int triesLeft);
     struct RxSinkRateRequest {
         int producerRate{DEFAULT_SAMPLE_RATE};
         quint64 sinkGeneration{0};
