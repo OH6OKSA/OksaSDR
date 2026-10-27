@@ -83,6 +83,9 @@
 #include <QNetworkInformation>
 #include <QNetworkInterface>
 #include <QTimer>
+#ifdef Q_OS_ANDROID
+#include <QMediaDevices>
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -374,6 +377,7 @@ MobileEngine::MobileEngine(QObject* parent)
     // stutter can be told apart: late packets or too short a buffer.
     QTimer::singleShot(0, this, [this] { applyAudioBuffer(); });
     setAudioOutputMode(audioOutput());
+    applyAudioOutputDevice();
     m_audioDiagTimer.setInterval(10000);
     connect(&m_audioDiagTimer, &QTimer::timeout, this, [this] {
         if (!m_connected || !m_audio) {
@@ -6600,8 +6604,44 @@ void MobileEngine::setAudioOutput(const QString& mode)
     AppSettings::instance().setValue(QStringLiteral("MobileAudioOutput"), mode);
     AppSettings::instance().save();
     setAudioOutputMode(audioOutput());
+    applyAudioOutputDevice();
     qCInfo(lcMobile).noquote() << "audio output:" << audioOutput();
     emit audioCompressionChanged();
+}
+
+// Android: Qt opens the receive stream on one output device (an AAudio
+// stream with that device's id), and Android's routing (the communication
+// device, the speakerphone) does not move it afterwards: with Bluetooth on,
+// Speaker kept playing in the Bluetooth device (beta 37, the user's phone).
+// Speaker opens the stream on the built-in speaker; Auto and Bluetooth on
+// Qt's default output (a connected Bluetooth device first, else the
+// speaker). A running stream restarts on the new device.
+void MobileEngine::applyAudioOutputDevice()
+{
+#ifdef Q_OS_ANDROID
+    if (!m_audio) {
+        return;
+    }
+    QAudioDevice device;
+    if (audioOutput() == QLatin1String("Speaker")) {
+        for (const QAudioDevice& candidate : QMediaDevices::audioOutputs()) {
+            if (candidate.description() == QLatin1String("Built in speaker")) {
+                device = candidate;
+                break;
+            }
+        }
+    }
+    if (m_outputDeviceApplied && device.id() == m_outputDeviceId) {
+        return;
+    }
+    m_outputDeviceApplied = true;
+    m_outputDeviceId = device.id();
+    qCInfo(lcMobile).noquote() << "audio output device:"
+                               << (device.isNull() ? QStringLiteral("the system default") : device.description());
+    QMetaObject::invokeMethod(m_audio, [audio = m_audio, device] {
+        audio->setOutputDevice(device, AudioDeviceSelection::Fallback);
+    }, Qt::QueuedConnection);
+#endif
 }
 
 void MobileEngine::applyAudioBuffer()

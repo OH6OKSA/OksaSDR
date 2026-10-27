@@ -507,6 +507,9 @@ public:
     QString audioBuffer() const;
     void setAudioBuffer(const QString& mode);
     void applyAudioBuffer();
+    // Android: the output device the receive stream opens on, from the
+    // operator's Audio output choice (see the .cpp).
+    void applyAudioOutputDevice();
     QString audioOutput() const;
     void setAudioOutput(const QString& mode);
     QString networkQuality() const;
@@ -1308,6 +1311,8 @@ private:
     double m_cpuPercent{0.0};
     double m_cpuPercentOfCore{0.0};
     double m_memoryMB{0.0};
+    QByteArray m_outputDeviceId;
+    bool m_outputDeviceApplied{false};
     // Per-thread CPU (Linux and Android, from /proc/self/task): ticks at
     // the last sample, by thread id.
     QHash<int, quint64> m_threadTicks;
