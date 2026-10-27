@@ -9,10 +9,9 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Record the band and play it back: the dot and the triangle at the end of the slice row record the slice in the radio and play it back; hold PTT while it plays and it goes on the air.
-- F/R on the display hides the band and step buttons, so the waterfall gets their height; Band then opens the bands (now with Close). Step buttons can follow the radio's STEP: View › STEP ×1 ×10 ×100. Thanks Larry Averbeck.
-- The eye in a password field shows what you typed (thanks Larry).
-- From builds 124–125: FT8 Keep CQ no longer logs a contact twice; FT8 / FT4 on a time server's time (thanks Kurt DL5EAG).
+- Logger32: every QSO you log can go to Logger32 on your PC (Log tab: the PC's address, port 52001); QSOs wait on the phone when the PC is not reached (thanks Juho Kontio).
+- A narrow window on an iPad (Split View, Stage Manager) keeps PTT on screen, and its top lines no longer leave half empty.
+- From build 129: record and play back (the dot and the triangle in the slice row); F/R hides the band and step buttons; step buttons on the radio's STEP; the eye in password fields (thanks Larry Averbeck).
 
 RECENT (builds 94–123)
 - Less battery: the spectrum drawn by the graphics chip (thanks Mike VA3MW); "2 analog" meters; Audio output choice; held step buttons repeat (thanks Larry); wider bar meters (thanks Juho).
@@ -28,7 +27,7 @@ PLEASE TRY
 - The Log tab: log a few contacts, save your QRZ.com account (it now says if the sign-in worked), and share the ADIF file to your logbook.
 - FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - The FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
-- New: record a few seconds with the dot, play them back with the triangle, and F/R with Band on the display. [TX to send a recording]
+- New: Logger32 on the Log tab if you use it; record a few seconds with the dot and play them back with the triangle. [TX to send a recording]
 - Spots and the DX cluster, a notch on a carrier, the TX processing at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM
