@@ -173,7 +173,8 @@ Item {
             border.color: Theme.surfaceRaised
             radius: Theme.radius
         }
-        readonly property real cellWidth: Math.max(Theme.buttonWidth * 0.9, 64)
+        // Room for "2 analog" at a large iPad's font.
+        readonly property real cellWidth: Math.max(Theme.buttonWidth * 0.9, 72)
         contentItem: ColumnLayout {
             spacing: Theme.spacing / 2
             Label { text: qsTr("Style"); color: Theme.textDim; font.pixelSize: Math.round(Theme.buttonFont * 0.85) }
