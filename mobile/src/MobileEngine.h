@@ -1443,6 +1443,11 @@ private:
     bool m_digiTransmitting{false};
     bool m_digiLogged{false};
     bool m_digiEndAfterTx{false};
+    // The last contact logged: a station that sends again soon after (its
+    // 73, or its report when our RR73 did not reach it) is not a new QSO.
+    QString m_digiLastLoggedCall;
+    QString m_digiLastLoggedBand;
+    qint64 m_digiLastLoggedMs{0};
 
     // ---- RADE (MobileEngineRade.cpp) ----
     void activateRade();

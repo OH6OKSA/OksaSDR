@@ -14,6 +14,7 @@
 #include "core/LogManager.h"
 #include "models/DecoderAudioModel.h"
 #include "models/PanadapterModel.h"
+#include "models/BandSettings.h"
 #include "models/RadioModel.h"
 #include "models/SliceModel.h"
 
@@ -43,6 +44,9 @@ constexpr int kMaxDecodes = 80;
 // the QSO (WSJT-X's Tx watchdog does the same in time).
 constexpr int kMaxTries = 6;
 constexpr int kMaxCqCalls = 10;
+// How long after a contact is logged the same station on the same band is
+// that contact still (its 73, a repeated report), not a new one.
+constexpr qint64 kDigiRepeatWindowMs = 10 * 60 * 1000;
 // Keying and the audio path to the radio, so the tones reach the air at the
 // nominal 0.5 s into the slot.
 constexpr double kTxLatencyS = 0.25;
@@ -1140,6 +1144,18 @@ void MobileEngine::digiLogQso()
     if (m_digiLogged || m_digiDx.isEmpty()) {
         return;
     }
+    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    const QString band = BandSettings::bandForFrequency(digiSlice() ? digiSlice()->frequency() : 0.0);
+    if (m_digiDx == m_digiLastLoggedCall && band == m_digiLastLoggedBand
+        && nowMs - m_digiLastLoggedMs < kDigiRepeatWindowMs) {
+        m_digiLogged = true;
+        qCInfo(lcMobile).noquote() << "digi:" << m_digiDx << "is in the log on" << band
+                                   << "from" << (nowMs - m_digiLastLoggedMs) / 1000 << "s ago; not logged twice";
+        return;
+    }
+    m_digiLastLoggedCall = m_digiDx;
+    m_digiLastLoggedBand = band;
+    m_digiLastLoggedMs = nowMs;
     if (m_digiDryRun) {  // a test's made-up QSO stays out of the log
         m_digiLogged = true;
         qCInfo(lcMobile) << "digi: dry run, not logged:" << m_digiDx;
@@ -1197,6 +1213,34 @@ void MobileEngine::handleDigiDecodes(const QVariantList& decodes, qint64 slotMs)
         const bool report = Ft8Engine::isReport(extra) && !extra.startsWith(QLatin1Char('R'));
         const bool rReport = Ft8Engine::isReport(extra) && extra.startsWith(QLatin1Char('R'));
         if (m_digiState == QLatin1String("cq") && m_digiDx.isEmpty()) {
+            // A sign-off ends a QSO and never starts one: a station's 73
+            // after our RR73 was answered as a new call, and its software's
+            // reply was logged a second time (F1IQH and F8MRQ on 12 m,
+            // build 122). An R-report is the end of a QSO too: only the
+            // station just logged sends one now, when our RR73 did not
+            // reach it, and it gets RR73 again (logged once). The station
+            // just logged calling again is that contact still.
+            if (extra == QLatin1String("73") || extra == QLatin1String("RR73") || extra == QLatin1String("RRR")) {
+                continue;
+            }
+            const bool justLogged = p.de == m_digiLastLoggedCall
+                && QDateTime::currentMSecsSinceEpoch() - m_digiLastLoggedMs < kDigiRepeatWindowMs;
+            if (justLogged && rReport) {
+                m_digiDx = p.de;
+                m_digiRxHz = d.value(QStringLiteral("freq")).toInt();
+                m_digiDxGrid.clear();
+                m_digiDxSig.clear();
+                m_digiLogged = true;
+                m_digiTxMsg = digiMessage(QStringLiteral("rr73"));
+                m_digiEndAfterTx = true;
+                m_digiTries = 0;
+                setDigiStatus(tr("%1 did not get our RR73: sending it again").arg(m_digiDx));
+                return;
+            }
+            if (justLogged || rReport) {
+                qCInfo(lcMobile).noquote() << "digi: not a new call:" << d.value(QStringLiteral("text")).toString();
+                continue;
+            }
             // Someone answered our CQ.
             m_digiDx = p.de;
             m_digiRxHz = d.value(QStringLiteral("freq")).toInt();

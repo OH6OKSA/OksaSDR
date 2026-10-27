@@ -1523,7 +1523,14 @@ int main(int argc, char* argv[])
         if (!nonstd) {
             QTimer::singleShot(70000, &app, [feed] { feed(QStringLiteral("OH6OKSA K1ABC R-10")); });
         }
-        QTimer::singleShot(110000, &app, [&app, &engine] {
+        // signoff: after the QSO, the station's 73 must not start a new one,
+        // and its report again gets RR73 again without a second log entry.
+        const bool signoff = parser.value(ft8TestOption).contains(QStringLiteral("signoff"));
+        if (signoff) {
+            QTimer::singleShot(105000, &app, [feed] { feed(QStringLiteral("OH6OKSA K1ABC 73")); });
+            QTimer::singleShot(135000, &app, [feed] { feed(QStringLiteral("OH6OKSA K1ABC R-10")); });
+        }
+        QTimer::singleShot(signoff ? 170000 : 110000, &app, [&app, &engine] {
             const QVariantMap d = engine.digi();
             qInfo().noquote() << "keepcq-test: end state" << d.value(QStringLiteral("state")).toString() << "|"
                               << d.value(QStringLiteral("status")).toString() << "| next" << d.value(QStringLiteral("txMsg")).toString();
