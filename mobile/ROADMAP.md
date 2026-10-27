@@ -367,6 +367,23 @@ From other FlexRadio mobile clients (PocketSDR for Android, release of
 - PTT latency measured over SmartLink and VPN (key to RF), and FreeDV /
   RADE on transmit and receive.
 
+Ideas to think over later (2026-10-27):
+- From upstream 26.10.3 (the engine fixes that matter here, taken as one
+  build and checked on the radio at low power): per-band TUNE RCA
+  suppression (#6524) and restoring only the outputs TUNE inhibited
+  (#6526); the interlock source list (#6493); Auto squelch by mode and per
+  slice and pan (#6464); the radio's Auto AGC-T where the firmware has it
+  (#6508); the firmware-dependent NR level range (#6498); CWX quote
+  encoding and macro status. Later perhaps: voice keyer recordings on the
+  device (#6292), the DeepCW / DeepFist CW decoders (#4817, models
+  downloaded on first use).
+- 4O3A Power Genius XL (PGXL) control, with the Tuner Genius XL panel.
+- Record the band and play it back, also on the air (the radio's slice
+  record and play, which the engine has: SliceModel::setRecordOn /
+  setPlayOn).
+- CW autotune: a tap near a CW signal centres it on the pitch, even when the
+  tap misses it (the peak in the spectrum around the tap).
+
 ## Waiting
 
 - **Upstream (aethersdr/AetherSDR):** no longer pursued (2026-10-22); OksaSDR
