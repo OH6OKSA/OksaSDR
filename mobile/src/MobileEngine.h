@@ -337,6 +337,11 @@ class MobileEngine : public QObject {
     // Tuning lock of the active slice (the radio's slice lock; SliceModel
     // refuses tuning while it is on). tuneBlocked fires on a refused tune.
     Q_PROPERTY(bool locked READ locked WRITE setLocked NOTIFY lockedChanged)
+    // The radio's quick record and playback on the active slice (SmartSDR's
+    // REC / PLAY): playAvailable once something has been recorded.
+    Q_PROPERTY(bool recordOn READ recordOn NOTIFY recordPlayChanged)
+    Q_PROPERTY(bool playOn READ playOn NOTIFY recordPlayChanged)
+    Q_PROPERTY(bool playAvailable READ playAvailable NOTIFY recordPlayChanged)
     // The radio's profiles (as SmartSDR/AetherSDR): global (band, pans,
     // slices…), transmit and mic. Type is "global", "transmit" or "mic".
     Q_PROPERTY(QStringList globalProfiles READ globalProfiles NOTIFY profilesChanged)
@@ -712,6 +717,9 @@ public:
     void setCwBreakIn(bool on);
     bool cwDecoderEnabled() const;
     bool locked() const;
+    bool recordOn() const;
+    bool playOn() const;
+    bool playAvailable() const;
     int agcThreshold() const;
     void setAgcThreshold(int value);
     int rfGain() const;
@@ -905,6 +913,8 @@ public:
     Q_INVOKABLE void setCwMemory(int index, const QString& text);
     Q_INVOKABLE void sendCwMemory(int index);
     void setLocked(bool on);
+    Q_INVOKABLE void toggleRecord();
+    Q_INVOKABLE void togglePlay();
     bool wfAutoLevel() const { return displayInt("MobileWfAuto", 1) != 0; }
     void setWfAutoLevel(bool on) { setDisplayInt("MobileWfAuto", on ? 1 : 0); }
     int wfBlackLevel() const { return displayInt("MobileWfBlack", 50); }
@@ -1236,6 +1246,7 @@ signals:
     void cwDecoderChanged();
     void displayLevelsChanged();
     void lockedChanged();
+    void recordPlayChanged();
     void rfGainChanged();
     void memoriesChanged();
     void qsoLogChanged();
@@ -1683,6 +1694,8 @@ private:
     // QSO is calls and RR73 only (type 4 messages).
     bool digiNoReports() const;
     double m_digiTxPeakW{0.0};
+    // The forward power's peak since PTT was keyed (the release logs it).
+    double m_pttPeakW{0.0};
     double m_digiTxPeakSwr{0.0};
     // The last transmission's peak power and SWR, for the Digi tab.
     double m_digiLastTxW{0.0};

@@ -1403,6 +1403,7 @@ void MobileEngine::wireTransmit()
     connect(&rm.meterModel(), &MeterModel::txMetersChanged, this,
             [this](float fwdPower, float swr, bool swrValid) {
         m_forwardPowerW = fwdPower;
+        m_pttPeakW = std::max(m_pttPeakW, double(fwdPower));
         if (m_digiTransmitting) {
             m_digiTxPeakW = std::max(m_digiTxPeakW, double(fwdPower));
             if (swrValid) {
@@ -2683,6 +2684,7 @@ void MobileEngine::setPtt(bool down, const QString& reason)
         }
         return;
     }
+    m_pttPeakW = 0.0;
     qCInfo(lcMobile) << "PTT keyed";
 }
 
@@ -2705,7 +2707,10 @@ void MobileEngine::releasePtt(const QString& reason)
         QMetaObject::invokeMethod(m_audio, &AudioEngine::stopTxClip, Qt::QueuedConnection);
         emit dvkChanged();
     }
-    qCInfo(lcMobile).noquote() << "PTT released:" << reason;
+    // The power out at its peak: none with PTT down says the audio did not
+    // reach the transmitter (the microphone, the slice's playback).
+    qCInfo(lcMobile).noquote() << "PTT released:" << reason
+                               << QStringLiteral("(peak %1 W)").arg(m_pttPeakW, 0, 'f', 1);
     // What left for the radio during this press: a steady rate and short
     // gaps mean stutter heard on the air comes from the network (VPN) or the
     // radio, long gaps that the phone sent unevenly.
@@ -5131,6 +5136,51 @@ void MobileEngine::setLocked(bool on)
     }
 }
 
+bool MobileEngine::recordOn() const
+{
+    return m_slice && m_slice->recordOn();
+}
+
+bool MobileEngine::playOn() const
+{
+    return m_slice && m_slice->playOn();
+}
+
+bool MobileEngine::playAvailable() const
+{
+    return m_slice && m_slice->playEnabled();
+}
+
+// The radio records the slice's receive audio and plays it back; played
+// while the slice transmits, the recording goes on the air (SmartSDR's
+// quick record). One or the other: recording stops playback and the other
+// way round, as the radio does.
+void MobileEngine::toggleRecord()
+{
+    if (!m_slice) {
+        return;
+    }
+    const bool on = !m_slice->recordOn();
+    if (on && m_slice->playOn()) {
+        m_slice->setPlayOn(false);
+    }
+    m_slice->setRecordOn(on);
+    qCInfo(lcMobile) << "slice record" << (on ? "on" : "off");
+}
+
+void MobileEngine::togglePlay()
+{
+    if (!m_slice || (!m_slice->playEnabled() && !m_slice->playOn())) {
+        return;
+    }
+    const bool on = !m_slice->playOn();
+    if (on && m_slice->recordOn()) {
+        m_slice->setRecordOn(false);
+    }
+    m_slice->setPlayOn(on);
+    qCInfo(lcMobile) << "slice play" << (on ? "on" : "off");
+}
+
 QStringList MobileEngine::pinnedSections() const
 {
     return AppSettings::instance().value(QStringLiteral("MobilePinnedSections"), QStringLiteral("DSP"))
@@ -6127,6 +6177,9 @@ void MobileEngine::bindSlice(SliceModel* slice)
         m_sliceConnections.append(connect(slice, &SliceModel::repeaterOffsetDirChanged, this, &MobileEngine::fmChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::fmRepeaterOffsetFreqChanged, this, &MobileEngine::fmChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::lockedChanged, this, &MobileEngine::lockedChanged));
+        for (auto sig : {&SliceModel::recordOnChanged, &SliceModel::playOnChanged, &SliceModel::playEnabledChanged}) {
+            m_sliceConnections.append(connect(slice, sig, this, &MobileEngine::recordPlayChanged));
+        }
         m_sliceConnections.append(connect(slice, &SliceModel::tuneBlockedByLock, this, &MobileEngine::tuneBlocked));
         // The preset set changes with the mode.
         m_sliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::filterChanged));
@@ -6167,6 +6220,7 @@ void MobileEngine::bindSlice(SliceModel* slice)
     }
     emit frequencyChanged();
     emit lockedChanged();
+    emit recordPlayChanged();
     emit modeChanged();
     emit modesChanged();
     emit afGainChanged();

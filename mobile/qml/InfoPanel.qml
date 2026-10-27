@@ -9,7 +9,8 @@ import AetherMobile
 // DSP flags (lit when on) and AGC, which can run long. Each is a
 // finger-sized target with its choices behind it: antennas open their
 // chooser, the width and the flags the filter/DSP chooser, AGC its modes, AGC-T and RF gain;
-// the speaker the volume and mute, the lock locks.
+// the speaker the volume and mute, the lock locks, the dot records the slice
+// and the triangle plays it back (the radio's quick record).
 // Two rows next to the frequency on a tablet; one row elsewhere.
 Item {
     id: info
@@ -301,6 +302,88 @@ Item {
                     target: Engine
                     function onTuneBlocked() { lockFlashAnim.restart() }
                 }
+            }
+            // The radio's quick record and playback (SmartSDR's REC / PLAY):
+            // a dot that records the slice's receive audio (red while it
+            // does), and a triangle that plays it back (lit once there is a
+            // recording); played while transmitting, it goes on the air.
+            Item {
+                objectName: "recordHit"
+                visible: info.showControls
+                implicitWidth: recIcon.width + (info.singleLine ? 12 : 16)
+                implicitHeight: info.rowH
+                Accessible.role: Accessible.Button
+                Accessible.name: Engine.recordOn ? qsTr("Stop recording") : qsTr("Record")
+                Canvas {
+                    id: recIcon
+                    anchors.centerIn: parent
+                    width: Math.round(info.fontPx * 0.9)
+                    height: width
+                    property bool on: Engine.recordOn
+                    property color col: on ? Theme.transmit : info.rxColor
+                    onColChanged: requestPaint()
+                    onPaint: {
+                        const ctx = getContext("2d")
+                        ctx.reset()
+                        const lw = Math.max(1.5, width * 0.13)
+                        ctx.beginPath()
+                        ctx.arc(width / 2, height / 2, width / 2 - lw / 2, 0, Math.PI * 2)
+                        if (on) {
+                            ctx.fillStyle = col
+                            ctx.fill()
+                        } else {
+                            ctx.strokeStyle = col
+                            ctx.lineWidth = lw
+                            ctx.stroke()
+                        }
+                    }
+                    SequentialAnimation on opacity {
+                        running: recIcon.on
+                        loops: Animation.Infinite
+                        onRunningChanged: if (!running) recIcon.opacity = 1
+                        NumberAnimation { to: 0.35; duration: 600 }
+                        NumberAnimation { to: 1; duration: 600 }
+                    }
+                }
+                MouseArea { anchors.fill: parent; onClicked: Engine.toggleRecord() }
+            }
+            Item {
+                objectName: "playHit"
+                visible: info.showControls
+                implicitWidth: playIcon.width + (info.singleLine ? 12 : 16)
+                implicitHeight: info.rowH
+                Accessible.role: Accessible.Button
+                Accessible.name: Engine.playOn ? qsTr("Stop playback") : qsTr("Play the recording")
+                Canvas {
+                    id: playIcon
+                    anchors.centerIn: parent
+                    width: Math.round(info.fontPx * 0.9)
+                    height: width
+                    property bool on: Engine.playOn
+                    property color col: on ? Theme.accent : Engine.playAvailable ? info.rxColor : info.dim
+                    onColChanged: requestPaint()
+                    onOnChanged: requestPaint()
+                    onPaint: {
+                        const ctx = getContext("2d")
+                        ctx.reset()
+                        const lw = Math.max(1.5, width * 0.13)
+                        ctx.beginPath()
+                        ctx.moveTo(lw, lw)
+                        ctx.lineTo(width - lw / 2, height / 2)
+                        ctx.lineTo(lw, height - lw)
+                        ctx.closePath()
+                        ctx.lineJoin = "round"
+                        if (on) {
+                            ctx.fillStyle = col
+                            ctx.fill()
+                        } else {
+                            ctx.strokeStyle = col
+                            ctx.lineWidth = lw
+                            ctx.stroke()
+                        }
+                    }
+                }
+                MouseArea { anchors.fill: parent; onClicked: Engine.togglePlay() }
             }
         }
 
