@@ -25,6 +25,7 @@
 #include <qpa/qwindowsysteminterface.h>
 #include <QDateTime>
 #include <QGuiApplication>
+#include <QSurfaceFormat>
 #include <QSysInfo>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
@@ -137,6 +138,18 @@ int main(int argc, char* argv[])
 {
     AetherSDR::QtAudioBackendGuard::applyAtStartup();
 
+#if !defined(Q_OS_IOS) && !defined(Q_OS_ANDROID) && !defined(Q_OS_MACOS)
+    // The desktop development build on OpenGL: a core profile context, so
+    // the scene graph takes the GLSL 150 shaders. A compatibility context
+    // gets GLSL 120 only, which the 3D view's shaders do not carry: on
+    // Mesa (llvmpipe in a VM) the 3D view stayed empty.
+    {
+        QSurfaceFormat format = QSurfaceFormat::defaultFormat();
+        format.setVersion(3, 3);
+        format.setProfile(QSurfaceFormat::CoreProfile);
+        QSurfaceFormat::setDefaultFormat(format);
+    }
+#endif
     QGuiApplication app(argc, argv);
     AetherSDR::mobile::LogBuffer::install();
 #ifdef Q_OS_ANDROID

@@ -468,7 +468,9 @@ void Spectrum3DRenderer::synchronize(QQuickRhiItem* rhiItem)
             m_slowFrames = 0;
         }
         // Five frames in a row, each late by over half a second.
-        if (m_slowFrames >= 5 && !m_reportedSlow) {
+        // AETHER_3D_KEEP (development) keeps the view on a slow software
+        // GPU, e.g. Mesa's llvmpipe in a VM, to check what it draws.
+        if (m_slowFrames >= 5 && !m_reportedSlow && !qEnvironmentVariableIsSet("AETHER_3D_KEEP")) {
             m_reportedSlow = true;
             QMetaObject::invokeMethod(item, [item, waited] { item->onGpuTooSlow(waited); }, Qt::QueuedConnection);
         }
