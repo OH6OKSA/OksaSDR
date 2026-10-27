@@ -29,6 +29,11 @@ Page {
     // window on a foldable's inner screen, beta 43) got it, its header line
     // did not fit and pushed the page, PTT with it, off the right edge.
     readonly property bool landscape: width > height * 1.3
+    // Portrait wider than a phone (480 dp and up: a split window on a
+    // foldable's inner screen): the frequency row and the slice's flags
+    // flow along the lines, wrapping only where the room ends; the two-row
+    // phone header left half of each row empty there.
+    readonly property bool flowHeader: !landscape && width >= 480
     // CW paddles on a phone: dit at the left edge and dah at the right, the
     // Controls button between (portrait) or the step buttons (landscape), so
     // each thumb keys its own paddle. The halves share this state.
@@ -129,6 +134,7 @@ Page {
             spacing: Theme.spacing / 2
 
             RowLayout {
+                visible: !page.flowHeader
                 Layout.fillWidth: true
                 Label {
                     text: page.formatMhz(Engine.frequencyMhz)
@@ -186,13 +192,71 @@ Page {
             // Tight under the frequency row: no gap, a lower row (still a
             // finger's height for its targets).
             InfoPanel {
-                visible: !page.landscape
+                visible: !page.landscape && !page.flowHeader
                 showStep: false
                 showCore: false
                 singleLine: true
                 rowScale: 0.75
                 Layout.fillWidth: true
                 Layout.topMargin: -Theme.spacing / 2
+            }
+            Flow {
+                id: headerFlow
+                visible: page.flowHeader
+                Layout.fillWidth: true
+                // No gap between the lines (the user: too loose); the gap
+                // between items is each item's own right margin.
+                spacing: 0
+                // Every item centred on one line height, as low as the
+                // phone header's flag row, so the flags sit level with the
+                // frequency.
+                readonly property real lineH: Math.round(Theme.touchTarget * 0.75)
+                readonly property real gap: Theme.spacing / 2
+                Item {
+                    width: flowFreq.implicitWidth + headerFlow.gap
+                    height: headerFlow.lineH
+                    Label {
+                        id: flowFreq
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: page.formatMhz(Engine.frequencyMhz)
+                        color: Theme.text
+                        font.pixelSize: 30
+                        font.family: "monospace"
+                        TapHandler { onTapped: freqDialog.open() }
+                    }
+                }
+                Item {
+                    width: flowMode.implicitWidth + headerFlow.gap
+                    height: headerFlow.lineH
+                    ModeButton { id: flowMode; anchors.verticalCenter: parent.verticalCenter; fontSize: 18 }
+                }
+                Item {
+                    width: flowStep.implicitWidth + headerFlow.gap
+                    height: headerFlow.lineH
+                    StepButton { id: flowStep; anchors.verticalCenter: parent.verticalCenter; fontSize: 13; heightScale: 0.75 }
+                }
+                Repeater {
+                    // The slice's groups, each its own piece: the slice and
+                    // TX, antennas / width / AGC, speaker / lock / record,
+                    // then SPLIT and the DSP flags.
+                    model: ["identity", "core", "controls", "options"]
+                    delegate: Item {
+                        required property string modelData
+                        width: flowInfo.implicitWidth + headerFlow.gap
+                        height: headerFlow.lineH
+                        InfoPanel {
+                            id: flowInfo
+                            anchors.verticalCenter: parent.verticalCenter
+                            singleLine: true
+                            rowScale: 0.75
+                            showStep: false
+                            showIdentity: modelData === "identity"
+                            showCore: modelData === "core"
+                            showControls: modelData === "controls"
+                            showOptions: modelData === "options"
+                        }
+                    }
+                }
             }
 
             // Horizontally scrolling band strip. Left out in very low
