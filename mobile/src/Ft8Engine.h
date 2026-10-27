@@ -66,7 +66,11 @@ public:
     // Decodes one slot of 12 kHz audio (also used by the tests).
     QVector<Decode> decodeSamples(const std::vector<float>& samples12k, qint64 slotMs) const;
 
+    // The time FT8 / FT4 run on: the device clock plus the correction a time
+    // server gave (NtpClock), as an app cannot set the device's own clock.
     static qint64 nowMs();
+    static void setClockCorrectionMs(qint64 ms);
+    static qint64 clockCorrectionMs();
     static Parsed parse(const QString& text);
     // A call the standard messages carry in full (K1ABC, OH2XO); others
     // (OH6OKSA, PJ4/K1ABC) need <hashed> forms and type 4 messages.

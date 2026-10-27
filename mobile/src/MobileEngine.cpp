@@ -4304,7 +4304,9 @@ bool MobileEngine::logQso(const QVariantMap& fields)
         d.insert(QStringLiteral("freq"), mhz);
         d.insert(QStringLiteral("band"), QsoLog::bandOf(mhz));
     }
-    const QDateTime now = QDateTime::currentDateTimeUtc();
+    // FT8 / FT4's time: the device clock, corrected by a time server when
+    // FT8 / FT4 have run (Ft8Engine::nowMs).
+    const QDateTime now = QDateTime::fromMSecsSinceEpoch(Ft8Engine::nowMs()).toUTC();
     QString timeOn = fields.value(QStringLiteral("timeOn")).toString().remove(QLatin1Char(':'));
     if (timeOn.size() != 4) {
         timeOn = now.toString(QStringLiteral("HHmm"));

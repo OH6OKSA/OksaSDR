@@ -1,5 +1,6 @@
 #include "Ft8Engine.h"
 
+#include "NtpClock.h"
 #include "core/DecoderPcmAdapter.h"
 
 #include <QDateTime>
@@ -230,9 +231,23 @@ void Ft8Engine::setRunning(bool on)
     emit runningChanged();
 }
 
+namespace {
+std::atomic<qint64> s_clockCorrectionMs{0};
+}
+
 qint64 Ft8Engine::nowMs()
 {
-    return QDateTime::currentMSecsSinceEpoch();
+    return ::AetherSDR::mobile::NtpClock::deviceMs() + s_clockCorrectionMs.load(std::memory_order_relaxed);
+}
+
+void Ft8Engine::setClockCorrectionMs(qint64 ms)
+{
+    s_clockCorrectionMs.store(ms, std::memory_order_relaxed);
+}
+
+qint64 Ft8Engine::clockCorrectionMs()
+{
+    return s_clockCorrectionMs.load(std::memory_order_relaxed);
 }
 
 void Ft8Engine::resetAudio()

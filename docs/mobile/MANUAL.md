@@ -732,9 +732,14 @@ Reporter).
   and theirs with a / suffix such as /QRP) has no FT8 message for a report:
   the app makes it with the calls and RR73 only, and logs it without RST.
 
-  If the decodes' DT is off by more than 0.8 s on average, a red notice
-  says this device's clock looks off: FT8 needs it within about a second,
-  so set Date & Time to automatic.
+  FT8 needs the time within about a second. When decoding starts, and every
+  30 minutes while it runs, the app asks a time server (pool.ntp.org) and
+  runs FT8 / FT4, and the times in the log, on that time whatever the
+  device's clock says (an app cannot set the device's clock); when the
+  device's clock is off by 0.3 s or more, a line under PSK Reporter says
+  by how much. Without the internet, if the decodes' DT is off by more than
+  0.8 s on average, a red notice says this device's clock looks off: set
+  Date & Time to automatic.
 
   The app then runs the QSO as WSJT-X does (report, R-report, RR73 or RRR,
   73), stops after six tries without the reply it waits for, and writes the

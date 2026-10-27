@@ -180,6 +180,18 @@ ColumnLayout {
             wrapMode: Text.WordWrap
         }
     }
+    // FT8 / FT4 run on a time server's time; said when the device's own
+    // clock is noticeably off (a second's tenths matter to FT8).
+    Label {
+        Layout.fillWidth: true
+        visible: (digi.qso.clockServer || "") !== "" && Math.abs(digi.qso.clockCorrection || 0) >= 0.3
+        text: qsTr("This device's clock is %1 s off; FT8 / FT4 use the time from %2.")
+              .arg((digi.qso.clockCorrection < 0 ? "+" : "−") + Math.abs(Number(digi.qso.clockCorrection || 0)).toFixed(1))
+              .arg(digi.qso.clockServer || "")
+        color: Theme.textDim
+        font.pixelSize: 12
+        wrapMode: Text.WordWrap
+    }
     RowLayout {
         Layout.fillWidth: true
         Label {

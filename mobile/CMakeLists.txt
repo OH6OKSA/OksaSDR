@@ -38,6 +38,8 @@ qt_add_executable(aether-mobile
     src/QsoLog.h
     src/Ft8Engine.cpp
     src/Ft8Engine.h
+    src/NtpClock.cpp
+    src/NtpClock.h
     src/MobileEngineDigi.cpp
     src/MobileEngineRade.cpp
     src/MobileEngineOnlineLog.cpp

@@ -11,7 +11,7 @@ through TestFlight and as the Android beta from
 The app collects no personal data. Nothing you do in the app is sent to the
 developer. It connects to a third-party service only when you use a feature
 that needs it (SmartLink, QRZ.com, a DX cluster, PSK Reporter, your own
-Wavelog or Cloudlog logbook), as listed below.
+Wavelog or Cloudlog logbook, a time server for FT8 / FT4), as listed below.
 
 ## Network use
 
@@ -37,6 +37,10 @@ these services:
   times of the FT8 / FT4 stations this device decodes are sent to
   report.pskreporter.info with your callsign, your grid and the app's name
   and version, and are published there, as WSJT-X does.
+- **A time server** (pool.ntp.org), while FT8 / FT4 decoding runs: when it
+  starts and every 30 minutes, the app asks the time (a standard NTP
+  request, nothing about you is sent) and runs FT8 / FT4 on it, as an app
+  cannot set the device's clock.
 - **FreeDV Reporter** (qso.freedv.org): while the FreeDV tab is open the
   app fetches the list of stations on it (nothing about you is sent). Only
   if you turn on *Report to FreeDV Reporter* (off by default), while RADE

@@ -53,6 +53,8 @@ struct SpectrumDecodeScale;
 
 namespace AetherSDR::mobile {
 
+class NtpClock;
+
 class QsoLog;
 
 // Composition root of the touch client: owns the radio session, discovery and
@@ -1654,6 +1656,11 @@ private:
     // clock is off (FT8 needs it within about a second).
     double m_digiClockOffset{0.0};
     bool m_digiClockKnown{false};
+    // The time server FT8 / FT4 run on (NtpClock), when it last answered.
+    NtpClock* m_ntp{nullptr};
+    QTimer m_ntpTimer;
+    QElapsedTimer m_ntpSynced;
+    QString m_digiClockServer;
     void digiFinishQso(const QString& status);
     // Both our call and the other station's are nonstandard (OH6OKSA and,
     // say, SN9Q/QRP): FT8 has no message for a report between them, so the

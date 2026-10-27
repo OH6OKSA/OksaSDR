@@ -4,6 +4,7 @@
 #include "MobileEngine.h"
 
 #include "Ft8Engine.h"
+#include "NtpClock.h"
 #include "PskReporterUpload.h"
 #include "QsoLog.h"
 
@@ -44,6 +45,8 @@ constexpr int kMaxDecodes = 80;
 // the QSO (WSJT-X's Tx watchdog does the same in time).
 constexpr int kMaxTries = 6;
 constexpr int kMaxCqCalls = 10;
+// How often FT8 / FT4 ask the time server again while running.
+constexpr int kNtpResyncMs = 30 * 60 * 1000;
 // How long after a contact is logged the same station on the same band is
 // that contact still (its 73, a repeated report), not a new one.
 constexpr qint64 kDigiRepeatWindowMs = 10 * 60 * 1000;
@@ -105,6 +108,32 @@ void MobileEngine::setupDigi()
     m_digiFilter = AppSettings::instance().value(QStringLiteral("MobileDigiFilter"), QStringLiteral("all")).toString();
     connect(m_ft8.get(), &Ft8Engine::slotStarted, this, &MobileEngine::onDigiSlot);
     connect(this, &MobileEngine::qsoLogChanged, this, [this] { m_wkDirty = true; });
+    // FT8 / FT4 on a time server's time: asked when decoding starts and every
+    // 30 minutes while it runs (Kurt DL5EAG: a tablet whose clock drifts).
+    m_ntp = new NtpClock(this);
+    connect(m_ntp, &NtpClock::synced, this, [this](double offsetMs, double delayMs, const QString& server) {
+        const qint64 correction = std::llround(offsetMs);
+        Ft8Engine::setClockCorrectionMs(correction);
+        m_digiClockServer = server;
+        m_ntpSynced.start();
+        // The decodes' DT is measured on the corrected time from now on.
+        m_digiClockKnown = false;
+        m_digiClockOffset = 0.0;
+        qCInfo(lcMobile).noquote() << QStringLiteral("digi: FT8 / FT4 on %1's time: the device clock is %2 s off (round trip %3 ms)")
+                                          .arg(server)
+                                          .arg(-correction / 1000.0, 0, 'f', 2)
+                                          .arg(delayMs, 0, 'f', 0);
+        emit digiChanged();
+    });
+    connect(m_ntp, &NtpClock::failed, this, [](const QString& reason) {
+        qCWarning(lcMobile).noquote() << "digi: time server:" << reason << "- FT8 / FT4 stay on the time they had";
+    });
+    m_ntpTimer.setInterval(kNtpResyncMs);
+    connect(&m_ntpTimer, &QTimer::timeout, this, [this] {
+        if (m_digiOn) {
+            m_ntp->sync();
+        }
+    });
 }
 
 bool MobileEngine::digiRunning() const
@@ -119,6 +148,7 @@ void MobileEngine::setDigiRunning(bool on)
     }
     if (!on) {
         digiHalt();
+        m_ntpTimer.stop();
         if (m_psk) {
             m_psk->flush();
         }
@@ -138,6 +168,10 @@ void MobileEngine::setDigiRunning(bool on)
             m_slice->setTxSlice(true);
         }
         bindDigiSlice(m_session.radioModel().txSlice() ? m_session.radioModel().txSlice() : m_slice.data());
+        if (!m_ntpSynced.isValid() || m_ntpSynced.elapsed() > kNtpResyncMs) {
+            m_ntp->sync();
+        }
+        m_ntpTimer.start();
     }
     m_digiOn = on;
     qCInfo(lcMobile) << "digi:" << (on ? "decoding on" : "decoding off") << digiProtocol()
@@ -659,6 +693,9 @@ QVariantMap MobileEngine::digi() const
             {QStringLiteral("lastTxW"), m_digiLastTxW},
             {QStringLiteral("lastTxSwr"), m_digiLastTxSwr},
             {QStringLiteral("clockWarn"), m_digiClockKnown && std::abs(m_digiClockOffset) > 0.8},
+            // The time server's correction (seconds) and its name; none yet: "".
+            {QStringLiteral("clockCorrection"), Ft8Engine::clockCorrectionMs() / 1000.0},
+            {QStringLiteral("clockServer"), m_digiClockServer},
             // Where the other station is heard (WSJT-X's green RX mark): the
             // QSO's station, or while calling CQ our own TX audio frequency.
             // Always shown, as WSJT-X's: the last station worked stays
@@ -925,7 +962,7 @@ void MobileEngine::digiAnswer(int index)
     m_digiRptRcvd.clear();
     m_digiLogged = false;
     m_digiEndAfterTx = false;
-    m_digiTimeOn = QDateTime::currentDateTimeUtc().toString(QStringLiteral("HHmm"));
+    m_digiTimeOn = QDateTime::fromMSecsSinceEpoch(Ft8Engine::nowMs()).toUTC().toString(QStringLiteral("HHmm"));
     m_digiTxParity = d.value(QStringLiteral("slotOdd")).toBool() ? 0 : 1;
     // They called us: answer with the report; else call them. With two
     // nonstandard calls there is no report: the call, then RR73.
@@ -1247,7 +1284,7 @@ void MobileEngine::handleDigiDecodes(const QVariantList& decodes, qint64 slotMs)
             m_digiDxGrid = Ft8Engine::isGrid(extra) ? extra : QString();
             m_digiDxSig.clear();
             m_digiRptSent = digiReport(d.value(QStringLiteral("snr")).toInt());
-            m_digiTimeOn = QDateTime::currentDateTimeUtc().toString(QStringLiteral("HHmm"));
+            m_digiTimeOn = QDateTime::fromMSecsSinceEpoch(Ft8Engine::nowMs()).toUTC().toString(QStringLiteral("HHmm"));
             m_digiLogged = false;
             if (digiNoReports()) {
                 // Their answer is the contact: no report can follow.
