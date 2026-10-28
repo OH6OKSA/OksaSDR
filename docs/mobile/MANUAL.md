@@ -174,8 +174,9 @@ Radio Setup, Manual, Log and Disconnect:
 The layout follows the device: rotation, Split View, Stage Manager and
 folding switch it live. A window at least 600 points wide and 500 high
 gets the tablet layout, so a foldable's inner screen (the iPhone Duo's,
-the OnePlus Open's) looks the same in both orientations; where the info panel has no room beside the frequency,
-it goes under it. In portrait the controls pin under the display only on a
+the OnePlus Open's) looks the same in both orientations: where the row is short of room, the frequency and the
+info panel beside it shrink a little, and only in a narrow window does the
+panel go under the frequency. In portrait the controls pin under the display only on a
 screen about 1050 points tall (an iPad); on a lower one they open as the
 drawer. On a very low screen in landscape (a phone's outer
 screen, the smaller iPhones) the band buttons give way to the display;
@@ -845,9 +846,10 @@ Reporter).
   30 minutes while it runs, the app asks a time server (time.cloudflare.com,
   or else pool.ntp.org or time.google.com) and
   runs FT8 / FT4, and the times in the log, on that time whatever the
-  device's clock says (an app cannot set the device's clock); when the
-  device's clock is off by 0.3 s or more, a line under PSK Reporter says
-  by how much. Without the internet, if the decodes' DT is off by more than
+  device's clock says (an app cannot set the device's clock). A line under
+  PSK Reporter names the time server and how far off the device's clock
+  is, in milliseconds (amber from 0.3 s), or says that no time server has
+  answered yet. Without the internet, if the decodes' DT is off by more than
   0.8 s on average, a red notice says this device's clock looks off: set
   Date & Time to automatic.
 

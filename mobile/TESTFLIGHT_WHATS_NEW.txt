@@ -9,10 +9,10 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- The iPhone Duo's inner screen keeps the iPad layout upright too: any window at least 600 points wide (also the 13-inch iPad's half Split View) does.
-- A narrow iPad window (portrait, Split View, Stage Manager): Setup, Manual, Log and Disconnect go behind ⋯ and the network dot drops its words, so the radio's name no longer runs under it; the info panel goes under the frequency where it does not fit beside it, so the band and step buttons stay on screen; the pinned controls are at least 320 points wide.
-- FTx: Keep CQ sits between CQ and Halt TX (a narrow panel showed "Keep …"). The CW text, QRZ.com, Wavelog and Logger32 fields put their buttons under them where the hint did not fit.
-- From builds 133–134: the volume and AGC panels have their full width in a narrow window; the network panel fits an iPhone.
+- FTx: a line under PSK Reporter now always says which time server FT8 / FT4 run on and how many milliseconds this device's clock is off (it showed only from 0.3 s, so on an iPhone you never saw that the sync ran).
+- A narrow iPad window and the iPhone Duo's inner screen upright keep the info panel (antennas, filter, AGC, speaker…) beside the frequency as in landscape; the frequency and the panel shrink a little instead of the panel dropping under it.
+- From build 135: the iPhone Duo's inner screen and windows from 600 points keep the iPad layout; Setup, Manual, Log and Disconnect behind ⋯ in a narrow window; Keep CQ between CQ and Halt TX; field hints no longer cut short.
+- From builds 133–134: full-width volume and AGC panels; the network panel fits an iPhone.
 - From build 132: QSOs to Logger32 on your PC (Log tab; thanks Juho Kontio); the manual's Getting started.
 
 RECENT (builds 94–123)
