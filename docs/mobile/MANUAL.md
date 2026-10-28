@@ -35,7 +35,8 @@ sections tell the rest.
 CW, View, Prof, Mem, Log, FTx, FreeDV): on an iPad, Mac or tablet in the
 top row; on a phone the **Controls** button beside PTT at the bottom (in
 landscape the ☰ button at the right end of the step row). **Setup** (Radio
-Setup) is in the top row, on a phone behind **⋯**, as are **Manual** and
+Setup) is in the top row, on a phone and in a narrow window (most iPads in
+portrait, a foldable's inner screen) behind **⋯**, as are **Manual** and
 **Log**.
 
 **Once, for everything**
@@ -147,7 +148,7 @@ mode, a DSP that runs, the shown tab) is **lit blue**; the others are dark.
 
 | Area | What it is |
 |---|---|
-| Top row | Radio name, [network quality](#network-quality), app version, **Controls** (open or hide the controls), **Setup** ([Radio Setup](#9-radio-setup)), **Manual**, **Log**, **Disconnect** (on a phone Setup, Manual, Log and Disconnect are behind **⋯**, and the controls open from the button beside PTT) |
+| Top row | Radio name, [network quality](#network-quality), app version, **Controls** (open or hide the controls), **Setup** ([Radio Setup](#9-radio-setup)), **Manual**, **Log**, **Disconnect** (on a phone, and in a window under about 1000 points wide such as most iPads in portrait or a foldable's inner screen, Setup, Manual, Log and Disconnect are behind **⋯**; on a phone the controls open from the button beside PTT) |
 | Frequency row | Frequency, mode, and the [info panel](#3-frequency-mode-and-the-info-panel) |
 | Band buttons | 160 m … 6 m, the radio's transverter (XVTR) bands, WWV, GEN |
 | Slice row | The two [meters](#4-meters-and-slices) at the ends, the slices in between |
@@ -165,13 +166,18 @@ the display still in view tunes as usual.
 |---|---|
 | ![iPhone portrait](manual/phone-portrait.jpg) | ![iPhone landscape](manual/phone-landscape.jpg) |
 
-On a phone, **⋯** at the top right holds Radio Setup, Manual, Log and
-Disconnect:
+On a phone (and in a narrow tablet window), **⋯** at the top right holds
+Radio Setup, Manual, Log and Disconnect:
 
 ![The phone's ⋯ menu](manual/phone-menu.jpg)
 
 The layout follows the device: rotation, Split View, Stage Manager and
-folding switch it live. On a very low screen in landscape (a phone's outer
+folding switch it live. A window at least 600 points wide and 500 high
+gets the tablet layout, so a foldable's inner screen (the iPhone Duo's,
+the OnePlus Open's) looks the same in both orientations; where the info panel has no room beside the frequency,
+it goes under it. In portrait the controls pin under the display only on a
+screen about 1050 points tall (an iPad); on a lower one they open as the
+drawer. On a very low screen in landscape (a phone's outer
 screen, the smaller iPhones) the band buttons give way to the display;
 there the **Band** button on the waterfall opens the bands, with *Whole
 band* (the band zoom) and *Close* under them. **F/R** beside it hides the
@@ -185,8 +191,9 @@ rows back (also *View › Bands and steps*; remembered).
 
 The dot in the top row (with the app's CPU and memory next to it) rates the connection as the desktop AetherSDR does —
 **Excellent / Very Good** (green), **Good** (blue), **Fair** (amber),
-**Poor** (red) — with the round-trip time. On an iPhone the dot, the time,
-the CPU and the memory (the number alone) show. Tap it for the details:
+**Poor** (red) — with the round-trip time. On an iPhone and in a narrow
+tablet window the dot, the time, the CPU and the memory (the number alone)
+show. Tap it for the details:
 
 ![Network details](manual/network.jpg)
 
@@ -800,7 +807,7 @@ Reporter).
   **CQ** calls CQ on the **TX slice** (the one with the red TX badge), in
   the slot set by **CQ slot**: *Auto* (the next one), *Even* (FT8: 0 and
   30 s, FT4: 0, 15, 30, 45 s) or *Odd* (15 and 45 s; FT4: 7.5, 22.5 …).
-  **Keep CQ** goes back to CQ after every QSO your CQ brought (and after a
+  **Keep CQ** (between CQ and Halt TX) goes back to CQ after every QSO your CQ brought (and after a
   station that answered goes quiet), until **Halt TX**; a CQ nobody
   answers still stops after its tries. Timing and transmitting follow the TX slice: move the TX
   badge, press a band button with another slice active, or tap inside
