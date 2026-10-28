@@ -12,7 +12,10 @@ Popup {
     dim: false
     margins: Theme.spacing
     padding: Theme.spacing
-    width: Math.min(420, (parent ? parent.width : 420))
+    // From the window, not the parent: in the wrapped phone header the info
+    // panel is in pieces a few labels wide (beta 45 squeezed the AGC modes
+    // and sliders into one). The panadapter's RF gain sets its own.
+    width: Math.min(420, Theme.windowWidth - 2 * Theme.spacing)
     background: Rectangle {
         color: Theme.surface
         border.color: Theme.surfaceRaised
