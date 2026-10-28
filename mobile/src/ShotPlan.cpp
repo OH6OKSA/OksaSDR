@@ -5,12 +5,12 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
-#include <QMouseEvent>
 #include <QPointer>
 #include <QQmlApplicationEngine>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QTimer>
+#include <qpa/qwindowsysteminterface.h>
 
 #include <algorithm>
 #include <functional>
@@ -213,14 +213,16 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             m_engine.setMeterStyle(QStringLiteral("right"), styles.at(1));
         }
     } else if (command == QLatin1String("tap")) {
+        // Through the window system, as a real press: an event sent straight
+        // to the window keeps a press position of (0,0), so the panadapter's
+        // DragHandler saw a drag and took the RF gain label's tap.
         const QStringList xy = arg.split(QLatin1Char(','));
         if (window && xy.size() == 2) {
             const QPointF p(xy.at(0).toDouble() * window->width(), xy.at(1).toDouble() * window->height());
             const QPointF g = window->mapToGlobal(p);
-            QMouseEvent press(QEvent::MouseButtonPress, p, g, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-            QCoreApplication::sendEvent(window, &press);
-            QMouseEvent release(QEvent::MouseButtonRelease, p, g, Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
-            QCoreApplication::sendEvent(window, &release);
+            QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
+            QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+            QWindowSystemInterface::flushWindowSystemEvents();
         }
     } else if (command == QLatin1String("hold")) {
         // Press, keep it down MS, release: a held button's auto-repeat. The
@@ -231,15 +233,15 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             const QPointF g = window->mapToGlobal(p);
             const int ms = xym.at(2).toInt();
             qInfo() << "shot-plan: hold" << ms << "ms, frequency" << QString::number(m_engine.frequencyMhz(), 'f', 6);
-            QMouseEvent press(QEvent::MouseButtonPress, p, g, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-            QCoreApplication::sendEvent(window, &press);
+            QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
+            QWindowSystemInterface::flushWindowSystemEvents();
             QPointer<QQuickWindow> w(window);
             QTimer::singleShot(ms, this, [this, w, p, g] {
                 if (!w) {
                     return;
                 }
-                QMouseEvent release(QEvent::MouseButtonRelease, p, g, Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
-                QCoreApplication::sendEvent(w, &release);
+                QWindowSystemInterface::handleMouseEvent(w, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+                QWindowSystemInterface::flushWindowSystemEvents();
                 qInfo() << "shot-plan: released, frequency" << QString::number(m_engine.frequencyMhz(), 'f', 6);
                 QTimer::singleShot(1500, this, [this] {
                     qInfo() << "shot-plan: settled, frequency" << QString::number(m_engine.frequencyMhz(), 'f', 6);
