@@ -32,20 +32,34 @@ Page {
     // spectrum in portrait, and a scrolling control column so nothing is cut.
     readonly property bool compact: width < 1200
     // The info panel goes under the frequency only where the frequency row
-    // has no room for it (narrow Split View).
-    // Measured on the left column, which the pinned panel narrows.
-    readonly property bool infoUnder: leftWidth < 700
+    // has no room for it (narrow Split View, a foldable's inner screen).
+    // Measured on the left column, which the pinned panel narrows, against
+    // what the row needs in this type: a row wider than the column pushed
+    // the whole page past the right edge (the bands, steps and right meter
+    // cut off at 750 pt).
+    // An HF frequency's width at least, so a band change from 7 to 14 MHz
+    // does not move the panel.
+    readonly property bool infoUnder: leftWidth < Math.max(freqLabel.implicitWidth, freqMetrics.advanceWidth)
+                                                 + modeColumn.implicitWidth
+                                                 + infoBeside.implicitWidth + Theme.spacing
+                                                 + 3 * (compact ? Theme.spacing : 2 * Theme.spacing)
     // PTT height, shared with the drawer's copy of the button.
     // PTT runs the full width along the bottom in every orientation.
     readonly property real pttHeight: Math.round(Theme.touchTarget * 1.5)
-    readonly property bool portrait: height > width
+    // Taller than wide in the room the page has (less the status and
+    // navigation bars): a near-square foldable screen is then laid out the
+    // same in both orientations (the OnePlus Open's 698 x 751 counted the
+    // bars and turned to the portrait layout with 668 left).
+    readonly property bool portrait: Theme.windowHeight > Theme.windowWidth
     // Landscape with the panel pinned: two columns, the panel the full
     // height at the right, PTT under the display only. Otherwise one column
     // and PTT the full width.
     readonly property bool twoColumns: !portrait && panelPinned
     // Landscape side column: the pinned control panel (none when hidden).
-    // Fixed, so content can never widen it off screen.
-    readonly property int sideWidth: Math.max(280, Math.min(360, width * 0.28))
+    // Fixed, so content can never widen it off screen. At least 320 as the
+    // drawer: 287 on a 1024 pt window cut "TX 2170 Hz", "New DXCC" and the
+    // voice keyer's F10 short.
+    readonly property int sideWidth: Math.max(320, Math.min(360, width * 0.28))
     // The room inside the safe area, and the left column's share of it.
     readonly property real innerWidth: width - SafeArea.margins.left - SafeArea.margins.right - 2 * Theme.spacing
     readonly property real leftWidth: twoColumns ? innerWidth - sideWidth - Theme.spacing : innerWidth
@@ -55,7 +69,12 @@ Page {
     // column below them and pushed the panel off the right edge.
     readonly property bool sideFits: innerWidth - sideWidth - Theme.spacing
                                      >= Math.max(560, Engine.bands.length * 40 + (Engine.bands.length - 1) * Theme.spacing / 2)
-    readonly property bool panelPinned: Engine.controlsVisible && (portrait || sideFits)
+    // In portrait it pins under the display only in a tall window (an
+    // iPad, the mini's 1089 pt too): lower, the panel's share left the
+    // display no height (640 x 700, 683 x 1004); the drawer then.
+    readonly property bool bottomFits: Theme.windowHeight >= 1050
+    readonly property bool pinFits: portrait ? bottomFits : sideFits
+    readonly property bool panelPinned: Engine.controlsVisible && pinFits
 
     function formatMhz(mhz) {
         // 14.074.500 style: MHz . kHz . Hz
@@ -65,6 +84,12 @@ Page {
         const hzPart = hz % 1e3
         return mhzPart + "." + String(khzPart).padStart(3, "0") + "." + String(hzPart).padStart(3, "0")
     }
+
+    // A narrow window (a foldable's inner screen, an iPad in portrait or
+    // Split View): Setup, Manual, Log and Disconnect go behind ⋯ as on a
+    // phone and the badge drops its words. The full row needs about 900 pt
+    // in the devices' type; narrower, the radio's name ran under the badge.
+    readonly property bool narrowTop: width < 1000
 
     header: ToolBar {
         background: Rectangle { color: Theme.surface }
@@ -76,11 +101,13 @@ Page {
                 text: Engine.radioName
                 color: Theme.textDim
                 font.pixelSize: 18
+                elide: Text.ElideRight
                 Layout.fillWidth: true
             }
             // Network quality; tap for the details.
             NetworkBadge {
                 objectName: "networkBadge"
+                compact: page.narrowTop
                 Layout.rightMargin: Theme.spacing
                 TapHandler { onTapped: networkDialog.open() }
             }
@@ -104,23 +131,44 @@ Page {
                 }
             }
             TopButton {
+                visible: !page.narrowTop
                 text: qsTr("Setup")
                 focusPolicy: Qt.NoFocus
                 onClicked: radioSetup.open()
             }
             TopButton {
+                visible: !page.narrowTop
                 text: qsTr("Manual")
                 focusPolicy: Qt.NoFocus
                 onClicked: Qt.openUrlExternally(Engine.manualUrl)
             }
             TopButton {
+                visible: !page.narrowTop
                 text: qsTr("Log")
                 focusPolicy: Qt.NoFocus
                 onClicked: logPage.open()
             }
             TopButton {
+                visible: !page.narrowTop
                 text: qsTr("Disconnect")
                 onClicked: Engine.disconnectRadio()
+            }
+            TopButton {
+                id: moreButton
+                visible: page.narrowTop
+                text: "⋯"
+                font.pixelSize: 22
+                focusPolicy: Qt.NoFocus
+                onClicked: moreMenu.popup(moreButton, 0, moreButton.height)
+                Menu {
+                    id: moreMenu
+                    modal: true
+                    dim: false
+                    MenuItem { text: qsTr("Radio Setup"); onTriggered: radioSetup.open() }
+                    MenuItem { text: qsTr("Manual"); onTriggered: Qt.openUrlExternally(Engine.manualUrl) }
+                    MenuItem { text: qsTr("Log"); onTriggered: logPage.open() }
+                    MenuItem { text: qsTr("Disconnect"); onTriggered: Engine.disconnectRadio() }
+                }
             }
         }
     }
@@ -153,7 +201,13 @@ Page {
 
             RowLayout {
                 spacing: page.compact ? Theme.spacing : 2 * Theme.spacing
+                TextMetrics {
+                    id: freqMetrics
+                    font: freqLabel.font
+                    text: "00.000.000"
+                }
                 Label {
+                    id: freqLabel
                     text: page.formatMhz(Engine.frequencyMhz)
                     color: Theme.text
                     font.pixelSize: page.compact ? 40 : 56
@@ -163,6 +217,7 @@ Page {
                 }
                 // Mode, and the tuning step under it.
                 ColumnLayout {
+                    id: modeColumn
                     spacing: 0
                     ModeButton {
                         fontSize: page.compact ? 24 : 32
@@ -174,17 +229,22 @@ Page {
                 // The slice at a glance and in reach: antennas, width,
                 // speaker, lock, DSP, AGC (each opens its choices).
                 InfoPanel {
+                    id: infoBeside
                     visible: !page.infoUnder
                     showStep: false
                     Layout.leftMargin: Theme.spacing
                 }
                 Item { Layout.fillWidth: true }
             }
+            // Clipped rather than widening the page if even one line runs
+            // out of room.
             InfoPanel {
                 visible: page.infoUnder
                 showStep: false
                 singleLine: true
+                clip: true
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
             }
 
             // Band stack (Flex): one row, buttons share the width. Each band
@@ -201,7 +261,8 @@ Page {
                         leftPadding: 2
                         rightPadding: 2
                         Layout.fillWidth: true
-                        Layout.minimumWidth: 40
+                        // 13 bands fit a 600 pt window ("160m" in its type).
+                        Layout.minimumWidth: 34
                         Layout.preferredWidth: 60
                         Layout.preferredHeight: Theme.touchTarget
                         checked: Engine.activeBand === modelData
@@ -302,7 +363,9 @@ Page {
         id: controlsDrawer
         objectName: "controlsDrawer"
         edge: page.portrait ? Qt.BottomEdge : Qt.RightEdge
-        width: page.portrait ? page.width : Math.min(page.width * 0.4, 460)
+        // At least 320 pt beside the display: a narrow window's 40 % cut the
+        // panel's buttons short.
+        width: page.portrait ? page.width : Math.min(Math.max(page.width * 0.4, 320), 460)
         // Landscape: ends above the page's PTT row, which stays usable, so
         // the drawer needs no PTT of its own. Portrait (from the bottom)
         // covers it and carries a copy.
@@ -336,7 +399,7 @@ Page {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 // Pinning would not show where the panel does not fit.
-                showPinButton: page.portrait || page.sideFits
+                showPinButton: page.pinFits
                 onPinRequested: {
                     controlsDrawer.close()
                     Engine.controlsVisible = true

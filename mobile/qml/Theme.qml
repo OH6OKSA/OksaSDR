@@ -39,7 +39,10 @@ QtObject {
     readonly property real shortSide: Math.min(windowWidth, windowHeight)
     readonly property bool landscape: windowWidth > windowHeight
     // Compact width: an iPhone, a folded phone, a narrow Split View pane.
-    readonly property bool compactWidth: windowWidth < 700
+    // A foldable's inner screen keeps the tablet layout in both orientations
+    // (upright, the iPhone Duo's is 626 pt wide and the OnePlus Open's 698;
+    // both got the phone's).
+    readonly property bool compactWidth: windowWidth < 600
     // Compact height: an iPhone (or small pane) in landscape.
     readonly property bool compactHeight: windowHeight < 500
     // Very low: a phone's outer screen in landscape, small iPhones in
