@@ -3,10 +3,13 @@
 #include "AndroidJni.h"
 #include "AudioSession.h"
 
+#include <QApplicationStateChangeEvent>
 #include <QDebug>
 #include <QGuiApplication>
 #include <QLoggingCategory>
+#include <QRegion>
 #include <QTimer>
+#include <QWindow>
 #include <qpa/qwindowsysteminterface.h>
 
 #include <atomic>
@@ -67,6 +70,36 @@ void watchApplicationState()
     });
 }
 
+// The render thread idle before Qt drops the window's surface: on Suspended,
+// Qt's Android window (6.12) destroys the surface and then asks for an
+// unexposed frame; a frame the render thread was drawing at that moment
+// asked for a new surface and waited for it, holding the GUI thread, which
+// waited for the render thread, until the app came back. The radio dropped
+// the connection after 15 s without pings (beta 49, 22:26: in the middle of
+// an FT8 QSO; the "GUI thread stalled (app not in front)" since beta 42).
+// The state change event comes before the signal Qt's window acts on, so an
+// unexpose here, delivered at once, lets the render thread finish its frame
+// (it fails fast while the old surface is still marked created) and stop.
+class SuspendGuard : public QObject {
+public:
+    using QObject::QObject;
+
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override
+    {
+        if (watched == qApp && event->type() == QEvent::ApplicationStateChange
+            && static_cast<QApplicationStateChangeEvent*>(event)->applicationState() <= Qt::ApplicationHidden) {
+            for (QWindow* window : QGuiApplication::topLevelWindows()) {
+                if (window->isExposed()) {
+                    QWindowSystemInterface::handleExposeEvent<QWindowSystemInterface::SynchronousDelivery>(window,
+                                                                                                           QRegion());
+                }
+            }
+        }
+        return false;
+    }
+};
+
 } // namespace
 
 void androidFrameDrawn()
@@ -76,6 +109,7 @@ void androidFrameDrawn()
 
 void androidStartup()
 {
+    qApp->installEventFilter(new SuspendGuard(qApp));
     watchApplicationState();
     QJniObject::callStaticMethod<void>(kPlatformClass, "setMulticast", "(Landroid/content/Context;Z)V",
                                        androidContext().object(), jboolean(true));
