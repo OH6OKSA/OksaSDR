@@ -85,6 +85,17 @@ ColumnLayout {
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiCallCq()
         }
+        // Keep CQ: back to CQ after each QSO our CQ brought. Beside CQ: in
+        // the slot row a narrow panel cut it to "Keep …".
+        AppButton {
+            objectName: "digiAutoCq"
+            text: qsTr("Keep CQ")
+            checked: Engine.digiAutoCq
+            Accessible.name: qsTr("Call CQ again after each QSO")
+            Layout.fillWidth: true
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.digiAutoCq = !Engine.digiAutoCq
+        }
         AppButton {
             objectName: "digiHalt"
             text: qsTr("Halt TX")
@@ -94,8 +105,7 @@ ColumnLayout {
             onClicked: Engine.digiHalt()
         }
     }
-    // CQ's slot (even = 0 / 30 s, odd = 15 / 45 s in FT8; Auto = the next)
-    // and Keep CQ: back to CQ after each QSO our CQ brought.
+    // CQ's slot (even = 0 / 30 s, odd = 15 / 45 s in FT8; Auto = the next).
     RowLayout {
         Layout.fillWidth: true
         spacing: 4
@@ -115,15 +125,6 @@ ColumnLayout {
                 focusPolicy: Qt.NoFocus
                 onClicked: Engine.digiCqParity = modelData.key
             }
-        }
-        AppButton {
-            objectName: "digiAutoCq"
-            text: qsTr("Keep CQ")
-            checked: Engine.digiAutoCq
-            Accessible.name: qsTr("Call CQ again after each QSO")
-            Layout.fillWidth: true
-            focusPolicy: Qt.NoFocus
-            onClicked: Engine.digiAutoCq = !Engine.digiAutoCq
         }
     }
     // PSK Reporter: the stations decoded here, reported (off by default).

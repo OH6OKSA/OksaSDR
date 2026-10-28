@@ -392,11 +392,20 @@ ColumnLayout {
             onEditingFinished: Engine.myGrid = text
         }
     }
-    RowLayout {
+    // One row where both hints fit beside Save, else the user over the
+    // password and Save (a narrow panel cut "password (saved)" short).
+    GridLayout {
+        id: qrzRow
         Layout.fillWidth: true
+        readonly property bool oneRow: (width - qrzSave.implicitWidth - 2 * columnSpacing) / 2
+                                       >= Math.max(qrzUserHint.advanceWidth, qrzPassHint.advanceWidth + 40) + 24
+        columns: oneRow ? 3 : 2
+        TextMetrics { id: qrzUserHint; font: qrzUserField.font; text: qrzUserField.placeholderText }
+        TextMetrics { id: qrzPassHint; font: qrzPassField.font; text: qsTr("password (saved)") }
         TextField {
             id: qrzUserField
             Layout.fillWidth: true
+            Layout.columnSpan: qrzRow.oneRow ? 1 : 2
             placeholderText: qsTr("QRZ.com user")
             font.pixelSize: 15
             text: Engine.qrzUser
@@ -409,6 +418,7 @@ ColumnLayout {
             font.pixelSize: 15
         }
         AppButton {
+            id: qrzSave
             text: qsTr("Save")
             focusPolicy: Qt.NoFocus
             onClicked: {
@@ -446,23 +456,33 @@ ColumnLayout {
         text: Engine.onlineLog.url || ""
         inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
     }
-    RowLayout {
+    // One row where the key's hint fits beside the station ID and Save, else
+    // the key over them (a narrow panel cut it to "API key (sa…").
+    GridLayout {
+        id: onlineKeyRow
         Layout.fillWidth: true
+        readonly property bool oneRow: width - 90 - onlineSave.implicitWidth - 2 * columnSpacing
+                                       >= onlineKeyHint.advanceWidth + 40 + 24
+        columns: oneRow ? 3 : 2
+        TextMetrics { id: onlineKeyHint; font: onlineKeyField.font; text: qsTr("API key (read & write)") }
         PasswordField {
             id: onlineKeyField
             Layout.fillWidth: true
+            Layout.columnSpan: onlineKeyRow.oneRow ? 1 : 2
             placeholderText: Engine.onlineLog.hasKey ? qsTr("API key (saved)") : qsTr("API key (read & write)")
             font.pixelSize: 15
         }
         TextField {
             id: onlineStationField
             Layout.preferredWidth: 90
+            Layout.fillWidth: !onlineKeyRow.oneRow
             placeholderText: qsTr("Station ID")
             font.pixelSize: 15
             text: Engine.onlineLog.stationId || ""
             inputMethodHints: Qt.ImhDigitsOnly
         }
         AppButton {
+            id: onlineSave
             text: qsTr("Save")
             focusPolicy: Qt.NoFocus
             onClicked: {
@@ -494,8 +514,12 @@ ColumnLayout {
     // ---- Logger32 on the operator's PC: each logged QSO over TCP (Juho
     // Kontio) ----
     Label { text: qsTr("Logger32"); color: Theme.textDim; font.pixelSize: 14; Layout.topMargin: Theme.spacing }
-    RowLayout {
+    // One row where the hint fits beside Save, else Save under the field.
+    GridLayout {
+        id: logger32Row
         Layout.fillWidth: true
+        columns: width - logger32Save.implicitWidth - columnSpacing >= logger32Hint.advanceWidth + 24 ? 2 : 1
+        TextMetrics { id: logger32Hint; font: logger32Field.font; text: logger32Field.placeholderText }
         TextField {
             id: logger32Field
             objectName: "logger32Host"
@@ -506,6 +530,8 @@ ColumnLayout {
             inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
         }
         AppButton {
+            id: logger32Save
+            Layout.alignment: Qt.AlignRight
             text: qsTr("Save")
             focusPolicy: Qt.NoFocus
             onClicked: Engine.setLogger32(logger32Field.text)

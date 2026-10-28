@@ -202,13 +202,25 @@ ColumnLayout {
     // CWX: text sent by the radio's keyer at the set speed. Live sends each
     // character as it is typed (the desktop's live mode); otherwise Send (or
     // Return) sends the line. Stop, or Esc on a keyboard, aborts.
-    RowLayout {
+    // One row where the field's hint fits beside the buttons, else the field
+    // over them (a narrow panel cut the hint to "CW text to s…").
+    GridLayout {
+        id: cwxRow
         Layout.fillWidth: true
         visible: Engine.cwxAvailable
+        readonly property bool oneRow: width >= cwxHint.advanceWidth + 32 + liveButton.implicitWidth
+                                                + send.implicitWidth + stopButton.implicitWidth + 3 * columnSpacing
+        columns: oneRow ? 4 : 3
+        TextMetrics {
+            id: cwxHint
+            font: cwxText.font
+            text: qsTr("Type: each letter goes now")
+        }
         TextField {
             id: cwxText
             property string sentText: ""
             Layout.fillWidth: true
+            Layout.columnSpan: cwxRow.oneRow ? 1 : 3
             placeholderText: liveButton.checked ? qsTr("Type: each letter goes now") : qsTr("CW text to send")
             inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
             font.pixelSize: 16
@@ -250,6 +262,7 @@ ColumnLayout {
             id: liveButton
             text: qsTr("Live")
             checkable: true
+            Layout.fillWidth: !cwxRow.oneRow
             onToggled: {
                 cwxText.text = ""
                 cwxText.sentText = ""
@@ -260,12 +273,18 @@ ColumnLayout {
             visible: !liveButton.checked
             text: qsTr("Send")
             enabled: cwxText.text.length > 0
+            Layout.fillWidth: !cwxRow.oneRow
             onClicked: {
                 Engine.sendCwx(cwxText.text)
                 cwxText.text = ""
             }
         }
-        AppButton { text: qsTr("Stop"); onClicked: Engine.stopCwx() }
+        AppButton {
+            id: stopButton
+            text: qsTr("Stop")
+            Layout.fillWidth: !cwxRow.oneRow
+            onClicked: Engine.stopCwx()
+        }
     }
 
     Label { text: qsTr("Speed  %1 WPM").arg(Engine.cwSpeed); color: Theme.textDim; font.pixelSize: 15 }
