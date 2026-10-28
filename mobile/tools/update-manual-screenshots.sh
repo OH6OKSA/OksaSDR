@@ -33,12 +33,19 @@ else
     src=(--demo)
 fi
 
+# The radio takes two GUI clients, and a run's client is freed some seconds
+# after it quits: with a phone connected, back-to-back runs found both taken
+# and rendered the connect page. A pause after each run on the radio.
+settle() {
+    if [ -n "$RADIO" ]; then sleep 20; fi
+}
 shot() { # name size args...: one picture, one run
     local name="$1" size="$2"
     shift 2
     QT_QPA_PLATFORM=offscreen timeout 90 "$APP" --size "$size" \
         --screenshot "$TMP/$name.png" --screenshot-delay "$DELAY" "$@" >/dev/null 2>&1
     echo "  $name ($size)"
+    settle
 }
 plan() { # name size args...: the plan on stdin, many pictures in one run
     local name="$1" size="$2"
@@ -47,6 +54,7 @@ plan() { # name size args...: the plan on stdin, many pictures in one run
     QT_QPA_PLATFORM=offscreen timeout 300 "$APP" --size "$size" \
         --shot-plan "$TMP/$name.plan" --shot-dir "$TMP" "$@" >/dev/null 2>&1
     echo "  $name: $(grep -c '^shot ' "$TMP/$name.plan") pictures ($size)"
+    settle
 }
 # jpg NAME [CROP] [RESIZE]: write docs/mobile/manual/NAME.jpg
 jpg() {

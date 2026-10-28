@@ -453,7 +453,17 @@ int main(int argc, char* argv[])
         QStringLiteral("Window size in points, e.g. 1024x768, to check other iPad layouts."),
         QStringLiteral("WxH"));
     parser.addOption(sizeOption);
+    const QCommandLineOption fontPxOption(QStringLiteral("font-px"),
+        QStringLiteral("Default font size in pixels, as a device's (Android about 16, iOS 17): text without a set "
+                       "size is smaller here than on the devices, so test shots fit where the devices did not."),
+        QStringLiteral("px"));
+    parser.addOption(fontPxOption);
     parser.process(app);
+    if (parser.isSet(fontPxOption)) {
+        QFont font = QGuiApplication::font();
+        font.setPixelSize(parser.value(fontPxOption).toInt());
+        QGuiApplication::setFont(font);
+    }
 
     // Settings load before any model or the AudioEngine is constructed.
     AetherSDR::AppSettings::instance().load();
