@@ -130,7 +130,7 @@ Item {
                 color: info.rxColor
                 fontPx: info.fontPx
                 rowH: info.rowH
-                pad: info.singleLine ? 6 : 12
+                pad: Math.round((info.singleLine ? 6 : 12) * info.fontScale)
                 onTapped: stepChooser.open()
             }
             Row {
@@ -174,7 +174,7 @@ Item {
                 color: info.rxColor
                 fontPx: info.fontPx
                 rowH: info.rowH
-                pad: info.singleLine ? 6 : 12
+                pad: Math.round((info.singleLine ? 6 : 12) * info.fontScale)
                 onTapped: rxChooser.open()
             }
             Hit {
@@ -183,7 +183,7 @@ Item {
                 color: Theme.transmit
                 fontPx: info.fontPx
                 rowH: info.rowH
-                pad: info.singleLine ? 6 : 12
+                pad: Math.round((info.singleLine ? 6 : 12) * info.fontScale)
                 onTapped: txChooser.open()
             }
             Hit {
@@ -192,7 +192,7 @@ Item {
                 color: info.rxColor
                 fontPx: info.fontPx
                 rowH: info.rowH
-                pad: info.singleLine ? 6 : 12
+                pad: Math.round((info.singleLine ? 6 : 12) * info.fontScale)
                 onTapped: filterChooser.open()
             }
             Hit {
@@ -201,7 +201,7 @@ Item {
                 color: info.rxColor
                 fontPx: info.fontPx
                 rowH: info.rowH
-                pad: info.singleLine ? 6 : 12
+                pad: Math.round((info.singleLine ? 6 : 12) * info.fontScale)
                 onTapped: agcChooser.open()
             }
             // Speaker: tap for the volume (AF gain) and mute. The slice's
@@ -400,7 +400,7 @@ Item {
                 color: Engine.splitActive ? Theme.warning : info.dim
                 fontPx: info.fontPx
                 rowH: info.rowH
-                pad: info.singleLine ? 6 : 12
+                pad: Math.round((info.singleLine ? 6 : 12) * info.fontScale)
                 onTapped: Engine.toggleSplit()
                 // Press and hold: split up 1, 5 or 10 kHz (the desktop's Split Up).
                 onHeld: splitChooser.open()

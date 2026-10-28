@@ -31,18 +31,38 @@ Page {
     // and portrait: smaller type below 1200 pt, controls stacked under the
     // spectrum in portrait, and a scrolling control column so nothing is cut.
     readonly property bool compact: width < 1200
-    // The info panel goes under the frequency only where the frequency row
-    // has no room for it (narrow Split View, a foldable's inner screen).
-    // Measured on the left column, which the pinned panel narrows, against
-    // what the row needs in this type: a row wider than the column pushed
-    // the whole page past the right edge (the bands, steps and right meter
-    // cut off at 750 pt).
-    // An HF frequency's width at least, so a band change from 7 to 14 MHz
-    // does not move the panel.
-    readonly property bool infoUnder: leftWidth < Math.max(freqLabel.implicitWidth, freqMetrics.advanceWidth)
-                                                 + modeColumn.implicitWidth
-                                                 + infoBeside.implicitWidth + Theme.spacing
-                                                 + 3 * (compact ? Theme.spacing : 2 * Theme.spacing)
+    // The info panel stays beside the frequency in two rows, as in a wide
+    // window: where the row does not fit, the frequency and the panel's
+    // type shrink to fit it (a foldable's inner screen upright has 676 of
+    // the 700 the row needs; the panel went under the frequency there and
+    // the two orientations looked different). Under the frequency only
+    // below 66 %: the iPhone Duo's inner screen upright (604 pt for the
+    // row) needs 68 % in iOS's monospace, about the phone row's type. Measured on the left column, which the
+    // pinned panel narrows, at full size (an HF frequency) and from two
+    // probes, so the scale never feeds back into its own measure: the
+    // panel's width is a fixed part (badge and icon paddings) plus a part
+    // that follows the type, w(s) = fixed + perScale * s.
+    readonly property real infoRoom: leftWidth - modeColumn.implicitWidth - Theme.spacing - 8
+                                     - 3 * (compact ? Theme.spacing : 2 * Theme.spacing)
+    readonly property real infoPerScale: (infoProbe.implicitWidth - infoProbe70.implicitWidth) / 0.3
+    readonly property real infoFixed: infoProbe.implicitWidth - infoPerScale
+    // 3 % to spare for the type's whole pixels (rounded, a scaled row came
+    // out a few pixels wider than the line through the probes).
+    readonly property real infoRaw: (infoRoom - infoFixed) / (freqMetrics.advanceWidth + infoPerScale)
+    readonly property real infoFit: infoRaw >= 1 ? 1 : infoRaw * 0.97
+    readonly property bool infoUnder: infoFit < 0.66
+    readonly property real infoScale: infoUnder ? 1 : infoFit
+    InfoPanel {
+        id: infoProbe
+        visible: false
+        showStep: false
+    }
+    InfoPanel {
+        id: infoProbe70
+        visible: false
+        showStep: false
+        fontScale: 0.7
+    }
     // PTT height, shared with the drawer's copy of the button.
     // PTT runs the full width along the bottom in every orientation.
     readonly property real pttHeight: Math.round(Theme.touchTarget * 1.5)
@@ -203,14 +223,19 @@ Page {
                 spacing: page.compact ? Theme.spacing : 2 * Theme.spacing
                 TextMetrics {
                     id: freqMetrics
-                    font: freqLabel.font
-                    text: "00.000.000"
+                    font.pixelSize: page.compact ? 40 : 56
+                    font.family: "monospace"
+                    // At least an HF frequency, so 7 -> 14 MHz does not move
+                    // the panel; a VHF one (one digit more) as it is.
+                    text: {
+                        const now = page.formatMhz(Engine.frequencyMhz)
+                        return now.length > 10 ? now : "00.000.000"
+                    }
                 }
                 Label {
-                    id: freqLabel
                     text: page.formatMhz(Engine.frequencyMhz)
                     color: Theme.text
-                    font.pixelSize: page.compact ? 40 : 56
+                    font.pixelSize: Math.round((page.compact ? 40 : 56) * page.infoScale)
                     font.family: "monospace"
                     // Tap for direct entry.
                     TapHandler { onTapped: freqDialog.open() }
@@ -228,11 +253,15 @@ Page {
                 }
                 // The slice at a glance and in reach: antennas, width,
                 // speaker, lock, DSP, AGC (each opens its choices).
+                // Clipped at its room should the fit be off by a pixel or
+                // two (rounding): a row wider than the column widened the page.
                 InfoPanel {
-                    id: infoBeside
                     visible: !page.infoUnder
                     showStep: false
+                    fontScale: page.infoScale
+                    clip: true
                     Layout.leftMargin: Theme.spacing
+                    Layout.maximumWidth: Math.max(0, page.infoRoom - freqMetrics.advanceWidth * page.infoScale)
                 }
                 Item { Layout.fillWidth: true }
             }
