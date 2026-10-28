@@ -181,15 +181,21 @@ ColumnLayout {
             wrapMode: Text.WordWrap
         }
     }
-    // FT8 / FT4 run on a time server's time; said when the device's own
-    // clock is noticeably off (a second's tenths matter to FT8).
+    // FT8 / FT4 run on a time server's time: which server and how far off
+    // the device's own clock is, always (the user: shown only from 0.3 s,
+    // an iPhone's few ms never showed that the sync ran at all).
     Label {
+        objectName: "digiClock"
         Layout.fillWidth: true
-        visible: (digi.qso.clockServer || "") !== "" && Math.abs(digi.qso.clockCorrection || 0) >= 0.3
-        text: qsTr("This device's clock is %1 s off; FT8 / FT4 use the time from %2.")
-              .arg((digi.qso.clockCorrection < 0 ? "+" : "−") + Math.abs(Number(digi.qso.clockCorrection || 0)).toFixed(1))
-              .arg(digi.qso.clockServer || "")
-        color: Theme.textDim
+        readonly property string server: digi.qso.clockServer || ""
+        readonly property real correction: Number(digi.qso.clockCorrection || 0)
+        visible: Engine.digiRunning || server !== ""
+        text: server !== ""
+              ? qsTr("FT8 / FT4 run on %1's time; this device's clock is %2 ms off.")
+                    .arg(server).arg((correction < 0 ? "+" : correction > 0 ? "−" : "")
+                                     + Math.round(Math.abs(correction) * 1000))
+              : qsTr("FT8 / FT4 run on this device's clock: no time server reached yet.")
+        color: Math.abs(correction) >= 0.3 ? Theme.warning : Theme.textDim
         font.pixelSize: 12
         wrapMode: Text.WordWrap
     }
