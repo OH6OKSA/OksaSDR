@@ -493,7 +493,10 @@ Item {
         modal: true
         dim: false
         y: info.height + 4
-        width: Math.min(360, (info.parent ? info.parent.width : 360))
+        // From the window, not the panel's parent: in the wrapped phone
+        // header each group of the panel is a piece of its own, a few
+        // icons wide (beta 45 squeezed the sliders and Mute into it).
+        width: Math.min(360, Theme.windowWidth - 2 * Theme.spacing)
         margins: Theme.spacing
         padding: Theme.spacing
         background: Rectangle { color: Theme.surface; border.color: Theme.surfaceRaised; radius: Theme.radius }
