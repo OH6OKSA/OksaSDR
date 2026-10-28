@@ -9,7 +9,8 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- The volume panel (the speaker icon) has its full width again in a narrow iPad window (Split View, Stage Manager); build 132 squeezed its sliders.
+- The AGC panel (AGC-F and the like in the top row) has its full width again in a narrow iPad window (Split View, Stage Manager), as the volume panel has since build 133; build 132 squeezed both.
+- The network panel (tap the dot and ms in the top row): on an iPhone its title no longer runs over the quality, and with the phone on its side it scrolls down to Close.
 - From build 132: Logger32: every QSO you log can go to Logger32 on your PC (Log tab: the PC's address, port 52001); QSOs wait on the phone when the PC is not reached (thanks Juho Kontio). A narrow iPad window keeps PTT on screen, with a tidier top. The manual starts with Getting started: what each mode (voice, CW, FT8 / FT4, RADE) needs before you go on the air.
 - From build 129: record and play back (the dot and the triangle in the slice row); F/R hides the band and step buttons; step buttons on the radio's STEP; the eye in password fields (thanks Larry Averbeck).
 
