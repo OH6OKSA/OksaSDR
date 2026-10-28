@@ -9,6 +9,7 @@ This manual describes every function and how it works. The screenshots are
 taken from the app connected to a real FLEX radio. The app's **Manual**
 button (top row) opens this page.
 
+- [Getting started: what each mode needs](#getting-started-what-each-mode-needs)
 - [1. Connecting](#1-connecting)
 - [2. The main screen](#2-the-main-screen)
 - [3. Frequency, mode and the info panel](#3-frequency-mode-and-the-info-panel)
@@ -22,6 +23,87 @@ button (top row) opens this page.
 - [11. Keyboard and Apple Pencil](#11-keyboard-and-apple-pencil)
 - [12. Reporting a problem](#12-reporting-a-problem)
 - [13. Android](#13-android)
+
+---
+
+## Getting started: what each mode needs
+
+What has to be set before each kind of operating, and where; the linked
+sections tell the rest.
+
+**Where things are.** **Controls** opens the control tabs (DSP, Audio, TX,
+CW, View, Prof, Mem, Log, FTx, FreeDV): on an iPad, Mac or tablet in the
+top row; on a phone the **Controls** button beside PTT at the bottom (in
+landscape the ☰ button at the right end of the step row). **Setup** (Radio
+Setup) is in the top row, on a phone behind **⋯**, as are **Manual** and
+**Log**.
+
+**Once, for everything**
+- **Connect** ([1](#1-connecting)): by the radio's IP address on the same
+  network, from anywhere over SmartLink, or over your own VPN.
+- **A slice of its own**: the app opens one on the radio. When the radio's
+  slices are all in use by other programs, *No slice* shows
+  ([Notices](#10-notices-and-problems)).
+- **Your callsign in the radio**: Setup → Radio → Callsign. FT8 / FT4, the
+  CW memories' `{CALL}`, RADE's end of over, the DX cluster and the log
+  take it from there. A radio without one offers *Set up* when you connect.
+- **Your grid**: the Log tab's *My grid*, unless the radio has GPS. The
+  FT8 / FT4 CQ, PSK Reporter, FreeDV Reporter and the log use it.
+
+**Receive** needs nothing more: tap a band button. A band that stays
+silent may have its slice muted: tap the speaker on the info panel.
+
+**Transmit, in every mode**
+- **A TX slice**: one slice carries the red **TX** tag; press and hold a
+  slice for *Make TX slice*. The FTx band buttons set it themselves.
+- **The radio's microphone input on PC** (this device): the app sets it
+  when it connects. If another program switched it back, Controls → TX →
+  **Use this device's microphone**.
+- **RF power**: Controls → TX. Try low power or a dummy load first.
+- When transmit is not possible, the reason shows above PTT
+  ([7](#7-transmitting-ptt-key-and-tune)).
+
+**Voice (USB, LSB, AM, FM)**
+- **The mode**: tap the mode beside the frequency. PTT does not key in
+  DIGU / DIGL.
+- **Microphone access**: the app asks once, when transmit first becomes
+  possible (Android: on the first connect). Refused: allow it in the
+  device's settings › OksaSDR › Microphone.
+- **Mic level**: Controls → TX, with Mic on the left meter: speech peaks
+  near −10 dB (phone microphones often need +10 to +20 dB).
+- **A Bluetooth headset**: Controls → Audio → Audio output (*Auto* takes
+  its microphone too).
+- Then hold **PTT**, or make it a switch: Controls → TX → PTT *Tap on / off*.
+
+**CW**
+- **The mode** CW, and **Break-in** on (Controls → CW): with it off the key
+  does not put the radio on the air.
+- **Key**: the big button is a straight key; *Paddles* (Controls → CW →
+  Key) gives dit and dah. Speed and pitch are on the CW tab, and the
+  memories M1–M12 send `{CALL}` from the radio's callsign.
+
+**FT8 / FT4**
+- **The callsign** (above): without it the app decodes but does not call
+  or answer. **The grid**: without it the CQ goes out without a locator
+  and PSK Reporter waits.
+- **The time** within about a second: online the app takes it from a time
+  server by itself; offline set the device's Date & Time to automatic.
+- Then Controls → **FTx** → a band button: the active slice becomes the TX
+  slice, tunes to the band's FT8 (or FT4) frequency in DIGU and decodes. Tap a
+  decode to answer it, or **CQ** to call. The power out follows the TX
+  tab's RF power (TX level 0 dB); **Halt TX** stops at once. No computer,
+  WSJT-X, DAX or mode setting is needed ([FTx](#8-controls)).
+
+**RADE digital voice**
+- **Microphone access** and **Mic level** as for voice, and **the callsign**
+  (sent at the end of each over).
+- Then Controls → **FreeDV** → *RADE*, and talk with PTT. *Report to
+  FreeDV Reporter* (optional) also needs the grid.
+
+**Logging** (optional): the Log tab logs every contact; import your
+logbook there (ADIF) so FTx and the log know what you have worked. A
+QRZ.com account fills in who each station is; Wavelog / Cloudlog and
+Logger32 get every QSO too ([Log](#8-controls)).
 
 ---
 

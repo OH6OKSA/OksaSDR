@@ -46,6 +46,7 @@ iOS background).
 
 **Build 132** (2026-10-28), iPhone and iPad, and Android beta 46 (for iOS also betas 44 and 45's layout fixes):
 - Logger32 (Juho Kontio, iPhone 17 Pro): the Log tab's Logger32 field (host or host:port, 52001 by default) sends each logged QSO as its ADIF record on a TCP connection of its own; unsent records wait in a queue in the settings (500 at most) and go with the next QSO, the next start, a Save, or every two minutes. Save checks with a bare connection. Checked against a listener here (the record arrived; the queue held and went on the next start); the privacy policy and the manual name it.
+- The manual's Getting started (a tester could not find the FT8 settings): what each mode needs (once: connect, a slice, the radio's callsign, the grid; transmit: the TX slice, the PC mic input, RF power; voice, CW, FT8 / FT4, RADE, logging), with where each is set. The Android notes' earlier-betas list lost a doubled phrase.
 
 **Android beta 45** (2026-10-27; no iOS build):
 - Beta 44 on the user's split window (about 533 dp wide): the portrait layout fitted, but its phone header (made for 390-440 dp) left half of both rows empty. From 480 dp wide in portrait the frequency, mode, STEP and the slice's groups flow along the lines and wrap only where the room ends, on the phone flag row's height with no gap between lines (the user found the first try too loose). Rendered on the FLEX at 533x505, 533x574, 600x700 and 440x956 (unchanged).

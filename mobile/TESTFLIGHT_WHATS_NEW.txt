@@ -11,6 +11,7 @@ GETTING STARTED
 NEW IN THIS BUILD
 - Logger32: every QSO you log can go to Logger32 on your PC (Log tab: the PC's address, port 52001); QSOs wait on the phone when the PC is not reached (thanks Juho Kontio).
 - A narrow window on an iPad (Split View, Stage Manager) keeps PTT on screen, and its top lines no longer leave half empty.
+- The manual starts with Getting started: what each mode (voice, CW, FT8 / FT4, RADE) needs before you go on the air, and where to set it.
 - From build 129: record and play back (the dot and the triangle in the slice row); F/R hides the band and step buttons; step buttons on the radio's STEP; the eye in password fields (thanks Larry Averbeck).
 
 RECENT (builds 94–123)
