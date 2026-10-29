@@ -48,6 +48,10 @@ Page {
     // PTT height, shared with the drawer's copy of the button. PTT runs
     // along the bottom in both orientations; lower in landscape.
     readonly property real pttHeight: landscape ? Math.round(Theme.touchTarget * 1.2) : 64
+    // Upright, the controls can take the whole screen (the button beside
+    // Close): FTx then lists its decodes on the full height (Michael
+    // Whaley). Kept while the app runs.
+    property bool controlsFull: false
 
     function formatMhz(mhz) {
         const hz = Math.round(mhz * 1e6)
@@ -456,7 +460,7 @@ Page {
         objectName: "controlsDrawer"
         edge: page.landscape ? Qt.RightEdge : Qt.BottomEdge
         width: page.landscape ? Math.min(page.width * 0.5, 460) : page.width
-        height: page.landscape ? (parent ? parent.height : page.height) : Math.min(page.height * 0.55, 520)
+        height: page.landscape || page.controlsFull ? (parent ? parent.height : page.height) : Math.min(page.height * 0.55, 520)
         // To the window's edges: Qt otherwise keeps popups inside the safe
         // area (above Android's navigation bar) and the drawer stopped short
         // of the page's bottom row. The content below keeps the insets.
@@ -515,6 +519,23 @@ Page {
                         font.pixelSize: 15
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
+                    }
+                }
+                // Full screen and back (upright only: on its side the drawer
+                // already runs the window's height).
+                AppButton {
+                    objectName: "fullControls"
+                    visible: !page.landscape
+                    Accessible.name: page.controlsFull ? qsTr("Smaller controls") : qsTr("Full-screen controls")
+                    Layout.preferredWidth: Theme.touchTarget
+                    Layout.preferredHeight: Engine.digiRunning && !Engine.rade ? Theme.touchTarget : page.pttHeight
+                    onClicked: page.controlsFull = !page.controlsFull
+                    contentItem: Item {
+                        Caret {
+                            anchors.centerIn: parent
+                            size: 16
+                            rotation: page.controlsFull ? 0 : 180
+                        }
                     }
                 }
                 PttButton {

@@ -159,8 +159,10 @@ mode, a DSP that runs, the shown tab) is **lit blue**; the others are dark.
 On an iPad or tablet the controls can stay pinned at the side (as above) or
 open as a drawer. On a phone they open as a drawer from the **Controls**
 button beside PTT (three bars in landscape); the drawer carries its own PTT
-in the same place. A swipe inside the open drawer never tunes; the part of
-the display still in view tunes as usual.
+in the same place. Upright, **▲** beside **Close** gives the drawer the whole
+screen (FTx then lists about twice as many decodes) and **▼** takes it back
+to half; the choice holds while the app runs. A swipe inside the open drawer
+never tunes; the part of the display still in view tunes as usual.
 
 | iPhone, portrait | iPhone, landscape |
 |---|---|
@@ -541,7 +543,8 @@ offers **Off**.
   the big button reads TUNE and pressing it stops the carrier.
 
 The button is always on top. On a phone an open controls drawer carries its
-own copy at the bottom, beside **Close** (which closes the drawer); on a
+own copy at the bottom, beside **Close** (which closes the drawer) and **▲**
+(full screen); on a
 tablet the drawer stops above the page's PTT, so nothing ever covers it.
 When transmit is not possible (no TX slice, the radio's mic input not
 this device, a refusal), the reason shows above PTT and under the
