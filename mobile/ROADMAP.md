@@ -42,6 +42,81 @@ operator's certificate; the logbook or Wavelog does it); QSY from Wavelog
 to the radio (needs a listening server on the phone, not possible in the
 iOS background).
 
+## Planned: usability (review of 2026-10-29)
+
+From a review of every panel and drawer tab in 20 window sizes (phones
+both ways, the iPhone Duo's and OnePlus Open's both screens, iPads, Mac,
+split windows) and a look at the other FlexRadio clients. The goal: the
+app feels like the phone's own apps. Which build each goes into is
+decided one at a time; the ones marked *to discuss* need a closer talk
+first.
+
+Touch and feel:
+- **Bigger touch areas** for the most used controls: the info row's items
+  (slice, TX, speaker, lock, REC, PLAY, NB / NR) are about 22x33 px and
+  STEP, ANT and AGC about 24 px tall, where Apple asks for 44 pt and Google
+  48 dp. The touch area grows to 44 px; what shows can stay the size it is.
+- **One panel base** for every panel: title, Close in the same place
+  (top right, as in the AGC, volume, filter and meter panels now; TNF and
+  Network still have it at the bottom) and scrolling where the window is
+  low.
+- **Haptics:** a light tap felt on PTT press and release, the step buttons
+  and the slider steps. None anywhere yet. *To discuss:* which controls,
+  and a setting to turn it off.
+
+Text and large screens:
+- **A text scale that follows the system text size** (iOS Dynamic Type,
+  Android font scale): sizes are fixed pixels now, about 80 texts are
+  11–13 px and the phone's info row about 10 px. One scale in the theme,
+  13 px at the smallest. *To discuss:* how far it may grow before rows
+  wrap or move to a second line, and checking every layout at the large
+  sizes.
+- **Tablets and Mac:** the scale stops at 1.15, so a 13" iPad shows
+  12–16 px text; the connect page stretches over the full width (a
+  maximum width, centred). On a MacBook the window's short side is about
+  950–1100 px, so the scale stays near 1.0: phone-sized text, seen from
+  twice the distance, and a stretched phone layout; an external monitor
+  more so. A Mac window can be any size, so every size in between must
+  work too, and a right click acts as the long press. *To discuss:* views
+  side by side on a large screen (FTx and the log, two panadapters)
+  instead of a larger phone layout.
+
+Finding things:
+- **A long press on the spectrum opens a menu** (notch here, slice here,
+  FT8 TX here, ...) for what is now a hidden gesture found only in the
+  manual (the hold for a notch, the dBm scale drag, the divider's double
+  tap, the SPLIT and memory holds, a tap that resets a value).
+  *To discuss:* what goes in the menu.
+- **First-run hints:** three or four short hints on the first start.
+  *To discuss:* whether to have them, and which.
+
+Screen reader:
+- **VoiceOver and TalkBack:** 18 screen-reader names for about 200 touch
+  targets; icons and the spectrum have none. Names for every control, and
+  tuning that works with the screen reader (the frequency read out, a
+  swipe up or down = one step). *To discuss:* with a tester who uses a
+  screen reader.
+
+Small ones:
+- SmartLink shows the radio's state as raw text ("In_Use"); it becomes
+  "In use by" and the station's name.
+- A lit blue button's contrast is 3.8:1, below the 4.5:1 asked for.
+- Scroll bars where a list or panel scrolls (only the panels fixed in
+  build 137 have one).
+
+Later, *to discuss:* a connection doctor (what blocks a connection:
+the local network permission, the route, SmartLink, the radio's client
+slots, in plain words).
+
+Proposed order (a proposal, each build still decided on its own):
+1. **Build A**, small but felt: the info row's touch areas, one panel
+   base, haptics on PTT and the steps.
+2. **Build B:** the text scale with the system text size, the tablet
+   scale, the connect page's maximum width, "In use by".
+3. **Build C:** the spectrum's long-press menu, first-run hints, tuning
+   with the screen reader.
+4. **Later:** views side by side on a tablet, the connection doctor.
+
 ## Released
 
 **Build 136** (2026-10-28), iPhone and iPad, and Android beta 50:
@@ -413,6 +488,17 @@ Ideas to think over later (2026-10-27):
 - 4O3A Power Genius XL (PGXL) control, with the Tuner Genius XL panel.
 - CW autotune: a tap near a CW signal centres it on the pitch, even when the
   tap misses it (the peak in the spectrum around the tap).
+
+Tester requests (2026-10-29, Sebastian Schu DG5CST):
+- RF-KIT RF2K-S amplifier: its power on the right bar meter. Upstream has
+  it over the amplifier's REST API (#6596, 26.10.4), so mostly a panel and
+  a meter source. As with the Tuner Genius and PGXL: not released untested
+  on a real device; a tester with one who takes the risk could test it.
+- Connect by host name (a dynamic DNS name), not only an IP address: the
+  name resolved before connecting, and letters on the address keypad. A
+  radio forwarded straight to the internet is not the route to suggest
+  (the radio's API has no password, and its UDP to a phone behind a mobile
+  network's NAT does not arrive); SmartLink or a VPN is.
 
 ## Waiting
 
