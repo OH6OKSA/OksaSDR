@@ -123,7 +123,7 @@ MODEL_NAMES = {
     "iPad11_3": "iPad Air 3", "iPad11_4": "iPad Air 3", "iPad12_1": "iPad (9th gen)", "iPad12_2": "iPad (9th gen)",
     "iPad17_1": "iPad Pro 11 (M5)", "iPad17_2": "iPad Pro 11 (M5)", "iPad17_3": "iPad Pro 13 (M5)",
     "iPad17_4": "iPad Pro 13 (M5)", "Mac14_2": "MacBook Air (M2)",
-    "Mac17_4": "MacBook Air 15 (M5)",
+    "Mac17_4": "MacBook Air 15 (M5)", "Mac18_5": "Mac mini (M6)",
 }
 
 
