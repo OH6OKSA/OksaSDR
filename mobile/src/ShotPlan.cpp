@@ -120,10 +120,19 @@ void ShotPlan::step()
 void ShotPlan::closePopups()
 {
     for (QObject* root : m_qml.rootObjects()) {
+        // Guarded: a close can destroy others in the list (the TNF popup's
+        // sample notch takes its spectrum handle with it).
+        QList<QPointer<QObject>> objects;
         for (QObject* o : allObjects(root)) {
+            objects << o;
+        }
+        for (const QPointer<QObject>& o : std::as_const(objects)) {
+            if (!o) {
+                continue;
+            }
             const QMetaObject* mo = o->metaObject();
             if (mo->indexOfProperty("opened") >= 0 && mo->indexOfMethod("close()") >= 0 && o->property("opened").toBool()) {
-                QMetaObject::invokeMethod(o, "close");
+                QMetaObject::invokeMethod(o.data(), "close");
             }
         }
         for (QObject* notice : findNamed(root, QStringLiteral("noSliceNotice"))) {
