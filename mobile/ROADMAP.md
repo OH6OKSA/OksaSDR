@@ -515,6 +515,8 @@ Tester requests (2026-10-29, Sebastian Schu DG5CST):
   it over the amplifier's REST API (#6596, 26.10.4), so mostly a panel and
   a meter source. As with the Tuner Genius and PGXL: not released untested
   on a real device; a tester with one who takes the risk could test it.
+  Sebastian uses an RF2K-S and is willing to (2026-10-29); the phone must
+  reach the amplifier's own address too.
 - Connect by host name (a dynamic DNS name), not only an IP address: the
   name resolved before connecting, and letters on the address keypad. A
   radio forwarded straight to the internet is not the route to suggest
