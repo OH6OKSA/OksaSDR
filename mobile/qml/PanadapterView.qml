@@ -822,13 +822,13 @@ Rectangle {
             opacity: 0.85
             onClicked: panArea.bandPicker ? bandChooser.open() : Engine.setPanDisplay("bandZoom", checked ? 0 : 1)
         }
-        // F/R (frequency / resolution, Larry Averbeck's name): the band row
+        // B/S (bands / steps, Larry Averbeck's name; F/R before): the band row
         // and the step buttons, or hidden so the waterfall has their height;
         // Band then opens the bands. On a page that has those rows.
         AppButton {
             objectName: "tuneRowsButton"
             visible: panArea.tuneRowsToggle
-            text: qsTr("F/R")
+            text: qsTr("B/S")
             Accessible.name: qsTr("Band row and step buttons")
             checked: Engine.tuneRowsShown
             font.pixelSize: Math.round(Theme.buttonFont * 0.85)
@@ -844,7 +844,7 @@ Rectangle {
     // Set by a page that leaves its band row out (no band could be picked
     // there before).
     property bool bandPicker: false
-    // Set by a page whose band row and step buttons F/R hides.
+    // Set by a page whose band row and step buttons B/S hides.
     property bool tuneRowsToggle: false
     Popup {
         id: bandChooser

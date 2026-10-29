@@ -315,7 +315,7 @@ Page {
                 Layout.topMargin: -Math.round(Theme.spacing / 2)
                 // A swipe in the open drawer must not tune.
                 covers: [controlsDrawer.background]
-                // F/R hides the band row and the step buttons: Band then
+                // B/S hides the band row and the step buttons: Band then
                 // picks the bands.
                 bandPicker: !Engine.tuneRowsShown
                 tuneRowsToggle: true

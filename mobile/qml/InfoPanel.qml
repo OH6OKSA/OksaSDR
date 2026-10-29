@@ -496,7 +496,7 @@ Item {
         // From the window, not the panel's parent: in the wrapped phone
         // header each group of the panel is a piece of its own, a few
         // icons wide (beta 45 squeezed the sliders and Mute into it).
-        width: Math.min(360, Theme.windowWidth - 2 * Theme.spacing)
+        width: Math.min(420, Theme.windowWidth - 2 * Theme.spacing)
         margins: Theme.spacing
         padding: Theme.spacing
         background: Rectangle { color: Theme.surface; border.color: Theme.surfaceRaised; radius: Theme.radius }
@@ -504,10 +504,22 @@ Item {
             spacing: Theme.spacing / 2
             // Every slice's audio, as the desktop's RX applet: AF gain, mute
             // and pan (left-right), the active slice marked.
-            Label {
-                text: qsTr("Volume")
-                color: Theme.textDim
-                font.pixelSize: Math.round(Theme.buttonFont * 0.9)
+            RowLayout {
+                Layout.fillWidth: true
+                Label {
+                    text: qsTr("Volume")
+                    color: Theme.textDim
+                    font.pixelSize: Math.round(Theme.buttonFont * 0.9)
+                    Layout.fillWidth: true
+                }
+                // As the AGC panel's: a tap outside closes it too.
+                AppButton {
+                    text: qsTr("Close")
+                    focusPolicy: Qt.NoFocus
+                    Layout.preferredWidth: Theme.buttonWidth * 1.5
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: volumePopup.close()
+                }
             }
             // The rows follow the slice ids only: a status echo (each volume
             // change sends one) must not rebuild the rows mid-drag, or the
@@ -527,6 +539,12 @@ Item {
                 target: Engine
                 function onSlicesChanged() { sliceAudioIds.refresh() }
             }
+            TextMetrics {
+                id: txBadgeWidth
+                text: "W TX"
+                font.pixelSize: Math.round(Theme.buttonFont * 0.85)
+                font.bold: true
+            }
             Repeater {
                 model: sliceAudioIds.ids
                 delegate: ColumnLayout {
@@ -538,8 +556,10 @@ Item {
                     spacing: 0
                     RowLayout {
                         Layout.fillWidth: true
+                        // One width for "A" and "C TX", so the rows' − / +
+                        // line up.
                         Rectangle {
-                            implicitWidth: sliceLetter.implicitWidth + 10
+                            implicitWidth: Math.max(sliceLetter.implicitWidth, txBadgeWidth.width) + 10
                             implicitHeight: sliceLetter.implicitHeight + 4
                             radius: 4
                             color: sliceAudio.info.active ? "#2f7fd6" : Theme.surfaceRaised
@@ -552,19 +572,16 @@ Item {
                                 color: "#ffffff"
                             }
                         }
-                        Slider {
+                        // − / + for the last step (Larry Averbeck).
+                        FineSlider {
                             id: gainSlider
                             Layout.fillWidth: true
                             from: 0; to: 100
-                            focusPolicy: Qt.NoFocus
-                            onMoved: Engine.setSliceAudio(sliceAudio.sliceId, "gain", value)
-                            Binding on value {
-                                when: !gainSlider.pressed
-                                value: sliceAudio.info.gain
-                            }
+                            value: sliceAudio.info.gain || 0
+                            onMoved: (v) => Engine.setSliceAudio(sliceAudio.sliceId, "gain", v)
                         }
                         Label {
-                            text: Math.round(gainSlider.value)
+                            text: Math.round(gainSlider.shown)
                             color: Theme.textDim
                             font.pixelSize: Math.round(Theme.buttonFont * 0.8)
                             Layout.preferredWidth: 28

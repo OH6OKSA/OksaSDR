@@ -177,7 +177,18 @@ Item {
         readonly property real cellWidth: Math.max(Theme.buttonWidth * 0.9, 72)
         contentItem: ColumnLayout {
             spacing: Theme.spacing / 2
-            Label { text: qsTr("Style"); color: Theme.textDim; font.pixelSize: Math.round(Theme.buttonFont * 0.85) }
+            // Every choice keeps it open; Close as the AGC and volume panels'.
+            RowLayout {
+                Layout.fillWidth: true
+                Label { text: qsTr("Style"); color: Theme.textDim; font.pixelSize: Math.round(Theme.buttonFont * 0.85); Layout.fillWidth: true }
+                AppButton {
+                    text: qsTr("Close")
+                    focusPolicy: Qt.NoFocus
+                    Layout.preferredWidth: Theme.buttonWidth * 1.5
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: chooser.close()
+                }
+            }
             // Two bars: one over the other, each with its own receive and
             // transmit choice (the lower bar's from a tap on it).
             RowLayout {

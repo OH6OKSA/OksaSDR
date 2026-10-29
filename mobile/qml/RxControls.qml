@@ -86,14 +86,22 @@ ColumnLayout {
             focusPolicy: Qt.NoFocus
             onClicked: Engine.squelchOn = !Engine.squelchOn
         }
-        Slider {
+        // − / + for the last step (Larry Averbeck), and the level read out.
+        FineSlider {
+            id: squelchSlider
             Layout.fillWidth: true
             from: 0
             to: 100
-            stepSize: 1
             value: Engine.squelchLevel
             enabled: Engine.squelchOn
-            onMoved: Engine.squelchLevel = Math.round(value)
+            onMoved: (v) => Engine.squelchLevel = Math.round(v)
+        }
+        Label {
+            text: Math.round(squelchSlider.shown)
+            color: Engine.squelchOn ? Theme.text : Theme.textDim
+            font.pixelSize: 15
+            horizontalAlignment: Text.AlignRight
+            Layout.preferredWidth: 28
         }
     }
 

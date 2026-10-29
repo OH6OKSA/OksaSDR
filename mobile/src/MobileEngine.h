@@ -600,7 +600,7 @@ public:
     // the room (PTT always stays). Remembered on the device.
     bool controlsVisible() const;
     void setControlsVisible(bool visible);
-    // The band row and the step buttons, or hidden behind F/R on the display
+    // The band row and the step buttons, or hidden behind B/S on the display
     // so the waterfall has their height (Larry Averbeck); remembered.
     bool tuneRowsShown() const;
     void setTuneRowsShown(bool shown);

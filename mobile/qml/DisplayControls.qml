@@ -31,7 +31,7 @@ ColumnLayout {
             }
         }
     }
-    // The band row and the step buttons (also F/R on the display), and what
+    // The band row and the step buttons (also B/S on the display), and what
     // the step buttons step by (Larry Averbeck).
     RowLayout {
         Layout.fillWidth: true

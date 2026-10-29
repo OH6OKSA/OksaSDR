@@ -301,7 +301,7 @@ Page {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 rfLabelWidth: sliceBar.rightMeterWidth
-                // The band row is left out there, or hidden by F/R: Band
+                // The band row is left out there, or hidden by B/S: Band
                 // picks the bands.
                 bandPicker: (page.landscape && Theme.tightHeight) || !Engine.tuneRowsShown
                 tuneRowsToggle: true
@@ -312,8 +312,8 @@ Page {
                 covers: [controlsDrawer.background]
             }
 
-            // Portrait: only the step buttons, gone with F/R. Landscape: the
-            // controls button and PTT stay when F/R hides the steps.
+            // Portrait: only the step buttons, gone with B/S. Landscape: the
+            // controls button and PTT stay when B/S hides the steps.
             RowLayout {
                 visible: page.landscape || Engine.tuneRowsShown
                 Layout.fillWidth: true

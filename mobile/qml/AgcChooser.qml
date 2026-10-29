@@ -4,7 +4,8 @@ import QtQuick.Layouts
 import AetherMobile
 
 // AGC from the info panel: the mode (off/slow/med/fast; picking one keeps
-// the popup open), the AGC threshold (AGC-T) and the panadapter's RF gain.
+// the popup open), the AGC threshold (AGC-T) and the panadapter's RF gain,
+// each slider with − / + for the last step.
 Popup {
     id: chooser
     objectName: "agcChooser"
@@ -23,10 +24,23 @@ Popup {
     }
     contentItem: ColumnLayout {
         spacing: Theme.spacing / 2
-        Label {
-            text: qsTr("AGC")
-            color: Theme.textDim
-            font.pixelSize: Math.round(Theme.buttonFont * 0.85)
+        // A tap outside closes it too; Close says so (Larry Averbeck). In the
+        // title row, so the panel is no taller.
+        RowLayout {
+            Layout.fillWidth: true
+            Label {
+                text: qsTr("AGC")
+                color: Theme.textDim
+                font.pixelSize: Math.round(Theme.buttonFont * 0.85)
+                Layout.fillWidth: true
+            }
+            AppButton {
+                text: qsTr("Close")
+                focusPolicy: Qt.NoFocus
+                Layout.preferredWidth: Theme.buttonWidth * 1.5
+                Layout.preferredHeight: Theme.touchTarget
+                onClicked: chooser.close()
+            }
         }
         RowLayout {
             Layout.fillWidth: true
@@ -47,17 +61,18 @@ Popup {
         RowLayout {
             Layout.fillWidth: true
             Label {
-                text: qsTr("AGC-T  %1").arg(Engine.agcThreshold)
+                text: qsTr("AGC-T  %1").arg(Math.round(agcT.shown))
                 color: Theme.textDim
                 font.pixelSize: 14
                 Layout.preferredWidth: 90
             }
-            Slider {
+            FineSlider {
+                id: agcT
                 Layout.fillWidth: true
                 enabled: Engine.connectionState === "connected" && Engine.agcMode !== "off"
                 from: 0; to: 100; stepSize: 1
                 value: Engine.agcThreshold
-                onMoved: Engine.agcThreshold = Math.round(value)
+                onMoved: (v) => Engine.agcThreshold = Math.round(v)
             }
         }
         // RF gain (preamp / attenuator) of the panadapter, in the radio's steps.
@@ -65,19 +80,19 @@ Popup {
             Layout.fillWidth: true
             visible: Engine.connectionState === "connected"
             Label {
-                text: qsTr("RF gain  %1 dB").arg(Engine.rfGain)
+                text: qsTr("RF gain  %1 dB").arg(Math.round(rfGain.shown))
                 color: Theme.textDim
                 font.pixelSize: 14
                 Layout.preferredWidth: 90
             }
-            Slider {
+            FineSlider {
+                id: rfGain
                 Layout.fillWidth: true
                 from: Engine.rfGainLow
                 to: Engine.rfGainHigh
                 stepSize: Engine.rfGainStep
-                snapMode: Slider.SnapAlways
                 value: Engine.rfGain
-                onMoved: Engine.rfGain = Math.round(value)
+                onMoved: (v) => Engine.rfGain = Math.round(v)
             }
         }
     }

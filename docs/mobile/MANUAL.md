@@ -183,9 +183,9 @@ screen about 1050 points tall (an iPad); on a lower one they open as the
 drawer. On a very low screen in landscape (a phone's outer
 screen, the smaller iPhones) the band buttons give way to the display;
 there the **Band** button on the waterfall opens the bands, with *Whole
-band* (the band zoom) and *Close* under them. **F/R** beside it hides the
+band* (the band zoom) and *Close* under them. **B/S** (bands / steps) beside it hides the
 band buttons and the step buttons on any device, so the waterfall gets
-their height; Band then opens the bands the same way, and F/R brings the
+their height; Band then opens the bands the same way, and B/S brings the
 rows back (also *View › Bands and steps*; remembered).
 
 ![The bands from the Band button in a low landscape window](manual/bandchooser.jpg)
@@ -289,7 +289,8 @@ frequency and the rest under it; in landscape it is one row, STEP first.
 choosing one closes the window) and the radio's DSP: NR, NB, ANF, APF (CW),
 and NRL, ANFL, ANFT, NRS, RNN, NRF where the radio has them, and **WNB**, the
 panadapter's wideband noise blanker. **BC** is the app's own beat cancel
-(below). DSP toggles leave the window open, so several can be set together.
+(below). DSP toggles leave the window open, so several can be set together;
+*Close* at the top right (or a tap outside) closes it.
 Each DSP that is on and has a level (NR, NB, ANF, APF, NRL, ANFL, NRS, NRF,
 WNB) gets a slider under the toggles, sent to the radio when released.
 
@@ -310,6 +311,12 @@ button, RADE), AGC follows it: **fast** for CW and data (DIGU, DIGL,
 RTTY, FreeDV), **slow** for voice. Pick another AGC and the app keeps it
 for that kind of mode from then on. A mode change made by another program
 on the radio leaves the AGC alone.
+
+**Sliders with − and +.** AGC-T, RF gain, each slice's volume and the
+squelch level have **−** and **+** at the ends of their slider: drag near
+the value, then tap − or + for one step at a time (hold to keep stepping).
+The AGC, volume, filter and meter windows stay open while you set them;
+*Close* at the top right, or a tap outside, closes them.
 
 ![AGC, AGC-T and RF gain](manual/agc.jpg)
 
@@ -398,9 +405,9 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
 - **Band** (beside − / +) zooms out to the whole band you are on; tap it
   again to return to the slice. Off every band (the view dragged or tuned
   outside one), it goes back to the slice's band, or else the nearest one.
-  With the band buttons hidden (F/R, or a very low landscape screen) it opens
+  With the band buttons hidden (B/S, or a very low landscape screen) it opens
   the bands instead.
-- **F/R** hides the band buttons and the step buttons, or brings them back.
+- **B/S** (bands / steps) hides the band buttons and the step buttons, or brings them back.
 - The **frequency scale** runs along the top of the waterfall.
 - The **dBm scale** at the left: drag it up or down to move the trace (the
   reference level; this turns the spectrum's *Auto* off, View gives it
@@ -575,7 +582,7 @@ Reporter).
 
 - **DSP** — RIT and XIT (on/off; − and + step 10 Hz and run while held,
   faster the longer: 10, then 50, then 100 Hz; tap the value to reset;
-  not in FM), squelch (where the radio has it), and **TNF** (the radio's notch filters on/off, *+ TNF* for a
+  not in FM), squelch (where the radio has it; − / + and the level beside the slider), and **TNF** (the radio's notch filters on/off, *+ TNF* for a
   notch in the passband; see [Panadapter and waterfall](#5-panadapter-and-waterfall)).
 - **Audio** — **Receive audio**: *Auto* uses Opus (compressed, made for
   the internet) over SmartLink or when the radio is reached through a VPN,
