@@ -897,8 +897,10 @@ Reporter).
   runs FT8 / FT4, and the times in the log, on that time whatever the
   device's clock says (an app cannot set the device's clock). A line under
   PSK Reporter names the time server and how far off the device's clock
-  is, in milliseconds (amber from 0.3 s), or says that no time server has
-  answered yet. Without the internet, if the decodes' DT is off by more than
+  is, in milliseconds, or says that no time server has answered yet. The
+  line stays dim while a server is in use, however far off the device's
+  clock is (the app runs on the server's time); without one it turns amber
+  when the decodes' DT says the clock is 0.3 s or more off. Without the internet, if the decodes' DT is off by more than
   0.8 s on average, a red notice says this device's clock looks off: set
   Date & Time to automatic.
 

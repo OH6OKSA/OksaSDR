@@ -183,7 +183,11 @@ ColumnLayout {
     }
     // FT8 / FT4 run on a time server's time: which server and how far off
     // the device's own clock is, always (the user: shown only from 0.3 s,
-    // an iPhone's few ms never showed that the sync ran at all).
+    // an iPhone's few ms never showed that the sync ran at all). Dim while a
+    // server is in use, however far off the device's clock: the app runs on
+    // the server's time, so nothing is wrong (the user: an Android phone's
+    // +496 ms in amber looked like a fault). Amber only without a server,
+    // when the decodes' DT says the device's clock is off.
     Label {
         objectName: "digiClock"
         Layout.fillWidth: true
@@ -195,7 +199,7 @@ ColumnLayout {
                     .arg(server).arg((correction < 0 ? "+" : correction > 0 ? "−" : "")
                                      + Math.round(Math.abs(correction) * 1000))
               : qsTr("FT8 / FT4 run on this device's clock: no time server reached yet.")
-        color: Math.abs(correction) >= 0.3 ? Theme.warning : Theme.textDim
+        color: server === "" && Math.abs(Number(digi.qso.clockOffset || 0)) >= 0.3 ? Theme.warning : Theme.textDim
         font.pixelSize: 12
         wrapMode: Text.WordWrap
     }
