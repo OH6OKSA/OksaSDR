@@ -70,6 +70,8 @@ Popup {
                 model: Engine.dspKeys
                 delegate: AppButton {
                     required property string modelData
+                    // For the render tool's click (dsp_NR).
+                    objectName: "dsp_" + modelData
                     text: modelData
                     // Re-read on every DSP change (dspOn is a method).
                     checked: Engine.dspKeys.length >= 0 && Engine.dspOn(modelData)
