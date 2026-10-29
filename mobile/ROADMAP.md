@@ -497,6 +497,17 @@ Ideas to think over later (2026-10-27):
 - CW autotune: a tap near a CW signal centres it on the pitch, even when the
   tap misses it (the peak in the spectrum around the tap).
 
+Tester requests (2026-10-29, Michael Whaley AF0F, after trying the
+full-screen drawer of build 137):
+- FTx: the main buttons fixed at the top and only the decode list scrolling
+  under them (his option B), as a choice beside today's one-piece scroll,
+  with a scroll bar that shows it is a scroll (nested scrolls confuse
+  otherwise). Some want the spectrum, some the decodes, some both: the
+  choice is the point. He offered to pilot it. *To discuss.*
+- Fox / Hound and SuperFox, to work a DXpedition from the phone (his use:
+  grabbing a rare one at work). A bigger piece: Hound mode's rules (calling
+  above 1000 Hz, the Fox's replies) and the SuperFox decoder. *To discuss.*
+
 Tester requests (2026-10-29, Sebastian Schu DG5CST):
 - RF-KIT RF2K-S amplifier: its power on the right bar meter. Upstream has
   it over the amplifier's REST API (#6596, 26.10.4), so mostly a panel and
