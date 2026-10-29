@@ -74,6 +74,10 @@ struct MobileEngine::DigiDecoder {
     std::unique_ptr<DecoderAudioModel> audio;
     bool assignedDax{false};
     int savedDax{0};
+    // The slice's band, and the watch that clears the list when it changes.
+    QString band;
+    QMetaObject::Connection bandWatch;
+    ~DigiDecoder() { QObject::disconnect(bandWatch); }
 };
 
 void MobileEngine::setupDigi()
@@ -220,6 +224,38 @@ void MobileEngine::syncDigiAudio()
         }
         auto d = std::make_shared<DigiDecoder>();
         d->slice = slice;
+        d->band = QsoLog::bandOf(slice->frequency());
+        // Another band: the decodes this slice heard on the old one go from
+        // the list (the user: they are from the old band), and the slot being
+        // heard is dropped, so audio from the old band is not decoded under
+        // the new band's name. The other slices' decodes stay.
+        d->bandWatch = connect(slice, &SliceModel::frequencyChanged, this, [this, id] {
+            const auto it = m_digiDecoders.find(id);
+            if (it == m_digiDecoders.end() || !it->second->slice) {
+                return;
+            }
+            DigiDecoder& dec = *it->second;
+            const QString band = QsoLog::bandOf(dec.slice->frequency());
+            if (band == dec.band) {
+                return;
+            }
+            dec.band = band;
+            dec.ft8->resetAudio();
+            const qsizetype before = m_digiDecodes.size();
+            m_digiDecodes.erase(std::remove_if(m_digiDecodes.begin(), m_digiDecodes.end(),
+                                               [id, &band](const QVariant& v) {
+                                                   const QVariantMap m = v.toMap();
+                                                   return m.value(QStringLiteral("sliceId")).toInt() == id
+                                                          && m.value(QStringLiteral("band")).toString() != band;
+                                               }),
+                                m_digiDecodes.end());
+            qCInfo(lcMobile).noquote() << QStringLiteral("digi: slice %1 to %2: %3 decodes from the old band cleared")
+                                              .arg(dec.slice->letter(), band.isEmpty() ? QStringLiteral("no band") : band)
+                                              .arg(before - m_digiDecodes.size());
+            if (m_digiDecodes.size() != before) {
+                emit digiDecodesChanged();
+            }
+        });
         // Its own DAX channel, so the other slices' audio is not mixed in
         // (without one the decoder hears every audible slice; a new slice
         // can come with the channel of the slice it was made from, and two
@@ -271,6 +307,7 @@ void MobileEngine::syncDigiAudio()
                                         {QStringLiteral("newCall"), digiNewCall(p.de, p.cq, band)},
                                         {QStringLiteral("sliceId"), id},
                                         {QStringLiteral("slice"), sl ? sl->letter() : QString()},
+                                        {QStringLiteral("band"), band},
                                         {QStringLiteral("slotOdd"), (slotMs / slotLen) % 2 == 1},
                                         {QStringLiteral("slotMs"), slotMs}});
             }

@@ -830,7 +830,9 @@ Reporter).
   audio stays out: a slice without one, or one sharing its channel with
   another slice, gets a free channel while it decodes and its old one back
   after. The decodes come at the end of each slot, newest first: slice
-  letter, UTC, SNR, DT, audio frequency and the message.
+  letter, UTC, SNR, DT, audio frequency and the message. When a slice
+  moves to another band, its decodes from the old band leave the list (the
+  other slices' stay), and the slot it was hearing is dropped.
 
   The colours are WSJT-X's: green a CQ, red your call, yellow your own
   transmission, magenta a new DXCC (light pink: new on this band), amber a
