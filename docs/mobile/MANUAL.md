@@ -758,6 +758,19 @@ Reporter).
   checks that Logger32 answers there; from then on every QSO you log also
   goes to Logger32 as an ADIF record over TCP. Away from home the phone
   reaches the PC through your VPN; Windows' firewall must let the port in.
+  Logger32 may listen on the PC itself only (127.0.0.1): if *Save* says it
+  does not answer, forward the port to it and let the phone in, in a
+  PowerShell run as administrator (Juho Kontio's steps; `192.168.1.5` is
+  the PC, `192.168.2.6` the phone's VPN address, or the whole VPN as
+  `192.168.2.0/24`):
+
+  ```
+  netsh interface portproxy add v4tov4 listenaddress=192.168.1.5 listenport=52001 connectaddress=127.0.0.1 connectport=52001
+  New-NetFirewallRule -DisplayName 'Logger32 TCP 52001 (portproxy)' -Direction Inbound -Protocol TCP -LocalPort 52001 -RemoteAddress 192.168.2.6 -Action Allow -Profile Any
+  ```
+
+  A coming Logger32 version lets you choose the address it listens on;
+  then neither is needed.
   QSOs that cannot be sent wait on the device and go with the next QSO, the
   next start or every two minutes; the line under the field says how many
   wait. Clear the address to stop. (Asked by Juho Kontio.)
