@@ -162,6 +162,11 @@ Page {
                     singleLine: true
                     showStep: false
                     clip: true
+                    // The row is a full touch target tall here; the wider
+                    // icons only where the line has room for them, so a small
+                    // phone on its side (667, the iPhone Duo's outer 678)
+                    // keeps the DSP flags it showed before.
+                    iconW: page.width >= 780 ? Math.round(Theme.touchTarget * 0.82) : 0
                     Layout.fillWidth: true
                     Layout.minimumWidth: 0
                 }

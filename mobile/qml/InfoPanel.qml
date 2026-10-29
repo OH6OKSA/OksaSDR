@@ -51,7 +51,7 @@ Item {
     // or the page's fit (two probes, OperatePage) drops the panel under the
     // frequency and leaves the room beside it empty (the iPhone Duo's inner
     // screen did).
-    readonly property real iconW: Math.round(Theme.touchTarget * 0.82)
+    property real iconW: Math.round(Theme.touchTarget * 0.82)
     readonly property color dim: "#6b7785"
     readonly property color rxColor: "#3fb6ff"
 
