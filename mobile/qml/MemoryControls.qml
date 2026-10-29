@@ -143,13 +143,21 @@ ColumnLayout {
         }
 
         contentItem: Flickable {
+            id: editScroll
+            readonly property bool overflows: editColumn.implicitHeight > height + 1
             implicitHeight: editColumn.implicitHeight
             contentHeight: editColumn.implicitHeight
             clip: true
             boundsBehavior: Flickable.StopAtBounds
+            // A bar while the editor is taller than the window, the fields
+            // clear of it.
+            ScrollBar.vertical: ScrollBar {
+                id: editBar
+                policy: editScroll.overflows ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
+            }
             ColumnLayout {
                 id: editColumn
-                width: parent.width
+                width: parent.width - (editScroll.overflows ? editBar.width + 2 : 0)
                 spacing: Theme.spacing / 2
 
                 Label {

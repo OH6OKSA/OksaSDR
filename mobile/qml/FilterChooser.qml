@@ -97,24 +97,19 @@ Popup {
                     font.pixelSize: Math.round(Theme.buttonFont * 0.85)
                     Layout.preferredWidth: chooser.cellWidth * 0.7
                 }
-                Slider {
+                // Sent once the finger lifts (the radio's DSP level), each
+                // − / + step on its own.
+                FineSlider {
                     id: levelSlider
                     Layout.fillWidth: true
-                    Layout.minimumWidth: chooser.cellWidth * 2
+                    Layout.minimumWidth: chooser.cellWidth * 3
                     from: 0; to: 100; stepSize: 1
-                    focusPolicy: Qt.NoFocus
-                    onPressedChanged: {
-                        if (!pressed) {
-                            Engine.setDspLevel(levelRow.modelData, Math.round(value))
-                        }
-                    }
-                    Binding on value {
-                        when: !levelSlider.pressed
-                        value: Engine.dspKeys.length >= 0 ? Engine.dspLevel(levelRow.modelData) : 0
-                    }
+                    liveDrag: false
+                    value: Engine.dspKeys.length >= 0 ? Engine.dspLevel(levelRow.modelData) : 0
+                    onMoved: (v) => Engine.setDspLevel(levelRow.modelData, Math.round(v))
                 }
                 Label {
-                    text: Math.round(levelSlider.value)
+                    text: Math.round(levelSlider.shown)
                     color: Theme.textDim
                     font.pixelSize: Math.round(Theme.buttonFont * 0.85)
                     horizontalAlignment: Text.AlignRight

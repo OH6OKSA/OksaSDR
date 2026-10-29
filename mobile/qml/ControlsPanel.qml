@@ -91,12 +91,10 @@ ColumnLayout {
         currentIndex: tabs.currentIndex
         Repeater {
             model: panel.multiSelect ? [] : panel.sections
-            delegate: ScrollView {
+            delegate: PageScroll {
                 id: tabScroll
                 objectName: "controlsTabScroll"
                 required property var modelData
-                clip: true
-                contentWidth: availableWidth
                 Loader {
                     width: tabScroll.availableWidth
                     sourceComponent: tabScroll.modelData.component
@@ -128,14 +126,12 @@ ColumnLayout {
             }
         }
     }
-    ScrollView {
+    PageScroll {
         id: pinnedScroll
         objectName: "pinnedScroll"
         visible: panel.multiSelect
         Layout.fillWidth: true
         Layout.fillHeight: true
-        clip: true
-        contentWidth: availableWidth
         ColumnLayout {
             width: pinnedScroll.availableWidth
             spacing: Theme.spacing

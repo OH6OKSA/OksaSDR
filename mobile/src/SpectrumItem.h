@@ -65,6 +65,11 @@ public:
     double bandPlanHeight() const;
     double axisHeight() const { return std::clamp(height() * 0.03, 16.0, 22.0); }
     void setSpectrumFraction(double fraction);
+    // CW autotune (a tap that misses a CW signal by a little): the
+    // frequency of the strongest peak within about 14 px (at least 60 Hz)
+    // either side of mhz, if it stands 8 dB or more over the bins around it;
+    // else -1. Interpolated between bins, so it lands within a few Hz.
+    Q_INVOKABLE double cwPeakNear(double mhz) const;
 
 signals:
     void engineChanged();

@@ -206,7 +206,9 @@ rows back (also *View › Bands and steps*; remembered).
 meter, the bands, a notch, network, stations, a voice keyer slot) has its
 name and **Close** at the top right; a tap outside closes it too. Where the
 window is lower than the panel, the rows under the title scroll and a bar at
-the right shows there is more; the title and Close stay in place.
+the right shows there is more; the title and Close stay in place. The
+controls tabs, Radio Setup, the connect page and the log show the same bar
+whenever they scroll.
 
 **Felt taps.** On an iPhone or an Android phone, PTT's press and release,
 the step buttons and − / + are felt as a light tap, as the phone's own
@@ -338,9 +340,13 @@ RTTY, FreeDV), **slow** for voice. Pick another AGC and the app keeps it
 for that kind of mode from then on. A mode change made by another program
 on the radio leaves the AGC alone.
 
-**Sliders with − and +.** AGC-T, RF gain, each slice's volume and the
-squelch level have **−** and **+** at the ends of their slider: drag near
-the value, then tap − or + for one step at a time (hold to keep stepping).
+**Sliders with − and +.** AGC-T, RF gain, each slice's volume and pan, the
+squelch level, the DSP levels, RF and tune power, the microphone and
+monitor levels, the TX filter, this device's microphone processing, CW
+speed and pitch, and Radio Setup's levels have **−** and **+** at the ends
+of their slider: drag near the value, then tap − or + for one step at a
+time (hold to keep stepping). The display's own sliders (levels you set by
+eye) and the equaliser's bands have none.
 The AGC, volume, filter and meter panels stay open while you set them
 (see [Panels](#2-the-main-screen)).
 
@@ -419,7 +425,11 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
 
 ![Panadapter and waterfall](manual/spectrum.jpg)
 
-- **Tap** to tune to the touched point (on the tuning step).
+- **Tap** to tune to the touched point (on the tuning step). In CW, with
+  **Autotune** on (Controls → CW, on by default), a tap lands on the CW
+  signal nearest the touch, within about a finger's width, so you hear it at
+  your pitch even when the tap misses it a little; where there is none it
+  tunes to the touched point, to the hertz.
 - **Drag inside the filter passband** to tune; the slice follows the finger
   in tuning steps (STEP), so it stops on a round frequency.
 - **Drag a passband edge** (a finger's width around either edge line) to
@@ -707,7 +717,8 @@ Reporter).
   - **Key** — *Straight key* or *Paddles*; with paddles, **Iambic** A / B and
     **Swap ⇄**, and **Paddles on a keyboard** (see
     [KEY](#7-transmitting-ptt-key-and-tune)).
-  - Speed, pitch, **Break-in** (QSK) and the **Decoder**. With Break-in off
+  - Speed, pitch, **Break-in** (QSK), the **Decoder** and **Autotune** (a
+    tap on the display lands on the nearest CW signal). With Break-in off
     the key does not put the radio on air; the app says so when you key.
     The decoder has **Sens**
     (0–100, default 70): higher shows only the letters decoded with

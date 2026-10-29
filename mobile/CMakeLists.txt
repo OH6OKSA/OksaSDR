@@ -111,6 +111,7 @@ qt_add_qml_module(aether-mobile
         qml/PopupScroll.qml
         qml/PanelHeader.qml
         qml/PanelContent.qml
+        qml/PageScroll.qml
         qml/PttButton.qml
         qml/NetworkBadge.qml
         qml/NetworkDialog.qml

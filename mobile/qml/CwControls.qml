@@ -288,22 +288,22 @@ ColumnLayout {
     }
 
     Label { text: qsTr("Speed  %1 WPM").arg(Engine.cwSpeed); color: Theme.textDim; font.pixelSize: 15 }
-    Slider {
+    FineSlider {
         Layout.fillWidth: true
         from: 5
         to: 60
         stepSize: 1
         value: Engine.cwSpeed
-        onMoved: Engine.cwSpeed = Math.round(value)
+        onMoved: (v) => Engine.cwSpeed = Math.round(v)
     }
     Label { text: qsTr("Pitch  %1 Hz").arg(Engine.cwPitch); color: Theme.textDim; font.pixelSize: 15 }
-    Slider {
+    FineSlider {
         Layout.fillWidth: true
         from: 300
         to: 1000
         stepSize: 10
         value: Engine.cwPitch
-        onMoved: Engine.cwPitch = Math.round(value)
+        onMoved: (v) => Engine.cwPitch = Math.round(v)
     }
     RowLayout {
         Layout.fillWidth: true
@@ -320,6 +320,14 @@ ColumnLayout {
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.cwDecoderEnabled = !Engine.cwDecoderEnabled
+        }
+        // A tap on the display centres the CW signal there on the pitch.
+        AppButton {
+            text: qsTr("Autotune")
+            checked: Engine.cwAutotune
+            Layout.fillWidth: true
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.cwAutotune = !Engine.cwAutotune
         }
     }
 

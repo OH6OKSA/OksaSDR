@@ -17,6 +17,10 @@ RowLayout {
     // What the slider shows now (the value label follows it mid-drag).
     readonly property real shown: slider.value
     readonly property bool busy: slider.pressed || down.pressed || up.pressed
+    // False for a value the radio takes once, on release (a DSP level, a
+    // Radio Setup level): a drag then sends only where it ends; − / + still
+    // send each step.
+    property bool liveDrag: true
     signal moved(real value)
     spacing: 2
 
@@ -46,7 +50,8 @@ RowLayout {
         stepSize: 1
         snapMode: Slider.SnapAlways
         focusPolicy: Qt.NoFocus
-        onMoved: fine.moved(value)
+        onMoved: if (fine.liveDrag) fine.moved(value)
+        onPressedChanged: if (!pressed && !fine.liveDrag) fine.moved(value)
         Binding on value {
             when: !fine.busy
             value: fine.value

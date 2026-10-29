@@ -314,6 +314,9 @@ class MobileEngine : public QObject {
     // driving the app's iambic keyer (the desktop's IambicKeyer: mode,
     // speed and swapped paddles follow the radio's settings). Remembered.
     Q_PROPERTY(bool cwPaddles READ cwPaddles WRITE setCwPaddles NOTIFY cwChanged)
+    // A tap on the display in CW lets the radio centre the CW signal there
+    // on the pitch (tuneToCw); on by default.
+    Q_PROPERTY(bool cwAutotune READ cwAutotune WRITE setCwAutotune NOTIFY cwChanged)
     // Paddles on a hardware keyboard: "ctrl" (left and right Ctrl, as USB
     // paddle adapters send; the default), "alt" (left and right Alt / Option,
     // for keyboards with no right Ctrl), "brackets" ([ and ]) or "off".
@@ -680,6 +683,15 @@ public:
     bool cwKeyDown() const { return m_cwKeyHeld || m_paddleKeyDown.load(std::memory_order_relaxed); }
     bool cwPaddles() const;
     void setCwPaddles(bool on);
+    bool cwAutotune() const;
+    void setCwAutotune(bool on);
+    // A tap in CW with autotune on: tunes to the CW signal the display found
+    // near the tap (SpectrumItem::cwPeakNear), or to the tapped point, to the
+    // hertz rather than the step grid (which can be wider than the CW
+    // filter): the slice on a CW signal hears it at the pitch. The radio's
+    // own autotune (slice auto_tune) needs SmartSDR+ (the radio answers
+    // 50004001 without it), so it is not used.
+    Q_INVOKABLE void tuneToCw(double mhz, bool onSignal);
     QString cwKeyboardPaddles() const;
     void setCwKeyboardPaddles(const QString& keys);
     int cwIambicMode() const;

@@ -133,7 +133,7 @@ RowLayout {
                                 width: txText.implicitWidth + 8
                                 height: txText.implicitHeight + 4
                                 radius: 4
-                                color: Theme.transmit
+                                color: Theme.transmitTag
                                 Text {
                                     id: txText
                                     anchors.centerIn: parent

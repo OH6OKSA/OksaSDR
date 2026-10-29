@@ -13,6 +13,11 @@ QtObject {
     readonly property color textDim: "#8b98a5"
     readonly property color accent: "#3fb6ff"
     readonly property color transmit: "#e5484d"
+    // Small white-text tags (TX, the slice letter): a shade darker than the
+    // transmit red and the slice blue, for 4.5:1 against white (the
+    // usability review: 3.9 and 4.1).
+    readonly property color transmitTag: "#cf3a3f"
+    readonly property color sliceTag: "#2a72c2"
     readonly property color pttReady: "#7a1f22"
     readonly property color warning: "#f5a524"
     readonly property color passband: "#ffd75e"
@@ -25,7 +30,7 @@ QtObject {
     readonly property color buttonFace: darkButtons ? "#2d3947" : "#e0e0e0"
     readonly property color buttonFaceDown: darkButtons ? "#3d4b5c" : "#bdbdbd"
     readonly property color buttonText: darkButtons ? "#e6edf3" : "#1a1a1a"
-    readonly property color buttonFaceOn: buttonStyle === "light" ? "#f2f4f7" : buttonStyle === "lit" ? "#1f78d1" : "#353637"
+    readonly property color buttonFaceOn: buttonStyle === "light" ? "#f2f4f7" : buttonStyle === "lit" ? "#1c70c8" : "#353637"
     readonly property color buttonFaceOnDown: buttonStyle === "light" ? "#cfd5dc" : buttonStyle === "lit" ? "#1a66b3" : "#4a4b4c"
     readonly property color buttonTextOn: buttonStyle === "light" ? "#10161c" : "#ffffff"
     // Secondary text on a button face (e.g. a memory's mode).

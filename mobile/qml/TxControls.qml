@@ -155,26 +155,26 @@ ColumnLayout {
         font.pixelSize: 13
     }
     Label { text: qsTr("Tune power  %1").arg(Engine.tunePower); color: Theme.textDim; font.pixelSize: 15 }
-    Slider {
+    FineSlider {
         Layout.fillWidth: true
         from: 0
         to: 100
         stepSize: 1
         value: Engine.tunePower
         enabled: Engine.tuneAvailable || Engine.tuning
-        onMoved: Engine.tunePower = Math.round(value)
+        onMoved: (v) => Engine.tunePower = Math.round(v)
     }
 
     // ---- Power ----
     Label { text: qsTr("RF power  %1").arg(Engine.rfPower); color: Theme.textDim; font.pixelSize: 15 }
-    Slider {
+    FineSlider {
         Layout.fillWidth: true
         from: 0
         to: 100
         stepSize: 1
         value: Engine.rfPower
         enabled: Engine.transmitAvailable || Engine.canUseDeviceMicrophone || Engine.tuneAvailable
-        onMoved: Engine.rfPower = Math.round(value)
+        onMoved: (v) => Engine.rfPower = Math.round(v)
     }
 
     // ---- Speech processor (radio side) ----
@@ -237,18 +237,16 @@ ColumnLayout {
             font.pixelSize: 15
             Layout.preferredWidth: 64
         }
-        Slider {
+        FineSlider {
             id: plSlider
             Layout.fillWidth: true
             from: 0; to: 100; stepSize: 1
-            onPressedChanged: if (!pressed) Engine.setPhone(pl.key, Math.round(value))
-            Binding on value {
-                when: !plSlider.pressed
-                value: Engine.phone[pl.key] || 0
-            }
+            liveDrag: false
+            value: Engine.phone[pl.key] || 0
+            onMoved: (v) => Engine.setPhone(pl.key, Math.round(v))
         }
         Label {
-            text: Math.round(plSlider.value)
+            text: Math.round(plSlider.shown)
             color: Theme.textDim
             font.pixelSize: 13
             Layout.preferredWidth: 28
@@ -278,13 +276,13 @@ ColumnLayout {
             focusPolicy: Qt.NoFocus
             onClicked: Engine.monitor = !Engine.monitor
         }
-        Slider {
+        FineSlider {
             Layout.fillWidth: true
             from: 0
             to: 100
             stepSize: 1
             value: Engine.monitorGain
-            onMoved: Engine.monitorGain = Math.round(value)
+            onMoved: (v) => Engine.monitorGain = Math.round(v)
         }
     }
 
@@ -299,18 +297,15 @@ ColumnLayout {
         color: Theme.textDim
         font.pixelSize: 15
     }
-    Slider {
+    FineSlider {
         id: micSlider
         Layout.fillWidth: true
         from: Engine.transmitAvailable ? -20 : 0
         to: Engine.transmitAvailable ? 30 : 100
         stepSize: 1
-        onMoved: Engine.transmitAvailable ? Engine.micGainDb = Math.round(value)
-                                          : Engine.radioMicLevel = Math.round(value)
-        Binding on value {
-            when: !micSlider.pressed
-            value: Engine.transmitAvailable ? Engine.micGainDb : Engine.radioMicLevel
-        }
+        value: Engine.transmitAvailable ? Engine.micGainDb : Engine.radioMicLevel
+        onMoved: (v) => Engine.transmitAvailable ? Engine.micGainDb = Math.round(v)
+                                                 : Engine.radioMicLevel = Math.round(v)
     }
     Label {
         visible: Engine.transmitAvailable
@@ -385,23 +380,23 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         Label { text: qsTr("Low"); color: Theme.textDim; font.pixelSize: 13 }
-        Slider {
+        FineSlider {
             Layout.fillWidth: true
             enabled: Engine.connectionState === "connected"
             from: 0; to: 1000; stepSize: 10
             value: Engine.txFilterLow
-            onMoved: Engine.txFilterLow = Math.round(value)
+            onMoved: (v) => Engine.txFilterLow = Math.round(v)
         }
     }
     RowLayout {
         Layout.fillWidth: true
         Label { text: qsTr("High"); color: Theme.textDim; font.pixelSize: 13 }
-        Slider {
+        FineSlider {
             Layout.fillWidth: true
             enabled: Engine.connectionState === "connected"
             from: 1000; to: 5000; stepSize: 50
             value: Engine.txFilterHigh
-            onMoved: Engine.txFilterHigh = Math.round(value)
+            onMoved: (v) => Engine.txFilterHigh = Math.round(v)
         }
     }
 
@@ -433,18 +428,15 @@ ColumnLayout {
             elide: Text.ElideRight
             Layout.preferredWidth: 64
         }
-        Slider {
+        FineSlider {
             id: csSlider
             Layout.fillWidth: true
             from: cs.from; to: cs.to; stepSize: cs.step
-            onMoved: Engine.setTxChain(cs.key, value)
-            Binding on value {
-                when: !csSlider.pressed
-                value: Engine.txChain[cs.key] || 0
-            }
+            value: Engine.txChain[cs.key] || 0
+            onMoved: (v) => Engine.setTxChain(cs.key, v)
         }
         Label {
-            text: (csSlider.value > 0 && cs.from < 0 ? "+" : "") + csSlider.value.toFixed(0) + cs.unit
+            text: (csSlider.shown > 0 && cs.from < 0 ? "+" : "") + csSlider.shown.toFixed(0) + cs.unit
             color: Theme.textDim
             font.pixelSize: 13
             Layout.preferredWidth: 52

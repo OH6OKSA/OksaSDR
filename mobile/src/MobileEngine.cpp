@@ -5422,6 +5422,36 @@ void MobileEngine::setCwKey(bool down, const QString& reason)
     emit cwKeyDownChanged();
 }
 
+bool MobileEngine::cwAutotune() const
+{
+    return AppSettings::instance().value(QStringLiteral("MobileCwAutotune"), QStringLiteral("True")).toString()
+        == QLatin1String("True");
+}
+
+void MobileEngine::setCwAutotune(bool on)
+{
+    if (on == cwAutotune()) {
+        return;
+    }
+    AppSettings::instance().setValue(QStringLiteral("MobileCwAutotune"), on ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    emit cwChanged();
+}
+
+void MobileEngine::tuneToCw(double mhz, bool onSignal)
+{
+    if (!m_slice || mhz <= 0.0) {
+        return;
+    }
+    const double hz = static_cast<double>(std::llround(mhz * 1e6)) / 1e6;
+    qCInfo(lcMobile).noquote() << QStringLiteral("cw autotune: slice %1 to %2 MHz (%3)")
+                                      .arg(m_slice->letter())
+                                      .arg(hz, 0, 'f', 6)
+                                      .arg(onSignal ? QStringLiteral("the signal near the tap")
+                                                    : QStringLiteral("no signal near, the tapped point"));
+    tuneTo(hz);
+}
+
 bool MobileEngine::cwPaddles() const
 {
     return AppSettings::instance().value(QStringLiteral("MobileCwPaddles"), QStringLiteral("False")).toString()

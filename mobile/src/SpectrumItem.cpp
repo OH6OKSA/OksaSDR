@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
 #include <cstring>
 
 namespace AetherSDR::mobile {
@@ -407,6 +408,60 @@ void SpectrumItem::onSpectrum(const QVector<float>& binsDbm)
         return;
     }
     traceChanged();
+}
+
+double SpectrumItem::cwPeakNear(double mhz) const
+{
+    const qsizetype n = m_spectrum.size();
+    if (n < 16 || m_frameBandwidthMhz <= 0.0 || width() <= 0.0) {
+        return -1.0;
+    }
+    const double lowMhz = m_frameCenterMhz - m_frameBandwidthMhz / 2.0;
+    const double binMhz = m_frameBandwidthMhz / static_cast<double>(n);
+    const double centre = (mhz - lowMhz) / binMhz;
+    if (centre < 0.0 || centre >= static_cast<double>(n)) {
+        return -1.0;
+    }
+    const double halfMhz = std::max(14.0 * m_frameBandwidthMhz / width(), 60e-6);
+    const qsizetype half = std::max<qsizetype>(2, static_cast<qsizetype>(std::ceil(halfMhz / binMhz)));
+    const qsizetype c = static_cast<qsizetype>(centre);
+    const qsizetype lo = std::max<qsizetype>(1, c - half);
+    const qsizetype hi = std::min<qsizetype>(n - 2, c + half);
+    if (lo > hi) {
+        return -1.0;
+    }
+    qsizetype best = lo;
+    for (qsizetype i = lo + 1; i <= hi; ++i) {
+        if (m_spectrum.at(i) > m_spectrum.at(best)) {
+            best = i;
+        }
+    }
+    // The bins around it (three times as wide) for its floor: their median.
+    std::vector<float> around;
+    for (qsizetype i = std::max<qsizetype>(0, c - 3 * half); i <= std::min<qsizetype>(n - 1, c + 3 * half); ++i) {
+        around.push_back(m_spectrum.at(i));
+    }
+    std::nth_element(around.begin(), around.begin() + around.size() / 2, around.end());
+    const float floor = around[around.size() / 2];
+    const float peak = m_spectrum.at(best);
+    const double bestMhz = lowMhz + (static_cast<double>(best) + 0.5) * binMhz;
+    qCInfo(lcSpectrum).noquote() << QStringLiteral("cw peak near %1 MHz (±%2 Hz): %3 dBm at %4 MHz, floor %5 dBm: %6")
+                                        .arg(mhz, 0, 'f', 6)
+                                        .arg(std::lround(halfMhz * 1e6))
+                                        .arg(peak, 0, 'f', 1)
+                                        .arg(bestMhz, 0, 'f', 6)
+                                        .arg(floor, 0, 'f', 1)
+                                        .arg(peak >= floor + 8.0f ? QStringLiteral("a signal") : QStringLiteral("none"));
+    if (peak < floor + 8.0f) {
+        return -1.0;
+    }
+    // Between the bins: the vertex of the parabola through the peak and its
+    // neighbours.
+    const float l = m_spectrum.at(best - 1);
+    const float r = m_spectrum.at(best + 1);
+    const float denom = l - 2.0f * peak + r;
+    const double shift = denom < 0.0f ? std::clamp(0.5 * (l - r) / denom, -0.5, 0.5) : 0.0;
+    return lowMhz + (static_cast<double>(best) + 0.5 + shift) * binMhz;
 }
 
 WaterfallLevelMap::Params SpectrumItem::waterfallParams(float autoBlack) const

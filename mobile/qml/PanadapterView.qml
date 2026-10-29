@@ -1334,7 +1334,16 @@ Rectangle {
                         return
                     }
                 }
-                Engine.tuneToSnapped(panArea.mhzAt(eventPoint.position.x))
+                // In CW with autotune: the radio centres the signal there
+                // on the pitch (a tap that misses it by a little still finds
+                // it).
+                if (Engine.cwMode && Engine.cwAutotune) {
+                    const tapped = panArea.mhzAt(eventPoint.position.x)
+                    const peak = spectrum.cwPeakNear(tapped)
+                    Engine.tuneToCw(peak > 0 ? peak : tapped, peak > 0)
+                } else {
+                    Engine.tuneToSnapped(panArea.mhzAt(eventPoint.position.x))
+                }
             }
         }
         // Press and hold: a notch (TNF) at that point.

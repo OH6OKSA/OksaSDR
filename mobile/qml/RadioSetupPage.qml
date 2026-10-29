@@ -64,20 +64,22 @@ Popup {
         Layout.fillWidth: true
         spacing: 0
         Label {
-            text: level.label + "  " + Math.round(slider.pressed ? slider.value : level.current) + level.unit
+            text: level.label + "  " + Math.round(slider.busy ? slider.shown : level.current) + level.unit
             color: Theme.text
             font.pixelSize: 15
         }
-        Slider {
+        // Sent on release, each − / + step on its own; follows the radio
+        // except while a finger is on it.
+        FineSlider {
             id: slider
             Layout.fillWidth: true
             from: level.from
             to: level.to
             stepSize: level.stepSize
-            onPressedChanged: if (!pressed) level.committed(Math.round(value))
+            liveDrag: false
+            value: level.current
+            onMoved: (v) => level.committed(Math.round(v))
         }
-        // Follows the radio except while the finger is on it.
-        Binding { target: slider; property: "value"; value: level.current; when: !slider.pressed }
     }
     // A text value with its own Save (written only on Save).
     component TextSetting: ColumnLayout {
@@ -146,12 +148,10 @@ Popup {
                 }
             }
         }
-        ScrollView {
+        PageScroll {
             id: scroll
             Layout.fillWidth: true
             Layout.fillHeight: true
-            clip: true
-            contentWidth: availableWidth
             StackLayout {
                 width: scroll.availableWidth
                 currentIndex: setup.section

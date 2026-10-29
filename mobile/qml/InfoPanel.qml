@@ -52,7 +52,8 @@ Item {
     // frequency and leaves the room beside it empty (the iPhone Duo's inner
     // screen did).
     property real iconW: Math.round(Theme.touchTarget * 0.82)
-    readonly property color dim: "#6b7785"
+    // Off flags and idle icons: 5:1 on the header (#6b7785 was 3.5:1).
+    readonly property color dim: "#84919e"
     readonly property color rxColor: "#3fb6ff"
 
     function stepLabel(hz) {
@@ -154,7 +155,7 @@ Item {
                     width: letterText.implicitWidth + 10
                     height: letterText.implicitHeight + 4
                     radius: 4
-                    color: "#2f7fd6"
+                    color: Theme.sliceTag
                     Text {
                         id: letterText
                         Accessible.ignored: info.measureOnly
@@ -170,7 +171,7 @@ Item {
                     width: txTagText.implicitWidth + 10
                     height: txTagText.implicitHeight + 4
                     radius: 4
-                    color: Theme.transmit
+                    color: Theme.transmitTag
                     Text {
                         id: txTagText
                         Accessible.ignored: info.measureOnly
@@ -566,7 +567,7 @@ Item {
                             implicitWidth: Math.max(sliceLetter.implicitWidth, txBadgeWidth.width) + 10
                             implicitHeight: sliceLetter.implicitHeight + 4
                             radius: 4
-                            color: sliceAudio.info.active ? "#2f7fd6" : Theme.surfaceRaised
+                            color: sliceAudio.info.active ? Theme.sliceTag : Theme.surfaceRaised
                             Text {
                                 id: sliceLetter
                                 anchors.centerIn: parent
@@ -602,6 +603,20 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         Label { text: "L"; color: Theme.textDim; font.pixelSize: Math.round(Theme.buttonFont * 0.75) }
+                        // − / + as the volume's (the user): one step left or
+                        // right, held to keep going.
+                        RepeatButton {
+                            id: panLeft
+                            text: "−"
+                            Accessible.name: qsTr("Pan one step left")
+                            Layout.preferredWidth: Theme.touchTarget
+                            Layout.preferredHeight: Theme.touchTarget
+                            onStepped: {
+                                const v = Math.max(0, Math.round(panSlider.value) - 1)
+                                panSlider.value = v
+                                Engine.setSliceAudio(sliceAudio.sliceId, "pan", v)
+                            }
+                        }
                         Slider {
                             id: panSlider
                             Layout.fillWidth: true
@@ -620,8 +635,9 @@ Item {
                                 onDoubleTapped: Engine.setSliceAudio(sliceAudio.sliceId, "pan", 50)
                             }
                             Binding on value {
-                                when: !panSlider.pressed
+                                when: !panSlider.pressed && !panLeft.pressed && !panRight.pressed
                                 value: sliceAudio.info.pan
+                                restoreMode: Binding.RestoreNone
                             }
                             // Centre mark, above and below the track.
                             Rectangle {
@@ -631,6 +647,18 @@ Item {
                                 height: Math.round(panSlider.availableHeight * 0.9)
                                 color: Math.round(panSlider.value) === 50 ? Theme.accent : Theme.textDim
                                 z: -1
+                            }
+                        }
+                        RepeatButton {
+                            id: panRight
+                            text: "+"
+                            Accessible.name: qsTr("Pan one step right")
+                            Layout.preferredWidth: Theme.touchTarget
+                            Layout.preferredHeight: Theme.touchTarget
+                            onStepped: {
+                                const v = Math.min(100, Math.round(panSlider.value) + 1)
+                                panSlider.value = v
+                                Engine.setSliceAudio(sliceAudio.sliceId, "pan", v)
                             }
                         }
                         Label { text: "R"; color: Theme.textDim; font.pixelSize: Math.round(Theme.buttonFont * 0.75) }
