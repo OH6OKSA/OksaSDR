@@ -345,7 +345,10 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             *delayMs = ms + 2000;
         }
     } else if (command == QLatin1String("freq")) {
-        m_engine.setFrequencyMhz(arg.toDouble());
+        // As the frequency entry: the view follows (a plain set left the
+        // slice outside the pan, which the radio refuses).
+        m_engine.tuneTo(arg.toDouble());
+        *delayMs = 1500;
     } else if (command == QLatin1String("mode")) {
         m_engine.setMode(arg);
         *delayMs = 1500;
