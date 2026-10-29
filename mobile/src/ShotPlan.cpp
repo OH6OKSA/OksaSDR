@@ -49,6 +49,21 @@ QList<QObject*> allObjects(QObject* root)
     return found;
 }
 
+// On screen: visible and not under an item at opacity 0 (the tablet page's
+// probes are shown so, to be measured, never seen).
+bool seen(const QQuickItem* item)
+{
+    if (!item->isVisible()) {
+        return false;
+    }
+    for (const QQuickItem* i = item; i; i = i->parentItem()) {
+        if (i->opacity() <= 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // Objects named so anywhere under the window.
 QList<QObject*> findNamed(QObject* root, const QString& name)
 {
@@ -156,10 +171,23 @@ void ShotPlan::logLayout()
         }
         for (QObject* o : allObjects(root)) {
             const auto* item = qobject_cast<QQuickItem*>(o);
-            if (!item || !item->isVisible()) {
+            if (!item) {
                 continue;
             }
             const QString type = QString::fromLatin1(o->metaObject()->className()).section(QLatin1Char('_'), 0, 0);
+            // The tablet page's probes (shown at opacity 0, never seen): the
+            // width each measures at its type size; the page fits the panel
+            // from them.
+            if (type == QLatin1String("InfoPanel") && o->objectName().startsWith(QLatin1String("infoProbe"))) {
+                parts << QStringLiteral("Probe(%1 scale=%2 needs=%3)")
+                             .arg(o->objectName())
+                             .arg(QString::number(o->property("fontScale").toDouble(), 'f', 2))
+                             .arg(qRound(item->implicitWidth()));
+                continue;
+            }
+            if (!seen(item)) {
+                continue;
+            }
             if (type == QLatin1String("OperatePage") || type == QLatin1String("PhoneOperatePage")) {
                 QStringList props;
                 for (const char* name : {"landscape", "flowHeader", "infoUnder", "infoScale", "controlsFull"}) {
@@ -202,7 +230,7 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             // Every visible match: a page can hold a hidden twin.
             for (QObject* chooser : findNamed(root, name)) {
                 const auto* host = qvariant_cast<QQuickItem*>(chooser->property("parent"));
-                if (host && !host->isVisible()) {
+                if (host && !seen(host)) {
                     continue;
                 }
                 const bool hasPreview = chooser->metaObject()->indexOfMethod("preview()") >= 0;
