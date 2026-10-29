@@ -31,6 +31,9 @@ class MobileEngine;
 //   tap FX,FY               tap at this fraction of the window
 //   hold FX,FY,MS           press there for MS (auto-repeat), logging the frequency
 //   freq MHZ                tune the active slice there (to put it back)
+//   mode NAME               the active slice's mode (USB shows the squelch row;
+//                           put the mode back after)
+//   click NAME              clicked() on the visible buttons with this objectName
 //   size WxH                resize the window (a phone turning: WxH swapped)
 //
 // The run quits after the last command (exit status 2 if a shot failed).

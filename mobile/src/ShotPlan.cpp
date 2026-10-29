@@ -9,6 +9,7 @@
 #include <QQmlApplicationEngine>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QSet>
 #include <QTimer>
 #include <qpa/qwindowsysteminterface.h>
 
@@ -19,19 +20,24 @@ namespace AetherSDR::mobile {
 
 namespace {
 
-// Objects named so anywhere under the window: QObject children and the
-// visual items (a popup's content is not a QObject child of its page).
-QList<QObject*> findNamed(QObject* root, const QString& name)
+// Every object under the window: the QObject children and the visual items
+// with their QObject children (a popup's content is not a QObject child of its
+// page, and a Repeater's delegates, such as the phone header's info panel
+// pieces with their popups, are no QObject children of anything).
+QList<QObject*> allObjects(QObject* root)
 {
-    QList<QObject*> found = root->findChildren<QObject*>(name);
-    std::function<void(QQuickItem*)> walk = [&](QQuickItem* item) {
-        if (item->objectName() == name && !found.contains(item)) {
-            found << item;
+    QList<QObject*> found = root->findChildren<QObject*>();
+    QSet<QObject*> seen(found.cbegin(), found.cend());
+    auto add = [&](QObject* o) {
+        if (!seen.contains(o)) {
+            seen.insert(o);
+            found << o;
         }
+    };
+    std::function<void(QQuickItem*)> walk = [&](QQuickItem* item) {
+        add(item);
         for (QObject* child : item->children()) {
-            if (child->objectName() == name && !found.contains(child)) {
-                found << child;
-            }
+            add(child);
         }
         for (QQuickItem* child : item->childItems()) {
             walk(child);
@@ -39,6 +45,18 @@ QList<QObject*> findNamed(QObject* root, const QString& name)
     };
     if (auto* window = qobject_cast<QQuickWindow*>(root)) {
         walk(window->contentItem());
+    }
+    return found;
+}
+
+// Objects named so anywhere under the window.
+QList<QObject*> findNamed(QObject* root, const QString& name)
+{
+    QList<QObject*> found;
+    for (QObject* o : allObjects(root)) {
+        if (o->objectName() == name) {
+            found << o;
+        }
     }
     return found;
 }
@@ -102,7 +120,7 @@ void ShotPlan::step()
 void ShotPlan::closePopups()
 {
     for (QObject* root : m_qml.rootObjects()) {
-        for (QObject* o : root->findChildren<QObject*>()) {
+        for (QObject* o : allObjects(root)) {
             const QMetaObject* mo = o->metaObject();
             if (mo->indexOfProperty("opened") >= 0 && mo->indexOfMethod("close()") >= 0 && o->property("opened").toBool()) {
                 QMetaObject::invokeMethod(o, "close");
@@ -251,6 +269,23 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         }
     } else if (command == QLatin1String("freq")) {
         m_engine.setFrequencyMhz(arg.toDouble());
+    } else if (command == QLatin1String("mode")) {
+        m_engine.setMode(arg);
+        *delayMs = 1500;
+    } else if (command == QLatin1String("click")) {
+        bool clicked = false;
+        for (QObject* root : m_qml.rootObjects()) {
+            for (QObject* button : findNamed(root, arg)) {
+                const auto* item = qobject_cast<QQuickItem*>(button);
+                if (item && item->isVisible()) {
+                    QMetaObject::invokeMethod(button, "clicked");
+                    clicked = true;
+                }
+            }
+        }
+        if (!clicked) {
+            qWarning() << "shot-plan: no visible" << arg;
+        }
     } else if (command == QLatin1String("size")) {
         const QStringList wh = arg.split(QLatin1Char('x'));
         if (window && wh.size() == 2) {
