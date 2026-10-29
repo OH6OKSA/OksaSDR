@@ -66,6 +66,11 @@ Page {
     // PTT height, shared with the drawer's copy of the button.
     // PTT runs the full width along the bottom in every orientation.
     readonly property real pttHeight: Math.round(Theme.touchTarget * 1.5)
+    // Upright, the controls drawer can take the whole height (▲ beside
+    // Close, as on the phone): FTx then lists its decodes on the full height,
+    // e.g. on an iPhone Duo's inner screen, where half showed none. Kept
+    // while the app runs.
+    property bool controlsFull: false
     // Taller than wide in the room the page has (less the status and
     // navigation bars): a near-square foldable screen is then laid out the
     // same in both orientations (the OnePlus Open's 698 x 751 counted the
@@ -398,7 +403,7 @@ Page {
         // Landscape: ends above the page's PTT row, which stays usable, so
         // the drawer needs no PTT of its own. Portrait (from the bottom)
         // covers it and carries a copy.
-        height: page.portrait ? Math.min(page.height * 0.5, 560)
+        height: page.portrait ? (page.controlsFull ? (parent ? parent.height : page.height) : Math.min(page.height * 0.5, 560))
                               : page.height - page.pttHeight - 2 * Theme.spacing
                                 - Math.max(page.SafeArea.margins.bottom, 12)
         // From the window's edge: Qt otherwise keeps popups inside the safe
@@ -434,11 +439,47 @@ Page {
                     Engine.controlsVisible = true
                 }
             }
-            PttButton {
-                visible: page.portrait && !digiHidden
+            // Upright: Close, full height and the PTT copy, as on the phone.
+            RowLayout {
+                visible: page.portrait
                 Layout.fillWidth: true
-                Layout.preferredHeight: page.pttHeight
-                fontPx: 32
+                spacing: Theme.spacing / 2
+                AppButton {
+                    objectName: "closeControls"
+                    Layout.fillWidth: drawerPtt.digiHidden
+                    Accessible.name: qsTr("Close controls")
+                    Layout.preferredWidth: Math.max(110, page.width * 0.18)
+                    Layout.preferredHeight: drawerPtt.digiHidden ? Theme.touchTarget : page.pttHeight
+                    onClicked: controlsDrawer.close()
+                    contentItem: Label {
+                        text: qsTr("Close")
+                        color: Theme.buttonText
+                        font.pixelSize: 15
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                }
+                AppButton {
+                    objectName: "fullControls"
+                    Accessible.name: page.controlsFull ? qsTr("Smaller controls") : qsTr("Full-screen controls")
+                    Layout.preferredWidth: Theme.touchTarget
+                    Layout.preferredHeight: drawerPtt.digiHidden ? Theme.touchTarget : page.pttHeight
+                    onClicked: page.controlsFull = !page.controlsFull
+                    contentItem: Item {
+                        Caret {
+                            anchors.centerIn: parent
+                            size: 16
+                            rotation: page.controlsFull ? 0 : 180
+                        }
+                    }
+                }
+                PttButton {
+                    id: drawerPtt
+                    visible: !digiHidden
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: page.pttHeight
+                    fontPx: 32
+                }
             }
         }
     }

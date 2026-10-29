@@ -17,12 +17,20 @@ Popup {
     // panel is in pieces a few labels wide (beta 45 squeezed the AGC modes
     // and sliders into one). The panadapter's RF gain sets its own.
     width: Math.min(420, Theme.windowWidth - 2 * Theme.spacing)
+    // One label width for both slider rows, wide enough for a negative RF
+    // gain ("RF gain  -10 dB" ran into the − button at 90).
+    readonly property real labelWidth: Math.max(90, Math.ceil(widestLabel.width) + 4)
+    TextMetrics {
+        id: widestLabel
+        text: qsTr("RF gain  %1 dB").arg(Math.min(Engine.rfGainLow, -10))
+        font.pixelSize: 14
+    }
     background: Rectangle {
         color: Theme.surface
         border.color: Theme.surfaceRaised
         radius: Theme.radius
     }
-    contentItem: ColumnLayout {
+    contentItem: PopupScroll {
         spacing: Theme.spacing / 2
         // A tap outside closes it too; Close says so (Larry Averbeck). In the
         // title row, so the panel is no taller.
@@ -64,7 +72,7 @@ Popup {
                 text: qsTr("AGC-T  %1").arg(Math.round(agcT.shown))
                 color: Theme.textDim
                 font.pixelSize: 14
-                Layout.preferredWidth: 90
+                Layout.preferredWidth: chooser.labelWidth
             }
             FineSlider {
                 id: agcT
@@ -83,7 +91,7 @@ Popup {
                 text: qsTr("RF gain  %1 dB").arg(Math.round(rfGain.shown))
                 color: Theme.textDim
                 font.pixelSize: 14
-                Layout.preferredWidth: 90
+                Layout.preferredWidth: chooser.labelWidth
             }
             FineSlider {
                 id: rfGain

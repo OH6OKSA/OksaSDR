@@ -500,7 +500,7 @@ Item {
         margins: Theme.spacing
         padding: Theme.spacing
         background: Rectangle { color: Theme.surface; border.color: Theme.surfaceRaised; radius: Theme.radius }
-        contentItem: ColumnLayout {
+        contentItem: PopupScroll {
             spacing: Theme.spacing / 2
             // Every slice's audio, as the desktop's RX applet: AF gain, mute
             // and pan (left-right), the active slice marked.

@@ -26,7 +26,7 @@ Popup {
         border.color: Theme.surfaceRaised
         radius: Theme.radius
     }
-    contentItem: ColumnLayout {
+    contentItem: PopupScroll {
         spacing: Theme.spacing / 2
         // Close for the DSP toggles, which keep it open (Larry Averbeck); in
         // the title row, so the panel is no taller.

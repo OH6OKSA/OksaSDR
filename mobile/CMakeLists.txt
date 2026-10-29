@@ -106,6 +106,7 @@ qt_add_qml_module(aether-mobile
         qml/AgcChooser.qml
         qml/RepeatButton.qml
         qml/FineSlider.qml
+        qml/PopupScroll.qml
         qml/PttButton.qml
         qml/NetworkBadge.qml
         qml/NetworkDialog.qml

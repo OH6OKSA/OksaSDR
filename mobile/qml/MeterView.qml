@@ -175,7 +175,7 @@ Item {
         }
         // Room for "2 analog" at a large iPad's font.
         readonly property real cellWidth: Math.max(Theme.buttonWidth * 0.9, 72)
-        contentItem: ColumnLayout {
+        contentItem: PopupScroll {
             spacing: Theme.spacing / 2
             // Every choice keeps it open; Close as the AGC and volume panels'.
             RowLayout {

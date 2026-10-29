@@ -161,7 +161,9 @@ open as a drawer. On a phone they open as a drawer from the **Controls**
 button beside PTT (three bars in landscape); the drawer carries its own PTT
 in the same place. Upright, **▲** beside **Close** gives the drawer the whole
 screen (FTx then lists about twice as many decodes) and **▼** takes it back
-to half; the choice holds while the app runs. A swipe inside the open drawer
+to half; the choice holds while the app runs. A tablet's drawer from the
+bottom (upright on a screen lower than an iPad's, such as the iPhone Duo's
+inner screen) has the same **Close** and **▲**. A swipe inside the open drawer
 never tunes; the part of the display still in view tunes as usual.
 
 | iPhone, portrait | iPhone, landscape |
@@ -316,7 +318,9 @@ on the radio leaves the AGC alone.
 squelch level have **−** and **+** at the ends of their slider: drag near
 the value, then tap − or + for one step at a time (hold to keep stepping).
 The AGC, volume, filter and meter windows stay open while you set them;
-*Close* at the top right, or a tap outside, closes them.
+*Close* at the top right, or a tap outside, closes them. Where the window
+is too low for one (a phone on its side), it scrolls, and a bar at its
+right shows there is more.
 
 ![AGC, AGC-T and RF gain](manual/agc.jpg)
 
@@ -551,8 +555,8 @@ offers **Off**.
 
 The button is always on top. On a phone an open controls drawer carries its
 own copy at the bottom, beside **Close** (which closes the drawer) and **▲**
-(full screen); on a
-tablet the drawer stops above the page's PTT, so nothing ever covers it.
+(full screen), and so does a tablet's drawer from the bottom; on a
+tablet on its side the drawer stops above the page's PTT, so nothing ever covers it.
 When transmit is not possible (no TX slice, the radio's mic input not
 this device, a refusal), the reason shows above PTT and under the
 controls; on a phone the power and SWR show beside PTT while you
