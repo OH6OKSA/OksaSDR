@@ -34,6 +34,8 @@ class MobileEngine;
 //   mode NAME               the active slice's mode (USB shows the squelch row;
 //                           put the mode back after)
 //   click NAME              clicked() on the visible buttons with this objectName
+//   setup KEY=VALUE         a Radio Setup value, as the page sets it (e.g.
+//                           showTxInWaterfall=0; put it back after)
 //   size WxH                resize the window (a phone turning: WxH swapped)
 //   layout                  log the page's layout decisions and the info
 //                           panels' geometry (layout-diff.py compares runs)

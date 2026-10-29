@@ -349,6 +349,12 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
     } else if (command == QLatin1String("mode")) {
         m_engine.setMode(arg);
         *delayMs = 1500;
+    } else if (command == QLatin1String("setup")) {
+        const int eq = arg.indexOf(QLatin1Char('='));
+        if (eq > 0) {
+            m_engine.setRadioSetup(arg.left(eq), arg.mid(eq + 1));
+        }
+        *delayMs = 1000;
     } else if (command == QLatin1String("click")) {
         bool clicked = false;
         for (QObject* root : m_qml.rootObjects()) {
