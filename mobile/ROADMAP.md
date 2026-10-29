@@ -510,13 +510,31 @@ full-screen drawer of build 137):
   grabbing a rare one at work). A bigger piece: Hound mode's rules (calling
   above 1000 Hz, the Fox's replies) and the SuperFox decoder. *To discuss.*
 
-Tester requests (2026-10-29, Sebastian Schu DG5CST):
-- RF-KIT RF2K-S amplifier: its power on the right bar meter. Upstream has
-  it over the amplifier's REST API (#6596, 26.10.4), so mostly a panel and
-  a meter source. As with the Tuner Genius and PGXL: not released untested
-  on a real device; a tester with one who takes the risk could test it.
-  Sebastian uses an RF2K-S and is willing to (2026-10-29); the phone must
-  reach the amplifier's own address too.
+Amplifiers and the tuner (planned 2026-10-29, its own build; asked by
+Sebastian Schu DG5CST for the RF2K-S and Bill Arcand for the Tuner Genius):
+- Radio Setup gets an **Amplifier & tuner** tab:
+  - **4O3A Power Genius XL**, found through the radio: model, state,
+    Operate / Standby (relayed by the radio, so over SmartLink too).
+  - **4O3A Tuner Genius XL**, found through the radio: Operate / Bypass and
+    Tune (the radio's `tgxl autotune`). Later, with the TGXL's own
+    connection and its code: a surer autotune, the relays and the 1x3's
+    antenna.
+  - **RF-KIT RF2K-S**, the amplifier's own REST API (upstream #6596,
+    26.10.4; RfkitProtocol / RfkitConnection taken as they are): address
+    (or host name) and port, the link's state, Operate / Standby, internal
+    antenna 1-4, error reset (asks first); band, frequency, tuner and
+    interface shown. Not over SmartLink: the phone must reach the
+    amplifier's address (same network or VPN).
+- The meters can show them, offered while one is there: amplifier power,
+  SWR, temperature and current (RF2K-S voltage, PGXL drive); the tuner's
+  power and SWR. The engine has the PGXL / TGXL meters already
+  (MeterModel ampMetersChanged, ampVitalsChanged, tgxlMetersChanged); take
+  upstream's #6658 with it (SmartSDR 4.3 amp / tuner meter handles
+  unsigned).
+- Testing: no hardware here. The RF2K-S against a local mock of its API
+  first, then Sebastian on his amplifier (he offered, 2026-10-29). PGXL and
+  TGXL need a tester with one; not released untested on a real device (Mike
+  VA3MW agreed: "He needs the equipment to test and integrate").
 - Connect by host name (a dynamic DNS name), not only an IP address: the
   name resolved before connecting, and letters on the address keypad. A
   radio forwarded straight to the internet is not the route to suggest
