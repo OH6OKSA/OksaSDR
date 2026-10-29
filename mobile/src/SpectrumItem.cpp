@@ -395,9 +395,12 @@ void SpectrumItem::onSpectrum(const QVector<float>& binsDbm)
         m_reportedNoise = m_autoNoise;
         emit traceScaleChanged();
     }
-    // Own transmission in the waterfall: the radio pauses waterfall rows
-    // during TX, so draw them from the trace on the RX colour scale.
-    if (transmitting && !m_waterfall.isNull() && nowMs >= m_nextTxRowMs) {
+    // Own transmission in the waterfall, when the radio's Show TX in
+    // waterfall is on: the radio pauses waterfall rows during TX, so draw
+    // them from the trace on the RX colour scale. Off, the waterfall simply
+    // waits for the transmission to end, as SmartSDR's (the user: the TX
+    // rows lit the whole span on 20 m).
+    if (transmitting && !m_waterfall.isNull() && nowMs >= m_nextTxRowMs && m_engine->showTxInWaterfall()) {
         m_nextTxRowMs = nowMs + kTxRowIntervalMs;
         followView();
         pushRow(m_spectrum, m_viewLowMhz, m_viewHighMhz, waterfallParams(noise));

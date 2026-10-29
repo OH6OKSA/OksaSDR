@@ -65,8 +65,11 @@ Page {
         contentWidth: availableWidth
         clip: true
 
+        // At most a phone-and-a-half wide, centred: on an iPad, a Mac or an
+        // external display the rows ran the window's whole width.
         ColumnLayout {
-            width: scroll.availableWidth
+            width: Math.min(scroll.availableWidth, 560)
+            x: (scroll.availableWidth - width) / 2
             spacing: Theme.spacing
 
             RowLayout {

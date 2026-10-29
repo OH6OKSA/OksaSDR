@@ -1058,6 +1058,9 @@ public:
     // Radio actually on the air (MOX, tune, ATU, VOX); TX-only meters show
     // a value only then.
     bool radioTransmitting() const;
+    // The radio's "Show TX in waterfall" (transmit show_tx_in_waterfall, as
+    // SmartSDR's): this app draws its own transmission there only when on.
+    bool showTxInWaterfall() const;
     double compressionDb() const { return m_compressionDb; }
     double alcDbfs() const { return m_alcDbfs; }
     bool alcAvailable() const { return m_alcAvailable; }

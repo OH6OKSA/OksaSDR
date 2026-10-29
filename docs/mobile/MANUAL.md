@@ -125,7 +125,9 @@ The first page lists the ways to reach a radio:
   shows what you typed (dots again when you leave the field); the QRZ.com
   password and the Wavelog / Cloudlog API key have the same eye. **Sign out** takes two taps
   (the first turns it into *Sign out?* for three seconds), so a stray tap
-  does not sign you out.
+  does not sign you out. Each radio's card says whether it is free
+  (*Available*) or *In use by* and the station using it (e.g. another
+  computer running SmartSDR).
 - **By IP address or host name** — tap the address field and enter your
   radio's IP address on the keypad (SmartSDR's radio chooser and your
   router's device list both show it), then *Connect*. **ABC** switches to
@@ -457,7 +459,10 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
   on the correct side for USB/LSB (in LSB the carrier is at its right edge,
   in USB at its left) and centred for CW/AM. Other slices are marked with their letter;
   tap one to select it.
-- Your own transmission shows in the waterfall.
+- Your own transmission shows in the waterfall when *Radio Setup ›
+  Transmit › Show my transmission in the waterfall* is on (the radio's own
+  setting, the same as SmartSDR's Show TX in waterfall). Off, the waterfall
+  waits while you transmit and goes on after.
 - In CW, decoded text runs along the top of the waterfall.
 - **Spots** — callsigns along the top of the spectrum at their frequency:
   the spots the radio holds, from this app's DX cluster connection and
@@ -1037,6 +1042,7 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 | *Break-in is off …* | CW keyed with Break-in off: the key does not put the radio on air | Controls → CW → Break-in |
 | *This slice is muted on this band …* | The radio remembers the band's slice muted | Tap the speaker on the info panel |
 | *Microphone access is off …* | The device does not let the app use the microphone | Allow it in the device's settings (Settings › OksaSDR › Microphone) |
+| *Host unreachable* or *timed out* to a home-network address (iPhone, iPad, Mac) | iOS keeps the app off the home network until it may use it (Local Network permission); the error then names where | Settings › Privacy & Security › Local Network › OksaSDR on; also check the address and that this device is on the radio's network or VPN |
 | *No free slice for the transmit side of a split* | All the radio's slices are in use | Close a slice (press and hold its chip, or Stations…) |
 | *Set the radio's callsign first* / *The DX cluster needs a callsign* | FT8 / FT4, or the DX cluster, needs a callsign | Setup → Radio → Callsign (the DX cluster can also take one under Spots) |
 | *The radio takes transmit audio from its … input* | PTT would send the radio's own microphone | Controls → TX → **Use this device's microphone** |

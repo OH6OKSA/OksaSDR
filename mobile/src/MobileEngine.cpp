@@ -581,7 +581,30 @@ MobileEngine::MobileEngine(QObject* parent)
 
     connect(&rm, &RadioModel::connectionStateChanged, this, &MobileEngine::onConnectionStateChanged);
     connect(&rm, &RadioModel::connectionError, this, [this](const QString& msg) {
-        setLastError(msg);
+        // iOS refuses connections into the home network while the app has no
+        // Local Network permission, and the socket only says the host is
+        // unreachable (Larry Maleszewski, build 84: "Host unreachable" to
+        // 192.168.1.125, no radio found either). Where the radio's address is
+        // a home-network one, the error says where the permission is.
+        // Compiled everywhere (so a Linux build checks it), shown on iOS only:
+        // Android has no such permission.
+#if defined(Q_OS_IOS)
+        constexpr bool kLocalNetworkPermission = true;
+#else
+        constexpr bool kLocalNetworkPermission = false;
+#endif
+        QString text = msg;
+        const QHostAddress radio(m_session.radioModel().targetRadioIp());
+        const bool homeNetwork = radio.isPrivateUse() || radio.isLinkLocal();
+        if (kLocalNetworkPermission && !m_wanActive && homeNetwork
+            && (msg.contains(QLatin1String("unreachable"), Qt::CaseInsensitive)
+                || msg.contains(QLatin1String("timed out"), Qt::CaseInsensitive)
+                || msg.contains(QLatin1String("no route"), Qt::CaseInsensitive))) {
+            text += QLatin1Char(' ')
+                    + tr("If the radio is on this network, check that OksaSDR may use it: Settings › Privacy & "
+                         "Security › Local Network › OksaSDR.");
+        }
+        setLastError(text);
         if (m_connectionState == QLatin1String("connecting")) {
             setConnectionState(QStringLiteral("idle"));
         }
@@ -1167,6 +1190,35 @@ QString MobileEngine::smartLinkEmail() const
     return QString::fromUtf8(QByteArray::fromBase64(stored));
 }
 
+namespace {
+
+// A SmartLink radio's state for its card: "In use by" and the stations on it
+// (the server's gui_client_stations, comma-separated, 0x7f for a space),
+// not the raw "In_Use"; "Available" when free.
+QString smartLinkStatusText(const WanRadioInfo& radio)
+{
+    QStringList stations;
+    QString raw = radio.guiClientStations;
+    raw.replace(QChar(0x7f), QLatin1Char(' '));
+    for (const QString& station : raw.split(QLatin1Char(','), Qt::SkipEmptyParts)) {
+        if (!station.trimmed().isEmpty()) {
+            stations << station.trimmed();
+        }
+    }
+    if (!stations.isEmpty()) {
+        return MobileEngine::tr("In use by %1").arg(stations.join(QStringLiteral(", ")));
+    }
+    QString status = radio.status;
+    status.replace(QLatin1Char('_'), QLatin1Char(' '));
+    status = status.trimmed();
+    if (status.isEmpty() || status.compare(QLatin1String("Unknown"), Qt::CaseInsensitive) == 0) {
+        return {};
+    }
+    return status.compare(QLatin1String("In Use"), Qt::CaseInsensitive) == 0 ? MobileEngine::tr("In use") : status;
+}
+
+}  // namespace
+
 QVariantList MobileEngine::smartLinkRadios() const
 {
     QVariantList list;
@@ -1175,7 +1227,7 @@ QVariantList MobileEngine::smartLinkRadios() const
             {QStringLiteral("nickname"), radio.nickname},
             {QStringLiteral("model"), radio.model},
             {QStringLiteral("serial"), radio.serial},
-            {QStringLiteral("status"), radio.status},
+            {QStringLiteral("status"), smartLinkStatusText(radio)},
             {QStringLiteral("callsign"), radio.callsign},
             {QStringLiteral("reachable"), radio.publicTlsPort > 0 && !radio.publicIp.isEmpty()},
         });
@@ -1882,6 +1934,11 @@ bool MobileEngine::radioTransmitting() const
 {
     const RadioModel& rm = m_session.radioModel();
     return rm.isRadioTransmitting() || rm.transmitModel().isTransmitting() || rm.transmitModel().isTuning();
+}
+
+bool MobileEngine::showTxInWaterfall() const
+{
+    return m_session.radioModel().transmitModel().showTxInWaterfall();
 }
 
 bool MobileEngine::hasPaTemp() const
@@ -6630,6 +6687,7 @@ QVariantMap MobileEngine::radioSetup() const
     d[QStringLiteral("txDelay")] = tx.txDelay();
     d[QStringLiteral("interlockTimeoutS")] = tx.interlockTimeout() / 1000;
     d[QStringLiteral("tuneMode")] = tx.tuneMode();
+    d[QStringLiteral("showTxInWaterfall")] = tx.showTxInWaterfall();
     d[QStringLiteral("cwDelay")] = tx.cwDelay();
     d[QStringLiteral("iambic")] = tx.cwIambic();
     d[QStringLiteral("iambicMode")] = tx.cwIambicMode();
@@ -6673,6 +6731,13 @@ void MobileEngine::setRadioSetup(const QString& key, const QVariant& value)
         rm.sendCommand(QStringLiteral("interlock set timeout=%1").arg(std::max(0, value.toInt()) * 1000));
     } else if (key == QLatin1String("tuneMode")) {
         tx.setTuneMode(value.toString());
+    } else if (key == QLatin1String("showTxInWaterfall")) {
+        // The radio's own setting (SmartSDR and the desktop show the same),
+        // as the desktop's Radio Setup sends it; a backend that keeps the
+        // flag on the client takes it itself.
+        if (!rm.requestLocalShowTxInWaterfall(value.toBool()) && flex) {
+            rm.sendCommand(QStringLiteral("transmit set show_tx_in_waterfall=%1").arg(value.toBool() ? 1 : 0));
+        }
     } else if (key == QLatin1String("cwDelay")) {
         tx.setCwDelay(std::clamp(value.toInt(), 0, 2000));
     } else if (key == QLatin1String("iambic")) {

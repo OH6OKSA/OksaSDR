@@ -227,6 +227,13 @@ Popup {
                         current: setup.d.interlockTimeoutS || 0
                         onCommitted: (v) => setup.set("interlockTimeoutS", v)
                     }
+                    // The radio's own setting, as SmartSDR's Show TX in
+                    // waterfall: off, the waterfall waits while transmitting.
+                    OnOff {
+                        label: qsTr("Show my transmission in the waterfall")
+                        on: !!setup.d.showTxInWaterfall
+                        onToggled: (v) => setup.set("showTxInWaterfall", v)
+                    }
                     Heading { text: qsTr("TUNE signal") }
                     RowLayout {
                         Layout.fillWidth: true
