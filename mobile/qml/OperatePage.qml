@@ -50,18 +50,53 @@ Page {
     // out a few pixels wider than the line through the probes).
     readonly property real infoRaw: (infoRoom - infoFixed) / (freqMetrics.advanceWidth + infoPerScale)
     readonly property real infoFit: infoRaw >= 1 ? 1 : infoRaw * 0.97
+    // The panel measured at that scale (infoProbeFit): the line through the
+    // probes is only nearly straight (whole-pixel type, the lock's least
+    // width), and at 683 x 735 it came out 13 px short, cutting off the play
+    // triangle. The scale steps down by what the measured panel lacks, 2 px
+    // to spare; no loop, as the probe follows infoFit, not infoScale. Under
+    // the frequency is still decided from infoFit, and the step stops at
+    // 0.66: in USB the iPhone Duo's inner screen fits at 0.66 with a pixel
+    // short, and stepping below dropped the panel under the frequency,
+    // leaving the room beside it empty.
+    readonly property real infoShort: infoProbeFit.implicitWidth + 2
+                                      - (infoRoom - freqMetrics.advanceWidth * infoFit)
+    readonly property real infoFitted: infoShort > 0
+        ? infoFit - infoShort / (freqMetrics.advanceWidth + infoPerScale) : infoFit
     readonly property bool infoUnder: infoFit < 0.66
-    readonly property real infoScale: infoUnder ? 1 : infoFit
-    InfoPanel {
-        id: infoProbe
-        visible: false
-        showStep: false
-    }
-    InfoPanel {
-        id: infoProbe70
-        visible: false
-        showStep: false
-        fontScale: 0.7
+    readonly property real infoScale: infoUnder ? 1 : Math.max(0.66, infoFitted)
+    // The probes, measured and never seen: shown (opacity 0, no input, no
+    // screen reader, no room) rather than hidden. In a hidden item a part
+    // that appears later (the TX tag, the TX antenna, SPLIT, as the radio's
+    // status comes in) is not laid out, so a probe could stay short and the
+    // panel overflow: 626 x 890 cut off the play triangle in one run of
+    // three, the same code fitted in the others.
+    Item {
+        width: 0
+        height: 0
+        clip: true
+        opacity: 0
+        enabled: false
+        InfoPanel {
+            id: infoProbe
+            objectName: "infoProbe"
+            measureOnly: true
+            showStep: false
+        }
+        InfoPanel {
+            id: infoProbe70
+            objectName: "infoProbe70"
+            measureOnly: true
+            showStep: false
+            fontScale: 0.7
+        }
+        InfoPanel {
+            id: infoProbeFit
+            objectName: "infoProbeFit"
+            measureOnly: true
+            showStep: false
+            fontScale: page.infoFit
+        }
     }
     // PTT height, shared with the drawer's copy of the button.
     // PTT runs the full width along the bottom in every orientation.

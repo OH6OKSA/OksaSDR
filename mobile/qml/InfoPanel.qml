@@ -29,6 +29,10 @@ Item {
     property real rowScale: 1.0
     // Type size as a share of the default (the narrowest phones).
     property real fontScale: 1.0
+    // Only measured (the tablet page's probes, shown at opacity 0): out of
+    // the screen reader's way, which would read every probe as a second
+    // panel.
+    property bool measureOnly: false
 
     readonly property var activeSlice: {
         for (const s of Engine.slices) {
@@ -103,6 +107,7 @@ Item {
         }
         Text {
             id: label
+            Accessible.ignored: info.measureOnly
             anchors.centerIn: parent
             font.pixelSize: hit.fontPx
             font.bold: true
@@ -152,6 +157,7 @@ Item {
                     color: "#2f7fd6"
                     Text {
                         id: letterText
+                        Accessible.ignored: info.measureOnly
                         anchors.centerIn: parent
                         text: info.activeSlice ? info.activeSlice.letter : "–"
                         font.pixelSize: info.fontPx
@@ -167,6 +173,7 @@ Item {
                     color: Theme.transmit
                     Text {
                         id: txTagText
+                        Accessible.ignored: info.measureOnly
                         anchors.centerIn: parent
                         text: "TX"
                         font.pixelSize: info.fontPx
@@ -249,6 +256,7 @@ Item {
                 }
                 Label {
                     id: volumeText
+                    Accessible.ignored: info.measureOnly
                     anchors.left: speaker.right
                     anchors.leftMargin: 3
                     anchors.verticalCenter: parent.verticalCenter
@@ -317,6 +325,7 @@ Item {
             // recording); played while transmitting, it goes on the air.
             Item {
                 objectName: "recordHit"
+                Accessible.ignored: info.measureOnly
                 visible: info.showControls
                 implicitWidth: info.singleLine ? Math.max(info.iconW, recIcon.width + 12) : recIcon.width + 16
                 implicitHeight: info.rowH
@@ -357,6 +366,7 @@ Item {
             }
             Item {
                 objectName: "playHit"
+                Accessible.ignored: info.measureOnly
                 visible: info.showControls
                 implicitWidth: info.singleLine ? Math.max(info.iconW, playIcon.width + 12) : playIcon.width + 16
                 implicitHeight: info.rowH
@@ -431,6 +441,7 @@ Item {
                         model: info.flags
                         delegate: Text {
                             required property var modelData
+                            Accessible.ignored: info.measureOnly
                             text: modelData.text
                             font.pixelSize: info.fontPx
                             font.bold: modelData.on
