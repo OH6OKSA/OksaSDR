@@ -41,8 +41,12 @@ Item {
     // Height of a row, and so of every target in it.
     readonly property real rowH: Math.round((singleLine ? Theme.touchTarget : Theme.touchTarget * 0.8) * rowScale)
     readonly property real gap: Math.round(fontPx * 0.45)
-    // The icons' least width (lock, record, play: 21 px wide on a phone were
-    // hard to hit), 36 on a phone.
+    // The icons' least width on one line (lock, record, play: 21 px wide in
+    // the phone's rows were hard to hit), 36 on a phone. Not in the tablet's
+    // two lines beside the frequency: their width must shrink with the type,
+    // or the page's fit (two probes, OperatePage) drops the panel under the
+    // frequency and leaves the room beside it empty (the iPhone Duo's inner
+    // screen did).
     readonly property real iconW: Math.round(Theme.touchTarget * 0.82)
     readonly property color dim: "#6b7785"
     readonly property color rxColor: "#3fb6ff"
@@ -258,8 +262,8 @@ Item {
             // Tuning lock: tap to lock; flashes when a tune is refused.
             Item {
                 visible: info.showControls
-                implicitWidth: Math.max(info.iconW, info.singleLine ? lockIcon.width + 12
-                                                                    : Math.max(info.rowH * 0.9, lockIcon.width + 12))
+                implicitWidth: info.singleLine ? Math.max(info.iconW, lockIcon.width + 12)
+                                               : Math.max(info.rowH * 0.9, lockIcon.width + 12)
                 implicitHeight: info.rowH
                 Rectangle {
                     anchors.fill: parent
@@ -314,7 +318,7 @@ Item {
             Item {
                 objectName: "recordHit"
                 visible: info.showControls
-                implicitWidth: Math.max(info.iconW, recIcon.width + (info.singleLine ? 12 : 16))
+                implicitWidth: info.singleLine ? Math.max(info.iconW, recIcon.width + 12) : recIcon.width + 16
                 implicitHeight: info.rowH
                 Accessible.role: Accessible.Button
                 Accessible.name: Engine.recordOn ? qsTr("Stop recording") : qsTr("Record")
@@ -354,7 +358,7 @@ Item {
             Item {
                 objectName: "playHit"
                 visible: info.showControls
-                implicitWidth: Math.max(info.iconW, playIcon.width + (info.singleLine ? 12 : 16))
+                implicitWidth: info.singleLine ? Math.max(info.iconW, playIcon.width + 12) : playIcon.width + 16
                 implicitHeight: info.rowH
                 Accessible.role: Accessible.Button
                 Accessible.name: Engine.playOn ? qsTr("Stop playback") : qsTr("Play the recording")
