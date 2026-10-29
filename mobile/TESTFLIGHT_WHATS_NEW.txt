@@ -9,15 +9,18 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- FTx: a line under PSK Reporter now always says which time server FT8 / FT4 run on and how many milliseconds this device's clock is off (it showed only from 0.3 s, so on an iPhone you never saw that the sync ran).
-- A narrow iPad window and the iPhone Duo's inner screen upright keep the info panel (antennas, filter, AGC, speaker…) beside the frequency as in landscape; the frequency and the panel shrink a little instead of the panel dropping under it.
-- From build 135: the iPhone Duo's inner screen and windows from 600 points keep the iPad layout; Setup, Manual, Log and Disconnect behind ⋯ in a narrow window; Keep CQ between CQ and Halt TX; field hints no longer cut short.
-- From builds 133–134: full-width volume and AGC panels; the network panel fits an iPhone.
-- From build 132: QSOs to Logger32 on your PC (Log tab; thanks Juho Kontio); the manual's Getting started.
+- − and + at the ends of the AGC-T, RF gain, volume and squelch sliders: tap for one step, hold to keep stepping; the squelch slider shows its level. F/R is now B/S (bands / steps). Thanks Larry Averbeck.
+- Every panel has its name and Close at the top right (AGC, volume, filter, meter, bands, notch, network, stations, voice keyer); a long one scrolls with Close in sight.
+- Bigger touch targets on the iPhone: the rows beside and under the frequency are taller, the lock, record and play icons wider.
+- A light tap is felt on PTT press and release, the step buttons and − / + (iPhone; follows System Haptics).
+- Connect by host name: ABC on the address keypad, e.g. a name your VPN knows. Thanks Sebastian DG5CST.
+- The controls drawer goes full screen upright (▲ beside Close), so FTx lists its decodes on the whole height; also on the iPhone Duo's inner screen. Thanks Michael Whaley.
+- From builds 135–136: the FTx time sync line; the iPad layout on the iPhone Duo's inner screen and narrow windows.
 
-RECENT (builds 94–123)
-- Less battery: the spectrum drawn by the graphics chip (thanks Mike VA3MW); "2 analog" meters; Audio output choice; held step buttons repeat (thanks Larry); wider bar meters (thanks Juho).
-- CW paddles at the phone's edges; QRZ.com details in logged QSOs; slice volume by the speaker icon (thanks Wayne WA2N); FTx CQ POTA filter (thanks Ryland WW4GA); same controls on every device (thanks Richard EI9JE).
+RECENT (builds 94–134)
+- QSOs to Logger32 (thanks Juho Kontio); full-width volume and AGC panels; the manual's Getting started.
+- Less battery: the spectrum drawn by the graphics chip (thanks Mike VA3MW); "2 analog" meters; held step buttons repeat (thanks Larry); wider bar meters (thanks Juho).
+- CW paddles at the phone's edges; QRZ.com details in logged QSOs; slice volume by the speaker icon (thanks Wayne WA2N); FTx CQ POTA filter (thanks Ryland WW4GA).
 - FreeDV tab with FreeDV Reporter; FTx (FT8 / FT4) with PSK Reporter; Wavelog / Cloudlog; transverters.
 
 PLEASE TRY
@@ -29,7 +32,7 @@ PLEASE TRY
 - The Log tab: log a few contacts, save your QRZ.com account (it now says if the sign-in worked), and share the ADIF file to your logbook.
 - FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - The FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
-- New: Logger32 on the Log tab if you use it; record a few seconds with the dot and play them back with the triangle. [TX to send a recording]
+- New: set AGC-T and the volume with − / +; connect by host name over your VPN; feel the tap on PTT.
 - Spots and the DX cluster, a notch on a carrier, the TX processing at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM

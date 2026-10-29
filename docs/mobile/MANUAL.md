@@ -40,8 +40,8 @@ portrait, a foldable's inner screen) behind **⋯**, as are **Manual** and
 **Log**.
 
 **Once, for everything**
-- **Connect** ([1](#1-connecting)): by the radio's IP address on the same
-  network, from anywhere over SmartLink, or over your own VPN.
+- **Connect** ([1](#1-connecting)): by the radio's IP address or host name
+  on the same network, from anywhere over SmartLink, or over your own VPN.
 - **A slice of its own**: the app opens one on the radio. When the radio's
   slices are all in use by other programs, *No slice* shows
   ([Notices](#10-notices-and-problems)).
@@ -126,11 +126,19 @@ The first page lists the ways to reach a radio:
   password and the Wavelog / Cloudlog API key have the same eye. **Sign out** takes two taps
   (the first turns it into *Sign out?* for three seconds), so a stray tap
   does not sign you out.
-- **By IP address** — tap the address field and enter your radio's IP
-  address on the keypad (SmartSDR's radio chooser and your router's device
-  list both show it), then *Connect*. A hardware keyboard works in the
-  keypad too.
-  The device must reach the radio on the same network or over a VPN.
+- **By IP address or host name** — tap the address field and enter your
+  radio's IP address on the keypad (SmartSDR's radio chooser and your
+  router's device list both show it), then *Connect*. **ABC** switches to
+  the device's keyboard for a host name instead: a name your home network's
+  or VPN's DNS knows, or a dynamic DNS name. It is looked up when you
+  connect, and the name is what the app remembers. A hardware keyboard
+  types digits and letters on the keypad too.
+  The device must reach the radio on the same network or over a VPN. Do
+  not forward the radio's ports to the internet: its connection has no
+  password, so anyone who found it could control the radio and transmit,
+  and the spectrum and audio (UDP) seldom get through a mobile network to
+  the phone anyway. SmartLink or a VPN is the way from outside. (Host
+  names asked by Sebastian Schu DG5CST.)
 
 The top row shows the app version, **Manual** and **Log** (see
 [Reporting a problem](#12-reporting-a-problem)).
@@ -185,12 +193,24 @@ screen about 1050 points tall (an iPad); on a lower one they open as the
 drawer. On a very low screen in landscape (a phone's outer
 screen, the smaller iPhones) the band buttons give way to the display;
 there the **Band** button on the waterfall opens the bands, with *Whole
-band* (the band zoom) and *Close* under them. **B/S** (bands / steps) beside it hides the
+band* (the band zoom) and *Close* at the top. **B/S** (bands / steps) beside it hides the
 band buttons and the step buttons on any device, so the waterfall gets
 their height; Band then opens the bands the same way, and B/S brings the
 rows back (also *View › Bands and steps*; remembered).
 
 ![The bands from the Band button in a low landscape window](manual/bandchooser.jpg)
+
+**Panels.** Every panel the app opens (AGC, volume, filters and DSP, the
+meter, the bands, a notch, network, stations, a voice keyer slot) has its
+name and **Close** at the top right; a tap outside closes it too. Where the
+window is lower than the panel, the rows under the title scroll and a bar at
+the right shows there is more; the title and Close stay in place.
+
+**Felt taps.** On an iPhone or an Android phone, PTT's press and release,
+the step buttons and − / + are felt as a light tap, as the phone's own
+controls give. It follows the phone's own setting (iPhone: *Settings ›
+Sounds & Haptics › System Haptics*; Android: touch feedback under the
+vibration settings). iPads and Macs have none.
 
 ### Network quality
 
@@ -286,6 +306,8 @@ The speaker opens every slice's volume, mute and pan:
 The settings that are always there come first; split and the DSP flags
 follow on a second row. On an iPhone in portrait STEP and the antennas, width and AGC sit beside the
 frequency and the rest under it; in landscape it is one row, STEP first.
+Every word and icon in it is a finger-sized target, taller and wider than
+it looks.
 
 **Filters and DSP** — the mode's eight filter widths (the active one lit;
 choosing one closes the window) and the radio's DSP: NR, NB, ANF, APF (CW),
@@ -317,10 +339,8 @@ on the radio leaves the AGC alone.
 **Sliders with − and +.** AGC-T, RF gain, each slice's volume and the
 squelch level have **−** and **+** at the ends of their slider: drag near
 the value, then tap − or + for one step at a time (hold to keep stepping).
-The AGC, volume, filter and meter windows stay open while you set them;
-*Close* at the top right, or a tap outside, closes them. Where the window
-is too low for one (a phone on its side), it scrolls, and a bar at its
-right shows there is more.
+The AGC, volume, filter and meter panels stay open while you set them
+(see [Panels](#2-the-main-screen)).
 
 ![AGC, AGC-T and RF gain](manual/agc.jpg)
 
