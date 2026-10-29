@@ -575,16 +575,13 @@ ColumnLayout {
         }
         anchors.centerIn: Overlay.overlay
         modal: true
+        margins: Theme.spacing
         padding: Theme.spacing
         background: Rectangle { color: Theme.surface; border.color: Theme.surfaceRaised; radius: Theme.radius }
-        contentItem: ColumnLayout {
-            spacing: Theme.spacing / 2
-            Label {
-                text: qsTr("F%1  %2").arg(dvkMenu.slotId).arg(dvkMenu.slotName)
-                color: Theme.text
-                font.pixelSize: Theme.buttonFont
-                font.bold: true
-            }
+        contentItem: PanelContent {
+            title: qsTr("F%1  %2").arg(dvkMenu.slotId).arg(dvkMenu.slotName)
+            panel: dvkMenu
+            rowSpacing: Theme.spacing / 2
             Label {
                 Layout.maximumWidth: 320
                 wrapMode: Text.Wrap
@@ -623,17 +620,11 @@ ColumnLayout {
                     onClicked: Engine.dvkRename(dvkMenu.slotId, nameField.text)
                 }
             }
-            RowLayout {
-                AppButton {
-                    text: qsTr("Clear")
-                    Layout.fillWidth: true
-                    onClicked: Engine.dvkClear(dvkMenu.slotId)
-                }
-                AppButton {
-                    text: qsTr("Close")
-                    Layout.fillWidth: true
-                    onClicked: dvkMenu.close()
-                }
+            AppButton {
+                text: qsTr("Clear")
+                leftPadding: 16
+                rightPadding: 16
+                onClicked: Engine.dvkClear(dvkMenu.slotId)
             }
         }
     }

@@ -41,6 +41,9 @@ Item {
     // Height of a row, and so of every target in it.
     readonly property real rowH: Math.round((singleLine ? Theme.touchTarget : Theme.touchTarget * 0.8) * rowScale)
     readonly property real gap: Math.round(fontPx * 0.45)
+    // The icons' least width (lock, record, play: 21 px wide on a phone were
+    // hard to hit), 36 on a phone.
+    readonly property real iconW: Math.round(Theme.touchTarget * 0.82)
     readonly property color dim: "#6b7785"
     readonly property color rxColor: "#3fb6ff"
 
@@ -255,7 +258,8 @@ Item {
             // Tuning lock: tap to lock; flashes when a tune is refused.
             Item {
                 visible: info.showControls
-                implicitWidth: info.singleLine ? lockIcon.width + 12 : Math.max(info.rowH * 0.9, lockIcon.width + 12)
+                implicitWidth: Math.max(info.iconW, info.singleLine ? lockIcon.width + 12
+                                                                    : Math.max(info.rowH * 0.9, lockIcon.width + 12))
                 implicitHeight: info.rowH
                 Rectangle {
                     anchors.fill: parent
@@ -310,7 +314,7 @@ Item {
             Item {
                 objectName: "recordHit"
                 visible: info.showControls
-                implicitWidth: recIcon.width + (info.singleLine ? 12 : 16)
+                implicitWidth: Math.max(info.iconW, recIcon.width + (info.singleLine ? 12 : 16))
                 implicitHeight: info.rowH
                 Accessible.role: Accessible.Button
                 Accessible.name: Engine.recordOn ? qsTr("Stop recording") : qsTr("Record")
@@ -350,7 +354,7 @@ Item {
             Item {
                 objectName: "playHit"
                 visible: info.showControls
-                implicitWidth: playIcon.width + (info.singleLine ? 12 : 16)
+                implicitWidth: Math.max(info.iconW, playIcon.width + (info.singleLine ? 12 : 16))
                 implicitHeight: info.rowH
                 Accessible.role: Accessible.Button
                 Accessible.name: Engine.playOn ? qsTr("Stop playback") : qsTr("Play the recording")
@@ -500,27 +504,12 @@ Item {
         margins: Theme.spacing
         padding: Theme.spacing
         background: Rectangle { color: Theme.surface; border.color: Theme.surfaceRaised; radius: Theme.radius }
-        contentItem: PopupScroll {
-            spacing: Theme.spacing / 2
-            // Every slice's audio, as the desktop's RX applet: AF gain, mute
-            // and pan (left-right), the active slice marked.
-            RowLayout {
-                Layout.fillWidth: true
-                Label {
-                    text: qsTr("Volume")
-                    color: Theme.textDim
-                    font.pixelSize: Math.round(Theme.buttonFont * 0.9)
-                    Layout.fillWidth: true
-                }
-                // As the AGC panel's: a tap outside closes it too.
-                AppButton {
-                    text: qsTr("Close")
-                    focusPolicy: Qt.NoFocus
-                    Layout.preferredWidth: Theme.buttonWidth * 1.5
-                    Layout.preferredHeight: Theme.touchTarget
-                    onClicked: volumePopup.close()
-                }
-            }
+        // Every slice's audio, as the desktop's RX applet: AF gain, mute
+        // and pan (left-right), the active slice marked.
+        contentItem: PanelContent {
+            title: qsTr("Volume")
+            panel: volumePopup
+            rowSpacing: Theme.spacing / 2
             // The rows follow the slice ids only: a status echo (each volume
             // change sends one) must not rebuild the rows mid-drag, or the
             // slider loses the finger and jumps to the echoed value.

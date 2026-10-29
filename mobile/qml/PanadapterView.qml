@@ -860,8 +860,24 @@ Rectangle {
             border.color: Theme.surfaceRaised
             radius: Theme.radius
         }
-        contentItem: ColumnLayout {
-            spacing: 4
+        // Whole band in the title row, beside Close (a tap outside closes it
+        // too; Larry Averbeck).
+        contentItem: PanelContent {
+            title: qsTr("Band")
+            panel: bandChooser
+            rowSpacing: 4
+            extras: AppButton {
+                text: qsTr("Whole band")
+                checked: !!Engine.panDisplay.bandZoom
+                focusPolicy: Qt.NoFocus
+                leftPadding: 12
+                rightPadding: 12
+                Layout.preferredHeight: Theme.touchTarget
+                onClicked: {
+                    Engine.setPanDisplay("bandZoom", checked ? 0 : 1)
+                    bandChooser.close()
+                }
+            }
             GridLayout {
                 columns: Math.min(8, Math.max(4, Math.floor((panArea.width - 40) / (Theme.buttonWidth + 4))))
                 columnSpacing: 4
@@ -880,28 +896,6 @@ Rectangle {
                             bandChooser.close()
                         }
                     }
-                }
-            }
-            RowLayout {
-                spacing: 4
-                AppButton {
-                    text: qsTr("Whole band")
-                    checked: !!Engine.panDisplay.bandZoom
-                    focusPolicy: Qt.NoFocus
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: Theme.touchTarget
-                    onClicked: {
-                        Engine.setPanDisplay("bandZoom", checked ? 0 : 1)
-                        bandChooser.close()
-                    }
-                }
-                // A tap outside closes it too; this says so (Larry Averbeck).
-                AppButton {
-                    text: qsTr("Close")
-                    focusPolicy: Qt.NoFocus
-                    Layout.preferredWidth: Theme.buttonWidth * 1.5
-                    Layout.preferredHeight: Theme.touchTarget
-                    onClicked: bandChooser.close()
                 }
             }
         }
@@ -1164,6 +1158,8 @@ Rectangle {
             y = Math.max(8, Math.min(parent.height - implicitHeight - 8, p.y))
         }
         padding: Theme.spacing
+        // Kept inside the window, scrolling where it is lower than the panel.
+        margins: 8
         modal: false
         background: Rectangle {
             color: Theme.surface
@@ -1171,26 +1167,18 @@ Rectangle {
             radius: Theme.radius
             opacity: 0.97
         }
-        contentItem: ColumnLayout {
-            spacing: Theme.spacing / 2
-            RowLayout {
-                Layout.fillWidth: true
-                Label {
-                    text: tnfPopup.tnf ? qsTr("Notch %1 MHz").arg(tnfPopup.tnf.freq.toFixed(4)) : ""
-                    color: Theme.text
-                    font.pixelSize: Theme.labelFont
-                    font.bold: true
-                    Layout.fillWidth: true
-                }
-                // The radio's global switch: notches only work while it is on.
-                AppButton {
-                    text: Engine.tnfEnabled ? qsTr("TNF on") : qsTr("TNF off")
-                    checked: Engine.tnfEnabled
-                    Layout.preferredHeight: Math.round(Theme.touchTarget * 0.8)
-                    leftPadding: 10
-                    rightPadding: 10
-                    onClicked: Engine.tnfEnabled = !Engine.tnfEnabled
-                }
+        contentItem: PanelContent {
+            title: tnfPopup.tnf ? qsTr("Notch %1 MHz").arg(tnfPopup.tnf.freq.toFixed(4)) : ""
+            panel: tnfPopup
+            rowSpacing: Theme.spacing / 2
+            // The radio's global switch: notches only work while it is on.
+            extras: AppButton {
+                text: Engine.tnfEnabled ? qsTr("TNF on") : qsTr("TNF off")
+                checked: Engine.tnfEnabled
+                Layout.preferredHeight: Theme.touchTarget
+                leftPadding: 10
+                rightPadding: 10
+                onClicked: Engine.tnfEnabled = !Engine.tnfEnabled
             }
             Label {
                 visible: tnfPopup.roomy
@@ -1272,13 +1260,6 @@ Rectangle {
                         Engine.removeTnf(tnfPopup.tnfId)
                         tnfPopup.close()
                     }
-                }
-                AppButton {
-                    text: qsTr("Close")
-                    Layout.fillWidth: true
-                    Layout.preferredWidth: 1
-                    Layout.preferredHeight: Theme.touchTarget
-                    onClicked: tnfPopup.close()
                 }
             }
         }

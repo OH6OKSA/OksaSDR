@@ -30,26 +30,10 @@ Popup {
         border.color: Theme.surfaceRaised
         radius: Theme.radius
     }
-    contentItem: PopupScroll {
-        spacing: Theme.spacing / 2
-        // A tap outside closes it too; Close says so (Larry Averbeck). In the
-        // title row, so the panel is no taller.
-        RowLayout {
-            Layout.fillWidth: true
-            Label {
-                text: qsTr("AGC")
-                color: Theme.textDim
-                font.pixelSize: Math.round(Theme.buttonFont * 0.85)
-                Layout.fillWidth: true
-            }
-            AppButton {
-                text: qsTr("Close")
-                focusPolicy: Qt.NoFocus
-                Layout.preferredWidth: Theme.buttonWidth * 1.5
-                Layout.preferredHeight: Theme.touchTarget
-                onClicked: chooser.close()
-            }
-        }
+    contentItem: PanelContent {
+        title: qsTr("AGC")
+        panel: chooser
+        rowSpacing: Theme.spacing / 2
         RowLayout {
             Layout.fillWidth: true
             spacing: 4

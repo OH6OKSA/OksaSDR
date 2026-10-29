@@ -12,6 +12,7 @@ Popup {
     modal: true
     anchors.centerIn: Overlay.overlay
     width: Math.min(parent ? parent.width - 2 * Theme.spacing : 480, 480)
+    margins: Theme.spacing
     padding: Theme.spacing
     property int confirmHandle: 0
     property string confirmName: ""
@@ -21,14 +22,10 @@ Popup {
         radius: Theme.radius
     }
     onClosed: confirmHandle = 0
-    contentItem: ColumnLayout {
-        spacing: Theme.spacing / 2
-        Label {
-            text: qsTr("Connected stations")
-            color: Theme.text
-            font.pixelSize: Math.round(Theme.buttonFont * 1.1)
-            font.bold: true
-        }
+    contentItem: PanelContent {
+        title: qsTr("Connected stations")
+        panel: dialog
+        rowSpacing: Theme.spacing / 2
         Label {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
@@ -112,13 +109,6 @@ Popup {
                     }
                 }
             }
-        }
-        AppButton {
-            text: qsTr("Close")
-            Layout.alignment: Qt.AlignRight
-            leftPadding: 16
-            rightPadding: 16
-            onClicked: dialog.close()
         }
     }
 }

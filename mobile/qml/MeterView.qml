@@ -175,20 +175,11 @@ Item {
         }
         // Room for "2 analog" at a large iPad's font.
         readonly property real cellWidth: Math.max(Theme.buttonWidth * 0.9, 72)
-        contentItem: PopupScroll {
-            spacing: Theme.spacing / 2
-            // Every choice keeps it open; Close as the AGC and volume panels'.
-            RowLayout {
-                Layout.fillWidth: true
-                Label { text: qsTr("Style"); color: Theme.textDim; font.pixelSize: Math.round(Theme.buttonFont * 0.85); Layout.fillWidth: true }
-                AppButton {
-                    text: qsTr("Close")
-                    focusPolicy: Qt.NoFocus
-                    Layout.preferredWidth: Theme.buttonWidth * 1.5
-                    Layout.preferredHeight: Theme.touchTarget
-                    onClicked: chooser.close()
-                }
-            }
+        // Every choice keeps it open; the style buttons follow the title.
+        contentItem: PanelContent {
+            title: qsTr("Meter")
+            panel: chooser
+            rowSpacing: Theme.spacing / 2
             // Two bars: one over the other, each with its own receive and
             // transmit choice (the lower bar's from a tap on it).
             RowLayout {

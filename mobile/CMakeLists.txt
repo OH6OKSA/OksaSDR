@@ -53,20 +53,22 @@ qt_add_executable(aether-mobile
     src/SecureStore.h
     src/AudioSession.h
     src/ShareText.h
+    src/Haptics.h
     src/SideKeys.h
     ${AETHER_MOBILE_RESOURCES}
 )
 if(IOS)
     target_sources(aether-mobile PRIVATE ios/ScreenAwake.mm ios/SecureStore.mm ios/AudioSession.mm ios/ShareText.mm
-                                         ios/SideKeys.mm)
+                                         ios/SideKeys.mm ios/Haptics.mm)
     target_link_libraries(aether-mobile PRIVATE "-framework Security" "-framework AVFAudio" "-framework GameController")
 elseif(ANDROID)
     target_sources(aether-mobile PRIVATE android/AndroidJni.h android/ScreenAwake.cpp android/SecureStore.cpp
-                                         src/AudioSession.cpp android/ShareText.cpp src/SideKeys.cpp)
+                                         src/AudioSession.cpp android/ShareText.cpp src/SideKeys.cpp
+                                         android/Haptics.cpp)
     target_include_directories(aether-mobile PRIVATE src)
 else()
     target_sources(aether-mobile PRIVATE src/ScreenAwake.cpp src/SecureStore.cpp src/AudioSession.cpp src/ShareText.cpp
-                                         src/SideKeys.cpp)
+                                         src/SideKeys.cpp src/Haptics.cpp)
 endif()
 
 # Must precede qt_add_qml_module, which reads it when writing the qmldir.
@@ -107,6 +109,8 @@ qt_add_qml_module(aether-mobile
         qml/RepeatButton.qml
         qml/FineSlider.qml
         qml/PopupScroll.qml
+        qml/PanelHeader.qml
+        qml/PanelContent.qml
         qml/PttButton.qml
         qml/NetworkBadge.qml
         qml/NetworkDialog.qml

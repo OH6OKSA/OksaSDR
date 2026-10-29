@@ -56,8 +56,11 @@ AppButton {
     // Hold to transmit; release (or losing the touch) always unkeys. While
     // the tune carrier is on, PTT is its off switch.
     // In tap on/off mode a press switches and the release does nothing.
+    // A tap felt on press and release, voice only: the straight key and the
+    // paddles key too fast for it.
     onPressed: {
         if (paddleMode) return
+        if (!keyMode) Engine.haptic("press")
         if (Engine.tuning) Engine.stopTransmit("PTT pressed during tune")
         else if (keyMode) Engine.setCwKey(true)
         else if (toggleMode) Engine.togglePtt()
@@ -66,7 +69,10 @@ AppButton {
     onReleased: {
         if (paddleMode) return
         if (keyMode) Engine.setCwKey(false, "key released")
-        else if (!toggleMode) Engine.setPtt(false, "button released")
+        else if (!toggleMode) {
+            Engine.haptic("release")
+            Engine.setPtt(false, "button released")
+        }
     }
     onCanceled: {
         if (paddleMode) return

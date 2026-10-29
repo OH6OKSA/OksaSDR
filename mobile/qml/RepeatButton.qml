@@ -4,11 +4,13 @@ import AetherMobile
 // A button that keeps stepping while held, faster the longer it is held:
 // stepped(n) on the press (n = 0) and then on every repeat (n = 1, 2, ...).
 // The host turns n into a step size (e.g. 10 Hz, then 50, then 100).
+// Each step is felt as a tap (Engine.haptic).
 AppButton {
     id: button
     signal stepped(int n)
     property int count: 0
     focusPolicy: Qt.NoFocus
+    onStepped: Engine.haptic("step")
     onPressed: {
         count = 0
         stepped(0)

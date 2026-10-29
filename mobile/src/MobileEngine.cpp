@@ -25,6 +25,7 @@
 #include <QUrl>
 #include "Ft8Engine.h"
 #include "ShareText.h"
+#include "Haptics.h"
 
 #include "ScreenAwake.h"
 #include "SecureStore.h"
@@ -4317,6 +4318,13 @@ void MobileEngine::importAdif(const QUrl& url)
     });
     connect(worker, &QThread::finished, worker, &QObject::deleteLater);
     worker->start();
+}
+
+void MobileEngine::haptic(const QString& kind)
+{
+    mobile::haptic(kind == QLatin1String("press")     ? mobile::Haptic::Press
+                   : kind == QLatin1String("release") ? mobile::Haptic::Release
+                                                      : mobile::Haptic::Step);
 }
 
 bool MobileEngine::shareQsoLog()

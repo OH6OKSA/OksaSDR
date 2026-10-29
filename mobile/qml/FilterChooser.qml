@@ -26,32 +26,16 @@ Popup {
         border.color: Theme.surfaceRaised
         radius: Theme.radius
     }
-    contentItem: PopupScroll {
-        spacing: Theme.spacing / 2
-        // Close for the DSP toggles, which keep it open (Larry Averbeck); in
-        // the title row, so the panel is no taller.
-        RowLayout {
-            Layout.fillWidth: true
-            Label {
-                text: Engine.filterPresets.length === 0 ? ""
-                      : Engine.rade ? qsTr("%1 filter: RADE uses 750–2250 Hz; widths centre on it").arg(Engine.mode)
-                                    : qsTr("%1 filter").arg(Engine.mode)
-                color: Theme.textDim
-                font.pixelSize: Math.round(Theme.buttonFont * 0.85)
-                wrapMode: Text.Wrap
-                // The four columns' width less Close's: the RADE line wraps
-                // rather than widening the panel.
-                Layout.preferredWidth: chooser.cellWidth * 4 + 12 - Theme.buttonWidth * 1.5 - 5
-                Layout.fillWidth: true
-            }
-            AppButton {
-                text: qsTr("Close")
-                focusPolicy: Qt.NoFocus
-                Layout.preferredWidth: Theme.buttonWidth * 1.5
-                Layout.preferredHeight: Theme.touchTarget
-                onClicked: chooser.close()
-            }
-        }
+    // Close for the DSP toggles, which keep it open (Larry Averbeck).
+    contentItem: PanelContent {
+        panel: chooser
+        title: Engine.filterPresets.length === 0 ? qsTr("DSP")
+               : Engine.rade ? qsTr("%1 filter: RADE uses 750–2250 Hz; widths centre on it").arg(Engine.mode)
+                             : qsTr("%1 filter").arg(Engine.mode)
+        // The four columns' width less Close's: the RADE line wraps rather
+        // than widening the panel.
+        titleWidth: chooser.cellWidth * 4 + 12 - Theme.buttonWidth * 1.5 - Theme.spacing / 2
+        rowSpacing: Theme.spacing / 2
         GridLayout {
             columns: Math.min(4, Math.max(1, Engine.filterPresets.length))
             columnSpacing: 4

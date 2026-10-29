@@ -174,10 +174,12 @@ Page {
                     spacing: 0
                     // No margin on the narrowest phones, or AGC meets the edge.
                     Layout.leftMargin: page.width < 400 ? 0 : Theme.spacing
+                    // 36 px each (24 were hard to hit; a full 44 cost the
+                    // spectrum too much room).
                     StepButton {
                         Layout.alignment: Qt.AlignLeft
                         fontSize: 13
-                        heightScale: 0.55
+                        heightScale: 0.82
                     }
                     // The core settings: antennas, filter width, AGC.
                     InfoPanel {
@@ -187,20 +189,20 @@ Page {
                         showIdentity: false
                         showControls: false
                         showOptions: false
-                        rowScale: 0.55
+                        rowScale: 0.82
                         fontScale: page.width < 400 ? 0.88 : 1.0
                     }
                 }
                 Item { Layout.fillWidth: true }
             }
             // Tight under the frequency row: no gap, a lower row (still a
-            // finger's height for its targets).
+            // finger's height for its targets: 40 px).
             InfoPanel {
                 visible: !page.landscape && !page.flowHeader
                 showStep: false
                 showCore: false
                 singleLine: true
-                rowScale: 0.75
+                rowScale: 0.91
                 Layout.fillWidth: true
                 Layout.topMargin: -Theme.spacing / 2
             }
@@ -214,7 +216,7 @@ Page {
                 // Every item centred on one line height, as low as the
                 // phone header's flag row, so the flags sit level with the
                 // frequency.
-                readonly property real lineH: Math.round(Theme.touchTarget * 0.75)
+                readonly property real lineH: Math.round(Theme.touchTarget * 0.91)
                 readonly property real gap: Theme.spacing / 2
                 Item {
                     width: flowFreq.implicitWidth + headerFlow.gap
@@ -237,7 +239,7 @@ Page {
                 Item {
                     width: flowStep.implicitWidth + headerFlow.gap
                     height: headerFlow.lineH
-                    StepButton { id: flowStep; anchors.verticalCenter: parent.verticalCenter; fontSize: 13; heightScale: 0.75 }
+                    StepButton { id: flowStep; anchors.verticalCenter: parent.verticalCenter; fontSize: 13; heightScale: 0.91 }
                 }
                 Repeater {
                     // The slice's groups, each its own piece: the slice and
@@ -252,7 +254,7 @@ Page {
                             id: flowInfo
                             anchors.verticalCenter: parent.verticalCenter
                             singleLine: true
-                            rowScale: 0.75
+                            rowScale: 0.91
                             showStep: false
                             showIdentity: modelData === "identity"
                             showCore: modelData === "core"
@@ -343,7 +345,10 @@ Page {
                         autoRepeat: true
                         autoRepeatDelay: 400
                         autoRepeatInterval: 125
-                        onClicked: Engine.tuneByHz(modelData)
+                        onClicked: {
+                            Engine.haptic("step")
+                            Engine.tuneByHz(modelData)
+                        }
                     }
                 }
                 // With the steps hidden the controls button and PTT stay at

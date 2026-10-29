@@ -832,6 +832,9 @@ public:
     // ("OksaSDR-log-<date>.adi"): mail, Files, AirDrop, a logbook app, or
     // TQSL for LoTW. False when there is nothing to share.
     Q_INVOKABLE bool shareQsoLog();
+    // A tap felt in the hand (Haptics.h): "step" for a step button or − / +,
+    // "press" and "release" for PTT.
+    Q_INVOKABLE void haptic(const QString& kind);
     // Adds the contacts of an ADIF file (a file or content URL from the file
     // picker) to the log, skipping those already in it (call, date, time,
     // band, mode). Returns imported, duplicates and error.

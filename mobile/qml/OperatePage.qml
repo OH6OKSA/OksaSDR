@@ -345,7 +345,10 @@ Page {
                         autoRepeat: true
                         autoRepeatDelay: 400
                         autoRepeatInterval: 125
-                        onClicked: Engine.tuneByHz(modelData)
+                        onClicked: {
+                            Engine.haptic("step")
+                            Engine.tuneByHz(modelData)
+                        }
                     }
                 }
             }
