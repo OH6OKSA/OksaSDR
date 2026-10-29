@@ -35,6 +35,8 @@ class MobileEngine;
 //                           put the mode back after)
 //   click NAME              clicked() on the visible buttons with this objectName
 //   size WxH                resize the window (a phone turning: WxH swapped)
+//   layout                  log the page's layout decisions and the info
+//                           panels' geometry (layout-diff.py compares runs)
 //
 // The run quits after the last command (exit status 2 if a shot failed).
 class ShotPlan : public QObject {
@@ -48,6 +50,7 @@ private:
     void step();
     void run(const QString& command, const QStringList& args, int* delayMs);
     void closePopups();
+    void logLayout();
 
     QQmlApplicationEngine& m_qml;
     MobileEngine& m_engine;

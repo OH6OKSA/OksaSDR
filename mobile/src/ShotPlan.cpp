@@ -141,6 +141,46 @@ void ShotPlan::closePopups()
     }
 }
 
+// One line of the page's layout decisions and the info panels' geometry, to
+// compare a run with an earlier one (mobile/tools/layout-diff.py). A changed
+// decision shows there even where a picture looks fine at a glance: the
+// iPhone Duo's inner screen dropped the info panel under the frequency in
+// build 137's first audit (a black hole beside the frequency) and the
+// pictures were passed.
+void ShotPlan::logLayout()
+{
+    QStringList parts;
+    for (QObject* root : m_qml.rootObjects()) {
+        if (auto* window = qobject_cast<QQuickWindow*>(root)) {
+            parts << QStringLiteral("window=%1x%2").arg(window->width()).arg(window->height());
+        }
+        for (QObject* o : allObjects(root)) {
+            const auto* item = qobject_cast<QQuickItem*>(o);
+            if (!item || !item->isVisible()) {
+                continue;
+            }
+            const QString type = QString::fromLatin1(o->metaObject()->className()).section(QLatin1Char('_'), 0, 0);
+            if (type == QLatin1String("OperatePage") || type == QLatin1String("PhoneOperatePage")) {
+                QStringList props;
+                for (const char* name : {"landscape", "flowHeader", "infoUnder", "infoScale", "controlsFull"}) {
+                    const QVariant v = o->property(name);
+                    if (v.isValid()) {
+                        props << QStringLiteral("%1=%2").arg(QLatin1String(name),
+                            v.typeId() == QMetaType::Double ? QString::number(v.toDouble(), 'f', 2) : v.toString());
+                    }
+                }
+                parts << type + QLatin1Char('(') + props.join(QLatin1Char(' ')) + QLatin1Char(')');
+            } else if (type == QLatin1String("InfoPanel")) {
+                const QRectF r = item->mapRectToScene(QRectF(0, 0, item->width(), item->height()));
+                parts << QStringLiteral("InfoPanel(x=%1 y=%2 w=%3 h=%4 needs=%5)")
+                             .arg(qRound(r.x())).arg(qRound(r.y())).arg(qRound(r.width())).arg(qRound(r.height()))
+                             .arg(qRound(item->implicitWidth()));
+            }
+        }
+    }
+    qInfo().noquote() << "shot-plan: layout" << parts.join(QStringLiteral("; "));
+}
+
 void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs)
 {
     const QString arg = args.value(0);
@@ -295,6 +335,8 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         if (!clicked) {
             qWarning() << "shot-plan: no visible" << arg;
         }
+    } else if (command == QLatin1String("layout")) {
+        logLayout();
     } else if (command == QLatin1String("size")) {
         const QStringList wh = arg.split(QLatin1Char('x'));
         if (window && wh.size() == 2) {
