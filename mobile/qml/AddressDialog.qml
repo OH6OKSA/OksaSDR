@@ -5,7 +5,9 @@ import AetherMobile
 
 // The radio's IP address on the app's own keypad (as frequency entry), so it
 // can always be entered: on-screen or hardware keyboard alike. Typed digits
-// and dots work too.
+// and dots work too. ABC switches to the device's keyboard for a host name
+// (Sebastian Schu DG5CST: a dynamic DNS name); a hardware keyboard types one
+// on the keypad as well.
 Dialog {
     id: dialog
     objectName: "addressDialog"
@@ -19,30 +21,47 @@ Dialog {
     readonly property int keyHeight: Math.max(36, Math.min(60, (parent.height - 16 - 2 * padding - 90 - 5 * Theme.spacing) / 5))
 
     property string entry: ""
+    // The device's keyboard for a name instead of the keypad.
+    property bool letters: false
     signal connectRequested(string address)
 
+    readonly property bool ipLike: /^[0-9.]*$/.test(entry)
     function add(c) {
-        if (entry.length >= 15) return
-        if (c === "." && (entry.length === 0 || entry.endsWith(".") || entry.split(".").length > 3)) return
+        if (entry.length >= 253) return
+        if (c === "." && (entry.length === 0 || entry.endsWith(".") || (ipLike && entry.split(".").length > 3))) return
         entry += c
     }
-    readonly property bool complete: /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.test(entry)
-        && entry.split(".").every(p => Number(p) <= 255)
+    readonly property bool complete: ipLike
+        ? /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.test(entry) && entry.split(".").every(p => Number(p) <= 255)
+        : /^(?=.{1,253}$)[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\.?$/.test(entry)
     function commit() {
         if (!complete) return
         dialog.close()
         dialog.connectRequested(entry)
     }
+    function focusEntry() {
+        if (letters) {
+            nameField.text = entry
+            nameField.forceActiveFocus()
+        } else {
+            keyCatcher.forceActiveFocus()
+        }
+    }
 
-    onAboutToShow: entry = Engine.lastAddress
-    onOpened: keyCatcher.forceActiveFocus()
+    onAboutToShow: {
+        entry = Engine.lastAddress
+        letters = !ipLike
+    }
+    onOpened: focusEntry()
+    onLettersChanged: if (opened) focusEntry()
 
     Item {
         id: keyCatcher
         // The operate page leaves the keyboard focus here (see OperatePage).
         readonly property bool keepsKeyboard: true
         Keys.onPressed: (event) => {
-            if (event.key >= Qt.Key_0 && event.key <= Qt.Key_9) {
+            if ((event.key >= Qt.Key_0 && event.key <= Qt.Key_9) || (event.key >= Qt.Key_A && event.key <= Qt.Key_Z)
+                    || event.key === Qt.Key_Minus) {
                 dialog.add(event.text)
             } else if (event.key === Qt.Key_Period || event.key === Qt.Key_Comma) {
                 dialog.add(".")
@@ -63,11 +82,12 @@ Dialog {
         spacing: Theme.spacing
 
         Label {
-            text: qsTr("Radio IP address")
+            text: qsTr("Radio IP address or host name")
             color: Theme.textDim
             font.pixelSize: 15
         }
         Label {
+            visible: !dialog.letters
             Layout.fillWidth: true
             Layout.preferredHeight: 52
             verticalAlignment: Text.AlignVCenter
@@ -79,7 +99,23 @@ Dialog {
             font.pixelSize: 34
             font.family: "monospace"
         }
+        TextField {
+            id: nameField
+            objectName: "addressNameField"
+            visible: dialog.letters
+            Layout.fillWidth: true
+            Layout.preferredHeight: 52
+            font.pixelSize: 22
+            placeholderText: qsTr("e.g. radio.example.org")
+            color: dialog.complete || text.length === 0 ? Theme.text : Theme.warning
+            inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+                              | Qt.ImhPreferLowercase
+            EnterKey.type: Qt.EnterKeyGo
+            onTextEdited: dialog.entry = text.trim()
+            onAccepted: dialog.commit()
+        }
         GridLayout {
+            visible: !dialog.letters
             columns: 3
             Layout.fillWidth: true
             Repeater {
@@ -108,6 +144,17 @@ Dialog {
                 text: qsTr("Cancel")
                 font.pixelSize: 20
                 onClicked: dialog.close()
+            }
+            AppButton {
+                objectName: "addressLetters"
+                Layout.preferredHeight: dialog.keyHeight
+                leftPadding: 14
+                rightPadding: 14
+                text: dialog.letters ? "123" : "ABC"
+                font.pixelSize: 20
+                focusPolicy: Qt.NoFocus
+                Accessible.name: dialog.letters ? qsTr("Number keypad") : qsTr("Keyboard for a host name")
+                onClicked: dialog.letters = !dialog.letters
             }
             AppButton {
                 Layout.fillWidth: true

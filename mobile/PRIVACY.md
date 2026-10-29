@@ -19,7 +19,8 @@ FT4), as listed below.
 The app talks to your radio and, only for the features you turn on, to
 these services:
 
-- **Your radio.** It connects to the IP address you enter, or to a radio
+- **Your radio.** It connects to the IP address or host name you enter (a
+  name is looked up through your device's own DNS), or to a radio
   discovered on your local network. Control commands, spectrum, waterfall and
   audio travel directly between your device and your radio. They go through a
   VPN only if you route them that way.
@@ -118,4 +119,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-10-25 (FreeDV Reporter, developer link screenshots)
+Last updated: 2026-10-29 (host names for the radio)

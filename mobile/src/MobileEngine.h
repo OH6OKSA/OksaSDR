@@ -1115,8 +1115,9 @@ public:
     void setRadioMicLevel(int level);
 
     Q_INVOKABLE void connectToRadio(int row);
-    // A FlexRadio by address, for networks where discovery broadcasts do not
-    // arrive (iOS needs a multicast entitlement to receive them).
+    // A FlexRadio by address or host name, for networks where discovery
+    // broadcasts do not arrive (iOS needs a multicast entitlement to receive
+    // them), a VPN, or a dynamic DNS name.
     Q_INVOKABLE void connectToAddress(const QString& host);
     Q_INVOKABLE void signInSmartLink(const QString& email, const QString& password);
     Q_INVOKABLE void signOutSmartLink();
@@ -1309,6 +1310,7 @@ private:
     qint64 m_sentPanSizeMs{0};
     void setConnectionState(const QString& state);
     void setLastError(const QString& error);
+    void connectToHostAddress(const QString& entered, const QHostAddress& address);
     void connectWithInfo(const RadioInfo& info, const QString& displayName);
     void wireTransmit();
     void wireTxPacketSink();
@@ -1675,6 +1677,8 @@ private:
     WanRadioInfo m_pendingWan;
     bool m_wanActive{false};
     bool m_wanUserDisconnect{false};
+    // A host name being looked up before connecting (connectToAddress).
+    int m_hostLookupId{-1};
     bool m_smartLinkRetried{false};   // one re-sign-in after a refused session
     QTimer m_wanReconnectTimer;
     QString m_smartLinkState{QStringLiteral("signedOut")};

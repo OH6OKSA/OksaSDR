@@ -245,7 +245,7 @@ Page {
 
             // ---- By address ----
             Label {
-                text: qsTr("By IP address")
+                text: qsTr("By IP address or host name")
                 color: Theme.textDim
                 font.pixelSize: 17
                 Layout.topMargin: Theme.spacing
@@ -261,7 +261,7 @@ Page {
                     readonly property string address: Engine.lastAddress
                     Layout.fillWidth: true
                     Layout.preferredHeight: Theme.touchTarget
-                    text: address.length > 0 ? address : qsTr("Enter the radio's IP address")
+                    text: address.length > 0 ? address : qsTr("Enter the radio's IP address or name")
                     font.pixelSize: 18
                     focusPolicy: Qt.NoFocus
                     onClicked: addressDialog.open()
@@ -276,7 +276,7 @@ Page {
             }
             Label {
                 Layout.fillWidth: true
-                text: qsTr("Enter your own radio's IP address. SmartSDR's radio chooser and your router's device list both show it. This device must reach the radio on the same network or over a VPN. The address is remembered on this device only.")
+                text: qsTr("Enter your own radio's IP address, or a host name that leads to it (ABC on the keypad). SmartSDR's radio chooser and your router's device list both show the address. This device must reach the radio on the same network or over a VPN. It is remembered on this device only.")
                 color: Theme.textDim
                 font.pixelSize: 14
                 wrapMode: Text.Wrap

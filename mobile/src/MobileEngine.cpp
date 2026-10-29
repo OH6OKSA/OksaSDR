@@ -76,6 +76,7 @@
 #include <QKeyEvent>
 #include <QPointer>
 #include <QHostAddress>
+#include <QHostInfo>
 #include <QPermissions>
 #include <QJSEngine>
 #include <QLoggingCategory>
@@ -920,21 +921,64 @@ void MobileEngine::connectToRadio(int row)
 
 void MobileEngine::connectToAddress(const QString& host)
 {
-    const QHostAddress address(host.trimmed());
-    if (address.isNull()) {
-        setLastError(tr("“%1” is not an IP address.").arg(host.trimmed()));
-        return;
-    }
+    const QString entered = host.trimmed();
     if (m_connectionState != QLatin1String("idle")) {
         return;
     }
+    const QHostAddress address(entered);
+    if (!address.isNull()) {
+        connectToHostAddress(address.toString(), address);
+        return;
+    }
+    // A host name (Sebastian Schu DG5CST: a dynamic DNS name; or a name the
+    // VPN's or home network's DNS knows): looked up, then connected to as
+    // its address. The first IPv4 address, which the radio listens on.
+    static const QRegularExpression kHostName(QStringLiteral(
+        "^(?=.{1,253}$)[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\\.?$"));
+    if (!kHostName.match(entered).hasMatch()) {
+        setLastError(tr("“%1” is not an IP address or a host name.").arg(entered));
+        return;
+    }
+    setLastError({});
+    m_radioName = entered;
+    setConnectionState(QStringLiteral("connecting"));
+    m_hostLookupId = QHostInfo::lookupHost(entered, this, [this, entered](const QHostInfo& info) {
+        if (info.lookupId() != m_hostLookupId) {
+            return;  // given up (disconnectRadio)
+        }
+        m_hostLookupId = -1;
+        QHostAddress found;
+        for (const QHostAddress& a : info.addresses()) {
+            if (a.protocol() == QAbstractSocket::IPv4Protocol) {
+                found = a;
+                break;
+            }
+            if (found.isNull()) {
+                found = a;
+            }
+        }
+        if (found.isNull()) {
+            qCWarning(lcMobile).noquote() << "host name" << entered << "not found:" << info.errorString();
+            setConnectionState(QStringLiteral("idle"));
+            setLastError(tr("“%1” was not found (%2).").arg(entered, info.errorString()));
+            return;
+        }
+        qCInfo(lcMobile).noquote() << "host name" << entered << "->" << found.toString();
+        connectToHostAddress(entered, found);
+    });
+}
+
+// The address or name as entered is remembered (a dynamic DNS name keeps
+// following the radio's address).
+void MobileEngine::connectToHostAddress(const QString& entered, const QHostAddress& address)
+{
     RadioInfo info;
     info.family = QStringLiteral("flex");
     info.address = address;
-    AppSettings::instance().setValue(kLastAddressKey, address.toString());
+    AppSettings::instance().setValue(kLastAddressKey, entered);
     AppSettings::instance().save();
     emit lastAddressChanged();
-    connectWithInfo(info, address.toString());
+    connectWithInfo(info, entered);
 }
 
 void MobileEngine::connectWithInfo(const RadioInfo& info, const QString& displayName)
@@ -972,6 +1016,13 @@ void MobileEngine::connectToDemoWhenListed()
 
 void MobileEngine::disconnectRadio()
 {
+    // Still looking up a host name: nothing is connected yet.
+    if (m_hostLookupId >= 0) {
+        QHostInfo::abortHostLookup(m_hostLookupId);
+        m_hostLookupId = -1;
+        setConnectionState(QStringLiteral("idle"));
+        return;
+    }
     m_wanUserDisconnect = true;
     m_wanReconnectTimer.stop();
     stopTransmit(QStringLiteral("operator disconnect"));
