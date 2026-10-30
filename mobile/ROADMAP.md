@@ -5,7 +5,7 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-To verify in build 138 / beta 52: CW autotune on a real CW signal (a tap beside it lands on it; the CW tab's Autotune off taps to the point); the − / + on pan, power, mic, DSP and Radio Setup levels with a finger; Show my transmission in the waterfall off and on during a transmission; an FTx band change clearing the old band's decodes; the Local Network hint on an iPhone with the permission off (Settings › Privacy & Security › Local Network); "In use by" on a SmartLink card. To verify in build 137 / beta 51: the felt taps on an iPhone and an Android phone (PTT press and release, the step buttons, − / +; none on an iPad or a Mac); the taller rows beside and under the frequency on a phone upright (STEP, the antennas, width, AGC, lock, REC and PLAY with a thumb); every panel's Close at the top right and its rows scrolling in a low window; connecting by host name (ABC on the keypad) over a VPN (Sebastian Schu); − / + on AGC-T, RF gain, volume and squelch (Larry Averbeck); the full-screen drawer with FTx on a phone and the iPhone Duo's inner screen (Michael Whaley). To verify in build 134 / beta 48 (and 133 / 47): the AGC panel from AGC-F and the volume panel from the speaker in the OnePlus Open's inner screen and in a narrow iPad window; the network panel on an iPhone and on a phone on its side (scrolls to Close). To verify in build 132 / beta 46: Logger32 with Juho Kontio's own Logger32 (QSOs arriving, the queue when the PC is off, over his VPN); the iPad in a narrow Split View or Stage Manager window (PTT on screen, the wrapped top). To verify in Android beta 45: the app in a split or pop-up window on the OnePlus Open's inner screen (portrait layout with the wrapped two-line header, PTT on screen), and the phone page as before on the outer screen in both orientations. To verify in build 129 / beta 43: record and playback on a device (the dot, then the triangle; with PTT during playback on the air at low power, a recording of speech, not band noise); F/R and Band on a phone in both orientations and on an iPad; the step buttons with STEP ×1 ×10 ×100; the eye in the SmartLink sign-in (Larry Averbeck's S26 Ultra). From beta 42 (checked on the user's phone 2026-10-27): the headset's hands-free reopen on connect and on Bluetooth media -> Auto; no background stall in five returns. Still to check: the microphone of each Audio output choice with a short PTT. From beta 41, checked on the user's phone 2026-10-27: quick Audio output changes never left receive silent (about 25 changes, every one reopened); the waterfall fix did not catch the return after another app. From build 125 / beta 40, checked on the user's phone with the headset 2026-10-27: every switch both ways ended with receive open (route errors and refused opens reopened within a second). From build 124 / beta 39: FT8 with Keep CQ on the air, the station's 73 after our RR73 (no second QSO, one log entry). From build 123 / beta 38: Audio output on Android with a Bluetooth headset (Speaker: the phone's speaker and microphone; Bluetooth media: the music link and the phone's microphone, if Qt's one Bluetooth output is the A2DP one; Auto: the headset with its microphone), the user's phone and Larry Averbeck's S26 Ultra. From build 122 / beta 37: the app's CPU in the top row against build 120 on an iPad, iPhone and Android phone with the same view (the spectrum drawing moved to the GPU), the 3D view and the waterfall on Metal, Vulkan and GLES devices, a phone turning and a zoom with the new waterfall ring, "2 analog" on an iPad and a Mac. From build 120 / beta 36: a held PTT on Kurt DL5EAG's Lenovo tablet with its accessibility services on (Lenovo pen, accessibility menu); Audio output Speaker and Bluetooth media on a phone with Bluetooth audio (Larry Averbeck's S26 Ultra), and on an iPhone; the bar meters' new width on devices. Still to verify from earlier builds: the paddles at the phone's edges with a squeeze and the tap on / off 3-minute stop on the air (119); a phone turning on a real Android phone with the 3D view (117); RADE transmit from a device with the quick-tap fix; Two bars with TUNE on a device's microphone (113); Wavelog sending, PSK Reporter spots and a transverter from a device (105). Queued (tester requests): a blank panadapter while audio plays (Larry; waiting for a log), the desktop TX chain on the device (Jeff Stinger: a 10-band parametric EQ with presets, the desktop compressor, later a multiband compressor), Wavelog API v2 tokens, the rest of upstream 26.10.3 as its own build.
+To verify in build 139 / beta 53: Autotune on the CW tab and a tap beside a real, keyed CW signal (tested here on the 10 MHz carrier only); the CW pitch notice on a radio that reports 0; the notch panel by finger on a device (a hold, a width, Add; a tap outside leaves none); the eSSB tab on the air at low power with a second receiver; FTx Scroll › List only in the full-screen drawer on a phone and in the iPad's drawer (Michael Whaley offered to pilot it); VoiceOver and TalkBack on a device (the names read out, a double tap acts, a swipe steps a slider; a screen-reader user's view welcome). To verify in build 138 / beta 52: the − / + on pan, power, mic, DSP and Radio Setup levels with a finger; Show my transmission in the waterfall off and on during a transmission; an FTx band change clearing the old band's decodes; the Local Network hint on an iPhone with the permission off (Settings › Privacy & Security › Local Network); "In use by" on a SmartLink card. To verify in build 137 / beta 51: the felt taps on an iPhone and an Android phone (PTT press and release, the step buttons, − / +; none on an iPad or a Mac); the taller rows beside and under the frequency on a phone upright (STEP, the antennas, width, AGC, lock, REC and PLAY with a thumb); every panel's Close at the top right and its rows scrolling in a low window; connecting by host name (ABC on the keypad) over a VPN (Sebastian Schu); − / + on AGC-T, RF gain, volume and squelch (Larry Averbeck); the full-screen drawer with FTx on a phone and the iPhone Duo's inner screen (Michael Whaley). To verify in build 134 / beta 48 (and 133 / 47): the AGC panel from AGC-F and the volume panel from the speaker in the OnePlus Open's inner screen and in a narrow iPad window; the network panel on an iPhone and on a phone on its side (scrolls to Close). To verify in build 132 / beta 46: Logger32 with Juho Kontio's own Logger32 (QSOs arriving, the queue when the PC is off, over his VPN); the iPad in a narrow Split View or Stage Manager window (PTT on screen, the wrapped top). To verify in Android beta 45: the app in a split or pop-up window on the OnePlus Open's inner screen (portrait layout with the wrapped two-line header, PTT on screen), and the phone page as before on the outer screen in both orientations. To verify in build 129 / beta 43: record and playback on a device (the dot, then the triangle; with PTT during playback on the air at low power, a recording of speech, not band noise); F/R and Band on a phone in both orientations and on an iPad; the step buttons with STEP ×1 ×10 ×100; the eye in the SmartLink sign-in (Larry Averbeck's S26 Ultra). From beta 42 (checked on the user's phone 2026-10-27): the headset's hands-free reopen on connect and on Bluetooth media -> Auto; no background stall in five returns. Still to check: the microphone of each Audio output choice with a short PTT. From beta 41, checked on the user's phone 2026-10-27: quick Audio output changes never left receive silent (about 25 changes, every one reopened); the waterfall fix did not catch the return after another app. From build 125 / beta 40, checked on the user's phone with the headset 2026-10-27: every switch both ways ended with receive open (route errors and refused opens reopened within a second). From build 124 / beta 39: FT8 with Keep CQ on the air, the station's 73 after our RR73 (no second QSO, one log entry). From build 123 / beta 38: Audio output on Android with a Bluetooth headset (Speaker: the phone's speaker and microphone; Bluetooth media: the music link and the phone's microphone, if Qt's one Bluetooth output is the A2DP one; Auto: the headset with its microphone), the user's phone and Larry Averbeck's S26 Ultra. From build 122 / beta 37: the app's CPU in the top row against build 120 on an iPad, iPhone and Android phone with the same view (the spectrum drawing moved to the GPU), the 3D view and the waterfall on Metal, Vulkan and GLES devices, a phone turning and a zoom with the new waterfall ring, "2 analog" on an iPad and a Mac. From build 120 / beta 36: a held PTT on Kurt DL5EAG's Lenovo tablet with its accessibility services on (Lenovo pen, accessibility menu); Audio output Speaker and Bluetooth media on a phone with Bluetooth audio (Larry Averbeck's S26 Ultra), and on an iPhone; the bar meters' new width on devices. Still to verify from earlier builds: the paddles at the phone's edges with a squeeze and the tap on / off 3-minute stop on the air (119); a phone turning on a real Android phone with the 3D view (117); RADE transmit from a device with the quick-tap fix; Two bars with TUNE on a device's microphone (113); Wavelog sending, PSK Reporter spots and a transverter from a device (105). Queued (tester requests): a blank panadapter while audio plays (Larry; waiting for a log), the desktop TX chain on the eSSB tab (Jeff Stinger: a 10-band parametric EQ with presets, the desktop compressor, later a multiband compressor; with the de-esser, tube, exciter, reverb and a chain order, the engine has them: a build of its own, tested on the air), RTTY decoding (Ben van Schoor, 2026-10-30: the radio's RTTY mode can be chosen, the text is not decoded; the engine has the desktop's RttyDecoder), Wavelog API v2 tokens, the rest of upstream 26.10.3 as its own build.
 
 ## Planned: logging (step 1 and the ADIF share in build 91)
 
@@ -82,20 +82,24 @@ Text and large screens:
   instead of a larger phone layout.
 
 Finding things:
-- **A long press on the spectrum opens a menu** (notch here, slice here,
-  FT8 TX here, ...) for what is now a hidden gesture found only in the
-  manual (the hold for a notch, the dBm scale drag, the divider's double
-  tap, the SPLIT and memory holds, a tap that resets a value).
-  *To discuss:* what goes in the menu.
+- ~~A long press on the spectrum opens a menu~~: no menu (2026-10-30).
+  Gone through with the user, only the notch and a memory "here" were left
+  (a slice, a tap tune, FTx's bars, CW Autotune and zoom have their own
+  controls; Mem's Save keeps the frequency being heard). The long press
+  instead opens the notch panel for a new notch, set and confirmed with
+  Add, as it added notches too easily by accident: *done in build 139*.
+  The hidden gestures (the hold for a notch, the dBm scale drag, the
+  divider's double tap, the SPLIT and memory holds, a tap that resets a
+  value) go into the first-run hints.
 - **First-run hints:** three or four short hints on the first start.
   *To discuss:* whether to have them, and which.
 
 Screen reader:
-- **VoiceOver and TalkBack:** 18 screen-reader names for about 200 touch
-  targets; icons and the spectrum have none. Names for every control, and
-  tuning that works with the screen reader (the frequency read out, a
-  swipe up or down = one step). *To discuss:* with a tester who uses a
-  screen reader.
+- **VoiceOver and TalkBack:** names for every control *in build 139*
+  (290 on the FLEX, none without; 18 before), a double tap acting, a
+  swipe stepping a slider. Still to come: tuning that works with the
+  screen reader (the frequency read out, a swipe up or down = one step).
+  *To discuss:* with a tester who uses a screen reader.
 
 Small ones: done in build 138 ("In use by" on SmartLink cards, 4.5:1
 tags, scroll bars wherever a page scrolls).
@@ -111,11 +115,23 @@ Proposed order (a proposal, each build still decided on its own):
 2. **Build B:** the text scale with the system text size, the tablet
    scale, the connect page's maximum width, "In use by". *The connect
    page's width and "In use by" in build 138.*
-3. **Build C:** the spectrum's long-press menu, first-run hints, tuning
-   with the screen reader.
+3. **Build C:** first-run hints (the hidden gestures), tuning with the
+   screen reader (its names, and the notch confirmation instead of the
+   long-press menu, in build 139).
 4. **Later:** views side by side on a tablet, the connection doctor.
 
 ## Released
+
+**Build 139** (2026-10-30), iPhone and iPad, and Android beta 53:
+- CW Autotune acts when pressed (the user found it doing nothing in build 138: the button only switched a setting, and my test had tapped the display by script instead of pressing it): the strongest CW signal in the passband to the hertz, a notice with none; a tap in CW always lands on the nearest signal. The decoder's pitch was tried and left out (it reports a pitch from band noise, stuck at ~203 Hz). Checked by the user's own path on the radio, 2D and 3D: 10.000012-13 MHz from 163 Hz and ±90 Hz off, the notice and no tune on an empty stretch.
+- The radio reported CW pitch 0 for this app's client (since 2026-10-27; a fresh client is told 600): CW at zero beat silent, the decoder deaf, the CW tab showing 100. FlexBackend now carries a reported 0, and the app sets 600 Hz once a session with a notice (the user's choice). Checked: 0 -> "cw pitch 600" accepted, the next connect reports 600, no notice.
+- Render tool: `ready` (waits for the connection), `tapmhz`, `holdmhz`, `tapname` (a real tap on a named control), `span`, `tnfs`, `txchain`, `a11y`; objectNames for the CW Decoder and 2D / 3D buttons. A new working rule after the miss: test the user's own path, name buttons for what they do, report exactly what was tested; and a gate for device control (amplifiers): read-only first, a test plan per command, off by default, tester preview, confirmations.
+- Notches by confirmation (testers added them by accident): a hold on the display or + TNF opens the notch panel for a new notch, drawn on the display only, with width, depth, permanent and the 10 Hz steps; Add creates it (tnf create, then the settings once the radio reports the id); Close or a tap outside leaves none (modal while creating, so that tap does not tune). The title to 10 Hz. Checked on the FLEX by the user's path: a hold sent nothing; 200 Hz + Deep + Add gave a 200 Hz depth 2 notch; a tap outside and Close left none and did not tune; + TNF + Add put one at the passband centre; Remove. The first runs found two plan errors (a 3 kHz pan, a tap that hit +10 Hz) and a binding loop on Remove, and left notches on the radio, removed.
+- eSSB tab (the user's call: the radio's own audio settings stay in Audio and TX; the device's microphone processing gets its own tab, as the desktop's Aetherial chain): gate, EQ, compressor moved from TX. Eleven tabs in rows of six, the twelfth kept for the amplifier and tuner (the user); the buttons' type shrinks alike where six do not fit (a 698x668 side drawer cut "FreeDV").
+- Screen-reader names for every control: 290 on the FLEX, none without (render tool a11y lists them); press actions and slider steps checked through Qt's accessibility interface (a11ypress / a11yinc). Password fields give their placeholder as the description (Qt gives them no name).
+- FTx Scroll › List only (Michael Whaley's option B): the main buttons fixed, the settings under More, only the decode list scrolling with its bar; Whole tab as before; lower than 520 px the whole tab scrolls. Testing with live decodes found a hang: judged from the layout, the choice flipped with the page's scroll bar (rows wrap) and Qt looped; it is now judged from the view's height alone. Checked at 390x844, 440x956, 956x440 and the iPad drawer.
+- Ben van Schoor asked about FTx and RTTY decoding (RTTY queued).
+- The FB post for build 138 went up before the miss was found; the next post covers 138 and 139 together (the user).
 
 **Build 138** (2026-10-30), iPhone and iPad, and Android beta 52:
 - CW autotune (the user's idea of 2026-10-27): a tap in CW lands on the CW signal nearest it (SpectrumItem::cwPeakNear: the strongest bin within ~14 px, at least 60 Hz, 8 dB over the bins around it, interpolated) to the hertz; checked on the radio against the 10 MHz carrier (a tap 132 Hz away tuned to 10.000012 MHz). The radio's own autotune (slice auto_tune) answers 50004001 without SmartSDR+, so it is not used. Autotune on the CW tab.
@@ -477,7 +493,7 @@ From the comparison with upstream main and tester requests:
 - Upstream FFT Smooth and De-comb
 - Optional VOX mode (microphone always open)
 - More of the desktop's TX chain (de-esser, tube, exciter, reverb) and a
-  chain order
+  chain order, on the eSSB tab (build 139 gave the chain its tab)
 - CW profiles (new in SmartSDR 4.3)
 
 From other FlexRadio mobile clients (PocketSDR for Android, release of
@@ -509,13 +525,18 @@ full-screen drawer of build 137):
   under them (his option B), as a choice beside today's one-piece scroll,
   with a scroll bar that shows it is a scroll (nested scrolls confuse
   otherwise). Some want the spectrum, some the decodes, some both: the
-  choice is the point. He offered to pilot it. *To discuss.*
+  choice is the point. He offered to pilot it. *Done in build 139:*
+  Scroll › List only, the settings under More.
 - Fox / Hound and SuperFox, to work a DXpedition from the phone (his use:
   grabbing a rare one at work). A bigger piece: Hound mode's rules (calling
   above 1000 Hz, the Fox's replies) and the SuperFox decoder. *To discuss.*
 
 Amplifiers and the tuner (planned 2026-10-29, its own build; asked by
 Sebastian Schu DG5CST for the RF2K-S and Bill Arcand for the Tuner Genius):
+- Controls gets an **Amp** tab, the twelfth button (kept free in build
+  139's rows of six): the operating side, the state, Operate / Standby,
+  Tune, the meters. Radio Setup's tab below holds the setup (addresses,
+  turning them on).
 - Radio Setup gets an **Amplifier & tuner** tab:
   - **4O3A Power Genius XL**, found through the radio: model, state,
     Operate / Standby (relayed by the radio, so over SmartLink too).

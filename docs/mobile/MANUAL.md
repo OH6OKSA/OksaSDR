@@ -216,6 +216,14 @@ controls give. It follows the phone's own setting (iPhone: *Settings ›
 Sounds & Haptics › System Haptics*; Android: touch feedback under the
 vibration settings). iPads and Macs have none.
 
+**Screen reader.** With VoiceOver (iPhone, iPad, Mac) or TalkBack
+(Android) every control says what it is and its value: the frequency in
+kHz, the mode, the step, the antennas, filter width, AGC, volume, the
+lock, the meters with their reading, each slice, PTT, the sliders and
+fields. A double tap acts as a tap (hold PTT with a double tap and hold);
+a swipe up or down on a slider moves it one step, sent at once. Tuning
+from the display with the screen reader is still to come.
+
 ### Network quality
 
 The dot in the top row (with the app's CPU and memory next to it) rates the connection as the desktop AetherSDR does —
@@ -342,7 +350,7 @@ on the radio leaves the AGC alone.
 
 **Sliders with − and +.** AGC-T, RF gain, each slice's volume and pan, the
 squelch level, the DSP levels, RF and tune power, the microphone and
-monitor levels, the TX filter, this device's microphone processing, CW
+monitor levels, the TX filter, the eSSB levels, CW
 speed and pitch, and Radio Setup's levels have **−** and **+** at the ends
 of their slider: drag near the value, then tap − or + for one step at a
 time (hold to keep stepping). The display's own sliders (levels you set by
@@ -395,9 +403,9 @@ Receive offers S, Mic, PA temperature and supply voltage; transmit adds
 Power, SWR, ALC and Compression, which the radio reads only while
 transmitting, and leaves S out (it has nothing to read on the air). **Mic** is on the left meter and its lower bar
 (on a tablet the side panel covers the right one). With this device's microphone it shows the
-level of the audio as it is sent (after the processing in Controls → TX):
-while you transmit, and in receive too while Controls → TX is open, so the
-level can be set before going on the air; with a microphone on the radio
+level of the audio as it is sent (after the processing in Controls → eSSB):
+while you transmit, and in receive too while Controls → TX or eSSB is open,
+so the level can be set before going on the air; with a microphone on the radio
 it is the radio's own meter.
 
 **Peak hold.** Each meter keeps its highest reading — an amber needle on
@@ -479,15 +487,18 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
   follows the spot, as on the desktop). Close ones stack in up to four
   rows; zoom in to see more. In View, *Spots* shows or hides them, and
   *DX cluster* connects the app to a cluster of your choice.
-- **Notches (TNF)** — **press and hold** on the display to put a notch
-  there, or *+ TNF* in Controls → DSP for one in the middle of the
-  passband. A notch shows as a band through spectrum and waterfall
-  (yellow, or green when permanent) with a handle on top outlined in black:
-  filled while TNF is on, hollow while it is off. Tap it for its
-  width (50–500 Hz), depth, *Permanent*, a 10 Hz nudge either way and
-  *Remove*; *TNF on/off* there is the radio's switch for all notches —
-  they only work while it is on. Drag a notch along the spectrum (not the
-  waterfall) to move it.
+- **Notches (TNF)** — **press and hold** on the display where a notch
+  should go, or tap *+ TNF* in Controls → DSP for one in the middle of the
+  passband: the notch panel opens for the new notch, drawn on the display
+  but not yet on the radio, with its width (50–500 Hz, 100 Hz to start),
+  depth, *Permanent* and a 10 Hz nudge either way. **Add** puts it on the
+  radio; *Close* or a tap outside the panel leaves none, so a stray hold
+  no longer adds a notch. A notch shows as a band through spectrum and
+  waterfall (yellow, or green when permanent) with a handle on top
+  outlined in black: filled while TNF is on, hollow while it is off. Tap
+  it for the same settings and *Remove*; *TNF on/off* there is the radio's
+  switch for all notches — they only work while it is on. Drag a notch
+  along the spectrum (not the waterfall) to move it.
 
 ![Notch settings](manual/tnf.jpg)
 
@@ -607,21 +618,23 @@ assigned* or *The selected TX antenna cannot transmit on this frequency*).
 **Controls** (top row) opens the controls; on an iPad, *Pin Controls* keeps
 them in the page (at the right in landscape, under the display in portrait),
 with toggle buttons to show several sections at once; *Hide controls* puts
-them back into the drawer. The buttons are all one size: **DSP**, **Audio**,
-**TX**, **CW**, **View**, **Prof** (profiles), **Mem** (memory), **Log**,
-**FTx** (FT8 / FT4) and **FreeDV** (RADE digital voice and FreeDV
+them back into the drawer. The buttons are all one size, in rows of six:
+**DSP**, **Audio**, **TX**, **eSSB** (this device's microphone
+processing), **CW**, **View**, **Prof** (profiles), **Mem** (memory),
+**Log**, **FTx** (FT8 / FT4) and **FreeDV** (RADE digital voice and FreeDV
 Reporter).
 
 ![iPad in portrait with the controls pinned under the display](manual/ipad-portrait.jpg)
 
-| DSP | Audio | TX |
-|---|---|---|
-| ![DSP](manual/tab-dsp.jpg) | ![Audio](manual/tab-audio.jpg) | ![TX](manual/tab-tx.jpg) |
+| DSP | Audio | TX | eSSB |
+|---|---|---|---|
+| ![DSP](manual/tab-dsp.jpg) | ![Audio](manual/tab-audio.jpg) | ![TX](manual/tab-tx.jpg) | ![eSSB](manual/tab-essb.jpg) |
 
 - **DSP** — RIT and XIT (on/off; − and + step 10 Hz and run while held,
   faster the longer: 10, then 50, then 100 Hz; tap the value to reset;
-  not in FM), squelch (where the radio has it; − / + and the level beside the slider), and **TNF** (the radio's notch filters on/off, *+ TNF* for a
-  notch in the passband; see [Panadapter and waterfall](#5-panadapter-and-waterfall)).
+  not in FM), squelch (where the radio has it; − / + and the level beside the slider), and **TNF** (the radio's notch filters on/off, kept when off; *+ TNF*
+  opens a new notch in the middle of the passband to set and *Add*; see
+  [Panadapter and waterfall](#5-panadapter-and-waterfall)).
 - **Audio** — **Receive audio**: *Auto* uses Opus (compressed, made for
   the internet) over SmartLink or when the radio is reached through a VPN,
   and uncompressed audio on the local network; *Opus* or *Uncompressed* fix
@@ -673,16 +686,6 @@ Reporter).
   on). Phone microphones often need +10 to +20 dB; a limiter at
   −1 dBFS keeps the loudest peaks from clipping. With a microphone on the
   radio it is the radio's mic level (0–100), as SmartSDR's MIC.
-  - **This device's microphone: processing before it is sent** (voice modes, with this
-    device's microphone) — AetherSDR's client-side transmit chain, run on
-    the phone or tablet before the audio is sent: **Gate** (mutes the
-    background between words below the threshold), **EQ** (low cut
-    100–300 Hz, bass and presence ±12 dB) and **Comp** (threshold, ratio
-    2:1–8:1 and makeup; while you transmit, how much it is taking off shows
-    beside the ratio). The radio's own 8-band transmit EQ is in Audio.
-    Check the result with MON or a second receiver at low power first.
-
-    ![Processing](manual/tx-processing.jpg)
   - **Voice keyer** (voice modes) — twelve voice macros F1–F12. Tap one to
     transmit it, tap again to stop; press and hold to record (from this
     device's microphone; recording does not transmit), rename or clear. On a
@@ -692,6 +695,18 @@ Reporter).
     spoken. Either way **Listen** plays a recording to you without
     transmitting, so you can check it before naming it. Features that need
     SmartSDR+ appear only when the radio reports the subscription.
+- **eSSB** — this device's microphone processing: AetherSDR's client-side
+  transmit chain (the desktop's Aetherial TX chain), run on the phone or
+  tablet before the audio is sent, in voice modes with this device's
+  microphone: **Gate** (mutes the background between words below the
+  threshold), **EQ** (low cut 100–300 Hz, bass and presence ±12 dB) and
+  **Comp** (threshold, ratio 2:1–8:1 and makeup; while you transmit, how
+  much it is taking off shows beside the ratio). The radio's own audio
+  settings stay where they are: its 8-band transmit EQ in Audio, PROC and
+  the TX filter in TX. While the tab is open the microphone is open, so the
+  Mic meter moves as you set the gate and compressor (nothing is sent
+  before PTT). In CW the tab says it is not used. Check the result with
+  MON or a second receiver at low power first.
 
 | CW | View | Prof | Mem |
 |---|---|---|---|
@@ -840,6 +855,15 @@ Reporter).
   active slice the TX slice, tunes it to the mode's dial frequency in DIGU,
   starts decoding and zooms the display to the 4 kHz audio band (again with
   *Zoom*). The bar shows where in the 15 s (FT4: 7.5 s) slot you are.
+
+  **Scroll** (in the drawer): *Whole tab* scrolls the tab in one piece, as
+  before; *List only* keeps the main buttons at the top (Decode, the
+  bands, the slot bar, CQ, Keep CQ, Halt TX, the QSO's state and Show) and
+  scrolls only the decode list under them, with its own scroll bar. The
+  rest (CQ slot, PSK Reporter, the time line, TX Hz and TX level, the
+  colours) folds under **More**. Where the drawer is lower than about
+  520 px (a phone on its side, the drawer at half height), the whole tab
+  scrolls anyway. (Michael Whaley's request.)
 
   **Every slice in DIGU / DIGL decodes at once** (say 40 m on slice A and
   20 m on slice B), each on a DAX channel of its own so the other slices'

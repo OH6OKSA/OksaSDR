@@ -86,9 +86,10 @@ radio interface, with no computer running alongside.
   as callsigns on the display, tap to tune; the app's own DX cluster
   connection sends its spots to the radio, as the desktop does; a status
   line says whether it is connected, to which server and as whom.
-- **Notch filters (TNF)**: press and hold on the display for a notch, tap
-  it for width, depth, permanent or remove; drawn through spectrum and
-  waterfall as on the desktop.
+- **Notch filters (TNF)**: press and hold on the display (or *+ TNF*) for
+  a new notch, set its width, depth and permanent and *Add* it, so a stray
+  hold adds none; tap one for its settings or remove; drawn through
+  spectrum and waterfall as on the desktop.
 - The radio's global, TX and mic profiles: load, save and delete, as in
   SmartSDR and AetherSDR.
 - Filter passband drawn on the display, on the correct side for USB/LSB and
@@ -151,9 +152,10 @@ radio interface, with no computer running alongside.
 - **Voice keyer**: twelve voice macros F1–F12. With SmartSDR+ they are the
   radio's DVK; without it the app records and plays them itself, kept on
   the device. *Listen* plays one back without transmitting.
-- **Processing of the device's microphone**, AetherSDR's client-side TX
-  chain: gate, EQ (low cut, bass, presence) and compressor, with the Mic
-  meter reading the processed audio on the air.
+- **eSSB**: the processing of the device's microphone, AetherSDR's
+  client-side TX chain, on a tab of its own as on the desktop: gate, EQ
+  (low cut, bass, presence) and compressor, with the Mic meter reading the
+  processed audio on the air.
 - Hold-to-talk PTT from the device's microphone (the radio's mic input is
   set to `PC` when the app connects), with RF power and mic level, plus forward power and SWR
   while transmitting. The microphone is open only while PTT is held.
@@ -179,7 +181,8 @@ radio interface, with no computer running alongside.
   New, New DXCC, New call). Tap a
   call to answer it (TX and the display move to its slice) or call CQ;
   the app runs the QSO and logs it. Drag the red TX band to a free
-  frequency on the display.
+  frequency on the display. *List only* keeps the main buttons fixed and
+  scrolls just the decodes.
 - **RADE digital voice** (FreeDV's Radio Autoencoder) in the app, on any
   Flex (Controls › FreeDV): receive with the callsign each station sends,
   transmit with PTT as usual, report to FreeDV Reporter (qso.freedv.org)
@@ -206,13 +209,15 @@ radio interface, with no computer running alongside.
 - A tablet layout and a phone layout. They switch live on rotation, Split
   View, Stage Manager and folding (iPhone Duo).
 - The waterfall gets the screen. On iPhone, the controls (DSP, Audio, TX,
-  CW, View, Prof, Mem, Log, FTx, FreeDV) live in a drawer that slides in over it when needed. On iPad the side
+  eSSB, CW, View, Prof, Mem, Log, FTx, FreeDV) live in a drawer that slides in over it when needed. On iPad the side
   panel can be hidden into the same drawer. PTT/KEY always stays on screen:
   the drawer carries it at the bottom, never covering it.
 - Apple Pencil drags tune 10× finer, for zero-beating.
 - Magic Keyboard and trackpad: arrows tune, Space is PTT, +/− zoom, F opens
   frequency entry, scroll tunes and ⌘-scroll zooms.
 - Safe-area aware: notch, Dynamic Island and the home indicator.
+- VoiceOver and TalkBack: every control has a spoken name; a double tap
+  acts and a swipe moves a slider one step.
 - On a Mac with Apple silicon the iPad app runs from TestFlight; a click
   in a text field opens a text box to type in.
 - Network quality in the top row (as the desktop's indicator), with
@@ -271,8 +276,9 @@ landscape and Android pictures are taken from the devices.</sub>
 | Mac (Apple silicon), the iPad app from TestFlight | ✅ In use by testers; typing through the text box since build 111 |
 | Log tab, ADIF export and import, QRZ.com lookup | ✅ In use by testers |
 | Several slices and panadapters, multiFLEX | ✅ Supported |
-| Spots and DX cluster, TNF, memory editing | ✅ Tested against a FLEX-6600M (build 77) |
-| TX processing (gate, EQ, compressor) | ✅ Measured on the FLEX with a test tone; testers' on-air reports welcome |
+| Spots and DX cluster, TNF, memory editing | ✅ Tested against a FLEX-6600M (build 77; the notch panel with Add in build 139) |
+| eSSB: TX processing (gate, EQ, compressor) | ✅ Measured on the FLEX with a test tone; testers' on-air reports welcome |
+| VoiceOver / TalkBack names | 🧪 Every control named (build 139); reports from screen-reader users welcome |
 | CWX (CW memories, CW text) on air | ✅ Used on air by a tester (POTA/WWFF replies); checked at 10 W with the sidetone in step |
 | CW straight key and paddles on air | ✅ Checked on the FLEX at 10 W: straight key, paddles (elements on time at 30 WPM), iambic A and B squeeze |
 | CW decoder | ✅ Decodes a strong signal cleanly and weak stations' calls (8–45 WPM, Sens filter against noise) |
