@@ -539,6 +539,17 @@ Sebastian Schu DG5CST for the RF2K-S and Bill Arcand for the Tuner Genius):
   first, then Sebastian on his amplifier (he offered, 2026-10-29). PGXL and
   TGXL need a tester with one; not released untested on a real device (Mike
   VA3MW agreed: "He needs the equipment to test and integrate").
+- The gate for anything that changes a device's state (the user,
+  2026-10-30: the smoke must stay in the amplifier):
+  1. Read-only first: power, SWR, temperature, state. No command that
+     changes the device goes out in the first step.
+  2. A written test plan for every control command (what it does, the
+     device's reply, the error handling), and mock tests with the failures
+     too (link lost, a wrong reply, a slow device).
+  3. Off by default, and first only in a preview build for the tester with
+     the device; to everyone only after the tester's check.
+  4. Every state change (Operate, antenna, error reset, tune) behind a
+     confirmation, never one stray tap.
 
 ## Waiting
 
