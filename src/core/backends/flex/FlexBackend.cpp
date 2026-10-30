@@ -1427,7 +1427,11 @@ void FlexBackend::decodeTransmitStatus(const QMap<QString, QString>& kvs)
 
     // CW
     carryClamp(kvs, "speed", d.cwSpeed, 5, 100);
-    carryClamp(kvs, "pitch", d.cwPitch, 100, 6000);
+    // From 0, not 100: a radio that reports 0 (seen on a FLEX-6600, its
+    // stored pitch for one client) is heard so, CW at zero beat silent; a
+    // client must see it to set a usable one (TransmitModel::setCwPitch
+    // keeps 100-6000 for what it sends).
+    carryClamp(kvs, "pitch", d.cwPitch, 0, 6000);
     carry(kvs, "break_in", d.cwBreakIn);
     carryClamp(kvs, "break_in_delay", d.cwDelay, 0, 2000);
     carry(kvs, "sidetone", d.cwSidetone);

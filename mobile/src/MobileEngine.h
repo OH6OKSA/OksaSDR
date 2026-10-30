@@ -1686,6 +1686,9 @@ private:
     bool m_pttHeld{false};
     bool m_micPermissionRequested{false};
     bool m_connected{false};
+    // The radio's CW pitch was set to 600 this session (it reported 0).
+    bool m_cwPitchRepaired{false};
+    void repairCwPitch(int hz);
     bool m_micDefaulted{false};
     bool m_displayActive{true};
     int m_fftFramesSeen{0};

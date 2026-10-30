@@ -1052,6 +1052,7 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 | *The TX slice is in DIGU: PTT is for voice …* | PTT pressed with the transmit slice in DIGU / DIGL | Switch it to USB / LSB to talk; FT8 / FT4 run from the FTx tab, RADE from the FreeDV tab |
 | *Break-in is off …* | CW keyed with Break-in off: the key does not put the radio on air | Controls → CW → Break-in |
 | *This slice is muted on this band …* | The radio remembers the band's slice muted | Tap the speaker on the info panel |
+| *The radio's CW pitch was 0 Hz …* | The radio had a CW pitch of 0 stored for this app, so CW at zero beat was silent | Nothing: the app set 600 Hz; change it under Controls → CW → Pitch |
 | *Microphone access is off …* | The device does not let the app use the microphone | Allow it in the device's settings (Settings › OksaSDR › Microphone) |
 | *Host unreachable* or *timed out* to a home-network address (iPhone, iPad, Mac) | iOS keeps the app off the home network until it may use it (Local Network permission); the error then names where | Settings › Privacy & Security › Local Network › OksaSDR on; also check the address and that this device is on the radio's network or VPN |
 | *No free slice for the transmit side of a split* | All the radio's slices are in use | Close a slice (press and hold its chip, or Stations…) |

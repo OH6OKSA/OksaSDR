@@ -3655,6 +3655,7 @@ void MobileEngine::wireCw()
     };
     connect(&rm.transmitModel(), &TransmitModel::phoneStateChanged, this, syncSidetone);
     connect(&rm.transmitModel(), &TransmitModel::stateChanged, this, &MobileEngine::cwChanged);
+    connect(&rm.transmitModel(), &TransmitModel::cwPitchChanged, this, &MobileEngine::repairCwPitch);
 
     // CWX (memories, CW text, Live) keys in the radio, which tells nothing of
     // the elements: a local keyer plays the same text at the same speed into
@@ -3887,6 +3888,22 @@ void MobileEngine::setCwSpeed(int wpm)
     wpm = std::clamp(wpm, 5, 100);
     m_session.radioModel().transmitModel().setCwSpeed(wpm);
     m_session.radioModel().cwxModel().setSpeed(wpm);
+}
+
+void MobileEngine::repairCwPitch(int hz)
+{
+    // A radio that reports a CW pitch under 100 Hz (0 seen on a FLEX-6600,
+    // its stored pitch for this client) has CW at zero beat silent and the
+    // decoder deaf: 600 Hz (SmartSDR's default), once a session, and a
+    // notice.
+    if (hz >= 100 || !m_connected || m_cwPitchRepaired || !m_session.radioModel().usesFlexCommandPlane()) {
+        return;
+    }
+    m_cwPitchRepaired = true;
+    qCWarning(lcMobile) << "the radio reports a CW pitch of" << hz << "Hz: set to 600 Hz";
+    setCwPitch(600);
+    setLastError(tr("The radio's CW pitch was %1 Hz, so CW at zero beat was silent; it is now 600 Hz "
+                    "(Controls › CW › Pitch).").arg(hz));
 }
 
 void MobileEngine::setCwPitch(int hz)
@@ -6111,6 +6128,11 @@ void MobileEngine::onConnectionStateChanged(bool connected)
     }
     m_connected = connected;
     m_micDefaulted = false;
+    m_cwPitchRepaired = false;
+    // The transmit status can come before the connection is marked up.
+    if (connected) {
+        QTimer::singleShot(0, this, [this] { repairCwPitch(m_session.radioModel().transmitModel().cwPitch()); });
+    }
     m_netSampleMs = 0;
     m_sliceRecoveryTried = false;
     m_sliceRecoveryPending = false;
