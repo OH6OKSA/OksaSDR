@@ -230,9 +230,69 @@ public:
     }
 };
 
+// Press and hold a text field on a Mac (0.6 s, the pointer still): Apple's
+// text box, for a Mac where typed keys do not reach the field. A drag
+// (selecting text) does not open it.
+void offerMacTextEntry(QObject* obj);
+class MacTextHold : public QObject {
+public:
+    explicit MacTextHold(QObject* parent) : QObject(parent)
+    {
+        m_timer.setSingleShot(true);
+        m_timer.setInterval(600);
+        connect(&m_timer, &QTimer::timeout, this, [this] {
+            if (m_field) {
+                offerMacTextEntry(m_field);
+            }
+        });
+    }
+    bool eventFilter(QObject* receiver, QEvent* event) override
+    {
+        switch (event->type()) {
+        case QEvent::MouseButtonPress:
+        case QEvent::TouchBegin:
+            if (receiver->inherits("QQuickTextInput") || receiver->inherits("QQuickTextEdit")) {
+                m_field = receiver;
+                m_pressedAt = static_cast<QPointerEvent*>(event)->points().value(0).globalPosition();
+                m_timer.start();
+            }
+            break;
+        case QEvent::MouseMove:
+        case QEvent::TouchUpdate:
+            if (receiver == m_field && m_timer.isActive()) {
+                const QPointF at = static_cast<QPointerEvent*>(event)->points().value(0).globalPosition();
+                if ((at - m_pressedAt).manhattanLength() > 12) {
+                    m_timer.stop();
+                }
+            }
+            break;
+        case QEvent::MouseButtonRelease:
+        case QEvent::TouchEnd:
+        case QEvent::TouchCancel:
+        case QEvent::UngrabMouse:
+            if (receiver == m_field) {
+                m_timer.stop();
+                m_field = nullptr;
+            }
+            break;
+        default:
+            break;
+        }
+        return false;
+    }
+
+private:
+    QTimer m_timer;
+    QPointer<QObject> m_field;
+    QPointF m_pressedAt;
+};
+
 // Puts text into a Qt text field as typing does: the old text selected and
-// replaced key by key (validators and textEdited see a user's edit), then
-// Return for a one-line field (accepted, editingFinished).
+// replaced key by key (validators and textEdited see a user's edit). No
+// Return: in the Log tab's callsign field it logged the contact at once
+// (Pentti Pärnänen OH6PP, build 139: half-typed calls in the log), and in the
+// CW text field it would send; the field's own button does that. The focus
+// leaving afterwards gives editingFinished.
 void typeIntoField(QQuickItem* field, const QString& text)
 {
     const auto send = [field](int key, const QString& keyText) {
@@ -246,14 +306,15 @@ void typeIntoField(QQuickItem* field, const QString& text)
     for (const QChar ch : text) {
         send(ch.toUpper().unicode(), QString(ch));
     }
-    if (field->inherits("QQuickTextInput")) {
-        send(Qt::Key_Return, QString());
-    }
 }
 
-// On a Mac a focused text field opens Apple's text box (no typed key reaches
-// Qt there). Once per focus: the field lets go of focus afterwards, so the
-// box does not come back when the window takes focus again.
+// Apple's text box for a Mac where typed keys do not reach Qt (build 108, a
+// MacBook then). Since keys do reach the fields (MacTextKeys; build 139 on
+// macOS 27, the same MacBook typed straight into the field) it opens only
+// when a field is pressed and held (MacTextHold), not on every focus: a
+// click that landed on the field's text opened it, a click beside it typed
+// directly, and testers could not tell why. Once per press: the field lets
+// go of focus afterwards.
 void offerMacTextEntry(QObject* obj)
 {
     static bool open = false;
@@ -839,9 +900,12 @@ MobileEngine::MobileEngine(QObject* parent)
         qCInfo(lcMobile) << "keyboard: iPad app on a Mac:" << (runningAsIosAppOnMac() ? "yes" : "no");
         if (runningAsIosAppOnMac()) {
             qApp->installEventFilter(new MacTextKeys(this));
+            if (macTextEntryAvailable()) {
+                qApp->installEventFilter(new MacTextHold(this));
+            }
             startMacKeyDiagnostics();
             qCInfo(lcMobile) << "keyboard: text fields take the key presses directly (no input method); "
-                                "a focused field opens a text box";
+                                "a field pressed and held opens a text box";
         }
         auto textItem = std::make_shared<QPointer<QObject>>();
         auto seenAtFocus = std::make_shared<int>(0);
@@ -862,9 +926,6 @@ MobileEngine::MobileEngine(QObject* parent)
                 diag->inputMethod = 0;
                 *seenAtFocus = sideKeysSeen();
                 qCInfo(lcMobile).noquote() << "keyboard: text field focused:" << obj->metaObject()->className() << obj->objectName();
-                if (macTextEntryAvailable()) {
-                    offerMacTextEntry(obj);
-                }
             }
         });
     }

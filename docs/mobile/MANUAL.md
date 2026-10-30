@@ -1086,11 +1086,14 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 
 ## 11. Keyboard and Apple Pencil
 
-On a **Mac** (the iPad app, through TestFlight) the Mac's keyboard does not
-reach the app's own text fields, so clicking one opens a small text box
-(Apple's own) with the field's text: type there and press Return or OK to
-put the text in the field, as if typed there and Return pressed; Esc or
-Cancel leaves the field as it was. The iPad's GameController keyboard
+On a **Mac** (the iPad app, through TestFlight) click a text field and type
+in it as on an iPad. If the Mac's keyboard does not reach a field (as on
+some Macs before), **press and hold** the field: a small text box (Apple's
+own) opens with the field's text; type there and press Return or OK to put
+the text in the field, Esc or Cancel to leave it as it was. OK only fills
+the field: logging a contact, sending CW text or saving is still the
+field's own button (until build 139 OK also pressed Return, so the Log
+tab logged a half-typed call at once). The iPad's GameController keyboard
 reading is not used on a Mac.
 
 With a Magic Keyboard, trackpad or any hardware keyboard (also a

@@ -218,8 +218,9 @@ radio interface, with no computer running alongside.
 - Safe-area aware: notch, Dynamic Island and the home indicator.
 - VoiceOver and TalkBack: every control has a spoken name; a double tap
   acts and a swipe moves a slider one step.
-- On a Mac with Apple silicon the iPad app runs from TestFlight; a click
-  in a text field opens a text box to type in.
+- On a Mac with Apple silicon the iPad app runs from TestFlight; text
+  fields take the Mac's keyboard, and a field pressed and held opens a
+  text box where a Mac's keys do not reach it.
 - Network quality in the top row (as the desktop's indicator), with
   link timing, packet loss per stream and traffic on tap.
 - **Radio Setup** (top row): callsign, radio name, remote, transmit limits
@@ -273,7 +274,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | FreeDV Reporter (qso.freedv.org) | ✅ The app's RADE listed on qso.freedv.org (build 112) |
 | PSK Reporter, Wavelog / Cloudlog | ✅ Spots on pskreporter.info; QSOs sent to a Wavelog logbook |
 | Transverters (XVTR) in Radio Setup | 🧪 Built in; reports with a transverter welcome |
-| Mac (Apple silicon), the iPad app from TestFlight | ✅ In use by testers; typing through the text box since build 111 |
+| Mac (Apple silicon), the iPad app from TestFlight | ✅ In use by testers; typing straight into the fields (the text box on press and hold since build 140) |
 | Log tab, ADIF export and import, QRZ.com lookup | ✅ In use by testers |
 | Several slices and panadapters, multiFLEX | ✅ Supported |
 | Spots and DX cluster, TNF, memory editing | ✅ Tested against a FLEX-6600M (build 77; the notch panel with Add in build 139) |
