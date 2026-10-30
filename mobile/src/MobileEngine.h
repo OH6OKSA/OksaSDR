@@ -314,9 +314,6 @@ class MobileEngine : public QObject {
     // driving the app's iambic keyer (the desktop's IambicKeyer: mode,
     // speed and swapped paddles follow the radio's settings). Remembered.
     Q_PROPERTY(bool cwPaddles READ cwPaddles WRITE setCwPaddles NOTIFY cwChanged)
-    // A tap on the display in CW lets the radio centre the CW signal there
-    // on the pitch (tuneToCw); on by default.
-    Q_PROPERTY(bool cwAutotune READ cwAutotune WRITE setCwAutotune NOTIFY cwChanged)
     // Paddles on a hardware keyboard: "ctrl" (left and right Ctrl, as USB
     // paddle adapters send; the default), "alt" (left and right Alt / Option,
     // for keyboards with no right Ctrl), "brackets" ([ and ]) or "off".
@@ -683,8 +680,6 @@ public:
     bool cwKeyDown() const { return m_cwKeyHeld || m_paddleKeyDown.load(std::memory_order_relaxed); }
     bool cwPaddles() const;
     void setCwPaddles(bool on);
-    bool cwAutotune() const;
-    void setCwAutotune(bool on);
     // A tap in CW with autotune on: tunes to the CW signal the display found
     // near the tap (SpectrumItem::cwPeakNear), or to the tapped point, to the
     // hertz rather than the step grid (which can be wider than the CW
@@ -692,6 +687,17 @@ public:
     // own autotune (slice auto_tune) needs SmartSDR+ (the radio answers
     // 50004001 without it), so it is not used.
     Q_INVOKABLE void tuneToCw(double mhz, bool onSignal);
+    // Autotune now (the CW tab's Autotune): the slice onto peakMhz, the
+    // display's strongest CW signal in the passband (SpectrumItem::
+    // cwPeakNear at the slice; <= 0: none found), where it is heard at the
+    // pitch whatever the pitch is; with none, a notice. The decoder's pitch
+    // is not used: it reports one from band noise too (stuck at its range's
+    // bottom) and the offset needs the radio's pitch, which this radio
+    // reports as 0.
+    Q_INVOKABLE void cwAutotuneNow(double peakMhz);
+    // The CW tab's Autotune pressed: the display answers with its peak in
+    // the passband (cwAutotuneRequested -> cwAutotuneNow).
+    Q_INVOKABLE void requestCwAutotune() { emit cwAutotuneRequested(); }
     QString cwKeyboardPaddles() const;
     void setCwKeyboardPaddles(const QString& keys);
     int cwIambicMode() const;
@@ -1281,6 +1287,7 @@ signals:
     void freedvChanged();
     void freedvStationsChanged();
     void digiDecodesChanged();
+    void cwAutotuneRequested();
     void digiFilterChanged();
     void callLookupChanged();
     void lastSpotCallChanged();

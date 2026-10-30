@@ -5422,22 +5422,6 @@ void MobileEngine::setCwKey(bool down, const QString& reason)
     emit cwKeyDownChanged();
 }
 
-bool MobileEngine::cwAutotune() const
-{
-    return AppSettings::instance().value(QStringLiteral("MobileCwAutotune"), QStringLiteral("True")).toString()
-        == QLatin1String("True");
-}
-
-void MobileEngine::setCwAutotune(bool on)
-{
-    if (on == cwAutotune()) {
-        return;
-    }
-    AppSettings::instance().setValue(QStringLiteral("MobileCwAutotune"), on ? QStringLiteral("True") : QStringLiteral("False"));
-    AppSettings::instance().save();
-    emit cwChanged();
-}
-
 void MobileEngine::tuneToCw(double mhz, bool onSignal)
 {
     if (!m_slice || mhz <= 0.0) {
@@ -5450,6 +5434,21 @@ void MobileEngine::tuneToCw(double mhz, bool onSignal)
                                       .arg(onSignal ? QStringLiteral("the signal near the tap")
                                                     : QStringLiteral("no signal near, the tapped point"));
     tuneTo(hz);
+}
+
+void MobileEngine::cwAutotuneNow(double peakMhz)
+{
+    if (!m_slice || !cwMode()) {
+        return;
+    }
+    if (peakMhz > 0.0) {
+        qCInfo(lcMobile).noquote() << QStringLiteral("cw autotune now: the display's peak at %1 MHz")
+                                          .arg(peakMhz, 0, 'f', 6);
+        tuneToCw(peakMhz, true);
+        return;
+    }
+    setLastError(tr("No CW signal heard near the slice: tune close to one (or tap beside it on the display), "
+                    "then Autotune."));
 }
 
 bool MobileEngine::cwPaddles() const

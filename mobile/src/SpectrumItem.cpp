@@ -410,7 +410,7 @@ void SpectrumItem::onSpectrum(const QVector<float>& binsDbm)
     traceChanged();
 }
 
-double SpectrumItem::cwPeakNear(double mhz) const
+double SpectrumItem::cwPeakNear(double mhz, double halfHz) const
 {
     const qsizetype n = m_spectrum.size();
     if (n < 16 || m_frameBandwidthMhz <= 0.0 || width() <= 0.0) {
@@ -422,7 +422,7 @@ double SpectrumItem::cwPeakNear(double mhz) const
     if (centre < 0.0 || centre >= static_cast<double>(n)) {
         return -1.0;
     }
-    const double halfMhz = std::max(14.0 * m_frameBandwidthMhz / width(), 60e-6);
+    const double halfMhz = halfHz > 0.0 ? halfHz / 1e6 : std::max(14.0 * m_frameBandwidthMhz / width(), 60e-6);
     const qsizetype half = std::max<qsizetype>(2, static_cast<qsizetype>(std::ceil(halfMhz / binMhz)));
     const qsizetype c = static_cast<qsizetype>(centre);
     const qsizetype lo = std::max<qsizetype>(1, c - half);

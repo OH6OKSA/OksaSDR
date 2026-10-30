@@ -1265,6 +1265,16 @@ Rectangle {
         }
     }
     StationsDialog { id: stationsDialog }
+    // The CW tab's Autotune: the strongest CW signal in the passband, for
+    // when the decoder has not heard one (Engine.cwAutotuneNow).
+    Connections {
+        target: Engine
+        function onCwAutotuneRequested() {
+            const centre = Engine.frequencyMhz + (Engine.filterLow + Engine.filterHigh) / 2e6
+            const half = Math.max(60, (Engine.filterHigh - Engine.filterLow) / 2)
+            Engine.cwAutotuneNow(spectrum.cwPeakNear(centre, half))
+        }
+    }
     Connections {
         target: Engine
         function onStationsRequested() { stationsDialog.open() }
@@ -1334,10 +1344,10 @@ Rectangle {
                         return
                     }
                 }
-                // In CW with autotune: the radio centres the signal there
-                // on the pitch (a tap that misses it by a little still finds
-                // it).
-                if (Engine.cwMode && Engine.cwAutotune) {
+                // In CW: on the CW signal nearest the tap, heard at the
+                // pitch (a tap that misses it by a little still finds it);
+                // where there is none, the touched point to the hertz.
+                if (Engine.cwMode) {
                     const tapped = panArea.mhzAt(eventPoint.position.x)
                     const peak = spectrum.cwPeakNear(tapped)
                     Engine.tuneToCw(peak > 0 ? peak : tapped, peak > 0)

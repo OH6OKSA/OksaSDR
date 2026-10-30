@@ -425,11 +425,10 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
 
 ![Panadapter and waterfall](manual/spectrum.jpg)
 
-- **Tap** to tune to the touched point (on the tuning step). In CW, with
-  **Autotune** on (Controls → CW, on by default), a tap lands on the CW
-  signal nearest the touch, within about a finger's width, so you hear it at
-  your pitch even when the tap misses it a little; where there is none it
-  tunes to the touched point, to the hertz.
+- **Tap** to tune to the touched point (on the tuning step). In CW a tap
+  lands on the CW signal nearest the touch, within about a finger's width,
+  so you hear it at your pitch even when the tap misses it a little; where
+  there is none it tunes to the touched point, to the hertz.
 - **Drag inside the filter passband** to tune; the slice follows the finger
   in tuning steps (STEP), so it stops on a round frequency.
 - **Drag a passband edge** (a finger's width around either edge line) to
@@ -717,8 +716,9 @@ Reporter).
   - **Key** — *Straight key* or *Paddles*; with paddles, **Iambic** A / B and
     **Swap ⇄**, and **Paddles on a keyboard** (see
     [KEY](#7-transmitting-ptt-key-and-tune)).
-  - Speed, pitch, **Break-in** (QSK), the **Decoder** and **Autotune** (a
-    tap on the display lands on the nearest CW signal). With Break-in off
+  - Speed, pitch, **Break-in** (QSK), the **Decoder** and **Autotune**:
+    pressed, it puts the strongest CW signal in the passband on your pitch
+    (tune close to one first); with none there it says so. With Break-in off
     the key does not put the radio on air; the app says so when you key.
     The decoder has **Sens**
     (0–100, default 70): higher shows only the letters decoded with

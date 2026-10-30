@@ -315,19 +315,23 @@ ColumnLayout {
             onClicked: Engine.cwBreakIn = !Engine.cwBreakIn
         }
         AppButton {
+            objectName: "cwDecoder"
             text: qsTr("Decoder")
             checked: Engine.cwDecoderEnabled
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.cwDecoderEnabled = !Engine.cwDecoderEnabled
         }
-        // A tap on the display centres the CW signal there on the pitch.
+        // Now: the CW signal being heard to the pitch (the decoder's pitch,
+        // else the display's peak in the passband), as the desktop's Zero
+        // Beat.
         AppButton {
+            objectName: "cwAutotune"
             text: qsTr("Autotune")
-            checked: Engine.cwAutotune
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
-            onClicked: Engine.cwAutotune = !Engine.cwAutotune
+            enabled: Engine.cwMode
+            onClicked: Engine.requestCwAutotune()
         }
     }
 
