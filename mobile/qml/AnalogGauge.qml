@@ -216,6 +216,7 @@ Item {
     }
     Text {
         id: nameText
+        Accessible.ignored: true
         x: 2; y: 0
         text: gauge.kind === "S" && gauge.live ? gauge.parts[0] : gauge.shortName
         color: "#3fb6ff"
@@ -223,6 +224,7 @@ Item {
         font.bold: true
     }
     Text {
+        Accessible.ignored: true
         visible: gauge.roomy
         anchors.horizontalCenter: parent.horizontalCenter
         y: 2
@@ -231,6 +233,7 @@ Item {
         font.pixelSize: Math.max(8, Math.round(9 * gauge.unit))
     }
     Text {
+        Accessible.ignored: true
         anchors.right: parent.right
         anchors.rightMargin: 12
         y: 0

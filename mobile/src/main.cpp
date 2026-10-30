@@ -196,8 +196,9 @@ int main(int argc, char* argv[])
         QStringLiteral("state"));
     parser.addOption(controlsOption);
     const QCommandLineOption controlsTabOption(QStringLiteral("controls-tab"),
-        QStringLiteral("Controls tab to show (0 DSP, 1 Audio, 2 TX, 3 CW, 4 View, 5 Profiles, 6 Memory); on a "
-                       "tablet, the sections pinned for this run (e.g. 0,2,3)."), QStringLiteral("index"));
+        QStringLiteral("Controls tab to show (0 DSP, 1 Audio, 2 TX, 3 ESSB, 4 CW, 5 View, 6 Profiles, 7 Memory, "
+                       "8 Log, 9 FTx, 10 FreeDV); on a tablet, the sections pinned for this run (e.g. 0,2,3)."),
+        QStringLiteral("index"));
     parser.addOption(controlsTabOption);
     const QCommandLineOption controlsScrollOption(QStringLiteral("controls-scroll"),
         QStringLiteral("With --controls drawer: scroll the shown tab down by <px> (screenshots), "
@@ -2080,8 +2081,8 @@ int main(int argc, char* argv[])
     // one for this run and put the user's choice back on exit.
     if (parser.value(controlsOption) != QLatin1String("drawer") && parser.isSet(controlsTabOption)) {
         static const QStringList names{QStringLiteral("DSP"), QStringLiteral("Audio"), QStringLiteral("TX"),
-            QStringLiteral("CW"), QStringLiteral("View"), QStringLiteral("Profiles"), QStringLiteral("Memory"),
-            QStringLiteral("Log"), QStringLiteral("Digi"), QStringLiteral("FreeDV")};
+            QStringLiteral("ESSB"), QStringLiteral("CW"), QStringLiteral("View"), QStringLiteral("Profiles"),
+            QStringLiteral("Memory"), QStringLiteral("Log"), QStringLiteral("Digi"), QStringLiteral("FreeDV")};
         QStringList pinned;
         for (const QString& index : parser.value(controlsTabOption).split(QLatin1Char(','), Qt::SkipEmptyParts)) {
             if (const QString name = names.value(index.toInt()); !name.isEmpty()) {

@@ -12,6 +12,11 @@ Row {
     property bool compact: false
     signal tapped()
     spacing: 5
+    // One button to a screen reader (the page opens the details on its
+    // press action), its parts not read one by one.
+    Accessible.role: Accessible.Button
+    Accessible.name: badge.rttMs > 0 ? qsTr("Network %1, %2 ms").arg(badge.quality).arg(badge.rttMs)
+                                     : qsTr("Network %1").arg(badge.quality)
     readonly property color dotColor: quality === "Excellent" || quality === "Very Good" ? "#00cc66"
                                     : quality === "Good" ? "#00b4d8"
                                     : quality === "Fair" ? "#cc9900"
@@ -22,6 +27,7 @@ Row {
         color: badge.dotColor
     }
     Text {
+        Accessible.ignored: true
         anchors.verticalCenter: parent.verticalCenter
         visible: !badge.compact
         text: badge.quality
@@ -30,6 +36,7 @@ Row {
         font.bold: true
     }
     Text {
+        Accessible.ignored: true
         anchors.verticalCenter: parent.verticalCenter
         visible: badge.rttMs > 0
         text: badge.rttMs + " ms"
@@ -38,6 +45,7 @@ Row {
     }
     // The app's CPU (share of all cores, as the desktop's status bar).
     Text {
+        Accessible.ignored: true
         anchors.verticalCenter: parent.verticalCenter
         leftPadding: 6
         text: "CPU " + Math.round(Engine.cpuPercent) + " %"
@@ -46,6 +54,7 @@ Row {
     }
     // The app's memory (phones: the number alone, beside the CPU).
     Text {
+        Accessible.ignored: true
         anchors.verticalCenter: parent.verticalCenter
         visible: Engine.memoryMB > 0
         text: (badge.compact ? "" : "RAM ") + Math.round(Engine.memoryMB) + " MB"

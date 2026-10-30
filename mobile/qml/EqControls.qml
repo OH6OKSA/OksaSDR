@@ -61,6 +61,9 @@ ColumnLayout {
                         font.pixelSize: 12
                     }
                     Slider {
+                        Accessible.name: qsTr("%1 band").arg(band.modelData)
+                        Accessible.onIncreaseAction: { increase(); moved() }
+                        Accessible.onDecreaseAction: { decrease(); moved() }
                         Layout.alignment: Qt.AlignHCenter
                         Layout.preferredHeight: 140
                         orientation: Qt.Vertical

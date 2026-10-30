@@ -218,6 +218,7 @@ ColumnLayout {
         }
         TextField {
             id: cwxText
+            Accessible.name: qsTr("CW text to send")
             property string sentText: ""
             Layout.fillWidth: true
             Layout.columnSpan: cwxRow.oneRow ? 1 : 3
@@ -289,6 +290,7 @@ ColumnLayout {
 
     Label { text: qsTr("Speed  %1 WPM").arg(Engine.cwSpeed); color: Theme.textDim; font.pixelSize: 15 }
     FineSlider {
+        accessibleName: qsTr("CW speed")
         Layout.fillWidth: true
         from: 5
         to: 60
@@ -298,6 +300,7 @@ ColumnLayout {
     }
     Label { text: qsTr("Pitch  %1 Hz").arg(Engine.cwPitch); color: Theme.textDim; font.pixelSize: 15 }
     FineSlider {
+        accessibleName: qsTr("CW pitch")
         Layout.fillWidth: true
         from: 300
         to: 1000
@@ -343,6 +346,9 @@ ColumnLayout {
         Label { text: qsTr("Sens"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
         Slider {
             id: sensSlider
+            Accessible.name: qsTr("CW decoder sensitivity")
+            Accessible.onIncreaseAction: { increase(); moved() }
+            Accessible.onDecreaseAction: { decrease(); moved() }
             Layout.fillWidth: true
             from: 0; to: 100; stepSize: 5
             onMoved: Engine.cwDecoderSensitivity = Math.round(value)
@@ -422,6 +428,7 @@ ColumnLayout {
             }
             TextField {
                 id: memoryField
+                Accessible.name: qsTr("Memory M%1 text").arg(memoryEditor.index + 1)
                 Layout.fillWidth: true
                 font.pixelSize: 17
                 inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText

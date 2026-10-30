@@ -14,6 +14,24 @@ ColumnLayout {
     readonly property real slotSeconds: qso.slotSeconds || 15
     property real slotPos: 0
 
+    // The drawer's view height (ControlsPanel gives it to a tab shown on its
+    // own; 0 in the tablet's pinned panel). With List only (Michael Whaley's
+    // option B) the tab fills it: the main buttons stay at the top, the
+    // settings fold under More, and only the decode list scrolls, with a
+    // bar that shows it does.
+    property real viewHeight: 0
+    readonly property bool wantList: Engine.digiListScroll && viewHeight > 0
+    property bool settingsOpen: false
+    readonly property bool settingsShown: !wantList || settingsOpen
+    // Where the view is too low for the main buttons and four rows (a
+    // phone on its side, the drawer at half height), the whole tab scrolls
+    // as before. Decided from the view's height alone: judged from where
+    // the list starts, the page's scroll bar coming and going moved that
+    // (rows wrap), which flipped the choice, which moved the bar again, and
+    // the app hung.
+    readonly property real listRows: 4 * 34
+    readonly property bool useList: wantList && viewHeight >= 520
+
     Timer {
         interval: 200
         repeat: true
@@ -104,9 +122,51 @@ ColumnLayout {
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiHalt()
         }
+        // List only: the settings below fold away; More shows them.
+        AppButton {
+            objectName: "digiMore"
+            visible: digi.wantList
+            text: qsTr("More")
+            checked: digi.settingsOpen
+            Accessible.name: digi.settingsOpen ? qsTr("Hide the FTx settings") : qsTr("Show the FTx settings")
+            Layout.fillWidth: true
+            focusPolicy: Qt.NoFocus
+            onClicked: digi.settingsOpen = !digi.settingsOpen
+        }
+    }
+    // How the tab scrolls in the drawer: all of it, or the decode list only
+    // under the fixed main buttons.
+    RowLayout {
+        visible: digi.viewHeight > 0 && digi.settingsShown
+        Layout.fillWidth: true
+        spacing: 4
+        Label {
+            text: qsTr("Scroll")
+            color: Theme.textDim
+        }
+        AppButton {
+            objectName: "digiScrollTab"
+            text: qsTr("Whole tab")
+            checked: !Engine.digiListScroll
+            Layout.fillWidth: true
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.digiListScroll = false
+        }
+        AppButton {
+            objectName: "digiScrollList"
+            text: qsTr("List only")
+            checked: Engine.digiListScroll
+            Layout.fillWidth: true
+            focusPolicy: Qt.NoFocus
+            onClicked: {
+                Engine.digiListScroll = true
+                digi.settingsOpen = false
+            }
+        }
     }
     // CQ's slot (even = 0 / 30 s, odd = 15 / 45 s in FT8; Auto = the next).
     RowLayout {
+        visible: digi.settingsShown
         Layout.fillWidth: true
         spacing: 4
         Label {
@@ -129,6 +189,7 @@ ColumnLayout {
     }
     // PSK Reporter: the stations decoded here, reported (off by default).
     RowLayout {
+        visible: digi.settingsShown
         Layout.fillWidth: true
         Label {
             text: qsTr("Report to PSK Reporter")
@@ -155,7 +216,7 @@ ColumnLayout {
     }
     Label {
         Layout.fillWidth: true
-        visible: Engine.pskReporter && Engine.pskReporterStatus.length > 0
+        visible: digi.settingsShown && Engine.pskReporter && Engine.pskReporterStatus.length > 0
         text: Engine.pskReporterStatus
         color: Theme.textDim
         font.pixelSize: 12
@@ -193,7 +254,7 @@ ColumnLayout {
         Layout.fillWidth: true
         readonly property string server: digi.qso.clockServer || ""
         readonly property real correction: Number(digi.qso.clockCorrection || 0)
-        visible: Engine.digiRunning || server !== ""
+        visible: digi.settingsShown && (Engine.digiRunning || server !== "")
         text: server !== ""
               ? qsTr("FT8 / FT4 run on %1's time; this device's clock is %2 ms off.")
                     .arg(server).arg((correction < 0 ? "+" : correction > 0 ? "−" : "")
@@ -204,6 +265,7 @@ ColumnLayout {
         wrapMode: Text.WordWrap
     }
     RowLayout {
+        visible: digi.settingsShown
         Layout.fillWidth: true
         Label {
             text: qsTr("TX %1 Hz").arg(Engine.digiTxHz)
@@ -245,6 +307,7 @@ ColumnLayout {
     // The transmit audio level (WSJT-X's Pwr): 0 dB drives the radio fully,
     // so the power out is the TX tab's power; lower it to back off.
     RowLayout {
+        visible: digi.settingsShown
         Layout.fillWidth: true
         Label {
             text: qsTr("TX level %1 dB").arg(Engine.digiTxLevelDb)
@@ -276,7 +339,7 @@ ColumnLayout {
     Label {
         objectName: "digiLastTx"
         Layout.fillWidth: true
-        visible: (digi.qso.lastTxW || 0) > 0
+        visible: digi.settingsShown && (digi.qso.lastTxW || 0) > 0
         text: qsTr("Last TX: %1 W%2 (RF power %3 W)")
               .arg(Number(digi.qso.lastTxW || 0).toFixed(1))
               .arg((digi.qso.lastTxSwr || 0) > 0 ? qsTr(", SWR %1").arg(Number(digi.qso.lastTxSwr).toFixed(1)) : "")
@@ -423,7 +486,7 @@ ColumnLayout {
     }
     Label {
         Layout.fillWidth: true
-        visible: Engine.digiDecodes.length > 0
+        visible: digi.settingsShown && Engine.digiDecodes.length > 0
         text: qsTr("Green CQ · pink / magenta new DXCC · amber new CQ zone · red new continent or your call · cyan a new call (light: new on this band) · yellow your TX · grey worked before on this band and mode")
         color: Theme.textDim
         font.pixelSize: 11
@@ -433,67 +496,91 @@ ColumnLayout {
     // Decodes from every DIGU slice, newest first: slice, UTC, SNR, DT,
     // audio Hz, message. A tap answers (TX and the display move to that
     // slice).
-    Repeater {
-        model: digi.shown
-        delegate: ItemDelegate {
-            required property var modelData
-            readonly property var row: modelData.row
-            readonly property string key: row.utc + "|" + row.freq + "|" + row.text
-            Component.onCompleted: {
-                const left = 1350 - (Date.now() - digi.flashAt)
-                if (digi.flashKey === key && left > 0) {
-                    flashAnim.loops = Math.max(1, Math.ceil(left / 450))
-                    flashAnim.restart()
-                }
-            }
-            readonly property color ground: digi.hlColor(row.hl)
-            readonly property bool lit: row.hl && row.hl !== "b4"
-            Layout.fillWidth: true
-            implicitHeight: Math.max(32, decodeText.implicitHeight + 8)
-            padding: 2
-            Accessible.name: row.text
-            background: Rectangle {
-                color: parent.ground
-                radius: 4
-                // A tapped row flashes, so the answer shows where the
-                // finger is even with the status line scrolled away.
-                Rectangle {
-                    id: flash
-                    anchors.fill: parent
-                    radius: 4
-                    color: "#ffff00"
-                    border.color: "#ffffff"
-                    border.width: 2
-                    opacity: 0
-                }
-            }
-            SequentialAnimation {
-                id: flashAnim
-                loops: 3
-                NumberAnimation { target: flash; property: "opacity"; to: 0.9; duration: 80 }
-                PauseAnimation { duration: 170 }
-                NumberAnimation { target: flash; property: "opacity"; to: 0; duration: 200 }
-            }
-            contentItem: Label {
-                id: decodeText
-                text: "%1 %2 %3 %4 %5  %6".arg(row.slice || " ")
-                                          .arg(row.utc.substring(0, 4))
-                                          .arg(row.snr === "" ? "   " : ((row.snr >= 0 ? "+" : "") + row.snr))
-                                          .arg(row.dt === "" ? "   " : row.dt)
-                                          .arg(row.freq)
-                                          .arg(row.text)
-                color: parent.lit ? "#101010" : row.hl === "b4" ? Theme.textDim : Theme.text
-                font.family: "monospace"
-                font.pixelSize: 13
-                elide: Text.ElideRight
-            }
-            onClicked: {
-                digi.flashKey = key
-                digi.flashAt = Date.now()
-                flashAnim.loops = 3
+    component DecodeRow: ItemDelegate {
+        required property var modelData
+        readonly property var row: modelData.row
+        readonly property string key: row.utc + "|" + row.freq + "|" + row.text
+        Component.onCompleted: {
+            const left = 1350 - (Date.now() - digi.flashAt)
+            if (digi.flashKey === key && left > 0) {
+                flashAnim.loops = Math.max(1, Math.ceil(left / 450))
                 flashAnim.restart()
-                Engine.digiAnswer(modelData.index)
             }
+        }
+        readonly property color ground: digi.hlColor(row.hl)
+        readonly property bool lit: row.hl && row.hl !== "b4"
+        Layout.fillWidth: true
+        implicitHeight: Math.max(32, decodeText.implicitHeight + 8)
+        padding: 2
+        Accessible.name: row.text
+        background: Rectangle {
+            color: parent.ground
+            radius: 4
+            // A tapped row flashes, so the answer shows where the
+            // finger is even with the status line scrolled away.
+            Rectangle {
+                id: flash
+                anchors.fill: parent
+                radius: 4
+                color: "#ffff00"
+                border.color: "#ffffff"
+                border.width: 2
+                opacity: 0
+            }
+        }
+        SequentialAnimation {
+            id: flashAnim
+            loops: 3
+            NumberAnimation { target: flash; property: "opacity"; to: 0.9; duration: 80 }
+            PauseAnimation { duration: 170 }
+            NumberAnimation { target: flash; property: "opacity"; to: 0; duration: 200 }
+        }
+        contentItem: Label {
+            id: decodeText
+            text: "%1 %2 %3 %4 %5  %6".arg(row.slice || " ")
+                                      .arg(row.utc.substring(0, 4))
+                                      .arg(row.snr === "" ? "   " : ((row.snr >= 0 ? "+" : "") + row.snr))
+                                      .arg(row.dt === "" ? "   " : row.dt)
+                                      .arg(row.freq)
+                                      .arg(row.text)
+            color: parent.lit ? "#101010" : row.hl === "b4" ? Theme.textDim : Theme.text
+            font.family: "monospace"
+            font.pixelSize: 13
+            elide: Text.ElideRight
+        }
+        onClicked: {
+            digi.flashKey = key
+            digi.flashAt = Date.now()
+            flashAnim.loops = 3
+            flashAnim.restart()
+            Engine.digiAnswer(modelData.index)
+        }
+    }
+    // List only: where the list starts, and the list in the rest of the
+    // view (four rows at least: the page scrolls a little if the settings
+    // open on a phone).
+    Item {
+        id: listTop
+        visible: digi.useList
+        Layout.fillWidth: true
+    }
+    Repeater {
+        model: digi.useList ? [] : digi.shown
+        delegate: DecodeRow {}
+    }
+    ListView {
+        id: decodeList
+        visible: digi.useList
+        Layout.fillWidth: true
+        Layout.preferredHeight: digi.useList ? Math.max(digi.listRows, digi.viewHeight - listTop.y - digi.spacing) : 0
+        clip: true
+        spacing: digi.spacing
+        boundsBehavior: Flickable.StopAtBounds
+        model: digi.useList ? digi.shown : []
+        readonly property bool overflows: contentHeight > height + 1
+        ScrollBar.vertical: ScrollBar { policy: decodeList.overflows ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff }
+        delegate: DecodeRow {
+            width: decodeList.width - (decodeList.overflows ? decodeList.ScrollBar.vertical.width + 2 : 0)
         }
     }
 }

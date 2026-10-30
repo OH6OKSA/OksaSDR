@@ -144,6 +144,7 @@ ColumnLayout {
         Layout.fillWidth: true
         TextField {
             id: dxHost
+            Accessible.name: qsTr("DX cluster server")
             Layout.fillWidth: true
             placeholderText: qsTr("Cluster server")
             text: Engine.dxCluster.host || ""
@@ -152,6 +153,7 @@ ColumnLayout {
             onEditingFinished: if (text !== Engine.dxCluster.host) Engine.setDxCluster("host", text)
         }
         TextField {
+            Accessible.name: qsTr("DX cluster port")
             Layout.preferredWidth: 72
             placeholderText: qsTr("Port")
             text: Engine.dxCluster.port || ""
@@ -164,6 +166,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         TextField {
+            Accessible.name: qsTr("DX cluster callsign")
             Layout.fillWidth: true
             placeholderText: qsTr("Callsign (the radio's if empty)")
             text: Engine.dxCluster.callsignFromRadio ? "" : (Engine.dxCluster.callsign || "")
@@ -216,6 +219,9 @@ ColumnLayout {
         font.pixelSize: 15
     }
     Slider {
+        Accessible.name: qsTr("3D floor")
+        Accessible.onIncreaseAction: { increase(); moved() }
+        Accessible.onDecreaseAction: { decrease(); moved() }
         visible: Engine.spectrum3D
         Layout.fillWidth: true
         from: 0; to: 24; stepSize: 1
@@ -254,6 +260,9 @@ ColumnLayout {
         font.pixelSize: 15
     }
     Slider {
+        Accessible.name: qsTr("3D gain")
+        Accessible.onIncreaseAction: { increase(); moved() }
+        Accessible.onDecreaseAction: { decrease(); moved() }
         visible: Engine.spectrum3D
         Layout.fillWidth: true
         from: 0; to: 100; stepSize: 1
@@ -278,6 +287,10 @@ ColumnLayout {
         }
         Slider {
             id: psSlider
+            Accessible.name: ps.title
+            // Sent on release; a screen reader's swipe is one step, sent at once.
+            Accessible.onIncreaseAction: { increase(); Engine.setPanDisplay(ps.key, Math.round(value)) }
+            Accessible.onDecreaseAction: { decrease(); Engine.setPanDisplay(ps.key, Math.round(value)) }
             Layout.fillWidth: true
             from: ps.from; to: ps.to; stepSize: 1
             onPressedChanged: if (!pressed) Engine.setPanDisplay(ps.key, Math.round(value))
@@ -303,6 +316,9 @@ ColumnLayout {
     }
     Label { text: qsTr("Black level  %1").arg(Engine.wfBlackLevel); color: Theme.textDim; font.pixelSize: 15 }
     Slider {
+        Accessible.name: qsTr("Black level")
+        Accessible.onIncreaseAction: { increase(); moved() }
+        Accessible.onDecreaseAction: { decrease(); moved() }
         Layout.fillWidth: true
         from: 0; to: 100; stepSize: 1
         value: Engine.wfBlackLevel
@@ -310,6 +326,9 @@ ColumnLayout {
     }
     Label { text: qsTr("Colour gain  %1").arg(Engine.wfColorGain); color: Theme.textDim; font.pixelSize: 15 }
     Slider {
+        Accessible.name: qsTr("Colour gain")
+        Accessible.onIncreaseAction: { increase(); moved() }
+        Accessible.onDecreaseAction: { decrease(); moved() }
         Layout.fillWidth: true
         from: 0; to: 100; stepSize: 1
         value: Engine.wfColorGain
@@ -334,6 +353,9 @@ ColumnLayout {
         font.pixelSize: 15
     }
     Slider {
+        Accessible.name: qsTr("Reference level")
+        Accessible.onIncreaseAction: { increase(); moved() }
+        Accessible.onDecreaseAction: { decrease(); moved() }
         Layout.fillWidth: true
         enabled: !Engine.traceAutoRange
         from: -140; to: 0; stepSize: 1
@@ -348,6 +370,9 @@ ColumnLayout {
         font.pixelSize: 15
     }
     Slider {
+        Accessible.name: qsTr("Range")
+        Accessible.onIncreaseAction: { increase(); moved() }
+        Accessible.onDecreaseAction: { decrease(); moved() }
         Layout.fillWidth: true
         from: 20; to: 150; stepSize: 5
         value: Engine.traceRangeDb

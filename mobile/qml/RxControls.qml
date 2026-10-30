@@ -89,6 +89,7 @@ ColumnLayout {
         // − / + for the last step (Larry Averbeck), and the level read out.
         FineSlider {
             id: squelchSlider
+            accessibleName: qsTr("Squelch level")
             Layout.fillWidth: true
             from: 0
             to: 100
@@ -105,9 +106,10 @@ ColumnLayout {
         }
     }
 
-    // Tracking notch filters: the global switch and +TNF (at the passband's
-    // centre, as the desktop); holding a finger on the display adds one
-    // there, a tap on a notch opens its settings.
+    // Tracking notch filters: the global switch (all notches on / off,
+    // kept) and + TNF (at the passband's centre, as the desktop); + TNF and
+    // a finger held on the display open a new notch's settings to confirm
+    // with Add, a tap on a notch opens its settings.
     RowLayout {
         Layout.fillWidth: true
         visible: Engine.tnfAvailable
@@ -120,10 +122,11 @@ ColumnLayout {
             onClicked: Engine.tnfEnabled = !Engine.tnfEnabled
         }
         AppButton {
+            objectName: "tnfNew"
             text: qsTr("+ TNF")
             enabled: Engine.canAddTnf
             Layout.preferredWidth: 72
-            onClicked: Engine.addTnf(0)
+            onClicked: Engine.requestTnfCreate()
         }
         Label {
             Layout.fillWidth: true

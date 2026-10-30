@@ -13,6 +13,9 @@ Item {
     property real heightScale: 0.8
     implicitWidth: row.implicitWidth + 12
     implicitHeight: Math.max(row.implicitHeight, Theme.touchTarget * heightScale)
+    Accessible.role: Accessible.Button
+    Accessible.name: qsTr("Tuning step %1").arg(label(Engine.stepHz))
+    Accessible.onPressAction: stepChooser.open()
 
     function label(hz) {
         return hz >= 1000 ? (hz / 1000).toFixed(hz % 1000 ? 1 : 0) + " kHz" : hz + " Hz"
@@ -29,12 +32,14 @@ Item {
         anchors.centerIn: parent
         spacing: 6
         Label {
+            Accessible.ignored: true
             text: qsTr("STEP")
             color: Theme.textDim
             font.pixelSize: stepButton.fontSize
             font.bold: true
         }
         Label {
+            Accessible.ignored: true
             text: stepButton.label(Engine.stepHz)
             color: Theme.accent
             font.pixelSize: stepButton.fontSize

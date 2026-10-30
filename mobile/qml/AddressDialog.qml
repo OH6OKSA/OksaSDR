@@ -101,6 +101,7 @@ Dialog {
         }
         TextField {
             id: nameField
+            Accessible.name: qsTr("Radio address or host name")
             objectName: "addressNameField"
             visible: dialog.letters
             Layout.fillWidth: true

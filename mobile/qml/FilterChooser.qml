@@ -103,6 +103,7 @@ Popup {
                 // − / + step on its own.
                 FineSlider {
                     id: levelSlider
+                    accessibleName: qsTr("%1 level").arg(levelRow.modelData)
                     Layout.fillWidth: true
                     Layout.minimumWidth: chooser.cellWidth * 3
                     from: 0; to: 100; stepSize: 1

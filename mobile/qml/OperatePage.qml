@@ -169,6 +169,7 @@ Page {
                 objectName: "networkBadge"
                 compact: page.narrowTop
                 Layout.rightMargin: Theme.spacing
+                Accessible.onPressAction: networkDialog.open()
                 TapHandler { onTapped: networkDialog.open() }
             }
             // App version and build, so a screenshot or report says which.
@@ -217,6 +218,7 @@ Page {
                 id: moreButton
                 visible: page.narrowTop
                 text: "⋯"
+                Accessible.name: qsTr("More")
                 font.pixelSize: 22
                 focusPolicy: Qt.NoFocus
                 onClicked: moreMenu.popup(moreButton, 0, moreButton.height)
@@ -278,6 +280,10 @@ Page {
                     font.pixelSize: Math.round((page.compact ? 40 : 56) * page.infoScale)
                     font.family: "monospace"
                     // Tap for direct entry.
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Frequency %1 kHz").arg((Engine.frequencyMhz * 1000).toFixed(3))
+                    Accessible.description: qsTr("Opens frequency entry")
+                    Accessible.onPressAction: freqDialog.open()
                     TapHandler { onTapped: freqDialog.open() }
                 }
                 // Mode, and the tuning step under it.

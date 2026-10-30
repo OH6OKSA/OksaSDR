@@ -112,6 +112,11 @@ RowLayout {
                     font.pixelSize: bar.compact ? Math.round(Theme.buttonFont * 0.9) : Theme.buttonFont
                     focusPolicy: Qt.NoFocus
                     onClicked: Engine.selectSlice(modelData.id)
+                    // The label is drawn below (no text of its own): named here.
+                    Accessible.name: qsTr("Slice %1, %2 kHz, %3%4").arg(modelData.letter)
+                                     .arg((modelData.frequency * 1000).toFixed(3)).arg(modelData.mode)
+                                     .arg(modelData.tx ? qsTr(", the transmit slice") : "")
+                    Accessible.description: qsTr("Hold for Make TX slice and Close slice")
                     // Under the pressed chip, not at the last pointer position.
                     onPressAndHold: sliceMenu.popup(chip, 0, chip.height)
                     contentItem: Item {
@@ -119,6 +124,7 @@ RowLayout {
                             anchors.centerIn: parent
                             spacing: 5
                             Text {
+                                Accessible.ignored: true
                                 anchors.verticalCenter: parent.verticalCenter
                                 // Compact (phone): the mode is beside the frequency already.
                                 text: chip.modelData.letter + " " + chip.modelData.frequency.toFixed(3)
@@ -136,6 +142,7 @@ RowLayout {
                                 color: Theme.transmitTag
                                 Text {
                                     id: txText
+                                    Accessible.ignored: true
                                     anchors.centerIn: parent
                                     text: "TX"
                                     font.pixelSize: chip.font.pixelSize

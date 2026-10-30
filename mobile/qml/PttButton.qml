@@ -32,9 +32,16 @@ AppButton {
     focusPolicy: Qt.NoFocus
     font.pixelSize: fontPx
     font.bold: true
+    // In words for a screen reader (its double tap and hold keys, as a
+    // finger's hold does).
+    Accessible.name: Engine.tuning ? qsTr("Tune, transmitting") : keyMode ? qsTr("CW key")
+                     : Engine.pttLatched ? qsTr("Transmitting, tap to stop") : Engine.transmitting ? qsTr("Transmitting")
+                     : qsTr("Push to talk")
+    Accessible.description: toggleMode ? qsTr("Tap to transmit, tap again to stop") : qsTr("Hold to transmit")
     // Ready, unavailable and transmitting must look different at a glance:
     // ready has a bright border and label, unavailable is dim.
     contentItem: Text {
+        Accessible.ignored: true
         visible: !ptt.paddleMode || !ptt.enabled
         text: ptt.text
         font: ptt.font
@@ -108,12 +115,15 @@ AppButton {
             property string symbol
             property string name
             radius: Theme.radius
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Paddle, %1").arg(pad.name)
             color: padTap.pressed ? Theme.transmit : Theme.pttReady
             border.width: 2
             border.color: padTap.pressed ? "white" : Theme.transmit
             Column {
                 anchors.centerIn: parent
                 Text {
+                    Accessible.ignored: true
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: pad.symbol
                     color: "white"
@@ -121,6 +131,7 @@ AppButton {
                     font.bold: true
                 }
                 Text {
+                    Accessible.ignored: true
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: pad.name
                     color: "white"

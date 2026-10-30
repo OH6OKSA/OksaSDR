@@ -60,6 +60,7 @@ Popup {
             }
             FineSlider {
                 id: agcT
+                accessibleName: qsTr("AGC threshold")
                 Layout.fillWidth: true
                 enabled: Engine.connectionState === "connected" && Engine.agcMode !== "off"
                 from: 0; to: 100; stepSize: 1
@@ -79,6 +80,7 @@ Popup {
             }
             FineSlider {
                 id: rfGain
+                accessibleName: qsTr("RF gain")
                 Layout.fillWidth: true
                 from: Engine.rfGainLow
                 to: Engine.rfGainHigh

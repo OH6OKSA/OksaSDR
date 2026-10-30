@@ -16,6 +16,7 @@ ColumnLayout {
         Layout.fillWidth: true
         TextField {
             id: nameField
+            Accessible.name: qsTr("Name for the current frequency")
             Layout.fillWidth: true
             placeholderText: qsTr("Name for the current frequency")
             font.pixelSize: 15
@@ -48,17 +49,26 @@ ColumnLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: Theme.touchTarget
             focusPolicy: Qt.NoFocus
+            // The row's labels in one name (the button has no text of its own);
+            // a name that is only the frequency (the radio's default) is left out.
+            readonly property string ownName: modelData.name && !modelData.name.startsWith(modelData.freq.toFixed(3))
+                                              ? modelData.name : ""
+            Accessible.name: ownName ? qsTr("Memory %1, %2 kHz, %3").arg(ownName).arg((modelData.freq * 1000).toFixed(3)).arg(modelData.mode)
+                                     : qsTr("Memory, %1 kHz, %2").arg((modelData.freq * 1000).toFixed(3)).arg(modelData.mode)
+            Accessible.description: qsTr("Tap to tune; hold to edit or delete")
             contentItem: RowLayout {
                 spacing: Theme.spacing
                 Label {
+                    Accessible.ignored: true
                     text: (modelData.freq).toFixed(4)
                     font.family: "monospace"
                     font.pixelSize: 15
                     color: Theme.buttonText
                 }
-                Label { text: modelData.mode; font.pixelSize: 13; color: Theme.buttonTextDim }
+                Label { Accessible.ignored: true; text: modelData.mode; font.pixelSize: 13; color: Theme.buttonTextDim }
                 // FM repeater: the shift and the CTCSS tone, e.g. "−7.6 88.5".
                 Label {
+                    Accessible.ignored: true
                     visible: text.length > 0
                     text: (modelData.dir === "down" ? "\u2212" + modelData.offset.toFixed(1)
                            : modelData.dir === "up" ? "+" + modelData.offset.toFixed(1) : "")
@@ -67,6 +77,7 @@ ColumnLayout {
                     color: Theme.accent
                 }
                 Label {
+                    Accessible.ignored: true
                     text: modelData.name
                     font.pixelSize: 14
                     color: Theme.buttonText
@@ -169,6 +180,7 @@ ColumnLayout {
                 Label { text: qsTr("Name"); color: Theme.textDim; font.pixelSize: Theme.smallFont }
                 TextField {
                     id: nameEdit
+                    Accessible.name: qsTr("Memory name")
                     Layout.fillWidth: true
                     font.pixelSize: 15
                     onAccepted: freqEdit.forceActiveFocus()
@@ -178,6 +190,7 @@ ColumnLayout {
                     Layout.fillWidth: true
                     TextField {
                         id: freqEdit
+                        Accessible.name: qsTr("Memory frequency in MHz")
                         Layout.fillWidth: true
                         font.pixelSize: 15
                         font.family: "monospace"
@@ -258,6 +271,7 @@ ColumnLayout {
                     }
                     TextField {
                         id: shiftEdit
+                        Accessible.name: qsTr("Repeater shift in MHz")
                         Layout.preferredWidth: 80
                         font.pixelSize: 15
                         horizontalAlignment: TextInput.AlignRight
@@ -287,6 +301,9 @@ ColumnLayout {
                         onClicked: editDialog.ctcss = true
                     }
                     ComboBox {
+                        Accessible.name: qsTr("CTCSS tone")
+                        // Its text field would be read again, without a name.
+                        Component.onCompleted: contentItem.Accessible.ignored = true
                         Layout.fillWidth: true
                         Layout.preferredWidth: 2
                         Layout.preferredHeight: Theme.touchTarget

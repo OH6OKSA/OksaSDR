@@ -157,6 +157,12 @@ Item {
     // Open the chooser right under this meter; the popup's margins keep it
     // inside the window (the right meter's opens leftwards).
     TapHandler { onTapped: chooser.open() }
+    // One button to a screen reader: what it measures and the reading.
+    Accessible.role: Accessible.Button
+    Accessible.name: qsTr("%1 meter: %2").arg(meter.kind === "S" ? qsTr("S") : meter.kind)
+                     .arg(meter.reading.live ? (meter.analog ? gauge.valueText : bars.valueText) : qsTr("no reading"))
+    Accessible.description: qsTr("Choose what the meter shows")
+    Accessible.onPressAction: chooser.open()
 
     // Style and what the face shows in receive and in transmit, as the
     // app's buttons: the current choice of each is the dark (checked) one.

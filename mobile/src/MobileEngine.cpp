@@ -1427,6 +1427,7 @@ void MobileEngine::wireTransmit()
     connect(&rm, &RadioModel::memoryRemoved, this, &MobileEngine::memoriesChanged);
     connect(&rm, &RadioModel::memoriesCleared, this, &MobileEngine::memoriesChanged);
     connect(&rm.tnfModel(), &TnfModel::tnfChanged, this, &MobileEngine::tnfsChanged);
+    connect(&rm.tnfModel(), &TnfModel::tnfChanged, this, &MobileEngine::applyPendingTnf);
     connect(&rm.tnfModel(), &TnfModel::tnfRemoved, this, &MobileEngine::tnfsChanged);
     connect(&rm.tnfModel(), &TnfModel::globalEnabledChanged, this, &MobileEngine::tnfsChanged);
     connect(&rm.transmitModel(), &TransmitModel::profileListChanged, this, &MobileEngine::profilesChanged);
@@ -4812,6 +4813,60 @@ void MobileEngine::addTnf(double freqMhz)
     }
     qCInfo(lcMobile) << "add TNF at" << freqMhz;
     m_session.radioModel().tnfModel().createTnf(freqMhz);
+}
+
+void MobileEngine::addTnfWith(double freqMhz, int widthHz, int depth, bool permanent)
+{
+    if (!canAddTnf() || freqMhz <= 0.0) {
+        return;
+    }
+    PendingTnf& p = m_pendingTnf;
+    p = PendingTnf{};
+    p.freqMhz = freqMhz;
+    p.widthHz = widthHz;
+    p.depth = depth;
+    p.permanent = permanent;
+    for (const TnfEntry& t : m_session.radioModel().tnfModel().tnfs()) {
+        p.known.insert(t.id);
+    }
+    p.untilMs = QDateTime::currentMSecsSinceEpoch() + 8000;
+    qCInfo(lcMobile) << "add TNF at" << freqMhz << "width" << widthHz << "depth" << depth << "permanent" << permanent;
+    m_session.radioModel().tnfModel().createTnf(freqMhz);
+}
+
+void MobileEngine::applyPendingTnf(int id)
+{
+    PendingTnf& p = m_pendingTnf;
+    if (p.untilMs == 0 || p.known.contains(id)) {
+        return;
+    }
+    if (QDateTime::currentMSecsSinceEpoch() > p.untilMs) {
+        p.untilMs = 0;
+        return;
+    }
+    const TnfEntry* t = m_session.radioModel().tnfModel().tnf(id);
+    if (!t || std::abs(t->freqMhz - p.freqMhz) > 0.0005) {
+        return;
+    }
+    // Cleared first: each setTnf below reports the notch changed again.
+    p.untilMs = 0;
+    qCInfo(lcMobile) << "TNF" << id << "settings: width" << p.widthHz << "depth" << p.depth << "permanent" << p.permanent;
+    if (t->widthHz != p.widthHz) {
+        setTnf(id, QStringLiteral("width"), p.widthHz);
+    }
+    if (tnfHasDepth() && t->depthDb != p.depth) {
+        setTnf(id, QStringLiteral("depth"), p.depth);
+    }
+    if (t->permanent != p.permanent) {
+        setTnf(id, QStringLiteral("permanent"), p.permanent);
+    }
+}
+
+void MobileEngine::requestTnfCreate()
+{
+    if (canAddTnf() && m_slice) {
+        emit tnfCreateRequested(m_slice->frequency() + (m_slice->filterLow() + m_slice->filterHigh()) / 2.0 / 1e6);
+    }
 }
 
 void MobileEngine::setTnf(int id, const QString& key, const QVariant& value)

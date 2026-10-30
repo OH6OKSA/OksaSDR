@@ -3,8 +3,9 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import AetherMobile
 
-// The operating controls in sections (DSP, Audio, TX, CW, View,
-// Profiles, Memory). In the slide-in drawer they are tabs, one at a time.
+// The operating controls in sections (DSP, Audio, TX, eSSB, CW, View,
+// Profiles, Memory, Log, FTx, FreeDV). In the slide-in drawer they are
+// tabs, one at a time.
 // Pinned to the iPad's side (multiSelect) they are toggle buttons, as
 // AetherSDR's applet buttons: every chosen section shows, one under another.
 ColumnLayout {
@@ -24,6 +25,7 @@ ColumnLayout {
         { name: "DSP", button: qsTr("DSP"), title: qsTr("DSP"), component: dspSection },
         { name: "Audio", button: qsTr("Audio"), title: qsTr("Audio"), component: audioSection },
         { name: "TX", button: qsTr("TX"), title: qsTr("TX"), component: txSection },
+        { name: "ESSB", button: qsTr("eSSB"), title: qsTr("eSSB"), component: essbSection },
         { name: "CW", button: qsTr("CW"), title: qsTr("CW"), component: cwSection },
         { name: "View", button: qsTr("View"), title: qsTr("View"), component: viewSection },
         { name: "Profiles", button: qsTr("Prof"), title: qsTr("Profiles"), component: profileSection },
@@ -32,8 +34,17 @@ ColumnLayout {
         { name: "Digi", button: qsTr("FTx"), title: qsTr("FT8 / FT4"), component: digiSection },
         { name: "FreeDV", button: qsTr("FreeDV"), title: qsTr("FreeDV"), component: freedvSection },
     ]
-    // One row of all on a wide panel, else rows of five.
-    readonly property int buttonColumns: panel.width >= 640 ? sections.length : 5
+    // One row of all on a wide panel, else rows of six (6 + 5; the twelfth
+    // is kept for the amplifier and tuner).
+    readonly property int buttonColumns: panel.width >= 700 ? sections.length : 6
+    // The widest label at the buttons' type size: where six to a row are
+    // narrower (a side drawer, 698 x 668 cut "FreeDV"), every section
+    // button's type shrinks alike until it fits, down to 12 px.
+    FontMetrics { id: buttonMetrics; font.pixelSize: Theme.buttonFont }
+    readonly property real widestButton: Math.max(...sections.map(s => buttonMetrics.advanceWidth(s.button)))
+    function buttonFont(width) {
+        return Math.max(12, Math.min(Theme.buttonFont, Math.floor(Theme.buttonFont * (width - 6) / widestButton)))
+    }
 
     function toggleSection(name) {
         const list = Engine.pinnedSections.slice()
@@ -51,8 +62,8 @@ ColumnLayout {
     }
 
     // ---- Drawer: one section at a time, chosen from a button grid ----
-    // A grid rather than a tab bar: on an iPhone all seven sections show at
-    // once (5 + 4) instead of hiding behind a scrolling strip.
+    // A grid rather than a tab bar: on an iPhone all the sections show at
+    // once (6 + 5) instead of hiding behind a scrolling strip.
     Item {
         id: tabs
         objectName: "controlsTabs"
@@ -73,6 +84,7 @@ ColumnLayout {
                     required property var modelData
                     text: modelData.button
                     checked: tabs.currentIndex === index
+                    font.pixelSize: panel.buttonFont(width)
                     leftPadding: 2
                     rightPadding: 2
                     Layout.fillWidth: true
@@ -98,6 +110,9 @@ ColumnLayout {
                 Loader {
                     width: tabScroll.availableWidth
                     sourceComponent: tabScroll.modelData.component
+                    // A tab that can fill the view (FTx's List only) gets its height.
+                    onLoaded: if (item.hasOwnProperty("viewHeight"))
+                                  item.viewHeight = Qt.binding(() => tabScroll.availableHeight)
                 }
             }
         }
@@ -117,6 +132,7 @@ ColumnLayout {
                 required property var modelData
                 text: modelData.button
                 checked: Engine.pinnedSections.indexOf(modelData.name) >= 0
+                font.pixelSize: panel.buttonFont(width)
                 leftPadding: 2
                 rightPadding: 2
                 Layout.fillWidth: true
@@ -264,6 +280,7 @@ ColumnLayout {
         }
     }
     Component { id: txSection; TxControls {} }
+    Component { id: essbSection; EssbControls {} }
     Component { id: cwSection; CwControls {} }
     Component { id: viewSection; DisplayControls {} }
     Component { id: profileSection; ProfileControls {} }

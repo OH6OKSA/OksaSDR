@@ -213,6 +213,9 @@ class MobileEngine : public QObject {
     // Which decodes the list shows: "all", "cq", "new" (a new continent, CQ
     // zone or DXCC, also per band) or "dxcc" (a new DXCC, also per band).
     Q_PROPERTY(QString digiFilter READ digiFilter WRITE setDigiFilter NOTIFY digiFilterChanged)
+    // FTx tab in the drawer: the decode list scrolls on its own under fixed
+    // main buttons (Michael Whaley's option B), or the whole tab scrolls.
+    Q_PROPERTY(bool digiListScroll READ digiListScroll WRITE setDigiListScroll NOTIFY digiListScrollChanged)
     // RADE digital voice in the app (FreeDV Radio Autoencoder): on or off,
     // whether this build has it, and its receive state (synced, snr,
     // callsign of the last end of over).
@@ -791,6 +794,8 @@ public:
     QVariantList digiDecodes() const { return m_digiDecodes; }
     QString digiFilter() const { return m_digiFilter; }
     void setDigiFilter(const QString& filter);
+    bool digiListScroll() const;
+    void setDigiListScroll(bool on);
     QVariantList digiFrequencies() const;
     // Calls CQ in the next slot, and keeps calling until someone answers.
     Q_INVOKABLE void digiCallCq();
@@ -884,6 +889,14 @@ public:
     // A notch at freqMhz, or at the passband's centre when 0 (as the
     // desktop's +TNF).
     Q_INVOKABLE void addTnf(double freqMhz = 0.0);
+    // A notch confirmed in the display's notch panel (a hold on the display
+    // or + TNF opens it, nothing is sent until Add): created at freqMhz, then
+    // given the panel's width, depth and permanent once the radio reports it
+    // (a Flex creates a notch with its frequency only).
+    Q_INVOKABLE void addTnfWith(double freqMhz, int widthHz, int depth, bool permanent);
+    // + TNF: the display's notch panel at the passband's centre
+    // (tnfCreateRequested), to confirm there.
+    Q_INVOKABLE void requestTnfCreate();
     // key: freq (MHz), width (Hz), depth (1-3) or permanent (bool).
     Q_INVOKABLE void setTnf(int id, const QString& key, const QVariant& value);
     Q_INVOKABLE void removeTnf(int id);
@@ -1289,12 +1302,14 @@ signals:
     void digiDecodesChanged();
     void cwAutotuneRequested();
     void digiFilterChanged();
+    void digiListScrollChanged();
     void callLookupChanged();
     void lastSpotCallChanged();
     void qrzChanged();
     void onlineLogChanged();
     void logger32Changed();
     void tnfsChanged();
+    void tnfCreateRequested(double freqMhz);
     void txChainChanged();
     void spotsChanged();
     void dxClusterChanged();
@@ -1761,6 +1776,18 @@ private:
     QTimer m_panPixelsTimer;
     QTimer m_panMoveTimer;
     double m_pendingPanCenterMhz{0.0};
+    // addTnfWith's settings until the radio reports the new notch: the ids
+    // there were before it was asked, and until when to wait.
+    struct PendingTnf {
+        double freqMhz{0.0};
+        int widthHz{0};
+        int depth{0};
+        bool permanent{false};
+        QSet<int> known;
+        qint64 untilMs{0};
+    };
+    PendingTnf m_pendingTnf;
+    void applyPendingTnf(int id);
     QTimer m_panPreviewEndTimer;
     double m_panPreviewMhz{0.0};
     qint64 m_panPreviewUntilMs{0};

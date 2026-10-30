@@ -150,6 +150,7 @@ Page {
                         }
                         TextField {
                             id: emailField
+                            Accessible.name: qsTr("SmartLink e-mail")
                             Layout.fillWidth: true
                             text: Engine.smartLinkEmail
                             placeholderText: qsTr("E-mail")
@@ -158,6 +159,7 @@ Page {
                         }
                         PasswordField {
                             id: passwordField
+                            Accessible.name: qsTr("SmartLink password")
                             Layout.fillWidth: true
                             placeholderText: qsTr("Password")
                             font.pixelSize: 17

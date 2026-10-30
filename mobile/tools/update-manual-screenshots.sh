@@ -121,21 +121,17 @@ PLAN
 
 printf 'wait %s\nshot ipad-portrait\n' "$FILL" | plan ipad-portrait 1024x1366 "${src[@]}" --controls visible
 
-tabs=(dsp audio tx cw view profiles memory log digi freedv)
+tabs=(dsp audio tx essb cw view profiles memory log digi freedv)
 {
     echo "wait $FILL"
     echo "shot phone-portrait"
     echo "tap 0.93,0.03"
     echo "shot phone-menu"
     echo "close"
-    echo "drawer 6"
+    echo "drawer 7"
     echo "popup memoryEditDialog"
     echo "shot memory-edit"
     echo "close"
-    echo "drawer 2"
-    echo "scroll 580"
-    echo "shot tx-processing"
-    echo "scroll 0"
     for i in "${!tabs[@]}"; do
         echo "drawer $i"
         echo "shot tab-${tabs[$i]}"
@@ -181,7 +177,6 @@ jpg network 460x600+448+212
 jpg setup 640x600+363+50
 jpg tnf 967x492+13+354 800x
 jpg memory-edit 440x380+0+280
-jpg tx-processing 440x520+0+436
 for t in "${tabs[@]}"; do
     jpg "tab-$t" 440x520+0+436
 done

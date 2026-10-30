@@ -49,6 +49,7 @@ Popup {
             }
             Label { text: qsTr("Developer link"); color: Theme.text; font.pixelSize: 15 }
             TextField {
+                Accessible.name: qsTr("Developer link PC address")
                 Layout.fillWidth: true
                 text: DevLink.host
                 placeholderText: qsTr("PC address")

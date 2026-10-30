@@ -499,6 +499,22 @@ void MobileEngine::setDigiFilter(const QString& filter)
     emit digiFilterChanged();
 }
 
+bool MobileEngine::digiListScroll() const
+{
+    return AppSettings::instance().value(QStringLiteral("MobileDigiListScroll"), QStringLiteral("False")).toString()
+        == QLatin1String("True");
+}
+
+void MobileEngine::setDigiListScroll(bool on)
+{
+    if (on == digiListScroll()) {
+        return;
+    }
+    AppSettings::instance().setValue(QStringLiteral("MobileDigiListScroll"), on ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    emit digiListScrollChanged();
+}
+
 void MobileEngine::bindDigiSlice(SliceModel* slice)
 {
     if (slice == m_digiSlice.data()) {

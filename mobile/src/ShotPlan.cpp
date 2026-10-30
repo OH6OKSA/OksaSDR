@@ -2,6 +2,7 @@
 
 #include "MobileEngine.h"
 
+#include <QAccessible>
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
@@ -78,9 +79,9 @@ QList<QObject*> findNamed(QObject* root, const QString& name)
 
 // The tablet panel's sections, by the drawer's tab order.
 const QStringList kSections{QStringLiteral("DSP"),      QStringLiteral("Audio"),  QStringLiteral("TX"),
-                            QStringLiteral("CW"),       QStringLiteral("View"),   QStringLiteral("Profiles"),
-                            QStringLiteral("Memory"),   QStringLiteral("Log"),    QStringLiteral("Digi"),
-                            QStringLiteral("FreeDV")};
+                            QStringLiteral("ESSB"),     QStringLiteral("CW"),     QStringLiteral("View"),
+                            QStringLiteral("Profiles"), QStringLiteral("Memory"), QStringLiteral("Log"),
+                            QStringLiteral("Digi"),     QStringLiteral("FreeDV")};
 
 // Time a command's effect needs before the next one (open animations).
 constexpr int kSettleMs = 900;
@@ -319,11 +320,13 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
             QWindowSystemInterface::flushWindowSystemEvents();
         }
-    } else if (command == QLatin1String("tapmhz")) {
+    } else if (command == QLatin1String("tapmhz") || command == QLatin1String("holdmhz")) {
         // On the spectrum at that frequency, a quarter down its height: a tap
         // at a known distance from a signal (CW autotune), wherever the view
-        // is.
-        const double mhz = arg.toDouble();
+        // is; holdmhz MHZ,MS keeps it pressed MS (a new notch).
+        const QStringList parts = arg.split(QLatin1Char(','));
+        const double mhz = parts.at(0).toDouble();
+        const int holdMs = command == QLatin1String("holdmhz") && parts.size() == 2 ? parts.at(1).toInt() : 0;
         const double low = m_engine.panCenterMhz() - m_engine.panBandwidthMhz() / 2.0;
         QQuickItem* spectrum = nullptr;
         for (QObject* root : m_qml.rootObjects()) {
@@ -338,10 +341,23 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             const QPointF local((mhz - low) / m_engine.panBandwidthMhz() * spectrum->width(), spectrum->height() * 0.12);
             const QPointF p = spectrum->mapToScene(local);
             const QPointF g = window->mapToGlobal(p);
-            qInfo().noquote() << QStringLiteral("shot-plan: tap at %1 MHz (x %2)").arg(mhz, 0, 'f', 6).arg(qRound(p.x()));
+            qInfo().noquote() << QStringLiteral("shot-plan: %1 at %2 MHz (x %3)").arg(holdMs > 0 ? QStringLiteral("hold") : QStringLiteral("tap"))
+                                     .arg(mhz, 0, 'f', 6).arg(qRound(p.x()));
             QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
-            QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
             QWindowSystemInterface::flushWindowSystemEvents();
+            if (holdMs > 0) {
+                QPointer<QQuickWindow> w(window);
+                QTimer::singleShot(holdMs, this, [w, p, g] {
+                    if (w) {
+                        QWindowSystemInterface::handleMouseEvent(w, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+                        QWindowSystemInterface::flushWindowSystemEvents();
+                    }
+                });
+                *delayMs = holdMs + 1500;
+            } else {
+                QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+                QWindowSystemInterface::flushWindowSystemEvents();
+            }
         } else {
             qWarning() << "shot-plan: no spectrum to tap";
             m_failed = true;
@@ -400,6 +416,30 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             m_engine.setRadioSetup(arg.left(eq), arg.mid(eq + 1));
         }
         *delayMs = 1000;
+    } else if (command == QLatin1String("tapname")) {
+        // A finger on the named control's middle, through the window system
+        // (click only emits its clicked): whatever covers it, a popup's
+        // press-outside close included, acts as for a user.
+        QQuickItem* target = nullptr;
+        for (QObject* root : m_qml.rootObjects()) {
+            for (QObject* o : findNamed(root, arg)) {
+                auto* item = qobject_cast<QQuickItem*>(o);
+                if (item && item->isVisible()) {
+                    target = item;
+                }
+            }
+        }
+        if (window && target) {
+            const QPointF p = target->mapToScene(QPointF(target->width() / 2.0, target->height() / 2.0));
+            const QPointF g = window->mapToGlobal(p);
+            qInfo().noquote() << QStringLiteral("shot-plan: tap %1 at %2,%3").arg(arg).arg(qRound(p.x())).arg(qRound(p.y()));
+            QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
+            QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+            QWindowSystemInterface::flushWindowSystemEvents();
+        } else {
+            qWarning() << "shot-plan: no visible" << arg;
+            m_failed = true;
+        }
     } else if (command == QLatin1String("click")) {
         bool clicked = false;
         for (QObject* root : m_qml.rootObjects()) {
@@ -414,6 +454,98 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         if (!clicked) {
             qWarning() << "shot-plan: no visible" << arg;
         }
+    } else if (command == QLatin1String("span")) {
+        // The pan this many kHz wide, centred on the slice: a plan's
+        // frequencies then land where it expects (the radio keeps each
+        // client's last zoom, 3 kHz one run, 200 the next).
+        if (m_engine.panBandwidthMhz() > 0.0) {
+            m_engine.zoom(arg.toDouble() / 1000.0 / m_engine.panBandwidthMhz());
+        }
+        *delayMs = 2000;
+    } else if (command == QLatin1String("a11y") || command == QLatin1String("a11ypress")
+               || command == QLatin1String("a11yinc") || command == QLatin1String("a11ydec")) {
+        // What a screen reader is given: a11y on turns accessibility on (the
+        // controls name themselves only then); a11y logs every element in
+        // view with its role and name, and the buttons without a name;
+        // a11ypress NAME does the named element's press action, as a
+        // VoiceOver or TalkBack double tap.
+        // A name can have spaces: the rest of the line.
+        const QString name = args.join(QLatin1Char(' '));
+        if (name == QLatin1String("on")) {
+            QAccessible::setActive(true);
+            *delayMs = 1000;
+            return;
+        }
+        QList<QAccessibleInterface*> found;
+        int named = 0;
+        int unnamed = 0;
+        const std::function<void(QAccessibleInterface*, int)> walk = [&](QAccessibleInterface* a, int depth) {
+            if (!a || !a->isValid() || depth > 60 || a->state().invisible) {
+                return;
+            }
+            // A password field gives no name (Qt's choice); its description
+            // (the placeholder) says what it is.
+            const QString text = a->state().passwordEdit && a->text(QAccessible::Name).isEmpty()
+                ? a->text(QAccessible::Description) : a->text(QAccessible::Name);
+            const QAccessible::Role role = a->role();
+            const bool actionable = role == QAccessible::Button || role == QAccessible::CheckBox
+                || role == QAccessible::RadioButton || role == QAccessible::Slider || role == QAccessible::ComboBox
+                || role == QAccessible::EditableText || role == QAccessible::MenuItem;
+            if (command != QLatin1String("a11y")) {
+                if (a->text(QAccessible::Name) == name) {
+                    found << a;
+                }
+            } else if (actionable || !text.isEmpty()) {
+                const QRect r = a->rect();
+                if (actionable && text.trimmed().isEmpty()) {
+                    ++unnamed;
+                } else if (actionable) {
+                    ++named;
+                }
+                qInfo().noquote() << QStringLiteral("shot-plan: a11y %1 %2 \"%3\" at %4,%5 %6x%7")
+                                         .arg(actionable && text.trimmed().isEmpty() ? QStringLiteral("UNNAMED") : QStringLiteral("-"))
+                                         .arg(int(role), 0, 16).arg(text).arg(r.x()).arg(r.y()).arg(r.width()).arg(r.height());
+            }
+            for (int i = 0; i < a->childCount(); ++i) {
+                walk(a->child(i), depth + 1);
+            }
+        };
+        if (window) {
+            walk(QAccessible::queryAccessibleInterface(window), 0);
+        }
+        if (command != QLatin1String("a11y")) {
+            QAccessibleActionInterface* action = found.isEmpty() ? nullptr : found.first()->actionInterface();
+            if (action) {
+                qInfo().noquote() << "shot-plan:" << command << name << "of" << found.size();
+                action->doAction(command == QLatin1String("a11yinc")   ? QAccessibleActionInterface::increaseAction()
+                                 : command == QLatin1String("a11ydec") ? QAccessibleActionInterface::decreaseAction()
+                                                                       : QAccessibleActionInterface::pressAction());
+            } else {
+                qWarning().noquote() << "shot-plan:" << command << "no element" << name << "with that action";
+                m_failed = true;
+            }
+        } else {
+            qInfo().noquote() << QStringLiteral("shot-plan: a11y %1 controls named, %2 without a name").arg(named).arg(unnamed);
+        }
+    } else if (command == QLatin1String("txchain")) {
+        QStringList kv;
+        const QVariantMap chain = m_engine.txChain();
+        for (auto it = chain.cbegin(); it != chain.cend(); ++it) {
+            kv << it.key() + QLatin1Char('=') + it.value().toString();
+        }
+        qInfo().noquote() << "shot-plan: txchain" << kv.join(QLatin1Char(' '));
+    } else if (command == QLatin1String("tnfs")) {
+        QStringList list;
+        for (const QVariant& v : m_engine.tnfs()) {
+            const QVariantMap t = v.toMap();
+            list << QStringLiteral("%1@%2/%3Hz/d%4%5").arg(t.value(QStringLiteral("id")).toInt())
+                        .arg(t.value(QStringLiteral("freq")).toDouble(), 0, 'f', 6).arg(t.value(QStringLiteral("width")).toInt())
+                        .arg(t.value(QStringLiteral("depth")).toInt()).arg(t.value(QStringLiteral("permanent")).toBool() ? QStringLiteral("/p") : QString());
+        }
+        qInfo().noquote() << "shot-plan: tnfs" << list.size() << list.join(QLatin1Char(' ')) << "frequency"
+                          << QString::number(m_engine.frequencyMhz(), 'f', 6) << "pan"
+                          << QString::number(m_engine.panCenterMhz() - m_engine.panBandwidthMhz() / 2.0, 'f', 5)
+                          << QString::number(m_engine.panCenterMhz() + m_engine.panBandwidthMhz() / 2.0, 'f', 5);
     } else if (command == QLatin1String("layout")) {
         logLayout();
     } else if (command == QLatin1String("size")) {

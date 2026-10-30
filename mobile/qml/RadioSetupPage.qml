@@ -72,6 +72,7 @@ Popup {
         // except while a finger is on it.
         FineSlider {
             id: slider
+            accessibleName: level.label
             Layout.fillWidth: true
             from: level.from
             to: level.to
@@ -96,6 +97,7 @@ Popup {
             Layout.fillWidth: true
             TextField {
                 id: field
+                Accessible.name: textSetting.label
                 Layout.fillWidth: true
                 font.pixelSize: 17
                 placeholderText: textSetting.current.length > 0 ? textSetting.current : textSetting.hint

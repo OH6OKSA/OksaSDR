@@ -30,16 +30,27 @@ class MobileEngine;
 //   meter-style L,R         analog, bar or two, each side (remembered)
 //   tap FX,FY               tap at this fraction of the window
 //   tapmhz MHZ              tap the spectrum at that frequency
+//   holdmhz MHZ,MS          press the spectrum there for MS (a new notch)
 //   hold FX,FY,MS           press there for MS (auto-repeat), logging the frequency
 //   freq MHZ                tune the active slice there (to put it back)
+//   span KHZ                the pan this wide, centred on the slice
 //   mode NAME               the active slice's mode (USB shows the squelch row;
 //                           put the mode back after)
 //   click NAME              clicked() on the visible buttons with this objectName
+//   tapname NAME            a tap through the window on that control's middle
 //   ready                   wait until connected with a slice (up to 30 s),
 //                           then 4 s for the display
 //   setup KEY=VALUE         a Radio Setup value, as the page sets it (e.g.
 //                           showTxInWaterfall=0; put it back after)
 //   size WxH                resize the window (a phone turning: WxH swapped)
+//   tnfs                    log the notches the radio has and the frequency
+//   txchain                 log this device's microphone processing (ESSB)
+//   a11y on|                on: accessibility on; bare: log the screen reader's
+//                           elements in view (role, name) and the unnamed buttons
+//   a11ypress NAME          the named element's press action (a screen
+//                           reader's double tap)
+//   a11yinc NAME            its increase action (a swipe up on a slider)
+//   a11ydec NAME            its decrease action (a swipe down)
 //   layout                  log the page's layout decisions and the info
 //                           panels' geometry (layout-diff.py compares runs)
 //

@@ -41,6 +41,13 @@ Rectangle {
         id: spectrum
         anchors.fill: parent
         engine: Engine
+        // To a screen reader: what is shown (tuning by it is to come).
+        Accessible.role: Accessible.Graphic
+        Accessible.name: Engine.panBandwidthMhz > 0
+                         ? qsTr("Spectrum and waterfall, %1 to %2 MHz")
+                               .arg((Engine.panCenterMhz - Engine.panBandwidthMhz / 2).toFixed(3))
+                               .arg((Engine.panCenterMhz + Engine.panBandwidthMhz / 2).toFixed(3))
+                         : qsTr("Spectrum and waterfall")
         // The 3D surface needs height; the desktop gives it about half. It
         // stretches with its area, so it keeps iPad landscape's shape (height
         // 0.158 of the width) in every orientation and the waterfall takes
@@ -316,9 +323,10 @@ Rectangle {
     // notch's width through spectrum and waterfall (temporary yellow,
     // permanent green, dimmer while TNF is off) with a handle on top, deeper
     // notches a bigger one, outlined so it shows over the waterfall. A tap opens its settings; holding a finger on
-    // the display adds one there.
-    // Screenshots without a notch on the radio: a sample one, drawn here
-    // only (tnfPopup.preview()); nothing is sent.
+    // the display opens a new one's settings there, added only by Add.
+    // Drawn here only (nothing sent): that new notch until Add
+    // (tnfPopup.create()), and for screenshots without a notch on the radio
+    // a sample one (tnfPopup.preview()).
     property var previewTnfs: []
     readonly property var shownTnfs: Engine.tnfs.concat(previewTnfs)
     Repeater {
@@ -386,7 +394,9 @@ Rectangle {
                 }
             }
             TapHandler {
+                enabled: notch.modelData.id >= 0
                 onTapped: {
+                    tnfPopup.creating = false
                     tnfPopup.tnfId = notch.modelData.id
                     tnfPopup.anchorX = notch.cx
                     tnfPopup.open()
@@ -679,6 +689,8 @@ Rectangle {
             }
             delegate: Label {
                 required property int modelData
+                // The scale's numbers one by one say nothing to a screen reader.
+                Accessible.ignored: true
                 x: 3
                 y: (scaleStrip.topDbm - modelData) / scaleStrip.range * scaleStrip.height - height / 2
                 visible: y > 0 && y < scaleStrip.height - height
@@ -798,6 +810,7 @@ Rectangle {
             delegate: AppButton {
                 required property var modelData
                 text: modelData.label
+                Accessible.name: modelData.factor > 1 ? qsTr("Zoom out") : qsTr("Zoom in")
                 font.pixelSize: Math.round(Theme.buttonFont * 1.3)
                 width: Math.max(32, zoomRow.stepWidth / 2 - 1)
                 height: Theme.touchTarget
@@ -1114,6 +1127,28 @@ Rectangle {
         objectName: "tnfPopup"
         property int tnfId: -1
         property real anchorX: panArea.width / 2
+        // A new notch to confirm (a hold on the display, + TNF): drawn here
+        // only until Add creates it on the radio with the settings chosen;
+        // Close or a tap outside leaves none (a stray hold added one at once).
+        property bool creating: false
+        function create(mhz) {
+            panArea.previewTnfs = [{ id: -1, freq: mhz, width: 100, depth: 1, permanent: false }]
+            creating = true
+            tnfId = -1
+            anchorX = (mhz - Engine.panCenterMhz) / Engine.panBandwidthMhz * panArea.width + panArea.width / 2
+            if (opened) place()
+            else open()
+        }
+        // A setting: the new notch's (drawn here) or the radio's.
+        function set(key, value) {
+            if (creating) {
+                const t = Object.assign({}, panArea.previewTnfs[0])
+                t[key] = value
+                panArea.previewTnfs = [t]
+            } else {
+                Engine.setTnf(tnfId, key, value)
+            }
+        }
         readonly property var tnf: {
             const list = panArea.shownTnfs
             for (let i = 0; i < list.length; ++i) {
@@ -1127,12 +1162,17 @@ Rectangle {
             if (!tnf) return
             if (n === 0) nudgeMhz = tnf.freq
             nudgeMhz += dir * 10e-6
-            Engine.setTnf(tnfId, "freq", nudgeMhz)
+            set("freq", nudgeMhz)
         }
         // Gone (removed here or by another client): close.
         onTnfChanged: if (opened && !tnf) close()
-        // The screenshot's sample notch goes with its popup.
-        onClosed: panArea.previewTnfs = []
+        // The new or the screenshot's sample notch goes with its popup.
+        // Only when there is one: closed because Remove took its notch from
+        // shownTnfs, a write here would loop on that binding. creating stays
+        // (each open sets it): cleared here, the popup stopped being modal
+        // before Qt decided to stop the press that closed it, and that press
+        // tuned the slice.
+        onClosed: if (panArea.previewTnfs.length > 0) panArea.previewTnfs = []
         // Screenshots (--popup tnfPopup): the first notch in view, or a
         // sample one in the passband (the radio's notches can all be on
         // other bands; the manual's picture showed none).
@@ -1144,6 +1184,7 @@ Rectangle {
                                          freq: Engine.frequencyMhz + (Engine.filterLow + Engine.filterHigh) / 2e6 }]
                 first = panArea.previewTnfs[0]
             }
+            creating = false
             tnfId = first.id
             anchorX = (first.freq - Engine.panCenterMhz) / Engine.panBandwidthMhz * panArea.width + panArea.width / 2
             open()
@@ -1152,15 +1193,18 @@ Rectangle {
         parent: Overlay.overlay
         width: Math.min(parent.width - 16, 420)
         // Placed when it opens (mapToItem is not a live binding).
-        onAboutToShow: {
+        function place() {
             const p = panArea.mapToItem(Overlay.overlay, anchorX, panArea.height * 0.12)
             x = Math.max(8, Math.min(parent.width - width - 8, p.x - width / 2))
             y = Math.max(8, Math.min(parent.height - implicitHeight - 8, p.y))
         }
+        onAboutToShow: place()
         padding: Theme.spacing
         // Kept inside the window, scrolling where it is lower than the panel.
         margins: 8
-        modal: false
+        // A new notch: a tap outside only cancels (it does not tune there).
+        modal: creating
+        dim: false
         background: Rectangle {
             color: Theme.surface
             border.color: Theme.surfaceRaised
@@ -1168,7 +1212,10 @@ Rectangle {
             opacity: 0.97
         }
         contentItem: PanelContent {
-            title: tnfPopup.tnf ? qsTr("Notch %1 MHz").arg(tnfPopup.tnf.freq.toFixed(4)) : ""
+            // To 10 Hz, so the −10 / +10 Hz steps show.
+            title: !tnfPopup.tnf ? ""
+                   : tnfPopup.creating ? qsTr("New notch %1 MHz").arg(tnfPopup.tnf.freq.toFixed(5))
+                   : qsTr("Notch %1 MHz").arg(tnfPopup.tnf.freq.toFixed(5))
             panel: tnfPopup
             rowSpacing: Theme.spacing / 2
             // The radio's global switch: notches only work while it is on.
@@ -1193,12 +1240,13 @@ Rectangle {
                     model: [50, 100, 200, 500]
                     delegate: AppButton {
                         required property int modelData
+                        objectName: "tnfWidth" + modelData
                         text: modelData + " Hz"
                         checked: !!tnfPopup.tnf && tnfPopup.tnf.width === modelData
                         Layout.fillWidth: true
                         Layout.preferredWidth: 1
                         Layout.preferredHeight: Theme.touchTarget
-                        onClicked: Engine.setTnf(tnfPopup.tnfId, "width", modelData)
+                        onClicked: tnfPopup.set("width", modelData)
                     }
                 }
             }
@@ -1217,27 +1265,30 @@ Rectangle {
                            : []
                     delegate: AppButton {
                         required property var modelData
+                        objectName: "tnfDepth" + modelData.d
                         text: modelData.label
                         checked: !!tnfPopup.tnf && tnfPopup.tnf.depth === modelData.d
                         Layout.fillWidth: true
                         Layout.preferredWidth: 1
                         Layout.preferredHeight: Theme.touchTarget
-                        onClicked: Engine.setTnf(tnfPopup.tnfId, "depth", modelData.d)
+                        onClicked: tnfPopup.set("depth", modelData.d)
                     }
                 }
                 AppButton {
+                    objectName: "tnfPermanent"
                     text: qsTr("Permanent")
                     checked: !!tnfPopup.tnf && tnfPopup.tnf.permanent
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
                     Layout.preferredHeight: Theme.touchTarget
-                    onClicked: Engine.setTnf(tnfPopup.tnfId, "permanent", !checked)
+                    onClicked: tnfPopup.set("permanent", !checked)
                 }
             }
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 4
                 RepeatButton {
+                    objectName: "tnfDown"
                     text: "−10 Hz"
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
@@ -1245,19 +1296,28 @@ Rectangle {
                     onStepped: (n) => tnfPopup.nudge(n, -1)
                 }
                 RepeatButton {
+                    objectName: "tnfUp"
                     text: "+10 Hz"
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
                     Layout.preferredHeight: Theme.touchTarget
                     onStepped: (n) => tnfPopup.nudge(n, 1)
                 }
+                // A new notch: Add puts it on the radio. One there: Remove.
                 AppButton {
-                    text: qsTr("Remove")
+                    objectName: tnfPopup.creating ? "tnfAdd" : "tnfRemove"
+                    text: tnfPopup.creating ? qsTr("Add") : qsTr("Remove")
+                    enabled: !tnfPopup.creating || Engine.canAddTnf
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
                     Layout.preferredHeight: Theme.touchTarget
                     onClicked: {
-                        Engine.removeTnf(tnfPopup.tnfId)
+                        const t = tnfPopup.tnf
+                        if (tnfPopup.creating) {
+                            if (t) Engine.addTnfWith(t.freq, t.width, t.depth, t.permanent)
+                        } else {
+                            Engine.removeTnf(tnfPopup.tnfId)
+                        }
                         tnfPopup.close()
                     }
                 }
@@ -1278,6 +1338,10 @@ Rectangle {
     Connections {
         target: Engine
         function onStationsRequested() { stationsDialog.open() }
+        // The DSP tab's + TNF: a new notch at the passband's centre, to confirm.
+        function onTnfCreateRequested(mhz) {
+            if (Engine.panBandwidthMhz > 0) tnfPopup.create(mhz)
+        }
     }
 
     function mhzAt(x) {
@@ -1356,11 +1420,12 @@ Rectangle {
                 }
             }
         }
-        // Press and hold: a notch (TNF) at that point.
+        // Press and hold: a new notch (TNF) at that point, to set and
+        // confirm in its panel (Add); nothing is sent before that.
         onLongPressed: {
             const p = panTap.point.position
             if (Engine.panBandwidthMhz > 0 && Engine.canAddTnf && !panArea.overlayHit(p.x, p.y)) {
-                Engine.addTnf(panArea.mhzAt(p.x))
+                tnfPopup.create(panArea.mhzAt(p.x))
             }
         }
     }

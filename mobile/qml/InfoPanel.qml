@@ -88,11 +88,13 @@ Item {
     implicitHeight: lines.implicitHeight
 
     // A tappable word: the row's full height, a little wider than the text,
-    // pressed feedback.
+    // pressed feedback. A button to a screen reader, named in words (the
+    // word itself by default), a double tap acting as the tap.
     component Hit: Item {
         id: hit
         property alias text: label.text
         property alias color: label.color
+        property string accessibleName: text
         property real fontPx: 16
         property real rowH: 40
         property real pad: 12
@@ -100,6 +102,10 @@ Item {
         signal held()
         implicitWidth: label.implicitWidth + pad
         implicitHeight: rowH
+        Accessible.role: Accessible.Button
+        Accessible.name: hit.accessibleName
+        Accessible.ignored: info.measureOnly
+        Accessible.onPressAction: hit.tapped()
         Rectangle {
             anchors.fill: parent
             radius: 6
@@ -108,7 +114,7 @@ Item {
         }
         Text {
             id: label
-            Accessible.ignored: info.measureOnly
+            Accessible.ignored: true
             anchors.centerIn: parent
             font.pixelSize: hit.fontPx
             font.bold: true
@@ -140,6 +146,7 @@ Item {
                 objectName: "stepHit"
                 visible: info.showStep
                 text: info.stepLabel(Engine.stepHz)
+                accessibleName: qsTr("Tuning step %1").arg(text)
                 color: info.rxColor
                 fontPx: info.fontPx
                 rowH: info.rowH
@@ -151,6 +158,11 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 4
                 rightPadding: info.gap
+                Accessible.role: Accessible.StaticText
+                Accessible.name: !info.activeSlice ? qsTr("No slice")
+                                 : info.activeSlice.tx ? qsTr("Slice %1, the transmit slice").arg(info.activeSlice.letter)
+                                 : qsTr("Slice %1").arg(info.activeSlice.letter)
+                Accessible.ignored: info.measureOnly
                 Rectangle {
                     width: letterText.implicitWidth + 10
                     height: letterText.implicitHeight + 4
@@ -158,7 +170,7 @@ Item {
                     color: Theme.sliceTag
                     Text {
                         id: letterText
-                        Accessible.ignored: info.measureOnly
+                        Accessible.ignored: true
                         anchors.centerIn: parent
                         text: info.activeSlice ? info.activeSlice.letter : "–"
                         font.pixelSize: info.fontPx
@@ -174,7 +186,7 @@ Item {
                     color: Theme.transmitTag
                     Text {
                         id: txTagText
-                        Accessible.ignored: info.measureOnly
+                        Accessible.ignored: true
                         anchors.centerIn: parent
                         text: "TX"
                         font.pixelSize: info.fontPx
@@ -186,6 +198,7 @@ Item {
             Hit {
                 visible: (info.showCore) && (Engine.rxAntenna.length > 0)
                 text: Engine.rxAntenna
+                accessibleName: qsTr("Receive antenna %1").arg(text)
                 color: info.rxColor
                 fontPx: info.fontPx
                 rowH: info.rowH
@@ -195,6 +208,7 @@ Item {
             Hit {
                 visible: (info.showCore) && (Engine.txAntenna.length > 0 && Engine.txAntennas.length > 0)
                 text: Engine.txAntenna
+                accessibleName: qsTr("Transmit antenna %1").arg(text)
                 color: Theme.transmit
                 fontPx: info.fontPx
                 rowH: info.rowH
@@ -204,6 +218,7 @@ Item {
             Hit {
                 visible: (info.showCore) && (Engine.filterPresets.length > 0)
                 text: info.widthLabel(Engine.filterWidth)
+                accessibleName: qsTr("Filter width %1 Hz").arg(Engine.filterWidth)
                 color: info.rxColor
                 fontPx: info.fontPx
                 rowH: info.rowH
@@ -213,6 +228,7 @@ Item {
             Hit {
                 visible: info.showCore
                 text: info.agcText
+                accessibleName: qsTr("AGC %1").arg(Engine.agcMode)
                 color: info.rxColor
                 fontPx: info.fontPx
                 rowH: info.rowH
@@ -227,6 +243,10 @@ Item {
                 visible: info.showControls
                 implicitWidth: (info.singleLine ? 10 : 12) + speaker.width + 3 + volumeText.implicitWidth
                 implicitHeight: info.rowH
+                Accessible.role: Accessible.Button
+                Accessible.name: Engine.muted ? qsTr("Volume %1, muted").arg(volumeText.text) : qsTr("Volume %1").arg(volumeText.text)
+                Accessible.ignored: info.measureOnly
+                Accessible.onPressAction: volumePopup.open()
                 Canvas {
                     id: speaker
                     x: (parent.width - width - 3 - volumeText.implicitWidth) / 2
@@ -257,7 +277,7 @@ Item {
                 }
                 Label {
                     id: volumeText
-                    Accessible.ignored: info.measureOnly
+                    Accessible.ignored: true
                     anchors.left: speaker.right
                     anchors.leftMargin: 3
                     anchors.verticalCenter: parent.verticalCenter
@@ -274,6 +294,10 @@ Item {
                 implicitWidth: info.singleLine ? Math.max(info.iconW, lockIcon.width + 12)
                                                : Math.max(info.rowH * 0.9, lockIcon.width + 12)
                 implicitHeight: info.rowH
+                Accessible.role: Accessible.Button
+                Accessible.name: Engine.locked ? qsTr("Tuning lock, on") : qsTr("Tuning lock, off")
+                Accessible.ignored: info.measureOnly
+                Accessible.onPressAction: Engine.locked = !Engine.locked
                 Rectangle {
                     anchors.fill: parent
                     radius: 6
@@ -332,6 +356,7 @@ Item {
                 implicitHeight: info.rowH
                 Accessible.role: Accessible.Button
                 Accessible.name: Engine.recordOn ? qsTr("Stop recording") : qsTr("Record")
+                Accessible.onPressAction: Engine.toggleRecord()
                 Canvas {
                     id: recIcon
                     anchors.centerIn: parent
@@ -373,6 +398,7 @@ Item {
                 implicitHeight: info.rowH
                 Accessible.role: Accessible.Button
                 Accessible.name: Engine.playOn ? qsTr("Stop playback") : qsTr("Play the recording")
+                Accessible.onPressAction: Engine.togglePlay()
                 Canvas {
                     id: playIcon
                     anchors.centerIn: parent
@@ -416,6 +442,7 @@ Item {
                 objectName: "splitHit"
                 visible: (info.showOptions) && (Engine.splitAvailable)
                 text: "SPLIT"
+                accessibleName: Engine.splitActive ? qsTr("Split, on") : qsTr("Split, off")
                 color: Engine.splitActive ? Theme.warning : info.dim
                 fontPx: info.fontPx
                 rowH: info.rowH
@@ -428,6 +455,10 @@ Item {
             Item {
                 implicitWidth: flagRow.implicitWidth + (info.singleLine ? 6 : 12)
                 implicitHeight: info.rowH
+                Accessible.role: Accessible.Button
+                Accessible.name: qsTr("DSP: %1").arg(info.flags.map(f => f.on ? qsTr("%1 on").arg(f.text) : qsTr("%1 off").arg(f.text)).join(", "))
+                Accessible.ignored: info.measureOnly
+                Accessible.onPressAction: filterChooser.open()
                 Rectangle {
                     anchors.fill: parent
                     radius: 6
@@ -442,7 +473,7 @@ Item {
                         model: info.flags
                         delegate: Text {
                             required property var modelData
-                            Accessible.ignored: info.measureOnly
+                            Accessible.ignored: true
                             text: modelData.text
                             font.pixelSize: info.fontPx
                             font.bold: modelData.on
@@ -580,6 +611,7 @@ Item {
                         // − / + for the last step (Larry Averbeck).
                         FineSlider {
                             id: gainSlider
+                            accessibleName: qsTr("Volume, slice %1").arg(sliceAudio.info.letter)
                             Layout.fillWidth: true
                             from: 0; to: 100
                             value: sliceAudio.info.gain || 0
@@ -619,6 +651,9 @@ Item {
                         }
                         Slider {
                             id: panSlider
+                            Accessible.name: qsTr("Pan, slice %1").arg(sliceAudio.info.letter)
+                            Accessible.onIncreaseAction: { increase(); moved() }
+                            Accessible.onDecreaseAction: { decrease(); moved() }
                             Layout.fillWidth: true
                             from: 0; to: 100; stepSize: 1
                             focusPolicy: Qt.NoFocus

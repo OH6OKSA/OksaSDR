@@ -10,12 +10,16 @@ Item {
     property int fontSize: 32
     implicitWidth: row.implicitWidth
     implicitHeight: Math.max(row.implicitHeight, Theme.touchTarget)
+    Accessible.role: Accessible.Button
+    Accessible.name: qsTr("Mode %1").arg(Engine.mode)
+    Accessible.onPressAction: chooser.open()
 
     Row {
         id: row
         anchors.verticalCenter: parent.verticalCenter
         spacing: 4
         Label {
+            Accessible.ignored: true
             text: Engine.mode
             color: Theme.accent
             font.pixelSize: modeButton.fontSize

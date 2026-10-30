@@ -86,6 +86,7 @@ Page {
             // Network quality (dot and ms); tap for the details.
             NetworkBadge {
                 compact: true
+                Accessible.onPressAction: networkDialog.open()
                 TapHandler { onTapped: networkDialog.open() }
             }
             // App version and build, so a screenshot or report says which.
@@ -100,6 +101,7 @@ Page {
             TopButton {
                 id: moreButton
                 text: "⋯"
+                Accessible.name: qsTr("More")
                 font.pixelSize: 22
                 focusPolicy: Qt.NoFocus
                 onClicked: moreMenu.popup(moreButton, 0, moreButton.height)
@@ -145,6 +147,10 @@ Page {
                     color: Theme.text
                     font.pixelSize: 30
                     font.family: "monospace"
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Frequency %1 kHz").arg((Engine.frequencyMhz * 1000).toFixed(3))
+                    Accessible.description: qsTr("Opens frequency entry")
+                    Accessible.onPressAction: freqDialog.open()
                     TapHandler { onTapped: freqDialog.open() }
                 }
                 ModeButton { fontSize: 18 }
@@ -233,6 +239,10 @@ Page {
                         color: Theme.text
                         font.pixelSize: 30
                         font.family: "monospace"
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Frequency %1 kHz").arg((Engine.frequencyMhz * 1000).toFixed(3))
+                        Accessible.description: qsTr("Opens frequency entry")
+                        Accessible.onPressAction: freqDialog.open()
                         TapHandler { onTapped: freqDialog.open() }
                     }
                 }
@@ -438,6 +448,7 @@ Page {
                             spacing: 8
                             MenuIcon { width: 18; height: 14; anchors.verticalCenter: parent.verticalCenter }
                             Label {
+                                Accessible.ignored: true
                                 text: qsTr("Controls")
                                 color: Theme.buttonText
                                 font.pixelSize: 15

@@ -21,6 +21,9 @@ RowLayout {
     // Radio Setup level): a drag then sends only where it ends; − / + still
     // send each step.
     property bool liveDrag: true
+    // What it sets, for a screen reader ("Volume", "RF power"); its swipe
+    // up or down is one step, sent as the − / + send theirs.
+    property string accessibleName: ""
     signal moved(real value)
     spacing: 2
 
@@ -39,7 +42,7 @@ RowLayout {
     RepeatButton {
         id: down
         text: "−"
-        Accessible.name: qsTr("One step down")
+        Accessible.name: fine.accessibleName ? qsTr("%1, one step down").arg(fine.accessibleName) : qsTr("One step down")
         Layout.preferredWidth: Theme.touchTarget
         Layout.preferredHeight: Theme.touchTarget
         onStepped: fine.nudge(-1)
@@ -50,6 +53,9 @@ RowLayout {
         stepSize: 1
         snapMode: Slider.SnapAlways
         focusPolicy: Qt.NoFocus
+        Accessible.name: fine.accessibleName
+        Accessible.onIncreaseAction: fine.nudge(1)
+        Accessible.onDecreaseAction: fine.nudge(-1)
         onMoved: if (fine.liveDrag) fine.moved(value)
         onPressedChanged: if (!pressed && !fine.liveDrag) fine.moved(value)
         Binding on value {
@@ -61,7 +67,7 @@ RowLayout {
     RepeatButton {
         id: up
         text: "+"
-        Accessible.name: qsTr("One step up")
+        Accessible.name: fine.accessibleName ? qsTr("%1, one step up").arg(fine.accessibleName) : qsTr("One step up")
         Layout.preferredWidth: Theme.touchTarget
         Layout.preferredHeight: Theme.touchTarget
         onStepped: fine.nudge(1)

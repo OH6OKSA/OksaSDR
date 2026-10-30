@@ -104,6 +104,7 @@ ColumnLayout {
         wrapMode: Text.WordWrap
     }
     TextField {
+        Accessible.name: qsTr("FreeDV Reporter message")
         objectName: "freedvMessage"
         visible: Engine.freedvReporter
         Layout.fillWidth: true

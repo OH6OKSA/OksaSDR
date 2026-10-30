@@ -45,6 +45,7 @@ ColumnLayout {
         Layout.fillWidth: true
         TextField {
             id: callField
+            Accessible.name: qsTr("Callsign")
             Layout.fillWidth: true
             placeholderText: qsTr("Callsign")
             font.pixelSize: 20
@@ -190,6 +191,7 @@ ColumnLayout {
         Label { text: qsTr("Sent"); color: Theme.textDim; font.pixelSize: 15 }
         TextField {
             id: rstSent
+            Accessible.name: qsTr("Report sent")
             property bool edited: false
             Layout.preferredWidth: 64
             font.pixelSize: 16
@@ -200,6 +202,7 @@ ColumnLayout {
         Label { text: qsTr("Rcvd"); color: Theme.textDim; font.pixelSize: 15 }
         TextField {
             id: rstRcvd
+            Accessible.name: qsTr("Report received")
             property bool edited: false
             Layout.preferredWidth: 64
             font.pixelSize: 16
@@ -224,6 +227,7 @@ ColumnLayout {
     }
     TextField {
         id: comment
+        Accessible.name: qsTr("Comment")
         Layout.fillWidth: true
         placeholderText: qsTr("Comment")
         font.pixelSize: 15
@@ -249,6 +253,7 @@ ColumnLayout {
     QtObject { id: theirSig; property string value: "" }
     TextField {
         id: theirRef
+        Accessible.name: qsTr("Their reference")
         visible: theirSig.value.length > 0
         Layout.fillWidth: true
         placeholderText: theirSig.value === "POTA" ? qsTr("Park, e.g. US-1234") : qsTr("Reference, e.g. OHFF-0001")
@@ -275,6 +280,7 @@ ColumnLayout {
     QtObject { id: mySig; property string value: "" }
     TextField {
         id: myRef
+        Accessible.name: qsTr("My reference")
         visible: mySig.value.length > 0
         Layout.fillWidth: true
         placeholderText: qsTr("My reference")
@@ -384,6 +390,7 @@ ColumnLayout {
         }
         TextField {
             id: gridField
+            Accessible.name: qsTr("My grid")
             Layout.fillWidth: true
             placeholderText: qsTr("My grid, e.g. KP22")
             font.pixelSize: 15
@@ -404,6 +411,7 @@ ColumnLayout {
         TextMetrics { id: qrzPassHint; font: qrzPassField.font; text: qsTr("password (saved)") }
         TextField {
             id: qrzUserField
+            Accessible.name: qsTr("QRZ.com user")
             Layout.fillWidth: true
             Layout.columnSpan: qrzRow.oneRow ? 1 : 2
             placeholderText: qsTr("QRZ.com user")
@@ -413,6 +421,7 @@ ColumnLayout {
         }
         PasswordField {
             id: qrzPassField
+            Accessible.name: qsTr("QRZ.com password")
             Layout.fillWidth: true
             placeholderText: Engine.qrzUser.length > 0 ? qsTr("password (saved)") : qsTr("password")
             font.pixelSize: 15
@@ -449,6 +458,7 @@ ColumnLayout {
     Label { text: qsTr("Wavelog / Cloudlog"); color: Theme.textDim; font.pixelSize: 14; Layout.topMargin: Theme.spacing }
     TextField {
         id: onlineUrlField
+        Accessible.name: qsTr("Logbook address")
         objectName: "onlineLogUrl"
         Layout.fillWidth: true
         placeholderText: qsTr("Logbook address, e.g. https://log.example.com")
@@ -467,6 +477,7 @@ ColumnLayout {
         TextMetrics { id: onlineKeyHint; font: onlineKeyField.font; text: qsTr("API key (read & write)") }
         PasswordField {
             id: onlineKeyField
+            Accessible.name: qsTr("API key")
             Layout.fillWidth: true
             Layout.columnSpan: onlineKeyRow.oneRow ? 1 : 2
             placeholderText: Engine.onlineLog.hasKey ? qsTr("API key (saved)") : qsTr("API key (read & write)")
@@ -474,6 +485,7 @@ ColumnLayout {
         }
         TextField {
             id: onlineStationField
+            Accessible.name: qsTr("Station ID")
             Layout.preferredWidth: 90
             Layout.fillWidth: !onlineKeyRow.oneRow
             placeholderText: qsTr("Station ID")
@@ -522,6 +534,7 @@ ColumnLayout {
         TextMetrics { id: logger32Hint; font: logger32Field.font; text: logger32Field.placeholderText }
         TextField {
             id: logger32Field
+            Accessible.name: qsTr("Logger32 PC address")
             objectName: "logger32Host"
             Layout.fillWidth: true
             placeholderText: qsTr("PC address, e.g. 192.168.1.10:52001")

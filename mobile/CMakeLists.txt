@@ -98,6 +98,7 @@ qt_add_qml_module(aether-mobile
         qml/OperateKeys.qml
         qml/MeterMarks.js
         qml/TxControls.qml
+        qml/EssbControls.qml
         qml/RxControls.qml
         qml/SliceBar.qml
         qml/CwControls.qml

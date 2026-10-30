@@ -25,6 +25,7 @@ TextField {
         visible: field.enabled
         Accessible.role: Accessible.Button
         Accessible.name: field.revealed ? qsTr("Hide password") : qsTr("Show password")
+        Accessible.onPressAction: field.revealed = !field.revealed
 
         Canvas {
             id: icon

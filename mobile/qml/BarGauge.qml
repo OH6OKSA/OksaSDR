@@ -139,6 +139,7 @@ Item {
     }
     Text {
         id: nameText
+        Accessible.ignored: true
         x: 0
         height: gauge.headerHeight
         verticalAlignment: Text.AlignVCenter
@@ -148,6 +149,7 @@ Item {
         font.bold: true
     }
     Text {
+        Accessible.ignored: true
         anchors.right: parent.right
         anchors.rightMargin: gauge.headerRightInset
         height: gauge.headerHeight

@@ -23,6 +23,9 @@ ColumnLayout {
         Label { text: section.title; color: Theme.textDim; font.pixelSize: 16 }
         ComboBox {
             id: picker
+            Accessible.name: section.title
+            // Its text field would be read again, without a name.
+            Component.onCompleted: contentItem.Accessible.ignored = true
             Layout.fillWidth: true
             Layout.preferredHeight: Theme.touchTarget
             model: section.names
@@ -35,6 +38,7 @@ ColumnLayout {
             Layout.fillWidth: true
             TextField {
                 id: nameField
+                Accessible.name: qsTr("New %1 profile name").arg(section.title)
                 Layout.fillWidth: true
                 placeholderText: qsTr("Save as…")
                 font.pixelSize: 15
