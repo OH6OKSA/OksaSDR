@@ -527,6 +527,92 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         } else {
             qInfo().noquote() << QStringLiteral("shot-plan: a11y %1 controls named, %2 without a name").arg(named).arg(unnamed);
         }
+    } else if (command == QLatin1String("focusaudit")) {
+        // Every text field in view, as a finger would: scrolled into view,
+        // tapped (it should take the keyboard), then a tap at FX,FY outside
+        // it (it should let go, the page keeping the keyboard: Space PTT on
+        // an iPad). One line per field.
+        const QStringList xy = arg.split(QLatin1Char(','));
+        if (!window || xy.size() != 2) {
+            m_failed = true;
+            return;
+        }
+        const QPointF neutral(xy.at(0).toDouble() * window->width(), xy.at(1).toDouble() * window->height());
+        QList<QPointer<QQuickItem>> fields;
+        for (QObject* root : m_qml.rootObjects()) {
+            for (QObject* o : allObjects(root)) {
+                auto* item = qobject_cast<QQuickItem*>(o);
+                if (item && (o->inherits("QQuickTextInput") || o->inherits("QQuickTextEdit")) && seen(item)
+                    && !o->property("readOnly").toBool() && item->width() > 4 && item->height() > 4) {
+                    fields << item;
+                }
+            }
+        }
+        const auto press = [](QQuickWindow* w, const QPointF& p) {
+            const QPointF g = w->mapToGlobal(p);
+            QWindowSystemInterface::handleMouseEvent(w, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
+            QWindowSystemInterface::handleMouseEvent(w, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+            QWindowSystemInterface::flushWindowSystemEvents();
+        };
+        QPointer<QQuickWindow> w(window);
+        int at = 0;
+        for (const QPointer<QQuickItem>& field : fields) {
+            // Into view: the nearest scrolling ancestor brought to it.
+            QTimer::singleShot(at, this, [field] {
+                if (!field) {
+                    return;
+                }
+                for (QQuickItem* p = field->parentItem(); p; p = p->parentItem()) {
+                    if (p->inherits("QQuickFlickable")) {
+                        auto* content = p->property("contentItem").value<QQuickItem*>();
+                        if (content) {
+                            const QPointF c = field->mapToItem(content, QPointF(0, field->height() / 2));
+                            const qreal maxY = std::max(0.0, p->property("contentHeight").toReal() - p->height());
+                            p->setProperty("contentY", std::clamp(c.y() - p->height() / 2, 0.0, maxY));
+                        }
+                        break;
+                    }
+                }
+            });
+            QTimer::singleShot(at + 300, this, [this, w, field, press] {
+                if (!w || !field) {
+                    return;
+                }
+                const QPointF c = field->mapToScene(QPointF(field->width() / 2, field->height() / 2));
+                if (c.x() < 0 || c.y() < 0 || c.x() > w->width() || c.y() > w->height()) {
+                    qInfo().noquote() << "shot-plan: focusaudit" << field->property("placeholderText").toString() << "out of view";
+                    return;
+                }
+                press(w, c);
+            });
+            QTimer::singleShot(at + 650, this, [this, w, field, neutral, press] {
+                if (!w || !field) {
+                    return;
+                }
+                const bool took = QGuiApplication::focusObject() == field;
+                field->setProperty("auditTook", took);
+                press(w, neutral);
+            });
+            QTimer::singleShot(at + 1000, this, [this, field] {
+                if (!field) {
+                    return;
+                }
+                QObject* now = QGuiApplication::focusObject();
+                const bool released = !(now && (now->inherits("QQuickTextInput") || now->inherits("QQuickTextEdit")));
+                QString name = field->property("placeholderText").toString();
+                if (name.isEmpty()) {
+                    name = field->objectName().isEmpty() ? QString::fromLatin1(field->metaObject()->className()) : field->objectName();
+                }
+                const bool took = field->property("auditTook").toBool();
+                qInfo().noquote() << QStringLiteral("shot-plan: focusaudit %1 \"%2\" took %3 released %4 page %5")
+                                         .arg(took && released && m_engine.keyboardOnPage() ? QStringLiteral("ok  ") : QStringLiteral("FAIL"))
+                                         .arg(name).arg(took ? "yes" : "no").arg(released ? "yes" : "no")
+                                         .arg(m_engine.keyboardOnPage() ? "yes" : "no");
+            });
+            at += 1200;
+        }
+        qInfo().noquote() << "shot-plan: focusaudit" << fields.size() << "text fields";
+        *delayMs = at + 500;
     } else if (command == QLatin1String("focus")) {
         // Where the keyboard is: Space PTT on an iPad needs the page to have
         // it (Engine.keyboardOnPage); and the overlay's visible children,
