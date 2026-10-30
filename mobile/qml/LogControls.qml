@@ -45,6 +45,7 @@ ColumnLayout {
         Layout.fillWidth: true
         TextField {
             id: callField
+            objectName: "logCall"
             Accessible.name: qsTr("Callsign")
             Layout.fillWidth: true
             placeholderText: qsTr("Callsign")
@@ -302,7 +303,13 @@ ColumnLayout {
                 sig: theirSig.value, sigInfo: theirSig.value.length > 0 ? theirRef.text : "",
                 mySig: mySig.value, mySigInfo: mySig.value.length > 0 ? myRef.text : ""
             })
-            if (ok) logTab.reset()
+            if (ok) {
+                logTab.reset()
+                // The keyboard back to the page (Space is PTT again on an
+                // iPad), also when Return in a field logged it.
+                const f = logTab.Window.activeFocusItem
+                if (f && f.cursorPosition !== undefined) f.focus = false
+            }
         }
     }
 

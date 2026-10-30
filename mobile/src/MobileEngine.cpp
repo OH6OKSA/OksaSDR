@@ -72,6 +72,7 @@
 #include <QGuiApplication>
 #include <QInputMethodQueryEvent>
 #include <QQuickItem>
+#include <QQuickWindow>
 #include <QElapsedTimer>
 #include <QKeyEvent>
 #include <QPointer>
@@ -227,6 +228,38 @@ public:
         }
         query->accept();
         return true;
+    }
+};
+
+// A press anywhere outside the focused text field lets go of the keyboard.
+// The field kept it whatever else was pressed (the app's buttons take no
+// focus), so on an iPad with a Magic Keyboard Space typed into the Log
+// tab's callsign field instead of keying PTT, and neither PTT, the display
+// nor the panel gave it back (the user, build 139). Let go, the page takes
+// the keyboard again (OperateKeys); a press inside the field (or its eye
+// button) keeps typing.
+class TextFocusRelease : public QObject {
+public:
+    explicit TextFocusRelease(QObject* parent) : QObject(parent) {}
+    bool eventFilter(QObject* receiver, QEvent* event) override
+    {
+        if (event->type() != QEvent::MouseButtonPress && event->type() != QEvent::TouchBegin) {
+            return false;
+        }
+        auto* window = qobject_cast<QQuickWindow*>(receiver);
+        auto* field = qobject_cast<QQuickItem*>(QGuiApplication::focusObject());
+        if (!window || !field || field->window() != window
+            || !(field->inherits("QQuickTextInput") || field->inherits("QQuickTextEdit"))) {
+            return false;
+        }
+        const auto* press = static_cast<QPointerEvent*>(event);
+        if (press->points().isEmpty()) {
+            return false;
+        }
+        if (!field->contains(field->mapFromScene(press->points().first().scenePosition()))) {
+            field->setFocus(false);
+        }
+        return false;
     }
 };
 
@@ -897,6 +930,7 @@ MobileEngine::MobileEngine(QObject* parent)
     {
         auto* diag = new KeyboardDiag(this);
         qApp->installEventFilter(diag);
+        qApp->installEventFilter(new TextFocusRelease(this));
         qCInfo(lcMobile) << "keyboard: iPad app on a Mac:" << (runningAsIosAppOnMac() ? "yes" : "no");
         if (runningAsIosAppOnMac()) {
             qApp->installEventFilter(new MacTextKeys(this));
@@ -925,7 +959,16 @@ MobileEngine::MobileEngine(QObject* parent)
                 diag->keys = 0;
                 diag->inputMethod = 0;
                 *seenAtFocus = sideKeysSeen();
-                qCInfo(lcMobile).noquote() << "keyboard: text field focused:" << obj->metaObject()->className() << obj->objectName();
+                // Named by its placeholder (or screen-reader name), so a log
+                // says which field holds the keyboard.
+                QString name = obj->property("placeholderText").toString();
+                if (name.isEmpty()) {
+                    if (const auto* item = qobject_cast<QQuickItem*>(obj); item && item->parentItem()) {
+                        name = item->parentItem()->property("placeholderText").toString();
+                    }
+                }
+                qCInfo(lcMobile).noquote() << "keyboard: text field focused:" << obj->metaObject()->className() << obj->objectName()
+                                           << (name.isEmpty() ? QString() : QStringLiteral("\"%1\"").arg(name));
             }
         });
     }

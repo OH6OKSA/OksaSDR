@@ -527,6 +527,28 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         } else {
             qInfo().noquote() << QStringLiteral("shot-plan: a11y %1 controls named, %2 without a name").arg(named).arg(unnamed);
         }
+    } else if (command == QLatin1String("focus")) {
+        // Where the keyboard is: Space PTT on an iPad needs the page to have
+        // it (Engine.keyboardOnPage); and the overlay's visible children,
+        // which keep it from the page (OperateKeys.popupOpen).
+        QStringList overlay;
+        QString active = QStringLiteral("none");
+        if (window) {
+            if (QQuickItem* item = window->activeFocusItem()) {
+                active = QString::fromLatin1(item->metaObject()->className()) + QLatin1Char(' ') + item->objectName();
+            }
+            for (QQuickItem* child : window->contentItem()->childItems()) {
+                if (QString::fromLatin1(child->metaObject()->className()).contains(QLatin1String("Overlay"))) {
+                    for (QQuickItem* c : child->childItems()) {
+                        if (c->isVisible()) {
+                            overlay << QString::fromLatin1(c->metaObject()->className()) + QLatin1Char(' ') + c->objectName();
+                        }
+                    }
+                }
+            }
+        }
+        qInfo().noquote() << "shot-plan: focus keyboardOnPage" << m_engine.keyboardOnPage() << "active" << active
+                          << "overlay visible:" << overlay.join(QStringLiteral(", "));
     } else if (command == QLatin1String("txchain")) {
         QStringList kv;
         const QVariantMap chain = m_engine.txChain();
