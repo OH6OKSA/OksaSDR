@@ -502,9 +502,9 @@ Rectangle {
         }
     }
 
-    // Latest decoded CW along the top of the waterfall (just under its
-    // frequency scale, which stays readable), where no layout's bottom bar
-    // can cover it. Two lines that fill
+    // Latest decoded CW, or RTTY, along the top of the waterfall (just under
+    // its frequency scale, which stays readable), where no layout's bottom
+    // bar can cover it. Two lines that fill
     // as writing does: the top line first, then the bottom one; when that is
     // full, it moves up and a new bottom line starts. Lines break between
     // words (a word longer than the line is cut), as the text comes in, so
@@ -512,7 +512,25 @@ Rectangle {
     // the line's length (the decoder's line breaks stacked a column of text
     // over the spectrum, eliding works on single lines only).
     Rectangle {
-        visible: Engine.cwDecoderEnabled && Engine.cwMode && Engine.cwDecodedText.length > 0
+        id: decodeStrip
+        // RTTY: shown whenever its decoder runs, empty or not, as the way to
+        // its panel (a tap); CW once there is text.
+        readonly property bool rtty: Engine.rttyMode && Engine.rttyDecoderEnabled
+        readonly property string stream: rtty ? Engine.rttyStrip : Engine.cwStrip
+        readonly property real streamStart: rtty ? Engine.rttyStripStart : Engine.cwStripStart
+        onRttyChanged: cwLine.rewrap()
+        visible: rtty || (Engine.cwDecoderEnabled && Engine.cwMode && Engine.cwDecodedText.length > 0)
+        objectName: "decodeStrip"
+        Accessible.role: rtty ? Accessible.Button : Accessible.StaticText
+        Accessible.name: rtty ? qsTr("RTTY text: %1").arg(cwLine.text) : qsTr("CW text: %1").arg(cwLine.text)
+        Accessible.onPressAction: if (rtty) rttyPanel.open()
+        // Takes the tap (a TapHandler let it through to the display, which
+        // tuned there too).
+        MouseArea {
+            anchors.fill: parent
+            enabled: decodeStrip.rtty
+            onClicked: rttyPanel.open()
+        }
         // In a low panadapter (a phone in landscape) it would lie under the
         // zoom / Band and + Slice / + Pan buttons: then between them.
         readonly property bool besideButtons: y + height > zoomRow.y - 2
@@ -547,7 +565,13 @@ Rectangle {
             property string upper: ""
             property string current: ""
             property real seen: 0
-            text: upper.length > 0 ? upper + "\n" + current : current
+            // RTTY before its first letter: what it listens for, and that a
+            // tap opens its panel.
+            readonly property string idle: decodeStrip.rtty && upper.length === 0 && current.length === 0
+                ? qsTr("RTTY: listening, mark %1 Hz, shift %2 Hz. Tap for its settings.")
+                      .arg(Engine.rtty.markHz).arg(Engine.rtty.shiftHz)
+                : ""
+            text: idle.length > 0 ? idle : upper.length > 0 ? upper + "\n" + current : current
             function feed(chars) {
                 for (const c of chars) {
                     if (c === " " && current.length === 0)
@@ -564,34 +588,35 @@ Rectangle {
             function rewrap() {
                 upper = ""
                 current = ""
-                const strip = Engine.cwStrip
+                const strip = decodeStrip.stream
                 let tail = strip.slice(-3 * columns)
                 if (tail.length < strip.length && tail.indexOf(" ") >= 0)
                     tail = tail.slice(tail.indexOf(" ") + 1)
                 feed(tail)
-                seen = Engine.cwStripStart + strip.length
+                seen = decodeStrip.streamStart + strip.length
             }
             function follow() {
-                const start = Engine.cwStripStart
-                const end = start + Engine.cwStrip.length
+                const start = decodeStrip.streamStart
+                const end = start + decodeStrip.stream.length
                 // Cleared, or the away mark taken back: start over.
-                if (end < seen || seen < start || Engine.cwStrip.length === 0) {
+                if (end < seen || seen < start || decodeStrip.stream.length === 0) {
                     rewrap()
                     return
                 }
-                feed(Engine.cwStrip.slice(seen - start))
+                feed(decodeStrip.stream.slice(seen - start))
                 seen = end
             }
             onColumnsChanged: rewrap()
             Component.onCompleted: rewrap()
             Connections {
                 target: Engine
-                function onCwDecoderChanged() { cwLine.follow() }
+                function onCwDecoderChanged() { if (!decodeStrip.rtty) cwLine.follow() }
+                function onRttyDecoderChanged() { if (decodeStrip.rtty) cwLine.follow() }
             }
             wrapMode: Text.NoWrap
             maximumLineCount: 2
             clip: true
-            color: "white"
+            color: idle.length > 0 ? Theme.textDim : "white"
             font.family: "monospace"
             font.pixelSize: 15
             verticalAlignment: Text.AlignTop
@@ -1325,6 +1350,137 @@ Rectangle {
         }
     }
     StationsDialog { id: stationsDialog }
+    // RTTY's panel (a tap on its strip): the text so far, decode on / off,
+    // the mark and shift (Auto: the radio's RTTY settings), the speed,
+    // reverse, and whether it has locked on.
+    Popup {
+        id: rttyPanel
+        objectName: "rttyPanel"
+        parent: Overlay.overlay
+        width: Math.min(parent.width - 16, 460)
+        x: (parent.width - width) / 2
+        y: Math.max(8, (parent.height - implicitHeight) / 3)
+        margins: 8
+        padding: Theme.spacing
+        modal: false
+        background: Rectangle {
+            color: Theme.surface
+            border.color: Theme.surfaceRaised
+            radius: Theme.radius
+            opacity: 0.97
+        }
+        readonly property var r: Engine.rtty
+        component Choice: AppButton {
+            property string key
+            property var value
+            checked: rttyPanel.r[key] === value
+            Layout.fillWidth: true
+            Layout.preferredWidth: 1
+            Layout.preferredHeight: Theme.touchTarget
+            leftPadding: 2
+            rightPadding: 2
+            onClicked: Engine.setRtty(key, value)
+        }
+        contentItem: PanelContent {
+            title: qsTr("RTTY")
+            panel: rttyPanel
+            rowSpacing: Theme.spacing / 2
+            extras: AppButton {
+                objectName: "rttyDecode"
+                text: Engine.rttyDecoderEnabled ? qsTr("Decode on") : qsTr("Decode off")
+                checked: Engine.rttyDecoderEnabled
+                Layout.preferredHeight: Theme.touchTarget
+                leftPadding: 10
+                rightPadding: 10
+                onClicked: Engine.rttyDecoderEnabled = !Engine.rttyDecoderEnabled
+            }
+            Label {
+                Layout.fillWidth: true
+                // Its long text must not widen the panel (rows of buttons
+                // past its edge, and a layout that never settled).
+                Layout.preferredWidth: 1
+                text: !Engine.rttyDecoderEnabled ? qsTr("Decoding is off.")
+                      : rttyPanel.r.locked ? qsTr("Locked on, SNR %1 dB").arg(rttyPanel.r.snr)
+                      : qsTr("Listening (mark %1 Hz, shift %2 Hz); tune the signal's mark onto the dial frequency.")
+                            .arg(rttyPanel.r.markHz).arg(rttyPanel.r.shiftHz)
+                color: rttyPanel.r.locked ? Theme.accent : Theme.textDim
+                font.pixelSize: Theme.smallFont
+                wrapMode: Text.WordWrap
+            }
+            // As the notch panel: each row's name over it, the buttons
+            // sharing the width alike.
+            Label { text: qsTr("Shift"); color: Theme.textDim; font.pixelSize: Theme.smallFont }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 4
+                Choice { key: "shift"; value: 0; text: qsTr("Auto") }
+                Choice { key: "shift"; value: 170; text: "170" }
+                Choice { key: "shift"; value: 425; text: "425" }
+                Choice { key: "shift"; value: 850; text: "850" }
+            }
+            Label { text: qsTr("Speed and mark"); color: Theme.textDim; font.pixelSize: Theme.smallFont }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 4
+                Choice { key: "baud"; value: 45.45; text: "45.45" }
+                Choice { key: "baud"; value: 50; text: "50" }
+                Choice { key: "baud"; value: 75; text: "75" }
+                AppButton {
+                    objectName: "rttyReverse"
+                    text: qsTr("Reverse")
+                    checked: rttyPanel.r.reverse
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: Theme.touchTarget
+                    leftPadding: 2
+                    rightPadding: 2
+                    onClicked: Engine.setRtty("reverse", !checked)
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 4
+                Choice { key: "mark"; value: 0; text: qsTr("Mark auto") }
+                Choice { key: "mark"; value: 2125; text: "2125" }
+                Choice { key: "mark"; value: 1275; text: "1275" }
+            }
+            // The text so far, the newest kept in sight at the bottom: a
+            // fixed height, its width not from the text.
+            FontMetrics {
+                id: rttyLine
+                font.family: "monospace"
+                font.pixelSize: 14
+            }
+            Flickable {
+                id: rttyText
+                Layout.fillWidth: true
+                Layout.preferredWidth: 1
+                Layout.preferredHeight: 6 * rttyLine.height + 8
+                clip: true
+                contentWidth: width
+                contentHeight: rttyTextLabel.implicitHeight
+                boundsBehavior: Flickable.StopAtBounds
+                readonly property bool overflows: contentHeight > height + 1
+                ScrollBar.vertical: ScrollBar { policy: rttyText.overflows ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff }
+                Label {
+                    id: rttyTextLabel
+                    width: rttyText.width - 12
+                    text: Engine.rttyDecodedText.length > 0 ? Engine.rttyDecodedText : qsTr("Nothing decoded yet.")
+                    color: Engine.rttyDecodedText.length > 0 ? Theme.text : Theme.textDim
+                    font: rttyLine.font
+                    wrapMode: Text.WrapAnywhere
+                    onTextChanged: Qt.callLater(() => rttyText.contentY = Math.max(0, rttyText.contentHeight - rttyText.height))
+                }
+            }
+            AppButton {
+                objectName: "rttyClear"
+                text: qsTr("Clear")
+                Layout.alignment: Qt.AlignRight
+                Layout.preferredHeight: Theme.touchTarget
+                onClicked: Engine.clearRttyText()
+            }
+        }
+    }
     // The CW tab's Autotune: the strongest CW signal in the passband, for
     // when the decoder has not heard one (Engine.cwAutotuneNow).
     Connections {

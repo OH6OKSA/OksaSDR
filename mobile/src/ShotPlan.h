@@ -45,6 +45,9 @@ class MobileEngine;
 //   size WxH                resize the window (a phone turning: WxH swapped)
 //   tnfs                    log the notches the radio has and the frequency
 //   txchain                 log this device's microphone processing (ESSB)
+//   rtty [spots]            log the RTTY decoder: mode, mark, shift, SNR, text
+//                           (spots: and the RTTY stations the spots know)
+//   rttyfeed TEXT           TEXT as RTTY audio into the running decoder (a test)
 //   focus                   log where the keyboard is (keyboardOnPage, active item)
 //   focusaudit FX,FY        tap every text field in view, then FX,FY: each must
 //                           take the keyboard and let it go to the page

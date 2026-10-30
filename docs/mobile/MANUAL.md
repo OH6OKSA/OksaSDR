@@ -502,6 +502,20 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
 
 ![Notch settings](manual/tnf.jpg)
 
+**RTTY.** With the slice in **RTTY** (the mode button), the app decodes it
+itself, as the desktop does: the text runs along the top of the waterfall
+in the same two lines as decoded CW. Before the first letter the line says
+what it listens for. Tune so the signal's mark tone sits on the dial
+frequency (the white line; the radio's RTTY filter is around it). A tap on
+the line opens the **RTTY** panel: the text so far (newest at the bottom,
+*Clear*), **Decode on / off**, the **Shift** (*Auto* takes the radio's,
+170 Hz for amateur RTTY, 425 or 850 for others), the speed (**45.45**
+baud for amateur RTTY, 50, 75), **Reverse** for a signal with mark and
+space swapped, the **Mark** tone (*Mark auto* takes the radio's, normally
+2125 Hz) and whether it has **locked on** (with the SNR). Band noise
+gives a stray letter now and then, as in any RTTY decoder. The decoder
+receives only; the app does not transmit RTTY.
+
 **View** (in Controls) switches between the 2D waterfall and the **3D**
 stacked trace and sets the levels. They work as on the desktop AetherSDR:
 

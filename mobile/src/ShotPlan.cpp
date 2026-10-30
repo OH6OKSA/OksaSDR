@@ -635,6 +635,28 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         }
         qInfo().noquote() << "shot-plan: focus keyboardOnPage" << m_engine.keyboardOnPage() << "active" << active
                           << "overlay visible:" << overlay.join(QStringLiteral(", "));
+    } else if (command == QLatin1String("rttyfeed")) {
+        m_engine.testRttyFeed(args.join(QLatin1Char(' ')));
+        *delayMs = 1000;
+    } else if (command == QLatin1String("rtty")) {
+        const QVariantMap r = m_engine.rtty();
+        QString text = m_engine.rttyDecodedText().right(160);
+        text.replace(QLatin1Char('\n'), QStringLiteral(" | ")).replace(QLatin1Char('\r'), QString());
+        qInfo().noquote() << "shot-plan: rtty mode" << m_engine.rttyMode() << "mark" << r.value(QStringLiteral("markHz")).toInt()
+                          << "shift" << r.value(QStringLiteral("shiftHz")).toInt() << "snr" << r.value(QStringLiteral("snr")).toInt()
+                          << "locked" << r.value(QStringLiteral("locked")).toBool() << "text" << m_engine.rttyDecodedText().size()
+                          << QStringLiteral("\"%1\"").arg(text);
+        if (arg == QLatin1String("spots")) {
+            // RTTY stations the spots know of, to tune onto one.
+            for (const QVariant& v : m_engine.spots()) {
+                const QVariantMap sp = v.toMap();
+                const QString what = sp.value(QStringLiteral("mode")).toString() + QLatin1Char(' ') + sp.value(QStringLiteral("comment")).toString();
+                if (what.contains(QLatin1String("RTTY"), Qt::CaseInsensitive)) {
+                    qInfo().noquote() << "shot-plan: rtty spot" << sp.value(QStringLiteral("call")).toString()
+                                      << QString::number(sp.value(QStringLiteral("freq")).toDouble(), 'f', 4) << what.left(60);
+                }
+            }
+        }
     } else if (command == QLatin1String("txchain")) {
         QStringList kv;
         const QVariantMap chain = m_engine.txChain();

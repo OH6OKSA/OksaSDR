@@ -55,6 +55,7 @@
 #include "core/CwxLocalKeyer.h"
 #include "core/IambicKeyer.h"
 #include "models/CwRxModel.h"
+#include "core/RttyDecoder.h"
 #include "models/EqualizerModel.h"
 #include "gui/MemoryCommands.h"
 #include "models/CwxModel.h"
@@ -3869,6 +3870,245 @@ void MobileEngine::wireCw()
         emit cwDecoderChanged();
     });
     connect(this, &MobileEngine::modeChanged, this, &MobileEngine::updateCwDecoder);
+
+    // RTTY, wired as the CW decoder: the slice's receive audio (before the
+    // speaker's gain and mute) to the desktop's RttyDecoder, while the slice
+    // is in RTTY mode.
+    m_rttyDecoder = std::make_unique<RttyDecoder>();
+    m_rttyAudio = std::make_unique<DecoderAudioModel>(rm, DecoderAudioModel::Consumer::Rtty);
+    connect(m_rttyAudio.get(), &DecoderAudioModel::pcmReady, m_rttyDecoder.get(), &RttyDecoder::feedPcmBlock);
+    connect(m_rttyAudio.get(), &DecoderAudioModel::sourceReset, m_rttyDecoder.get(), &RttyDecoder::resetInput);
+    connect(m_rttyDecoder.get(), &RttyDecoder::textDecoded, this, [this](const QString& text, float) {
+        appendRttyDecoded(text);
+        emit rttyDecoderChanged();
+    });
+    connect(m_rttyDecoder.get(), &RttyDecoder::statsUpdated, this, [this](float, float, float snrDb, bool locked) {
+        // Only a change worth showing (the decoder reports often).
+        if (locked != m_rttyLocked || std::abs(snrDb - m_rttySnrDb) >= 1.0f) {
+            m_rttyLocked = locked;
+            m_rttySnrDb = snrDb;
+            emit rttyDecoderChanged();
+        }
+    });
+    connect(this, &MobileEngine::modeChanged, this, &MobileEngine::updateRttyDecoder);
+}
+
+namespace {
+const QString kRttyDecoderKey = QStringLiteral("MobileRttyDecoder");
+const QString kRttyMarkKey = QStringLiteral("MobileRttyMark");
+const QString kRttyShiftKey = QStringLiteral("MobileRttyShift");
+const QString kRttyBaudKey = QStringLiteral("MobileRttyBaud");
+const QString kRttyReverseKey = QStringLiteral("MobileRttyReverse");
+}
+
+bool MobileEngine::rttyMode() const
+{
+    return m_slice && m_slice->mode() == QLatin1String("RTTY");
+}
+
+// On by default, as the desktop's RTTY pane: choosing RTTY is the wish to
+// read it.
+bool MobileEngine::rttyDecoderEnabled() const
+{
+    return AppSettings::instance().value(kRttyDecoderKey, QStringLiteral("True")).toString() == QLatin1String("True");
+}
+
+void MobileEngine::setRttyDecoderEnabled(bool on)
+{
+    AppSettings::instance().setValue(kRttyDecoderKey, on ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    updateRttyDecoder();
+    emit rttyDecoderChanged();
+}
+
+QVariantMap MobileEngine::rtty() const
+{
+    const int mark = AppSettings::instance().value(kRttyMarkKey, QStringLiteral("0")).toInt();
+    const int shift = AppSettings::instance().value(kRttyShiftKey, QStringLiteral("0")).toInt();
+    return {{QStringLiteral("mark"), mark},
+            {QStringLiteral("shift"), shift},
+            {QStringLiteral("baud"), AppSettings::instance().value(kRttyBaudKey, QStringLiteral("45.45")).toDouble()},
+            {QStringLiteral("reverse"), AppSettings::instance().value(kRttyReverseKey, QStringLiteral("False")).toString()
+                                            == QLatin1String("True")},
+            {QStringLiteral("markHz"), mark > 0 ? mark : (m_slice ? m_slice->rttyMark() : 2125)},
+            {QStringLiteral("shiftHz"), shift > 0 ? shift : (m_slice && m_slice->rttyShift() > 0 ? m_slice->rttyShift() : 170)},
+            {QStringLiteral("snr"), qRound(m_rttySnrDb)},
+            {QStringLiteral("locked"), m_rttyLocked}};
+}
+
+void MobileEngine::setRtty(const QString& key, const QVariant& value)
+{
+    if (key == QLatin1String("mark")) {
+        AppSettings::instance().setValue(kRttyMarkKey, QString::number(std::clamp(value.toInt(), 0, 3000)));
+    } else if (key == QLatin1String("shift")) {
+        AppSettings::instance().setValue(kRttyShiftKey, QString::number(std::clamp(value.toInt(), 0, 1000)));
+    } else if (key == QLatin1String("baud")) {
+        AppSettings::instance().setValue(kRttyBaudKey, QString::number(std::clamp(value.toDouble(), 20.0, 300.0)));
+    } else if (key == QLatin1String("reverse")) {
+        AppSettings::instance().setValue(kRttyReverseKey, value.toBool() ? QStringLiteral("True") : QStringLiteral("False"));
+    } else {
+        return;
+    }
+    AppSettings::instance().save();
+    updateRttyDecoder();
+    emit rttyDecoderChanged();
+}
+
+void MobileEngine::testRttyFeed(const QString& text)
+{
+    if (!m_rttyDecoder || !m_rttyDecoder->isRunning()) {
+        qCWarning(lcMobile) << "RTTY test: the decoder is not running";
+        return;
+    }
+    static const char kLtrs[] = "\0E\nA SIU\rDRJNFCKTZLWHYPQOBG\0MXV\0";
+    static const char kFigs[] = "\0003\n- \a87\r$4',!:(5\")2#6019?&\0./;\0";
+    const QVariantMap r = rtty();
+    const double mark = r.value(QStringLiteral("markHz")).toDouble();
+    const double shift = r.value(QStringLiteral("shiftHz")).toDouble();
+    const double space = r.value(QStringLiteral("reverse")).toBool() ? mark + shift : mark - shift;
+    const double baud = r.value(QStringLiteral("baud")).toDouble();
+    constexpr double kRate = 24000.0;
+    std::vector<float> mono;
+    double phase = 0.0;
+    double bitClock = 0.0;
+    const auto tone = [&](bool isMark, double bits) {
+        bitClock += bits * kRate / baud;
+        while (double(mono.size()) < bitClock) {
+            phase += 2.0 * M_PI * (isMark ? mark : space) / kRate;
+            mono.push_back(float(0.3 * std::sin(phase)));
+        }
+    };
+    const auto sendCode = [&](int code) {
+        tone(false, 1.0);  // start
+        for (int b = 0; b < 5; ++b) {
+            tone((code >> b) & 1, 1.0);
+        }
+        tone(true, 1.5);  // stop
+    };
+    tone(true, baud * 0.5);  // half a second of mark
+    sendCode(0x1F);
+    sendCode(0x1F);
+    bool figs = false;
+    for (const QChar qc : text.toUpper()) {
+        const char c = qc.toLatin1();
+        int code = -1;
+        bool needFigs = false;
+        for (int i = 1; i < 32; ++i) {
+            if (kLtrs[i] == c) { code = i; needFigs = false; break; }
+        }
+        if (code < 0) {
+            for (int i = 1; i < 32; ++i) {
+                if (kFigs[i] == c) { code = i; needFigs = true; break; }
+            }
+        }
+        if (code < 0) {
+            continue;
+        }
+        if (c != ' ' && c != '\n' && c != '\r' && needFigs != figs) {
+            sendCode(needFigs ? 0x1B : 0x1F);
+            figs = needFigs;
+        }
+        sendCode(code);
+    }
+    tone(true, baud * 0.5);
+    // A little noise, as off the air.
+    quint32 seed = 12345;
+    for (float& v : mono) {
+        seed = seed * 1664525u + 1013904223u;
+        v += float((seed >> 8) / double(1 << 24) - 0.5) * 0.06f;
+    }
+    qCInfo(lcMobile) << "RTTY test:" << text.size() << "characters," << mono.size() / kRate << "s at mark" << mark
+                     << "space" << space << "baud" << baud;
+    // Fed in real time, 100 ms at a time (the decoder's buffer holds 4 s),
+    // the radio's audio held off meanwhile (both in one buffer garbled it).
+    m_rttyAudio->setEnabled(false);
+    auto samples = std::make_shared<std::vector<float>>(std::move(mono));
+    auto at = std::make_shared<size_t>(0);
+    auto* timer = new QTimer(this);
+    timer->setInterval(100);
+    connect(timer, &QTimer::timeout, this, [this, samples, at, timer] {
+        const size_t n = std::min<size_t>(2400, samples->size() - *at);
+        if (n == 0 || !m_rttyDecoder || !m_rttyDecoder->isRunning()) {
+            timer->deleteLater();
+            updateRttyDecoder();  // the radio's audio back
+            return;
+        }
+        QByteArray stereo(int(n * 2 * sizeof(float)), Qt::Uninitialized);
+        auto* out = reinterpret_cast<float*>(stereo.data());
+        for (size_t i = 0; i < n; ++i) {
+            out[2 * i] = out[2 * i + 1] = (*samples)[*at + i];
+        }
+        *at += n;
+        m_rttyDecoder->feedAudio(stereo);
+    });
+    timer->start();
+}
+
+void MobileEngine::clearRttyText()
+{
+    m_rttyDecodedText.clear();
+    m_rttyStripStart += m_rttyStrip.size();
+    m_rttyStrip.clear();
+    emit rttyDecoderChanged();
+}
+
+// As appendCwDecoded: the text as received (its own line breaks kept), and
+// the strip with each run of whitespace as one space.
+void MobileEngine::appendRttyDecoded(const QString& text)
+{
+    m_rttyDecodedText += text;
+    if (m_rttyDecodedText.size() > kCwDecodedMaxChars) {
+        m_rttyDecodedText = m_rttyDecodedText.right(kCwDecodedMaxChars);
+    }
+    for (const QChar c : text) {
+        if (c.isSpace()) {
+            if (!m_rttyStrip.isEmpty() && !m_rttyStrip.endsWith(QLatin1Char(' '))) {
+                m_rttyStrip += QLatin1Char(' ');
+            }
+        } else if (c.isPrint()) {
+            m_rttyStrip += c;
+        }
+    }
+    constexpr int kStripMaxChars = 600;
+    if (m_rttyStrip.size() > kStripMaxChars) {
+        const int drop = int(m_rttyStrip.size()) - kStripMaxChars;
+        m_rttyStrip.remove(0, drop);
+        m_rttyStripStart += drop;
+    }
+}
+
+void MobileEngine::updateRttyDecoder()
+{
+    if (!m_rttyDecoder || !m_rttyAudio) {
+        return;
+    }
+    const bool run = m_connected && rttyDecoderEnabled() && rttyMode();
+    // The radio's mark and shift (the "Auto" choice) followed while it runs.
+    disconnect(m_rttyMarkConnection);
+    disconnect(m_rttyShiftConnection);
+    if (run) {
+        m_rttyMarkConnection = connect(m_slice.data(), &SliceModel::rttyMarkChanged, this, &MobileEngine::updateRttyDecoder);
+        m_rttyShiftConnection = connect(m_slice.data(), &SliceModel::rttyShiftChanged, this, &MobileEngine::updateRttyDecoder);
+    }
+    m_rttyAudio->setSlice(run ? m_slice.data() : nullptr);
+    m_rttyAudio->setEnabled(run);
+    if (run) {
+        const QVariantMap r = rtty();
+        m_rttyDecoder->setMarkFreqHz(r.value(QStringLiteral("markHz")).toInt());
+        m_rttyDecoder->setShiftHz(r.value(QStringLiteral("shiftHz")).toInt());
+        m_rttyDecoder->setBaudRate(float(r.value(QStringLiteral("baud")).toDouble()));
+        m_rttyDecoder->setReversePolarity(r.value(QStringLiteral("reverse")).toBool());
+        if (!m_rttyDecoder->isRunning()) {
+            qCInfo(lcMobile) << "RTTY decoder on: mark" << r.value(QStringLiteral("markHz")).toInt() << "shift"
+                             << r.value(QStringLiteral("shiftHz")).toInt() << "baud" << r.value(QStringLiteral("baud")).toDouble();
+            m_rttyDecoder->start();
+        }
+    } else if (m_rttyDecoder->isRunning()) {
+        m_rttyDecoder->stop();
+        m_rttyLocked = false;
+        qCInfo(lcMobile) << "RTTY decoder off";
+    }
+    emit rttyDecoderChanged();
 }
 
 int MobileEngine::cwDecoderSensitivity() const
@@ -6366,11 +6606,13 @@ void MobileEngine::onConnectionStateChanged(bool connected)
         emit txAudioChanged();
         emit cwChanged();
         updateCwDecoder();
+        updateRttyDecoder();
         updateMicCheck();
         return;
     }
     stopTransmit(QStringLiteral("radio disconnected"));
     updateCwDecoder();
+    updateRttyDecoder();
     if (m_wanActive && !m_wanUserDisconnect) {
         qCInfo(lcMobile) << "remote session dropped; reconnecting";
         m_wanReconnectTimer.start();

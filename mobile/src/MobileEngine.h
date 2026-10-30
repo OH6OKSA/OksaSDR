@@ -37,6 +37,7 @@ class AudioEngine;
 class DxClusterClient;
 class FreeDvClient;
 class CwRxModel;
+class RttyDecoder;
 class CwxLocalKeyer;
 class IambicKeyer;
 class DecoderAudioModel;
@@ -310,6 +311,16 @@ class MobileEngine : public QObject {
     // This client's panadapters. The app shows one; the others still stream.
     Q_PROPERTY(int panCount READ panCount NOTIFY slicesChanged)
     Q_PROPERTY(bool cwMode READ cwMode NOTIFY modeChanged)
+    // RTTY (Ben van Schoor): the radio's RTTY mode decoded on the device,
+    // as the desktop does (RttyDecoder on the slice's receive audio).
+    Q_PROPERTY(bool rttyMode READ rttyMode NOTIFY modeChanged)
+    Q_PROPERTY(bool rttyDecoderEnabled READ rttyDecoderEnabled WRITE setRttyDecoderEnabled NOTIFY rttyDecoderChanged)
+    Q_PROPERTY(QString rttyDecodedText READ rttyDecodedText NOTIFY rttyDecoderChanged)
+    Q_PROPERTY(QString rttyStrip READ rttyStrip NOTIFY rttyDecoderChanged)
+    Q_PROPERTY(qint64 rttyStripStart READ rttyStripStart NOTIFY rttyDecoderChanged)
+    // mark / shift (0 = the radio's), baud, reverse, and what is in use:
+    // markHz / shiftHz, snr, locked.
+    Q_PROPERTY(QVariantMap rtty READ rtty NOTIFY rttyDecoderChanged)
     Q_PROPERTY(bool cwKeyAvailable READ cwKeyAvailable NOTIFY transmitStateChanged)
     Q_PROPERTY(bool cwxAvailable READ cwxAvailable NOTIFY transmitStateChanged)
     Q_PROPERTY(bool cwKeyDown READ cwKeyDown NOTIFY cwKeyDownChanged)
@@ -740,6 +751,21 @@ public:
     bool cwBreakIn() const;
     void setCwBreakIn(bool on);
     bool cwDecoderEnabled() const;
+    bool rttyMode() const;
+    bool rttyDecoderEnabled() const;
+    void setRttyDecoderEnabled(bool on);
+    QString rttyDecodedText() const { return m_rttyDecodedText; }
+    QString rttyStrip() const { return m_rttyStrip; }
+    qint64 rttyStripStart() const { return m_rttyStripStart; }
+    QVariantMap rtty() const;
+    // key: mark (Hz, 0 = the radio's), shift (Hz, 0 = the radio's), baud,
+    // reverse (bool). Remembered.
+    Q_INVOKABLE void setRtty(const QString& key, const QVariant& value);
+    Q_INVOKABLE void clearRttyText();
+    // Tests (render tool rttyfeed): TEXT as RTTY audio at the decoder's
+    // mark, shift and speed (Baudot, continuous-phase FSK, a little noise),
+    // fed in real time to the running decoder.
+    void testRttyFeed(const QString& text);
     bool locked() const;
     bool recordOn() const;
     bool playOn() const;
@@ -1288,6 +1314,7 @@ signals:
     void cwChanged();
     void cwKeyDownChanged();
     void cwDecoderChanged();
+    void rttyDecoderChanged();
     void displayLevelsChanged();
     void lockedChanged();
     void recordPlayChanged();
@@ -1360,6 +1387,8 @@ private:
     void wireSmartLink();
     void wireCw();
     void updateCwDecoder();
+    void updateRttyDecoder();
+    void appendRttyDecoded(const QString& text);
     void startWanConnect();
     void setSmartLinkState(const QString& state);
 
@@ -1674,6 +1703,15 @@ private:
     std::atomic<qint64> m_cwxSidetoneKeyedMs{0};  // time keyed, ms
     std::chrono::steady_clock::time_point m_cwxSidetoneDownAt;  // keyer thread only
     std::unique_ptr<DecoderAudioModel> m_cwAudio;
+    std::unique_ptr<RttyDecoder> m_rttyDecoder;
+    std::unique_ptr<DecoderAudioModel> m_rttyAudio;
+    QString m_rttyDecodedText;
+    QString m_rttyStrip;
+    qint64 m_rttyStripStart{0};
+    float m_rttySnrDb{0.0f};
+    bool m_rttyLocked{false};
+    QMetaObject::Connection m_rttyMarkConnection;
+    QMetaObject::Connection m_rttyShiftConnection;
     QString m_cwDecodedText;
     // The mark added when the app went to the background with the decoder on.
     QString m_cwAwayMark;

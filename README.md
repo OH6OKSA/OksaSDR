@@ -86,6 +86,9 @@ radio interface, with no computer running alongside.
   as callsigns on the display, tap to tune; the app's own DX cluster
   connection sends its spots to the radio, as the desktop does; a status
   line says whether it is connected, to which server and as whom.
+- **RTTY decoding** in the radio's RTTY mode, as on the desktop: the text
+  along the top of the waterfall, a tap for the RTTY panel (shift, speed,
+  reverse, mark, the text so far). Receive only.
 - **Notch filters (TNF)**: press and hold on the display (or *+ TNF*) for
   a new notch, set its width, depth and permanent and *Add* it, so a stray
   hold adds none; tap one for its settings or remove; drawn through
