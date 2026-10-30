@@ -29,11 +29,14 @@ class MobileEngine;
 //   preview-tx on|off       the meters as while transmitting
 //   meter-style L,R         analog, bar or two, each side (remembered)
 //   tap FX,FY               tap at this fraction of the window
+//   tapmhz MHZ              tap the spectrum at that frequency
 //   hold FX,FY,MS           press there for MS (auto-repeat), logging the frequency
 //   freq MHZ                tune the active slice there (to put it back)
 //   mode NAME               the active slice's mode (USB shows the squelch row;
 //                           put the mode back after)
 //   click NAME              clicked() on the visible buttons with this objectName
+//   ready                   wait until connected with a slice (up to 30 s),
+//                           then 4 s for the display
 //   setup KEY=VALUE         a Radio Setup value, as the page sets it (e.g.
 //                           showTxInWaterfall=0; put it back after)
 //   size WxH                resize the window (a phone turning: WxH swapped)
@@ -59,6 +62,7 @@ private:
     QStringList m_lines;
     QString m_outDir;
     int m_next{0};
+    int m_readyTries{0};
     bool m_failed{false};
     QStringList m_savedPinned;
     bool m_pinned{false};

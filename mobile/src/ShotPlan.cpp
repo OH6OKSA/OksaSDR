@@ -319,6 +319,33 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
             QWindowSystemInterface::flushWindowSystemEvents();
         }
+    } else if (command == QLatin1String("tapmhz")) {
+        // On the spectrum at that frequency, a quarter down its height: a tap
+        // at a known distance from a signal (CW autotune), wherever the view
+        // is.
+        const double mhz = arg.toDouble();
+        const double low = m_engine.panCenterMhz() - m_engine.panBandwidthMhz() / 2.0;
+        QQuickItem* spectrum = nullptr;
+        for (QObject* root : m_qml.rootObjects()) {
+            for (QObject* o : allObjects(root)) {
+                auto* item = qobject_cast<QQuickItem*>(o);
+                if (item && seen(item) && QString::fromLatin1(o->metaObject()->className()).startsWith(QLatin1String("AetherSDR::mobile::SpectrumItem"))) {
+                    spectrum = item;
+                }
+            }
+        }
+        if (window && spectrum && m_engine.panBandwidthMhz() > 0.0) {
+            const QPointF local((mhz - low) / m_engine.panBandwidthMhz() * spectrum->width(), spectrum->height() * 0.12);
+            const QPointF p = spectrum->mapToScene(local);
+            const QPointF g = window->mapToGlobal(p);
+            qInfo().noquote() << QStringLiteral("shot-plan: tap at %1 MHz (x %2)").arg(mhz, 0, 'f', 6).arg(qRound(p.x()));
+            QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
+            QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+            QWindowSystemInterface::flushWindowSystemEvents();
+        } else {
+            qWarning() << "shot-plan: no spectrum to tap";
+            m_failed = true;
+        }
     } else if (command == QLatin1String("hold")) {
         // Press, keep it down MS, release: a held button's auto-repeat. The
         // frequency is logged before, at the release and when settled.
@@ -352,6 +379,21 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
     } else if (command == QLatin1String("mode")) {
         m_engine.setMode(arg);
         *delayMs = 1500;
+    } else if (command == QLatin1String("ready")) {
+        // Until connected with a slice (at most 30 s): a slow connect left a
+        // fixed wait short and the plan's first commands went to no slice.
+        if (m_engine.connectionState() != QLatin1String("connected") || m_engine.activeSliceId() < 0
+            || m_engine.frequencyMhz() <= 0.0) {
+            if (++m_readyTries <= 60) {
+                --m_next;  // this line again
+                *delayMs = 500;
+                return;
+            }
+            qWarning() << "shot-plan: not ready after 30 s";
+            m_failed = true;
+        }
+        m_readyTries = 0;
+        *delayMs = 4000;  // the display fills
     } else if (command == QLatin1String("setup")) {
         const int eq = arg.indexOf(QLatin1Char('='));
         if (eq > 0) {

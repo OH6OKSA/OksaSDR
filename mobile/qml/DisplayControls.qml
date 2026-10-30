@@ -191,6 +191,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         AppButton {
+            objectName: "view2D"
             text: qsTr("2D waterfall")
             checked: !Engine.spectrum3D
             Layout.fillWidth: true
@@ -198,6 +199,7 @@ ColumnLayout {
             onClicked: Engine.spectrum3D = false
         }
         AppButton {
+            objectName: "view3D"
             text: qsTr("3D")
             checked: Engine.spectrum3D
             Layout.fillWidth: true
