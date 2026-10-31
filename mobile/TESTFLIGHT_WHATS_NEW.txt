@@ -9,13 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- CW Autotune acts when pressed: the strongest CW signal in the passband lands on your pitch (in 138 it only switched a setting); in CW a tap lands on the nearest signal. A radio that reports a CW pitch of 0 Hz gets 600 Hz, with a notice.
-- Notches no longer appear by accident: a finger held on the display (or + TNF) opens a new notch's panel; Add puts it on the radio, Close or a tap outside cancels.
-- eSSB tab: this device's microphone processing (gate, EQ, compressor) has its own tab, as on the desktop; the radio's EQ, PROC and TX filter stay where they were.
-- FTx: Scroll > List only keeps the main buttons at the top and scrolls only the decodes, with the settings under More (thanks Michael Whaley).
-- VoiceOver: every control has a spoken name; double tap acts, a swipe up or down moves a slider one step.
-- From build 138: − and + on every exact slider; Show my transmission in the waterfall; "In use by" on SmartLink cards; scroll bars.
-- From build 137: − / + on AGC-T and volume (thanks Larry Averbeck); host names (thanks Sebastian DG5CST); full-screen FTx.
+- Space keys PTT again on an iPad with a Magic Keyboard after you type in the Log panel: a tap anywhere outside a text field gives the keyboard back, and logging a contact does too (the call field kept it, so Space typed into it).
+- RTTY decoding (thanks Ben van Schoor): put the slice in RTTY and the text runs along the top of the waterfall; tap it for the RTTY panel (shift, speed, reverse, mark, the text so far).
+- Mac: type straight into the text fields; press and hold a field for the text box, whose OK no longer logs a half-typed call (thanks Pentti OH6PP).
+- From build 139: CW Autotune acts when pressed; notches only after Add; the eSSB tab; FTx Scroll > List only (thanks Michael Whaley); VoiceOver names for every control.
+- From build 138: − and + on every exact slider; Show my transmission in the waterfall; "In use by" on SmartLink cards.
 
 RECENT (builds 94–136)
 - QSOs to Logger32 (thanks Juho Kontio); the manual's Getting started.
@@ -32,7 +30,7 @@ PLEASE TRY
 - The Log tab: log a few contacts, save your QRZ.com account and share the ADIF file to your logbook.
 - FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - The FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
-- New: in CW press Autotune near a signal; hold the display on a carrier, pick a width and Add the notch; FTx with Scroll > List only; VoiceOver on the main screen.
+- New: on an iPad with a keyboard, log a contact and key PTT with Space right after; an RTTY station in RTTY mode (20 m 14.080-14.090 in daytime) and its text; on a Mac, type a call into the Log tab.
 - Spots and the DX cluster; the eSSB tab at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM
