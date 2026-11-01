@@ -10,6 +10,7 @@ taken from the app connected to a real FLEX radio. The app's **Manual**
 button (top row) opens this page.
 
 - [Getting started: what each mode needs](#getting-started-what-each-mode-needs)
+- [Operating by mode](#operating-by-mode): [SSB](#ssb-voice-usb-and-lsb), [CW](#cw), [AM and SAM](#am-and-sam), [FM and repeaters](#fm-nfm-dfm-and-repeaters), [FT8 / FT4](#ft8-and-ft4-digu), [RTTY](#rtty), [RADE](#rade-digital-voice-freedv), [in every mode](#in-every-mode)
 - [1. Connecting](#1-connecting)
 - [2. The main screen](#2-the-main-screen)
 - [3. Frequency, mode and the info panel](#3-frequency-mode-and-the-info-panel)
@@ -105,6 +106,178 @@ silent may have its slice muted: tap the speaker on the info panel.
 logbook there (ADIF) so FTx and the log know what you have worked. A
 QRZ.com account fills in who each station is; Wavelog / Cloudlog and
 Logger32 get every QSO too ([Log](#8-controls)).
+
+---
+
+## Operating by mode
+
+How each mode looks on the app and what you can do in it, step by step.
+The pictures are a phone upright, connected to a FLEX; an iPad or a
+tablet shows the same with the controls beside the display. Change the
+mode with the mode button beside the frequency ([3](#3-frequency-mode-and-the-info-panel)).
+What has to be set up first is in [Getting started](#getting-started-what-each-mode-needs).
+
+### SSB voice: USB and LSB
+
+| USB on 20 m | The TX tab |
+|---|---|
+| ![USB](manual/mode-usb.jpg) | ![TX tab](manual/tab-tx.jpg) |
+
+**Receive**
+1. Pick the band (band buttons) and the mode: USB on 20 m and up, LSB on
+   40 m and down, by custom. The yellow edges on the display show the
+   passband, on the right side of the carrier for the mode.
+2. Tune: tap a station on the display (snapped to the step), drag inside
+   the passband, use the step buttons under the display, or type the
+   frequency (tap the frequency).
+3. Shape what you hear: the width on the info panel (the mode's eight
+   widths, 2.7K here), **AGC** (S / M / F), and the DSP flags (NR, NB,
+   ANF, NRL, ANFL and the rest the radio has; tap one for its level). **BC**
+   cancels steady carriers. RF gain, squelch, RIT and XIT are on the DSP
+   tab; a notch (TNF) by holding a finger on the display.
+
+**Transmit**
+1. Set **RF power** and **Mic level** on the TX tab: with Mic on the left
+   meter, speech peaks near −10 dB.
+2. Hold **PTT** and talk (or make it a switch: TX → PTT *Tap on / off*).
+   The speaker goes quiet the moment you press, so receive never reaches
+   the air; it comes back when you let go.
+3. Optional: **PROC** (NOR / DX / DX+) for punch, **MON** to hear yourself,
+   the **TX filter** (100-3100 Hz), the radio's TX equalizer (Audio) and
+   this device's own processing on the **eSSB** tab (gate, EQ, compressor).
+4. **Voice keyer**: F1-F12 on the TX tab record and send voice macros
+   (*Listen* plays one without transmitting).
+5. A headset: Controls → Audio → Audio output (Bluetooth, USB-C on
+   Android, or the speaker).
+
+### CW
+
+| CW with the paddles | The CW tab |
+|---|---|
+| ![CW](manual/mode-cw.jpg) | ![CW tab](manual/tab-cw.jpg) |
+
+**Receive**
+1. Mode CW; a narrow width (500, 250 …) on the info panel. **APF** sharpens
+   a weak signal further.
+2. Tap beside a CW signal: the slice lands on it to the hertz. **Autotune**
+   on the CW tab does the same for the signal in the passband.
+3. **Decoder** on (CW tab): the text runs along the top of the waterfall;
+   the calls it hears are offered as *Heard in CW* on the Log tab.
+
+**Transmit**
+1. **Break-in** (QSK) on, on the CW tab: without it the key does not put
+   the radio on the air. Set the **speed** and **pitch** there too.
+2. Key with the big button (a straight key) or choose **Paddles**: dit and
+   dah take PTT's place (on a phone at the two edges, one per thumb);
+   **Iambic** A or B, **Swap** for dah on the left. A hardware keyboard or
+   a USB paddle adapter keys with Ctrl, Alt or [ ] (the CW tab says which).
+3. **Memories** M1-M12 send text through the radio at the set speed
+   (`{CALL}` is your callsign, `{HIS}` the call in the Log tab); on a
+   keyboard F1-F12, Esc stops. **Live** sends letters as you type.
+
+### AM and SAM
+
+| AM on 40 m |
+|---|
+| ![AM](manual/mode-am.jpg) |
+
+1. Mode **AM**, or **SAM** (synchronous AM: steadier under fading and with
+   one sideband chosen). The passband sits centred on the carrier; pick a
+   width up to the widest the radio offers (6K here).
+2. Tune by a tap on the carrier; the step buttons move by the step.
+3. Transmit with PTT as in SSB. The **carrier** level is on the TX tab in
+   AM, SAM and DSB, with the mic level and power.
+
+### FM, NFM, DFM and repeaters
+
+| FM on 10 m | The TX tab's FM repeater section |
+|---|---|
+| ![FM](manual/mode-fm.jpg) | ![FM repeater](manual/fm-tx.jpg) |
+
+1. Mode **FM** (wide), **NFM** (narrow, 12.5 kHz channels) or **DFM**. On
+   VHF and UHF use a transverter band (the band buttons after 6 m): type
+   *439.000* to tune 439 MHz.
+2. **Squelch** (DSP tab) keeps the speaker quiet between signals.
+3. With an FM step (STEP, e.g. 12.5 kHz) the step buttons move by the
+   step, 100 kHz, 1 MHz and 10 MHz, always on the channel grid.
+4. **Repeaters** (TX tab, in FM modes): **Offset** Simplex / − / +, the
+   **shift** (0.6, 1.6, 5.0, 7.6 MHz or your own) and **Tone** CTCSS with
+   its frequency. The radio transmits on the frequency moved by the offset
+   and sends the tone; receive stays on the frequency shown.
+5. Talk with PTT as in SSB.
+
+### FT8 and FT4 (DIGU)
+
+| FT8 on 20 m | The FTx tab |
+|---|---|
+| ![FT8](manual/ft8-running.jpg) | ![FTx](manual/tab-digi.jpg) |
+
+1. Controls → **FTx** → a band button: the active slice becomes the TX
+   slice, goes to the band's FT8 (or FT4) frequency in DIGU and decodes.
+   No computer, WSJT-X or DAX.
+2. The decodes come at the end of each slot, coloured as in WSJT-X; **Show**
+   filters them (CQ, CQ POTA, New, New DXCC, New call).
+3. **Answer**: tap a decode. The app calls, runs the QSO (report, R-report,
+   RR73, 73) and logs it.
+4. **Call CQ**: **CQ** (in the **CQ slot** you choose); **Keep CQ** goes
+   back to CQ after each QSO.
+5. **Answer CQ** answers CQs by itself: the rarest first, five calls a
+   station, then the next. **Auto stops after … min untouched** (FTx
+   settings) is how long Answer CQ and Keep CQ go on without a touch on
+   the app.
+6. **Halt TX** stops at once. Pick a clear TX frequency by dragging the red
+   TX band on the display or with **Free**; **TX level** sets the drive
+   (0 dB = the TX tab's power); **Report to PSK Reporter** shows where you
+   are heard.
+7. FT4 the same with **FT4**. PTT is hidden while decoding (the app keys
+   the radio itself); voice PTT does not key in DIGU / DIGL. Details:
+   [FTx](#8-controls).
+
+### RTTY
+
+| RTTY on 20 m | The RTTY panel |
+|---|---|
+| ![RTTY](manual/mode-rtty.jpg) | ![RTTY panel](manual/rtty-panel.jpg) |
+
+1. Mode **RTTY** (the radio's RTTY: LSB, mark 2125 Hz, shift 170 Hz), around
+   14.080-14.090 on 20 m, or tap an RTTY spot.
+2. **Tap the signal** on the display (either of its two traces, or between
+   them): the slice goes onto its mark and the text runs along the top of
+   the waterfall. **Autotune** in the panel does the same after tuning by
+   the steps.
+3. Tap the text for the **RTTY** panel: shift (*Auto* = the radio's), speed
+   (45.45 baud for amateur RTTY), **Reverse** for a swapped signal, the
+   mark tone, **Squelch** (holds back the letters noise makes), **Clear**.
+4. Receive only: the app does not transmit RTTY.
+
+### RADE digital voice (FreeDV)
+
+| RADE on 20 m | The FreeDV tab |
+|---|---|
+| ![RADE](manual/rade-on.jpg) | ![FreeDV](manual/tab-freedv.jpg) |
+
+1. Controls → **FreeDV**: the list shows who is on RADE (from FreeDV
+   Reporter); tap one to tune there, or tune 14.236 MHz yourself.
+2. **RADE** on: the slice goes to DIGU and the app decodes; the callsign
+   each station sends shows when they finish.
+3. Talk with PTT as in SSB (mic level as for voice); your callsign goes out
+   at the end of each over.
+4. **Report to FreeDV Reporter** puts you on qso.freedv.org (needs your
+   grid).
+
+### In every mode
+
+| PTT and the transmit lock (TX tab) |
+|---|
+| ![Lock](manual/tx-lock.jpg) |
+
+- **Transmit lock** (TX tab → Lock): in standby (SB) nothing transmits
+  until you hold PTT, KEY, Space, TUNE or CQ for a second; then it stays
+  armed (OA) for five minutes after your last transmission.
+- **TUNE** and the **ATU** (TX tab) at the tune power; **Split**
+  ([6](#6-split)); memories (Mem tab), spots and the DX cluster on the
+  display; **REC** / **PLAY** of the slice in the info panel's row; the
+  **Log** tab for every contact.
 
 ---
 

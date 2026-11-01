@@ -141,6 +141,53 @@ tabs=(dsp audio tx essb cw view profiles memory log digi freedv)
 printf 'wait %s\nshot phone-landscape\n' "$FILL" | plan phone-landscape 956x440 "${src[@]}" --controls visible
 printf 'wait %s\npopup bandChooser\nshot bandchooser\n' "$FILL" | plan bandchooser 844x390 "${src[@]}"
 
+# Each mode on a phone (Operating by mode): this app's active slice tuned
+# to a frequency for the mode, receive only, the waterfall given time to
+# fill; the TX tab's FM repeater section and Lock row; RTTY with a test
+# text through the decoder and its panel. Back on 14.074 DIGU after.
+plan modes 440x956 "${src[@]}" <<PLAN
+ready
+wait 20000
+freq 14.200
+mode USB
+wait 20000
+shot mode-usb
+freq 14.030
+mode CW
+wait 20000
+shot mode-cw
+freq 7.150
+mode AM
+wait 20000
+shot mode-am
+freq 29.600
+mode FM
+wait 20000
+shot mode-fm
+drawer 2
+wait 1500
+scroll 0
+wait 800
+shot fm-tx
+scroll 550
+wait 800
+shot tx-lock
+close
+freq 14.085
+mode RTTY
+wait 15000
+rttyfeed CQ TEST OH6OKSA OH6OKSA OH6OKSA K
+wait 8000
+shot mode-rtty
+popup rttyPanel
+wait 1500
+shot rtty-panel
+close
+freq 14.074
+mode DIGU
+wait 3000
+PLAN
+
 # Situations (they change this app's slice; FT8 last, back on 14.074 DIGU).
 shot cw-paddles 440x956 "${src[@]}" --set-mode CW --cw-paddles on
 shot rade-on 440x956 "${src[@]}" --rade-test 60,14.236
@@ -180,4 +227,10 @@ jpg memory-edit 440x380+0+280
 for t in "${tabs[@]}"; do
     jpg "tab-$t" 440x520+0+436
 done
+for m in usb cw am fm rtty; do
+    jpg "mode-$m" "" 330x
+done
+jpg rtty-panel 440x440+0+172
+jpg fm-tx 440x160+0+532
+jpg tx-lock 440x110+0+596
 echo "Updated $OUT"

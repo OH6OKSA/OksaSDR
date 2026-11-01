@@ -5,6 +5,8 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
+Queued for build 142 / beta 56 (local): Backspace on a Mac (Pentti Pärnänen OH6PP, build 140: typing worked, Backspace did nothing: with the input method off Qt's UIKit mapping sends it as key 8 with the text "\b", which a text field ignores; now sent on as Backspace, which also fixes an iPad keyboard's Backspace in the frequency keypad; checked here by sending key 8 the way UIKit does, "OH6PPX" became "OH6P", unchanged without the fix); the Mac text box no longer opening on a double click (any release or double click stops its hold timer); the QRZ.com status saying the account is saved when QRZ.com does not answer (Sloan Davis); the manual's Operating by mode with a picture of each mode (the user).
+
 To verify in build 141 / beta 55: a voice transmission with receive on a phone's speaker, the start clean on a second receiver (the user heard the burst on Android beta 54; Jeff Stinger on his Pixel 7); a USB-C headset on Android (Jeff), and plugging one in during a session; an ADIF file from Drive picked on Kurt DL5EAG's tablet; the transmit lock by finger on a phone and an iPad (a short press does nothing, a second's hold arms, OA counts down) and Space on the iPad's Magic Keyboard; Answer CQ on a device (Kurt) and the presence limit counting down; an RTTY tap and an RTTY spot on a phone.
 
 To verify in build 140 / beta 54: Space PTT on the user's iPad with the Magic Keyboard after typing a call in the pinned Log panel (a tap outside the field, or logging, gives the keyboard back); RTTY with a real station (decoded live in build 141's tests); the Mac text box only on press and hold, typing straight into the fields (Pentti Pärnänen OH6PP's MacBook).
@@ -45,6 +47,38 @@ Not planned: LoTW upload from the app (needs TQSL signing with the
 operator's certificate; the logbook or Wavelog does it); QSY from Wavelog
 to the radio (needs a listening server on the phone, not possible in the
 iOS background).
+
+## Planned: two-way logbook sync (asked 2026-11-01)
+
+The user: Wavelog is the main QSO database for many, so the app should
+also read from it, and from every logbook it can reach when it starts
+(cloud or self-hosted); for desktop programs, a shared cloud folder. The
+app would pull the log at start (and after that only what is new), merge it
+into its own log without duplicates (Wavelog's own rule: call, band and
+mode within 15 minutes, FT4 as MFSK / FT4), so worked-before, New DXCC and
+the FTx colours know everything; each QSO logged here keeps going out as
+now. What each service offers (checked in their source or docs):
+1. **Wavelog** (first): `POST /index.php/api/get_contacts_adif` with the
+   existing key (a read-only key works), the station profile from
+   `api/station_info/<key>`, and `fetchfromid` for only the new QSOs
+   (Wavelog 1.8 and newer; `limit`, JSON with chosen fields from 2.4.1).
+   Wavelog 3.1's API v2 (`api/v2/qso`, a `wl2_` token with `qso:read`)
+   pages 5000 at a time.
+2. **QRZ.com Logbook**: `ACTION=FETCH` with the logbook's key, 250 at a time
+   after a log id (needs a QRZ subscription; upload with `ACTION=INSERT`).
+3. **LoTW**: `lotwreport.adi` with the LoTW user name and password, QSOs and
+   confirmations since the last fetch (the password in the secure store).
+4. **A shared ADIF file** in iCloud Drive, Google Drive, Dropbox, OneDrive
+   or Nextcloud, picked once: read at start, each new QSO appended, for
+   desktop loggers (Log4OM can watch such a file; N1MM, DXKeeper and
+   MacLoggerDX have no internet API).
+5. **Club Log**: the whole log only (`getadif.php`, email and an app
+   password, an API key from Club Log).
+6. **Cloudlog**: no download API; worked-before one call at a time
+   (`logbook_worked_status`).
+Not possible: eQSL (others' cards only), HRDLog (upload only).
+To decide: which first (Wavelog is ready to build on), and whether the
+pulled QSOs stay a separate "known" list or go into the app's own ADIF log.
 
 ## Planned: usability (review of 2026-10-29)
 
