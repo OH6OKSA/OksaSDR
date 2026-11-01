@@ -247,9 +247,12 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
    them): the slice goes onto its mark and the text runs along the top of
    the waterfall. **Autotune** in the panel does the same after tuning by
    the steps.
-3. Tap the text for the **RTTY** panel: shift (*Auto* = the radio's), speed
-   (45.45 baud for amateur RTTY), **Reverse** for a swapped signal, the
-   mark tone, **Squelch** (holds back the letters noise makes), **Clear**.
+3. Tap the text for the **RTTY** panel (the RTTY settings; there is no
+   RTTY tab under Controls): **Decode on / off**, shift (*Auto* = the
+   radio's), speed (45.45 baud for amateur RTTY), **Reverse** for a
+   swapped signal, the mark tone, **Squelch** (holds back the letters
+   noise makes), **Autotune**, **Clear**. With decoding off the line says
+   so, and a tap on it still opens the panel.
 4. Receive only: the app does not transmit RTTY.
 
 ### RADE digital voice (FreeDV)

@@ -514,9 +514,11 @@ Rectangle {
     // over the spectrum, eliding works on single lines only).
     Rectangle {
         id: decodeStrip
-        // RTTY: shown whenever its decoder runs, empty or not, as the way to
-        // its panel (a tap); CW once there is text.
-        readonly property bool rtty: Engine.rttyMode && Engine.rttyDecoderEnabled
+        // RTTY: shown whenever the slice is in RTTY, empty or not, decoding
+        // on or off, as the way to its panel (a tap; with decoding off it
+        // was gone, and with it the only way to turn decoding back on); CW
+        // once there is text.
+        readonly property bool rtty: Engine.rttyMode
         readonly property string stream: rtty ? Engine.rttyStrip : Engine.cwStrip
         readonly property real streamStart: rtty ? Engine.rttyStripStart : Engine.cwStripStart
         onRttyChanged: cwLine.rewrap()
@@ -568,7 +570,9 @@ Rectangle {
             property real seen: 0
             // RTTY before its first letter: what it listens for, and that a
             // tap opens its panel.
-            readonly property string idle: decodeStrip.rtty && upper.length === 0 && current.length === 0
+            readonly property string idle: !decodeStrip.rtty ? ""
+                : !Engine.rttyDecoderEnabled ? qsTr("RTTY decoding is off. Tap for its settings.")
+                : upper.length === 0 && current.length === 0
                 ? qsTr("RTTY: listening, mark %1 Hz, shift %2 Hz. Tap for its settings.")
                       .arg(Engine.rtty.markHz).arg(Engine.rtty.shiftHz)
                 : ""
