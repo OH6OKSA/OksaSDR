@@ -454,7 +454,8 @@ ColumnLayout {
         visible: Engine.qrzStatus.length > 0
         text: Engine.qrzStatus
         color: Engine.qrzStatusKind === "ok" ? "#00cc66"
-             : Engine.qrzStatusKind === "failed" ? Theme.transmit : Theme.textDim
+             : Engine.qrzStatusKind === "failed" ? Theme.transmit
+             : Engine.qrzStatusKind === "unreachable" ? Theme.warning : Theme.textDim
         font.pixelSize: 13
         wrapMode: Text.WordWrap
     }

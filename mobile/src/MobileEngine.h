@@ -260,7 +260,8 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QString lastSpotCall READ lastSpotCall NOTIFY lastSpotCallChanged)
     Q_PROPERTY(QString qrzUser READ qrzUser NOTIFY qrzChanged)
     // The sign-in check after Save: the text, and "checking", "ok", "failed"
-    // or "" (not checked this session).
+    // (refused), "unreachable" (QRZ.com did not answer) or "" (not checked
+    // this session).
     Q_PROPERTY(QString qrzStatus READ qrzStatus NOTIFY qrzChanged)
     Q_PROPERTY(QString qrzStatusKind READ qrzStatusKind NOTIFY qrzChanged)
     Q_PROPERTY(QString myGrid READ myGrid WRITE setMyGrid NOTIFY qrzChanged)
@@ -1685,7 +1686,7 @@ private:
     std::unique_ptr<CtyDatParser> m_cty;
     QString m_lookupCall;                // the call callLookup is for
     QString m_qrzStatus;                 // QRZ.com sign-in check, as shown
-    QString m_qrzStatusKind;             // "checking", "ok", "failed" or ""
+    QString m_qrzStatusKind;             // "checking", "ok", "failed", "unreachable" or ""
     QVariantMap m_callLookup;
     QString m_lastSpotCall;
     void applyCallInfo(const CallsignInfo& info);

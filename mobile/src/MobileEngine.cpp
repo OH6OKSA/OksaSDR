@@ -692,10 +692,23 @@ MobileEngine::MobileEngine(QObject* parent)
         });
         // The sign-in check after Save: shown under the account fields.
         connect(&lookup, &CallsignLookupService::loginTestFinished, this, [this](bool ok, const QString& message) {
-            m_qrzStatusKind = ok ? QStringLiteral("ok") : QStringLiteral("failed");
+            // QRZ.com not answering is not a wrong password: the account is
+            // saved either way, and lookups sign in again. "QRZ.com sign-in
+            // failed: Socket operation timed out" read as the account not
+            // saving (a tester, build 140, while QRZ.com timed out for the
+            // user's phone too).
+            static const QRegularExpression kNetwork(
+                QStringLiteral("timed out|timeout|host|network|connection|ssl|unreachable|refused"),
+                QRegularExpression::CaseInsensitiveOption);
+            const bool unreachable = !ok && kNetwork.match(message).hasMatch();
+            m_qrzStatusKind = ok ? QStringLiteral("ok") : unreachable ? QStringLiteral("unreachable") : QStringLiteral("failed");
             m_qrzStatus = ok ? (message.isEmpty() ? tr("Signed in to QRZ.com.")
                                                   : tr("Signed in to QRZ.com: %1").arg(message))
-                             : tr("QRZ.com sign-in failed: %1").arg(message);
+                          : unreachable
+                              ? tr("Your QRZ.com account is saved, but QRZ.com did not answer (%1), so it could not be "
+                                   "checked. Lookups will try again; press Save to check now.")
+                                    .arg(message)
+                              : tr("QRZ.com did not accept the sign-in: %1. Check the user name and password.").arg(message);
             qCInfo(lcMobile) << "QRZ.com sign-in" << (ok ? "ok" : "failed:") << (ok ? QString() : message);
             emit qrzChanged();
         });

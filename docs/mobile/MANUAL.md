@@ -816,8 +816,11 @@ Reporter).
   calls it heard (after *DE*, or twice; the newest first, up to three):
   a tap puts one in the field, handy when a park activator sends
   `CQ POTA DE` and the call. A card shows who it is: with a **QRZ.com** account
-  (user and password at the bottom; *Save* signs in and says below whether
-  it worked; their full records need QRZ.com's XML subscription) the name, QTH, grid, distance and bearing and whether the
+  (user and password at the bottom; *Save* keeps them and signs in, and the
+  line below says how it went: green signed in, red when QRZ.com refuses the
+  user name or password, amber when QRZ.com does not answer, the account
+  saved all the same and lookups signing in again by themselves; their full
+  records need QRZ.com's XML subscription) the name, QTH, grid, distance and bearing and whether the
   station uses LoTW, eQSL or paper cards; without one, the country,
   continent and CQ zone from the callsign's prefix. The same goes into
   every logged QSO, however the call got there: typed, a heard CW call, a
