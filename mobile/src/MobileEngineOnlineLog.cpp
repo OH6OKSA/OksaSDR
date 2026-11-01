@@ -18,6 +18,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLocale>
 #include <QLoggingCategory>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -77,7 +78,7 @@ void MobileEngine::setupOnlineLog()
                 m_knownQsos = std::move(known);
                 if (m_knownStatus.isEmpty()) {
                     m_knownStatusKind = QStringLiteral("ok");
-                    m_knownStatus = tr("%1 QSOs from the logbook count as worked before.").arg(m_knownQsos.size());
+                    m_knownStatus = tr("%1 QSOs from the logbook count as worked before.").arg(QLocale().toString(qlonglong(m_knownQsos.size())));
                 }
                 m_wkDirty = true;
                 qCInfo(lcMobile) << "online log:" << m_knownQsos.size() << "QSOs read back before";
@@ -434,7 +435,7 @@ void MobileEngine::onlineLogFetchNext(const std::shared_ptr<KnownFetch>& fetch)
                 if (exported < kReadLimit || entries.isEmpty()) {
                     ++fetch->index;
                 }
-                m_knownStatus = tr("Reading the logbook… %1 QSOs").arg(fetch->got.size());
+                m_knownStatus = tr("Reading the logbook… %1 QSOs").arg(QLocale().toString(qlonglong(fetch->got.size())));
                 emit onlineLogChanged();
                 onlineLogFetchNext(fetch);
             }, Qt::QueuedConnection);
@@ -489,8 +490,8 @@ void MobileEngine::onlineLogFetchDone(const std::shared_ptr<KnownFetch>& fetch, 
         writer->start();
     }
     m_knownStatusKind = QStringLiteral("ok");
-    m_knownStatus = full ? tr("%1 QSOs from the logbook count as worked before.").arg(m_knownQsos.size())
-                         : tr("%1 QSOs from the logbook count as worked before (%2 new).").arg(m_knownQsos.size()).arg(added);
+    m_knownStatus = full ? tr("%1 QSOs from the logbook count as worked before.").arg(QLocale().toString(qlonglong(m_knownQsos.size())))
+                         : tr("%1 QSOs from the logbook count as worked before (%2 new).").arg(QLocale().toString(qlonglong(m_knownQsos.size()))).arg(QLocale().toString(added));
     qCInfo(lcMobile).noquote() << "online log read:" << m_knownQsos.size() << "QSOs," << added << "read now from"
                                << fetch->stations.size() << "station location(s)";
     m_wkDirty = true;

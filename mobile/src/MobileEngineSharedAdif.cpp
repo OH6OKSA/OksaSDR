@@ -24,6 +24,7 @@
 #include <QDateTime>
 #include <QFile>
 #include <QFileInfo>
+#include <QLocale>
 #include <QLoggingCategory>
 #include <QMutex>
 #include <QMutexLocker>
@@ -329,7 +330,7 @@ void MobileEngine::sharedAdifRead()
                 m_sharedStatus = m_fileKnown.isEmpty()
                                      ? tr("The file could not be read (%1). Open it once in the Files app, or pick it again.").arg(error)
                                      : tr("The file could not be read (%1); its %2 QSOs from the last read still count.")
-                                           .arg(error).arg(m_fileKnown.size());
+                                           .arg(error).arg(QLocale().toString(qlonglong(m_fileKnown.size())));
                 qCWarning(lcMobile).noquote() << "shared ADIF:" << m_sharedStatus;
                 emit sharedAdifChanged();
                 return;
@@ -338,9 +339,9 @@ void MobileEngine::sharedAdifRead()
             m_wkDirty = true;
             m_sharedStatusKind = QStringLiteral("ok");
             m_sharedStatus = m_sharedWritable
-                                 ? tr("%1 QSOs in the file count as worked before; each QSO you log is added to it.").arg(m_fileKnown.size())
+                                 ? tr("%1 QSOs in the file count as worked before; each QSO you log is added to it.").arg(QLocale().toString(qlonglong(m_fileKnown.size())))
                                  : tr("%1 QSOs in the file count as worked before; the file is read-only here, so QSOs are not added.")
-                                       .arg(m_fileKnown.size());
+                                       .arg(QLocale().toString(qlonglong(m_fileKnown.size())));
             qCInfo(lcMobile).noquote() << "shared ADIF:" << m_fileKnown.size() << "QSOs read";
             emit qsoLogChanged();
             emit sharedAdifChanged();
@@ -406,7 +407,7 @@ void MobileEngine::sharedAdifFlush()
                 AppSettings::instance().setValue(QStringLiteral("MobileSharedAdifPending"), m_sharedPending.join(QLatin1Char('\n')));
                 AppSettings::instance().save();
                 m_sharedStatusKind = QStringLiteral("ok");
-                m_sharedStatus = tr("QSO added to the file (%1 QSOs in it).").arg(m_fileKnown.size());
+                m_sharedStatus = tr("QSO added to the file (%1 QSOs in it).").arg(QLocale().toString(qlonglong(m_fileKnown.size())));
                 qCInfo(lcMobile) << "shared ADIF:" << batch.size() << "QSO(s) added";
                 sharedAdifFlush();
             } else {

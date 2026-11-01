@@ -15,6 +15,7 @@
 #include "core/AppSettings.h"
 
 #include <QDateTime>
+#include <QLocale>
 #include <QLoggingCategory>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -120,7 +121,7 @@ void MobileEngine::setupQrzLog()
                 m_qrzKnown = std::move(known);
                 if (m_qrzReadStatus.isEmpty()) {
                     m_qrzReadStatusKind = QStringLiteral("ok");
-                    m_qrzReadStatus = tr("%1 QSOs from QRZ.com count as worked before.").arg(m_qrzKnown.size());
+                    m_qrzReadStatus = tr("%1 QSOs from QRZ.com count as worked before.").arg(QLocale().toString(qlonglong(m_qrzKnown.size())));
                 }
                 m_wkDirty = true;
                 qCInfo(lcMobile) << "QRZ logbook:" << m_qrzKnown.size() << "QSOs read back before";
@@ -416,7 +417,7 @@ void MobileEngine::qrzLogFetchNext(const std::shared_ptr<QrzFetch>& fetch)
                     return;
                 }
                 fetch->afterId = maxId + 1;
-                m_qrzReadStatus = tr("Reading the QRZ.com logbook… %1 QSOs").arg(fetch->got.size());
+                m_qrzReadStatus = tr("Reading the QRZ.com logbook… %1 QSOs").arg(QLocale().toString(qlonglong(fetch->got.size())));
                 emit qrzLogChanged();
                 qrzLogFetchNext(fetch);
             }, Qt::QueuedConnection);
@@ -465,8 +466,8 @@ void MobileEngine::qrzLogFetchDone(const std::shared_ptr<QrzFetch>& fetch, const
         writer->start();
     }
     m_qrzReadStatusKind = QStringLiteral("ok");
-    m_qrzReadStatus = full ? tr("%1 QSOs from QRZ.com count as worked before.").arg(m_qrzKnown.size())
-                           : tr("%1 QSOs from QRZ.com count as worked before (%2 new).").arg(m_qrzKnown.size()).arg(added);
+    m_qrzReadStatus = full ? tr("%1 QSOs from QRZ.com count as worked before.").arg(QLocale().toString(qlonglong(m_qrzKnown.size())))
+                           : tr("%1 QSOs from QRZ.com count as worked before (%2 new).").arg(QLocale().toString(qlonglong(m_qrzKnown.size()))).arg(QLocale().toString(added));
     qCInfo(lcMobile).noquote() << "QRZ logbook read:" << m_qrzKnown.size() << "QSOs," << added << "read now, last log id"
                                << fetch->lastId;
     m_wkDirty = true;
