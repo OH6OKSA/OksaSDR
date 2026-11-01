@@ -33,7 +33,7 @@ What has to be set before each kind of operating, and where; the linked
 sections tell the rest.
 
 **Where things are.** **Controls** opens the control tabs (DSP, Audio, TX,
-CW, View, Prof, Mem, Log, FTx, FreeDV): on an iPad, Mac or tablet in the
+eSSB, CW, View, Prof, Mem, Log, FTx, FreeDV, RTTY): on an iPad, Mac or tablet in the
 top row; on a phone the **Controls** button beside PTT at the bottom (in
 landscape the ☰ button at the right end of the step row). **Setup** (Radio
 Setup) is in the top row, on a phone and in a narrow window (most iPads in
@@ -241,18 +241,32 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
 |---|---|
 | ![RTTY](manual/mode-rtty.jpg) | ![RTTY panel](manual/rtty-panel.jpg) |
 
-1. Mode **RTTY** (the radio's RTTY: LSB, mark 2125 Hz, shift 170 Hz), around
-   14.080-14.090 on 20 m, or tap an RTTY spot.
+Amateur RTTY is 45.45 baud with a 170 Hz shift, the mark the higher radio
+frequency. Received as audio tones (AFSK), the mark is 2125 Hz and the
+space 2295 Hz on the lower sideband; on the upper sideband the same tones
+come the other way round.
+
+1. Controls → **RTTY** → **Receive in**: **RTTY (LSB)** is the radio's RTTY
+   mode, lower sideband, the frequency shown the mark (the standard; an
+   RTTY spot uses it too). **DIGL** and **DIGU** receive AFSK RTTY on the
+   lower or upper sideband, the frequency shown the carrier; on DIGU the
+   decoder takes the mark from the upper tone by itself. DIGL and DIGU stop
+   FT8 / FT4 decoding (they use the same modes), and starting FT8 / FT4, or
+   another mode, ends RTTY there. Around 14.080-14.090 on 20 m.
 2. **Tap the signal** on the display (either of its two traces, or between
-   them): the slice goes onto its mark and the text runs along the top of
-   the waterfall. **Autotune** in the panel does the same after tuning by
-   the steps.
-3. Tap the text for the **RTTY** panel (the RTTY settings; there is no
-   RTTY tab under Controls): **Decode on / off**, shift (*Auto* = the
-   radio's), speed (45.45 baud for amateur RTTY), **Reverse** for a
-   swapped signal, the mark tone, **Squelch** (holds back the letters
-   noise makes), **Autotune**, **Clear**. With decoding off the line says
-   so, and a tap on it still opens the panel.
+   them): the slice tunes so the mark and space land on their tones (the
+   mark on the shown frequency in the RTTY mode; 2125 Hz below it in DIGL;
+   2295 Hz above it in DIGU) and the text runs along the top of the
+   waterfall. **Autotune** on the tab does the same after tuning by the
+   steps.
+3. The rest of the **RTTY** tab: **Decode on / off**, shift (*Auto* = the
+   radio's in the RTTY mode, 170 Hz in DIGL / DIGU), speed (45.45 baud for
+   amateur RTTY), **Reverse** for a signal sent the other way round, the
+   mark tone, **Squelch** (holds back the letters noise makes), **Clear**,
+   and the text so far. The status line says how it listens (e.g. *DIGU,
+   mark 2295 Hz, space 2125 Hz*) and when it has locked on. A tap on the
+   text line over the waterfall opens the same settings over the display;
+   with decoding off the line says so, and the tap still opens them.
 4. Receive only: the app does not transmit RTTY.
 
 ### RADE digital voice (FreeDV)
@@ -840,8 +854,8 @@ with toggle buttons to show several sections at once; *Hide controls* puts
 them back into the drawer. The buttons are all one size, in rows of six:
 **DSP**, **Audio**, **TX**, **eSSB** (this device's microphone
 processing), **CW**, **View**, **Prof** (profiles), **Mem** (memory),
-**Log**, **FTx** (FT8 / FT4) and **FreeDV** (RADE digital voice and FreeDV
-Reporter).
+**Log**, **FTx** (FT8 / FT4), **FreeDV** (RADE digital voice and FreeDV
+Reporter) and **RTTY**.
 
 ![iPad in portrait with the controls pinned under the display](manual/ipad-portrait.jpg)
 
@@ -1300,6 +1314,18 @@ Reporter).
   on too, and for an SSB station (LSB / USB) RADE goes off and the slice
   takes the station's sideband, so you hear it. The list is fetched only while the tab
   is open.
+
+- **RTTY** — RTTY reception, as in [Operating by mode › RTTY](#rtty).
+
+  ![RTTY tab](manual/tab-rtty.jpg)
+
+  **Receive in**: **RTTY (LSB)** (the radio's RTTY mode, the standard),
+  **DIGL** or **DIGU** (AFSK; DIGU's mark is the upper tone, which the
+  decoder follows; both stop FT8 / FT4). Then **Decode on / off**, the
+  status (how it listens and whether it has locked on), **Shift**, speed,
+  **Reverse**, the mark tone, the text so far, **Autotune**, **Squelch** and
+  **Clear**. The text also runs along the top of the waterfall, where a tap
+  opens these settings over the display.
 
 ## 9. Radio Setup
 

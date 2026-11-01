@@ -184,6 +184,12 @@ void MobileEngine::setDigiRunning(bool on)
         m_ntpTimer.start();
     }
     m_digiOn = on;
+    // FT8 / FT4 take DIGU / DIGL back from RTTY.
+    if (on) {
+        AppSettings::instance().setValue(QStringLiteral("MobileRttyDigital"), QStringLiteral("False"));
+        AppSettings::instance().save();
+    }
+    updateRttyDecoder();
     qCInfo(lcMobile) << "digi:" << (on ? "decoding on" : "decoding off") << digiProtocol()
                      << "slice" << (digiSlice() ? digiSlice()->letter() : QString());
     if (!on) {

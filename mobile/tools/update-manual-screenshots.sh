@@ -121,7 +121,7 @@ PLAN
 
 printf 'wait %s\nshot ipad-portrait\n' "$FILL" | plan ipad-portrait 1024x1366 "${src[@]}" --controls visible
 
-tabs=(dsp audio tx essb cw view profiles memory log digi freedv)
+tabs=(dsp audio tx essb cw view profiles memory log digi freedv rtty)
 {
     echo "wait $FILL"
     echo "shot phone-portrait"

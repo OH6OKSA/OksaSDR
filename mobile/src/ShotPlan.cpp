@@ -497,8 +497,33 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                 }
             }
         }
+        // Below or above its scrolling panel's view (or the window), as a
+        // user would: scrolled into view first. A point still off the window
+        // is not tapped (it would land on whatever is there).
+        for (QQuickItem* up = target ? target->parentItem() : nullptr; up; up = up->parentItem()) {
+            if (up->inherits("QQuickFlickable")) {
+                auto* content = qvariant_cast<QQuickItem*>(up->property("contentItem"));
+                if (content) {
+                    const qreal y = target->mapToItem(content, QPointF(0, 0)).y();
+                    const qreal view = up->height();
+                    const qreal top = up->property("contentY").toReal();
+                    if (y < top || y + target->height() > top + view) {
+                        const qreal maxY = std::max<qreal>(0, up->property("contentHeight").toReal() - view);
+                        up->setProperty("contentY", std::clamp<qreal>(y - (view - target->height()) / 2.0, 0, maxY));
+                        QCoreApplication::processEvents();
+                    }
+                }
+                break;
+            }
+        }
         if (window && target) {
             const QPointF p = target->mapToScene(QPointF(target->width() / 2.0, target->height() / 2.0));
+            if (p.x() < 0 || p.y() < 0 || p.x() >= window->width() || p.y() >= window->height()) {
+                qWarning().noquote() << QStringLiteral("shot-plan: %1 is off the window at %2,%3: not tapped")
+                                            .arg(arg).arg(qRound(p.x())).arg(qRound(p.y()));
+                m_failed = true;
+                return;
+            }
             const QPointF g = window->mapToGlobal(p);
             qInfo().noquote() << QStringLiteral("shot-plan: tap %1 at %2,%3").arg(arg).arg(qRound(p.x())).arg(qRound(p.y()));
             QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
@@ -790,6 +815,14 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         // rtty=MHZ.
         m_engine.spotTest(arg);
         *delayMs = 1500;
+    } else if (command == QLatin1String("rttyset")) {
+        // KEY=VALUE straight to MobileEngine::setRtty (a shift the tab does
+        // not offer, e.g. a weather station's 450 Hz).
+        const QString key = arg.section(QLatin1Char('='), 0, 0);
+        const QString value = arg.section(QLatin1Char('='), 1);
+        m_engine.setRtty(key, key == QLatin1String("reverse") || key == QLatin1String("squelch")
+                                  ? QVariant(value == QLatin1String("true")) : QVariant(value.toDouble()));
+        *delayMs = 300;
     } else if (command == QLatin1String("rttyfeed")) {
         m_engine.testRttyFeed(args.join(QLatin1Char(' ')));
         *delayMs = 1000;
@@ -797,7 +830,9 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         const QVariantMap r = m_engine.rtty();
         QString text = m_engine.rttyDecodedText().right(160);
         text.replace(QLatin1Char('\n'), QStringLiteral(" | ")).replace(QLatin1Char('\r'), QString());
-        qInfo().noquote() << "shot-plan: rtty at" << QString::number(m_engine.frequencyMhz(), 'f', 5) << "mode" << m_engine.rttyMode()
+        qInfo().noquote() << "shot-plan: rtty at" << QString::number(m_engine.frequencyMhz(), 'f', 5) << "mode" << m_engine.mode()
+                          << "via" << r.value(QStringLiteral("via")).toString() << r.value(QStringLiteral("sideband")).toString()
+                          << "decoding" << m_engine.rttyDecoderEnabled()
                           << "mark" << r.value(QStringLiteral("markHz")).toInt()
                           << "shift" << r.value(QStringLiteral("shiftHz")).toInt() << "snr" << r.value(QStringLiteral("snr")).toInt()
                           << "locked" << r.value(QStringLiteral("locked")).toBool() << "squelch" << r.value(QStringLiteral("squelch")).toBool()

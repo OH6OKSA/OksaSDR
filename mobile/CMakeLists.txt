@@ -130,6 +130,7 @@ qt_add_qml_module(aether-mobile
         qml/LogControls.qml
         qml/DigiControls.qml
         qml/FreeDvControls.qml
+        qml/RttyControls.qml
         qml/PhoneOperatePage.qml
         qml/StationsDialog.qml
         qml/StepButton.qml

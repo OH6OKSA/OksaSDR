@@ -338,6 +338,9 @@ class MobileEngine : public QObject {
     // RTTY (Ben van Schoor): the radio's RTTY mode decoded on the device,
     // as the desktop does (RttyDecoder on the slice's receive audio).
     Q_PROPERTY(bool rttyMode READ rttyMode NOTIFY modeChanged)
+    // RTTY received now: the radio's RTTY mode, or DIGL / DIGU chosen for
+    // RTTY on the RTTY tab (rttyVia: "RTTY", "DIGL", "DIGU" or "").
+    Q_PROPERTY(bool rttyActive READ rttyActive NOTIFY rttyDecoderChanged)
     Q_PROPERTY(bool rttyDecoderEnabled READ rttyDecoderEnabled WRITE setRttyDecoderEnabled NOTIFY rttyDecoderChanged)
     Q_PROPERTY(QString rttyDecodedText READ rttyDecodedText NOTIFY rttyDecoderChanged)
     Q_PROPERTY(QString rttyStrip READ rttyStrip NOTIFY rttyDecoderChanged)
@@ -788,6 +791,12 @@ public:
     void setCwBreakIn(bool on);
     bool cwDecoderEnabled() const;
     bool rttyMode() const;
+    bool rttyActive() const;
+    QString rttyVia() const;
+    // The RTTY tab's mode row: "RTTY" (the radio's RTTY mode, lower
+    // sideband: the standard), "DIGL" or "DIGU" (AFSK, the decoder's
+    // polarity following the sideband); FT8 / FT4 decoding stops for DIGx.
+    Q_INVOKABLE void setRttyVia(const QString& via);
     bool rttyDecoderEnabled() const;
     void setRttyDecoderEnabled(bool on);
     QString rttyDecodedText() const { return m_rttyDecodedText; }
@@ -1682,6 +1691,8 @@ private:
     struct DigiDecoder;
     std::map<int, std::shared_ptr<DigiDecoder>> m_digiDecoders;
     bool m_digiOn{false};
+    QString m_rttyRunVia;  // the RTTY decoder's current way (RTTY / DIGL / DIGU)
+    int m_rttyRunMarkTone{0};
     // What the log has worked, for WSJT-X's highlighting: calls per band and
     // mode, DXCC entities, continents and CQ zones (each also per band).
     QSet<QString> m_wkCallBandMode, m_wkDxcc, m_wkDxccBand, m_wkCont, m_wkContBand, m_wkZone, m_wkZoneBand;

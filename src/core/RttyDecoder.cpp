@@ -253,6 +253,12 @@ void RttyDecoder::decodeLoop()
     double bitClock    = 0.0;
     double samplesPerBit = kSampleRate / baud;
     quint64 workerGeneration = m_inputGeneration.load();
+    // A character's confidence is read a little after its stop bit is
+    // sampled (the stop bit lasts 1.5 bits), when the envelopes have
+    // settled on the mark: read at the sample itself, characters ending in
+    // a space bit came out low and the squelch dropped them.
+    char   pendingChar    = '\0';
+    int    pendingSamples = 0;
 
     while (m_running) {
         if (m_paramsChanged.exchange(false)) {
@@ -270,6 +276,7 @@ void RttyDecoder::decodeLoop()
             prevBit  = 1;
             curBit   = 1;
             bitClock = 0.0;
+            pendingChar = '\0';
         }
 
         QByteArray chunk;
@@ -298,6 +305,7 @@ void RttyDecoder::decodeLoop()
             bitCount = shiftReg = statsTick = 0;
             figsMode = false;
             bitClock = 0.0;
+            pendingChar = '\0';
         }
         const auto current = [this, generation, source, typed] {
             return m_running && m_inputGeneration.load() == generation
@@ -326,8 +334,23 @@ void RttyDecoder::decodeLoop()
             else if (m_spaceEnv > m_markEnv * (1.0 + kHyst))  curBit = 0;
             // else: keep curBit
 
+            const bool startEdge = !inChar && prevBit == 1 && curBit == 0;
+            // The character waiting for its confidence: due, or the next
+            // one starting.
+            if (pendingChar != '\0' && (--pendingSamples <= 0 || startEdge)) {
+                const double total = m_markEnv + m_spaceEnv;
+                const float conf = total > 1e-8 ? static_cast<float>(m_markEnv / total) : 0.5f;
+                const QString text(QChar::fromLatin1(pendingChar));
+                pendingChar = '\0';
+                QMetaObject::invokeMethod(this, [this, current, text, conf] {
+                    if (current()) {
+                        emit textDecoded(text, conf);
+                    }
+                }, Qt::QueuedConnection);
+            }
+
             // Start-bit detection: falling edge (mark→space) while idle
-            if (!inChar && prevBit == 1 && curBit == 0) {
+            if (startEdge) {
                 inChar      = true;
                 bitCount    = 0;
                 shiftReg    = 0;
@@ -365,17 +388,9 @@ void RttyDecoder::decodeLoop()
                         } else if (shiftReg != kBaudotNull) {
                             char ch = baudotToAscii(shiftReg, figsMode);
                             if (ch != '\0' && ch != '\a') {
-                                const double total = m_markEnv + m_spaceEnv;
-                                float conf = 0.5f;
-                                if (total > 1e-8)
-                                    conf = static_cast<float>(
-                                        std::max(m_markEnv, m_spaceEnv) / total);
-                                const QString text(QChar::fromLatin1(ch));
-                                QMetaObject::invokeMethod(this, [this, current, text, conf] {
-                                    if (current()) {
-                                        emit textDecoded(text, conf);
-                                    }
-                                }, Qt::QueuedConnection);
+                                // Out with its confidence 0.4 bit on (above).
+                                pendingChar = ch;
+                                pendingSamples = static_cast<int>(0.4 * samplesPerBit);
                             }
                         }
                     }

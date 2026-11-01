@@ -4053,7 +4053,16 @@ void MobileEngine::wireCw()
             emit rttyDecoderChanged();
         }
     });
-    connect(this, &MobileEngine::modeChanged, this, &MobileEngine::updateRttyDecoder);
+    connect(this, &MobileEngine::modeChanged, this, [this] {
+        // RTTY chosen for DIGL / DIGU lasts while the slice stays there.
+        if (m_slice && m_slice->mode() != QLatin1String("DIGL") && m_slice->mode() != QLatin1String("DIGU")
+            && AppSettings::instance().value(QStringLiteral("MobileRttyDigital")).toString() == QLatin1String("True")) {
+            AppSettings::instance().setValue(QStringLiteral("MobileRttyDigital"), QStringLiteral("False"));
+            AppSettings::instance().save();
+        }
+        updateRttyDecoder();
+    });
+    connect(this, &MobileEngine::radeChanged, this, &MobileEngine::updateRttyDecoder);
 }
 
 namespace {
@@ -4063,11 +4072,63 @@ const QString kRttyShiftKey = QStringLiteral("MobileRttyShift");
 const QString kRttyBaudKey = QStringLiteral("MobileRttyBaud");
 const QString kRttyReverseKey = QStringLiteral("MobileRttyReverse");
 const QString kRttySquelchKey = QStringLiteral("MobileRttySquelch");
+const QString kRttyDigitalKey = QStringLiteral("MobileRttyDigital");
+constexpr int kAfskMarkHz = 2125;   // the amateur AFSK tones: mark 2125 Hz,
+constexpr int kAfskShiftHz = 170;   // space 2295 Hz (170 Hz shift)
 }
 
 bool MobileEngine::rttyMode() const
 {
     return m_slice && m_slice->mode() == QLatin1String("RTTY");
+}
+
+// How RTTY is received, as the amateur conventions have it: the radio's RTTY
+// mode (lower sideband, the shown frequency the mark: the standard), or AFSK
+// in DIGL (lower sideband, the mark tone 2125 Hz and the space 2295 Hz: the
+// mark, the higher radio frequency, is the lower tone) or DIGU (upper
+// sideband: the same tones the other way round, the mark the higher one).
+// DIGL / DIGU only when RTTY was chosen for them (the RTTY tab) and FT8 /
+// FT4 are not decoding, which use the same modes and audio.
+QString MobileEngine::rttyVia() const
+{
+    if (!m_slice) {
+        return {};
+    }
+    const QString mode = m_slice->mode();
+    if (mode == QLatin1String("RTTY")) {
+        return mode;
+    }
+    if ((mode == QLatin1String("DIGL") || mode == QLatin1String("DIGU")) && !m_digiOn && !radeActive()
+        && AppSettings::instance().value(kRttyDigitalKey, QStringLiteral("False")).toString() == QLatin1String("True")) {
+        return mode;
+    }
+    return {};
+}
+
+bool MobileEngine::rttyActive() const
+{
+    return !rttyVia().isEmpty();
+}
+
+void MobileEngine::setRttyVia(const QString& via)
+{
+    if (!m_slice || (via != QLatin1String("RTTY") && via != QLatin1String("DIGL") && via != QLatin1String("DIGU"))) {
+        return;
+    }
+    const bool digital = via != QLatin1String("RTTY");
+    AppSettings::instance().setValue(kRttyDigitalKey, digital ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    // FT8 / FT4 decode every DIGU / DIGL slice: RTTY there needs them off.
+    if (digital && m_digiOn) {
+        qCInfo(lcMobile) << "RTTY in" << via << ": FT8 / FT4 decoding off";
+        setDigiRunning(false);
+    }
+    qCInfo(lcMobile) << "RTTY via" << via << "on slice" << m_slice->letter();
+    if (m_slice->mode() != via) {
+        setMode(via);  // modeChanged brings the decoder
+    } else {
+        updateRttyDecoder();
+    }
 }
 
 // On by default, as the desktop's RTTY pane: choosing RTTY is the wish to
@@ -4087,8 +4148,14 @@ void MobileEngine::setRttyDecoderEnabled(bool on)
 
 QVariantMap MobileEngine::rtty() const
 {
+    const QString via = rttyVia();
+    const bool digital = via == QLatin1String("DIGL") || via == QLatin1String("DIGU");
     const int mark = AppSettings::instance().value(kRttyMarkKey, QStringLiteral("0")).toInt();
     const int shift = AppSettings::instance().value(kRttyShiftKey, QStringLiteral("0")).toInt();
+    const bool reversed = AppSettings::instance().value(kRttyReverseKey, QStringLiteral("False")).toString() == QLatin1String("True");
+    const int toneHz = mark > 0 ? mark : (digital ? kAfskMarkHz : (m_slice ? m_slice->rttyMark() : kAfskMarkHz));
+    const int shiftHz = shift > 0 ? shift : (!digital && m_slice && m_slice->rttyShift() > 0 ? m_slice->rttyShift() : kAfskShiftHz);
+    const bool markUpper = (via == QLatin1String("DIGU")) != reversed;
     return {{QStringLiteral("mark"), mark},
             {QStringLiteral("shift"), shift},
             {QStringLiteral("baud"), AppSettings::instance().value(kRttyBaudKey, QStringLiteral("45.45")).toDouble()},
@@ -4096,8 +4163,16 @@ QVariantMap MobileEngine::rtty() const
                                             == QLatin1String("True")},
             {QStringLiteral("squelch"), AppSettings::instance().value(kRttySquelchKey, QStringLiteral("True")).toString()
                                             == QLatin1String("True")},
-            {QStringLiteral("markHz"), mark > 0 ? mark : (m_slice ? m_slice->rttyMark() : 2125)},
-            {QStringLiteral("shiftHz"), shift > 0 ? shift : (m_slice && m_slice->rttyShift() > 0 ? m_slice->rttyShift() : 170)},
+            // Auto: the radio's mark and shift in its RTTY mode; the
+            // standard AFSK tones in DIGL / DIGU.
+            {QStringLiteral("markHz"), toneHz},
+            {QStringLiteral("shiftHz"), shiftHz},
+            {QStringLiteral("via"), via},
+            {QStringLiteral("sideband"), via == QLatin1String("DIGU") ? QStringLiteral("USB") : via.isEmpty() ? QString() : QStringLiteral("LSB")},
+            // The tones the mark and the space arrive on (as the decoder
+            // listens: upper sideband or Reverse puts the mark on the upper).
+            {QStringLiteral("markTone"), markUpper ? toneHz + shiftHz : toneHz},
+            {QStringLiteral("spaceTone"), markUpper ? toneHz : toneHz + shiftHz},
             {QStringLiteral("snr"), qRound(m_rttySnrDb)},
             {QStringLiteral("locked"), m_rttyLocked}};
 }
@@ -4134,8 +4209,21 @@ void MobileEngine::testRttyFeed(const QString& text)
     const QVariantMap r = rtty();
     const double mark = r.value(QStringLiteral("markHz")).toDouble();
     const double shift = r.value(QStringLiteral("shiftHz")).toDouble();
-    // As the radio's RTTY mode gives it: the space above the mark.
-    const double space = r.value(QStringLiteral("reverse")).toBool() ? mark - shift : mark + shift;
+    // A standard signal (the mark the higher radio frequency) as the
+    // receiver hears it: on lower sideband (RTTY, DIGL) the mark the lower
+    // tone and the space the shift above it, on upper sideband (DIGU) the
+    // other way round; reverse sends a signal of the opposite polarity.
+    // "lsb:" / "usb:" first sends it as heard on that sideband whatever the
+    // slice is in (a decoder on the other sideband must print nothing).
+    QString body = text;
+    bool usb = r.value(QStringLiteral("sideband")).toString() == QLatin1String("USB");
+    if (body.startsWith(QLatin1String("lsb:")) || body.startsWith(QLatin1String("usb:"))) {
+        usb = body.startsWith(QLatin1String("usb:"));
+        body = body.mid(4);
+    }
+    const bool flipped = usb != r.value(QStringLiteral("reverse")).toBool();
+    const double markTone = flipped ? mark + shift : mark;
+    const double space = flipped ? mark : mark + shift;
     const double baud = r.value(QStringLiteral("baud")).toDouble();
     constexpr double kRate = 24000.0;
     std::vector<float> mono;
@@ -4144,7 +4232,7 @@ void MobileEngine::testRttyFeed(const QString& text)
     const auto tone = [&](bool isMark, double bits) {
         bitClock += bits * kRate / baud;
         while (double(mono.size()) < bitClock) {
-            phase += 2.0 * M_PI * (isMark ? mark : space) / kRate;
+            phase += 2.0 * M_PI * (isMark ? markTone : space) / kRate;
             mono.push_back(float(0.3 * std::sin(phase)));
         }
     };
@@ -4159,7 +4247,7 @@ void MobileEngine::testRttyFeed(const QString& text)
     sendCode(0x1F);
     sendCode(0x1F);
     bool figs = false;
-    for (const QChar qc : text.toUpper()) {
+    for (const QChar qc : body.toUpper()) {
         const char c = qc.toLatin1();
         int code = -1;
         bool needFigs = false;
@@ -4187,8 +4275,8 @@ void MobileEngine::testRttyFeed(const QString& text)
         seed = seed * 1664525u + 1013904223u;
         v += float((seed >> 8) / double(1 << 24) - 0.5) * 0.06f;
     }
-    qCInfo(lcMobile) << "RTTY test:" << text.size() << "characters," << mono.size() / kRate << "s at mark" << mark
-                     << "space" << space << "baud" << baud;
+    qCInfo(lcMobile) << "RTTY test:" << body.size() << "characters," << (usb ? "USB" : "LSB") << mono.size() / kRate << "s, mark tone" << markTone
+                     << "space tone" << space << "baud" << baud << "via" << r.value(QStringLiteral("via")).toString();
     // Fed in real time, 100 ms at a time (the decoder's buffer holds 4 s),
     // the radio's audio held off meanwhile (both in one buffer garbled it).
     m_rttyAudio->setEnabled(false);
@@ -4234,6 +4322,7 @@ void MobileEngine::appendRttyGated(const QString& text, float conf)
 {
     constexpr float kOpen = 0.70f;
     constexpr float kKeep = 0.60f;
+    qCDebug(lcMobile).noquote() << QStringLiteral("rtty char '%1' conf %2").arg(text).arg(conf, 0, 'f', 3);
     if (!rtty().value(QStringLiteral("squelch")).toBool()) {
         appendRttyDecoded(text);
         emit rttyDecoderChanged();
@@ -4279,29 +4368,54 @@ void MobileEngine::tuneToRtty(double mhz, bool onSignal)
         tuneToSnapped(mhz);
         return;
     }
-    const double hz = static_cast<double>(std::llround(mhz * 1e6)) / 1e6;
-    qCInfo(lcMobile).noquote() << QStringLiteral("rtty tune: slice %1 to the mark at %2 MHz")
-                                      .arg(m_slice->letter())
-                                      .arg(hz, 0, 'f', 6);
+    // mhz is the signal's mark (its higher radio frequency). The radio's RTTY
+    // mode shows the mark; DIGL and DIGU show the carrier, placed so the
+    // tones land on the mark and space tones (DIGL: the mark at the mark
+    // tone below the carrier; DIGU: the space at the mark tone above it).
+    const QVariantMap r = rtty();
+    const QString via = r.value(QStringLiteral("via")).toString();
+    const double tone = r.value(QStringLiteral("markHz")).toDouble();
+    const double shift = r.value(QStringLiteral("shiftHz")).toDouble();
+    double dial = mhz;
+    if (via == QLatin1String("DIGL")) {
+        dial = mhz + tone / 1e6;
+    } else if (via == QLatin1String("DIGU")) {
+        dial = mhz - (tone + shift) / 1e6;
+    }
+    const double hz = static_cast<double>(std::llround(dial * 1e6)) / 1e6;
+    qCInfo(lcMobile).noquote() << QStringLiteral("rtty tune: slice %1 (%2) to %3 MHz for the mark at %4 MHz")
+                                      .arg(m_slice->letter(), via.isEmpty() ? m_slice->mode() : via)
+                                      .arg(hz, 0, 'f', 6)
+                                      .arg(mhz, 0, 'f', 6);
     tuneTo(hz);
 }
 
 void MobileEngine::rttyAutotune()
 {
-    if (!m_slice || !rttyMode()) {
+    if (!m_slice || !rttyActive()) {
         return;
     }
-    // The signal's centre if its mark were on the dial (the space below it
-    // by the shift), and the passband's reach either side.
-    const double shift = rtty().value(QStringLiteral("shiftHz")).toDouble();
+    // Where a signal tuned in would be centred (its mark on the shown
+    // frequency in the RTTY mode, the space a shift below; in DIGL / DIGU
+    // its tones on the mark and space tones), and the passband's reach.
+    const QVariantMap r = rtty();
+    const QString via = r.value(QStringLiteral("via")).toString();
+    const double shift = r.value(QStringLiteral("shiftHz")).toDouble();
+    const double tone = r.value(QStringLiteral("markHz")).toDouble();
+    double centre = m_slice->frequency() - shift / 2e6;
+    if (via == QLatin1String("DIGL")) {
+        centre = m_slice->frequency() - (tone + shift / 2.0) / 1e6;
+    } else if (via == QLatin1String("DIGU")) {
+        centre = m_slice->frequency() + (tone + shift / 2.0) / 1e6;
+    }
     const double width = static_cast<double>(m_slice->filterHigh() - m_slice->filterLow());
-    emit rttyAutotuneRequested(m_slice->frequency() - shift / 2e6, std::max(150.0, width / 2.0), true);
+    emit rttyAutotuneRequested(centre, std::max(150.0, width / 2.0), true);
 }
 
 void MobileEngine::rttyAutotuneNow(double markMhz, bool notify)
 {
     // A spot's (no notice) can come before the radio has confirmed RTTY.
-    if (!m_slice || (notify && !rttyMode())) {
+    if (!m_slice || (notify && !rttyActive())) {
         return;
     }
     if (markMhz > 0.0) {
@@ -4357,7 +4471,8 @@ void MobileEngine::updateRttyDecoder()
     if (!m_rttyDecoder || !m_rttyAudio) {
         return;
     }
-    const bool run = m_connected && rttyDecoderEnabled() && rttyMode();
+    const QString via = rttyVia();
+    const bool run = m_connected && rttyDecoderEnabled() && !via.isEmpty();
     // The radio's mark and shift (the "Auto" choice) followed while it runs.
     disconnect(m_rttyMarkConnection);
     disconnect(m_rttyShiftConnection);
@@ -4369,21 +4484,39 @@ void MobileEngine::updateRttyDecoder()
     m_rttyAudio->setEnabled(run);
     if (run) {
         const QVariantMap r = rtty();
-        m_rttyDecoder->setMarkFreqHz(r.value(QStringLiteral("markHz")).toInt());
-        m_rttyDecoder->setShiftHz(r.value(QStringLiteral("shiftHz")).toInt());
+        const int tone = r.value(QStringLiteral("markHz")).toInt();
+        const int shift = r.value(QStringLiteral("shiftHz")).toInt();
+        const bool reverse = r.value(QStringLiteral("reverse")).toBool();
+        // The two tones are the mark tone and the shift above it. A standard
+        // signal (the mark the higher radio frequency) arrives on lower
+        // sideband (the RTTY mode, DIGL) with its mark on the lower tone, on
+        // upper sideband (DIGU) on the upper one; Reverse is for a signal of
+        // the opposite polarity. The decoder takes the tone the mark arrives
+        // on and puts the space the shift below it, or above it when its
+        // polarity is reversed (on lower sideband without Reverse: silent on
+        // R8UT's CQ until it was).
+        const bool usb = via == QLatin1String("DIGU");
+        const bool markUpper = usb != reverse;
+        const int markTone = markUpper ? tone + shift : tone;
+        const int spaceTone = markUpper ? tone : tone + shift;
+        m_rttyDecoder->setMarkFreqHz(markTone);
+        m_rttyDecoder->setShiftHz(shift);
         m_rttyDecoder->setBaudRate(float(r.value(QStringLiteral("baud")).toDouble()));
-        // The radio's RTTY mode is lower sideband: the mark at the mark tone
-        // and the space the shift above it (2125 / 2295 Hz), which the
-        // decoder calls reversed (it was silent on R8UT's CQ without it).
-        m_rttyDecoder->setReversePolarity(!r.value(QStringLiteral("reverse")).toBool());
-        if (!m_rttyDecoder->isRunning()) {
-            qCInfo(lcMobile) << "RTTY decoder on: mark" << r.value(QStringLiteral("markHz")).toInt() << "shift"
-                             << r.value(QStringLiteral("shiftHz")).toInt() << "baud" << r.value(QStringLiteral("baud")).toDouble();
-            m_rttyDecoder->start();
+        m_rttyDecoder->setReversePolarity(spaceTone > markTone);
+        if (!m_rttyDecoder->isRunning() || via != m_rttyRunVia || markTone != m_rttyRunMarkTone) {
+            qCInfo(lcMobile) << "RTTY decoder on:" << via << (usb ? "USB" : "LSB") << "mark tone" << markTone
+                             << "space tone" << spaceTone << "baud" << r.value(QStringLiteral("baud")).toDouble()
+                             << (reverse ? "reversed" : "");
+            m_rttyRunMarkTone = markTone;
+            m_rttyRunVia = via;
+            if (!m_rttyDecoder->isRunning()) {
+                m_rttyDecoder->start();
+            }
         }
     } else if (m_rttyDecoder->isRunning()) {
         m_rttyDecoder->stop();
         m_rttyLocked = false;
+        m_rttyRunVia.clear();
         qCInfo(lcMobile) << "RTTY decoder off";
     }
     emit rttyDecoderChanged();
