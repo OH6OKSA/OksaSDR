@@ -75,6 +75,7 @@
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QElapsedTimer>
+#include <QStyleHints>
 #include <QKeyEvent>
 #include <QPointer>
 #include <QHostAddress>
@@ -298,9 +299,37 @@ private:
     MobileEngine* m_engine;
 };
 
+// Backspace from a hardware keyboard where the input method is off (a Mac's
+// text fields, MacTextKeys; an iPad's keypads and the operate page): Qt's
+// UIKit key mapping has no entry for it, so it arrives as key 8 with the
+// text "\b" (0x7F from some keyboards), which a text field does not take
+// as a deletion and refuses as text. Typing worked on Pentti Pärnänen
+// OH6PP's MacBook (build 140) but Backspace did nothing. Sent on as
+// Key_Backspace, as Qt's own AppKit mapping does on macOS.
+class AppleControlKeys : public QObject {
+public:
+    explicit AppleControlKeys(QObject* parent) : QObject(parent) {}
+    bool eventFilter(QObject* receiver, QEvent* event) override
+    {
+        if (event->type() != QEvent::KeyPress && event->type() != QEvent::KeyRelease) {
+            return false;
+        }
+        const auto* key = static_cast<QKeyEvent*>(event);
+        if (key->key() != 0x08 && key->key() != 0x7F) {
+            return false;
+        }
+        QKeyEvent backspace(event->type(), Qt::Key_Backspace, key->modifiers(), QString(), key->isAutoRepeat());
+        QCoreApplication::sendEvent(receiver, &backspace);
+        return true;
+    }
+};
+
 // Press and hold a text field on a Mac (0.6 s, the pointer still): Apple's
 // text box, for a Mac where typed keys do not reach the field. A drag
-// (selecting text) does not open it.
+// (selecting text) does not open it, nor does a double click (it did for
+// Pentti Pärnänen OH6PP, build 140: the second click's release did not
+// always reach the field, so the timer ran on): any release anywhere, and a
+// double click, stop it, and a press soon after a release arms nothing.
 void offerMacTextEntry(QObject* obj);
 class MacTextHold : public QObject {
 public:
@@ -319,11 +348,17 @@ public:
         switch (event->type()) {
         case QEvent::MouseButtonPress:
         case QEvent::TouchBegin:
-            if (receiver->inherits("QQuickTextInput") || receiver->inherits("QQuickTextEdit")) {
+            if ((receiver->inherits("QQuickTextInput") || receiver->inherits("QQuickTextEdit"))
+                && !(m_released.isValid()
+                     && m_released.elapsed() < QGuiApplication::styleHints()->mouseDoubleClickInterval())) {
                 m_field = receiver;
                 m_pressedAt = static_cast<QPointerEvent*>(event)->points().value(0).globalPosition();
                 m_timer.start();
             }
+            break;
+        case QEvent::MouseButtonDblClick:
+            m_timer.stop();
+            m_field = nullptr;
             break;
         case QEvent::MouseMove:
         case QEvent::TouchUpdate:
@@ -338,9 +373,10 @@ public:
         case QEvent::TouchEnd:
         case QEvent::TouchCancel:
         case QEvent::UngrabMouse:
-            if (receiver == m_field) {
-                m_timer.stop();
-                m_field = nullptr;
+            m_timer.stop();
+            m_field = nullptr;
+            if (event->type() != QEvent::UngrabMouse) {
+                m_released.start();
             }
             break;
         default:
@@ -350,6 +386,7 @@ public:
     }
 
 private:
+    QElapsedTimer m_released;
     QTimer m_timer;
     QPointer<QObject> m_field;
     QPointF m_pressedAt;
@@ -1002,6 +1039,7 @@ MobileEngine::MobileEngine(QObject* parent)
         qApp->installEventFilter(diag);
         qApp->installEventFilter(new TextFocusRelease(this));
         qApp->installEventFilter(new OperatorPresence(this));
+        qApp->installEventFilter(new AppleControlKeys(this));
         qCInfo(lcMobile) << "keyboard: iPad app on a Mac:" << (runningAsIosAppOnMac() ? "yes" : "no");
         if (runningAsIosAppOnMac()) {
             qApp->installEventFilter(new MacTextKeys(this));

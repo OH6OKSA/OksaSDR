@@ -703,6 +703,25 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         }
         qInfo().noquote() << "shot-plan: focus keyboardOnPage" << m_engine.keyboardOnPage() << "active" << active
                           << "overlay visible:" << overlay.join(QStringLiteral(", "));
+    } else if (command == QLatin1String("keys")) {
+        // Keys through the window as a hardware keyboard sends them; "\\b"
+        // is Backspace as an iPad app on a Mac gets it from UIKit (key 8,
+        // text "\\b"). Then the focused field's text.
+        if (window) {
+            QString keys = arg;
+            keys.replace(QLatin1String("\\b"), QString(QChar(0x08)));
+            for (const QChar ch : std::as_const(keys)) {
+                const int key = ch.unicode() == 0x08 ? 0x08 : ch.toUpper().unicode();
+                QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyPress, key, Qt::NoModifier, QString(ch));
+                QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyRelease, key, Qt::NoModifier, QString(ch));
+            }
+            QWindowSystemInterface::flushWindowSystemEvents();
+            QQuickItem* item = window->activeFocusItem();
+            qInfo().noquote() << "shot-plan: keys" << arg << "->"
+                              << (item ? QString::fromLatin1(item->metaObject()->className()) : QStringLiteral("none"))
+                              << (item ? item->property("text").toString() : QString());
+        }
+        *delayMs = 500;
     } else if (command == QLatin1String("spottest")) {
         // Test spots on the radio (MobileEngine::spotTest): add, clear,
         // rtty=MHZ.

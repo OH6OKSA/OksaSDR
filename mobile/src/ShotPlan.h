@@ -51,6 +51,8 @@ class MobileEngine;
 //                           (spots: and the RTTY stations the spots know)
 //   rttyfeed TEXT           TEXT as RTTY audio into the running decoder (a test)
 //   focus                   log where the keyboard is (keyboardOnPage, active item)
+//   keys TEXT               type TEXT through the window ("\\b": Backspace as a
+//                           Mac's UIKit sends it), then log the focused field's text
 //   focusaudit FX,FY        tap every text field in view, then FX,FY: each must
 //                           take the keyboard and let it go to the page
 //   a11y on|                on: accessibility on; bare: log the screen reader's
