@@ -88,7 +88,8 @@ radio interface, with no computer running alongside.
   line says whether it is connected, to which server and as whom.
 - **RTTY decoding** in the radio's RTTY mode, as on the desktop: the text
   along the top of the waterfall, a tap for the RTTY panel (shift, speed,
-  reverse, mark, the text so far). Receive only.
+  reverse, mark, the text so far, a squelch). A tap on a signal, an RTTY
+  spot or Autotune tunes onto it. Receive only.
 - **Notch filters (TNF)**: press and hold on the display (or *+ TNF*) for
   a new notch, set its width, depth and permanent and *Add* it, so a stray
   hold adds none; tap one for its settings or remove; drawn through
@@ -161,7 +162,11 @@ radio interface, with no computer running alongside.
   processed audio on the air.
 - Hold-to-talk PTT from the device's microphone (the radio's mic input is
   set to `PC` when the app connects), with RF power and mic level, plus forward power and SWR
-  while transmitting. The microphone is open only while PTT is held.
+  while transmitting. The microphone is open only while PTT is held, and
+  the speaker goes quiet at the press, so receive never reaches the air.
+- **Transmit lock** (TX tab, off by default): nothing transmits in
+  standby until PTT, KEY, Space, TUNE or CQ is held for a second; then it
+  stays armed for five minutes after the last transmission.
 - CW: in CW modes the PTT button is the straight key or two paddles (dit,
   dah) with the app's iambic keyer (A/B, squeeze; also [ ] or left/right
   Ctrl on a keyboard or USB paddle adapter), with the sidetone played on
@@ -183,7 +188,10 @@ radio interface, with no computer running alongside.
   continent, new call, worked before), with a filter (All, CQ, CQ POTA,
   New, New DXCC, New call). Tap a
   call to answer it (TX and the display move to its slice) or call CQ;
-  the app runs the QSO and logs it. Drag the red TX band to a free
+  the app runs the QSO and logs it. *Keep CQ* goes on calling; *Answer CQ*
+  answers CQs by itself (the rarest first, five calls each, then the
+  next); both stop after a time without a touch on the app, which you
+  set. Drag the red TX band to a free
   frequency on the display. *List only* keeps the main buttons fixed and
   scrolls just the decodes.
 - **RADE digital voice** (FreeDV's Radio Autoencoder) in the app, on any
@@ -268,11 +276,12 @@ landscape and Android pictures are taken from the devices.</sub>
 | iPad and iPhone builds, signing, TestFlight delivery | ✅ Automated in GitHub Actions |
 | Android APK (arm64), signed, from the same code | 🧪 Beta in GitHub Releases, built in GitHub Actions |
 | Android: background receive, Bluetooth headsets, SmartLink sign-in kept | ✅ Tested on a OnePlus Open (Android 16) |
+| Android: USB-C headsets | 🧪 New in beta 55; reports with a USB-C headset welcome |
 | RX audio on device | ✅ In daily use by testers, also with Bluetooth headsets |
 | Voice transmit on air (device mic, Bluetooth headset) | ✅ Used on air by testers. Test at low power or into a dummy load first. |
 | SmartLink remote (sign in, connect from anywhere, Opus audio) | ✅ Supported |
 | Remote over your own VPN (connect by IP) | ✅ In use by testers (OpenVPN, WireGuard, Tailscale; also over 5G) |
-| FT8 / FT4 in the app | ✅ QSOs logged on the air from the iPad and a FLEX; 157 PSKReporter spots from two 10 W CQs; several slices decoding at once |
+| FT8 / FT4 in the app | ✅ QSOs logged on the air from the iPad and a FLEX; 157 PSKReporter spots from two 10 W CQs; several slices decoding at once; Answer CQ worked three stations by itself (build 141) |
 | RADE digital voice | 🧪 Built in; reports with RADE stations welcome |
 | FreeDV Reporter (qso.freedv.org) | ✅ The app's RADE listed on qso.freedv.org (build 112) |
 | PSK Reporter, Wavelog / Cloudlog | ✅ Spots on pskreporter.info; QSOs sent to a Wavelog logbook |
@@ -285,6 +294,8 @@ landscape and Android pictures are taken from the devices.</sub>
 | VoiceOver / TalkBack names | 🧪 Every control named (build 139); reports from screen-reader users welcome |
 | CWX (CW memories, CW text) on air | ✅ Used on air by a tester (POTA/WWFF replies); checked at 10 W with the sidetone in step |
 | CW straight key and paddles on air | ✅ Checked on the FLEX at 10 W: straight key, paddles (elements on time at 30 WPM), iambic A and B squeeze |
+| Transmit lock (SB / OA) | ✅ Checked on the FLEX without transmitting (build 141) |
+| RTTY decoding | ✅ Contest stations decoded live (build 141) |
 | CW decoder | ✅ Decodes a strong signal cleanly and weak stations' calls (8–45 WPM, Sens filter against noise) |
 | LAN discovery on iOS | ⏳ Needs Apple's multicast entitlement. Connect by IP for now. |
 | LAN discovery on Android | 🧪 Built in; to be verified on the radio's own network |
