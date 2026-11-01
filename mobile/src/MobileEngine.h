@@ -759,9 +759,20 @@ public:
     qint64 rttyStripStart() const { return m_rttyStripStart; }
     QVariantMap rtty() const;
     // key: mark (Hz, 0 = the radio's), shift (Hz, 0 = the radio's), baud,
-    // reverse (bool). Remembered.
+    // reverse (bool), squelch (bool). Remembered.
     Q_INVOKABLE void setRtty(const QString& key, const QVariant& value);
     Q_INVOKABLE void clearRttyText();
+    // A tap in RTTY: onto the mark of the RTTY signal the display found near
+    // the tap (SpectrumItem::rttyMarkNear), to the hertz; with none, the
+    // tapped point on the step grid.
+    Q_INVOKABLE void tuneToRtty(double mhz, bool onSignal);
+    // The RTTY panel's Autotune: asks the display for the mark of the
+    // signal in the passband (rttyAutotuneRequested), then
+    // rttyAutotuneNow.
+    Q_INVOKABLE void rttyAutotune();
+    // The slice onto markMhz (<= 0: none found; with notify, a notice says
+    // so).
+    Q_INVOKABLE void rttyAutotuneNow(double markMhz, bool notify);
     // Tests (render tool rttyfeed): TEXT as RTTY audio at the decoder's
     // mark, shift and speed (Baudot, continuous-phase FSK, a little noise),
     // fed in real time to the running decoder.
@@ -1328,6 +1339,10 @@ signals:
     void freedvStationsChanged();
     void digiDecodesChanged();
     void cwAutotuneRequested();
+    // To the display: the RTTY signal's mark near nearMhz (within halfHz),
+    // answered with rttyAutotuneNow. Autotune, and a tap on an RTTY spot
+    // (spots give the mark, or the signal's centre).
+    void rttyAutotuneRequested(double nearMhz, double halfHz, bool notify);
     void digiFilterChanged();
     void digiListScrollChanged();
     void callLookupChanged();
@@ -1389,6 +1404,8 @@ private:
     void updateCwDecoder();
     void updateRttyDecoder();
     void appendRttyDecoded(const QString& text);
+    void appendRttyGated(const QString& text, float conf);
+    void resetRttyGate();
     void startWanConnect();
     void setSmartLinkState(const QString& state);
 
@@ -1710,6 +1727,15 @@ private:
     qint64 m_rttyStripStart{0};
     float m_rttySnrDb{0.0f};
     bool m_rttyLocked{false};
+    // A spot's mark looked for again while its station listens (the
+    // display shows no pair then): the spot's frequency and tries left.
+    double m_rttySpotMhz{0.0};
+    int m_rttySpotTries{0};
+    // The squelch (appendRttyGated): open, the characters before it opened
+    // that may start the text, and one doubtful character held inside a run.
+    bool m_rttyGateOpen{false};
+    QString m_rttyGatePending;
+    QString m_rttyGateHeld;
     QMetaObject::Connection m_rttyMarkConnection;
     QMetaObject::Connection m_rttyShiftConnection;
     QString m_cwDecodedText;

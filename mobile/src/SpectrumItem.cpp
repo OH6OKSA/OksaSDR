@@ -464,6 +464,78 @@ double SpectrumItem::cwPeakNear(double mhz, double halfHz) const
     return lowMhz + (static_cast<double>(best) + 0.5 + shift) * binMhz;
 }
 
+double SpectrumItem::rttyMarkNear(double mhz, double halfHz, double shiftHz) const
+{
+    const qsizetype n = m_spectrum.size();
+    if (n < 16 || m_frameBandwidthMhz <= 0.0 || width() <= 0.0 || shiftHz <= 0.0) {
+        return -1.0;
+    }
+    const double lowMhz = m_frameCenterMhz - m_frameBandwidthMhz / 2.0;
+    const double binHz = m_frameBandwidthMhz * 1e6 / static_cast<double>(n);
+    const double centre = (mhz - lowMhz) * 1e6 / binHz;
+    if (centre < 0.0 || centre >= static_cast<double>(n)) {
+        return -1.0;
+    }
+    const double half = halfHz > 0.0 ? halfHz : std::max(14.0 * m_frameBandwidthMhz * 1e6 / width(), 100.0);
+    const double shiftBins = shiftHz / binHz;
+    if (shiftBins < 3.0) {
+        const double peak = cwPeakNear(mhz, half);
+        return peak > 0.0 ? peak + shiftHz / 2e6 : -1.0;
+    }
+    // Each bin a candidate mark, its space a shift below (a few hertz
+    // either way: shifts are not exact), the pair overlapping the tapped
+    // span; the best is the one whose weaker tone is strongest.
+    const qsizetype c = static_cast<qsizetype>(centre);
+    const qsizetype halfBins = std::max<qsizetype>(2, static_cast<qsizetype>(std::ceil(half / binHz)));
+    const qsizetype sb = static_cast<qsizetype>(std::lround(shiftBins));
+    const qsizetype tol = std::max<qsizetype>(1, static_cast<qsizetype>(std::lround(12.0 / binHz)));
+    const qsizetype lo = std::max<qsizetype>(sb + tol + 1, c - halfBins);
+    const qsizetype hi = std::min<qsizetype>(n - 2, c + halfBins + sb);
+    if (lo > hi) {
+        return -1.0;
+    }
+    qsizetype best = -1;
+    float bestScore = -1e9f;
+    for (qsizetype i = lo; i <= hi; ++i) {
+        float space = -1e9f;
+        for (qsizetype j = i - sb - tol; j <= i - sb + tol; ++j) {
+            space = std::max(space, m_spectrum.at(j));
+        }
+        const float score = std::min(m_spectrum.at(i), space);
+        if (score > bestScore || (score == bestScore && std::abs(i - c) < std::abs(best - c))) {
+            bestScore = score;
+            best = i;
+        }
+    }
+    // The floor: the median of the bins around, three times as wide.
+    std::vector<float> around;
+    const qsizetype reach = 3 * (halfBins + sb);
+    for (qsizetype i = std::max<qsizetype>(0, c - reach); i <= std::min<qsizetype>(n - 1, c + reach); ++i) {
+        around.push_back(m_spectrum.at(i));
+    }
+    std::nth_element(around.begin(), around.begin() + around.size() / 2, around.end());
+    const float floor = around[around.size() / 2];
+    const double bestMhz = lowMhz + (static_cast<double>(best) + 0.5) * binHz / 1e6;
+    qCInfo(lcSpectrum).noquote() << QStringLiteral("rtty mark near %1 MHz (±%2 Hz, shift %3): weaker tone %4 dBm, mark at %5 MHz, floor %6 dBm: %7")
+                                        .arg(mhz, 0, 'f', 6)
+                                        .arg(std::lround(half))
+                                        .arg(std::lround(shiftHz))
+                                        .arg(bestScore, 0, 'f', 1)
+                                        .arg(bestMhz, 0, 'f', 6)
+                                        .arg(floor, 0, 'f', 1)
+                                        .arg(bestScore >= floor + 6.0f ? QStringLiteral("a signal") : QStringLiteral("none"));
+    if (bestScore < floor + 6.0f) {
+        return -1.0;
+    }
+    // Between the bins, as cwPeakNear.
+    const float peak = m_spectrum.at(best);
+    const float l = m_spectrum.at(best - 1);
+    const float r = m_spectrum.at(best + 1);
+    const float denom = l - 2.0f * peak + r;
+    const double frac = denom < 0.0f ? std::clamp(0.5 * (l - r) / denom, -0.5, 0.5) : 0.0;
+    return lowMhz + (static_cast<double>(best) + 0.5 + frac) * binHz / 1e6;
+}
+
 WaterfallLevelMap::Params SpectrumItem::waterfallParams(float autoBlack) const
 {
     // The desktop's waterfall law: black at the tracked noise floor (Black

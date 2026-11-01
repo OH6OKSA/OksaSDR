@@ -362,6 +362,56 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             qWarning() << "shot-plan: no spectrum to tap";
             m_failed = true;
         }
+    } else if (command == QLatin1String("rttypairs") || command == QLatin1String("tappair") || command == QLatin1String("spotpair")) {
+        // RTTY signals in view: SpectrumItem::rttyMarkNear every 20 px across
+        // the spectrum, marks within 30 Hz as one. tappair N then taps the
+        // N-th (from 1) between its two traces, as a user would; spotpair N
+        // puts an RTTY test spot there (a spot giving the signal's centre).
+        QQuickItem* spectrum = nullptr;
+        for (QObject* root : m_qml.rootObjects()) {
+            for (QObject* o : allObjects(root)) {
+                auto* item = qobject_cast<QQuickItem*>(o);
+                if (item && seen(item) && QString::fromLatin1(o->metaObject()->className()).startsWith(QLatin1String("AetherSDR::mobile::SpectrumItem"))) {
+                    spectrum = item;
+                }
+            }
+        }
+        if (!spectrum || m_engine.panBandwidthMhz() <= 0.0) {
+            qWarning() << "shot-plan: no spectrum for rttypairs";
+            m_failed = true;
+            return;
+        }
+        const double low = m_engine.panCenterMhz() - m_engine.panBandwidthMhz() / 2.0;
+        const double shift = m_engine.rtty().value(QStringLiteral("shiftHz")).toDouble();
+        QList<double> marks;
+        for (double x = 10.0; x < spectrum->width() - 10.0; x += 20.0) {
+            double mark = -1.0;
+            QMetaObject::invokeMethod(spectrum, "rttyMarkNear", Q_RETURN_ARG(double, mark),
+                                      Q_ARG(double, low + x / spectrum->width() * m_engine.panBandwidthMhz()),
+                                      Q_ARG(double, 0.0), Q_ARG(double, shift));
+            if (mark > 0.0 && std::none_of(marks.cbegin(), marks.cend(), [mark](double m) { return std::abs(m - mark) < 30e-6; })) {
+                marks << mark;
+            }
+        }
+        QStringList list;
+        for (double m : marks) {
+            list << QString::number(m, 'f', 5);
+        }
+        qInfo().noquote() << "shot-plan: rtty pairs (marks)" << list.join(QLatin1Char(' '));
+        if (command != QLatin1String("rttypairs")) {
+            const int n = arg.toInt();
+            if (n < 1 || n > marks.size()) {
+                qWarning() << "shot-plan: no rtty pair" << n;
+                m_failed = true;
+                return;
+            }
+            const QString centre = QString::number(marks.at(n - 1) - shift / 2e6, 'f', 6);
+            if (command == QLatin1String("tappair")) {
+                run(QStringLiteral("tapmhz"), {centre}, delayMs);
+            } else {
+                run(QStringLiteral("spottest"), {QStringLiteral("rtty=") + centre}, delayMs);
+            }
+        }
     } else if (command == QLatin1String("hold")) {
         // Press, keep it down MS, release: a held button's auto-repeat. The
         // frequency is logged before, at the release and when settled.
@@ -635,6 +685,11 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         }
         qInfo().noquote() << "shot-plan: focus keyboardOnPage" << m_engine.keyboardOnPage() << "active" << active
                           << "overlay visible:" << overlay.join(QStringLiteral(", "));
+    } else if (command == QLatin1String("spottest")) {
+        // Test spots on the radio (MobileEngine::spotTest): add, clear,
+        // rtty=MHZ.
+        m_engine.spotTest(arg);
+        *delayMs = 1500;
     } else if (command == QLatin1String("rttyfeed")) {
         m_engine.testRttyFeed(args.join(QLatin1Char(' ')));
         *delayMs = 1000;
@@ -642,9 +697,11 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         const QVariantMap r = m_engine.rtty();
         QString text = m_engine.rttyDecodedText().right(160);
         text.replace(QLatin1Char('\n'), QStringLiteral(" | ")).replace(QLatin1Char('\r'), QString());
-        qInfo().noquote() << "shot-plan: rtty mode" << m_engine.rttyMode() << "mark" << r.value(QStringLiteral("markHz")).toInt()
+        qInfo().noquote() << "shot-plan: rtty at" << QString::number(m_engine.frequencyMhz(), 'f', 5) << "mode" << m_engine.rttyMode()
+                          << "mark" << r.value(QStringLiteral("markHz")).toInt()
                           << "shift" << r.value(QStringLiteral("shiftHz")).toInt() << "snr" << r.value(QStringLiteral("snr")).toInt()
-                          << "locked" << r.value(QStringLiteral("locked")).toBool() << "text" << m_engine.rttyDecodedText().size()
+                          << "locked" << r.value(QStringLiteral("locked")).toBool() << "squelch" << r.value(QStringLiteral("squelch")).toBool()
+                          << "text" << m_engine.rttyDecodedText().size()
                           << QStringLiteral("\"%1\"").arg(text);
         if (arg == QLatin1String("spots")) {
             // RTTY stations the spots know of, to tune onto one.

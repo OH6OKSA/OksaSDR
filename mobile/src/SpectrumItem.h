@@ -71,6 +71,13 @@ public:
     // bins around it; else -1. Interpolated between bins, so it lands within
     // a few Hz.
     Q_INVOKABLE double cwPeakNear(double mhz, double halfHz = 0.0) const;
+    // RTTY (a tap, a spot, Autotune): the mark of the RTTY signal near mhz,
+    // two peaks shiftHz apart, the upper one the mark, with the pair within
+    // halfHz of mhz (0: about 14 px, at least 100 Hz) and both 6 dB or more
+    // over the bins around them; else -1. Too coarse a view to tell the two
+    // apart (a wide span): the strongest peak, as the signal's centre, and
+    // the mark half a shift above it.
+    Q_INVOKABLE double rttyMarkNear(double mhz, double halfHz, double shiftHz) const;
 
 signals:
     void engineChanged();

@@ -3878,9 +3878,8 @@ void MobileEngine::wireCw()
     m_rttyAudio = std::make_unique<DecoderAudioModel>(rm, DecoderAudioModel::Consumer::Rtty);
     connect(m_rttyAudio.get(), &DecoderAudioModel::pcmReady, m_rttyDecoder.get(), &RttyDecoder::feedPcmBlock);
     connect(m_rttyAudio.get(), &DecoderAudioModel::sourceReset, m_rttyDecoder.get(), &RttyDecoder::resetInput);
-    connect(m_rttyDecoder.get(), &RttyDecoder::textDecoded, this, [this](const QString& text, float) {
-        appendRttyDecoded(text);
-        emit rttyDecoderChanged();
+    connect(m_rttyDecoder.get(), &RttyDecoder::textDecoded, this, [this](const QString& text, float conf) {
+        appendRttyGated(text, conf);
     });
     connect(m_rttyDecoder.get(), &RttyDecoder::statsUpdated, this, [this](float, float, float snrDb, bool locked) {
         // Only a change worth showing (the decoder reports often).
@@ -3899,6 +3898,7 @@ const QString kRttyMarkKey = QStringLiteral("MobileRttyMark");
 const QString kRttyShiftKey = QStringLiteral("MobileRttyShift");
 const QString kRttyBaudKey = QStringLiteral("MobileRttyBaud");
 const QString kRttyReverseKey = QStringLiteral("MobileRttyReverse");
+const QString kRttySquelchKey = QStringLiteral("MobileRttySquelch");
 }
 
 bool MobileEngine::rttyMode() const
@@ -3930,6 +3930,8 @@ QVariantMap MobileEngine::rtty() const
             {QStringLiteral("baud"), AppSettings::instance().value(kRttyBaudKey, QStringLiteral("45.45")).toDouble()},
             {QStringLiteral("reverse"), AppSettings::instance().value(kRttyReverseKey, QStringLiteral("False")).toString()
                                             == QLatin1String("True")},
+            {QStringLiteral("squelch"), AppSettings::instance().value(kRttySquelchKey, QStringLiteral("True")).toString()
+                                            == QLatin1String("True")},
             {QStringLiteral("markHz"), mark > 0 ? mark : (m_slice ? m_slice->rttyMark() : 2125)},
             {QStringLiteral("shiftHz"), shift > 0 ? shift : (m_slice && m_slice->rttyShift() > 0 ? m_slice->rttyShift() : 170)},
             {QStringLiteral("snr"), qRound(m_rttySnrDb)},
@@ -3946,6 +3948,9 @@ void MobileEngine::setRtty(const QString& key, const QVariant& value)
         AppSettings::instance().setValue(kRttyBaudKey, QString::number(std::clamp(value.toDouble(), 20.0, 300.0)));
     } else if (key == QLatin1String("reverse")) {
         AppSettings::instance().setValue(kRttyReverseKey, value.toBool() ? QStringLiteral("True") : QStringLiteral("False"));
+    } else if (key == QLatin1String("squelch")) {
+        AppSettings::instance().setValue(kRttySquelchKey, value.toBool() ? QStringLiteral("True") : QStringLiteral("False"));
+        resetRttyGate();
     } else {
         return;
     }
@@ -3965,7 +3970,8 @@ void MobileEngine::testRttyFeed(const QString& text)
     const QVariantMap r = rtty();
     const double mark = r.value(QStringLiteral("markHz")).toDouble();
     const double shift = r.value(QStringLiteral("shiftHz")).toDouble();
-    const double space = r.value(QStringLiteral("reverse")).toBool() ? mark + shift : mark - shift;
+    // As the radio's RTTY mode gives it: the space above the mark.
+    const double space = r.value(QStringLiteral("reverse")).toBool() ? mark - shift : mark + shift;
     const double baud = r.value(QStringLiteral("baud")).toDouble();
     constexpr double kRate = 24000.0;
     std::vector<float> mono;
@@ -4046,10 +4052,115 @@ void MobileEngine::testRttyFeed(const QString& text)
 
 void MobileEngine::clearRttyText()
 {
+    resetRttyGate();
     m_rttyDecodedText.clear();
     m_rttyStripStart += m_rttyStrip.size();
     m_rttyStrip.clear();
     emit rttyDecoderChanged();
+}
+
+// The squelch (on by default): band noise decodes into a steady stream of
+// letters. Measured on 15 m contest stations (2026-11-01), a clean
+// signal's characters come at a confidence (the decoder's mark / space
+// ratio at the stop bit) of 0.70-0.74, noise's at 0.50-0.60. A character
+// of 0.70 or more opens the gate, bringing in the three before it that
+// reached 0.60 (a call's first letters); inside a run, one below 0.60 is
+// held until the next decides, and two close the gate.
+void MobileEngine::appendRttyGated(const QString& text, float conf)
+{
+    constexpr float kOpen = 0.70f;
+    constexpr float kKeep = 0.60f;
+    if (!rtty().value(QStringLiteral("squelch")).toBool()) {
+        appendRttyDecoded(text);
+        emit rttyDecoderChanged();
+        return;
+    }
+    if (!m_rttyGateOpen) {
+        if (conf >= kOpen) {
+            m_rttyGateOpen = true;
+            appendRttyDecoded(m_rttyGatePending + text);
+            m_rttyGatePending.clear();
+            emit rttyDecoderChanged();
+        } else if (conf >= kKeep) {
+            m_rttyGatePending = (m_rttyGatePending + text).right(3);
+        } else {
+            m_rttyGatePending.clear();
+        }
+    } else if (conf < kKeep) {
+        if (!m_rttyGateHeld.isEmpty()) {
+            resetRttyGate();
+        } else {
+            m_rttyGateHeld = text;
+        }
+    } else {
+        appendRttyDecoded(m_rttyGateHeld + text);
+        m_rttyGateHeld.clear();
+        emit rttyDecoderChanged();
+    }
+}
+
+void MobileEngine::resetRttyGate()
+{
+    m_rttyGateOpen = false;
+    m_rttyGatePending.clear();
+    m_rttyGateHeld.clear();
+}
+
+void MobileEngine::tuneToRtty(double mhz, bool onSignal)
+{
+    if (!m_slice || mhz <= 0.0) {
+        return;
+    }
+    if (!onSignal) {
+        tuneToSnapped(mhz);
+        return;
+    }
+    const double hz = static_cast<double>(std::llround(mhz * 1e6)) / 1e6;
+    qCInfo(lcMobile).noquote() << QStringLiteral("rtty tune: slice %1 to the mark at %2 MHz")
+                                      .arg(m_slice->letter())
+                                      .arg(hz, 0, 'f', 6);
+    tuneTo(hz);
+}
+
+void MobileEngine::rttyAutotune()
+{
+    if (!m_slice || !rttyMode()) {
+        return;
+    }
+    // The signal's centre if its mark were on the dial (the space below it
+    // by the shift), and the passband's reach either side.
+    const double shift = rtty().value(QStringLiteral("shiftHz")).toDouble();
+    const double width = static_cast<double>(m_slice->filterHigh() - m_slice->filterLow());
+    emit rttyAutotuneRequested(m_slice->frequency() - shift / 2e6, std::max(150.0, width / 2.0), true);
+}
+
+void MobileEngine::rttyAutotuneNow(double markMhz, bool notify)
+{
+    // A spot's (no notice) can come before the radio has confirmed RTTY.
+    if (!m_slice || (notify && !rttyMode())) {
+        return;
+    }
+    if (markMhz > 0.0) {
+        m_rttySpotTries = 0;
+        tuneToRtty(markMhz, true);
+        return;
+    }
+    // A spot's station between its transmissions: again each second for a
+    // few, while the slice stays on the spot.
+    if (!notify && m_rttySpotTries > 0) {
+        --m_rttySpotTries;
+        QTimer::singleShot(1000, this, [this] {
+            if (m_rttySpotTries > 0 && m_slice && rttyMode()
+                && std::abs(m_slice->frequency() - m_rttySpotMhz) < 1e-6) {
+                emit rttyAutotuneRequested(m_rttySpotMhz, 150.0, false);
+            }
+        });
+        return;
+    }
+    if (notify) {
+        setLastError(tr("No RTTY signal heard near the slice: tune close to one (or tap it on the display), "
+                        "then Autotune."));
+    }
 }
 
 // As appendCwDecoded: the text as received (its own line breaks kept), and
@@ -4097,7 +4208,10 @@ void MobileEngine::updateRttyDecoder()
         m_rttyDecoder->setMarkFreqHz(r.value(QStringLiteral("markHz")).toInt());
         m_rttyDecoder->setShiftHz(r.value(QStringLiteral("shiftHz")).toInt());
         m_rttyDecoder->setBaudRate(float(r.value(QStringLiteral("baud")).toDouble()));
-        m_rttyDecoder->setReversePolarity(r.value(QStringLiteral("reverse")).toBool());
+        // The radio's RTTY mode is lower sideband: the mark at the mark tone
+        // and the space the shift above it (2125 / 2295 Hz), which the
+        // decoder calls reversed (it was silent on R8UT's CQ without it).
+        m_rttyDecoder->setReversePolarity(!r.value(QStringLiteral("reverse")).toBool());
         if (!m_rttyDecoder->isRunning()) {
             qCInfo(lcMobile) << "RTTY decoder on: mark" << r.value(QStringLiteral("markHz")).toInt() << "shift"
                              << r.value(QStringLiteral("shiftHz")).toInt() << "baud" << r.value(QStringLiteral("baud")).toDouble();
@@ -5366,6 +5480,11 @@ void MobileEngine::spotTest(const QString& action)
                                .arg(QLatin1String(t.call), freq,
                                     QString::fromLatin1(t.comment).replace(QLatin1Char(' '), QChar(0x7f))));
         }
+    } else if (action.startsWith(QLatin1String("rtty="))) {
+        // An RTTY spot at a frequency (the render tool's spot tap in RTTY).
+        rm.sendCommand(QStringLiteral("spot add callsign=OH0RTTY rx_freq=%1 tx_freq=%1 mode=RTTY source=OksaSDR-test "
+                                      "trigger_action=none lifetime_seconds=120 color=#FF3FB6FF")
+                           .arg(QString::number(action.mid(5).toDouble(), 'f', 6)));
     } else if (action == QLatin1String("clear")) {
         for (const SpotData& s : rm.spotModel().spots()) {
             if (s.source == QLatin1String("OksaSDR-test") || s.callsign.startsWith(QLatin1String("OH0TEST"))) {
@@ -5574,11 +5693,20 @@ void MobileEngine::tuneToSpot(int index)
     if (m_pan && index >= 0) {
         rm.sendCommand(QStringLiteral("spot trigger %1 pan=%2").arg(index).arg(m_pan->panId()));
     }
+    QString mode = m_slice->mode();
     if (AppSettings::instance().value(QStringLiteral("SpotAutoSwitchMode"), QStringLiteral("True")).toString()
         == QLatin1String("True")) {
-        const QString mode = SpotModeResolver::resolveSpotRadioMode(spot.mode, spot.comment, spot.rxFreqMhz);
-        if (!mode.isEmpty() && mode != m_slice->mode() && m_slice->modeList().contains(mode)) {
-            m_slice->setMode(mode);
+        QString spotMode = SpotModeResolver::resolveSpotRadioMode(spot.mode, spot.comment, spot.rxFreqMhz);
+        // An RTTY spot to the radio's RTTY mode, which this app decodes (the
+        // desktop's resolver gives DIGL, for an RTTY program beside it).
+        const QString named = spot.mode.trimmed().isEmpty() ? SpotModeResolver::extractSpotModeFromComment(spot.comment)
+                                                            : spot.mode.trimmed().toUpper();
+        if (named == QLatin1String("RTTY")) {
+            spotMode = QStringLiteral("RTTY");
+        }
+        if (!spotMode.isEmpty() && spotMode != m_slice->mode() && m_slice->modeList().contains(spotMode)) {
+            m_slice->setMode(spotMode);
+            mode = spotMode;
         }
     }
     qCInfo(lcMobile) << "tune to spot" << spot.callsign << spot.rxFreqMhz;
@@ -5587,6 +5715,13 @@ void MobileEngine::tuneToSpot(int index)
         emit lastSpotCallChanged();
     }
     tuneTo(spot.rxFreqMhz);
+    // In RTTY (or on the way to it), a spot gives the signal's mark or its
+    // centre: onto the mark the display shows near it.
+    if (mode == QLatin1String("RTTY")) {
+        m_rttySpotMhz = spot.rxFreqMhz;
+        m_rttySpotTries = 8;
+        emit rttyAutotuneRequested(spot.rxFreqMhz, 150.0, false);
+    }
 }
 
 QString MobileEngine::buttonStyle() const

@@ -471,6 +471,7 @@ Rectangle {
         delegate: Item {
             id: spotTag
             required property var modelData
+            objectName: "spot:" + modelData.spot.call
             x: modelData.x - modelData.w / 2
             y: 4 + modelData.row * 24
             width: modelData.w
@@ -1401,7 +1402,7 @@ Rectangle {
                 Layout.preferredWidth: 1
                 text: !Engine.rttyDecoderEnabled ? qsTr("Decoding is off.")
                       : rttyPanel.r.locked ? qsTr("Locked on, SNR %1 dB").arg(rttyPanel.r.snr)
-                      : qsTr("Listening (mark %1 Hz, shift %2 Hz); tune the signal's mark onto the dial frequency.")
+                      : qsTr("Listening (mark %1 Hz, shift %2 Hz): tap the signal on the display, or Autotune.")
                             .arg(rttyPanel.r.markHz).arg(rttyPanel.r.shiftHz)
                 color: rttyPanel.r.locked ? Theme.accent : Theme.textDim
                 font.pixelSize: Theme.smallFont
@@ -1472,13 +1473,38 @@ Rectangle {
                     onTextChanged: Qt.callLater(() => rttyText.contentY = Math.max(0, rttyText.contentHeight - rttyText.height))
                 }
             }
-            AppButton {
-                objectName: "rttyClear"
-                text: qsTr("Clear")
-                Layout.alignment: Qt.AlignRight
-                Layout.preferredHeight: Theme.touchTarget
-                onClicked: Engine.clearRttyText()
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 4
+                AppButton {
+                    objectName: "rttyAutotune"
+                    text: qsTr("Autotune")
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: Engine.rttyAutotune()
+                }
+                // Noise's letters held back between transmissions.
+                AppButton {
+                    objectName: "rttySquelch"
+                    text: qsTr("Squelch")
+                    checked: rttyPanel.r.squelch
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: Engine.setRtty("squelch", !checked)
+                }
+                Item { Layout.fillWidth: true }
+                AppButton {
+                    objectName: "rttyClear"
+                    text: qsTr("Clear")
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: Engine.clearRttyText()
+                }
             }
+        }
+    }
+    // The RTTY panel's Autotune, and a tap on an RTTY spot.
+    Connections {
+        target: Engine
+        function onRttyAutotuneRequested(nearMhz, halfHz, notify) {
+            Engine.rttyAutotuneNow(spectrum.rttyMarkNear(nearMhz, halfHz, Engine.rtty.shiftHz), notify)
         }
     }
     // The CW tab's Autotune: the strongest CW signal in the passband, for
@@ -1571,6 +1597,12 @@ Rectangle {
                     const tapped = panArea.mhzAt(eventPoint.position.x)
                     const peak = spectrum.cwPeakNear(tapped)
                     Engine.tuneToCw(peak > 0 ? peak : tapped, peak > 0)
+                } else if (Engine.rttyMode) {
+                    // In RTTY: onto the mark of the signal nearest the tap
+                    // (on either of its two traces, or between them).
+                    const tapped = panArea.mhzAt(eventPoint.position.x)
+                    const mark = spectrum.rttyMarkNear(tapped, 0, Engine.rtty.shiftHz)
+                    Engine.tuneToRtty(mark > 0 ? mark : tapped, mark > 0)
                 } else {
                     Engine.tuneToSnapped(panArea.mhzAt(eventPoint.position.x))
                 }
