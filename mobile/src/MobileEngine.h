@@ -1399,6 +1399,7 @@ private:
     void stopDeviceMicrophoneCapture(bool force = false);
     void updateMicCheck();
     void releasePtt(const QString& reason);
+    void duckReceive(bool on, const char* why);
     void wireSmartLink();
     void wireCw();
     void updateCwDecoder();
@@ -1438,6 +1439,10 @@ private:
     bool m_outputDeviceApplied{false};
     QTimer m_headsetLinkTimer;
     int m_headsetLinkTicks{0};
+    // Android: Qt's default output, to reopen receive when a USB-C or wired
+    // headset comes or goes.
+    QByteArray m_defaultOutputId;
+    bool m_defaultOutputWired{false};
     // Per-thread CPU (Linux and Android, from /proc/self/task): ticks at
     // the last sample, by thread id.
     QHash<int, quint64> m_threadTicks;
@@ -1763,6 +1768,8 @@ private:
     double m_paTempC{0.0};
     double m_supplyVolts{0.0};
     bool m_pttHeld{false};
+    // Receive playback silent while the microphone is keyed (duckReceive).
+    bool m_rxDucked{false};
     bool m_micPermissionRequested{false};
     bool m_connected{false};
     // The radio's CW pitch was set to 600 this session (it reported 0).

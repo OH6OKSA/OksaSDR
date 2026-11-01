@@ -236,6 +236,12 @@ public:
 
     bool isMuted() const       { return m_muted.load(); }
     void setMuted(bool m);
+    // Receive playback held silent while this device's microphone is keyed
+    // (OksaSDR): a phone's speaker beside its microphone sent the last of
+    // the band noise out at the start of every transmission. Apart from the
+    // operator's mute, so it never shows as one.
+    void setRxDucked(bool ducked);
+    bool isRxDucked() const    { return m_rxDucked.load(); }
     bool isRxStreaming() const { return m_audioSink != nullptr; }
     bool isTxStreaming() const { return m_audioSource != nullptr; }
     // Which producer currently owns the QSO recorder's TX slot (#2539,
@@ -1261,6 +1267,7 @@ private:
     std::atomic<int>   m_rxPan{50};       // 0=left, 50=centre, 100=right (#1460)
     std::atomic<int>   m_rxBufferCapMs{100}; // RX buffer cap in ms (#1505; default lowered 200->100 for #3193)
     std::atomic<bool>  m_muted{false};
+    std::atomic<bool>  m_rxDucked{false};
     // RX sink device rate (negotiated via AudioFormatNegotiator). Audio is
     // resampled from the 24k canonical rate up to this when they differ (#3306).
     // Atomic: written from startRxStream() (GUI thread) and read from the RX

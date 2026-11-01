@@ -231,6 +231,26 @@ if(ANDROID)
     else()
         message(WARNING "AETHER_ANDROID_OPENSSL_DIR not set: the APK has no OpenSSL, so SmartLink cannot sign in")
     endif()
+    # USB-C headsets: Qt 6.12.0 leaves them out of its Android device list
+    # (android/qt-patches). The patched class goes into the Qt install's jar,
+    # which the APK packaging takes.
+    if(Qt6_VERSION VERSION_EQUAL 6.12.0)
+        file(GLOB _android_jars "${ANDROID_SDK_ROOT}/platforms/android-*/android.jar")
+        list(SORT _android_jars)
+        list(POP_BACK _android_jars _android_jar)
+        execute_process(COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/android/patch-qt-usb-audio.sh"
+                                "${QT6_INSTALL_PREFIX}/jar" "${_android_jar}"
+                        RESULT_VARIABLE _qt_usb_patch
+                        OUTPUT_VARIABLE _qt_usb_patch_out
+                        ERROR_VARIABLE _qt_usb_patch_out)
+        if(_qt_usb_patch EQUAL 0)
+            message(STATUS "Qt USB headset patch: ${_qt_usb_patch_out}")
+        else()
+            message(WARNING "Qt USB headset patch failed, USB-C headsets stay unused: ${_qt_usb_patch_out}")
+        endif()
+    else()
+        message(WARNING "android/qt-patches is for Qt 6.12.0, not ${Qt6_VERSION}: USB-C headsets stay unused")
+    endif()
 endif()
 
 if(IOS)

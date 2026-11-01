@@ -508,6 +508,28 @@ MobileEngine::MobileEngine(QObject* parent)
             : QStringLiteral("no hands-free link state from Android in 4 s with the headset as the route: receive opened again"));
         QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->reopenRx(); }, Qt::QueuedConnection);
     });
+    // A USB-C or wired headset plugged in or out: receive opens again on
+    // Qt's new default output (Auto, Bluetooth media; Speaker stays on the
+    // speaker). The microphone opens on the default input at each PTT.
+    // Bluetooth comings and goings are the hands-free watch's, above.
+    const auto wired = [](const QAudioDevice& device) {
+        const QString d = device.description();
+        return d == QLatin1String("USB headset") || d == QLatin1String("USB device")
+            || d == QLatin1String("Wired headset") || d == QLatin1String("Wired headphones");
+    };
+    m_defaultOutputId = QMediaDevices::defaultAudioOutput().id();
+    m_defaultOutputWired = wired(QMediaDevices::defaultAudioOutput());
+    connect(new QMediaDevices(this), &QMediaDevices::audioOutputsChanged, this, [this, wired] {
+        const QAudioDevice now = QMediaDevices::defaultAudioOutput();
+        const bool wasWired = std::exchange(m_defaultOutputWired, wired(now));
+        if (std::exchange(m_defaultOutputId, now.id()) == now.id() || !(wasWired || m_defaultOutputWired)) {
+            return;
+        }
+        qCInfo(lcMobile).noquote() << "default audio output now" << now.description();
+        if (m_connected && m_audio && audioOutput() != QLatin1String("Speaker")) {
+            QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->reopenRx(); }, Qt::QueuedConnection);
+        }
+    });
 #endif
     m_audioDiagTimer.setInterval(10000);
     connect(&m_audioDiagTimer, &QTimer::timeout, this, [this] {
@@ -2886,6 +2908,14 @@ void MobileEngine::setPtt(bool down, const QString& reason)
         qCWarning(lcMobile) << "DAX transmit was on: turned off so this device's microphone is heard";
         tm.setDax(false);
     }
+    // The speaker goes quiet before the microphone opens: the radio keys
+    // some 150-300 ms after the press and receive audio plays until then
+    // (and its buffer after), which a phone's microphone sent out as a loud
+    // burst of band noise at the start of every transmission (Jeff Stinger,
+    // Pixel 7). FT8 / FT4 send no microphone audio.
+    if (!m_digiKeying) {
+        duckReceive(true, "microphone keyed");
+    }
     startDeviceMicrophoneCapture();
     m_pttInput = m_session.radioModel().localTxController()->capture(TxController::Activity::Mox);
     m_pttHeld = true;
@@ -2893,6 +2923,7 @@ void MobileEngine::setPtt(bool down, const QString& reason)
         m_pttHeld = false;
         m_pttInput.stop();
         stopDeviceMicrophoneCapture();
+        duckReceive(false, "transmit refused");
         qCWarning(lcMobile) << "PTT start refused by the TX controller";
         // The radio's own reason, when it gave one just now, stays shown.
         if (QDateTime::currentMSecsSinceEpoch() - m_lastInterlockMs > 1000) {
@@ -2902,6 +2933,16 @@ void MobileEngine::setPtt(bool down, const QString& reason)
     }
     m_pttPeakW = 0.0;
     qCInfo(lcMobile) << "PTT keyed";
+}
+
+void MobileEngine::duckReceive(bool on, const char* why)
+{
+    if (on == m_rxDucked || !m_audio) {
+        return;
+    }
+    m_rxDucked = on;
+    qCInfo(lcMobile).noquote() << (on ? "receive playback silent:" : "receive playback back:") << why;
+    QMetaObject::invokeMethod(m_audio, [audio = m_audio, on] { audio->setRxDucked(on); }, Qt::QueuedConnection);
 }
 
 void MobileEngine::releasePtt(const QString& reason)
@@ -2917,6 +2958,7 @@ void MobileEngine::releasePtt(const QString& reason)
     }
     m_pttInput.stop();
     stopDeviceMicrophoneCapture();
+    duckReceive(false, "PTT released");
     // A voice macro ends with its PTT press.
     if (m_voiceState == QLatin1String("playback")) {
         m_voiceState = QStringLiteral("idle");
@@ -3827,6 +3869,15 @@ void MobileEngine::wireCw()
         RadioModel& model = m_session.radioModel();
         qCInfo(lcMobile).noquote() << "radio transmitting:" << (on ? "yes" : "no")
             << (on ? (model.txClientHandle() == model.ourClientHandle() ? "(this app)" : "(another client)") : "");
+        // With MON on, the speaker comes back once the receive audio from
+        // before the radio keyed has played out, for the radio's monitor.
+        if (on && m_rxDucked && monitor()) {
+            QTimer::singleShot(250, this, [this] {
+                if (m_pttHeld && m_rxDucked && monitor()) {
+                    duckReceive(false, "MON on, the radio transmitting");
+                }
+            });
+        }
     });
 
     // Paddles: the elements are timed here (worker thread, steady_clock),

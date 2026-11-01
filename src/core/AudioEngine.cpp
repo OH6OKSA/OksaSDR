@@ -4251,7 +4251,7 @@ bool AudioEngine::openRxSinkDevice(int producerRate)
             continue;   // RX drain writes Float PCM; Int16 rungs are for other sinks
         noteRxAttempt(candidate);
         auto* sink = new QAudioSink(dev, candidate, this);
-        sink->setVolume(m_muted.load() ? 0.0f : m_rxVolume.load());
+        sink->setVolume((m_muted.load() || m_rxDucked.load()) ? 0.0f : m_rxVolume.load());
 #ifdef Q_OS_WIN
         // Constrain the WASAPI shared-mode ring buffer (#3193). Without an explicit
         // size, class-compliant USB interfaces (Scarlett, Focusrite, etc.) inherit
@@ -4555,7 +4555,7 @@ void AudioEngine::setRxVolume(float v)
 {
     m_rxVolume.store(qBound(0.0f, v, 1.0f));
     if (m_audioSink)
-        m_audioSink->setVolume(m_muted.load() ? 0.0f : m_rxVolume.load());
+        m_audioSink->setVolume((m_muted.load() || m_rxDucked.load()) ? 0.0f : m_rxVolume.load());
 }
 
 void AudioEngine::setMuted(bool muted)
@@ -4563,9 +4563,17 @@ void AudioEngine::setMuted(bool muted)
     const bool prev = m_muted.load();
     m_muted.store(muted);
     if (m_audioSink)
-        m_audioSink->setVolume(muted ? 0.0f : m_rxVolume.load());
+        m_audioSink->setVolume((muted || m_rxDucked.load()) ? 0.0f : m_rxVolume.load());
     if (prev != muted)
         emit mutedChanged(muted);
+}
+
+void AudioEngine::setRxDucked(bool ducked)
+{
+    if (m_rxDucked.exchange(ducked) == ducked)
+        return;
+    if (m_audioSink)
+        m_audioSink->setVolume((m_muted.load() || ducked) ? 0.0f : m_rxVolume.load());
 }
 
 // Pick the sidetone backend from the build flag, the platform and the
