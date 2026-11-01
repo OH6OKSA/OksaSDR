@@ -5849,6 +5849,11 @@ void MobileEngine::togglePtt()
         releasePtt(QStringLiteral("toggled off"));
         return;
     }
+    // In standby a toggle press has no release to end a hold, so it would
+    // arm by itself a second later: refused (the PTT button arms when held).
+    if (txLockRefuses("PTT (tap on / off)")) {
+        return;
+    }
     setPtt(true);
     if (!m_pttHeld) {
         return;
