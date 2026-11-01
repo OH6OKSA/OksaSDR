@@ -823,9 +823,13 @@ Reporter).
   (ADIF)** opens the share sheet with the whole log as an `.adi` file: mail
   it, save it to Files or Drive, AirDrop it, or open it in your logbook
   program or TQSL for LoTW. **Import contacts (ADIF)** adds the contacts of
-  an ADIF file (from another logbook, or another device's OksaSDR log);
+  an ADIF file (from another logbook, or another device's OksaSDR log) to
+  this log, so worked-before colours and New call count them too;
   those already in the log (same call, date, time, band and mode) are
-  skipped. A big logbook (tens of thousands of contacts, tested with
+  skipped. A logbook kept on a computer comes over first: export it as
+  ADIF there and put the file where the device sees it (Drive, iCloud,
+  mail, a USB cable to Downloads); in the picker, the menu or Browse
+  leads to those places. A big logbook (tens of thousands of contacts, tested with
   120 000) imports in a few seconds while the display goes on, and the log
   is read in the background at start (worked-before colours follow when
   it is in); the line under the button says

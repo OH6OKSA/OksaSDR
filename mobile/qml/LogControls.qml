@@ -356,7 +356,12 @@ ColumnLayout {
         id: importDialog
         title: qsTr("Import contacts (ADIF)")
         fileMode: FileDialog.OpenFile
-        nameFilters: [qsTr("ADIF files (*.adi *.adif *.ADI)"), qsTr("All files (*)")]
+        // Android: no filter. Qt turns *.adi into application/octet-stream
+        // for the system picker, which then greyed out an ADIF file stored
+        // as text (from Drive, say) and left only this app's own log to pick
+        // (Kurt DL5EAG). The import tells an ADIF file by its contents.
+        nameFilters: Qt.platform.os === "android" ? []
+                     : [qsTr("ADIF files (*.adi *.adif *.ADI)"), qsTr("All files (*)")]
         onAccepted: {
             importResult.text = qsTr("Importing…")
             Engine.importAdif(selectedFile)
