@@ -5,7 +5,7 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Queued for the next build (local): Worked before from the Wavelog logbook, the QRZ.com Logbook both ways and a shared ADIF file in iCloud Drive / Google Drive / OneDrive (the two-way sync, below); one-button setups on the roadmap (Jeff Stinger).
+Build 143 / beta 57 as a preview on the user's own devices first (mobile/PREVIEW, 2026-11-01): Worked before from the Wavelog logbook, the QRZ.com Logbook both ways and a shared ADIF file in iCloud Drive / Google Drive / OneDrive (the two-way sync, below); counts with the locale's thousands separator. To verify there before the release: the QRZ.com Logbook with the user's real key (the key check, a QSO sent, the read-back's count against the logbook's); a shared file in iCloud Drive on the iPhone, the iPad and the Mac (chosen, read, a QSO added, still reached after a restart) and in Google Drive and OneDrive on Android (whether Drive appends with "wa" or the app rewrites the file); Wavelog's read on a device. Layout sweep against build 142's: 27 sizes, no layout decision changed (only the Log tab grew, checked at 440 and 360 px and on the iPad); build 143's sweep is the new baseline.
 
 To verify in build 142 / beta 56: Backspace on Pentti Pärnänen OH6PP's MacBook in the Log tab's fields and the frequency entry, held Backspace repeating; a double click in a text field on a Mac opens no text box, a press and hold still does; the QRZ.com status in amber, not red, when QRZ.com does not answer (Sloan Davis's iPad), and red for a wrong password.
 

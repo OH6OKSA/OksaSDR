@@ -1,0 +1,8 @@
+Preview build: with this file in the tree, a push builds for the developer's
+own devices only (iOS: the internal TestFlight group; Android: the APK stays
+the run's artifact). Delete it when the Mobile release workflow hands the
+same builds to the testers.
+
+Build 143 / Android beta 57: Wavelog read-back, the QRZ.com Logbook both
+ways and the shared ADIF file, to try with a real QRZ logbook key and files
+in iCloud Drive, Google Drive and OneDrive before the testers get them.

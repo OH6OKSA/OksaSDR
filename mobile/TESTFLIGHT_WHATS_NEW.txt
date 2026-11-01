@@ -9,12 +9,12 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Mac: Backspace works in the text fields, and a double click no longer opens the text box (thanks Pentti OH6PP).
-- When QRZ.com does not answer, the Log tab says your account is saved and lookups will try again, not "sign-in failed" (thanks Sloan Davis).
-- The manual's new part Operating by mode: a picture of each mode (SSB, CW, AM, FM, FT8 / FT4, RTTY, RADE) and how to receive and transmit in it.
-- From build 141: the transmit lock, Controls > TX > Lock (thanks Larry Averbeck); FTx Answer CQ with a presence limit you set (thanks Kurt DL5EAG); no band noise burst at PTT from the phone's speaker (thanks Jeff Stinger); RTTY the right way round, a tap or spot tunes it, Squelch; a QSO ends with its RR73 or 73.
-- From build 140: Space PTT after typing in the Log panel; RTTY decoding (thanks Ben van Schoor).
-- From build 139: CW Autotune, notches after Add, eSSB, FTx List only (thanks Michael Whaley), VoiceOver names.
+- Worked before from your logbooks, in every mode: Log tab > Wavelog > Worked before from the logbook reads your Wavelog logbook's QSOs, so worked before, dupes, New call / DXCC and the FTx colours know them.
+- QRZ.com Logbook both ways (needs a QRZ subscription): paste the logbook's API key on the Log tab; each QSO goes there, and its QSOs can count as worked before.
+- A shared ADIF file in iCloud Drive, Google Drive or OneDrive, for a desktop logger without a cloud connection (Log4OM, N1MM...): its QSOs count as worked before, and each QSO you log is added to it.
+- From build 142: Mac Backspace and no text box on a double click (thanks Pentti OH6PP); a clearer QRZ.com message (thanks Sloan Davis); the manual's Operating by mode.
+- From build 141: the transmit lock (thanks Larry Averbeck); FTx Answer CQ with a presence limit (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger); RTTY the right way round.
+- From builds 139-140: Space PTT after typing in the Log panel; RTTY decoding (thanks Ben van Schoor); CW Autotune, eSSB, FTx List only (thanks Michael Whaley).
 
 RECENT (builds 94–136)
 - QSOs to Logger32 (thanks Juho Kontio); the manual's Getting started.
@@ -31,7 +31,7 @@ PLEASE TRY
 - The Log tab: log a few contacts, save your QRZ.com account and share the ADIF file to your logbook.
 - FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - The FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
-- New: Backspace and a double click in a text field on a Mac. From 141: Lock on the TX tab (a second's hold arms); Answer CQ at low power while you watch [TX]; PTT with the phone's speaker on: is the start clean? [TX]
+- New: Worked before from Wavelog or QRZ.com, or a shared ADIF file in iCloud Drive: a call you have worked shows Worked N times in the Log tab.
 - Spots and the DX cluster; the eSSB tab at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM
