@@ -36,6 +36,8 @@ class MobileEngine;
 //   span KHZ                the pan this wide, centred on the slice
 //   mode NAME               the active slice's mode (USB shows the squelch row;
 //                           put the mode back after)
+//   rfpower W               the TX power (to put it back after a cut-short run)
+//   txslice LETTER          that slice active and TX (to put TX back after a test)
 //   click NAME              clicked() on the visible buttons with this objectName
 //   tapname NAME            a tap through the window on that control's middle
 //   ready                   wait until connected with a slice (up to 30 s),

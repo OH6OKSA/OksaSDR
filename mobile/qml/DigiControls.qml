@@ -38,6 +38,36 @@ ColumnLayout {
         running: digi.visible && Engine.digiRunning
         onTriggered: digi.slotPos = (Date.now() / 1000) % digi.slotSeconds
     }
+    // Answer CQ or Keep CQ running: the presence limit counts down in the
+    // status box (a touch anywhere starts it again).
+    readonly property bool automatic: Engine.digiAutoAnswer || (Engine.digiAutoCq && qso.state === "cq")
+    property int presenceLeft: 0
+    Timer {
+        interval: 1000
+        repeat: true
+        triggeredOnStart: true
+        running: digi.visible && digi.automatic
+        onTriggered: digi.presenceLeft = Engine.digiPresenceLeft()
+    }
+    // The presence limit's steps (minutes).
+    readonly property var presenceSteps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 45, 60]
+    function presenceStep(dir) {
+        const now = Engine.digiPresenceMin
+        if (dir > 0) {
+            for (let i = 0; i < presenceSteps.length; ++i) {
+                if (presenceSteps[i] > now) {
+                    return presenceSteps[i]
+                }
+            }
+            return now
+        }
+        for (let j = presenceSteps.length - 1; j >= 0; --j) {
+            if (presenceSteps[j] < now) {
+                return presenceSteps[j]
+            }
+        }
+        return now
+    }
 
     RowLayout {
         Layout.fillWidth: true
@@ -117,10 +147,22 @@ ColumnLayout {
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiAutoCq = !Engine.digiAutoCq
         }
+        // Answer CQ (Kurt DL5EAG): the app answers CQs by itself, 5 calls
+        // per station, then another; Halt TX ends it.
+        AppButton {
+            objectName: "digiAutoAnswer"
+            text: qsTr("Answer CQ")
+            checked: Engine.digiAutoAnswer
+            enabled: Engine.transmitAvailable || Engine.digiAutoAnswer
+            Accessible.name: Engine.digiAutoAnswer ? qsTr("Stop answering CQs by itself") : qsTr("Answer CQs by itself")
+            Layout.fillWidth: true
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.digiAutoAnswer = !Engine.digiAutoAnswer
+        }
         AppButton {
             objectName: "digiHalt"
             text: qsTr("Halt TX")
-            enabled: digi.qso.state !== "idle" || digi.qso.transmitting
+            enabled: digi.qso.state !== "idle" || digi.qso.transmitting || Engine.digiAutoAnswer
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiHalt()
@@ -188,6 +230,38 @@ ColumnLayout {
                 focusPolicy: Qt.NoFocus
                 onClicked: Engine.digiCqParity = modelData.key
             }
+        }
+    }
+    // The presence limit: Answer CQ and Keep CQ start no new QSO after
+    // this long without a touch on the app.
+    RowLayout {
+        visible: digi.settingsShown
+        Layout.fillWidth: true
+        Label {
+            objectName: "digiPresence"
+            text: qsTr("Auto stops after %1 min untouched").arg(Engine.digiPresenceMin)
+            color: Theme.textDim
+            font.pixelSize: 14
+            Layout.fillWidth: true
+            wrapMode: Text.WordWrap
+        }
+        AppButton {
+            objectName: "digiPresenceDown"
+            text: "−"
+            Accessible.name: qsTr("Shorter presence limit")
+            Layout.preferredWidth: Theme.touchTarget
+            focusPolicy: Qt.NoFocus
+            enabled: Engine.digiPresenceMin > 1
+            onClicked: Engine.digiPresenceMin = digi.presenceStep(-1)
+        }
+        AppButton {
+            objectName: "digiPresenceUp"
+            text: "+"
+            Accessible.name: qsTr("Longer presence limit")
+            Layout.preferredWidth: Theme.touchTarget
+            focusPolicy: Qt.NoFocus
+            enabled: Engine.digiPresenceMin < 60
+            onClicked: Engine.digiPresenceMin = digi.presenceStep(1)
         }
     }
     // PSK Reporter: the stations decoded here, reported (off by default).
@@ -356,7 +430,7 @@ ColumnLayout {
     // amber while waiting, red while transmitting.
     Rectangle {
         Layout.fillWidth: true
-        readonly property bool active: digi.qso.state !== "idle"
+        readonly property bool active: digi.qso.state !== "idle" || Engine.digiAutoAnswer
         visible: statusText.text.length > 0
         implicitHeight: statusText.implicitHeight + (active ? 14 : 0)
         radius: 6
@@ -374,6 +448,11 @@ ColumnLayout {
                 let line = s.status || ""
                 if (s.state !== "idle" && s.txMsg)
                     line += (line ? "\n" : "") + (s.transmitting ? qsTr("TX: ") : qsTr("Next (%1): ").arg(s.parity)) + s.txMsg
+                if (digi.automatic) {
+                    const left = digi.presenceLeft
+                    line += (line ? "\n" : "") + qsTr("Auto stops in %1 without a touch")
+                            .arg(Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0"))
+                }
                 return line
             }
             color: !parent.active ? Theme.text : digi.qso.transmitting ? "#ffffff" : "#101010"

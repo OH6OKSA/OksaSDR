@@ -896,9 +896,10 @@ Reporter).
 
   **Scroll** (in the drawer): *Whole tab* scrolls the tab in one piece, as
   before; *List only* keeps the main buttons at the top (Decode, the
-  bands, the slot bar, CQ, Keep CQ, Halt TX, the QSO's state and Show) and
-  scrolls only the decode list under them, with its own scroll bar. The
-  rest (CQ slot, PSK Reporter, the time line, TX Hz and TX level, the
+  bands, the slot bar, CQ, Keep CQ, Answer CQ, Halt TX, the QSO's state
+  and Show) and scrolls only the decode list under them, with its own
+  scroll bar. The rest (CQ slot, the presence limit, PSK Reporter, the
+  time line, TX Hz and TX level, the
   colours) folds under **More**. Where the drawer is lower than about
   520 px (a phone on its side, the drawer at half height), the whole tab
   scrolls anyway. (Michael Whaley's request.)
@@ -937,7 +938,27 @@ Reporter).
   30 s, FT4: 0, 15, 30, 45 s) or *Odd* (15 and 45 s; FT4: 7.5, 22.5 …).
   **Keep CQ** (between CQ and Halt TX) goes back to CQ after every QSO your CQ brought (and after a
   station that answered goes quiet), until **Halt TX**; a CQ nobody
-  answers still stops after its tries. Timing and transmitting follow the TX slice: move the TX
+  answers still stops after its tries.
+  **Answer CQ** (beside Keep CQ) answers CQs by itself while you are not
+  in a QSO or calling CQ: after each slot it picks a CQ heard on the TX
+  slice that **Show** lets through and that is not from a station already
+  in the log on this band and mode, the rarest first in WSJT-X's colour
+  order (a new continent, CQ zone, DXCC, then a new call), the strongest
+  among equals. It calls that station up to five times; when they answer,
+  the QSO runs and is logged as usual, and when they don't, it moves on to
+  another station (one called is left alone for 30 minutes). A CQ to some
+  (`CQ DX`, `CQ EU`) is answered only where you are them, `CQ POTA`, `SOTA`,
+  `WWFF`, `IOTA` and `QRP` always, contest CQs (`CQ TEST`, `CQ WW`) never.
+  It is on for this session only: **Halt TX**, decoding off, TX moving to
+  another slice or the transmit lock going back to SB switch it off.
+  (Kurt DL5EAG's request.)
+  **Auto stops after … min untouched** (the presence limit, with the
+  CQ slot setting; 1 to 60 minutes, 10 by default) is how long Answer CQ
+  and Keep CQ go on without a touch, a click or a key on the app: after
+  that Answer CQ switches off and Keep CQ ends after its QSO, so the app
+  never runs a station unattended for long. While either runs, the state
+  box counts the time down; any touch on the app starts it again.
+  Timing and transmitting follow the TX slice: move the TX
   badge, press a band button with another slice active, or tap inside
   another DIGU / DIGL slice's passband to move it; a QSO under way stops
   when TX moves, and adding slices does not take TX away.

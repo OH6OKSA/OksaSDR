@@ -445,6 +445,24 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
     } else if (command == QLatin1String("mode")) {
         m_engine.setMode(arg);
         *delayMs = 1500;
+    } else if (command == QLatin1String("txslice")) {
+        // That slice (by letter) active and the TX slice, as the operator
+        // had it before a test moved TX.
+        for (const QVariant& v : m_engine.slices()) {
+            const QVariantMap m = v.toMap();
+            if (m.value(QStringLiteral("letter")).toString() == arg) {
+                const int id = m.value(QStringLiteral("id")).toInt();
+                m_engine.selectSlice(id);
+                m_engine.makeTxSlice(id);
+                qInfo().noquote() << "shot-plan: slice" << arg << "active and TX";
+            }
+        }
+        *delayMs = 1500;
+    } else if (command == QLatin1String("rfpower")) {
+        // The TX power (W), to put it back after a run cut short.
+        m_engine.setRfPower(arg.toInt());
+        qInfo() << "shot-plan: RF power" << arg.toInt() << "W";
+        *delayMs = 1500;
     } else if (command == QLatin1String("ready")) {
         // Until connected with a slice (at most 30 s): a slow connect left a
         // fixed wait short and the plan's first commands went to no slice.

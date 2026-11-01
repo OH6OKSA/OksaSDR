@@ -45,6 +45,10 @@ constexpr int kMaxDecodes = 80;
 // the QSO (WSJT-X's Tx watchdog does the same in time).
 constexpr int kMaxTries = 6;
 constexpr int kMaxCqCalls = 10;
+// Answer CQ: calls to one station before it moves on to another (Kurt
+// DL5EAG), and how long a station called is left alone after that.
+constexpr int kAutoAnswerTries = 5;
+constexpr qint64 kAutoRetryMs = 30 * 60 * 1000;
 // How often FT8 / FT4 ask the time server again while running.
 constexpr int kNtpResyncMs = 30 * 60 * 1000;
 // How long after a contact is logged the same station on the same band is
@@ -107,6 +111,8 @@ void MobileEngine::setupDigi()
     connect(&m_session.radioModel(), &RadioModel::infoChanged, this, &MobileEngine::digiChanged);
     connect(this, &MobileEngine::qrzChanged, this, &MobileEngine::digiChanged);
     m_digiAutoCq = AppSettings::instance().value(QStringLiteral("MobileDigiAutoCq"), QStringLiteral("0")).toString() == QLatin1String("1");
+    m_digiPresenceMin = std::clamp(AppSettings::instance().value(QStringLiteral("MobileDigiPresenceMin"), 10).toInt(), 1, 60);
+    m_operatorMs = QDateTime::currentMSecsSinceEpoch();
     m_digiCqParity = AppSettings::instance().value(QStringLiteral("MobileDigiCqParity"), QStringLiteral("auto")).toString();
     m_digiTxLevelDb = std::clamp(AppSettings::instance().value(QStringLiteral("MobileDigiTxLevelDb"), 0).toInt(), -20, 0);
     m_digiFilter = AppSettings::instance().value(QStringLiteral("MobileDigiFilter"), QStringLiteral("all")).toString();
@@ -658,6 +664,187 @@ void MobileEngine::setDigiAutoCq(bool on)
     emit digiChanged();
 }
 
+void MobileEngine::setDigiAutoAnswer(bool on)
+{
+    if (on == m_digiAutoAnswer) {
+        return;
+    }
+    if (on) {
+        if (digiMyCall().isEmpty()) {
+            setLastError(tr("Set the radio's callsign first (Radio Setup)."));
+            return;
+        }
+        if (txLockRefuses("Answer CQ")) {
+            return;
+        }
+        noteOperator();
+        m_digiAutoTried.clear();
+        if (!digiRunning()) {
+            setDigiRunning(true);
+        }
+    }
+    m_digiAutoAnswer = on;
+    qCInfo(lcMobile) << "digi: Answer CQ" << (on ? "on" : "off");
+    if (m_digiState == QLatin1String("idle")) {
+        setDigiStatus(on ? tr("Answer CQ: waiting for a CQ") : tr("Answer CQ off"));
+        return;
+    }
+    emit digiChanged();
+}
+
+void MobileEngine::setDigiPresenceMin(int minutes)
+{
+    minutes = std::clamp(minutes, 1, 60);
+    if (minutes == m_digiPresenceMin) {
+        return;
+    }
+    m_digiPresenceMin = minutes;
+    AppSettings::instance().setValue(QStringLiteral("MobileDigiPresenceMin"), minutes);
+    AppSettings::instance().save();
+    emit digiChanged();
+}
+
+void MobileEngine::noteOperator()
+{
+    m_operatorMs = QDateTime::currentMSecsSinceEpoch();
+}
+
+bool MobileEngine::digiOperatorAway() const
+{
+    return QDateTime::currentMSecsSinceEpoch() - m_operatorMs > qint64(m_digiPresenceMin) * 60 * 1000;
+}
+
+int MobileEngine::digiPresenceLeft() const
+{
+    const qint64 left = m_operatorMs + qint64(m_digiPresenceMin) * 60 * 1000 - QDateTime::currentMSecsSinceEpoch();
+    return int(std::max<qint64>(0, left / 1000));
+}
+
+bool MobileEngine::digiFilterPasses(const QVariantMap& row) const
+{
+    // As the list's Show filter (DigiControls.qml).
+    const bool cq = row.value(QStringLiteral("cq")).toBool();
+    if (m_digiFilter == QLatin1String("cq")) {
+        return cq;
+    }
+    if (m_digiFilter == QLatin1String("pota")) {
+        return cq && row.value(QStringLiteral("text")).toString().simplified().toUpper().startsWith(QLatin1String("CQ POTA "));
+    }
+    if (m_digiFilter == QLatin1String("new")) {
+        static const QStringList kNew{QStringLiteral("continent"), QStringLiteral("continentBand"), QStringLiteral("cqzone"),
+                                      QStringLiteral("cqzoneBand"),  QStringLiteral("dxcc"),          QStringLiteral("dxccBand")};
+        return kNew.contains(row.value(QStringLiteral("hl")).toString());
+    }
+    if (m_digiFilter == QLatin1String("dxcc")) {
+        return row.value(QStringLiteral("newDxcc")).toInt() > 0;
+    }
+    if (m_digiFilter == QLatin1String("newcall")) {
+        return row.value(QStringLiteral("newCall")).toInt() > 0;
+    }
+    return true;
+}
+
+void MobileEngine::digiAutoAnswerPick(const QVariantList& decodes)
+{
+    const auto stop = [this](const QString& why) {
+        m_digiAutoAnswer = false;
+        setDigiStatus(tr("Answer CQ off: %1").arg(why));
+    };
+    if (digiOperatorAway()) {
+        stop(tr("no touch on the app for %n min (the presence limit)", nullptr, m_digiPresenceMin));
+        return;
+    }
+    if (txLocked()) {
+        stop(tr("transmit is locked (SB) again"));
+        return;
+    }
+    if (!transmitAvailable()) {
+        stop(transmitUnavailableReason());
+        return;
+    }
+    const QString my = digiMyCall();
+    const int txId = digiSlice() ? digiSlice()->sliceId() : -1;
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    for (auto it = m_digiAutoTried.begin(); it != m_digiAutoTried.end();) {
+        it = now - it.value() > kAutoRetryMs ? m_digiAutoTried.erase(it) : std::next(it);
+    }
+    const DxccEntity* me = m_cty ? m_cty->entityForCallsign(my) : nullptr;
+    const QString myCont = me ? me->continent : QString();
+    // WSJT-X's highlight order: the rarest first, then the strongest.
+    static const QStringList kRank{QStringLiteral("continent"),  QStringLiteral("continentBand"), QStringLiteral("cqzone"),
+                                   QStringLiteral("cqzoneBand"), QStringLiteral("dxcc"),          QStringLiteral("dxccBand"),
+                                   QStringLiteral("newcall"),    QStringLiteral("newcallBand"),   QStringLiteral("cq")};
+    static const QStringList kContinents{QStringLiteral("AF"), QStringLiteral("AN"), QStringLiteral("AS"), QStringLiteral("EU"),
+                                         QStringLiteral("NA"), QStringLiteral("OC"), QStringLiteral("SA")};
+    static const QStringList kAnyone{QStringLiteral("POTA"), QStringLiteral("SOTA"), QStringLiteral("WWFF"), QStringLiteral("IOTA"),
+                                     QStringLiteral("QRP")};
+    int best = -1;
+    int bestRank = 0;
+    int bestSnr = 0;
+    int cqs = 0;
+    for (int i = 0; i < decodes.size() && i < m_digiDecodes.size(); ++i) {
+        const QVariantMap d = decodes.at(i).toMap();
+        if (!d.value(QStringLiteral("cq")).toBool() || d.value(QStringLiteral("sliceId"), txId).toInt() != txId) {
+            continue;
+        }
+        const QString text = d.value(QStringLiteral("text")).toString().simplified().toUpper();
+        const Ft8Engine::Parsed p = Ft8Engine::parse(text);
+        if (p.de.isEmpty() || p.de == my) {
+            continue;
+        }
+        ++cqs;
+        const QString hl = d.value(QStringLiteral("hl")).toString();
+        if (hl == QLatin1String("b4") || m_digiAutoTried.contains(p.de) || !digiFilterPasses(d)) {
+            continue;
+        }
+        // A CQ to some (CQ DX, CQ EU, CQ POTA) only where we are them;
+        // contest CQs (CQ TEST, CQ WW) want contest messages, not these.
+        const QStringList t = text.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+        if (t.size() >= 4 || (t.size() == 3 && !Ft8Engine::isGrid(t.at(2)))) {
+            const QString to = t.at(1);
+            if (kContinents.contains(to)) {
+                if (to != myCont) {
+                    continue;
+                }
+            } else if (to == QLatin1String("DX")) {
+                const DxccEntity* them = m_cty ? m_cty->entityForCallsign(p.de) : nullptr;
+                if (!them || myCont.isEmpty() || them->continent == myCont) {
+                    continue;
+                }
+            } else if (!kAnyone.contains(to)) {
+                continue;
+            }
+        }
+        const qsizetype rank = kRank.indexOf(hl);
+        const int r = rank < 0 ? int(kRank.size()) : int(rank);
+        const int snr = d.value(QStringLiteral("snr")).toInt();
+        if (best < 0 || r < bestRank || (r == bestRank && snr > bestSnr)) {
+            best = i;
+            bestRank = r;
+            bestSnr = snr;
+        }
+    }
+    if (best < 0) {
+        const QString waiting = tr("Answer CQ: waiting for a CQ");
+        if (m_digiStatus != waiting) {
+            setDigiStatus(waiting);
+        }
+        return;
+    }
+    const QVariantMap d = decodes.at(best).toMap();
+    const QString call = Ft8Engine::parse(d.value(QStringLiteral("text")).toString()).de;
+    qCInfo(lcMobile).noquote() << QStringLiteral("digi: Answer CQ picked %1 (%2, %3 dB) of %4 CQs")
+                                      .arg(call, d.value(QStringLiteral("hl")).toString())
+                                      .arg(bestSnr)
+                                      .arg(cqs);
+    m_digiAutoTried.insert(call, now);
+    digiAnswer(best);
+    if (m_digiState == QLatin1String("answer") && m_digiDx == call) {
+        m_digiAutoQso = true;
+        setDigiStatus(tr("Answer CQ: calling %1, %2 calls at most").arg(call).arg(kAutoAnswerTries));
+    }
+}
+
 void MobileEngine::setDigiCqParity(const QString& parity)
 {
     if (parity == m_digiCqParity
@@ -698,6 +885,11 @@ void MobileEngine::digiFinishQso(const QString& status)
     // With Keep CQ on, a QSO that answered our CQ goes straight back to CQ
     // in the same slot.
     if (m_digiAutoCq && m_digiFromCq) {
+        if (digiOperatorAway()) {
+            digiEnd(tr("%1; Keep CQ stopped: no touch on the app for %n min (the presence limit)", nullptr, m_digiPresenceMin)
+                        .arg(status));
+            return;
+        }
         const int parity = m_digiTxParity;
         digiCallCq();
         m_digiTxParity = parity;
@@ -971,6 +1163,7 @@ void MobileEngine::digiCallCq()
     m_digiEndAfterTx = false;
     m_digiTxMsg = digiMessage(QStringLiteral("cq"));
     m_digiFromCq = true;
+    m_digiAutoQso = false;
     m_digiTxParity = m_digiCqParity == QLatin1String("even") ? 0
                      : m_digiCqParity == QLatin1String("odd") ? 1
                      : int((Ft8Engine::nowMs() / slotLen + 1) % 2);
@@ -1009,6 +1202,7 @@ void MobileEngine::digiAnswer(int index)
     }
     m_digiState = QStringLiteral("answer");
     m_digiFromCq = false;
+    m_digiAutoQso = false;
     m_digiDx = p.de;
     m_digiRxHz = d.value(QStringLiteral("freq")).toInt();
     m_digiDxGrid = Ft8Engine::isGrid(p.extra) ? p.extra : QString();
@@ -1051,8 +1245,17 @@ void MobileEngine::digiHalt()
         }
         m_session.radioModel().setDigitalVoiceTxSlice(-1);
     }
+    // Halt TX (and whatever else halts: decoding off, the TX slice moved)
+    // ends Answer CQ too, or it would answer the next CQ.
+    const bool wasAnswering = m_digiAutoAnswer;
+    if (wasAnswering) {
+        m_digiAutoAnswer = false;
+        qCInfo(lcMobile) << "digi: Answer CQ off (halted)";
+    }
     if (m_digiState != QLatin1String("idle")) {
         digiEnd(tr("Stopped"));
+    } else if (wasAnswering) {
+        setDigiStatus(tr("Answer CQ off"));
     }
 }
 
@@ -1063,6 +1266,7 @@ void MobileEngine::digiEnd(const QString& status)
     m_digiTxMsg.clear();
     m_digiTries = 0;
     m_digiEndAfterTx = false;
+    m_digiAutoQso = false;
     setDigiStatus(status);
 }
 
@@ -1075,7 +1279,9 @@ void MobileEngine::onDigiSlot(qint64 slotMs)
     if (int((slotMs / slotLen) % 2) != m_digiTxParity) {
         return;
     }
-    const int limit = m_digiState == QLatin1String("cq") && m_digiDx.isEmpty() ? kMaxCqCalls : kMaxTries;
+    const int limit = m_digiState == QLatin1String("cq") && m_digiDx.isEmpty() ? kMaxCqCalls
+                      : m_digiAutoQso                                           ? kAutoAnswerTries
+                                                                                : kMaxTries;
     if (m_digiTries >= limit) {
         if (m_digiDx.isEmpty()) {
             digiEnd(tr("No answer to CQ"));  // the CQ watchdog, Keep CQ or not
@@ -1129,6 +1335,7 @@ void MobileEngine::startDigiTx(qint64 slotMs)
     }
     if (m_digiDryRun) {
         m_digiTransmitting = true;
+        m_digiSentMsg = m_digiTxMsg;
         ++m_digiTries;
         const int ms = int(qint64(audio.size() / int(sizeof(float))) * 1000 / Ft8Engine::kTxSampleRate);
         qCInfo(lcMobile).noquote() << QStringLiteral("digi: dry TX \"%1\", try %2, %3 slot")
@@ -1137,7 +1344,7 @@ void MobileEngine::startDigiTx(qint64 slotMs)
                                           .arg((slotMs / qint64(m_ft8->slotSeconds() * 1000)) % 2 ? QStringLiteral("odd") : QStringLiteral("even"));
         QTimer::singleShot(ms, this, [this] {
             m_digiTransmitting = false;
-            if (m_digiEndAfterTx) {
+            if (m_digiEndAfterTx && m_digiSentMsg == m_digiTxMsg) {
                 digiFinishQso(m_digiLogged ? tr("QSO with %1 logged").arg(m_digiDx) : tr("Done"));
             } else {
                 emit digiChanged();
@@ -1166,6 +1373,7 @@ void MobileEngine::startDigiTx(qint64 slotMs)
         return;
     }
     m_digiTransmitting = true;
+    m_digiSentMsg = m_digiTxMsg;
     m_digiTxPeakW = 0.0;
     m_digiTxPeakSwr = 0.0;
     ++m_digiTries;
@@ -1227,7 +1435,12 @@ void MobileEngine::onDigiTxFinished()
         setProcEnabled(true);
     }
     m_session.radioModel().setDigitalVoiceTxSlice(-1);
-    if (m_digiEndAfterTx) {
+    // The QSO ends once its closing message (RR73 or 73) has gone out. A
+    // reply decoded after our slot had begun (decoding starts 14 s into
+    // the slot, plus the network's delay) found the previous message on
+    // the air: the closing one goes out in our next slot. It ended with
+    // that previous message before, so the RR73 or 73 was never sent.
+    if (m_digiEndAfterTx && m_digiSentMsg == m_digiTxMsg) {
         digiFinishQso(m_digiLogged ? tr("QSO with %1 logged").arg(m_digiDx) : tr("Done"));
         return;
     }
@@ -1291,6 +1504,9 @@ void MobileEngine::handleDigiDecodes(const QVariantList& decodes, qint64 slotMs)
     emit digiDecodesChanged();
 
     if (m_digiState == QLatin1String("idle")) {
+        if (m_digiAutoAnswer) {
+            digiAutoAnswerPick(decodes);
+        }
         return;
     }
     const QString my = digiMyCall();

@@ -271,6 +271,33 @@ public:
     }
 };
 
+// The operator is there: a touch, a click, a wheel or a key on any of the
+// app's windows (counted once, at the window). FT8 / FT4's Answer CQ and
+// Keep CQ start no new QSO after the presence limit without one.
+class OperatorPresence : public QObject {
+public:
+    explicit OperatorPresence(MobileEngine* engine) : QObject(engine), m_engine(engine) {}
+    bool eventFilter(QObject* receiver, QEvent* event) override
+    {
+        switch (event->type()) {
+        case QEvent::MouseButtonPress:
+        case QEvent::TouchBegin:
+        case QEvent::Wheel:
+        case QEvent::KeyPress:
+            if (receiver->isWindowType()) {
+                m_engine->noteOperator();
+            }
+            break;
+        default:
+            break;
+        }
+        return false;
+    }
+
+private:
+    MobileEngine* m_engine;
+};
+
 // Press and hold a text field on a Mac (0.6 s, the pointer still): Apple's
 // text box, for a Mac where typed keys do not reach the field. A drag
 // (selecting text) does not open it.
@@ -961,6 +988,7 @@ MobileEngine::MobileEngine(QObject* parent)
         auto* diag = new KeyboardDiag(this);
         qApp->installEventFilter(diag);
         qApp->installEventFilter(new TextFocusRelease(this));
+        qApp->installEventFilter(new OperatorPresence(this));
         qCInfo(lcMobile) << "keyboard: iPad app on a Mac:" << (runningAsIosAppOnMac() ? "yes" : "no");
         if (runningAsIosAppOnMac()) {
             qApp->installEventFilter(new MacTextKeys(this));
@@ -2883,6 +2911,9 @@ void MobileEngine::setPtt(bool down, const QString& reason)
     }
     if (m_pttHeld) {
         return;
+    }
+    if (!m_digiKeying) {
+        noteOperator();
     }
     // Transmit lock in standby: a press held for a second arms (the Space
     // key; the PTT button arms the same way itself). FT8 / FT4 are refused
@@ -6276,6 +6307,7 @@ void MobileEngine::setKeyboardOnPage(bool on)
 void MobileEngine::onSideKey(int keyValue, bool pressed)
 {
     const auto key = static_cast<SideKey>(keyValue);
+    noteOperator();
     if (key == SideKey::Space) {
         // Hold-to-talk, as OperatePage does elsewhere: only while the page
         // has the keyboard (no dialog or text entry) and the app is in front.

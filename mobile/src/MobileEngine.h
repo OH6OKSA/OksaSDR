@@ -203,6 +203,15 @@ class MobileEngine : public QObject {
     // Keep calling CQ after a QSO that answered our CQ (until Halt TX or
     // the CQ watchdog); the slot CQ goes out in: "auto", "even" or "odd".
     Q_PROPERTY(bool digiAutoCq READ digiAutoCq WRITE setDigiAutoCq NOTIFY digiChanged)
+    // Answer CQ (Kurt DL5EAG): while idle, the app answers a CQ heard on the
+    // TX slice by itself (one that the Show filter passes, not worked on
+    // this band and mode, the rarest first), 5 calls per station, then
+    // another. On for this session only; Halt TX, the transmit lock and
+    // the presence limit switch it off.
+    Q_PROPERTY(bool digiAutoAnswer READ digiAutoAnswer WRITE setDigiAutoAnswer NOTIFY digiChanged)
+    // The presence limit (minutes, 1-60): Answer CQ and Keep CQ start no
+    // new QSO after this long without a touch or key on the app.
+    Q_PROPERTY(int digiPresenceMin READ digiPresenceMin WRITE setDigiPresenceMin NOTIFY digiChanged)
     // Report decoded stations to PSK Reporter (off by default); the status
     // line under it: what was sent, or why nothing can be.
     Q_PROPERTY(bool pskReporter READ pskReporter WRITE setPskReporter NOTIFY digiChanged)
@@ -844,6 +853,14 @@ public:
     void setPskReporter(bool on);
     QString pskReporterStatus() const;
     void setDigiAutoCq(bool on);
+    bool digiAutoAnswer() const { return m_digiAutoAnswer; }
+    void setDigiAutoAnswer(bool on);
+    int digiPresenceMin() const { return m_digiPresenceMin; }
+    void setDigiPresenceMin(int minutes);
+    // Seconds left before the presence limit stops the automatic QSOs.
+    Q_INVOKABLE int digiPresenceLeft() const;
+    // A touch, a click or a key on the app: the operator is there.
+    void noteOperator();
     QString digiCqParity() const { return m_digiCqParity; }
     void setDigiCqParity(const QString& parity);
     QVariantMap digi() const;
@@ -1603,6 +1620,9 @@ private:
     bool m_digiTransmitting{false};
     bool m_digiLogged{false};
     bool m_digiEndAfterTx{false};
+    // The message of the transmission under way (or the last one): the QSO
+    // ends after the closing message itself has gone out.
+    QString m_digiSentMsg;
     // The last contact logged: a station that sends again soon after (its
     // 73, or its report when our RR73 did not reach it) is not a new QSO.
     QString m_digiLastLoggedCall;
@@ -1826,6 +1846,15 @@ private:
     bool m_previewTx{false};
     qint64 m_lastInterlockMs{0};  // when the radio last gave a reason for refusing transmit
     bool m_digiAutoCq{false};
+    bool m_digiAutoAnswer{false};
+    bool m_digiAutoQso{false};  // the QSO under way is one Answer CQ started
+    int m_digiPresenceMin{10};
+    qint64 m_operatorMs{0};     // the last touch, click or key on the app
+    // Stations Answer CQ called, and when: not called again for a while.
+    QHash<QString, qint64> m_digiAutoTried;
+    bool digiOperatorAway() const;
+    bool digiFilterPasses(const QVariantMap& row) const;
+    void digiAutoAnswerPick(const QVariantList& decodes);
     // FT8 / FT4 keying its own tones: past setPtt's voice-only check (DIGU
     // is where they transmit; builds 108-112 refused them there).
     bool m_digiKeying{false};

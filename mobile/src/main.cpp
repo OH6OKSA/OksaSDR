@@ -1612,6 +1612,21 @@ int main(int argc, char* argv[])
                 engine.setRfPower(10);
                 engine.digiCallCq();
             }
+            // autoanswer: Answer CQ on the air at 10 W (with dry the
+            // transmissions are simulated: no PTT, no audio, nothing
+            // logged); with presence, a 1-minute presence limit must switch
+            // it off.
+            if (spec.contains(QStringLiteral("dry"))) {
+                engine.setDigiDryRun(true);
+            }
+            if (spec.contains(QStringLiteral("autoanswer"))) {
+                if (spec.contains(QStringLiteral("presence"))) {
+                    engine.setDigiPresenceMin(1);
+                }
+                engine.setRfPower(10);
+                engine.setDigiAutoAnswer(true);
+                qInfo() << "autoanswer-test: on, presence limit" << engine.digiPresenceMin() << "min, filter" << engine.digiFilter();
+            }
         });
         if (answer) {
             // Answer the strongest plain CQ, once the app is idle again.
@@ -1804,8 +1819,11 @@ int main(int argc, char* argv[])
             // Two CQs, then stop calling (one slot pair is 30 s in FT8, 15 s in FT4).
             QTimer::singleShot(8000 + (ft4 ? 33000 : 63000), &app, [&engine] { engine.digiHalt(); });
         }
-        QTimer::singleShot(8000 + seconds * 1000, &app, [&app, &engine, saved] {
+        const int presenceWas = engine.digiPresenceMin();
+        QTimer::singleShot(8000 + seconds * 1000, &app, [&app, &engine, saved, presenceWas] {
+            qInfo() << "ft8-test: Answer CQ" << engine.digiAutoAnswer() << "|" << engine.digi().value(QStringLiteral("status")).toString();
             engine.digiHalt();
+            engine.setDigiPresenceMin(presenceWas);
             engine.setDigiRunning(false);
             engine.setDigiProtocol(std::get<3>(*saved));
             engine.digiTune(std::get<0>(*saved));
