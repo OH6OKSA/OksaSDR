@@ -588,10 +588,23 @@ offers **Off**.
   not key (the radio refuses voice there); switch to USB / LSB, or use the
   FTx tab for FT8 / FT4 and the FreeDV tab for RADE. When the radio refuses transmit, its own reason
   is shown.
-  The microphone is open only while transmitting. **Tap on / off** (Controls
+  The microphone is open only while transmitting, and the speaker goes
+  quiet from the press until the release, so the band noise still playing
+  as the radio keys does not reach a phone's microphone and go out at the
+  start of the transmission (with **MON** on, the speaker comes back a
+  moment after the radio keys, for the monitor). **Tap on / off** (Controls
   → TX → PTT) makes it a switch: tap to transmit, tap again to stop (TX ■
   while it is on); as a safety it stops by itself after 3 minutes. Space on
   a keyboard works the same way.
+- **Transmit lock** — Controls → TX → Lock *Transmit lock* (off by
+  default), for a finger that touches PTT or the paddles by mistake. With
+  it on, nothing transmits in standby: PTT says **SB** (*hold to arm*),
+  TUNE and CQ say *· SB*, and a tap there, the paddles, a CW memory, a
+  voice macro or a tapped FT8 decode only show how to arm. Hold PTT, KEY
+  (or Space), TUNE or CQ for a second to arm it: PTT turns red with **OA**
+  and the time left, five minutes after the last transmission, and the
+  next press transmits. **Standby** beside the line in the TX tab locks it
+  again at once.
 - **KEY** — in CW modes the same button is a straight key, or **paddles**
   (Controls → CW → Key: *Paddles*): dit and dah side by side in its
   place, each its own touch, so holding both gives iambic squeeze. On a
@@ -1179,7 +1192,9 @@ last years).
 
 **Bluetooth headsets.** With a headset connected, receive audio and the
 microphone go through it (the hands-free link, as on the iPhone). Without
-one, the phone's speaker and microphone are used. Controls › Audio ›
+one, the phone's speaker and microphone are used. **A USB-C headset** (or a
+USB-C to 3.5 mm adapter) is used the same way with *Auto*, ahead of
+Bluetooth; plugged in or out while connected, receive moves over at once. Controls › Audio ›
 **Audio output** changes this: *Speaker* keeps both on the phone, *Bluetooth
 media* plays over the music link with the phone's microphone (see
 [Controls](#8-controls)).

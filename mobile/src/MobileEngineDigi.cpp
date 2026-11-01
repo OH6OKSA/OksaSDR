@@ -953,6 +953,9 @@ void MobileEngine::digiCallCq()
         setLastError(tr("Set the radio's callsign first (Radio Setup)."));
         return;
     }
+    if (txLockRefuses("CQ")) {
+        return;
+    }
     if (!digiRunning()) {
         setDigiRunning(true);
     }
@@ -983,6 +986,9 @@ void MobileEngine::digiAnswer(int index)
     const QString my = digiMyCall();
     if (my.isEmpty()) {
         setLastError(tr("Set the radio's callsign first (Radio Setup)."));
+        return;
+    }
+    if (txLockRefuses("answering a decode")) {
         return;
     }
     const QVariantMap d = m_digiDecodes.at(index).toMap();
@@ -1085,6 +1091,10 @@ void MobileEngine::startDigiTx(qint64 slotMs)
 {
     if (!transmitAvailable()) {
         digiEnd(transmitUnavailableReason());
+        return;
+    }
+    if (txLocked()) {
+        digiEnd(tr("Transmit is locked (SB): hold CQ for a second to arm it."));
         return;
     }
     const double elapsed = (Ft8Engine::nowMs() - slotMs) / 1000.0;

@@ -121,10 +121,13 @@ ColumnLayout {
         Layout.fillWidth: true
         AppButton {
             id: tuneButton
-            text: Engine.tuning ? qsTr("TUNE ●") : qsTr("TUNE")
+            text: Engine.tuning ? qsTr("TUNE ●") : Engine.txLocked ? qsTr("TUNE · SB") : qsTr("TUNE")
             enabled: Engine.tuneAvailable || Engine.tuning
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
+            // Transmit lock in standby: held for a second, it arms (a held
+            // press skips clicked, so unlocked it acts as a tap).
+            onPressAndHold: Engine.txLocked ? Engine.armTransmit() : Engine.toggleTune()
             background: Rectangle {
                 implicitHeight: Theme.touchTarget
                 radius: Theme.radius
@@ -379,6 +382,48 @@ ColumnLayout {
             checked: Engine.pttToggle
             Layout.fillWidth: true
             onClicked: Engine.pttToggle = true
+        }
+    }
+
+    // Transmit lock (Larry Averbeck): in standby (SB) nothing transmits;
+    // PTT, KEY, TUNE or CQ held for a second arms it (OA) for five minutes
+    // after the last transmission.
+    RowLayout {
+        Layout.fillWidth: true
+        Label { text: qsTr("Lock"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+        AppButton {
+            objectName: "txLockOff"
+            text: qsTr("Off")
+            checked: !Engine.txLock
+            Layout.fillWidth: true
+            onClicked: Engine.txLock = false
+        }
+        AppButton {
+            objectName: "txLockOn"
+            text: qsTr("Transmit lock")
+            checked: Engine.txLock
+            Layout.fillWidth: true
+            onClicked: Engine.txLock = true
+        }
+    }
+    RowLayout {
+        Layout.fillWidth: true
+        visible: Engine.txLock
+        Label {
+            Layout.fillWidth: true
+            text: Engine.txLocked
+                  ? qsTr("SB, standby: hold PTT, KEY, TUNE or CQ for a second to arm.")
+                  : qsTr("OA, armed: %1 min left, five minutes after each transmission.")
+                        .arg(Math.ceil(Engine.txArmedSeconds / 60))
+            color: Engine.txLocked ? Theme.textDim : Theme.transmit
+            font.pixelSize: 12
+            wrapMode: Text.WordWrap
+        }
+        AppButton {
+            objectName: "txStandby"
+            visible: !Engine.txLocked
+            text: qsTr("Standby")
+            onClicked: Engine.standbyTransmit()
         }
     }
 

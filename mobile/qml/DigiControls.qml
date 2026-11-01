@@ -96,12 +96,15 @@ ColumnLayout {
         spacing: 4
         AppButton {
             objectName: "digiCq"
-            text: qsTr("CQ")
+            text: Engine.txLocked ? qsTr("CQ · SB") : qsTr("CQ")
             checked: digi.qso.state === "cq"
             enabled: Engine.transmitAvailable
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiCallCq()
+            // Transmit lock in standby: held for a second, it arms (a held
+            // press skips clicked, so unlocked it acts as a tap).
+            onPressAndHold: Engine.txLocked ? Engine.armTransmit() : Engine.digiCallCq()
         }
         // Keep CQ: back to CQ after each QSO our CQ brought. Beside CQ: in
         // the slot row a narrow panel cut it to "Keep …".

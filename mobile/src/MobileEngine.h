@@ -77,6 +77,13 @@ class MobileEngine : public QObject {
     // A latched transmission stops by itself after kPttToggleLimitS.
     Q_PROPERTY(bool pttToggle READ pttToggle WRITE setPttToggle NOTIFY pttToggleChanged)
     Q_PROPERTY(bool pttLatched READ pttLatched NOTIFY pttToggleChanged)
+    // Transmit lock (Larry Averbeck: a mistaken touch on PTT or the CW
+    // paddles keyed the radio). On, nothing transmits in standby (SB);
+    // holding PTT, KEY, TUNE or CQ for a second arms it (OA) for five
+    // minutes after the last transmission. Off by default; remembered.
+    Q_PROPERTY(bool txLock READ txLock WRITE setTxLock NOTIFY txLockChanged)
+    Q_PROPERTY(bool txLocked READ txLocked NOTIFY txLockChanged)
+    Q_PROPERTY(int txArmedSeconds READ txArmedSeconds NOTIFY txLockChanged)
     Q_PROPERTY(QStringList bandPlans READ bandPlans CONSTANT)
     // Receive audio coding: "Auto" (Opus when remote: SmartLink, a tailnet,
     // or the radio reached through a VPN), "Opus" or "None"; applies from
@@ -524,6 +531,18 @@ public:
     bool pttLatched() const { return m_pttLatched; }
     // Toggle-mode PTT: keys when not transmitting, unkeys when it is.
     Q_INVOKABLE void togglePtt();
+    bool txLock() const;
+    void setTxLock(bool on);
+    // The lock on and not armed: transmitting is refused.
+    bool txLocked() const;
+    // Armed: the seconds left (0 in standby or with the lock off).
+    int txArmedSeconds() const;
+    // Arms at once (a held TUNE or CQ), or after a second held (PTT, KEY,
+    // the Space key: down starts it, up before the second cancels it).
+    Q_INVOKABLE void armTransmit();
+    Q_INVOKABLE void armHold(bool down);
+    // Back to standby at once.
+    Q_INVOKABLE void standbyTransmit();
     QStringList bandPlans() const;
     // The active plan's segments (empty when off), for the spectrum.
     QVector<BandPlanManager::Segment> bandPlanSegments() const;
@@ -1280,6 +1299,7 @@ signals:
     void bandPlanChanged();
     void buttonStyleChanged();
     void pttToggleChanged();
+    void txLockChanged();
     void audioCompressionChanged();
     void networkChanged();
     void performanceChanged();
@@ -1668,6 +1688,12 @@ private:
     QTimer m_txChainSaveTimer;
     bool m_pttLatched{false};
     QTimer m_pttToggleLimit;
+    // Transmit lock: armed until (ms since the epoch; 0 = standby), the
+    // second's hold that arms, and the countdown's tick.
+    qint64 m_txArmedUntilMs{0};
+    QTimer m_txArmHold;
+    QTimer m_txArmTick;
+    bool txLockRefuses(const char* what);
     // DX cluster: its spots go to the radio ("spot add", as the desktop),
     // deduplicated per call within 1 kHz and sent at most RbnRateLimit a
     // second; the radio shows them to every client and brings them back

@@ -26,39 +26,65 @@ AppButton {
     // the display gets the room (Halt TX is on the Digi tab). RADE is voice
     // and keeps it.
     readonly property bool digiHidden: Engine.digiRunning && !Engine.rade
+    // Transmit lock (TX tab, Larry Averbeck): in standby the button says SB
+    // and a second's hold arms it (nothing is sent); armed, the time left
+    // shows under the label as OA m:ss.
+    readonly property bool txStandby: Engine.txLocked && !Engine.tuning
+    property bool arming: false
+    function armedLeft() {
+        const s = Engine.txArmedSeconds
+        return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0")
+    }
     enabled: (keyMode ? Engine.cwKeyAvailable : Engine.transmitAvailable) || Engine.tuning || pressed
-    text: Engine.tuning ? qsTr("TUNE") : keyMode ? (Engine.cwKeyDown ? qsTr("KEY ●") : qsTr("KEY"))
+    text: Engine.tuning ? qsTr("TUNE") : txStandby ? qsTr("SB")
+          : keyMode ? (Engine.cwKeyDown ? qsTr("KEY ●") : qsTr("KEY"))
           : Engine.pttLatched ? qsTr("TX ■") : Engine.transmitting ? qsTr("TX") : qsTr("PTT")
     focusPolicy: Qt.NoFocus
     font.pixelSize: fontPx
     font.bold: true
     // In words for a screen reader (its double tap and hold keys, as a
     // finger's hold does).
-    Accessible.name: Engine.tuning ? qsTr("Tune, transmitting") : keyMode ? qsTr("CW key")
+    Accessible.name: Engine.tuning ? qsTr("Tune, transmitting") : txStandby ? qsTr("Transmit locked, standby")
+                     : keyMode ? qsTr("CW key")
                      : Engine.pttLatched ? qsTr("Transmitting, tap to stop") : Engine.transmitting ? qsTr("Transmitting")
                      : qsTr("Push to talk")
-    Accessible.description: toggleMode ? qsTr("Tap to transmit, tap again to stop") : qsTr("Hold to transmit")
+    Accessible.description: txStandby ? qsTr("Hold for a second to arm transmitting")
+                            : toggleMode ? qsTr("Tap to transmit, tap again to stop") : qsTr("Hold to transmit")
     // Ready, unavailable and transmitting must look different at a glance:
     // ready has a bright border and label, unavailable is dim.
-    contentItem: Text {
+    contentItem: Item {
         Accessible.ignored: true
-        visible: !ptt.paddleMode || !ptt.enabled
-        text: ptt.text
-        font: ptt.font
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
-        color: ptt.enabled ? "white" : Theme.textDim
-        opacity: ptt.enabled ? 1.0 : 0.5
+        visible: !ptt.paddleMode || !ptt.enabled || ptt.txStandby
+        implicitHeight: label.implicitHeight + (lockLine.visible ? lockLine.implicitHeight : 0)
+        Column {
+            anchors.centerIn: parent
+            Text {
+                id: label
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: ptt.text
+                font: ptt.font
+                color: ptt.txStandby ? Theme.textDim : ptt.enabled ? "white" : Theme.textDim
+                opacity: ptt.enabled ? 1.0 : 0.5
+            }
+            Text {
+                id: lockLine
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: Engine.txLock && !Engine.tuning && ptt.enabled
+                text: ptt.txStandby ? qsTr("hold to arm") : qsTr("OA %1").arg(ptt.armedLeft())
+                font.pixelSize: Math.max(11, ptt.fontPx * 0.4)
+                color: ptt.txStandby ? Theme.textDim : "white"
+            }
+        }
     }
     background: Rectangle {
         radius: Theme.radius
         // The paddles draw their own faces.
         opacity: ptt.paddleMode && ptt.enabled ? 0 : 1
         color: Engine.transmitting || Engine.tuning || Engine.cwKeyDown ? Theme.transmit
-             : ptt.enabled ? Theme.pttReady : Theme.surface
-        border.width: Engine.transmitting ? 3 : ptt.enabled ? 2 : 1
+             : ptt.enabled && !ptt.txStandby ? Theme.pttReady : Theme.surface
+        border.width: Engine.transmitting ? 3 : ptt.enabled && !ptt.txStandby ? 2 : 1
         border.color: Engine.transmitting ? "white"
-                    : ptt.enabled ? Theme.transmit : Theme.surfaceRaised
+                    : ptt.enabled && !ptt.txStandby ? Theme.transmit : Theme.surfaceRaised
     }
     // Hold to transmit; release (or losing the touch) always unkeys. While
     // the tune carrier is on, PTT is its off switch.
@@ -66,6 +92,11 @@ AppButton {
     // A tap felt on press and release, voice only: the straight key and the
     // paddles key too fast for it.
     onPressed: {
+        if (txStandby) {
+            arming = true
+            Engine.armHold(true)
+            return
+        }
         if (paddleMode) return
         if (!keyMode) Engine.haptic("press")
         if (Engine.tuning) Engine.stopTransmit("PTT pressed during tune")
@@ -74,6 +105,11 @@ AppButton {
         else Engine.setPtt(true)
     }
     onReleased: {
+        if (arming) {
+            arming = false
+            Engine.armHold(false)
+            return
+        }
         if (paddleMode) return
         if (keyMode) Engine.setCwKey(false, "key released")
         else if (!toggleMode) {
@@ -82,6 +118,11 @@ AppButton {
         }
     }
     onCanceled: {
+        if (arming) {
+            arming = false
+            Engine.armHold(false)
+            return
+        }
         if (paddleMode) return
         if (keyMode) Engine.setCwKey(false, "touch cancelled by the system")
         else if (!toggleMode) Engine.setPtt(false, "touch cancelled by the system")
@@ -89,7 +130,7 @@ AppButton {
 
     Item {
         id: paddles
-        visible: ptt.paddleMode && ptt.enabled
+        visible: ptt.paddleMode && ptt.enabled && !ptt.txStandby
         anchors.fill: parent
         z: 2
         // The keyer swaps the paddles itself (the radio's setting): the left

@@ -108,6 +108,13 @@ Q_LOGGING_CATEGORY(lcMobile, "aether.mobile")
 namespace AetherSDR::mobile {
 
 namespace {
+// Transmit lock: armed for five minutes after the last transmission, by a
+// press held for a second.
+constexpr qint64 kTxArmMs = 5 * 60 * 1000;
+constexpr int kTxArmHoldMs = 1000;
+}
+
+namespace {
 
 MobileEngine* s_instance = nullptr;
 
@@ -2388,6 +2395,9 @@ void MobileEngine::dvkPlay(int id)
             setLastError(transmitUnavailableReason());
             return;
         }
+        if (txLockRefuses("a voice macro")) {
+            return;
+        }
         // The clip plays in the microphone's place for one PTT press.
         setPtt(true);
         if (!m_pttHeld) {
@@ -2408,6 +2418,9 @@ void MobileEngine::dvkPlay(int id)
     }
     if (!transmitAvailable()) {
         setLastError(transmitUnavailableReason());
+        return;
+    }
+    if (txLockRefuses("the voice keyer")) {
         return;
     }
     if (!dvk.canStartOperation()) {
@@ -2754,6 +2767,9 @@ void MobileEngine::toggleTune()
         qCInfo(lcMobile) << "tune press ignored: tune not available";
         return;
     }
+    if (txLockRefuses("TUNE")) {
+        return;
+    }
     m_tuneInput = rm.localTxController()->capture(TxController::Activity::Tune);
     if (!m_tuneInput.start()) {
         m_tuneInput.stop();
@@ -2766,7 +2782,7 @@ void MobileEngine::toggleTune()
 
 void MobileEngine::atuPressed()
 {
-    if (!hasTuner() || !m_caps.canTransmit) {
+    if (!hasTuner() || !m_caps.canTransmit || txLockRefuses("the ATU")) {
         return;
     }
     RadioModel& rm = m_session.radioModel();
@@ -2861,10 +2877,18 @@ void MobileEngine::useDeviceMicrophone()
 void MobileEngine::setPtt(bool down, const QString& reason)
 {
     if (!down) {
+        armHold(false);
         releasePtt(reason.isEmpty() ? QStringLiteral("operator release") : reason);
         return;
     }
     if (m_pttHeld) {
+        return;
+    }
+    // Transmit lock in standby: a press held for a second arms (the Space
+    // key; the PTT button arms the same way itself). FT8 / FT4 are refused
+    // where they start.
+    if (txLocked() && !m_digiKeying) {
+        armHold(true);
         return;
     }
     if (!transmitAvailable()) {
@@ -3869,6 +3893,11 @@ void MobileEngine::wireCw()
         RadioModel& model = m_session.radioModel();
         qCInfo(lcMobile).noquote() << "radio transmitting:" << (on ? "yes" : "no")
             << (on ? (model.txClientHandle() == model.ourClientHandle() ? "(this app)" : "(another client)") : "");
+        // Armed, each transmission starts the five minutes again.
+        if (m_txArmedUntilMs != 0) {
+            m_txArmedUntilMs = QDateTime::currentMSecsSinceEpoch() + kTxArmMs;
+            emit txLockChanged();
+        }
         // With MON on, the speaker comes back once the receive audio from
         // before the radio keyed has played out, for the radio's monitor.
         if (on && m_rxDucked && monitor()) {
@@ -5844,6 +5873,113 @@ void MobileEngine::pttToggleLimitReached()
     }
 }
 
+bool MobileEngine::txLock() const
+{
+    return AppSettings::instance().value(QStringLiteral("MobileTxLock"), QStringLiteral("False")).toString()
+        == QLatin1String("True");
+}
+
+void MobileEngine::setTxLock(bool on)
+{
+    if (on == txLock()) {
+        return;
+    }
+    AppSettings::instance().setValue(QStringLiteral("MobileTxLock"), on ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    m_txArmedUntilMs = 0;
+    m_txArmTick.stop();
+    m_txArmHold.stop();
+    qCInfo(lcMobile) << "transmit lock" << (on ? "on: standby until armed" : "off");
+    emit txLockChanged();
+}
+
+bool MobileEngine::txLocked() const
+{
+    return txLock() && m_txArmedUntilMs == 0;
+}
+
+int MobileEngine::txArmedSeconds() const
+{
+    if (!txLock() || m_txArmedUntilMs == 0) {
+        return 0;
+    }
+    return int(std::max<qint64>(0, (m_txArmedUntilMs - QDateTime::currentMSecsSinceEpoch() + 999) / 1000));
+}
+
+void MobileEngine::armTransmit()
+{
+    m_txArmHold.stop();
+    if (!txLock()) {
+        return;
+    }
+    const bool was = m_txArmedUntilMs != 0;
+    m_txArmedUntilMs = QDateTime::currentMSecsSinceEpoch() + kTxArmMs;
+    if (!m_txArmTick.isActive()) {
+        m_txArmTick.setInterval(1000);
+        // Each second: the countdown, kept full while transmitting; at its
+        // end, standby again.
+        connect(&m_txArmTick, &QTimer::timeout, this, [this] {
+            if (m_txArmedUntilMs == 0) {
+                m_txArmTick.stop();
+                return;
+            }
+            const qint64 now = QDateTime::currentMSecsSinceEpoch();
+            if (transmitting() || tuning() || m_cwKeyHeld || m_cwPaddleHeld || m_pttHeld) {
+                m_txArmedUntilMs = now + kTxArmMs;
+            } else if (now >= m_txArmedUntilMs) {
+                m_txArmedUntilMs = 0;
+                m_txArmTick.stop();
+                qCInfo(lcMobile) << "transmit lock: standby again, five minutes without transmitting";
+            }
+            emit txLockChanged();
+        }, Qt::UniqueConnection);
+        m_txArmTick.start();
+    }
+    if (!was) {
+        mobile::haptic(mobile::Haptic::Press);
+        qCInfo(lcMobile) << "transmit lock: armed for five minutes after the last transmission";
+    }
+    emit txLockChanged();
+}
+
+void MobileEngine::armHold(bool down)
+{
+    if (!down) {
+        m_txArmHold.stop();
+        return;
+    }
+    if (!txLocked() || m_txArmHold.isActive()) {
+        return;
+    }
+    m_txArmHold.setSingleShot(true);
+    m_txArmHold.setInterval(kTxArmHoldMs);
+    connect(&m_txArmHold, &QTimer::timeout, this, &MobileEngine::armTransmit, Qt::UniqueConnection);
+    m_txArmHold.start();
+    setLastError(tr("Transmit is locked (SB): keep holding for a second to arm it."));
+}
+
+void MobileEngine::standbyTransmit()
+{
+    if (m_txArmedUntilMs == 0) {
+        return;
+    }
+    m_txArmedUntilMs = 0;
+    m_txArmTick.stop();
+    qCInfo(lcMobile) << "transmit lock: standby (by hand)";
+    emit txLockChanged();
+}
+
+// A transmission refused in standby, with the way to arm in the notice.
+bool MobileEngine::txLockRefuses(const char* what)
+{
+    if (!txLocked()) {
+        return false;
+    }
+    qCInfo(lcMobile) << "transmit lock: refused" << what << "in standby";
+    setLastError(tr("Transmit is locked (SB): hold PTT, KEY, TUNE or CQ for a second to arm it."));
+    return true;
+}
+
 bool MobileEngine::locked() const
 {
     return m_slice && m_slice->isLocked();
@@ -5998,6 +6134,7 @@ void MobileEngine::clearCwDecoded()
 void MobileEngine::setCwKey(bool down, const QString& reason)
 {
     if (!down) {
+        armHold(false);
         if (m_cwKeyHeld) {
             m_cwKeyHeld = false;
             m_cwKeyInput.stop();
@@ -6008,6 +6145,10 @@ void MobileEngine::setCwKey(bool down, const QString& reason)
         return;
     }
     if (m_cwKeyHeld || !cwKeyAvailable()) {
+        return;
+    }
+    if (txLocked()) {
+        armHold(true);
         return;
     }
     m_cwKeyInput = m_session.radioModel().localTxController()->capture(TxController::Activity::CwKey);
@@ -6225,7 +6366,7 @@ void MobileEngine::setCwPaddleState(bool dit, bool dah)
     // A new press needs a radio that can key and no TUNE carrier; a release
     // always goes through, so nothing is left keyed.
     if (held && !m_cwPaddleHeld
-        && (!cwKeyAvailable() || !rm.transmitModel().admitsCwKeyEdge(true))) {
+        && (!cwKeyAvailable() || !rm.transmitModel().admitsCwKeyEdge(true) || txLockRefuses("the paddles"))) {
         return;
     }
     if (held && !m_cwPaddleHeld) {
@@ -6253,7 +6394,7 @@ void MobileEngine::releasePaddles()
 void MobileEngine::sendCwx(const QString& text)
 {
     const QString trimmed = text.trimmed();
-    if (trimmed.isEmpty() || !cwxAvailable()) {
+    if (trimmed.isEmpty() || !cwxAvailable() || txLockRefuses("CW text")) {
         return;
     }
     RadioModel& rm = m_session.radioModel();
@@ -6278,7 +6419,7 @@ void MobileEngine::sendCwxChar(const QString& ch)
 {
     // Live mode (the desktop's CWX live typing): each character to the
     // radio's keyer as it is typed.
-    if (ch.isEmpty() || !cwxAvailable()) {
+    if (ch.isEmpty() || !cwxAvailable() || txLockRefuses("CW typing")) {
         return;
     }
     RadioModel& rm = m_session.radioModel();
