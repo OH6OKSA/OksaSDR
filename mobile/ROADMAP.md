@@ -5,7 +5,7 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Queued for build 142 / beta 56 (local): Backspace on a Mac (Pentti Pärnänen OH6PP, build 140: typing worked, Backspace did nothing: with the input method off Qt's UIKit mapping sends it as key 8 with the text "\b", which a text field ignores; now sent on as Backspace, which also fixes an iPad keyboard's Backspace in the frequency keypad; checked here by sending key 8 the way UIKit does, "OH6PPX" became "OH6P", unchanged without the fix); the Mac text box no longer opening on a double click (any release or double click stops its hold timer); the QRZ.com status saying the account is saved when QRZ.com does not answer (Sloan Davis); the manual's Operating by mode with a picture of each mode (the user).
+To verify in build 142 / beta 56: Backspace on Pentti Pärnänen OH6PP's MacBook in the Log tab's fields and the frequency entry, held Backspace repeating; a double click in a text field on a Mac opens no text box, a press and hold still does; the QRZ.com status in amber, not red, when QRZ.com does not answer (Sloan Davis's iPad), and red for a wrong password.
 
 To verify in build 141 / beta 55: a voice transmission with receive on a phone's speaker, the start clean on a second receiver (the user heard the burst on Android beta 54; Jeff Stinger on his Pixel 7); a USB-C headset on Android (Jeff), and plugging one in during a session; an ADIF file from Drive picked on Kurt DL5EAG's tablet; the transmit lock by finger on a phone and an iPad (a short press does nothing, a second's hold arms, OA counts down) and Space on the iPad's Magic Keyboard; Answer CQ on a device (Kurt) and the presence limit counting down; an RTTY tap and an RTTY spot on a phone.
 
@@ -159,6 +159,13 @@ Proposed order (a proposal, each build still decided on its own):
 4. **Later:** views side by side on a tablet, the connection doctor.
 
 ## Released
+
+**Build 142** (2026-11-01), iPhone and iPad, and Android beta 56:
+- Backspace on a Mac (Pentti Pärnänen OH6PP, build 140: typing worked, Backspace did nothing). With the input method off, Qt's UIKit key mapping sends Backspace as key 8 with the text "\b", which a text field ignores; an application filter (AppleControlKeys) sends key 8 and 127 on as Qt::Key_Backspace, which also gives an iPad keyboard's Backspace to the frequency keypad. Checked with a new render tool command (keys, with \b sent the way UIKit sends it): "OH6PPX" became "OH6P", and stayed "OH6PPX" without the filter.
+- The Mac text box no longer opens on a double click (Pentti): the second click's release did not always reach the field, so the hold timer ran on; any release anywhere and a double click stop it, and a press soon after a release arms nothing. Only a Mac shows the box, so not testable here.
+- QRZ.com not answering (Sloan Davis, iPad Pro, build 140: "Socket timing out"): the account was saved, only the check after Save timed out (the user's Android phone timed out in the same hour; no other tester reported it). A network failure now shows in amber that the account is saved and lookups will try again; a refusal stays red ("did not accept the sign-in").
+- The manual's Operating by mode (the user: a picture of every mode and the steps for every feature by mode): SSB, CW, AM and SAM, FM with repeaters, FT8 / FT4, RTTY, RADE and what works in every mode, eight new pictures rendered against the FLEX by update-manual-screenshots.sh (its new "modes" plan).
+- Checked against build 141's sweep: 27 sizes, no layout decision changed (layout-diff clean; the info panel cut on phones on their side as before); the pictures differ only in the band's signals. Build 142's sweep is the new baseline.
 
 **Build 141** (2026-11-01), iPhone and iPad, and Android beta 55:
 - RTTY the right way round: the radio's RTTY mode is LSB (mark 2125, space 2295 Hz in the audio), and build 140 decoded nothing until Reverse. A tap on a signal, an RTTY spot or the panel's Autotune tunes onto the mark (SpectrumItem::rttyMarkNear: two peaks a shift apart; a spot retries for 8 s while the display fills), and an RTTY spot sets the radio's RTTY mode (it was DIGL). Squelch (on by default) holds back text below the decoder's confidence. Checked live in a Sunday RTTY contest (R8UT, UN8PT, RA6LIS, SP4NKJ decoded; a spot and Autotune from the space tone landed on the mark).

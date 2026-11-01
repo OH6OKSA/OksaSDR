@@ -9,12 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Transmit lock (thanks Larry Averbeck): Controls > TX > Lock. Nothing transmits in standby (SB) until you hold PTT, KEY, Space, TUNE or CQ for a second; then it stays armed (OA) for 5 minutes after your last transmission.
-- FTx Answer CQ (thanks Kurt DL5EAG): the app answers CQs by itself, the rarest first, 5 calls each, then the next. It stops after a time without a touch on the app, which you set (1-60 min).
-- No burst of band noise at the start of a transmission when the phone's speaker plays receive (thanks Jeff Stinger).
-- RTTY decodes the right way round (build 140 needed Reverse); a tap on a signal, an RTTY spot or Autotune tunes onto it; Squelch hides the noise.
-- FT8: a QSO always ends with its RR73 or 73 on the air.
-- From build 140: Space PTT after typing in the Log panel; RTTY decoding (thanks Ben van Schoor); Mac typing (thanks Pentti OH6PP).
+- Mac: Backspace works in the text fields, and a double click no longer opens the text box (thanks Pentti OH6PP).
+- When QRZ.com does not answer, the Log tab says your account is saved and lookups will try again, not "sign-in failed" (thanks Sloan Davis).
+- The manual's new part Operating by mode: a picture of each mode (SSB, CW, AM, FM, FT8 / FT4, RTTY, RADE) and how to receive and transmit in it.
+- From build 141: the transmit lock, Controls > TX > Lock (thanks Larry Averbeck); FTx Answer CQ with a presence limit you set (thanks Kurt DL5EAG); no band noise burst at PTT from the phone's speaker (thanks Jeff Stinger); RTTY the right way round, a tap or spot tunes it, Squelch; a QSO ends with its RR73 or 73.
+- From build 140: Space PTT after typing in the Log panel; RTTY decoding (thanks Ben van Schoor).
 - From build 139: CW Autotune, notches after Add, eSSB, FTx List only (thanks Michael Whaley), VoiceOver names.
 
 RECENT (builds 94–136)
@@ -32,7 +31,7 @@ PLEASE TRY
 - The Log tab: log a few contacts, save your QRZ.com account and share the ADIF file to your logbook.
 - FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - The FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
-- New: Lock on the TX tab (a short press does nothing, a second's hold arms); Answer CQ on the FTx tab at low power while you watch [TX]; PTT with the phone's speaker on, and ask whether the start of your transmission is clean [TX]; a tap on an RTTY station.
+- New: Backspace and a double click in a text field on a Mac. From 141: Lock on the TX tab (a second's hold arms); Answer CQ at low power while you watch [TX]; PTT with the phone's speaker on: is the start clean? [TX]
 - Spots and the DX cluster; the eSSB tab at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM

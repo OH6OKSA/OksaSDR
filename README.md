@@ -30,7 +30,8 @@ SmartLink (or your own VPN), it is a complete station control surface.
 **[Android beta: download the APK](https://github.com/OH6OKSA/OksaSDR/releases/latest)** (Android 9 or newer, 64-bit ARM): see the
 [tester guide](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md#android) for installing it.
 
-**[User manual](docs/mobile/MANUAL.md)** — every function, with screenshots
+**[User manual](docs/mobile/MANUAL.md)** — every function, with screenshots,
+and how to operate each mode: SSB, CW, AM, FM, FT8 / FT4, RTTY and RADE
 (also the app's *Manual* button).
 
 **[OksaSDR Users on Facebook](https://www.facebook.com/groups/1468327561855382)** — questions, problem reports,
@@ -230,8 +231,9 @@ radio interface, with no computer running alongside.
 - VoiceOver and TalkBack: every control has a spoken name; a double tap
   acts and a swipe moves a slider one step.
 - On a Mac with Apple silicon the iPad app runs from TestFlight; text
-  fields take the Mac's keyboard, and a field pressed and held opens a
-  text box where a Mac's keys do not reach it.
+  fields take the Mac's keyboard (Backspace too, since build 142), and a
+  field pressed and held opens a text box where a Mac's keys do not reach
+  it.
 - Network quality in the top row (as the desktop's indicator), with
   link timing, packet loss per stream and traffic on tap.
 - **Radio Setup** (top row): callsign, radio name, remote, transmit limits
@@ -286,7 +288,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | FreeDV Reporter (qso.freedv.org) | ✅ The app's RADE listed on qso.freedv.org (build 112) |
 | PSK Reporter, Wavelog / Cloudlog | ✅ Spots on pskreporter.info; QSOs sent to a Wavelog logbook |
 | Transverters (XVTR) in Radio Setup | 🧪 Built in; reports with a transverter welcome |
-| Mac (Apple silicon), the iPad app from TestFlight | ✅ In use by testers; typing straight into the fields (the text box on press and hold since build 140) |
+| Mac (Apple silicon), the iPad app from TestFlight | ✅ In use by testers; typing straight into the fields (the text box on press and hold since build 140, Backspace since 142) |
 | Log tab, ADIF export and import, QRZ.com lookup | ✅ In use by testers |
 | Several slices and panadapters, multiFLEX | ✅ Supported |
 | Spots and DX cluster, TNF, memory editing | ✅ Tested against a FLEX-6600M (build 77; the notch panel with Add in build 139) |
