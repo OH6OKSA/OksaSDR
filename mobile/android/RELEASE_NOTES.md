@@ -1,6 +1,7 @@
 **OksaSDR for Android — beta 57.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
 ### New in beta 57
+- **RTTY has its own tab**, Controls › RTTY: receive in the radio's RTTY mode (lower sideband, the standard) or as AFSK in DIGL or DIGU, the decoder following the sideband (on the upper sideband the mark is the upper tone); a tap on a signal tunes it in for each. **Reverse** works now (it put the space on a wrong tone), and the squelch no longer drops letters of upper-sideband or reversed signals. With decoding off, the line over the waterfall still opens the settings.
 - **Worked before from your logbooks, in every mode:** Log tab › Wavelog › **Worked before from the logbook** reads your Wavelog logbook's QSOs (every station location; at each start only the new ones), so worked before, dupes, New call / DXCC and the FTx colours know them. They stay apart from the app's own log, and a QSO the app sent there counts once.
 - **QRZ.com Logbook both ways** (needs a QRZ subscription): paste the logbook's API key on the Log tab; every QSO you log goes there, and with Worked before from the logbook on, its QSOs count as worked before.
 - **A shared ADIF file** in Google Drive, OneDrive, Dropbox or Nextcloud for a desktop logger without a cloud connection (Log4OM, N1MM…): Choose… it on the Log tab; its QSOs count as worked before, and every QSO you log is added to its end.

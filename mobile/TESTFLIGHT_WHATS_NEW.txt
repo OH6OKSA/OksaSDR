@@ -9,12 +9,12 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Worked before from your logbooks, in every mode: Log tab > Wavelog > Worked before from the logbook reads your Wavelog logbook's QSOs, so worked before, dupes, New call / DXCC and the FTx colours know them.
+- RTTY has its own tab, Controls > RTTY: the radio's RTTY mode (LSB, the standard) or AFSK in DIGL or DIGU, the decoder following the sideband. Reverse fixed; the squelch no longer drops letters on USB.
+- Worked before from your Wavelog logbook, in every mode (Log tab > Wavelog): dupes, New call / DXCC and the FTx colours know its QSOs.
 - QRZ.com Logbook both ways (needs a QRZ subscription): paste the logbook's API key on the Log tab; each QSO goes there, and its QSOs can count as worked before.
 - A shared ADIF file in iCloud Drive, Google Drive or OneDrive, for a desktop logger without a cloud connection (Log4OM, N1MM...): its QSOs count as worked before, and each QSO you log is added to it.
 - From build 142: Mac Backspace and no text box on a double click (thanks Pentti OH6PP); a clearer QRZ.com message (thanks Sloan Davis); the manual's Operating by mode.
-- From build 141: the transmit lock (thanks Larry Averbeck); FTx Answer CQ with a presence limit (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger); RTTY the right way round.
-- From builds 139-140: Space PTT after typing in the Log panel; RTTY decoding (thanks Ben van Schoor); CW Autotune, eSSB, FTx List only (thanks Michael Whaley).
+- From build 141: the transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger).
 
 RECENT (builds 94–136)
 - QSOs to Logger32 (thanks Juho Kontio); the manual's Getting started.
@@ -31,7 +31,7 @@ PLEASE TRY
 - The Log tab: log a few contacts, save your QRZ.com account and share the ADIF file to your logbook.
 - FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - The FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
-- New: Worked before from Wavelog or QRZ.com, or a shared ADIF file in iCloud Drive: a call you have worked shows Worked N times in the Log tab.
+- New: Controls > RTTY in RTTY, DIGL and DIGU on an RTTY station; worked before from Wavelog, QRZ.com or a shared ADIF file in iCloud Drive.
 - Spots and the DX cluster; the eSSB tab at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM

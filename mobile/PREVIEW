@@ -3,6 +3,8 @@ own devices only (iOS: the internal TestFlight group; Android: the APK stays
 the run's artifact). Delete it when the Mobile release workflow hands the
 same builds to the testers.
 
-Build 143 / Android beta 57: Wavelog read-back, the QRZ.com Logbook both
-ways and the shared ADIF file, to try with a real QRZ logbook key and files
-in iCloud Drive, Google Drive and OneDrive before the testers get them.
+Build 144 / Android beta 57 (in place of the 143 preview): RTTY with its own
+tab (RTTY mode, DIGL, DIGU), the Wavelog read-back, the QRZ.com Logbook both
+ways and the shared ADIF file, to try with a real QRZ logbook key, files in
+iCloud Drive, Google Drive and OneDrive, and a live RTTY station before the
+testers get them.
