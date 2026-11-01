@@ -1,5 +1,6 @@
 #include "QsoLog.h"
 
+#include <QDate>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -10,6 +11,7 @@
 #include <QTextStream>
 
 #include <algorithm>
+#include <cstdlib>
 
 #ifdef Q_OS_ANDROID
 #include <QJniObject>
@@ -413,5 +415,111 @@ QString QsoLog::modeGroup(const QString& adifMode)
     }
     return QStringLiteral("DATA");
 }
+
+namespace KnownLog {
+
+namespace {
+QMutex& knownMutex()
+{
+    static QMutex mutex;
+    return mutex;
+}
+
+QString lineOf(const QsoEntry& e)
+{
+    return e.call + QLatin1Char('\t') + e.band + QLatin1Char('\t') + e.mode + QLatin1Char('\t') + e.submode
+           + QLatin1Char('\t') + QString::number(e.date) + QLatin1Char('\t') + QString::number(e.time)
+           + QLatin1Char('\t') + QString::number(e.cqz) + QLatin1Char('\n');
+}
+
+bool writeLines(const QString& path, const QList<QsoEntry>& entries, QIODevice::OpenMode mode)
+{
+    QMutexLocker lock(&knownMutex());
+    QDir().mkpath(QFileInfo(path).absolutePath());
+    QFile file(path);
+    if (!file.open(mode | QIODevice::Text)) {
+        return false;
+    }
+    QString text;
+    text.reserve(entries.size() * 40);
+    for (const QsoEntry& e : entries) {
+        text += lineOf(e);
+    }
+    return file.write(text.toUtf8()) >= 0;
+}
+
+// Minutes since the start of the Julian calendar, -1 without a date.
+qint64 minuteOf(const QsoEntry& e)
+{
+    const QDate day(int(e.date / 10000), int(e.date / 100 % 100), int(e.date % 100));
+    if (!day.isValid()) {
+        return -1;
+    }
+    return day.toJulianDay() * 1440 + (e.time / 100) * 60 + e.time % 100;
+}
+} // namespace
+
+QString defaultPath()
+{
+    return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath(QStringLiteral("logbook-known.tsv"));
+}
+
+QList<QsoEntry> read(const QString& path)
+{
+    QList<QsoEntry> entries;
+    QByteArray data;
+    {
+        QMutexLocker lock(&knownMutex());
+        QFile file(path);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            return entries;
+        }
+        data = file.readAll();
+    }
+    // The same shared band and mode strings as the log's entries.
+    for (const QByteArray& line : data.split('\n')) {
+        const QList<QByteArray> f = line.split('\t');
+        if (f.size() < 7 || f.at(0).isEmpty()) {
+            continue;
+        }
+        QVariantMap r{{QStringLiteral("CALL"), QString::fromUtf8(f.at(0))},
+                      {QStringLiteral("BAND"), QString::fromUtf8(f.at(1))},
+                      {QStringLiteral("MODE"), QString::fromUtf8(f.at(2))},
+                      {QStringLiteral("SUBMODE"), QString::fromUtf8(f.at(3))},
+                      {QStringLiteral("QSO_DATE"), QString::fromUtf8(f.at(4))},
+                      {QStringLiteral("TIME_ON"), QStringLiteral("%1").arg(f.at(5).toInt(), 4, 10, QLatin1Char('0'))},
+                      {QStringLiteral("CQZ"), QString::fromUtf8(f.at(6))}};
+        entries.append(QsoLog::entryOf(r));
+    }
+    return entries;
+}
+
+bool write(const QString& path, const QList<QsoEntry>& entries)
+{
+    return writeLines(path, entries, QIODevice::WriteOnly | QIODevice::Truncate);
+}
+
+bool append(const QString& path, const QList<QsoEntry>& entries)
+{
+    return writeLines(path, entries, QIODevice::WriteOnly | QIODevice::Append);
+}
+
+void remove(const QString& path)
+{
+    QMutexLocker lock(&knownMutex());
+    QFile::remove(path);
+}
+
+bool sameContact(const QsoEntry& a, const QsoEntry& b)
+{
+    if (a.call != b.call || a.band != b.band || QsoLog::modeGroup(a.mode) != QsoLog::modeGroup(b.mode)) {
+        return false;
+    }
+    const qint64 ma = minuteOf(a);
+    const qint64 mb = minuteOf(b);
+    return ma >= 0 && mb >= 0 && std::abs(ma - mb) <= 15;
+}
+
+} // namespace KnownLog
 
 } // namespace AetherSDR::mobile

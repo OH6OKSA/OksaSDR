@@ -54,7 +54,11 @@ these services:
 - **Wavelog or Cloudlog**, only if you enter your logbook's address and API
   key on the Log tab: each QSO you log is sent to that logbook (your own
   server, or the one you use) with its ADIF fields. QSOs that could not be
-  sent wait on the device until they can.
+  sent wait on the device until they can. With *Worked before from the
+  logbook* on, the app also reads your QSOs back from that Wavelog
+  logbook (its station locations and each QSO's call, band, mode, date,
+  time and CQ zone) and keeps them on the device for worked-before;
+  turning it off deletes them from the device.
 - **Logger32**, only if you enter your PC's address on the Log tab: each QSO
   you log is sent with its ADIF fields to Logger32 on that PC (your own
   computer, on your network or through your VPN). QSOs that could not be

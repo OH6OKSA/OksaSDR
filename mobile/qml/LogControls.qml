@@ -528,9 +528,58 @@ ColumnLayout {
         font.pixelSize: 13
         wrapMode: Text.WordWrap
     }
+    // The logbook read back (Wavelog): its QSOs count as worked before,
+    // apart from the app's own log.
+    RowLayout {
+        Layout.fillWidth: true
+        visible: Engine.onlineLog.enabled === true
+        Label {
+            text: qsTr("Worked before from the logbook")
+            color: Theme.text
+            Layout.fillWidth: true
+            wrapMode: Text.WordWrap
+        }
+        AppButton {
+            objectName: "onlineLogReadOff"
+            text: qsTr("Off")
+            checked: Engine.onlineLog.read !== true
+            focusPolicy: Qt.NoFocus
+            Layout.preferredWidth: 64
+            onClicked: Engine.setOnlineLogRead(false)
+        }
+        AppButton {
+            objectName: "onlineLogReadOn"
+            text: qsTr("On")
+            checked: Engine.onlineLog.read === true
+            focusPolicy: Qt.NoFocus
+            Layout.preferredWidth: 64
+            onClicked: Engine.setOnlineLogRead(true)
+        }
+    }
+    RowLayout {
+        Layout.fillWidth: true
+        visible: Engine.onlineLog.enabled === true && Engine.onlineLog.read === true
+        Label {
+            objectName: "onlineLogReadStatus"
+            Layout.fillWidth: true
+            text: Engine.onlineLog.readStatus || ""
+            color: Engine.onlineLog.readStatusKind === "ok" ? "#00cc66"
+                 : Engine.onlineLog.readStatusKind === "failed" ? Theme.transmit : Theme.textDim
+            font.pixelSize: 13
+            wrapMode: Text.WordWrap
+        }
+        AppButton {
+            objectName: "onlineLogReadNow"
+            text: qsTr("Read now")
+            enabled: Engine.onlineLog.reading !== true
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.onlineLogRead()
+        }
+    }
     Label {
         Layout.fillWidth: true
         text: qsTr("Every QSO you log (and FT8 / FT4 logs) also goes to your Wavelog or Cloudlog logbook. The station ID is the station location's number there (Station Locations). QSOs that cannot be sent wait and go later. Clear the address to stop. The key stays in this device's secure store.")
+              + " " + qsTr("Worked before from the logbook reads your Wavelog logbook's QSOs (every station location; at each start only the new ones), so worked before, dupes, New call / DXCC and the FTx colours know them; they stay apart from this app's log. Needs Wavelog 1.8 or newer; Cloudlog cannot send its QSOs.")
         color: Theme.textDim
         font.pixelSize: 12
         wrapMode: Text.WordWrap

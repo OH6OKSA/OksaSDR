@@ -5,6 +5,8 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
+Queued for the next build (local): Worked before from the Wavelog logbook (the two-way sync's step 1, below); one-button setups on the roadmap (Jeff Stinger).
+
 To verify in build 142 / beta 56: Backspace on Pentti Pärnänen OH6PP's MacBook in the Log tab's fields and the frequency entry, held Backspace repeating; a double click in a text field on a Mac opens no text box, a press and hold still does; the QRZ.com status in amber, not red, when QRZ.com does not answer (Sloan Davis's iPad), and red for a wrong password.
 
 To verify in build 141 / beta 55: a voice transmission with receive on a phone's speaker, the start clean on a second receiver (the user heard the burst on Android beta 54; Jeff Stinger on his Pixel 7); a USB-C headset on Android (Jeff), and plugging one in during a session; an ADIF file from Drive picked on Kurt DL5EAG's tablet; the transmit lock by finger on a phone and an iPad (a short press does nothing, a second's hold arms, OA counts down) and Space on the iPad's Magic Keyboard; Answer CQ on a device (Kurt) and the presence limit counting down; an RTTY tap and an RTTY spot on a phone.
@@ -77,8 +79,20 @@ now. What each service offers (checked in their source or docs):
 6. **Cloudlog**: no download API; worked-before one call at a time
    (`logbook_worked_status`).
 Not possible: eQSL (others' cards only), HRDLog (upload only).
-To decide: which first (Wavelog is ready to build on), and whether the
-pulled QSOs stay a separate "known" list or go into the app's own ADIF log.
+Decided (the user, 2026-11-01): Wavelog first, the pulled QSOs a separate
+list. Step 1 is built (local, for the next build): Log tab › Wavelog ›
+Worked before from the logbook (off by default) reads every station
+location's QSOs (station_info, then get_contacts_adif 5000 at a time with
+fetchfromid; at each start only the new ones, Read now at once) into
+KnownLog (logbook-known.tsv in the app's data folder: call, band, mode,
+submode, date, time, CQ zone). They count for worked before and dupes in
+every mode, New call / DXCC, the FTx colours and Answer CQ, never go into
+the ADIF log nor out again; a QSO the app sent there counts once (call,
+band, mode group within 15 minutes). Tested against a mock Wavelog
+(paging, two stations, the dedupe, an incremental read, an old Wavelog's
+404, an unreachable server) and the user's own Wavelog (19 362 QSOs read
+in about 25 s, 650 kB on disk). Next: QRZ.com Logbook, LoTW, the shared
+ADIF file.
 
 ## Planned: usability (review of 2026-10-29)
 

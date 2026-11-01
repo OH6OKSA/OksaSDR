@@ -1,6 +1,7 @@
 #pragma once
 
 #include "models/BandPlanManager.h"
+#include "QsoLog.h"
 #include "RadioListModel.h"
 
 #include "core/TxCoordinator.h"
@@ -922,6 +923,12 @@ public:
     // saved one), checks the key and sends what is queued.
     Q_INVOKABLE void setOnlineLog(const QString& url, const QString& key, const QString& stationId);
     QVariantMap onlineLog() const;
+    // Reading the logbook back (Wavelog 1.8 and newer): its QSOs, from every
+    // station location, count as worked before. On reads it all, then at
+    // each start only the new ones; off forgets them. onlineLogRead() reads
+    // what is new now.
+    Q_INVOKABLE void setOnlineLogRead(bool on);
+    Q_INVOKABLE void onlineLogRead();
     // "host" or "host:port" (52001 when not given); empty turns it off.
     Q_INVOKABLE void setLogger32(const QString& hostPort);
     QVariantMap logger32() const;
@@ -996,6 +1003,10 @@ public:
     void spotTest(const QString& action);
     // Development (--radio-commands): send one command and log the radio's reply.
     void devCommand(const QString& command);
+    // Development (render tool "worked"): how a call stands as a CQ on a band
+    // and mode: the FTx highlight and New call, the Log tab's worked count
+    // and dupe; and the logbook read-back's state.
+    QString workedAudit(const QString& call, const QString& band, const QString& modeKey);
     // Development (--cwx-test): the CWX sidetone's key-downs and keyed time
     // since the last CWX text started.
     QString cwxSidetoneStats() const;
@@ -1548,6 +1559,21 @@ private:
     bool m_onlineLogSending{false};
     QString m_onlineLogStatus;
     QString m_onlineLogStatusKind;
+    // The logbook read back (MobileEngineOnlineLog.cpp): its contacts, apart
+    // from the app's own log (KnownLog), and the read in progress.
+    struct KnownFetch;
+    bool onlineLogReadOn() const;
+    void onlineLogFetch(bool full);
+    void onlineLogFetchNext(const std::shared_ptr<KnownFetch>& fetch);
+    void onlineLogFetchDone(const std::shared_ptr<KnownFetch>& fetch, const QString& error);
+    void onlineLogForget();
+    QList<QsoEntry> m_knownQsos;
+    bool m_knownReading{false};
+    bool m_knownReadThisSession{false};
+    bool m_knownFullRead{false};  // this session: the file's list is replaced
+    int m_knownGeneration{0};     // up at each forget: older reads are dropped
+    QString m_knownStatus;
+    QString m_knownStatusKind;
     // ---- Logger32 (MobileEngineLogger32.cpp) ----
     void setupLogger32();
     QString logger32Host() const;

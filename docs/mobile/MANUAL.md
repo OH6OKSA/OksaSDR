@@ -216,7 +216,9 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
    slice, goes to the band's FT8 (or FT4) frequency in DIGU and decodes.
    No computer, WSJT-X or DAX.
 2. The decodes come at the end of each slot, coloured as in WSJT-X; **Show**
-   filters them (CQ, CQ POTA, New, New DXCC, New call).
+   filters them (CQ, CQ POTA, New, New DXCC, New call). Worked before
+   counts the Log tab's log, and your Wavelog logbook with **Worked before
+   from the logbook** on (Log tab).
 3. **Answer**: tap a decode. The app calls, runs the QSO (report, R-report,
    RR73, 73) and logs it.
 4. **Call CQ**: **CQ** (in the **CQ slot** you choose); **Keep CQ** goes
@@ -278,6 +280,12 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
   ([6](#6-split)); memories (Mem tab), spots and the DX cluster on the
   display; **REC** / **PLAY** of the slice in the info panel's row; the
   **Log** tab for every contact.
+- **Worked before and dupes** in every mode count this app's log and,
+  with **Worked before from the logbook** on (Log tab, under Wavelog),
+  every QSO in your Wavelog logbook: a call typed in the Log tab says how
+  many times it was worked and whether it is a dupe on this band and mode
+  (SSB, CW, AM, FM, RTTY, RADE, FT8 alike), and the FTx colours and New
+  call / New DXCC know them too.
 
 ---
 
@@ -1032,6 +1040,19 @@ Reporter).
   FT4, also goes to the logbook. QSOs that cannot be sent (offline, server
   away) wait on the device and go with the next QSO or start; the line
   under the fields says how many wait. Clear the address to stop.
+  **Worked before from the logbook** (Wavelog 1.8 or newer; *On*) reads
+  your Wavelog logbook back: every station location's QSOs, all of them
+  the first time (about 20 000 QSOs take half a minute), then at each
+  start only the new ones; **Read now** reads what is new at once. They
+  count for worked before, dupes, New call / New DXCC and the FTx colours
+  in every mode, but stay apart from this app's own log: they are not
+  added to its ADIF file nor sent to the logbooks again, and a QSO that
+  came from this app is counted once (the same call, band and mode within
+  15 minutes, Wavelog's own rule). The line beside Read now says how many
+  QSOs count and how many the last read brought. *Off*, a cleared
+  address or another logbook's address forgets them. A read-only API key
+  is enough for reading; sending needs read & write. Cloudlog cannot send
+  its QSOs.
   **Logger32**: with your PC's address (e.g. `192.168.1.10`, or
   `192.168.1.10:52001` for another port than Logger32's 52001), *Save*
   checks that Logger32 answers there; from then on every QSO you log also
@@ -1096,7 +1117,8 @@ Reporter).
   this band; WSJT-X's New Call and New Call on Band); a CQ
   from a station already in the log on this band and mode is grey. "New"
   is counted from the Log tab's log, so import your logbook there (ADIF)
-  to see what you still need. **Show** filters the list: **All**, **CQ**
+  or turn on **Worked before from the logbook** (Wavelog) to see what you
+  still need. **Show** filters the list: **All**, **CQ**
   (CQ calls only), **CQ POTA** (park activators calling `CQ POTA`; a
   contact with one goes into the log with SIG POTA, the park itself is not
   in the message), **New** (a new continent, CQ zone or DXCC, overall or on

@@ -116,4 +116,23 @@ private:
     QList<QVariantMap> m_recent;
 };
 
+// Contacts read back from the operator's online logbook (Wavelog), kept
+// apart from the app's own log: they count for worked-before, dupes, New
+// call / DXCC and the FTx colours, but never go into the ADIF log nor out
+// to the logbooks again. A compact file in the app's data folder, one
+// contact a line: CALL, BAND, MODE, SUBMODE, QSO_DATE, TIME_ON, CQZ,
+// separated by tabs.
+namespace KnownLog {
+QString defaultPath();
+// From any thread (one writer at a time).
+QList<QsoEntry> read(const QString& path);
+bool write(const QString& path, const QList<QsoEntry>& entries);  // the whole list
+bool append(const QString& path, const QList<QsoEntry>& entries);
+void remove(const QString& path);
+// Wavelog's own duplicate rule: the same call, band and mode (group here:
+// the app logs USB as SSB / USB, a desktop logger may log USB) within 15
+// minutes of each other.
+bool sameContact(const QsoEntry& a, const QsoEntry& b);
+} // namespace KnownLog
+
 } // namespace AetherSDR::mobile

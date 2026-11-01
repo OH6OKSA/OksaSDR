@@ -1628,6 +1628,27 @@ int main(int argc, char* argv[])
                 qInfo() << "autoanswer-test: on, presence limit" << engine.digiPresenceMin() << "min, filter" << engine.digiFilter();
             }
         });
+        if (spec.contains(QStringLiteral("hl"))) {
+            // Each CQ caller once: its highlight and how the log and the
+            // logbook read back stand with it (MobileEngine::workedAudit).
+            auto seen = std::make_shared<QSet<QString>>();
+            QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::digiDecodesChanged, &app, [&engine, seen, ft4] {
+                for (const QVariant& v : engine.digiDecodes()) {
+                    const QVariantMap d = v.toMap();
+                    const QStringList t = d.value(QStringLiteral("text")).toString().split(QLatin1Char(' '), Qt::SkipEmptyParts);
+                    if (!d.value(QStringLiteral("cq")).toBool() || t.size() < 2) {
+                        continue;
+                    }
+                    const QString call = t.size() >= 3 && t.at(1).size() <= 4 && t.size() >= 4 ? t.at(2) : t.at(1);
+                    if (seen->contains(call)) {
+                        continue;
+                    }
+                    seen->insert(call);
+                    qInfo().noquote() << "hl-test:" << d.value(QStringLiteral("hl")).toString() << "|"
+                                      << engine.workedAudit(call, QStringLiteral("20m"), ft4 ? QStringLiteral("FT4") : QStringLiteral("FT8"));
+                }
+            });
+        }
         if (answer) {
             // Answer the strongest plain CQ, once the app is idle again.
             QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::digiDecodesChanged, &app, [&engine] {

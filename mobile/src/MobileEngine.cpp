@@ -5110,9 +5110,32 @@ QVariantMap MobileEngine::qsoDefaults() const
 QVariantMap MobileEngine::workedInfo(const QString& call) const
 {
     const QVariantMap d = qsoDefaults();
-    return {{QStringLiteral("worked"), m_qsoLog->workedCount(call)},
-            {QStringLiteral("dupe"), m_qsoLog->isDupe(call, d.value(QStringLiteral("band")).toString(),
-                                                      QsoLog::adifMode(d.value(QStringLiteral("mode")).toString()).first)}};
+    const QString band = d.value(QStringLiteral("band")).toString();
+    const QString mode = QsoLog::adifMode(d.value(QStringLiteral("mode")).toString()).first;
+    int worked = m_qsoLog->workedCount(call);
+    bool dupe = m_qsoLog->isDupe(call, band, mode);
+    // The logbook's QSOs read back, less those it got from this app (the
+    // same contact within 15 minutes is counted once).
+    const QString c = call.trimmed().toUpper();
+    if (!m_knownQsos.isEmpty() && !c.isEmpty()) {
+        QList<QsoEntry> own;
+        for (const QsoEntry& e : m_qsoLog->entries()) {
+            if (e.call == c) {
+                own.append(e);
+            }
+        }
+        const QString group = QsoLog::modeGroup(mode);
+        for (const QsoEntry& k : m_knownQsos) {
+            if (k.call != c || std::any_of(own.cbegin(), own.cend(), [&k](const QsoEntry& e) { return KnownLog::sameContact(e, k); })) {
+                continue;
+            }
+            ++worked;
+            if (k.band == band.toLower() && QsoLog::modeGroup(k.mode) == group) {
+                dupe = true;
+            }
+        }
+    }
+    return {{QStringLiteral("worked"), worked}, {QStringLiteral("dupe"), dupe}};
 }
 
 bool MobileEngine::logQso(const QVariantMap& fields)

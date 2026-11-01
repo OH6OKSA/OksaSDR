@@ -383,7 +383,9 @@ void MobileEngine::rebuildWorked()
     m_wkContBand.clear();
     m_wkZone.clear();
     m_wkZoneBand.clear();
-    for (const QsoEntry& q : m_qsoLog->entries()) {
+    // The app's own log and the logbook's QSOs read back (sets: a contact
+    // in both counts once).
+    const auto add = [this](const QsoEntry& q) {
         const QString& call = q.call;
         const QString& band = q.band;
         const QString& mode = q.submode.isEmpty() ? q.mode : q.submode;
@@ -392,7 +394,7 @@ void MobileEngine::rebuildWorked()
         m_wkCallBand.insert(call + QLatin1Char('|') + band);
         const DxccEntity* e = m_cty ? m_cty->entityForCallsign(call) : nullptr;
         if (!e) {
-            continue;
+            return;
         }
         const int zone = q.cqz > 0 ? q.cqz : e->cqZone;
         m_wkDxcc.insert(e->primaryPrefix);
@@ -401,8 +403,26 @@ void MobileEngine::rebuildWorked()
         m_wkContBand.insert(e->continent + QLatin1Char('|') + band);
         m_wkZone.insert(QString::number(zone));
         m_wkZoneBand.insert(QString::number(zone) + QLatin1Char('|') + band);
+    };
+    for (const QsoEntry& q : m_qsoLog->entries()) {
+        add(q);
+    }
+    for (const QsoEntry& q : m_knownQsos) {
+        add(q);
     }
     m_wkDirty = false;
+}
+
+QString MobileEngine::workedAudit(const QString& call, const QString& band, const QString& modeKey)
+{
+    const QVariantMap info = workedInfo(call);
+    return QStringLiteral("%1 %2 %3: highlight %4, newcall %5, worked %6, dupe %7 (own log %8, read back %9)")
+        .arg(call.toUpper(), band, modeKey, digiHighlight(call, true, false, band, modeKey))
+        .arg(digiNewCall(call, true, band))
+        .arg(info.value(QStringLiteral("worked")).toInt())
+        .arg(info.value(QStringLiteral("dupe")).toBool() ? QStringLiteral("yes") : QStringLiteral("no"))
+        .arg(m_qsoLog->count())
+        .arg(m_knownQsos.size());
 }
 
 QString MobileEngine::digiHighlight(const QString& call, bool cq, bool toMe, const QString& band, const QString& modeKey)

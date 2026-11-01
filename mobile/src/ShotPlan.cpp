@@ -703,6 +703,28 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         }
         qInfo().noquote() << "shot-plan: focus keyboardOnPage" << m_engine.keyboardOnPage() << "active" << active
                           << "overlay visible:" << overlay.join(QStringLiteral(", "));
+    } else if (command == QLatin1String("worked")) {
+        // CALL[,BAND,MODE]: the worked-before view (MobileEngine::workedAudit).
+        const QStringList parts = arg.split(QLatin1Char(','));
+        qInfo().noquote() << "shot-plan: worked"
+                          << m_engine.workedAudit(parts.value(0), parts.value(1, QStringLiteral("20m")),
+                                                  parts.value(2, QStringLiteral("FT8")));
+        *delayMs = 100;
+    } else if (command == QLatin1String("logread")) {
+        // "on" / "off" sets Worked before from the logbook, "now" reads what
+        // is new, nothing logs its state.
+        if (arg == QLatin1String("on") || arg == QLatin1String("off")) {
+            m_engine.setOnlineLogRead(arg == QLatin1String("on"));
+        } else if (arg == QLatin1String("now")) {
+            m_engine.onlineLogRead();
+        }
+        const QVariantMap log = m_engine.onlineLog();
+        qInfo().noquote() << "shot-plan: logread" << arg << "read" << log.value(QStringLiteral("read")).toBool()
+                          << "reading" << log.value(QStringLiteral("reading")).toBool() << "known"
+                          << log.value(QStringLiteral("known")).toInt() << "status"
+                          << log.value(QStringLiteral("readStatusKind")).toString()
+                          << log.value(QStringLiteral("readStatus")).toString();
+        *delayMs = 100;
     } else if (command == QLatin1String("keys")) {
         // Keys through the window as a hardware keyboard sends them; "\\b"
         // is Backspace as an iPad app on a Mac gets it from UIKit (key 8,
