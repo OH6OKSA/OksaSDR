@@ -702,6 +702,8 @@ MobileEngine::MobileEngine(QObject* parent)
 #endif
     setupDigi();
     setupOnlineLog();
+    setupQrzLog();
+    setupSharedAdif();
     setupLogger32();
     m_cty = std::make_unique<CtyDatParser>();
     m_cty->loadFromResource(QStringLiteral(":/cty.dat"));
@@ -5114,24 +5116,29 @@ QVariantMap MobileEngine::workedInfo(const QString& call) const
     const QString mode = QsoLog::adifMode(d.value(QStringLiteral("mode")).toString()).first;
     int worked = m_qsoLog->workedCount(call);
     bool dupe = m_qsoLog->isDupe(call, band, mode);
-    // The logbook's QSOs read back, less those it got from this app (the
-    // same contact within 15 minutes is counted once).
+    // The logbooks' QSOs read back (Wavelog, QRZ.com, the shared file),
+    // each contact once: one this app sent there, or two of them hold, is
+    // the same call, band and mode within 15 minutes.
     const QString c = call.trimmed().toUpper();
-    if (!m_knownQsos.isEmpty() && !c.isEmpty()) {
-        QList<QsoEntry> own;
+    if ((!m_knownQsos.isEmpty() || !m_qrzKnown.isEmpty() || !m_fileKnown.isEmpty()) && !c.isEmpty()) {
+        QList<QsoEntry> counted;
         for (const QsoEntry& e : m_qsoLog->entries()) {
             if (e.call == c) {
-                own.append(e);
+                counted.append(e);
             }
         }
         const QString group = QsoLog::modeGroup(mode);
-        for (const QsoEntry& k : m_knownQsos) {
-            if (k.call != c || std::any_of(own.cbegin(), own.cend(), [&k](const QsoEntry& e) { return KnownLog::sameContact(e, k); })) {
-                continue;
-            }
-            ++worked;
-            if (k.band == band.toLower() && QsoLog::modeGroup(k.mode) == group) {
-                dupe = true;
+        for (const QList<QsoEntry>* list : {&m_knownQsos, &m_qrzKnown, &m_fileKnown}) {
+            for (const QsoEntry& k : *list) {
+                if (k.call != c
+                    || std::any_of(counted.cbegin(), counted.cend(), [&k](const QsoEntry& e) { return KnownLog::sameContact(e, k); })) {
+                    continue;
+                }
+                counted.append(k);
+                ++worked;
+                if (k.band == band.toLower() && QsoLog::modeGroup(k.mode) == group) {
+                    dupe = true;
+                }
             }
         }
     }
@@ -5273,6 +5280,8 @@ bool MobileEngine::writeQso(const QVariantMap& r)
                                            r.value(QStringLiteral("NAME")).toString().isEmpty() ? QStringLiteral("(no name)")
                                                                                                 : QStringLiteral("with name and QTH"));
     onlineLogQueue(QsoLog::adifRecord(r));
+    qrzLogQueue(QsoLog::adifRecord(r));
+    sharedAdifQueue(QsoLog::adifRecord(r));
     logger32Queue(QsoLog::adifRecord(r));
     emit qsoLogChanged();
     return true;

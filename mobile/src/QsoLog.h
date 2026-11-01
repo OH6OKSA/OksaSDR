@@ -123,7 +123,9 @@ private:
 // contact a line: CALL, BAND, MODE, SUBMODE, QSO_DATE, TIME_ON, CQZ,
 // separated by tabs.
 namespace KnownLog {
-QString defaultPath();
+QString defaultPath();  // Wavelog's
+QString qrzPath();      // QRZ.com Logbook's
+QString sharedPath();   // the shared ADIF file's, as last read
 // From any thread (one writer at a time).
 QList<QsoEntry> read(const QString& path);
 bool write(const QString& path, const QList<QsoEntry>& entries);  // the whole list

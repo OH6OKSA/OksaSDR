@@ -217,8 +217,8 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
    No computer, WSJT-X or DAX.
 2. The decodes come at the end of each slot, coloured as in WSJT-X; **Show**
    filters them (CQ, CQ POTA, New, New DXCC, New call). Worked before
-   counts the Log tab's log, and your Wavelog logbook with **Worked before
-   from the logbook** on (Log tab).
+   counts the Log tab's log, and your Wavelog or QRZ.com logbook with
+   **Worked before from the logbook** on, or a **Shared ADIF file** (Log tab).
 3. **Answer**: tap a decode. The app calls, runs the QSO (report, R-report,
    RR73, 73) and logs it.
 4. **Call CQ**: **CQ** (in the **CQ slot** you choose); **Keep CQ** goes
@@ -281,11 +281,12 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
   display; **REC** / **PLAY** of the slice in the info panel's row; the
   **Log** tab for every contact.
 - **Worked before and dupes** in every mode count this app's log and,
-  with **Worked before from the logbook** on (Log tab, under Wavelog),
-  every QSO in your Wavelog logbook: a call typed in the Log tab says how
-  many times it was worked and whether it is a dupe on this band and mode
-  (SSB, CW, AM, FM, RTTY, RADE, FT8 alike), and the FTx colours and New
-  call / New DXCC know them too.
+  with **Worked before from the logbook** on (Log tab: Wavelog, QRZ.com
+  Logbook) or a **Shared ADIF file** chosen, every QSO in those, each
+  contact once: a call typed in the Log tab says how many times it was
+  worked and whether it is a dupe on this band and mode (SSB, CW, AM, FM,
+  RTTY, RADE, FT8 alike), and the FTx colours and New call / New DXCC know
+  them too. Every QSO you log goes to each of them.
 
 ---
 
@@ -1053,6 +1054,26 @@ Reporter).
   address or another logbook's address forgets them. A read-only API key
   is enough for reading; sending needs read & write. Cloudlog cannot send
   its QSOs.
+  **QRZ.com Logbook** (both ways; QRZ's Logbook API needs a QRZ
+  subscription): paste the logbook's **API key** (QRZ.com › *Logbook* ›
+  *Settings*) and *Save*; the app checks it, and from then on every QSO you
+  log also goes to your QRZ.com logbook (queued while offline; one QRZ.com
+  already has, sent by Wavelog for example, counts as sent). **Worked
+  before from the logbook** (*On*) reads the logbook's QSOs back, all of
+  them the first time (250 at a time, as QRZ.com asks), then at each start
+  only the new ones, and **Read now** at once; they count as Wavelog's do,
+  each contact once with this app's log and Wavelog's. **Remove** forgets
+  the key, the queue and the QSOs read back.
+  **Shared ADIF file** (both ways, for a logging program without a cloud
+  connection: Log4OM, N1MM, DXKeeper, MacLoggerDX…): put an ADIF file in
+  iCloud Drive, Google Drive, OneDrive, Dropbox or Nextcloud (export one
+  from the program, or *Share the log* there) and **Choose…** it. Its QSOs
+  count as worked before (read at each start and with **Read now**), and
+  every QSO you log is added to its end for the program to import; the app
+  only adds, never changes what is in the file, and never makes a new one
+  in its place: when the file is away (a cloud file not yet on the device),
+  the QSOs wait and the QSOs of its last read still count. **Change** picks
+  another file, **Remove** forgets it (the file stays).
   **Logger32**: with your PC's address (e.g. `192.168.1.10`, or
   `192.168.1.10:52001` for another port than Logger32's 52001), *Save*
   checks that Logger32 answers there; from then on every QSO you log also
@@ -1117,8 +1138,8 @@ Reporter).
   this band; WSJT-X's New Call and New Call on Band); a CQ
   from a station already in the log on this band and mode is grey. "New"
   is counted from the Log tab's log, so import your logbook there (ADIF)
-  or turn on **Worked before from the logbook** (Wavelog) to see what you
-  still need. **Show** filters the list: **All**, **CQ**
+  or turn on **Worked before from the logbook** (Wavelog, QRZ.com) or a
+  **Shared ADIF file** to see what you still need. **Show** filters the list: **All**, **CQ**
   (CQ calls only), **CQ POTA** (park activators calling `CQ POTA`; a
   contact with one goes into the log with SIG POTA, the park itself is not
   in the message), **New** (a new continent, CQ zone or DXCC, overall or on

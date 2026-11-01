@@ -270,6 +270,12 @@ class MobileEngine : public QObject {
     // API): url, stationId, hasKey, enabled, pending (queued, unsent),
     // status and statusKind ("checking", "ok", "failed" or "").
     Q_PROPERTY(QVariantMap onlineLog READ onlineLog NOTIFY onlineLogChanged)
+    // QRZ.com Logbook both ways (MobileEngineQrzLog.cpp): hasKey, pending,
+    // status, statusKind; read, reading, known, readStatus, readStatusKind.
+    Q_PROPERTY(QVariantMap qrzLog READ qrzLog NOTIFY qrzLogChanged)
+    // The shared ADIF file both ways (MobileEngineSharedAdif.cpp): set, name,
+    // known, pending, reading, status, statusKind.
+    Q_PROPERTY(QVariantMap sharedAdif READ sharedAdif NOTIFY sharedAdifChanged)
     // Logger32 on the operator's PC: each logged QSO as an ADIF record over
     // TCP (MobileEngineLogger32.cpp).
     Q_PROPERTY(QVariantMap logger32 READ logger32 NOTIFY logger32Changed)
@@ -929,6 +935,22 @@ public:
     // what is new now.
     Q_INVOKABLE void setOnlineLogRead(bool on);
     Q_INVOKABLE void onlineLogRead();
+    // QRZ.com Logbook: the logbook's API key (an empty one keeps the saved
+    // key) is checked, then each logged QSO goes there; clearQrzLog() stops
+    // it all. Reading back as for Wavelog.
+    Q_INVOKABLE void setQrzLogKey(const QString& key);
+    Q_INVOKABLE void clearQrzLog();
+    Q_INVOKABLE void setQrzLogRead(bool on);
+    Q_INVOKABLE void qrzLogRead();
+    QVariantMap qrzLog() const;
+    // A shared ADIF file picked in the system's picker (iCloud Drive, Google
+    // Drive, OneDrive...): read for worked before, each logged QSO added to
+    // its end. clearSharedAdif() forgets it (the file stays); sharedAdifRead()
+    // reads it again now.
+    Q_INVOKABLE void setSharedAdif(const QUrl& url);
+    Q_INVOKABLE void clearSharedAdif();
+    Q_INVOKABLE void sharedAdifRead();
+    QVariantMap sharedAdif() const;
     // "host" or "host:port" (52001 when not given); empty turns it off.
     Q_INVOKABLE void setLogger32(const QString& hostPort);
     QVariantMap logger32() const;
@@ -1007,6 +1029,12 @@ public:
     // and mode: the FTx highlight and New call, the Log tab's worked count
     // and dupe; and the logbook read-back's state.
     QString workedAudit(const QString& call, const QString& band, const QString& modeKey);
+    // Development (render tool "qrzinsert"): one test record for CALL to
+    // the QRZ.com Logbook queue only (not the app's log, not Wavelog).
+    void devQrzInsert(const QString& call);
+    // Development (render tool "shared insert="): a test record for CALL to
+    // the shared ADIF file only.
+    void devSharedInsert(const QString& call);
     // Development (--cwx-test): the CWX sidetone's key-downs and keyed time
     // since the last CWX text started.
     QString cwxSidetoneStats() const;
@@ -1398,6 +1426,8 @@ signals:
     void lastSpotCallChanged();
     void qrzChanged();
     void onlineLogChanged();
+    void qrzLogChanged();
+    void sharedAdifChanged();
     void logger32Changed();
     void tnfsChanged();
     void tnfCreateRequested(double freqMhz);
@@ -1572,6 +1602,43 @@ private:
     bool m_knownReadThisSession{false};
     bool m_knownFullRead{false};  // this session: the file's list is replaced
     int m_knownGeneration{0};     // up at each forget: older reads are dropped
+    // ---- QRZ.com Logbook (MobileEngineQrzLog.cpp) ----
+    struct QrzFetch;
+    void setupQrzLog();
+    void qrzLogCheck();
+    void qrzLogQueue(const QString& adif);
+    void qrzLogFlush();
+    bool qrzLogReadOn() const;
+    void qrzLogFetch(bool full);
+    void qrzLogFetchNext(const std::shared_ptr<QrzFetch>& fetch);
+    void qrzLogFetchDone(const std::shared_ptr<QrzFetch>& fetch, const QString& error);
+    void qrzLogForget();
+    class QNetworkReply* qrzLogPost(const QList<QPair<QString, QString>>& fields);
+    QString m_qrzLogKey;
+    QStringList m_qrzLogPending;
+    bool m_qrzLogSending{false};
+    QString m_qrzLogStatus;
+    QString m_qrzLogStatusKind;
+    QList<QsoEntry> m_qrzKnown;
+    bool m_qrzReading{false};
+    bool m_qrzReadThisSession{false};
+    bool m_qrzFullRead{false};
+    int m_qrzGeneration{0};
+    QString m_qrzReadStatus;
+    QString m_qrzReadStatusKind;
+    // ---- The shared ADIF file (MobileEngineSharedAdif.cpp) ----
+    void setupSharedAdif();
+    void sharedAdifQueue(const QString& adif);
+    void sharedAdifFlush();
+    QString m_sharedAdifUrl;  // a file URL, or Android's content:// URI
+    QStringList m_sharedPending;
+    QList<QsoEntry> m_fileKnown;
+    bool m_sharedReading{false};
+    bool m_sharedWriting{false};
+    bool m_sharedWritable{true};
+    int m_sharedGeneration{0};
+    QString m_sharedStatus;
+    QString m_sharedStatusKind;
     QString m_knownStatus;
     QString m_knownStatusKind;
     // ---- Logger32 (MobileEngineLogger32.cpp) ----

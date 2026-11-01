@@ -5,7 +5,7 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Queued for the next build (local): Worked before from the Wavelog logbook (the two-way sync's step 1, below); one-button setups on the roadmap (Jeff Stinger).
+Queued for the next build (local): Worked before from the Wavelog logbook, the QRZ.com Logbook both ways and a shared ADIF file in iCloud Drive / Google Drive / OneDrive (the two-way sync, below); one-button setups on the roadmap (Jeff Stinger).
 
 To verify in build 142 / beta 56: Backspace on Pentti Pärnänen OH6PP's MacBook in the Log tab's fields and the frequency entry, held Backspace repeating; a double click in a text field on a Mac opens no text box, a press and hold still does; the QRZ.com status in amber, not red, when QRZ.com does not answer (Sloan Davis's iPad), and red for a wrong password.
 
@@ -91,8 +91,24 @@ the ADIF log nor out again; a QSO the app sent there counts once (call,
 band, mode group within 15 minutes). Tested against a mock Wavelog
 (paging, two stations, the dedupe, an incremental read, an old Wavelog's
 404, an unreachable server) and the user's own Wavelog (19 362 QSOs read
-in about 25 s, 650 kB on disk). Next: QRZ.com Logbook, LoTW, the shared
-ADIF file.
+in about 25 s, 650 kB on disk). Steps 2 and 4 too (the user, 2026-11-01:
+"kaksisuuntainen qrz lisätään", and a shared folder where a logger has no
+cloud sync): QRZ.com Logbook both ways (Log tab: the logbook's API key;
+each QSO with ACTION=INSERT, queued, a duplicate counted as sent; Worked
+before from the logbook with ACTION=FETCH, 250 a page after the highest
+app_qrzlog_logid, the HTML-escaped ADIF; qrzlog-known.tsv), and a shared
+ADIF file (Choose… in the system picker: iOS keeps Qt's security-scoped
+bookmark, Android takes a lasting read and write grant and appends through
+the ContentResolver with "wa", rewriting where a provider cannot append;
+read at start and on Read now, each QSO appended, never a new file in its
+place; sharedfile-known.tsv keeps its last read). Each contact counts once
+across the app's log and all three. Tested against a QRZ.com Logbook
+stand-in (a wrong key, paging 250 + 250 + 103, INSERT and a duplicate, an
+empty FETCH, Wavelog's and QRZ's copies of one QSO counted once) and on
+desktop files (a Log4OM-style file with CRLF and no final newline, an
+empty file, a file gone and back); to test on devices: a real QRZ
+logbook key, and files in iCloud Drive, Google Drive and OneDrive on an
+iPhone, an iPad, a Mac and Android. Next: LoTW confirmations, Club Log.
 
 ## Planned: usability (review of 2026-10-29)
 

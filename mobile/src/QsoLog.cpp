@@ -464,6 +464,16 @@ QString defaultPath()
     return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath(QStringLiteral("logbook-known.tsv"));
 }
 
+QString qrzPath()
+{
+    return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath(QStringLiteral("qrzlog-known.tsv"));
+}
+
+QString sharedPath()
+{
+    return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath(QStringLiteral("sharedfile-known.tsv"));
+}
+
 QList<QsoEntry> read(const QString& path)
 {
     QList<QsoEntry> entries;

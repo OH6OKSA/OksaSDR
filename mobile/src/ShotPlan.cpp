@@ -725,6 +725,47 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                           << log.value(QStringLiteral("readStatusKind")).toString()
                           << log.value(QStringLiteral("readStatus")).toString();
         *delayMs = 100;
+    } else if (command == QLatin1String("qrzlog")) {
+        // QRZ.com Logbook: "key=K" saves a key, "on" / "off" sets Worked
+        // before from the logbook, "now" reads what is new, "insert=CALL"
+        // queues a test record, "remove" clears it all; then its state.
+        if (arg.startsWith(QLatin1String("key="))) {
+            m_engine.setQrzLogKey(arg.mid(4));
+        } else if (arg == QLatin1String("on") || arg == QLatin1String("off")) {
+            m_engine.setQrzLogRead(arg == QLatin1String("on"));
+        } else if (arg == QLatin1String("now")) {
+            m_engine.qrzLogRead();
+        } else if (arg.startsWith(QLatin1String("insert="))) {
+            m_engine.devQrzInsert(arg.mid(7));
+        } else if (arg == QLatin1String("remove")) {
+            m_engine.clearQrzLog();
+        }
+        const QVariantMap q = m_engine.qrzLog();
+        qInfo().noquote() << "shot-plan: qrzlog" << arg.section(QLatin1Char('='), 0, 0) << "| key" << q.value(QStringLiteral("hasKey")).toBool()
+                          << "pending" << q.value(QStringLiteral("pending")).toInt() << "status"
+                          << q.value(QStringLiteral("statusKind")).toString() << q.value(QStringLiteral("status")).toString()
+                          << "| read" << q.value(QStringLiteral("read")).toBool() << "reading" << q.value(QStringLiteral("reading")).toBool()
+                          << "known" << q.value(QStringLiteral("known")).toInt() << q.value(QStringLiteral("readStatusKind")).toString()
+                          << q.value(QStringLiteral("readStatus")).toString();
+        *delayMs = 100;
+    } else if (command == QLatin1String("shared")) {
+        // The shared ADIF file: "file=PATH" chooses it, "now" reads it,
+        // "insert=CALL" adds a test record, "remove" forgets it; then its state.
+        if (arg.startsWith(QLatin1String("file="))) {
+            m_engine.setSharedAdif(QUrl::fromLocalFile(arg.mid(5)));
+        } else if (arg == QLatin1String("now")) {
+            m_engine.sharedAdifRead();
+        } else if (arg.startsWith(QLatin1String("insert="))) {
+            m_engine.devSharedInsert(arg.mid(7));
+        } else if (arg == QLatin1String("remove")) {
+            m_engine.clearSharedAdif();
+        }
+        const QVariantMap f = m_engine.sharedAdif();
+        qInfo().noquote() << "shot-plan: shared" << arg.section(QLatin1Char('='), 0, 0) << "| set" << f.value(QStringLiteral("set")).toBool()
+                          << f.value(QStringLiteral("name")).toString() << "known" << f.value(QStringLiteral("known")).toInt()
+                          << "pending" << f.value(QStringLiteral("pending")).toInt() << "reading" << f.value(QStringLiteral("reading")).toBool()
+                          << f.value(QStringLiteral("statusKind")).toString() << f.value(QStringLiteral("status")).toString();
+        *delayMs = 100;
     } else if (command == QLatin1String("keys")) {
         // Keys through the window as a hardware keyboard sends them; "\\b"
         // is Backspace as an iPad app on a Mac gets it from UIKit (key 8,

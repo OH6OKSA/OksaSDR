@@ -585,6 +585,167 @@ ColumnLayout {
         wrapMode: Text.WordWrap
     }
 
+    // ---- QRZ.com Logbook, both ways: each logged QSO there, its QSOs read
+    // back as worked before ----
+    Label { text: qsTr("QRZ.com Logbook"); color: Theme.textDim; font.pixelSize: 14; Layout.topMargin: Theme.spacing }
+    RowLayout {
+        Layout.fillWidth: true
+        PasswordField {
+            id: qrzLogKeyField
+            Accessible.name: qsTr("QRZ.com Logbook API key")
+            objectName: "qrzLogKey"
+            Layout.fillWidth: true
+            placeholderText: Engine.qrzLog.hasKey ? qsTr("API key (saved)") : qsTr("Logbook API key")
+            font.pixelSize: 15
+        }
+        AppButton {
+            text: qsTr("Save")
+            focusPolicy: Qt.NoFocus
+            onClicked: {
+                Engine.setQrzLogKey(qrzLogKeyField.text)
+                qrzLogKeyField.text = ""
+            }
+        }
+        AppButton {
+            objectName: "qrzLogRemove"
+            visible: Engine.qrzLog.hasKey === true
+            text: qsTr("Remove")
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.clearQrzLog()
+        }
+    }
+    Label {
+        objectName: "qrzLogStatus"
+        Layout.fillWidth: true
+        visible: text.length > 0
+        text: (Engine.qrzLog.status || "")
+              + (Engine.qrzLog.pending > 0 && (Engine.qrzLog.status || "").indexOf("wait") < 0
+                 ? "  (" + qsTr("%1 waiting").arg(Engine.qrzLog.pending) + ")" : "")
+        color: Engine.qrzLog.statusKind === "ok" ? "#00cc66"
+             : Engine.qrzLog.statusKind === "failed" ? Theme.transmit : Theme.textDim
+        font.pixelSize: 13
+        wrapMode: Text.WordWrap
+    }
+    RowLayout {
+        Layout.fillWidth: true
+        visible: Engine.qrzLog.hasKey === true
+        Label {
+            text: qsTr("Worked before from the logbook")
+            color: Theme.text
+            Layout.fillWidth: true
+            wrapMode: Text.WordWrap
+        }
+        AppButton {
+            objectName: "qrzLogReadOff"
+            text: qsTr("Off")
+            checked: Engine.qrzLog.read !== true
+            focusPolicy: Qt.NoFocus
+            Layout.preferredWidth: 64
+            onClicked: Engine.setQrzLogRead(false)
+        }
+        AppButton {
+            objectName: "qrzLogReadOn"
+            text: qsTr("On")
+            checked: Engine.qrzLog.read === true
+            focusPolicy: Qt.NoFocus
+            Layout.preferredWidth: 64
+            onClicked: Engine.setQrzLogRead(true)
+        }
+    }
+    RowLayout {
+        Layout.fillWidth: true
+        visible: Engine.qrzLog.hasKey === true && Engine.qrzLog.read === true
+        Label {
+            objectName: "qrzLogReadStatus"
+            Layout.fillWidth: true
+            text: Engine.qrzLog.readStatus || ""
+            color: Engine.qrzLog.readStatusKind === "ok" ? "#00cc66"
+                 : Engine.qrzLog.readStatusKind === "failed" ? Theme.transmit : Theme.textDim
+            font.pixelSize: 13
+            wrapMode: Text.WordWrap
+        }
+        AppButton {
+            objectName: "qrzLogReadNow"
+            text: qsTr("Read now")
+            enabled: Engine.qrzLog.reading !== true
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.qrzLogRead()
+        }
+    }
+    Label {
+        Layout.fillWidth: true
+        text: qsTr("With the logbook's API key (QRZ.com › Logbook › Settings), every QSO you log also goes to your QRZ.com logbook; QSOs that cannot be sent wait and go later. Worked before from the logbook reads its QSOs back (at each start only the new ones), counted once with this app's log and Wavelog's. QRZ.com's Logbook API needs a QRZ subscription. The key stays in this device's secure store.")
+        color: Theme.textDim
+        font.pixelSize: 12
+        wrapMode: Text.WordWrap
+    }
+
+    // ---- A shared ADIF file (iCloud Drive, Google Drive, OneDrive...), both
+    // ways, for loggers without a cloud API ----
+    Label { text: qsTr("Shared ADIF file"); color: Theme.textDim; font.pixelSize: 14; Layout.topMargin: Theme.spacing }
+    RowLayout {
+        Layout.fillWidth: true
+        Label {
+            objectName: "sharedAdifName"
+            Layout.fillWidth: true
+            text: Engine.sharedAdif.set === true ? Engine.sharedAdif.name : qsTr("No file chosen")
+            color: Engine.sharedAdif.set === true ? Theme.text : Theme.textDim
+            font.pixelSize: 15
+            elide: Text.ElideMiddle
+        }
+        AppButton {
+            objectName: "sharedAdifPick"
+            text: Engine.sharedAdif.set === true ? qsTr("Change") : qsTr("Choose…")
+            focusPolicy: Qt.NoFocus
+            onClicked: sharedDialog.open()
+        }
+        AppButton {
+            objectName: "sharedAdifRemove"
+            visible: Engine.sharedAdif.set === true
+            text: qsTr("Remove")
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.clearSharedAdif()
+        }
+    }
+    RowLayout {
+        Layout.fillWidth: true
+        visible: Engine.sharedAdif.set === true
+        Label {
+            objectName: "sharedAdifStatus"
+            Layout.fillWidth: true
+            text: (Engine.sharedAdif.status || "")
+                  + (Engine.sharedAdif.pending > 0 && (Engine.sharedAdif.status || "").indexOf("wait") < 0
+                     ? "  (" + qsTr("%1 waiting").arg(Engine.sharedAdif.pending) + ")" : "")
+            color: Engine.sharedAdif.statusKind === "ok" ? "#00cc66"
+                 : Engine.sharedAdif.statusKind === "failed" ? Theme.transmit : Theme.textDim
+            font.pixelSize: 13
+            wrapMode: Text.WordWrap
+        }
+        AppButton {
+            objectName: "sharedAdifReadNow"
+            text: qsTr("Read now")
+            enabled: Engine.sharedAdif.reading !== true
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.sharedAdifRead()
+        }
+    }
+    Label {
+        Layout.fillWidth: true
+        text: qsTr("For a logging program without a cloud connection (Log4OM, N1MM, DXKeeper, MacLoggerDX…): put an ADIF file in iCloud Drive, Google Drive, OneDrive, Dropbox or Nextcloud (export one from the program, or share this app's log there) and choose it here. Its QSOs count as worked before, read at each start and with Read now, and every QSO you log is added to its end for the program to import. The app only adds to the file, never changes what is in it.")
+        color: Theme.textDim
+        font.pixelSize: 12
+        wrapMode: Text.WordWrap
+    }
+    FileDialog {
+        id: sharedDialog
+        title: qsTr("Shared ADIF file")
+        fileMode: FileDialog.OpenFile
+        // Android without a filter, as the import (Kurt DL5EAG).
+        nameFilters: Qt.platform.os === "android" ? []
+                     : [qsTr("ADIF files (*.adi *.adif *.ADI)"), qsTr("All files (*)")]
+        onAccepted: Engine.setSharedAdif(selectedFile)
+    }
+
     // ---- Logger32 on the operator's PC: each logged QSO over TCP (Juho
     // Kontio) ----
     Label { text: qsTr("Logger32"); color: Theme.textDim; font.pixelSize: 14; Layout.topMargin: Theme.spacing }

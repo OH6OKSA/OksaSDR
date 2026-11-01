@@ -410,6 +410,12 @@ void MobileEngine::rebuildWorked()
     for (const QsoEntry& q : m_knownQsos) {
         add(q);
     }
+    for (const QsoEntry& q : m_qrzKnown) {
+        add(q);
+    }
+    for (const QsoEntry& q : m_fileKnown) {
+        add(q);
+    }
     m_wkDirty = false;
 }
 
@@ -422,7 +428,7 @@ QString MobileEngine::workedAudit(const QString& call, const QString& band, cons
         .arg(info.value(QStringLiteral("worked")).toInt())
         .arg(info.value(QStringLiteral("dupe")).toBool() ? QStringLiteral("yes") : QStringLiteral("no"))
         .arg(m_qsoLog->count())
-        .arg(m_knownQsos.size());
+        .arg(m_knownQsos.size() + m_qrzKnown.size() + m_fileKnown.size());
 }
 
 QString MobileEngine::digiHighlight(const QString& call, bool cq, bool toMe, const QString& band, const QString& modeKey)

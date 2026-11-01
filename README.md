@@ -208,7 +208,10 @@ radio interface, with no computer running alongside.
   another logbook. Every QSO can also go straight to your **Wavelog** or
   **Cloudlog** logbook, queued while offline, and your **Wavelog** logbook
   can be read back so worked before, dupes, New call / DXCC and the FTx
-  colours know every QSO in it, in every mode.
+  colours know every QSO in it, in every mode. The **QRZ.com Logbook** both
+  ways (each QSO sent, its QSOs read back), and a **shared ADIF file** in
+  iCloud Drive, Google Drive or OneDrive for a desktop logger without a
+  cloud connection (read for worked before, each QSO added to it).
 - **PSK Reporter**: report the stations you decode, as WSJT-X does (off by
   default).
 - **Transverters** set up in Radio Setup (XVTR).
@@ -288,7 +291,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | FT8 / FT4 in the app | ✅ QSOs logged on the air from the iPad and a FLEX; 157 PSKReporter spots from two 10 W CQs; several slices decoding at once; Answer CQ worked three stations by itself (build 141) |
 | RADE digital voice | 🧪 Built in; reports with RADE stations welcome |
 | FreeDV Reporter (qso.freedv.org) | ✅ The app's RADE listed on qso.freedv.org (build 112) |
-| PSK Reporter, Wavelog / Cloudlog | ✅ Spots on pskreporter.info; QSOs sent to a Wavelog logbook; Wavelog read back for worked before (tested with a 19 000-QSO logbook) |
+| PSK Reporter, Wavelog / Cloudlog | ✅ Spots on pskreporter.info; QSOs sent to a Wavelog logbook; Wavelog read back for worked before (tested with a 19 000-QSO logbook); QRZ.com Logbook both ways and a shared ADIF file (to test with real accounts and cloud folders) |
 | Transverters (XVTR) in Radio Setup | 🧪 Built in; reports with a transverter welcome |
 | Mac (Apple silicon), the iPad app from TestFlight | ✅ In use by testers; typing straight into the fields (the text box on press and hold since build 140, Backspace since 142) |
 | Log tab, ADIF export and import, QRZ.com lookup | ✅ In use by testers |

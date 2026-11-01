@@ -59,6 +59,18 @@ these services:
   logbook (its station locations and each QSO's call, band, mode, date,
   time and CQ zone) and keeps them on the device for worked-before;
   turning it off deletes them from the device.
+- **QRZ.com Logbook**, only if you enter your logbook's API key on the Log
+  tab: each QSO you log is sent to your QRZ.com logbook (logbook.qrz.com)
+  with its ADIF fields, and with *Worked before from the logbook* on, the
+  app reads your logbook's QSOs back from it (each QSO's call, band, mode,
+  date, time and CQ zone are kept on the device for worked-before).
+  *Remove* deletes the key and those QSOs from the device.
+- **A shared ADIF file**, only if you choose one on the Log tab: the app
+  reads the file you picked (in iCloud Drive, Google Drive, OneDrive or
+  another storage you chose; it goes wherever that storage sends it) and
+  adds each QSO you log to its end. The device keeps the system's
+  permission to reach that one file and a copy of each QSO's call, band,
+  mode, date, time and CQ zone from it; *Remove* deletes both.
 - **Logger32**, only if you enter your PC's address on the Log tab: each QSO
   you log is sent with its ADIF fields to Logger32 on that PC (your own
   computer, on your network or through your VPN). QSOs that could not be
