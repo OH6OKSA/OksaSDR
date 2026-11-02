@@ -356,7 +356,7 @@ ColumnLayout {
         enabled: Engine.workedCall.length >= 3
         focusPolicy: Qt.NoFocus
         onClicked: {
-            if (Engine.logQso({ call: Engine.workedCall, rstSent: "599", rstRcvd: "599" }))
+            if (Engine.logQso({ call: Engine.workedCall, rstSent: "599", rstRcvd: "599", timeOn: Engine.workedCallTimeOn() }))
                 Engine.workedCall = ""
         }
     }

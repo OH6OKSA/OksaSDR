@@ -1187,8 +1187,18 @@ public:
         const QString c = call.trimmed().toUpper();
         if (c != m_workedCall) {
             m_workedCall = c;
+            m_workedCallSince = c.isEmpty() ? QDateTime() : QDateTime::currentDateTimeUtc();
             emit workedCallChanged();
         }
+    }
+    // When the call being worked was picked (HHmm UTC), the QSO's start for
+    // the Digi tab's Log (it logged the moment Log was pressed, minutes
+    // after the QSO began); empty after an hour or with no call.
+    Q_INVOKABLE QString workedCallTimeOn() const
+    {
+        const QDateTime now = QDateTime::currentDateTimeUtc();
+        return m_workedCallSince.isValid() && m_workedCallSince.secsTo(now) < 3600
+                   ? m_workedCallSince.toString(QStringLiteral("HHmm")) : QString();
     }
     qint64 cwStripStart() const { return m_cwStripStart; }
     void appendCwDecoded(const QString& text);
@@ -1984,6 +1994,7 @@ private:
     QString m_cwAwayMark;
     QString m_cwStrip;
     QString m_workedCall;
+    QDateTime m_workedCallSince;
     // QSOs waiting for their call's lookup (name, QTH), by call.
     QHash<QString, QVariantMap> m_pendingQsos;
     bool m_qsoLogDryRun{false};
