@@ -358,11 +358,15 @@ void RttyDecoder::decodeLoop()
                 // The +1/spb compensates for the increment at the end of this loop.
                 bitClock = -(0.5 - 1.0 / samplesPerBit);
             } else if (inChar) {
-                // Gentle clock correction on transitions: pull the clock
-                // toward the expected zero-crossing (25% per edge).
+                // Gentle clock correction on transitions (25% per edge). The
+                // clock reads 0 where it samples, mid-bit, so an edge belongs
+                // at 0.5, halfway between two samples: pulled toward 0, as
+                // it was, every edge moved the samples toward the bit edges,
+                // and weak signals lost bits.
                 if (curBit != prevBit) {
-                    double frac = bitClock;
-                    if (frac > 0.5) frac -= 1.0;
+                    double frac = bitClock - 0.5;
+                    while (frac > 0.5) frac -= 1.0;
+                    while (frac < -0.5) frac += 1.0;
                     bitClock -= frac * 0.25;
                 }
             }

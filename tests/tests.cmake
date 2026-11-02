@@ -186,6 +186,13 @@ target_link_libraries(rtty_encoder_roundtrip_test PRIVATE aethercore Qt6::Core)
 add_test(NAME rtty_encoder_roundtrip_test COMMAND rtty_encoder_roundtrip_test)
 set_tests_properties(rtty_encoder_roundtrip_test PROPERTIES TIMEOUT 60)
 
+# RttyDecoder's character errors on weak and off-speed signals (the bit
+# clock's phase), RttyEncoder's audio with noise through the worker.
+add_executable(rtty_decoder_weak_signal_test tests/rtty_decoder_weak_signal_test.cpp)
+target_link_libraries(rtty_decoder_weak_signal_test PRIVATE aethercore Qt6::Core)
+add_test(NAME rtty_decoder_weak_signal_test COMMAND rtty_decoder_weak_signal_test)
+set_tests_properties(rtty_decoder_weak_signal_test PROPERTIES TIMEOUT 240)
+
 # Actual backend/model/audio/parser wiring with injected PCM; binds no sockets.
 add_executable(pcm_compatibility_test tests/pcm_compatibility_test.cpp)
 target_link_libraries(pcm_compatibility_test PRIVATE aethercore Qt6::Core)
