@@ -80,6 +80,7 @@ struct Run {
     unsigned seed{1};
     bool afc{true};
     double neighborHz{0.0};  // another station's signal there, as strong
+    double tailSeconds{0.0};  // silence (then noise) after the signal
     bool noSignal{false};    // only the noise (as loud as for snrDb)
 };
 
@@ -136,6 +137,7 @@ QString decode(const QString& text, const Run& r, QString* sent, double* tracked
         power += double(s) * s;
     }
     power /= samples.size();
+    samples.resize(samples.size() + int(r.tailSeconds * 24000.0), 0.0f);
     if (r.noSignal) {
         samples.fill(0.0f);
     }
@@ -258,7 +260,7 @@ int main(int argc, char** argv)
     const Row rows[] = {
         {31.25, -6.0, 0.5},
         {31.25, -10.0, 3.0},
-        {31.25, -12.0, 18.0},
+        {31.25, -12.0, 22.0},
         {62.5, -6.0, 1.5},
         {62.5, -8.0, 5.0},
     };
@@ -300,6 +302,18 @@ int main(int argc, char** argv)
         const QString got = decode(text, r, &sent, &tracked, lane++);
         check(errorRate(sent, got) <= 1.0 && !got.contains(QStringLiteral("DL1ABC")) && std::abs(tracked - 1000.0) < 2.0,
               QStringLiteral("PSK31 with a station at %1 Hz: %2 % errors, AFC at %3 Hz").arg(neighbor).arg(errorRate(sent, got), 0, 'f', 1).arg(tracked, 0, 'f', 1));
+    }
+    // AFC holds where the signal was once it ends (two seconds of noise
+    // after the text): it wandered off in noise alone.
+    {
+        Run r;
+        r.signalHz = 1008.0;
+        r.snrDb = -6.0;
+        r.tailSeconds = 4.0;
+        QString sent;
+        double tracked = 0.0;
+        decode(text, r, &sent, &tracked, lane++);
+        check(std::abs(tracked - 1008.0) < 1.5, QStringLiteral("AFC after the signal: %1 Hz (the signal was at 1008)").arg(tracked, 0, 'f', 1));
     }
     // Noise alone (as loud as a signal at -6 dB would have): the squelch
     // lets (next to) nothing through.

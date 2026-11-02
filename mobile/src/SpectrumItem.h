@@ -78,6 +78,11 @@ public:
     // apart (a wide span): the strongest peak, as the signal's centre, and
     // the mark half a shift above it.
     Q_INVOKABLE double rttyMarkNear(double mhz, double halfHz, double shiftHz) const;
+    // PSK (a tap): the centre of the PSK signal near mhz, the strongest
+    // within ±halfHz (0: a finger's width) and its power's centroid within
+    // 1.5 baud of it, where the carrier sits (AFC does the rest); -1 with
+    // nothing clearly over the noise there.
+    Q_INVOKABLE double pskCentreNear(double mhz, double halfHz, double baudHz) const;
 
 signals:
     void engineChanged();

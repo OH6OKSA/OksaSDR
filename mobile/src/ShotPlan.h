@@ -51,6 +51,9 @@ class MobileEngine;
 //   rtty [spots]            log the RTTY decoder: mode, mark, shift, SNR, text
 //                           (spots: and the RTTY stations the spots know)
 //   rttyfeed TEXT           TEXT as RTTY audio into the running decoder (a test)
+//   textmode MODE           the Digi tab's mode: RTTY, PSK31 or PSK63
+//   pskfeed [+-HZ] TEXT     TEXT as a PSK signal at the decoder's carrier (HZ off it)
+//   psk [KEY=VALUE]         setPsk (carrier=HZ, afc=true|false), or log the PSK state
 //   focus                   log where the keyboard is (keyboardOnPage, active item)
 //   keys TEXT               type TEXT through the window ("\\b": Backspace as a
 //                           Mac's UIKit sends it), then log the focused field's text;

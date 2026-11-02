@@ -69,6 +69,25 @@ void PskDecoder::setAfc(bool on)
     m_afc = on;
 }
 
+void PskDecoder::feedAudio(const QByteArray& pcm24kStereoFloat)
+{
+    if (!m_running || pcm24kStereoFloat.size() % (2 * sizeof(float)) != 0 || pcm24kStereoFloat.size() > kRingCapacity * 2) {
+        return;
+    }
+    const auto* src = reinterpret_cast<const float*>(pcm24kStereoFloat.constData());
+    const int frames = pcm24kStereoFloat.size() / (2 * static_cast<int>(sizeof(float)));
+    QByteArray mono(frames * static_cast<int>(sizeof(float)), Qt::Uninitialized);
+    auto* dst = reinterpret_cast<float*>(mono.data());
+    for (int i = 0; i < frames; ++i) {
+        if (!std::isfinite(src[2 * i]) || !std::isfinite(src[2 * i + 1])) {
+            resetInput();
+            return;
+        }
+        dst[i] = src[2 * i] * 0.5f + src[2 * i + 1] * 0.5f;
+    }
+    appendMono(mono, {}, false, false);
+}
+
 void PskDecoder::feedPcmBlock(const DecoderPcmBlock& block)
 {
     if (!m_running || !block.current() || block.samples.size() > PcmFrame::kMaxFrames) {
@@ -100,6 +119,9 @@ void PskDecoder::appendMono(const QByteArray& mono, const PcmEpochLease& source,
     m_source = source;
     m_typedSource = typed;
     m_ringBuf.append(mono);
+    if (!typed && m_ringBuf.size() > kRingCapacity) {
+        m_ringBuf.remove(0, m_ringBuf.size() - kRingCapacity);
+    }
 }
 
 void PskDecoder::resetInput()
@@ -191,8 +213,9 @@ void PskDecoder::resetDsp()
     m_baseband.assign(size_t(2 * rxTaps), {0.0f, 0.0f});
     m_basebandPos = 0;
 
-    m_freq = m_carrierHz.load();
-    m_trackedHz = m_freq;
+    // Where AFC last held the signal (the frequency set, after a tap): an
+    // audio source's reset is no reason to lose it.
+    m_freq = m_trackedHz.load();
     m_decimCount = 0;
     m_bitClock = 0.0;
     std::fill(std::begin(m_syncBuf), std::end(m_syncBuf), 0.0);
@@ -360,7 +383,10 @@ void PskDecoder::decodeLoop()
             const std::complex<double>& rot = steady ? slowRotation : rotation;
             const double pow2 = steady ? slowPower2 : power2;
             const double coherence = pow2 > 1e-20 ? std::abs(rot) / pow2 : 0.0;
-            if (m_afc.load() && coherence > (steady ? 0.1 : 0.3)) {
+            // Only with a signal there (its phase changes alike, whatever the
+            // offset): in noise alone it wandered off the station heard
+            // last, where it now waits for the next transmission.
+            if (m_afc.load() && afcQuality > 0.35 && coherence > (steady ? 0.1 : 0.3)) {
                 const double offset = std::arg(rot) * decimatedRate / (4.0 * std::numbers::pi);
                 const double set = m_carrierHz.load();
                 m_freq = std::clamp(m_freq + (steady ? 0.01 : 0.15) * offset, set - kAfcRangeHz, set + kAfcRangeHz);

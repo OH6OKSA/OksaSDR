@@ -947,7 +947,7 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         }
         *delayMs = 500;
     } else if (command == QLatin1String("spottest")) {
-        // Test spots on the radio (MobileEngine::spotTest): add, clear,
+        // Test spots on the radio (MobileEngine::spotTest): add, clear, psk=MHZ,
         // rtty=MHZ.
         m_engine.spotTest(arg);
         *delayMs = 1500;
@@ -962,6 +962,38 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
     } else if (command == QLatin1String("rttyfeed")) {
         m_engine.testRttyFeed(args.join(QLatin1Char(' ')));
         *delayMs = 1000;
+    } else if (command == QLatin1String("textmode")) {
+        // RTTY, PSK31 or PSK63, as the Digi tab's mode row.
+        m_engine.setTextMode(arg);
+        *delayMs = 1500;
+    } else if (command == QLatin1String("pskfeed")) {
+        // [+-HZ] TEXT: a PSK signal at the decoder's carrier (plus HZ off it).
+        double offset = 0.0;
+        QStringList words = args;
+        if (!words.isEmpty() && (words.first().startsWith(QLatin1Char('+')) || words.first().startsWith(QLatin1Char('-')))) {
+            offset = words.takeFirst().toDouble();
+        }
+        m_engine.testPskFeed(words.join(QLatin1Char(' ')), offset);
+        *delayMs = 1000;
+    } else if (command == QLatin1String("psk")) {
+        // KEY=VALUE to MobileEngine::setPsk (carrier=1500, afc=false), or
+        // bare: log the state and the text so far.
+        if (arg.contains(QLatin1Char('='))) {
+            const QString key = arg.section(QLatin1Char('='), 0, 0);
+            const QString value = arg.section(QLatin1Char('='), 1);
+            m_engine.setPsk(key, key == QLatin1String("afc") ? QVariant(value == QLatin1String("true")) : QVariant(value.toDouble()));
+            *delayMs = 300;
+        } else {
+            const QVariantMap k = m_engine.psk();
+            QString text = m_engine.rttyDecodedText().right(160);
+            text.replace(QLatin1Char('\n'), QStringLiteral(" | ")).replace(QLatin1Char('\r'), QString());
+            qInfo().noquote() << "shot-plan: psk active" << m_engine.pskActive() << "mode" << k.value(QStringLiteral("mode")).toString()
+                              << "via" << k.value(QStringLiteral("via")).toString() << "carrier" << k.value(QStringLiteral("carrierHz")).toDouble()
+                              << "tracked" << k.value(QStringLiteral("trackedHz")).toDouble()
+                              << "at" << QString::number(k.value(QStringLiteral("carrierMhz")).toDouble(), 'f', 6)
+                              << "quality" << k.value(QStringLiteral("quality")).toInt() << "locked" << k.value(QStringLiteral("locked")).toBool()
+                              << "text:" << text;
+        }
     } else if (command == QLatin1String("rtty")) {
         const QVariantMap r = m_engine.rtty();
         QString text = m_engine.rttyDecodedText().right(160);

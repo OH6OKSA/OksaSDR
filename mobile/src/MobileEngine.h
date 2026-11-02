@@ -39,6 +39,7 @@ class DxClusterClient;
 class FreeDvClient;
 class CwRxModel;
 class RttyDecoder;
+class PskDecoder;
 class CwxLocalKeyer;
 class IambicKeyer;
 class DecoderAudioModel;
@@ -348,10 +349,21 @@ class MobileEngine : public QObject {
     // mark / shift (0 = the radio's), baud, reverse, and what is in use:
     // markHz / shiftHz, snr, locked.
     Q_PROPERTY(QVariantMap rtty READ rtty NOTIFY rttyDecoderChanged)
-    // The Digi tab's keyboard modes (RTTY now): macros [{label, text}] as
-    // the CW memories ({CALL}, {HIS}, {NAME}, {RST}, {GRID}), the calls the
-    // received text holds (after DE, or twice), and whether text is going
-    // out.
+    // PSK31 / PSK63 on the Digi tab (G3PLX's BPSK, in DIGU as the standard
+    // has it): the mode chosen ("RTTY", "PSK31", "PSK63"; the radio's RTTY
+    // mode is always RTTY), whether PSK is received now (DIGU / DIGL, FT8 /
+    // FT4 off), and its state: mode, baud, carrierHz (the audio frequency
+    // set, a tap on a signal), trackedHz (where AFC holds it), carrierMhz
+    // (its radio frequency), afc, quality (0-100), locked, via.
+    Q_PROPERTY(QString textMode READ textMode NOTIFY rttyDecoderChanged)
+    Q_PROPERTY(bool pskActive READ pskActive NOTIFY rttyDecoderChanged)
+    Q_PROPERTY(QVariantMap psk READ psk NOTIFY rttyDecoderChanged)
+    // RTTY or PSK received now: what the macros and the text field send in.
+    Q_PROPERTY(bool textModeActive READ textModeActive NOTIFY rttyDecoderChanged)
+    // The Digi tab's keyboard modes (RTTY, PSK31, PSK63): macros [{label,
+    // text}] as the CW memories ({CALL}, {HIS}, {NAME}, {RST}, {GRID}), the
+    // calls the received text holds (after DE, or twice), and whether text
+    // is going out.
     Q_PROPERTY(QVariantList textMacros READ textMacros NOTIFY textMacrosChanged)
     Q_PROPERTY(QStringList textCalls READ textCalls NOTIFY rttyDecoderChanged)
     Q_PROPERTY(bool textTransmitting READ textTransmitting NOTIFY textTxChanged)
@@ -838,9 +850,10 @@ public:
     QStringList textCalls() const;
     bool textTransmitting() const { return m_textTransmitting; }
     // Transmit text in the mode received (RTTY: AFSK at the way's tones,
-    // the mark the higher radio frequency) from the slice, which must be
-    // the TX slice. Sent while text is going out, it follows without
-    // unkeying. False (and a notice) when it cannot go.
+    // the mark the higher radio frequency; PSK: on the frequency it is
+    // received on, as fldigi) from the slice, which must be the TX slice.
+    // Sent while text is going out, it follows without unkeying. False (and
+    // a notice) when it cannot go.
     Q_INVOKABLE bool sendText(const QString& text);
     Q_INVOKABLE bool sendTextMacro(int index);
     // What text would send now, its placeholders filled (the macro editor's
@@ -849,6 +862,21 @@ public:
     // Stops at once, the rest of the queue dropped.
     Q_INVOKABLE void stopTextTx();
     void testRttyFeed(const QString& text);
+    QString textMode() const;
+    bool pskActive() const;
+    bool textModeActive() const { return rttyActive() || pskActive(); }
+    QVariantMap psk() const;
+    // The Digi tab's mode row: RTTY (then Receive in picks the way), or
+    // PSK31 / PSK63, which put the slice in DIGU and FT8 / FT4 off.
+    Q_INVOKABLE void setTextMode(const QString& mode);
+    // "carrier" (the audio frequency, Hz), "afc" (bool).
+    Q_INVOKABLE void setPsk(const QString& key, const QVariant& value);
+    // A tap on the display in PSK: the carrier there (mhz, the signal's
+    // centre the display found, SpectrumItem::pskCentreNear, or the tap).
+    Q_INVOKABLE void pskTap(double mhz);
+    // Tests (render tool pskfeed): TEXT as a PSK signal at the decoder's
+    // carrier plus offsetHz, fed to the running decoder.
+    void testPskFeed(const QString& text, double offsetHz);
     bool locked() const;
     bool recordOn() const;
     bool playOn() const;
@@ -1459,6 +1487,9 @@ signals:
     // answered with rttyAutotuneNow. Autotune, and a tap on an RTTY spot
     // (spots give the mark, or the signal's centre).
     void rttyAutotuneRequested(double nearMhz, double halfHz, bool notify);
+    // To the display: the centre of the PSK signal near nearMhz (within
+    // halfHz), answered with pskTap (a PSK spot, once the display shows it).
+    void pskCentreRequested(double nearMhz, double halfHz);
     void digiFilterChanged();
     void digiListScrollChanged();
     void callLookupChanged();
@@ -1522,6 +1553,8 @@ private:
     void wireCw();
     void updateCwDecoder();
     void updateRttyDecoder();
+    // Runs the PSK decoder (run) at the chosen speed and carrier, or stops it.
+    void updatePskDecoder(bool run);
     void appendRttyDecoded(const QString& text);
     void appendRttyGated(const QString& text, float conf);
     void resetRttyGate();
@@ -1918,7 +1951,13 @@ private:
     std::chrono::steady_clock::time_point m_cwxSidetoneDownAt;  // keyer thread only
     std::unique_ptr<DecoderAudioModel> m_cwAudio;
     std::unique_ptr<RttyDecoder> m_rttyDecoder;
+    // The slice's receive audio for the Digi tab's text modes (RTTY and PSK
+    // alike; each decoder runs only in its own mode).
     std::unique_ptr<DecoderAudioModel> m_rttyAudio;
+    std::unique_ptr<PskDecoder> m_pskDecoder;
+    double m_pskTrackedHz{0.0};
+    int m_pskQuality{0};
+    bool m_pskLocked{false};
     QString m_rttyDecodedText;
     QString m_rttyStrip;
     qint64 m_rttyStripStart{0};

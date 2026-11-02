@@ -396,6 +396,10 @@ QPair<QString, QString> QsoLog::adifMode(const QString& radioMode)
     if (m == QLatin1String("RTTY")) {
         return {QStringLiteral("RTTY"), QString()};
     }
+    // ADIF 3: PSK31 and PSK63 are submodes of PSK.
+    if (m == QLatin1String("PSK31") || m == QLatin1String("PSK63")) {
+        return {QStringLiteral("PSK"), m};
+    }
     if (m == QLatin1String("DIGU") || m == QLatin1String("DIGL")) {
         return {QStringLiteral("DATA"), QString()};
     }

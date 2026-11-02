@@ -464,6 +464,38 @@ double SpectrumItem::cwPeakNear(double mhz, double halfHz) const
     return lowMhz + (static_cast<double>(best) + 0.5 + shift) * binMhz;
 }
 
+double SpectrumItem::pskCentreNear(double mhz, double halfHz, double baudHz) const
+{
+    const double peak = cwPeakNear(mhz, halfHz);
+    const qsizetype n = m_spectrum.size();
+    if (peak <= 0.0 || n < 16 || baudHz <= 0.0) {
+        return -1.0;
+    }
+    const double lowMhz = m_frameCenterMhz - m_frameBandwidthMhz / 2.0;
+    const double binMhz = m_frameBandwidthMhz / static_cast<double>(n);
+    const double reach = std::max(1.5 * baudHz / 1e6, 1.5 * binMhz);
+    const qsizetype lo = std::max<qsizetype>(0, static_cast<qsizetype>(std::floor((peak - reach - lowMhz) / binMhz)));
+    const qsizetype hi = std::min<qsizetype>(n - 1, static_cast<qsizetype>(std::ceil((peak + reach - lowMhz) / binMhz)));
+    // Power over the lowest bin in reach, as the floor under the signal.
+    float floorDb = m_spectrum.at(lo);
+    for (qsizetype i = lo; i <= hi; ++i) {
+        floorDb = std::min(floorDb, m_spectrum.at(i));
+    }
+    double sum = 0.0;
+    double moment = 0.0;
+    for (qsizetype i = lo; i <= hi; ++i) {
+        const double w = std::pow(10.0, (m_spectrum.at(i) - floorDb) / 10.0) - 1.0;
+        sum += w;
+        moment += w * (lowMhz + (static_cast<double>(i) + 0.5) * binMhz);
+    }
+    const double centre = sum > 0.0 ? moment / sum : peak;
+    qCInfo(lcSpectrum).noquote() << QStringLiteral("psk centre near %1 MHz: peak %2, centre %3 MHz")
+                                        .arg(mhz, 0, 'f', 6)
+                                        .arg(peak, 0, 'f', 6)
+                                        .arg(centre, 0, 'f', 6);
+    return centre;
+}
+
 double SpectrumItem::rttyMarkNear(double mhz, double halfHz, double shiftHz) const
 {
     const qsizetype n = m_spectrum.size();

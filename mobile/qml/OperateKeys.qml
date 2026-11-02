@@ -40,12 +40,12 @@ Item {
             return true
         }
         // CW memories M1-M12 and abort, as the desktop's CWX F-keys and Esc:
-        // CW modes send the CW memories, RTTY the Digi tab's macros (F1-F8,
-        // as fldigi's F-keys), voice modes the voice keyer.
+        // CW modes send the CW memories, RTTY and PSK the Digi tab's macros
+        // (F1-F8, as fldigi's F-keys), voice modes the voice keyer.
         const memory = keys.memoryKey(event)
         if (memory >= 0) {
             if (Engine.cwMode) Engine.sendCwMemory(memory)
-            else if (Engine.rttyActive) { if (memory < 8) Engine.sendTextMacro(memory) }
+            else if (Engine.textModeActive) { if (memory < 8) Engine.sendTextMacro(memory) }
             else Engine.dvkPlay(memory + 1)
             return true
         }

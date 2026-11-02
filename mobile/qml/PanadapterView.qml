@@ -189,6 +189,47 @@ Rectangle {
         }
     }
 
+    // PSK31 / PSK63: where the decoder listens (AFC's frequency), a green
+    // band as wide as the signal (twice the baud rate) with its audio
+    // frequency; text goes out there too. A tap on a signal moves it.
+    Item {
+        id: pskOverlay
+        anchors.fill: parent
+        visible: Engine.pskActive && Engine.panBandwidthMhz > 0
+        readonly property real pxPerMhz: width / Math.max(1e-6, Engine.panBandwidthMhz)
+        readonly property real markTop: Engine.spectrum3D ? height * spectrum.spectrumFraction : 0
+        Rectangle {
+            objectName: "pskMarker"
+            readonly property real hzWidth: 2 * (Engine.psk.baud || 31.25)
+            readonly property real centreX: (Engine.psk.carrierMhz - Engine.panCenterMhz) * pskOverlay.pxPerMhz + pskOverlay.width / 2
+            width: Math.max(3, hzWidth / 1e6 * pskOverlay.pxPerMhz)
+            x: centreX - width / 2
+            y: pskOverlay.markTop
+            height: pskOverlay.height - pskOverlay.markTop
+            color: Qt.rgba(0.2, 0.85, 0.35, 0.22)
+            border.color: Engine.psk.locked ? "#3ddc5a" : "#2a8f3d"
+            border.width: 2
+            Rectangle {
+                x: parent.x + parent.width + width + 90 > pskOverlay.width ? -width - 3 : parent.width + 3
+                y: 58  // under the state banner
+                width: pskLabel.implicitWidth + 10
+                height: pskLabel.implicitHeight + 4
+                radius: 4
+                color: Engine.textTransmitting ? "#d7262d" : "#2fb84a"
+                border.color: "#ffffff"
+                border.width: 1
+                Label {
+                    id: pskLabel
+                    anchors.centerIn: parent
+                    text: qsTr("%1 %2").arg(Engine.psk.mode).arg(Math.round(Engine.psk.trackedHz))
+                    color: Engine.textTransmitting ? "#ffffff" : "#0b1a0e"
+                    font.pixelSize: 12
+                    font.bold: true
+                }
+            }
+        }
+    }
+
     // Filter passband between the slice's filter edges (Hz offsets from the
     // carrier, so it sits on the correct side for USB/LSB and centred for
     // CW/AM): a fill over the spectrum and bright edge lines through the
@@ -514,18 +555,19 @@ Rectangle {
     // over the spectrum, eliding works on single lines only).
     Rectangle {
         id: decodeStrip
-        // RTTY: shown whenever RTTY is received (the RTTY mode, or DIGL /
-        // DIGU chosen for it), empty or not, decoding on or off, as the way
-        // to its panel (a tap; with decoding off it was gone, and with it the
-        // only way to turn decoding back on); CW once there is text.
-        readonly property bool rtty: Engine.rttyActive
+        // RTTY and PSK: shown whenever one is received (the RTTY mode, DIGL /
+        // DIGU chosen for RTTY, or PSK), empty or not, decoding on or off, as
+        // the way to its panel (a tap; with decoding off it was gone, and
+        // with it the only way to turn decoding back on); CW once there is
+        // text.
+        readonly property bool rtty: Engine.textModeActive
         readonly property string stream: rtty ? Engine.rttyStrip : Engine.cwStrip
         readonly property real streamStart: rtty ? Engine.rttyStripStart : Engine.cwStripStart
         onRttyChanged: cwLine.rewrap()
         visible: rtty || (Engine.cwDecoderEnabled && Engine.cwMode && Engine.cwDecodedText.length > 0)
         objectName: "decodeStrip"
         Accessible.role: rtty ? Accessible.Button : Accessible.StaticText
-        Accessible.name: rtty ? qsTr("RTTY text: %1").arg(cwLine.text) : qsTr("CW text: %1").arg(cwLine.text)
+        Accessible.name: rtty ? qsTr("%1 text: %2").arg(Engine.textMode).arg(cwLine.text) : qsTr("CW text: %1").arg(cwLine.text)
         Accessible.onPressAction: if (rtty) rttyPanel.open()
         // Takes the tap (a TapHandler let it through to the display, which
         // tuned there too).
@@ -571,10 +613,13 @@ Rectangle {
             // RTTY before its first letter: what it listens for, and that a
             // tap opens its panel.
             readonly property string idle: !decodeStrip.rtty ? ""
-                : !Engine.rttyDecoderEnabled ? qsTr("RTTY decoding is off. Tap for its settings.")
+                : !Engine.rttyDecoderEnabled ? qsTr("%1 decoding is off. Tap for its settings.").arg(Engine.textMode)
                 : upper.length === 0 && current.length === 0
-                ? qsTr("RTTY (%1): listening, mark %2 Hz, space %3 Hz. Tap for its settings.")
-                      .arg(Engine.rtty.via).arg(Engine.rtty.markTone).arg(Engine.rtty.spaceTone)
+                ? (Engine.pskActive
+                   ? qsTr("%1: listening at %2 Hz. Tap a signal on the display; tap here for the settings.")
+                         .arg(Engine.psk.mode).arg(Math.round(Engine.psk.trackedHz))
+                   : qsTr("RTTY (%1): listening, mark %2 Hz, space %3 Hz. Tap for its settings.")
+                         .arg(Engine.rtty.via).arg(Engine.rtty.markTone).arg(Engine.rtty.spaceTone))
                 : ""
             text: idle.length > 0 ? idle : upper.length > 0 ? upper + "\n" + current : current
             function feed(chars) {
@@ -1374,7 +1419,7 @@ Rectangle {
             opacity: 0.97
         }
         contentItem: PanelContent {
-            title: qsTr("RTTY")
+            title: Engine.textMode
             panel: rttyPanel
             rowSpacing: Theme.spacing / 2
             extras: AppButton {
@@ -1396,6 +1441,11 @@ Rectangle {
     // The RTTY panel's Autotune, and a tap on an RTTY spot.
     Connections {
         target: Engine
+        function onPskCentreRequested(nearMhz, halfHz) {
+            const centre = spectrum.pskCentreNear(nearMhz, halfHz, Engine.psk.baud)
+            if (centre > 0)
+                Engine.pskTap(centre)
+        }
         function onRttyAutotuneRequested(nearMhz, halfHz, notify) {
             Engine.rttyAutotuneNow(spectrum.rttyMarkNear(nearMhz, halfHz, Engine.rtty.shiftHz), notify)
         }
@@ -1490,6 +1540,12 @@ Rectangle {
                     const tapped = panArea.mhzAt(eventPoint.position.x)
                     const peak = spectrum.cwPeakNear(tapped)
                     Engine.tuneToCw(peak > 0 ? peak : tapped, peak > 0)
+                } else if (Engine.pskActive) {
+                    // In PSK: the decoder to the signal's centre near the tap
+                    // (the slice stays; AFC finds the last hertz).
+                    const tapped = panArea.mhzAt(eventPoint.position.x)
+                    const centre = spectrum.pskCentreNear(tapped, 0, Engine.psk.baud)
+                    Engine.pskTap(centre > 0 ? centre : tapped)
                 } else if (Engine.rttyActive) {
                     // In RTTY: the signal nearest the tap (either of its two
                     // traces, or between them) tuned in by its mark.

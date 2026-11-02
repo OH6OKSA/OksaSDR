@@ -55,6 +55,7 @@
 #include "core/CwxLocalKeyer.h"
 #include "core/IambicKeyer.h"
 #include "models/CwRxModel.h"
+#include "core/PskDecoder.h"
 #include "core/RttyDecoder.h"
 #include "models/EqualizerModel.h"
 #include "gui/MemoryCommands.h"
@@ -4067,6 +4068,25 @@ void MobileEngine::wireCw()
         updateRttyDecoder();
     });
     connect(this, &MobileEngine::radeChanged, this, &MobileEngine::updateRttyDecoder);
+
+    // PSK31 / PSK63 on the same receive audio, into the same text and
+    // squelch (its characters carry a quality on RTTY's confidence scale).
+    m_pskDecoder = std::make_unique<PskDecoder>();
+    connect(m_rttyAudio.get(), &DecoderAudioModel::pcmReady, m_pskDecoder.get(), &PskDecoder::feedPcmBlock);
+    connect(m_rttyAudio.get(), &DecoderAudioModel::sourceReset, m_pskDecoder.get(), &PskDecoder::resetInput);
+    connect(m_pskDecoder.get(), &PskDecoder::textDecoded, this, [this](const QString& text, float quality) {
+        appendRttyGated(text, quality);
+    });
+    connect(m_pskDecoder.get(), &PskDecoder::statsUpdated, this, [this](double trackedHz, float quality, bool locked) {
+        const int percent = qRound((quality - 0.5f) * 200.0f);
+        // Only a change worth showing (twice a second).
+        if (locked != m_pskLocked || std::abs(percent - m_pskQuality) >= 5 || std::abs(trackedHz - m_pskTrackedHz) >= 0.5) {
+            m_pskLocked = locked;
+            m_pskQuality = percent;
+            m_pskTrackedHz = trackedHz;
+            emit rttyDecoderChanged();
+        }
+    });
 }
 
 namespace {
@@ -4123,6 +4143,8 @@ void MobileEngine::setRttyVia(const QString& via)
     const double mark = rttyMarkMhz();
     const bool digital = via != QLatin1String("RTTY");
     AppSettings::instance().setValue(kRttyDigitalKey, digital ? QStringLiteral("True") : QStringLiteral("False"));
+    // RTTY chosen this way is the Digi tab's text mode (it may have been PSK).
+    AppSettings::instance().setValue(QStringLiteral("MobileDigiTextMode"), QStringLiteral("RTTY"));
     AppSettings::instance().save();
     // FT8 / FT4 decode every DIGU / DIGL slice: RTTY there needs them off.
     if (digital && m_digiOn) {
@@ -4522,6 +4544,7 @@ void MobileEngine::updateRttyDecoder()
     }
     const QString via = rttyVia();
     const bool run = m_connected && rttyDecoderEnabled() && !via.isEmpty();
+    const bool pskRun = m_connected && rttyDecoderEnabled() && pskActive();
     // The radio's mark and shift (the "Auto" choice) followed while it runs.
     disconnect(m_rttyMarkConnection);
     disconnect(m_rttyShiftConnection);
@@ -4529,8 +4552,9 @@ void MobileEngine::updateRttyDecoder()
         m_rttyMarkConnection = connect(m_slice.data(), &SliceModel::rttyMarkChanged, this, &MobileEngine::updateRttyDecoder);
         m_rttyShiftConnection = connect(m_slice.data(), &SliceModel::rttyShiftChanged, this, &MobileEngine::updateRttyDecoder);
     }
-    m_rttyAudio->setSlice(run ? m_slice.data() : nullptr);
-    m_rttyAudio->setEnabled(run);
+    m_rttyAudio->setSlice(run || pskRun ? m_slice.data() : nullptr);
+    m_rttyAudio->setEnabled(run || pskRun);
+    updatePskDecoder(pskRun);
     if (run) {
         const QVariantMap r = rtty();
         const int tone = r.value(QStringLiteral("markHz")).toInt();
@@ -5288,6 +5312,13 @@ QVariantMap MobileEngine::qsoDefaults() const
         mhz = rttyMarkMhz();
         mode = QStringLiteral("RTTY");
     }
+    // PSK31 / PSK63 on the signal's own frequency (the carrier, as fldigi
+    // logs it), ADIF PSK with the submode.
+    if (pskActive()) {
+        const QVariantMap k = psk();
+        mhz = k.value(QStringLiteral("carrierMhz")).toDouble();
+        mode = k.value(QStringLiteral("mode")).toString();
+    }
     const QString group = QsoLog::modeGroup(QsoLog::adifMode(mode).first);
     return {{QStringLiteral("freq"), mhz}, {QStringLiteral("band"), QsoLog::bandOf(mhz)},
             // No report until the slice's mode is known (59 voice, 599 CW and data).
@@ -5868,6 +5899,11 @@ void MobileEngine::spotTest(const QString& action)
         rm.sendCommand(QStringLiteral("spot add callsign=OH0RTTY rx_freq=%1 tx_freq=%1 mode=RTTY source=OksaSDR-test "
                                       "trigger_action=none lifetime_seconds=120 color=#FF3FB6FF")
                            .arg(QString::number(action.mid(5).toDouble(), 'f', 6)));
+    } else if (action.startsWith(QLatin1String("psk="))) {
+        // A PSK31 spot at a frequency (the render tool's spot tap in PSK).
+        rm.sendCommand(QStringLiteral("spot add callsign=OH0PSK rx_freq=%1 tx_freq=%1 mode=PSK31 source=OksaSDR-test "
+                                      "trigger_action=none lifetime_seconds=120 color=#FF3FB6FF")
+                           .arg(QString::number(action.mid(4).toDouble(), 'f', 6)));
     } else if (action == QLatin1String("clear")) {
         for (const SpotData& s : rm.spotModel().spots()) {
             if (s.source == QLatin1String("OksaSDR-test") || s.callsign.startsWith(QLatin1String("OH0TEST"))) {
@@ -6079,6 +6115,30 @@ void MobileEngine::tuneToSpot(int index)
     QString mode = m_slice->mode();
     const QString named = spot.mode.trimmed().isEmpty() ? SpotModeResolver::extractSpotModeFromComment(spot.comment)
                                                         : spot.mode.trimmed().toUpper();
+    // A PSK spot (its signal's own frequency, as RBN and the cluster give
+    // it) to the Digi tab's PSK in DIGU, the slice so the signal sounds at
+    // the carrier set (1000 Hz unless moved), the decoder then onto the
+    // signal the display shows near it (a spot is often 50-100 Hz off).
+    const bool pskSpot = named == QLatin1String("PSK31") || named == QLatin1String("PSK63") || named == QLatin1String("PSK");
+    if (pskSpot && (pskActive() || AppSettings::instance().value(QStringLiteral("SpotAutoSwitchMode"), QStringLiteral("True")).toString()
+                                       == QLatin1String("True"))) {
+        setTextMode(named == QLatin1String("PSK63") ? QStringLiteral("PSK63") : QStringLiteral("PSK31"));
+        const double carrier = psk().value(QStringLiteral("carrierHz")).toDouble();
+        setPsk(QStringLiteral("carrier"), carrier);
+        qCInfo(lcMobile) << "tune to PSK spot" << spot.callsign << spot.rxFreqMhz << "carrier" << carrier << "Hz";
+        if (m_lastSpotCall != spot.callsign) {
+            m_lastSpotCall = spot.callsign;
+            emit lastSpotCallChanged();
+        }
+        tuneTo(spot.rxFreqMhz - carrier / 1e6);
+        const double spotMhz = spot.rxFreqMhz;
+        QTimer::singleShot(2500, this, [this, spotMhz] {
+            if (pskActive()) {
+                emit pskCentreRequested(spotMhz, 150.0);
+            }
+        });
+        return;
+    }
     // RTTY received in DIGL / DIGU (chosen on the RTTY tab) stays there for an
     // RTTY spot: the slice tunes so the spot's mark lands on the mark tone.
     const QString via = rttyVia();

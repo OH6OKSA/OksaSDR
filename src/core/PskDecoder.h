@@ -46,6 +46,9 @@ public:
     static constexpr double kAfcRangeHz = 25.0;
 
 public slots:
+    // As RttyDecoder's: stereo float at 24 kHz (a test feed), trimmed to
+    // the newest 4 s when it comes faster than it is read.
+    void feedAudio(const QByteArray& pcm24kStereoFloat);
     void feedPcmBlock(const AetherSDR::DecoderPcmBlock& block);
     void resetInput();
 

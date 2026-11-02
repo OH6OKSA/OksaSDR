@@ -33,7 +33,7 @@ ColumnLayout {
         { name: "Log", button: qsTr("Log"), title: qsTr("Log"), component: logSection },
         { name: "Digi", button: qsTr("FTx"), title: qsTr("FT8 / FT4"), component: digiSection },
         { name: "FreeDV", button: qsTr("FreeDV"), title: qsTr("FreeDV"), component: freedvSection },
-        { name: "RTTY", button: qsTr("Digi"), title: qsTr("Digi: RTTY"), component: rttySection },
+        { name: "RTTY", button: qsTr("Digi"), title: qsTr("Digi (RTTY, PSK)"), component: rttySection },
     ]
     // One row of all on a wide panel, else rows of six (6 + 6).
     readonly property int buttonColumns: panel.width >= 700 ? sections.length : 6
