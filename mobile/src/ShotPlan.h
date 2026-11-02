@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QElapsedTimer>
 #include <QObject>
 #include <QStringList>
 
@@ -85,6 +86,13 @@ private:
     int m_next{0};
     int m_readyTries{0};
     bool m_failed{false};
+    // Conditional lines ("? cmd" runs when the last wait succeeded, "! cmd"
+    // when it did not) and the waits that poll (waittx, waitcall, waitover).
+    bool m_condition{true};
+    bool m_waiting{false};
+    QElapsedTimer m_waitClock;
+    QElapsedTimer m_growthClock;
+    qsizetype m_lastTextLen{0};
     QStringList m_savedPinned;
     bool m_pinned{false};
 };

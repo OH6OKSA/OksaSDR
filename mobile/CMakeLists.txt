@@ -41,6 +41,7 @@ qt_add_executable(aether-mobile
     src/NtpClock.cpp
     src/NtpClock.h
     src/MobileEngineDigi.cpp
+    src/MobileEngineTextModes.cpp
     src/MobileEngineRade.cpp
     src/MobileEngineOnlineLog.cpp
     src/MobileEngineQrzLog.cpp

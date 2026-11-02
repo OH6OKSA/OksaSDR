@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QFile>
 #include <QPointer>
+#include <QRegularExpression>
 #include <QQmlApplicationEngine>
 #include <QQuickItem>
 #include <QQuickWindow>
@@ -127,7 +128,15 @@ void ShotPlan::step()
     }
     const QString line = m_lines.at(m_next++);
     QStringList words = line.split(QLatin1Char(' '), Qt::SkipEmptyParts);
-    const QString command = words.takeFirst();
+    QString command = words.takeFirst();
+    if ((command == QLatin1String("?") || command == QLatin1String("!")) && !words.isEmpty()) {
+        if ((command == QLatin1String("?")) != m_condition) {
+            qInfo().noquote() << "shot-plan: skipped" << line;
+            QTimer::singleShot(0, this, &ShotPlan::step);
+            return;
+        }
+        command = words.takeFirst();
+    }
     int delayMs = kSettleMs;
     run(command, words, &delayMs);
     QTimer::singleShot(delayMs, this, &ShotPlan::step);
@@ -463,6 +472,72 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         m_engine.setRfPower(arg.toInt());
         qInfo() << "shot-plan: RF power" << arg.toInt() << "W";
         *delayMs = 1500;
+    } else if (command == QLatin1String("waittx") || command == QLatin1String("waitcall")
+               || command == QLatin1String("waitover")) {
+        // At most MS: waittx until this app's text has gone out; waitcall
+        // until the received text holds a call (after DE, or twice) and has
+        // stopped coming, the call becoming the one worked; waitover until the other station's
+        // over ends (K, KN, SK or BK after our last [TX] line, then 1.5 s
+        // with nothing new). Sets the condition "?" and "!" lines read.
+        if (!m_waiting) {
+            m_waiting = true;
+            m_waitClock.start();
+            m_growthClock.start();
+            m_lastTextLen = m_engine.rttyDecodedText().size();
+        }
+        const QString text = m_engine.rttyDecodedText();
+        if (text.size() != m_lastTextLen) {
+            m_lastTextLen = text.size();
+            m_growthClock.restart();
+        }
+        bool done = false;
+        QString what;
+        if (command == QLatin1String("waittx")) {
+            done = !m_engine.textTransmitting();
+        } else if (command == QLatin1String("waitcall")) {
+            // Once the caller's over has ended (1.5 s with nothing new): a
+            // call read half way ("OH2XY" of OH2XYZ) is not taken.
+            // "waitcall MS cq": only a station calling CQ (its over holds
+            // CQ), not one already in a QSO.
+            const qsizetype tx = text.lastIndexOf(QLatin1String("[TX]"));
+            const QString since = tx < 0 ? text : text.mid(tx);
+            const bool cqOk = args.value(1) != QLatin1String("cq")
+                || since.contains(QRegularExpression(QStringLiteral("\\bCQ\\b")));
+            const QStringList calls = m_engine.textCalls();
+            if (!calls.isEmpty() && cqOk && m_growthClock.elapsed() >= 1500) {
+                done = true;
+                what = calls.first();
+                m_engine.setWorkedCall(what);
+            }
+        } else {
+            const qsizetype tx = text.lastIndexOf(QLatin1String("[TX]"));
+            const qsizetype lineEnd = tx < 0 ? 0 : text.indexOf(QLatin1Char('\n'), tx);
+            const QString heard = lineEnd < 0 ? QString() : text.mid(lineEnd + 1).trimmed();
+            static const QRegularExpression over(QStringLiteral("(^|\\s)(K|KN|SK|BK|PSE K)$"));
+            done = heard.size() >= 6 && over.match(heard).hasMatch() && m_growthClock.elapsed() >= 1500;
+            what = heard.right(80);
+        }
+        if (done) {
+            m_waiting = false;
+            // waittx leaves the condition as the last call / over wait set it.
+            if (command != QLatin1String("waittx")) {
+                m_condition = true;
+            }
+            qInfo().noquote() << QStringLiteral("shot-plan: %1 done after %2 s %3").arg(command).arg(m_waitClock.elapsed() / 1000.0, 0, 'f', 1).arg(what);
+            *delayMs = 300;
+            return;
+        }
+        if (m_waitClock.elapsed() >= arg.toInt()) {
+            m_waiting = false;
+            if (command != QLatin1String("waittx")) {
+                m_condition = false;
+            }
+            qInfo().noquote() << QStringLiteral("shot-plan: %1 timed out after %2 s").arg(command).arg(m_waitClock.elapsed() / 1000.0, 0, 'f', 1);
+            *delayMs = 100;
+            return;
+        }
+        --m_next;  // this line again
+        *delayMs = 250;
     } else if (command == QLatin1String("ready")) {
         // Until connected with a slice (at most 30 s): a slow connect left a
         // fixed wait short and the plan's first commands went to no slice.
@@ -484,10 +559,13 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             m_engine.setRadioSetup(arg.left(eq), arg.mid(eq + 1));
         }
         *delayMs = 1000;
-    } else if (command == QLatin1String("tapname")) {
+    } else if (command == QLatin1String("tapname") || command == QLatin1String("showname")
+               || command == QLatin1String("holdname")) {
         // A finger on the named control's middle, through the window system
         // (click only emits its clicked): whatever covers it, a popup's
-        // press-outside close included, acts as for a user.
+        // press-outside close included, acts as for a user. showname only
+        // scrolls it into view; holdname keeps the finger down 1.2 s (a
+        // press and hold).
         QQuickItem* target = nullptr;
         for (QObject* root : m_qml.rootObjects()) {
             for (QObject* o : findNamed(root, arg)) {
@@ -516,6 +594,11 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                 break;
             }
         }
+        if (window && target && command == QLatin1String("showname")) {
+            const QPointF p = target->mapToScene(QPointF(0, 0));
+            qInfo().noquote() << QStringLiteral("shot-plan: show %1 at %2,%3").arg(arg).arg(qRound(p.x())).arg(qRound(p.y()));
+            return;
+        }
         if (window && target) {
             const QPointF p = target->mapToScene(QPointF(target->width() / 2.0, target->height() / 2.0));
             if (p.x() < 0 || p.y() < 0 || p.x() >= window->width() || p.y() >= window->height()) {
@@ -525,8 +608,20 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                 return;
             }
             const QPointF g = window->mapToGlobal(p);
-            qInfo().noquote() << QStringLiteral("shot-plan: tap %1 at %2,%3").arg(arg).arg(qRound(p.x())).arg(qRound(p.y()));
+            qInfo().noquote() << QStringLiteral("shot-plan: %1 %2 at %3,%4").arg(command == QLatin1String("holdname") ? QStringLiteral("hold") : QStringLiteral("tap"), arg).arg(qRound(p.x())).arg(qRound(p.y()));
             QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
+            QWindowSystemInterface::flushWindowSystemEvents();
+            if (command == QLatin1String("holdname")) {
+                QPointer<QQuickWindow> w(window);
+                QTimer::singleShot(1200, [w, p, g] {
+                    if (w) {
+                        QWindowSystemInterface::handleMouseEvent(w, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+                        QWindowSystemInterface::flushWindowSystemEvents();
+                    }
+                });
+                *delayMs = std::max(*delayMs, 1600);
+                return;
+            }
             QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
             QWindowSystemInterface::flushWindowSystemEvents();
         } else {
@@ -804,7 +899,19 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         // is Backspace as an iPad app on a Mac gets it from UIKit (key 8,
         // text "\\b"). Then the focused field's text.
         if (window) {
-            QString keys = arg;
+            QString keys = args.join(QLatin1Char(' '));  // words with spaces between
+            // <F1> ... <F12>, <Esc>: that key alone, no text.
+            static const QRegularExpression named(QStringLiteral("^<(F([1-9]|1[0-2])|Esc)>$"));
+            if (const QRegularExpressionMatch m = named.match(keys); m.hasMatch()) {
+                const int key = m.captured(1) == QLatin1String("Esc") ? Qt::Key_Escape : Qt::Key_F1 + m.captured(2).toInt() - 1;
+                QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyPress, key, Qt::NoModifier);
+                QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyRelease, key, Qt::NoModifier);
+                QWindowSystemInterface::flushWindowSystemEvents();
+                QQuickItem* item = window->activeFocusItem();
+                qInfo().noquote() << "shot-plan: key" << keys << "->" << (item ? QString::fromLatin1(item->metaObject()->className()) : QStringLiteral("none"));
+                *delayMs = 500;
+                return;
+            }
             keys.replace(QLatin1String("\\b"), QString(QChar(0x08)));
             for (const QChar ch : std::as_const(keys)) {
                 const int key = ch.unicode() == 0x08 ? 0x08 : ch.toUpper().unicode();
@@ -846,6 +953,13 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                           << "locked" << r.value(QStringLiteral("locked")).toBool() << "squelch" << r.value(QStringLiteral("squelch")).toBool()
                           << "text" << m_engine.rttyDecodedText().size()
                           << QStringLiteral("\"%1\"").arg(text);
+        if (arg == QLatin1String("all")) {
+            QString all = m_engine.rttyDecodedText();
+            all.replace(QLatin1Char('\r'), QString());
+            for (const QString& l : all.split(QLatin1Char('\n'))) {
+                qInfo().noquote() << "shot-plan: rtty text |" << l;
+            }
+        }
         if (arg == QLatin1String("spots")) {
             // RTTY stations the spots know of, to tune onto one.
             for (const QVariant& v : m_engine.spots()) {

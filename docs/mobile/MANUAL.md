@@ -248,7 +248,7 @@ come the other way round. Lower sideband is the tradition, but many
 stations run AFSK on the upper sideband: on the air the signal is the same
 as long as the mark stays the higher frequency, so either way receives it.
 
-1. Controls → **RTTY** → **Receive in**: **RTTY (LSB)** is the radio's RTTY
+1. Controls → **Digi** → **Receive in**: **RTTY (LSB)** is the radio's RTTY
    mode, lower sideband, the frequency shown the mark (the standard; an
    RTTY spot uses it too). **DIGL** and **DIGU** receive AFSK RTTY on the
    lower or upper sideband, the frequency shown the carrier; on DIGU the
@@ -264,18 +264,39 @@ as long as the mark stays the higher frequency, so either way receives it.
    2295 Hz above it in DIGU) and the text runs along the top of the
    waterfall. **Autotune** on the tab does the same after tuning by the
    steps.
-3. The rest of the **RTTY** tab: **Decode on / off**, shift (*Auto* = the
+3. **Operating** (the Digi tab, under the text): **Call** shows the call
+   being worked (the Log tab's, as on the CW tab) and the calls the text
+   holds (after DE, or twice) as buttons; a tap picks one, ✕ clears it.
+   The **macros** (F1-F8 on a keyboard) follow fldigi's set and the QSO
+   bpsk31.com describes: **CQ** ("CQ CQ CQ DE OH6OKSA x3 PSE K"),
+   **Answer** ("HIS HIS DE OH6OKSA x3 KN"), **QSO** (the report and BTU),
+   **BTU**, **73 SK**, **QRZ?**, **AGN?** and **Locator**. A tap sends one,
+   press and hold edits it (its name and text; **Default** brings the
+   original back). In a macro {CALL} is your call, {HIS} the call being
+   worked, {NAME} its first name from the lookup, {RST} 599 and {GRID}
+   your locator. **Text to send** and **Send** (or Return) send a line;
+   sent while text is going out, a macro or a line follows without
+   unkeying. **Stop** (or Esc) stops at once. **Log** puts the call being
+   worked into the log as RTTY on the signal's mark (599 both ways; the
+   Log tab for anything more).
+4. **Transmitting**: from this slice, which must be the TX slice, at the
+   FTx tab's TX level, with the speech processor off while it sends. RTTY
+   goes out as audio tones in all three ways, the mark always the higher
+   radio frequency (Reverse is only for receiving); a short mark and two
+   LTRS before the text, so the other station's decoder is in step. The
+   transmitted text shows in the text as [TX] lines.
+5. The receive settings below: **Decode on / off**, shift (*Auto* = the
    radio's in the RTTY mode, 170 Hz in DIGL / DIGU), speed (45.45 baud for
    amateur RTTY), **Reverse** for a signal sent the other way round, the
-   mark tone, **Squelch** (holds back the letters noise makes), **Clear**,
-   and the text so far. The status line says how it listens (e.g. *DIGU,
-   mark 2295 Hz, space 2125 Hz*) and when it has locked on. A tap on the
-   text line over the waterfall opens the same settings over the display;
-   with decoding off the line says so, and the tap still opens them.
-4. **Logging**: a QSO logged from the Log tab while RTTY is received goes in
-   as RTTY on the signal's mark frequency, the same whichever way it is
-   received (in DIGL / DIGU not DATA on the carrier, 2 kHz away).
-5. Receive only: the app does not transmit RTTY.
+   mark tone, **Squelch** (holds back the letters noise makes), **Clear**.
+   The status line says how it listens (e.g. *DIGU, mark 2295 Hz, space
+   2125 Hz*), when it has locked on and when it transmits. A tap on the
+   text line over the waterfall opens the receive settings over the
+   display; with decoding off the line says so, and the tap still opens
+   them.
+6. **Logging** from the Log tab too: a QSO logged while RTTY is received
+   goes in as RTTY on the signal's mark frequency, the same whichever way
+   it is received (in DIGL / DIGU not DATA on the carrier, 2 kHz away).
 
 ### RADE digital voice (FreeDV)
 
@@ -1323,17 +1344,21 @@ Reporter) and **RTTY**.
   takes the station's sideband, so you hear it. The list is fetched only while the tab
   is open.
 
-- **RTTY** — RTTY reception, as in [Operating by mode › RTTY](#rtty).
+- **Digi** — the keyboard digital modes: RTTY now (PSK31 next), received
+  and sent, as in [Operating by mode › RTTY](#rtty).
 
-  ![RTTY tab](manual/tab-rtty.jpg)
+  ![Digi tab](manual/tab-rtty.jpg)
 
   **Receive in**: **RTTY (LSB)** (the radio's RTTY mode, the standard),
   **DIGL** or **DIGU** (AFSK; DIGU's mark is the upper tone, which the
   decoder follows; both stop FT8 / FT4). Then **Decode on / off**, the
-  status (how it listens and whether it has locked on), **Shift**, speed,
-  **Reverse**, the mark tone, the text so far, **Autotune**, **Squelch** and
-  **Clear**. The text also runs along the top of the waterfall, where a tap
-  opens these settings over the display.
+  status (how it listens, whether it has locked on, when it transmits), the
+  text so far (sent text as [TX] lines), **Autotune**, **Squelch** and
+  **Clear**; **Call** with the calls heard; the eight **macros** (tap sends,
+  press and hold edits; F1-F8); **Text to send** with **Send** and
+  **Stop**; **Log**; then **Shift**, speed, **Reverse** and the mark tone.
+  The text also runs along the top of the waterfall, where a tap opens the
+  receive settings over the display.
 
 ## 9. Radio Setup
 

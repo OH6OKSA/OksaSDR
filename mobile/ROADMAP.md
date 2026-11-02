@@ -17,6 +17,46 @@ To verify in build 140 / beta 54: Space PTT on the user's iPad with the Magic Ke
 
 To verify in build 139 / beta 53: Autotune on the CW tab and a tap beside a real, keyed CW signal (tested here on the 10 MHz carrier only); the CW pitch notice on a radio that reports 0; the notch panel by finger on a device (a hold, a width, Add; a tap outside leaves none); the eSSB tab on the air at low power with a second receiver; FTx Scroll › List only in the full-screen drawer on a phone and in the iPad's drawer (Michael Whaley offered to pilot it); VoiceOver and TalkBack on a device (the names read out, a double tap acts, a swipe steps a slider; a screen-reader user's view welcome). To verify in build 138 / beta 52: the − / + on pan, power, mic, DSP and Radio Setup levels with a finger; Show my transmission in the waterfall off and on during a transmission; an FTx band change clearing the old band's decodes; the Local Network hint on an iPhone with the permission off (Settings › Privacy & Security › Local Network); "In use by" on a SmartLink card. To verify in build 137 / beta 51: the felt taps on an iPhone and an Android phone (PTT press and release, the step buttons, − / +; none on an iPad or a Mac); the taller rows beside and under the frequency on a phone upright (STEP, the antennas, width, AGC, lock, REC and PLAY with a thumb); every panel's Close at the top right and its rows scrolling in a low window; connecting by host name (ABC on the keypad) over a VPN (Sebastian Schu); − / + on AGC-T, RF gain, volume and squelch (Larry Averbeck); the full-screen drawer with FTx on a phone and the iPhone Duo's inner screen (Michael Whaley). To verify in build 134 / beta 48 (and 133 / 47): the AGC panel from AGC-F and the volume panel from the speaker in the OnePlus Open's inner screen and in a narrow iPad window; the network panel on an iPhone and on a phone on its side (scrolls to Close). To verify in build 132 / beta 46: Logger32 with Juho Kontio's own Logger32 (QSOs arriving, the queue when the PC is off, over his VPN); the iPad in a narrow Split View or Stage Manager window (PTT on screen, the wrapped top). To verify in Android beta 45: the app in a split or pop-up window on the OnePlus Open's inner screen (portrait layout with the wrapped two-line header, PTT on screen), and the phone page as before on the outer screen in both orientations. To verify in build 129 / beta 43: record and playback on a device (the dot, then the triangle; with PTT during playback on the air at low power, a recording of speech, not band noise); F/R and Band on a phone in both orientations and on an iPad; the step buttons with STEP ×1 ×10 ×100; the eye in the SmartLink sign-in (Larry Averbeck's S26 Ultra). From beta 42 (checked on the user's phone 2026-10-27): the headset's hands-free reopen on connect and on Bluetooth media -> Auto; no background stall in five returns. Still to check: the microphone of each Audio output choice with a short PTT. From beta 41, checked on the user's phone 2026-10-27: quick Audio output changes never left receive silent (about 25 changes, every one reopened); the waterfall fix did not catch the return after another app. From build 125 / beta 40, checked on the user's phone with the headset 2026-10-27: every switch both ways ended with receive open (route errors and refused opens reopened within a second). From build 124 / beta 39: FT8 with Keep CQ on the air, the station's 73 after our RR73 (no second QSO, one log entry). From build 123 / beta 38: Audio output on Android with a Bluetooth headset (Speaker: the phone's speaker and microphone; Bluetooth media: the music link and the phone's microphone, if Qt's one Bluetooth output is the A2DP one; Auto: the headset with its microphone), the user's phone and Larry Averbeck's S26 Ultra. From build 122 / beta 37: the app's CPU in the top row against build 120 on an iPad, iPhone and Android phone with the same view (the spectrum drawing moved to the GPU), the 3D view and the waterfall on Metal, Vulkan and GLES devices, a phone turning and a zoom with the new waterfall ring, "2 analog" on an iPad and a Mac. From build 120 / beta 36: a held PTT on Kurt DL5EAG's Lenovo tablet with its accessibility services on (Lenovo pen, accessibility menu); Audio output Speaker and Bluetooth media on a phone with Bluetooth audio (Larry Averbeck's S26 Ultra), and on an iPhone; the bar meters' new width on devices. Still to verify from earlier builds: the paddles at the phone's edges with a squeeze and the tap on / off 3-minute stop on the air (119); a phone turning on a real Android phone with the 3D view (117); RADE transmit from a device with the quick-tap fix; Two bars with TUNE on a device's microphone (113); Wavelog sending, PSK Reporter spots and a transverter from a device (105). Queued (tester requests): a blank panadapter while audio plays (Larry; waiting for a log), an Amp tab for the Power Genius XL and Tuner Genius XL (Dennis Daniel, who may test it; the amplifier build below), the desktop TX chain on the eSSB tab (Jeff Stinger: a 10-band parametric EQ with presets, the desktop compressor, later a multiband compressor; with the de-esser, tube, exciter, reverb and a chain order, the engine has them: a build of its own, tested on the air), one-button setups (Jeff Stinger, 2026-11-01: one press to go from the phone's own speaker and microphone to a headset and change every setting with it, like the voice keyer's buttons: a named setup holding the app's Audio output, the radio's mic profile (the Prof tab loads them one at a time now) and the eSSB settings), a port after the radio's address for a direct connection (Sebastian Schu DG5CST, 2026-10-31: his router forwards e.g. tcp 56034 to the radio; the radio needs two ports: TCP for the commands (4992 on a LAN) and UDP for audio and the panadapter (the app sends to 4991 and 4992, the radio back to the app's own port); SmartLink with manual port forwarding gives both (TCP 4994, UDP 4993 by default) and the app already takes them from the SmartLink server, so first ask whether his 56034 is SmartLink's manual TCP port and which UDP port he forwards; a direct connection without SmartLink would need host, TCP port and UDP port, [IPv6] too, ":" on the address keypad, remembered), Wavelog API v2 tokens, the rest of upstream 26.10.3 as its own build.
 
+## Planned: the Digi tab, keyboard modes as one (asked 2026-11-02)
+
+The user: PSK31 too (bpsk31.com), and every keyboard digital mode thought
+of as one whole, since they all need the same ways to answer, log and so
+on: one Digi button in Controls, the mode chosen under it, each mode with
+ready operating macros. FTx stays its own (its traffic runs by itself);
+PSK and RTTY follow the same message norms. The user chose step 1 first
+and the RTTY / DIGL / DIGU tuning fix to wait for it (no build 146 alone).
+
+Conventions read first: fldigi runs RTTY, PSK31/63 and the rest from one
+window with one macro set (its new-install defaults: CQ "CQ CQ CQ de
+<MYCALL> x3 pse k", ANS "<CALL> <CALL> de <MYCALL> x3 kn", QSO "<CALL> de
+<MYCALL>", KN "btu <NAME> <CALL> de <MYCALL> k", SK "tnx fer QSO <NAME>,
+73 ... <CALL> de <MYCALL> sk", Me/Qth, Brag, Log QSO); a callsign clicked
+in the received text goes to the log. bpsk31.com: PSK31 on USB, 14.070
+and the band list, the same QSO shape ("CQ CQ CQ de CALL CALL CALL K",
+"CALL de MYCALL pse K", BTU, SK), 595 instead of an automatic 599 to a
+dirty signal, ALC at zero. SmartSDR's RTTY mode transmits the AFSK tones
+sent to it (the mark set in its DSP settings), so RTTY goes out as audio
+from this app in the RTTY mode, DIGL and DIGU alike, through the path
+FT8 / FT4 use (PTT for digital audio, the TX slice, PROC off, the TX
+level).
+
+1. Step 1, RTTY (a build of its own): the RTTY tab becomes Digi; the
+   received text with the calls heard (after DE, or twice) as buttons
+   that set the call being worked (the Log tab's, as on the CW tab);
+   macros like the CW memories (tap sends, press and hold edits; {CALL},
+   {HIS}, {NAME} from the lookup, {RST}) with fldigi's set as defaults;
+   a field to type and send; Stop; Log QSO (RTTY on the mark). Transmit:
+   Baudot with letters / figures shifts and unshift on space, 45.45 baud
+   CPFSK at the way's tones (mark the higher radio frequency), a short
+   mark lead and tail. Tested: the encoder against the decoder on the
+   desktop, every macro and the field by taps, then a live low-power
+   transmission heard back (a second receiver or an RTTY skimmer).
+2. Step 2, PSK31 / PSK63 (a build of its own): the mode row on the Digi
+   tab; BPSK at 31.25 / 62.5 baud, Varicode, receive with AFC and a tap
+   on the waterfall, transmit with the same macros; ADIF PSK / PSK31.
+   Tested with test signals, then live on 14.070.
+3. Later: contest macros (serial numbers), more modes (Olivia, MFSK...).
+
 ## Planned: logging (step 1 and the ADIF share in build 91)
 
 QSO logging from the app to any logbook, through the standard ADIF routes

@@ -41,11 +41,13 @@ Item {
         case Qt.Key_F1: case Qt.Key_F2: case Qt.Key_F3: case Qt.Key_F4:
         case Qt.Key_F5: case Qt.Key_F6: case Qt.Key_F7: case Qt.Key_F8:
         case Qt.Key_F9: case Qt.Key_F10: case Qt.Key_F11: case Qt.Key_F12:
-            // CW modes send the CW memories, voice modes the voice keyer.
+            // CW modes send the CW memories, RTTY the Digi tab's macros
+            // (F1-F8, as fldigi's F-keys), voice modes the voice keyer.
             if (Engine.cwMode) Engine.sendCwMemory(event.key - Qt.Key_F1)
+            else if (Engine.rttyActive) { if (event.key <= Qt.Key_F8) Engine.sendTextMacro(event.key - Qt.Key_F1) }
             else Engine.dvkPlay(event.key - Qt.Key_F1 + 1)
             break
-        case Qt.Key_Escape: Engine.stopCwx(); Engine.dvkStop(); break
+        case Qt.Key_Escape: Engine.stopCwx(); Engine.dvkStop(); Engine.stopTextTx(); break
         case Qt.Key_Space:
             // iOS: GameController keys Space itself (keyboardOnPage).
             if (Engine.nativeKeyboardSides) break

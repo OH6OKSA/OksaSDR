@@ -348,6 +348,13 @@ class MobileEngine : public QObject {
     // mark / shift (0 = the radio's), baud, reverse, and what is in use:
     // markHz / shiftHz, snr, locked.
     Q_PROPERTY(QVariantMap rtty READ rtty NOTIFY rttyDecoderChanged)
+    // The Digi tab's keyboard modes (RTTY now): macros [{label, text}] as
+    // the CW memories ({CALL}, {HIS}, {NAME}, {RST}, {GRID}), the calls the
+    // received text holds (after DE, or twice), and whether text is going
+    // out.
+    Q_PROPERTY(QVariantList textMacros READ textMacros NOTIFY textMacrosChanged)
+    Q_PROPERTY(QStringList textCalls READ textCalls NOTIFY rttyDecoderChanged)
+    Q_PROPERTY(bool textTransmitting READ textTransmitting NOTIFY textTxChanged)
     Q_PROPERTY(bool cwKeyAvailable READ cwKeyAvailable NOTIFY transmitStateChanged)
     Q_PROPERTY(bool cwxAvailable READ cwxAvailable NOTIFY transmitStateChanged)
     Q_PROPERTY(bool cwKeyDown READ cwKeyDown NOTIFY cwKeyDownChanged)
@@ -821,6 +828,20 @@ public:
     // Tests (render tool rttyfeed): TEXT as RTTY audio at the decoder's
     // mark, shift and speed (Baudot, continuous-phase FSK, a little noise),
     // fed in real time to the running decoder.
+    QVariantList textMacros() const;
+    Q_INVOKABLE void setTextMacro(int index, const QString& label, const QString& text);
+    // Back to its default (fldigi's set, as bpsk31.com writes a QSO).
+    Q_INVOKABLE void resetTextMacro(int index);
+    QStringList textCalls() const;
+    bool textTransmitting() const { return m_textTransmitting; }
+    // Transmit text in the mode received (RTTY: AFSK at the way's tones,
+    // the mark the higher radio frequency) from the slice, which must be
+    // the TX slice. Sent while text is going out, it follows without
+    // unkeying. False (and a notice) when it cannot go.
+    Q_INVOKABLE bool sendText(const QString& text);
+    Q_INVOKABLE bool sendTextMacro(int index);
+    // Stops at once, the rest of the queue dropped.
+    Q_INVOKABLE void stopTextTx();
     void testRttyFeed(const QString& text);
     bool locked() const;
     bool recordOn() const;
@@ -1138,6 +1159,7 @@ public:
     qint64 cwStripStart() const { return m_cwStripStart; }
     void appendCwDecoded(const QString& text);
     QStringList cwCalls() const;
+    QStringList heardCallsIn(const QString& text) const;
     // Development (--cw-text): text as if the CW decoder had received it.
     // Development: QSOs printed to the app log, not written or sent.
     void setQsoLogDryRun(bool on) { m_qsoLogDryRun = on; }
@@ -1412,6 +1434,8 @@ signals:
     void cwKeyDownChanged();
     void cwDecoderChanged();
     void rttyDecoderChanged();
+    void textMacrosChanged();
+    void textTxChanged();
     void displayLevelsChanged();
     void lockedChanged();
     void recordPlayChanged();
@@ -1672,6 +1696,11 @@ private:
     void handleDigiDecodes(const QVariantList& decodes, qint64 slotMs);
     void startDigiTx(qint64 slotMs);
     void onDigiTxFinished();
+    // Keyboard-mode transmit: the next text keyed (or played on while
+    // keyed), and what to do when a clip has gone out.
+    void startTextTx();
+    void onTextTxFinished();
+    QString expandTextMacro(const QString& text, QString* error) const;
     void digiLogQso();
     void digiEnd(const QString& status);
     void setDigiStatus(const QString& status);
@@ -1892,6 +1921,11 @@ private:
     // A spot's mark looked for again while its station listens (the
     // display shows no pair then): the spot's frequency and tries left.
     double m_rttySpotMhz{0.0};
+    // Keyboard-mode transmit (MobileEngineTextModes.cpp).
+    bool m_textTransmitting{false};
+    bool m_textProcRestore{false};
+    int m_textTxSeq{0};
+    QStringList m_textTxQueue;
     int m_rttySpotTries{0};
     // The squelch (appendRttyGated): open, the characters before it opened
     // that may start the text, and one doubtful character held inside a run.

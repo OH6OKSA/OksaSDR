@@ -3,10 +3,12 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import AetherMobile
 
-// RTTY's settings and text: the Controls RTTY tab, and the panel a tap on
-// the RTTY line along the top of the waterfall opens. Decode on / off, the
-// shift and mark (Auto: the radio's RTTY settings), the speed, reverse,
-// squelch, Autotune, whether it has locked on, and the text so far.
+// The Controls Digi tab (RTTY; PSK31 next), and the panel a tap on the RTTY
+// line along the top of the waterfall opens. Receiving: how (RTTY, DIGL,
+// DIGU), Decode on / off, the text so far, Autotune, Squelch; operating (the
+// tab only): the call being worked from the calls heard, macros as fldigi's
+// (tap sends, press and hold edits), a field to type and send, Stop, Log;
+// then the shift, speed, mark and Reverse.
 ColumnLayout {
     id: rtty
     spacing: Theme.spacing / 2
@@ -82,12 +84,14 @@ ColumnLayout {
             // Its long text must not widen the panel (rows of buttons past
             // its edge, and a layout that never settled).
             Layout.preferredWidth: 1
-            text: !Engine.rttyDecoderEnabled ? qsTr("Decoding is off.")
+            text: Engine.textTransmitting ? qsTr("Transmitting RTTY…")
+                  : !Engine.rttyDecoderEnabled ? qsTr("Decoding is off.")
                   : !Engine.rttyActive ? qsTr("Decoding starts when RTTY is chosen above.")
                   : rtty.r.locked ? qsTr("Locked on, SNR %1 dB").arg(rtty.r.snr)
                   : qsTr("Listening in %1 (mark %2 Hz, space %3 Hz): tap the signal on the display, or Autotune.")
                         .arg(rtty.r.via).arg(rtty.r.markTone).arg(rtty.r.spaceTone)
-            color: rtty.r.locked && Engine.rttyActive ? Theme.accent : Theme.textDim
+            color: Engine.textTransmitting ? Theme.transmit
+                   : rtty.r.locked && Engine.rttyActive ? Theme.accent : Theme.textDim
             font.pixelSize: Theme.smallFont
             wrapMode: Text.WordWrap
         }
@@ -102,43 +106,6 @@ ColumnLayout {
             rightPadding: 10
             onClicked: Engine.rttyDecoderEnabled = !Engine.rttyDecoderEnabled
         }
-    }
-    // As the notch panel: each row's name over it, the buttons sharing the
-    // width alike.
-    Label { text: qsTr("Shift"); color: Theme.textDim; font.pixelSize: Theme.smallFont }
-    RowLayout {
-        Layout.fillWidth: true
-        spacing: 4
-        Choice { key: "shift"; value: 0; text: qsTr("Auto") }
-        Choice { key: "shift"; value: 170; text: "170" }
-        Choice { key: "shift"; value: 425; text: "425" }
-        Choice { key: "shift"; value: 850; text: "850" }
-    }
-    Label { text: qsTr("Speed and mark"); color: Theme.textDim; font.pixelSize: Theme.smallFont }
-    RowLayout {
-        Layout.fillWidth: true
-        spacing: 4
-        Choice { key: "baud"; value: 45.45; text: "45.45" }
-        Choice { key: "baud"; value: 50; text: "50" }
-        Choice { key: "baud"; value: 75; text: "75" }
-        AppButton {
-            objectName: "rttyReverse"
-            text: qsTr("Reverse")
-            checked: rtty.r.reverse
-            Layout.fillWidth: true
-            Layout.preferredWidth: 1
-            Layout.preferredHeight: Theme.touchTarget
-            leftPadding: 2
-            rightPadding: 2
-            onClicked: Engine.setRtty("reverse", !checked)
-        }
-    }
-    RowLayout {
-        Layout.fillWidth: true
-        spacing: 4
-        Choice { key: "mark"; value: 0; text: qsTr("Mark auto") }
-        Choice { key: "mark"; value: 2125; text: "2125" }
-        Choice { key: "mark"; value: 1275; text: "1275" }
     }
     // The text so far, the newest kept in sight at the bottom: a fixed
     // height, its width not from the text.
@@ -194,13 +161,257 @@ ColumnLayout {
             onClicked: Engine.clearRttyText()
         }
     }
+    // ---- Operating (the tab) ----
+    // The station being worked: the Log tab's Call (the same call, as on the
+    // CW tab); the calls the text holds (after DE, or twice) as buttons, one
+    // tap picks; the pick shows first, ✕ clears it.
+    RowLayout {
+        id: workedRow
+        visible: !rtty.inPanel
+        Layout.fillWidth: true
+        spacing: 4
+        Label {
+            text: qsTr("Call")
+            color: Theme.textDim
+            font.pixelSize: 12
+        }
+        AppButton {
+            visible: Engine.workedCall.length > 0
+            objectName: "textWorkedCall"
+            text: Engine.workedCall + "  ✕"
+            font.family: "monospace"
+            font.bold: true
+            checked: true
+            focusPolicy: Qt.NoFocus
+            Layout.preferredWidth: Math.max(implicitWidth + 12, 76)
+            onClicked: Engine.workedCall = ""
+        }
+        Repeater {
+            id: heardCalls
+            model: Engine.textCalls.filter(c => c !== Engine.workedCall).slice(0, workedRow.width >= 420 ? 3 : 2)
+            delegate: AppButton {
+                required property string modelData
+                objectName: "textHeard_" + modelData
+                text: modelData
+                font.family: "monospace"
+                focusPolicy: Qt.NoFocus
+                Layout.preferredWidth: Math.max(implicitWidth + 12, 76)
+                onClicked: Engine.workedCall = modelData
+            }
+        }
+        Label {
+            visible: Engine.workedCall.length === 0 && heardCalls.count === 0
+            Layout.fillWidth: true
+            Layout.preferredWidth: 1
+            text: qsTr("Calls heard show here; or type one on the Log tab.")
+            color: Theme.textDim
+            font.pixelSize: 12
+            wrapMode: Text.WordWrap
+        }
+        Item { Layout.fillWidth: true; visible: Engine.workedCall.length > 0 || heardCalls.count > 0 }
+    }
+    // Macros (F1-F8 on a keyboard): tap sends, press and hold edits.
+    GridLayout {
+        visible: !rtty.inPanel
+        Layout.fillWidth: true
+        columns: 4
+        columnSpacing: 4
+        rowSpacing: 4
+        Repeater {
+            model: Engine.textMacros
+            delegate: AppButton {
+                required property int index
+                required property var modelData
+                objectName: "textMacro" + index
+                text: modelData.label.length > 0 ? modelData.label : "F" + (index + 1)
+                enabled: Engine.rttyActive
+                focusPolicy: Qt.NoFocus
+                Layout.fillWidth: true
+                Layout.preferredWidth: 1
+                Layout.preferredHeight: Theme.touchTarget
+                leftPadding: 2
+                rightPadding: 2
+                onClicked: Engine.sendTextMacro(index)
+                onPressAndHold: {
+                    macroEditor.index = index
+                    macroEditor.label = modelData.label
+                    macroEditor.text = modelData.text
+                    macroEditor.open()
+                }
+            }
+        }
+    }
+    // Typed text: Send (or Return) sends the line; sent while text is
+    // going out, it follows without unkeying. Stop (or Esc) stops at once.
+    RowLayout {
+        visible: !rtty.inPanel
+        Layout.fillWidth: true
+        spacing: 4
+        TextField {
+            id: textToSend
+            objectName: "textToSend"
+            Accessible.name: qsTr("RTTY text to send")
+            Layout.fillWidth: true
+            placeholderText: qsTr("Text to send")
+            inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
+            font.pixelSize: 16
+            onAccepted: sendButton.clicked()
+            Keys.onPressed: (event) => {
+                if (event.key >= Qt.Key_F1 && event.key <= Qt.Key_F8) {
+                    Engine.sendTextMacro(event.key - Qt.Key_F1)
+                    event.accepted = true
+                } else if (event.key === Qt.Key_Escape) {
+                    Engine.stopTextTx()
+                    event.accepted = true
+                }
+            }
+        }
+        AppButton {
+            id: sendButton
+            objectName: "textSend"
+            text: qsTr("Send")
+            enabled: Engine.rttyActive && textToSend.text.trim().length > 0
+            focusPolicy: Qt.NoFocus
+            Layout.preferredHeight: Theme.touchTarget
+            onClicked: {
+                if (Engine.sendText(textToSend.text + "\n"))
+                    textToSend.text = ""
+            }
+        }
+        AppButton {
+            objectName: "textStop"
+            text: qsTr("Stop")
+            enabled: Engine.textTransmitting
+            focusPolicy: Qt.NoFocus
+            Layout.preferredHeight: Theme.touchTarget
+            onClicked: Engine.stopTextTx()
+        }
+    }
+    // Into the log as RTTY on the signal's mark (599 both ways; the Log tab
+    // for anything more).
+    AppButton {
+        visible: !rtty.inPanel
+        objectName: "textLog"
+        Layout.fillWidth: true
+        Layout.preferredHeight: Theme.touchTarget
+        text: Engine.workedCall.length > 0 ? qsTr("Log %1").arg(Engine.workedCall) : qsTr("Log QSO")
+        enabled: Engine.workedCall.length >= 3
+        focusPolicy: Qt.NoFocus
+        onClicked: {
+            if (Engine.logQso({ call: Engine.workedCall, rstSent: "599", rstRcvd: "599" }))
+                Engine.workedCall = ""
+        }
+    }
+
+    // As the notch panel: each row's name over it, the buttons sharing the
+    // width alike.
+    Label { text: qsTr("Shift"); color: Theme.textDim; font.pixelSize: Theme.smallFont }
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 4
+        Choice { key: "shift"; value: 0; text: qsTr("Auto") }
+        Choice { key: "shift"; value: 170; text: "170" }
+        Choice { key: "shift"; value: 425; text: "425" }
+        Choice { key: "shift"; value: 850; text: "850" }
+    }
+    Label { text: qsTr("Speed and mark"); color: Theme.textDim; font.pixelSize: Theme.smallFont }
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 4
+        Choice { key: "baud"; value: 45.45; text: "45.45" }
+        Choice { key: "baud"; value: 50; text: "50" }
+        Choice { key: "baud"; value: 75; text: "75" }
+        AppButton {
+            objectName: "rttyReverse"
+            text: qsTr("Reverse")
+            checked: rtty.r.reverse
+            Layout.fillWidth: true
+            Layout.preferredWidth: 1
+            Layout.preferredHeight: Theme.touchTarget
+            leftPadding: 2
+            rightPadding: 2
+            onClicked: Engine.setRtty("reverse", !checked)
+        }
+    }
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 4
+        Choice { key: "mark"; value: 0; text: qsTr("Mark auto") }
+        Choice { key: "mark"; value: 2125; text: "2125" }
+        Choice { key: "mark"; value: 1275; text: "1275" }
+    }
     Label {
         visible: !rtty.inPanel
         Layout.fillWidth: true
         Layout.preferredWidth: 1
-        text: qsTr("The text also runs along the top of the waterfall; a tap on it opens these settings over the display. Receive only: the app does not transmit RTTY.")
+        text: qsTr("Macros and the text field transmit RTTY from this slice, which must be the TX slice, at the FTx tab's TX level; the mark always the higher radio frequency. In a macro {CALL} is your call, {HIS} the call being worked, {NAME} its name from the lookup, {RST} 599, {GRID} your locator. The text also runs along the top of the waterfall; a tap on it opens the receive settings over the display.")
         color: Theme.textDim
         font.pixelSize: 12
         wrapMode: Text.WordWrap
+    }
+
+    // Edits one macro.
+    Dialog {
+        id: macroEditor
+        objectName: "macroEditor"
+        property int index: 0
+        property alias label: macroLabel.text
+        property alias text: macroText.text
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(460, parent ? parent.width - 24 : 420)
+        modal: true
+        padding: Theme.spacing
+        background: Rectangle { color: Theme.surface; radius: Theme.radius; border.color: Theme.surfaceRaised }
+        onOpened: macroText.forceActiveFocus()
+        contentItem: ColumnLayout {
+            spacing: Theme.spacing / 2
+            Label {
+                text: qsTr("Macro F%1: {CALL} = your call, {HIS} = the call being worked, {NAME}, {RST}, {GRID}").arg(macroEditor.index + 1)
+                color: Theme.textDim
+                font.pixelSize: 14
+                Layout.preferredWidth: macroEditor.width - 2 * macroEditor.padding
+                wrapMode: Text.WordWrap
+            }
+            TextField {
+                id: macroLabel
+                Accessible.name: qsTr("Macro F%1 name").arg(macroEditor.index + 1)
+                Layout.fillWidth: true
+                placeholderText: qsTr("Name on the button")
+                font.pixelSize: 16
+            }
+            TextArea {
+                id: macroText
+                Accessible.name: qsTr("Macro F%1 text").arg(macroEditor.index + 1)
+                Layout.fillWidth: true
+                Layout.preferredHeight: 5 * font.pixelSize * 1.4
+                wrapMode: TextEdit.Wrap
+                font.pixelSize: 16
+                font.family: "monospace"
+                inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
+                background: Rectangle { color: Theme.surfaceRaised; radius: 4 }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                AppButton {
+                    text: qsTr("Default")
+                    Layout.fillWidth: true
+                    onClicked: {
+                        Engine.resetTextMacro(macroEditor.index)
+                        macroEditor.close()
+                    }
+                }
+                AppButton { text: qsTr("Cancel"); Layout.fillWidth: true; onClicked: macroEditor.close() }
+                AppButton {
+                    objectName: "macroSave"
+                    text: qsTr("Save")
+                    Layout.fillWidth: true
+                    onClicked: {
+                        Engine.setTextMacro(macroEditor.index, macroLabel.text, macroText.text)
+                        macroEditor.close()
+                    }
+                }
+            }
+        }
     }
 }

@@ -2579,6 +2579,10 @@ void MobileEngine::onVoiceClipFinished()
         onDigiTxFinished();
         return;
     }
+    if (m_textTransmitting) {
+        onTextTxFinished();
+        return;
+    }
     if (m_voiceState == QLatin1String("playback")) {
         m_voiceState = QStringLiteral("idle");
         releasePtt(QStringLiteral("voice macro done"));
@@ -6397,9 +6401,15 @@ void MobileEngine::setCwDecoderEnabled(bool on)
 
 QStringList MobileEngine::cwCalls() const
 {
+    return heardCallsIn(m_cwDecodedText);
+}
+
+// The calls a decoder's text holds (CW, RTTY), the newest first.
+QStringList MobileEngine::heardCallsIn(const QString& text) const
+{
     // What was received, not sent ([TX] lines are this station's own).
     QStringList words;
-    for (const QString& line : m_cwDecodedText.split(QLatin1Char('\n'))) {
+    for (const QString& line : text.split(QLatin1Char('\n'))) {
         if (!line.startsWith(QLatin1String("[TX]"))) {
             words += line.toUpper().split(QRegularExpression(QStringLiteral("[^A-Z0-9/]+")), Qt::SkipEmptyParts);
         }

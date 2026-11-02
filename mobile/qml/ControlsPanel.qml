@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import AetherMobile
 
 // The operating controls in sections (DSP, Audio, TX, eSSB, CW, View,
-// Profiles, Memory, Log, FTx, FreeDV, RTTY). In the slide-in drawer they are
+// Profiles, Memory, Log, FTx, FreeDV, Digi). In the slide-in drawer they are
 // tabs, one at a time.
 // Pinned to the iPad's side (multiSelect) they are toggle buttons, as
 // AetherSDR's applet buttons: every chosen section shows, one under another.
@@ -33,7 +33,7 @@ ColumnLayout {
         { name: "Log", button: qsTr("Log"), title: qsTr("Log"), component: logSection },
         { name: "Digi", button: qsTr("FTx"), title: qsTr("FT8 / FT4"), component: digiSection },
         { name: "FreeDV", button: qsTr("FreeDV"), title: qsTr("FreeDV"), component: freedvSection },
-        { name: "RTTY", button: qsTr("RTTY"), title: qsTr("RTTY"), component: rttySection },
+        { name: "RTTY", button: qsTr("Digi"), title: qsTr("Digi: RTTY"), component: rttySection },
     ]
     // One row of all on a wide panel, else rows of six (6 + 6).
     readonly property int buttonColumns: panel.width >= 700 ? sections.length : 6

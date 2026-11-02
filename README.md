@@ -87,12 +87,15 @@ radio interface, with no computer running alongside.
   as callsigns on the display, tap to tune; the app's own DX cluster
   connection sends its spots to the radio, as the desktop does; a status
   line says whether it is connected, to which server and as whom.
-- **RTTY decoding** with its own Controls tab: in the radio's RTTY mode
-  (lower sideband, the standard) or as AFSK in DIGL or DIGU, the decoder
-  following the sideband (on the upper sideband the mark is the upper
-  tone); shift, speed, reverse, mark, a squelch and the text so far. The
-  text also runs along the top of the waterfall. A tap on a signal, an RTTY
-  spot or Autotune tunes it in. Receive only.
+- **RTTY, received and sent**, on the Controls **Digi** tab: in the radio's
+  RTTY mode (lower sideband, the standard) or as AFSK in DIGL or DIGU, the
+  decoder following the sideband (on the upper sideband the mark is the
+  upper tone); switching between them keeps the station tuned in. Macros
+  as fldigi's (CQ, Answer, QSO, BTU, 73 SK...; tap sends, press and hold
+  edits, F1-F8), a text field, Stop, the calls heard as buttons and Log
+  (RTTY on the mark frequency). Shift, speed, reverse, mark, a squelch and
+  the text so far, which also runs along the top of the waterfall. A tap
+  on a signal, an RTTY spot or Autotune tunes it in.
 - **Notch filters (TNF)**: press and hold on the display (or *+ TNF*) for
   a new notch, set its width, depth and permanent and *Add* it, so a stray
   hold adds none; tap one for its settings or remove; drawn through
@@ -304,7 +307,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | CWX (CW memories, CW text) on air | ✅ Used on air by a tester (POTA/WWFF replies); checked at 10 W with the sidetone in step |
 | CW straight key and paddles on air | ✅ Checked on the FLEX at 10 W: straight key, paddles (elements on time at 30 WPM), iambic A and B squeeze |
 | Transmit lock (SB / OA) | ✅ Checked on the FLEX without transmitting (build 141) |
-| RTTY decoding | ✅ Contest stations decoded live (build 141); DIGL / DIGU and Reverse checked with test signals on both sidebands (build 144) |
+| RTTY decoding and sending | ✅ Contest stations decoded live (build 141); DIGL / DIGU decoded live (IT9EJW, SV1EKI); sent at 10 W and decoded by RBN skimmers across Europe (OE9GHV 33 dB, GM0UDL 27 dB) |
 | CW decoder | ✅ Decodes a strong signal cleanly and weak stations' calls (8–45 WPM, Sens filter against noise) |
 | LAN discovery on iOS | ⏳ Needs Apple's multicast entitlement. Connect by IP for now. |
 | LAN discovery on Android | 🧪 Built in; to be verified on the radio's own network |
