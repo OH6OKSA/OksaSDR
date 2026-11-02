@@ -79,9 +79,10 @@ QString roundTrip(const QString& text, bool usb, QString* sent)
         if (const std::optional<DecoderPcmBlock> block = adapter.accept(*frame)) {
             decoder.feedPcmBlock(*block);
         }
-        // Real time is not needed, but the worker's buffer is finite.
-        if ((offset / 480) % 50 == 0) {
-            pumpUntil([] { return false; }, 1);
+        // Real time is not needed, but the worker's buffer is finite (4 s)
+        // and it sleeps 10 ms when it runs dry: about 50 times real time.
+        if ((offset / 480) % 25 == 0) {
+            pumpUntil([] { return false; }, 10);
         }
     }
     pumpUntil([&] { return decoded.size() >= sent->size(); }, 8000);

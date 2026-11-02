@@ -105,9 +105,10 @@ double errorRate(bool usb, double snrDb, double baudScale, unsigned seed, int la
         if (const std::optional<DecoderPcmBlock> block = adapter.accept(*frame)) {
             decoder.feedPcmBlock(*block);
         }
-        // Faster than real time, but within the worker's 4 s buffer.
+        // About 50 times real time: within the worker's 4 s buffer, which
+        // it drains after sleeping 10 ms when dry.
         if ((offset / 480) % 25 == 0) {
-            pumpUntil([] { return false; }, 4);
+            pumpUntil([] { return false; }, 10);
         }
     }
     pumpUntil([] { return false; }, 400);
