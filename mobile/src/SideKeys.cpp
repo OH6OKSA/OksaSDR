@@ -49,4 +49,9 @@ QString macKeyRouting()
     return {};
 }
 
+bool macKeyRoutingLost()
+{
+    return false;
+}
+
 } // namespace AetherSDR::mobile

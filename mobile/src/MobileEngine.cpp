@@ -1081,6 +1081,18 @@ MobileEngine::MobileEngine(QObject* parent)
                 }
                 qCInfo(lcMobile).noquote() << "keyboard: text field focused:" << obj->metaObject()->className() << obj->objectName()
                                            << (name.isEmpty() ? QString() : QStringLiteral("\"%1\"").arg(name));
+                // A Mac with no first responder hands the keys to no one and
+                // beeps (Pentti Pärnänen OH6PP, build 146: typing worked only
+                // after a text box had opened and closed). The window
+                // activated, as Qt does it (the key window, its view the
+                // first responder), the keys reach the field.
+                if (macKeyRoutingLost()) {
+                    qCInfo(lcMobile).noquote() << "keyboard: no key routing on the Mac:" << macKeyRouting() << "- activating the window";
+                    if (const auto* item = qobject_cast<QQuickItem*>(obj); item && item->window()) {
+                        item->window()->requestActivate();
+                    }
+                    QTimer::singleShot(0, qApp, [] { qCInfo(lcMobile).noquote() << "keyboard: key routing now:" << macKeyRouting(); });
+                }
             }
         });
     }

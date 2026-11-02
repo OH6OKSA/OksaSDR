@@ -235,6 +235,27 @@ QString macKeyRouting()
         .arg(s_presses);
 }
 
+bool macKeyRoutingLost()
+{
+    if (!runningAsIosAppOnMac()) {
+        return false;
+    }
+    if (!firstResponder()) {
+        return true;
+    }
+    for (UIScene* scene in UIApplication.sharedApplication.connectedScenes) {
+        if (![scene isKindOfClass:[UIWindowScene class]]) {
+            continue;
+        }
+        for (UIWindow* window in static_cast<UIWindowScene*>(scene).windows) {
+            if (window.isKeyWindow) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 bool runningAsIosAppOnMac()
 {
     if (@available(iOS 14.0, *)) {

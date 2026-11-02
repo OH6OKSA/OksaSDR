@@ -44,5 +44,10 @@ void showMacTextEntry(const QString& title, const QString& message, const QStrin
 // log tells where the Mac's keys go. Empty elsewhere.
 void startMacKeyDiagnostics();
 QString macKeyRouting();
+// Mac only: no first responder, or the app's window not the key window, so
+// UIKit hands the keys to no one and macOS beeps at each one (Pentti
+// Pärnänen OH6PP's MacBook, build 146: "first responder: none" until a text
+// box opened and closed). False elsewhere.
+bool macKeyRoutingLost();
 
 } // namespace AetherSDR::mobile
