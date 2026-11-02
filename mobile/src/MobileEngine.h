@@ -1498,6 +1498,9 @@ private:
     // The radio frequency of the received RTTY signal's mark (tuneToRtty the
     // other way round); 0 when RTTY is not being received.
     double rttyMarkMhz() const;
+    // The slice frequency that puts a signal's mark (markMhz) on the tones
+    // of a way of receiving RTTY ("RTTY", "DIGL", "DIGU").
+    double rttyDialFor(const QString& via, double markMhz) const;
     void startWanConnect();
     void setSmartLinkState(const QString& state);
 

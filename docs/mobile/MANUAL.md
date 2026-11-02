@@ -254,8 +254,10 @@ as long as the mark stays the higher frequency, so either way receives it.
    lower or upper sideband, the frequency shown the carrier; on DIGU the
    decoder takes the mark from the upper tone by itself. DIGL and DIGU stop
    FT8 / FT4 decoding (they use the same modes), and starting FT8 / FT4, or
-   another mode, ends RTTY there. An RTTY spot keeps DIGL / DIGU and tunes
-   so its mark lands on the mark tone. Around 14.080-14.090 on 20 m.
+   another mode, ends RTTY there. Switching between the three keeps the
+   station being received tuned in (the slice moves so its mark stays on
+   the mark tone). An RTTY spot keeps DIGL / DIGU and tunes so its mark
+   lands on the mark tone. Around 14.080-14.090 on 20 m.
 2. **Tap the signal** on the display (either of its two traces, or between
    them): the slice tunes so the mark and space land on their tones (the
    mark on the shown frequency in the RTTY mode; 2125 Hz below it in DIGL;

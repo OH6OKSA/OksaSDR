@@ -4115,6 +4115,8 @@ void MobileEngine::setRttyVia(const QString& via)
     if (!m_slice || (via != QLatin1String("RTTY") && via != QLatin1String("DIGL") && via != QLatin1String("DIGU"))) {
         return;
     }
+    // The signal being received, if any, before the way changes.
+    const double mark = rttyMarkMhz();
     const bool digital = via != QLatin1String("RTTY");
     AppSettings::instance().setValue(kRttyDigitalKey, digital ? QStringLiteral("True") : QStringLiteral("False"));
     AppSettings::instance().save();
@@ -4126,6 +4128,18 @@ void MobileEngine::setRttyVia(const QString& via)
     qCInfo(lcMobile) << "RTTY via" << via << "on slice" << m_slice->letter();
     if (m_slice->mode() != via) {
         setMode(via);  // modeChanged brings the decoder
+        // The station stays tuned in: the RTTY mode shows the mark, DIGL /
+        // DIGU the carrier, so the same number on the display put the signal
+        // 2 kHz off the tones (the user, build 145: RTTY decoded SV1EKI,
+        // DIGU nothing until the signal was tapped again).
+        if (mark > 0.0) {
+            const double dial = rttyDialFor(via, mark);
+            qCInfo(lcMobile).noquote() << QStringLiteral("RTTY via %1: slice %2 to %3 MHz, the mark staying at %4 MHz")
+                                              .arg(via, m_slice->letter())
+                                              .arg(dial, 0, 'f', 6)
+                                              .arg(mark, 0, 'f', 6);
+            tuneTo(dial);
+        }
     } else {
         updateRttyDecoder();
     }
@@ -4368,26 +4382,36 @@ void MobileEngine::tuneToRtty(double mhz, bool onSignal)
         tuneToSnapped(mhz);
         return;
     }
-    // mhz is the signal's mark (its higher radio frequency). The radio's RTTY
-    // mode shows the mark; DIGL and DIGU show the carrier, placed so the
-    // tones land on the mark and space tones (DIGL: the mark at the mark
-    // tone below the carrier; DIGU: the space at the mark tone above it).
-    const QVariantMap r = rtty();
-    const QString via = r.value(QStringLiteral("via")).toString();
-    const double tone = r.value(QStringLiteral("markHz")).toDouble();
-    const double shift = r.value(QStringLiteral("shiftHz")).toDouble();
-    double dial = mhz;
-    if (via == QLatin1String("DIGL")) {
-        dial = mhz + tone / 1e6;
-    } else if (via == QLatin1String("DIGU")) {
-        dial = mhz - (tone + shift) / 1e6;
-    }
-    const double hz = static_cast<double>(std::llround(dial * 1e6)) / 1e6;
+    // mhz is the signal's mark (its higher radio frequency).
+    const QString via = rttyVia();
+    const double hz = rttyDialFor(via, mhz);
     qCInfo(lcMobile).noquote() << QStringLiteral("rtty tune: slice %1 (%2) to %3 MHz for the mark at %4 MHz")
                                       .arg(m_slice->letter(), via.isEmpty() ? m_slice->mode() : via)
                                       .arg(hz, 0, 'f', 6)
                                       .arg(mhz, 0, 'f', 6);
     tuneTo(hz);
+}
+
+// Where the slice goes for a signal whose mark is markMhz, received by via:
+// the radio's RTTY mode shows the mark; DIGL and DIGU show the carrier,
+// placed so the tones land on the mark and space tones (DIGL: the mark at
+// the mark tone below the carrier; DIGU: the space at the mark tone above
+// it). The tones as rtty() has them for that way (Auto: the radio's in the
+// RTTY mode, the standard AFSK tones in DIGL / DIGU).
+double MobileEngine::rttyDialFor(const QString& via, double markMhz) const
+{
+    const bool digital = via == QLatin1String("DIGL") || via == QLatin1String("DIGU");
+    const int mark = AppSettings::instance().value(kRttyMarkKey, QStringLiteral("0")).toInt();
+    const int shift = AppSettings::instance().value(kRttyShiftKey, QStringLiteral("0")).toInt();
+    const int toneHz = mark > 0 ? mark : (digital ? kAfskMarkHz : (m_slice ? m_slice->rttyMark() : kAfskMarkHz));
+    const int shiftHz = shift > 0 ? shift : (!digital && m_slice && m_slice->rttyShift() > 0 ? m_slice->rttyShift() : kAfskShiftHz);
+    double dial = markMhz;
+    if (via == QLatin1String("DIGL")) {
+        dial = markMhz + toneHz / 1e6;
+    } else if (via == QLatin1String("DIGU")) {
+        dial = markMhz - (toneHz + shiftHz) / 1e6;
+    }
+    return static_cast<double>(std::llround(dial * 1e6)) / 1e6;
 }
 
 // The mark is the higher radio frequency whichever way it is received
