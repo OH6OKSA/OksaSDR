@@ -53,6 +53,7 @@ class MobileEngine;
 //   rttyfeed TEXT           TEXT as RTTY audio into the running decoder (a test)
 //   textmode MODE           the Digi tab's mode: RTTY, PSK31 or PSK63
 //   pskfeed [+-HZ] TEXT     TEXT as a PSK signal at the decoder's carrier (HZ off it)
+//   logqso K=V | K=V ...    log a QSO with those fields (call, rstSent, rstRcvd, timeOn, comment)
 //   psk [KEY=VALUE]         setPsk (carrier=HZ, afc=true|false), or log the PSK state
 //   focus                   log where the keyboard is (keyboardOnPage, active item)
 //   keys TEXT               type TEXT through the window ("\\b": Backspace as a

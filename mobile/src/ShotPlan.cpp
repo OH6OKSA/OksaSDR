@@ -851,6 +851,19 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                           << "rst" << d.value(QStringLiteral("rst")).toString() << "| slice"
                           << QString::number(m_engine.frequencyMhz(), 'f', 6) << m_engine.mode();
         *delayMs = 100;
+    } else if (command == QLatin1String("logqso")) {
+        // KEY=VALUE | KEY=VALUE ...: MobileEngine::logQso with those fields
+        // (call, rstSent, rstRcvd, timeOn HHMM, comment...), as the Log tab
+        // sends them: a QSO a run worked but could not log itself.
+        QVariantMap fields;
+        for (const QString& part : args.join(QLatin1Char(' ')).split(QLatin1Char('|'))) {
+            const QString key = part.section(QLatin1Char('='), 0, 0).trimmed();
+            if (!key.isEmpty()) {
+                fields.insert(key, part.section(QLatin1Char('='), 1).trimmed());
+            }
+        }
+        qInfo().noquote() << "shot-plan: logqso" << fields.value(QStringLiteral("call")).toString() << "->" << m_engine.logQso(fields);
+        *delayMs = 3000;
     } else if (command == QLatin1String("preview")) {
         // TEXT as a Digi macro would send it now (MobileEngine::previewText).
         qInfo().noquote() << "shot-plan: preview" << m_engine.workedCall() << "->" << m_engine.previewText(args.join(QLatin1Char(' ')));
