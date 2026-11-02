@@ -52,6 +52,8 @@ class MobileEngine;
 //                           (spots: and the RTTY stations the spots know)
 //   rttyfeed TEXT           TEXT as RTTY audio into the running decoder (a test)
 //   textmode MODE           the Digi tab's mode: RTTY, PSK31 or PSK63
+//   textclear               the Digi tab's text cleared, as its Clear
+//   qsodry [off]            QSOs printed to the log, not written or sent
 //   pskfeed [+-HZ] TEXT     TEXT as a PSK signal at the decoder's carrier (HZ off it)
 //   logqso K=V | K=V ...    log a QSO with those fields (call, rstSent, rstRcvd, timeOn, comment)
 //   psk [KEY=VALUE]         setPsk (carrier=HZ, afc=true|false), or log the PSK state

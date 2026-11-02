@@ -976,6 +976,14 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
     } else if (command == QLatin1String("rttyfeed")) {
         m_engine.testRttyFeed(args.join(QLatin1Char(' ')));
         *delayMs = 1000;
+    } else if (command == QLatin1String("qsodry")) {
+        // QSOs printed to the log, not written to the logbook or sent (a test).
+        m_engine.setQsoLogDryRun(arg != QLatin1String("off"));
+        *delayMs = 100;
+    } else if (command == QLatin1String("textclear")) {
+        // The Digi tab's text (RTTY's and PSK's alike), as its Clear.
+        m_engine.clearRttyText();
+        *delayMs = 300;
     } else if (command == QLatin1String("textmode")) {
         // RTTY, PSK31 or PSK63, as the Digi tab's mode row.
         m_engine.setTextMode(arg);

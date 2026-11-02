@@ -505,7 +505,8 @@ void MobileEngine::testPskFeed(const QString& text, double offsetHz)
     p.baud = k.value(QStringLiteral("baud")).toDouble();
     p.sampleRate = kTextSampleRate;
     p.amplitude = 0.3;
-    const QByteArray audio = PskEncoder::encode(text, p);
+    // A line of its own, as an over ends.
+    const QByteArray audio = PskEncoder::encode(text + QLatin1Char('\n'), p);
     const auto* f = reinterpret_cast<const float*>(audio.constData());
     auto samples = std::make_shared<std::vector<float>>(f, f + audio.size() / int(sizeof(float)));
     // A little noise, as off the air.

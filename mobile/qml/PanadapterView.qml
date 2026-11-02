@@ -195,6 +195,8 @@ Rectangle {
     Item {
         id: pskOverlay
         anchors.fill: parent
+        // Over the passband's edge lines, which covered its label.
+        z: 1
         visible: Engine.pskActive && Engine.panBandwidthMhz > 0
         readonly property real pxPerMhz: width / Math.max(1e-6, Engine.panBandwidthMhz)
         readonly property real markTop: Engine.spectrum3D ? height * spectrum.spectrumFraction : 0
