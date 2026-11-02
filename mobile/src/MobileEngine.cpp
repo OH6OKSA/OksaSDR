@@ -6416,9 +6416,11 @@ QStringList MobileEngine::heardCallsIn(const QString& text) const
     }
     // A prefix, a digit, a suffix ending in a letter, a portable part either
     // side; 5NN, 599, TU and the like do not match. A decoding error rarely
-    // makes the same call twice, and a call after DE is meant as one.
+    // makes the same call twice, and a call after DE is meant as one. The
+    // suffix up to six: special-event calls (OE100OEVSV, calling CQ in RTTY
+    // on 2026-11-02, was not offered with up to four).
     static const QRegularExpression call(
-        QStringLiteral("^([A-Z0-9]{1,3}/)?[A-Z0-9]{1,3}[0-9][A-Z0-9]{0,3}[A-Z](/[A-Z0-9]{1,4})?$"));
+        QStringLiteral("^([A-Z0-9]{1,3}/)?[A-Z0-9]{1,3}[0-9][A-Z0-9]{0,5}[A-Z](/[A-Z0-9]{1,4})?$"));
     const QString my = m_session.radioModel().callsign().trimmed().toUpper();
     QHash<QString, int> seen;
     QHash<QString, int> last;
