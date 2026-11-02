@@ -41,17 +41,26 @@ the README's iPad mini portrait and iPhone portrait and landscape shots
 manual's (`docs/mobile/manual/*.jpg`), most of them with `--shot-plan`
 (`src/ShotPlan.h`): one run per window size connects once, lets the display
 fill and then opens each chooser, takes it and closes it, so the whole set
-takes about 6 minutes instead of 45 s a picture. The iPad landscape and Android
-pictures are taken on the devices (the developer link below). Run them
-with every user-interface change and commit the images with it.
+takes about 15 minutes against a remote radio instead of 45 s a picture.
+`--only NAME,...` renders just the pictures that changed (names as the
+files; `--list` prints them, `--dry-run` shows the runs and plans), a
+minute or two each. Runs that move this app's slice or the TX slice (the
+modes, CW paddles, RADE, FT8) put them back, and their logs say so. The
+iPad landscape and Android pictures are taken on the devices (the developer
+link below). Run them with every user-interface change and commit the
+images with it.
 
 ## Keeping GitHub up to date
 
 What GitHub shows (README, manual, tester guide, roadmap, TestFlight notes,
 Android releases) is checked and partly published automatically:
 
-- `mobile/tools/update-docs.sh RADIO_IP` refreshes the README and manual
-  screenshots against the radio (receive only), then runs the check below.
+- `mobile/tools/update-docs.sh RADIO_IP [--only NAME,...] [--sweep NEW_DIR
+  --baseline OLD_DIR]` refreshes the README and manual screenshots against
+  the radio (receive only), then runs the check below. `--sweep` runs the
+  layout sweep (`render-sweep.py`, every window size) and compares it with
+  the previous build's (`layout-diff.py`) first, once, before the
+  screenshot runs; a changed layout decision stops it there.
 - `mobile/tools/docs-check.py` checks the unpushed commits: an app change
   needs new `mobile/TESTFLIGHT_WHATS_NEW.txt` and a `mobile/ROADMAP.md`
   update; a UI change (`mobile/qml`) needs `docs/mobile/MANUAL.md` and new

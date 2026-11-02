@@ -484,6 +484,18 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         m_engine.setRfPower(arg.toInt());
         qInfo() << "shot-plan: RF power" << arg.toInt() << "W";
         *delayMs = 1500;
+    } else if (command == QLatin1String("slices")) {
+        // Every slice on the radio, the TX slice and the power: what a test
+        // left behind.
+        for (const QVariant& v : m_engine.slices()) {
+            const QVariantMap m = v.toMap();
+            qInfo().noquote() << "shot-plan: slice" << m.value(QStringLiteral("letter")).toString()
+                              << QString::number(m.value(QStringLiteral("frequency")).toDouble(), 'f', 6)
+                              << m.value(QStringLiteral("mode")).toString()
+                              << (m.value(QStringLiteral("tx")).toBool() ? "TX" : "")
+                              << (m.value(QStringLiteral("active")).toBool() ? "active" : "");
+        }
+        qInfo() << "shot-plan: RF power" << m_engine.rfPower() << "W";
     } else if (command == QLatin1String("waittx") || command == QLatin1String("waitcall")
                || command == QLatin1String("waitover")) {
         // At most MS: waittx until this app's text has gone out; waitcall

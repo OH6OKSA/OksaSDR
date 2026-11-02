@@ -62,6 +62,10 @@ public:
     }
 };
 
+// --screenshot's picture could not be saved: the run's exit status is 2
+// even when a test ends the run.
+static bool g_screenshotFailed = false;
+
 static QList<QObject*> findNamedObjects(QObject* root, const QString& name)
 {
     QList<QObject*> found = root->findChildren<QObject*>(name);
@@ -215,8 +219,8 @@ int main(int argc, char* argv[])
     parser.addOption(zoomTestOption);
     const QCommandLineOption ft8TestOption(QStringLiteral("ft8-test"),
         QStringLiteral("Development: 8 s after start tune to 20 m FT8 (or FT4 with ft4), decode for <s> seconds "
-                       "and log the decodes; with cq also call CQ twice at 10 W. Frequency, mode and power are "
-                       "restored, then the app quits. E.g. 120 or 120,cq or 60,ft4."),
+                       "and log the decodes; with cq also call CQ twice at 10 W. Frequency, mode, power and the TX "
+                       "slice are restored, then the app quits. E.g. 120 or 120,cq or 60,ft4."),
         QStringLiteral("spec"));
     parser.addOption(ft8TestOption);
     const QCommandLineOption tuneToOption(QStringLiteral("tune-to"),
@@ -262,7 +266,7 @@ int main(int argc, char* argv[])
     parser.addOption(adifImportOption);
     const QCommandLineOption radeTestOption(QStringLiteral("rade-test"),
         QStringLiteral("Development: 8 s after start tune to <mhz> (default 14.236), turn RADE on for <s> seconds "
-                       "and log its sync, SNR and callsigns; then RADE off and the slice restored. E.g. 180,14.236."),
+                       "and log its sync, SNR and callsigns; then RADE off, the slice and the TX slice restored. E.g. 180,14.236."),
         QStringLiteral("s,mhz"));
     parser.addOption(radeTestOption);
     const QCommandLineOption wheelIosTestOption(QStringLiteral("wheel-test-ios"),
@@ -1583,6 +1587,9 @@ int main(int argc, char* argv[])
             });
         }
         auto saved = std::make_shared<std::tuple<double, QString, int, QString>>();
+        // FT8's tuning makes the active slice the TX slice: the one that was
+        // TX gets it back at the end.
+        auto savedTx = std::make_shared<int>(-1);
         // Slices a cut-short run left behind: with clean, all but the first
         // go (only then: they can be another client's or the user's own).
         QTimer::singleShot(6000, &app, [&engine, spec] {
@@ -1602,8 +1609,13 @@ int main(int argc, char* argv[])
             }
             engine.selectSlice(first);
         });
-        QTimer::singleShot(8000, &app, [&engine, saved, cq, ft4, spec] {
+        QTimer::singleShot(8000, &app, [&engine, saved, savedTx, cq, ft4, spec] {
             *saved = {engine.frequencyMhz(), engine.mode(), engine.rfPower(), engine.digiProtocol()};
+            for (const QVariant& v : engine.slices()) {
+                if (v.toMap().value(QStringLiteral("tx")).toBool()) {
+                    *savedTx = v.toMap().value(QStringLiteral("id")).toInt();
+                }
+            }
             qInfo() << "ft8-test: saved" << std::get<0>(*saved) << std::get<1>(*saved) << std::get<2>(*saved) << "W";
             engine.setDigiProtocol(ft4 ? QStringLiteral("FT4") : QStringLiteral("FT8"));
             engine.digiTune(spec.contains(QStringLiteral("40")) ? (ft4 ? 7.0475 : 7.074) : (ft4 ? 14.080 : 14.074));
@@ -1841,7 +1853,7 @@ int main(int argc, char* argv[])
             QTimer::singleShot(8000 + (ft4 ? 33000 : 63000), &app, [&engine] { engine.digiHalt(); });
         }
         const int presenceWas = engine.digiPresenceMin();
-        QTimer::singleShot(8000 + seconds * 1000, &app, [&app, &engine, saved, presenceWas] {
+        QTimer::singleShot(8000 + seconds * 1000, &app, [&app, &engine, saved, savedTx, presenceWas] {
             qInfo() << "ft8-test: Answer CQ" << engine.digiAutoAnswer() << "|" << engine.digi().value(QStringLiteral("status")).toString();
             engine.digiHalt();
             engine.setDigiPresenceMin(presenceWas);
@@ -1851,7 +1863,11 @@ int main(int argc, char* argv[])
             engine.setDigiRunning(false);
             engine.setMode(std::get<1>(*saved));
             engine.setRfPower(std::get<2>(*saved));
-            qInfo() << "ft8-test: restored" << std::get<0>(*saved) << std::get<1>(*saved) << std::get<2>(*saved) << "W";
+            if (*savedTx >= 0) {
+                engine.makeTxSlice(*savedTx);
+            }
+            qInfo() << "ft8-test: restored" << std::get<0>(*saved) << std::get<1>(*saved) << std::get<2>(*saved) << "W"
+                    << "TX slice" << *savedTx;
             QTimer::singleShot(1500, &app, &QCoreApplication::quit);
         });
     }
@@ -1860,8 +1876,15 @@ int main(int argc, char* argv[])
         const int seconds = std::clamp(spec.value(0).toInt(), 10, 3600);
         const double mhz = spec.value(1, QStringLiteral("14.236")).toDouble();
         auto saved = std::make_shared<std::pair<double, QString>>();
-        QTimer::singleShot(8000, &app, [&engine, saved, mhz] {
+        // RADE makes its slice the TX slice: the one that was TX gets it back.
+        auto savedTx = std::make_shared<int>(-1);
+        QTimer::singleShot(8000, &app, [&engine, saved, savedTx, mhz] {
             *saved = {engine.frequencyMhz(), engine.mode()};
+            for (const QVariant& v : engine.slices()) {
+                if (v.toMap().value(QStringLiteral("tx")).toBool()) {
+                    *savedTx = v.toMap().value(QStringLiteral("id")).toInt();
+                }
+            }
             engine.digiTune(mhz);
             QTimer::singleShot(2000, &engine, [&engine] {
                 engine.setRadeActive(true);
@@ -1877,11 +1900,14 @@ int main(int argc, char* argv[])
             }
             last = now;
         });
-        QTimer::singleShot(10000 + seconds * 1000, &app, [&app, &engine, saved] {
+        QTimer::singleShot(10000 + seconds * 1000, &app, [&app, &engine, saved, savedTx] {
             engine.setRadeActive(false);
             engine.digiTune(saved->first);
             engine.setMode(saved->second);
-            qInfo() << "rade-test: restored" << saved->first << saved->second;
+            if (*savedTx >= 0) {
+                engine.makeTxSlice(*savedTx);
+            }
+            qInfo() << "rade-test: restored" << saved->first << saved->second << "TX slice" << *savedTx;
             QTimer::singleShot(3000, &app, &QCoreApplication::quit);
         });
     }
@@ -2154,13 +2180,23 @@ int main(int argc, char* argv[])
         engine.setRedactIdentity(true);
         QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::connectionStateChanged, &engine,
                          [&engine] { engine.setMuted(true); });
-        QTimer::singleShot(parser.value(screenshotDelayOption).toInt(), &app, [&qml, path] {
+        // A RADE or FT8 test puts the slice (and the TX slice) back at its
+        // end and then quits: the run waits for it rather than leaving the
+        // radio as the test had it (RADE's slice stayed the TX slice).
+        const bool testEndsRun = parser.isSet(radeTestOption) || parser.isSet(ft8TestOption);
+        QTimer::singleShot(parser.value(screenshotDelayOption).toInt(), &app, [&qml, path, testEndsRun] {
             auto* window = qml.rootObjects().isEmpty()
                 ? nullptr : qobject_cast<QQuickWindow*>(qml.rootObjects().constFirst());
             const bool saved = window && window->grabWindow().save(path);
+            g_screenshotFailed = !saved;
+            if (testEndsRun) {
+                qInfo() << "screenshot:" << (saved ? "saved" : "failed") << "- the test ends the run";
+                return;
+            }
             QCoreApplication::exit(saved ? 0 : 2);
         });
     }
 
-    return app.exec();
+    const int rc = app.exec();
+    return g_screenshotFailed ? 2 : rc;
 }

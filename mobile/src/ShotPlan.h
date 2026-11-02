@@ -39,6 +39,7 @@ class MobileEngine;
 //                           put the mode back after)
 //   rfpower W               the TX power (to put it back after a cut-short run)
 //   txslice LETTER          that slice active and TX (to put TX back after a test)
+//   slices                  log every slice (frequency, mode, TX, active) and the power
 //   click NAME              clicked() on the visible buttons with this objectName
 //   tapname NAME            a tap through the window on that control's middle
 //   ready                   wait until connected with a slice (up to 30 s),
