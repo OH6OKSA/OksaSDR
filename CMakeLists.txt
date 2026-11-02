@@ -1001,6 +1001,8 @@ set(CORE_SOURCES
     src/core/RadioDiscovery.cpp
     src/core/NetworkPathResolver.cpp
     src/core/TgxlConnection.cpp
+    src/core/RfkitProtocol.cpp
+    src/core/RfkitConnection.cpp
     src/core/AudioSummaryLogger.cpp
     src/core/AudioFormatNegotiator.cpp
     src/core/AudioDeviceNegotiator.cpp
