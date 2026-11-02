@@ -1495,6 +1495,9 @@ private:
     void appendRttyDecoded(const QString& text);
     void appendRttyGated(const QString& text, float conf);
     void resetRttyGate();
+    // The radio frequency of the received RTTY signal's mark (tuneToRtty the
+    // other way round); 0 when RTTY is not being received.
+    double rttyMarkMhz() const;
     void startWanConnect();
     void setSmartLinkState(const QString& state);
 

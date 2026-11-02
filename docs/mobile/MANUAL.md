@@ -244,7 +244,9 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
 Amateur RTTY is 45.45 baud with a 170 Hz shift, the mark the higher radio
 frequency. Received as audio tones (AFSK), the mark is 2125 Hz and the
 space 2295 Hz on the lower sideband; on the upper sideband the same tones
-come the other way round.
+come the other way round. Lower sideband is the tradition, but many
+stations run AFSK on the upper sideband: on the air the signal is the same
+as long as the mark stays the higher frequency, so either way receives it.
 
 1. Controls → **RTTY** → **Receive in**: **RTTY (LSB)** is the radio's RTTY
    mode, lower sideband, the frequency shown the mark (the standard; an
@@ -252,7 +254,8 @@ come the other way round.
    lower or upper sideband, the frequency shown the carrier; on DIGU the
    decoder takes the mark from the upper tone by itself. DIGL and DIGU stop
    FT8 / FT4 decoding (they use the same modes), and starting FT8 / FT4, or
-   another mode, ends RTTY there. Around 14.080-14.090 on 20 m.
+   another mode, ends RTTY there. An RTTY spot keeps DIGL / DIGU and tunes
+   so its mark lands on the mark tone. Around 14.080-14.090 on 20 m.
 2. **Tap the signal** on the display (either of its two traces, or between
    them): the slice tunes so the mark and space land on their tones (the
    mark on the shown frequency in the RTTY mode; 2125 Hz below it in DIGL;
@@ -267,7 +270,10 @@ come the other way round.
    mark 2295 Hz, space 2125 Hz*) and when it has locked on. A tap on the
    text line over the waterfall opens the same settings over the display;
    with decoding off the line says so, and the tap still opens them.
-4. Receive only: the app does not transmit RTTY.
+4. **Logging**: a QSO logged from the Log tab while RTTY is received goes in
+   as RTTY on the signal's mark frequency, the same whichever way it is
+   received (in DIGL / DIGU not DATA on the carrier, 2 kHz away).
+5. Receive only: the app does not transmit RTTY.
 
 ### RADE digital voice (FreeDV)
 

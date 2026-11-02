@@ -735,6 +735,14 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                           << m_engine.workedAudit(parts.value(0), parts.value(1, QStringLiteral("20m")),
                                                   parts.value(2, QStringLiteral("FT8")));
         *delayMs = 100;
+    } else if (command == QLatin1String("qso")) {
+        // What a QSO logged now gets: the Log tab's frequency, mode and band.
+        const QVariantMap d = m_engine.qsoDefaults();
+        qInfo().noquote() << "shot-plan: qso" << QString::number(d.value(QStringLiteral("freq")).toDouble(), 'f', 6)
+                          << d.value(QStringLiteral("mode")).toString() << d.value(QStringLiteral("band")).toString()
+                          << "rst" << d.value(QStringLiteral("rst")).toString() << "| slice"
+                          << QString::number(m_engine.frequencyMhz(), 'f', 6) << m_engine.mode();
+        *delayMs = 100;
     } else if (command == QLatin1String("logread")) {
         // "on" / "off" sets Worked before from the logbook, "now" reads what
         // is new, nothing logs its state.

@@ -4390,6 +4390,28 @@ void MobileEngine::tuneToRtty(double mhz, bool onSignal)
     tuneTo(hz);
 }
 
+// The mark is the higher radio frequency whichever way it is received
+// (Reverse only tells the decoder which tone is which): the shown frequency
+// in the RTTY mode, the mark tone below the carrier in DIGL, the upper tone
+// above it in DIGU. Loggers and spots give RTTY on this frequency.
+double MobileEngine::rttyMarkMhz() const
+{
+    const QVariantMap r = rtty();
+    const QString via = r.value(QStringLiteral("via")).toString();
+    if (!m_slice || via.isEmpty()) {
+        return 0.0;
+    }
+    const double tone = r.value(QStringLiteral("markHz")).toDouble();
+    const double shift = r.value(QStringLiteral("shiftHz")).toDouble();
+    double mhz = m_slice->frequency();
+    if (via == QLatin1String("DIGL")) {
+        mhz -= tone / 1e6;
+    } else if (via == QLatin1String("DIGU")) {
+        mhz += (tone + shift) / 1e6;
+    }
+    return static_cast<double>(std::llround(mhz * 1e6)) / 1e6;
+}
+
 void MobileEngine::rttyAutotune()
 {
     if (!m_slice || !rttyActive()) {
@@ -4428,8 +4450,7 @@ void MobileEngine::rttyAutotuneNow(double markMhz, bool notify)
     if (!notify && m_rttySpotTries > 0) {
         --m_rttySpotTries;
         QTimer::singleShot(1000, this, [this] {
-            if (m_rttySpotTries > 0 && m_slice && rttyMode()
-                && std::abs(m_slice->frequency() - m_rttySpotMhz) < 1e-6) {
+            if (m_rttySpotTries > 0 && m_slice && std::abs(rttyMarkMhz() - m_rttySpotMhz) < 1e-6) {
                 emit rttyAutotuneRequested(m_rttySpotMhz, 150.0, false);
             }
         });
@@ -5230,8 +5251,14 @@ bool MobileEngine::shareQsoLog()
 
 QVariantMap MobileEngine::qsoDefaults() const
 {
-    const double mhz = m_slice ? m_slice->frequency() : 0.0;
-    const QString mode = m_slice ? m_slice->mode() : QString();
+    double mhz = m_slice ? m_slice->frequency() : 0.0;
+    QString mode = m_slice ? m_slice->mode() : QString();
+    // RTTY received in DIGL / DIGU is an RTTY QSO on its mark, as the radio's
+    // RTTY mode logs it (not DATA on the carrier, 2 kHz away).
+    if (const QString via = rttyVia(); via == QLatin1String("DIGL") || via == QLatin1String("DIGU")) {
+        mhz = rttyMarkMhz();
+        mode = QStringLiteral("RTTY");
+    }
     const QString group = QsoLog::modeGroup(QsoLog::adifMode(mode).first);
     return {{QStringLiteral("freq"), mhz}, {QStringLiteral("band"), QsoLog::bandOf(mhz)},
             // No report until the slice's mode is known (59 voice, 599 CW and data).
@@ -6021,13 +6048,18 @@ void MobileEngine::tuneToSpot(int index)
         rm.sendCommand(QStringLiteral("spot trigger %1 pan=%2").arg(index).arg(m_pan->panId()));
     }
     QString mode = m_slice->mode();
-    if (AppSettings::instance().value(QStringLiteral("SpotAutoSwitchMode"), QStringLiteral("True")).toString()
-        == QLatin1String("True")) {
+    const QString named = spot.mode.trimmed().isEmpty() ? SpotModeResolver::extractSpotModeFromComment(spot.comment)
+                                                        : spot.mode.trimmed().toUpper();
+    // RTTY received in DIGL / DIGU (chosen on the RTTY tab) stays there for an
+    // RTTY spot: the slice tunes so the spot's mark lands on the mark tone.
+    const QString via = rttyVia();
+    const bool rttyOnDigital = named == QLatin1String("RTTY") && (via == QLatin1String("DIGL") || via == QLatin1String("DIGU"));
+    if (!rttyOnDigital
+        && AppSettings::instance().value(QStringLiteral("SpotAutoSwitchMode"), QStringLiteral("True")).toString()
+               == QLatin1String("True")) {
         QString spotMode = SpotModeResolver::resolveSpotRadioMode(spot.mode, spot.comment, spot.rxFreqMhz);
         // An RTTY spot to the radio's RTTY mode, which this app decodes (the
         // desktop's resolver gives DIGL, for an RTTY program beside it).
-        const QString named = spot.mode.trimmed().isEmpty() ? SpotModeResolver::extractSpotModeFromComment(spot.comment)
-                                                            : spot.mode.trimmed().toUpper();
         if (named == QLatin1String("RTTY")) {
             spotMode = QStringLiteral("RTTY");
         }
@@ -6041,10 +6073,14 @@ void MobileEngine::tuneToSpot(int index)
         m_lastSpotCall = spot.callsign;
         emit lastSpotCallChanged();
     }
-    tuneTo(spot.rxFreqMhz);
+    if (rttyOnDigital) {
+        tuneToRtty(spot.rxFreqMhz, true);
+    } else {
+        tuneTo(spot.rxFreqMhz);
+    }
     // In RTTY (or on the way to it), a spot gives the signal's mark or its
     // centre: onto the mark the display shows near it.
-    if (mode == QLatin1String("RTTY")) {
+    if (mode == QLatin1String("RTTY") || rttyOnDigital) {
         m_rttySpotMhz = spot.rxFreqMhz;
         m_rttySpotTries = 8;
         emit rttyAutotuneRequested(spot.rxFreqMhz, 150.0, false);
