@@ -256,9 +256,13 @@ ColumnLayout {
             inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
             font.pixelSize: 16
             onAccepted: sendButton.clicked()
+            // F1-F8 (or ⌘ / Ctrl with 1-8) and Esc work while typing too.
             Keys.onPressed: (event) => {
                 if (event.key >= Qt.Key_F1 && event.key <= Qt.Key_F8) {
                     Engine.sendTextMacro(event.key - Qt.Key_F1)
+                    event.accepted = true
+                } else if ((event.modifiers & Qt.ControlModifier) && event.key >= Qt.Key_1 && event.key <= Qt.Key_8) {
+                    Engine.sendTextMacro(event.key - Qt.Key_1)
                     event.accepted = true
                 } else if (event.key === Qt.Key_Escape) {
                     Engine.stopTextTx()

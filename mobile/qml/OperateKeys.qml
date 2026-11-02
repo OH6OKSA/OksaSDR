@@ -5,8 +5,9 @@ import AetherMobile
 // A hardware keyboard on the operating page, the tablet's and the phone's
 // alike (the phone page took only the CW paddle keys): the CW paddles,
 // arrows tune (up / down ten steps, Shift ten times as far), + / − zoom,
-// F frequency entry, F1–F12 the CW memories or voice macros, Esc stops
-// them, Space PTT. The page forwards its key events and focus changes; the
+// F frequency entry, F1–F12 the CW memories, Digi macros or voice macros
+// (⌘1–⌘9 and ⌘0 too, Ctrl on Android and a PC keyboard: an iPad's Magic
+// Keyboard has no F-keys), Esc stops them, Space PTT. The page forwards its key events and focus changes; the
 // keyboard focus returns to the page whenever a control took it.
 Item {
     id: keys
@@ -20,11 +21,32 @@ Item {
 
     CwKeyboardPaddles { id: paddles }
 
+    // F1-F12, or ⌘ / Ctrl with 1-9 and 0 as F1-F10: 0-11, else -1.
+    function memoryKey(event) {
+        if (event.key >= Qt.Key_F1 && event.key <= Qt.Key_F12) {
+            return event.key - Qt.Key_F1
+        }
+        if ((event.modifiers & Qt.ControlModifier) && event.key >= Qt.Key_0 && event.key <= Qt.Key_9) {
+            return event.key === Qt.Key_0 ? 9 : event.key - Qt.Key_1
+        }
+        return -1
+    }
+
     function press(event) {
         if (paddles.handlePress(event)) {
             return true
         }
         if (event.isAutoRepeat && event.key === Qt.Key_Space) {
+            return true
+        }
+        // CW memories M1-M12 and abort, as the desktop's CWX F-keys and Esc:
+        // CW modes send the CW memories, RTTY the Digi tab's macros (F1-F8,
+        // as fldigi's F-keys), voice modes the voice keyer.
+        const memory = keys.memoryKey(event)
+        if (memory >= 0) {
+            if (Engine.cwMode) Engine.sendCwMemory(memory)
+            else if (Engine.rttyActive) { if (memory < 8) Engine.sendTextMacro(memory) }
+            else Engine.dvkPlay(memory + 1)
             return true
         }
         const mult = (event.modifiers & Qt.ShiftModifier) ? 10 : 1
@@ -37,16 +59,6 @@ Item {
         case Qt.Key_Equal: Engine.zoom(0.5); break
         case Qt.Key_Minus: Engine.zoom(2.0); break
         case Qt.Key_F: if (keys.freqDialog) keys.freqDialog.open(); break
-        // CW memories M1-M12 and abort, as the desktop's CWX F-keys and Esc.
-        case Qt.Key_F1: case Qt.Key_F2: case Qt.Key_F3: case Qt.Key_F4:
-        case Qt.Key_F5: case Qt.Key_F6: case Qt.Key_F7: case Qt.Key_F8:
-        case Qt.Key_F9: case Qt.Key_F10: case Qt.Key_F11: case Qt.Key_F12:
-            // CW modes send the CW memories, RTTY the Digi tab's macros
-            // (F1-F8, as fldigi's F-keys), voice modes the voice keyer.
-            if (Engine.cwMode) Engine.sendCwMemory(event.key - Qt.Key_F1)
-            else if (Engine.rttyActive) { if (event.key <= Qt.Key_F8) Engine.sendTextMacro(event.key - Qt.Key_F1) }
-            else Engine.dvkPlay(event.key - Qt.Key_F1 + 1)
-            break
         case Qt.Key_Escape: Engine.stopCwx(); Engine.dvkStop(); Engine.stopTextTx(); break
         case Qt.Key_Space:
             // iOS: GameController keys Space itself (keyboardOnPage).

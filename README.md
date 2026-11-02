@@ -92,7 +92,7 @@ radio interface, with no computer running alongside.
   decoder following the sideband (on the upper sideband the mark is the
   upper tone); switching between them keeps the station tuned in. Macros
   as fldigi's (CQ, Answer, QSO, BTU, 73 SK...; tap sends, press and hold
-  edits, F1-F8), a text field, Stop, the calls heard as buttons and Log
+  edits, F1-F8 or ⌘1-⌘8), a text field, Stop, the calls heard as buttons and Log
   (RTTY on the mark frequency). Shift, speed, reverse, mark, a squelch and
   the text so far, which also runs along the top of the waterfall. A tap
   on a signal, an RTTY spot or Autotune tunes it in.
@@ -179,7 +179,8 @@ radio interface, with no computer running alongside.
   the device; editable memories ({CALL} = your callsign) and CWX
   text sent by the radio at the set speed, with sidetone too; speed, pitch and break-in, plus the CW decoder
   with the decoded text along the top of the waterfall (what you send shows
-  there too). Twelve memories, also on F1–F12 from a keyboard (Esc stops),
+  there too). Twelve memories, also on F1–F12 from a keyboard (⌘1–⌘0 on an
+  iPad's Magic Keyboard; Esc stops),
   and a Live mode that sends letters as you type; {CALL} sends the
   radio's callsign, set in Radio Setup.
 - Safety first. Keying goes through AetherSDR's `TxController`, and every TX

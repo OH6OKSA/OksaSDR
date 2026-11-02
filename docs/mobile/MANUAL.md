@@ -173,7 +173,8 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
    a USB paddle adapter keys with Ctrl, Alt or [ ] (the CW tab says which).
 3. **Memories** M1-M12 send text through the radio at the set speed
    (`{CALL}` is your callsign, `{HIS}` the call in the Log tab); on a
-   keyboard F1-F12, Esc stops. **Live** sends letters as you type.
+   keyboard F1-F12 (⌘1-⌘0 without F-keys), Esc stops. **Live** sends
+   letters as you type.
 
 ### AM and SAM
 
@@ -267,7 +268,7 @@ as long as the mark stays the higher frequency, so either way receives it.
 3. **Operating** (the Digi tab, under the text): **Call** shows the call
    being worked (the Log tab's, as on the CW tab) and the calls the text
    holds (after DE, or twice) as buttons; a tap picks one, ✕ clears it.
-   The **macros** (F1-F8 on a keyboard) follow fldigi's set and the QSO
+   The **macros** (F1-F8 or ⌘1-⌘8 on a keyboard) follow fldigi's set and the QSO
    bpsk31.com describes: **CQ** ("CQ CQ CQ DE OH6OKSA x3 PSE K"),
    **Answer** ("HIS HIS DE OH6OKSA x3 KN"), **QSO** (the report and BTU),
    **BTU**, **73 SK**, **QRZ?**, **AGN?** and **Locator**. A tap sends one,
@@ -1463,6 +1464,7 @@ Bluetooth keyboard on a phone, or Android's DeX):
 | + / − | Zoom |
 | F | Frequency entry |
 | F1–F12 | CW memories (CW modes), the Digi tab's macros (F1–F8, RTTY) or voice macros (voice modes) |
+| ⌘1–⌘9, ⌘0 | As F1–F10, for a keyboard without F-keys (an iPad's Magic Keyboard); Ctrl with the digit on Android and a PC keyboard (not while Ctrl keys the CW paddles) |
 | Esc | Stop CW text, RTTY text or a voice macro |
 | Scroll | Tune; ⌘- or Ctrl-scroll zooms |
 

@@ -248,10 +248,14 @@ ColumnLayout {
                 }
                 sentText = text
             }
-            // The keyboard's F-keys and Esc work while typing too.
+            // The keyboard's F-keys (or ⌘ / Ctrl with 1-9, 0) and Esc work
+            // while typing too.
             Keys.onPressed: (event) => {
                 if (event.key >= Qt.Key_F1 && event.key <= Qt.Key_F12) {
                     Engine.sendCwMemory(event.key - Qt.Key_F1)
+                    event.accepted = true
+                } else if ((event.modifiers & Qt.ControlModifier) && event.key >= Qt.Key_0 && event.key <= Qt.Key_9) {
+                    Engine.sendCwMemory(event.key === Qt.Key_0 ? 9 : event.key - Qt.Key_1)
                     event.accepted = true
                 } else if (event.key === Qt.Key_Escape) {
                     Engine.stopCwx()

@@ -916,12 +916,17 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         // text "\\b"). Then the focused field's text.
         if (window) {
             QString keys = args.join(QLatin1Char(' '));  // words with spaces between
-            // <F1> ... <F12>, <Esc>: that key alone, no text.
-            static const QRegularExpression named(QStringLiteral("^<(F([1-9]|1[0-2])|Esc)>$"));
+            // <F1> ... <F12>, <Esc>: that key alone, no text. <Cmd-1> ...
+            // <Cmd-0>: the digit with Control, as Qt hands an iPad's ⌘ on
+            // (Ctrl on Android and a PC).
+            static const QRegularExpression named(QStringLiteral("^<(F([1-9]|1[0-2])|Esc|Cmd-([0-9]))>$"));
             if (const QRegularExpressionMatch m = named.match(keys); m.hasMatch()) {
-                const int key = m.captured(1) == QLatin1String("Esc") ? Qt::Key_Escape : Qt::Key_F1 + m.captured(2).toInt() - 1;
-                QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyPress, key, Qt::NoModifier);
-                QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyRelease, key, Qt::NoModifier);
+                const bool cmd = !m.captured(3).isEmpty();
+                const int key = cmd ? Qt::Key_0 + m.captured(3).toInt()
+                                    : m.captured(1) == QLatin1String("Esc") ? Qt::Key_Escape : Qt::Key_F1 + m.captured(2).toInt() - 1;
+                const Qt::KeyboardModifiers mods = cmd ? Qt::ControlModifier : Qt::NoModifier;
+                QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyPress, key, mods);
+                QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyRelease, key, mods);
                 QWindowSystemInterface::flushWindowSystemEvents();
                 QQuickItem* item = window->activeFocusItem();
                 qInfo().noquote() << "shot-plan: key" << keys << "->" << (item ? QString::fromLatin1(item->metaObject()->className()) : QStringLiteral("none"));
