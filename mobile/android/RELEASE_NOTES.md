@@ -1,6 +1,9 @@
-**OksaSDR for Android — beta 57.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
+**OksaSDR for Android — beta 58.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
-### New in beta 57
+### New in beta 58
+- **RTTY on either sideband, logged and spotted right:** received in DIGL or DIGU, a QSO you log goes in as RTTY on the signal's mark frequency, as in the radio's RTTY mode (it went in as DATA on the carrier, 2 kHz off), and a tap on an RTTY spot keeps DIGL / DIGU, tuning so the spot's mark lands on the mark tone. Lower sideband is the tradition, but many stations run AFSK on the upper sideband: the signal is the same as long as the mark is the higher frequency, so both receive it.
+
+### Still new from beta 57
 - **RTTY has its own tab**, Controls › RTTY: receive in the radio's RTTY mode (lower sideband, the standard) or as AFSK in DIGL or DIGU, the decoder following the sideband (on the upper sideband the mark is the upper tone); a tap on a signal tunes it in for each. **Reverse** works now (it put the space on a wrong tone), and the squelch no longer drops letters of upper-sideband or reversed signals. With decoding off, the line over the waterfall still opens the settings.
 - **Worked before from your logbooks, in every mode:** Log tab › Wavelog › **Worked before from the logbook** reads your Wavelog logbook's QSOs (every station location; at each start only the new ones), so worked before, dupes, New call / DXCC and the FTx colours know them. They stay apart from the app's own log, and a QSO the app sent there counts once.
 - **QRZ.com Logbook both ways** (needs a QRZ subscription): paste the logbook's API key on the Log tab; every QSO you log goes there, and with Worked before from the logbook on, its QSOs count as worked before.

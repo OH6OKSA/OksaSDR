@@ -9,14 +9,13 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- RTTY has its own tab, Controls > RTTY: the radio's RTTY mode (LSB, the standard) or AFSK in DIGL or DIGU, the decoder following the sideband. Reverse fixed; the squelch no longer drops letters on USB.
-- Worked before from your Wavelog logbook, in every mode (Log tab > Wavelog): dupes, New call / DXCC and the FTx colours know its QSOs.
-- QRZ.com Logbook both ways (needs a QRZ subscription): paste the logbook's API key on the Log tab; each QSO goes there, and its QSOs can count as worked before.
-- A shared ADIF file in iCloud Drive, Google Drive or OneDrive, for a desktop logger without a cloud connection (Log4OM, N1MM...): its QSOs count as worked before, and each QSO you log is added to it.
+- RTTY on either sideband, logged and spotted right: received in DIGL or DIGU, a logged QSO goes in as RTTY on the signal's mark frequency (it was DATA on the carrier), and an RTTY spot keeps DIGL / DIGU, tuning its mark onto the tone.
+- From build 144: RTTY has its own tab, Controls > RTTY: the radio's RTTY mode (LSB, the standard) or AFSK in DIGL or DIGU, the decoder following the sideband. Reverse fixed; the squelch no longer drops letters on USB.
+- From build 144: worked before from your Wavelog logbook, in every mode (Log tab > Wavelog); the QRZ.com Logbook both ways (needs a QRZ subscription); a shared ADIF file in iCloud Drive, Google Drive or OneDrive for a desktop logger (Log4OM, N1MM...): its QSOs count as worked before, and each QSO you log is added to it.
 - From build 142: Mac Backspace and no text box on a double click (thanks Pentti OH6PP); a clearer QRZ.com message (thanks Sloan Davis); the manual's Operating by mode.
-- From build 141: the transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger).
 
-RECENT (builds 94–136)
+RECENT (builds 94–141)
+- The transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger).
 - QSOs to Logger32 (thanks Juho Kontio); the manual's Getting started.
 - Less battery: the spectrum drawn by the graphics chip (thanks Mike VA3MW); "2 analog" meters; held step buttons repeat (thanks Larry); wider bar meters (thanks Juho).
 - CW paddles at the phone's edges; QRZ.com details in logged QSOs; slice volume by the speaker icon (thanks Wayne WA2N); FTx CQ POTA filter (thanks Ryland WW4GA).
