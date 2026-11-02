@@ -10,7 +10,7 @@ taken from the app connected to a real FLEX radio. The app's **Manual**
 button (top row) opens this page.
 
 - [Getting started: what each mode needs](#getting-started-what-each-mode-needs)
-- [Operating by mode](#operating-by-mode): [SSB](#ssb-voice-usb-and-lsb), [CW](#cw), [AM and SAM](#am-and-sam), [FM and repeaters](#fm-nfm-dfm-and-repeaters), [FT8 / FT4](#ft8-and-ft4-digu), [RTTY](#rtty), [RADE](#rade-digital-voice-freedv), [in every mode](#in-every-mode)
+- [Operating by mode](#operating-by-mode): [SSB](#ssb-voice-usb-and-lsb), [CW](#cw), [AM and SAM](#am-and-sam), [FM and repeaters](#fm-nfm-dfm-and-repeaters), [FT8 / FT4](#ft8-and-ft4-digu), [RTTY](#rtty), [PSK31 / PSK63](#psk31-and-psk63-digu), [RADE](#rade-digital-voice-freedv), [in every mode](#in-every-mode)
 - [1. Connecting](#1-connecting)
 - [2. The main screen](#2-the-main-screen)
 - [3. Frequency, mode and the info panel](#3-frequency-mode-and-the-info-panel)
@@ -280,7 +280,7 @@ as long as the mark stays the higher frequency, so either way receives it.
    sent while text is going out, a macro or a line follows without
    unkeying. **Stop** (or Esc) stops at once. **Log QSO** puts the call being
    worked into the log as RTTY on the signal's mark (599 both ways; the
-   Log tab for anything more).
+   Log tab for anything more), starting when its call was picked.
 
    ![Operating on the Digi tab](manual/digi-operating.jpg)
 
@@ -302,6 +302,41 @@ as long as the mark stays the higher frequency, so either way receives it.
 6. **Logging** from the Log tab too: a QSO logged while RTTY is received
    goes in as RTTY on the signal's mark frequency, the same whichever way
    it is received (in DIGL / DIGU not DATA on the carrier, 2 kHz away).
+
+### PSK31 and PSK63 (DIGU)
+
+![PSK31 on 20 m](manual/mode-psk.jpg)
+
+PSK31 (G3PLX's keyboard mode, 31.25 baud, about 60 Hz wide) and its faster
+PSK63 run in DIGU, upper sideband, as the standard has them: around 14.070
+on 20 m (7.040, 3.580, 10.142, 18.100, 21.070, 28.120 on the other bands).
+Many signals share a few kilohertz, each on its own audio frequency in the
+passband, so the slice stays put and the decoder is moved to the signal.
+
+1. **Choose PSK31 or PSK63** on Controls › Digi (**Mode**): the slice goes to
+   DIGU and FT8 / FT4 decoding stops (starting FT8 / FT4 again takes the
+   slice back for them). Tune the slice about a kilohertz below the
+   signals (e.g. 14.0695 for 14.070-14.073).
+2. **Tap a signal** on the display: the decoder goes to its centre (a green
+   band as wide as the signal marks where it listens, with its audio
+   frequency, e.g. *PSK31 1590*), and **AFC** holds it within 25 Hz as it
+   drifts; −10 / +10 under **Carrier** move it by hand. The text runs on
+   the Digi tab and along the top of the waterfall; **Squelch** keeps band
+   noise out of it between transmissions. A PSK spot on the display puts
+   the Digi tab in PSK31 (or PSK63) and tunes so the signal sounds at the
+   carrier, then onto the signal itself.
+3. **Operating** is as in RTTY (above): the calls heard as buttons, the
+   eight macros (F1-F8, ⌘1-⌘8), **Text to send**, **Stop**, **Log QSO**.
+   PSK has lower case, and most PSK operators type in it.
+4. **Transmitting**: on the frequency received (where AFC holds the
+   station), as fldigi sends; from this slice, which must be the TX slice,
+   at the FTx tab's TX level with the speech processor off. Keep the ALC at
+   zero: an overdriven PSK signal splatters over its neighbours. A run of
+   phase reversals before the text and a steady carrier after it let the
+   other station's decoder lock on and off; the band turns red while
+   sending.
+5. **Logging**: Log QSO and the Log tab put PSK31 / PSK63 in the log on the
+   signal's own frequency (ADIF mode PSK, submode PSK31 or PSK63).
 
 ### RADE digital voice (FreeDV)
 
@@ -1360,12 +1395,16 @@ Reporter) and **RTTY**.
   takes the station's sideband, so you hear it. The list is fetched only while the tab
   is open.
 
-- **Digi** — the keyboard digital modes: RTTY now (PSK31 next), received
-  and sent, as in [Operating by mode › RTTY](#rtty).
+- **Digi** — the keyboard digital modes: RTTY, PSK31 and PSK63, received
+  and sent, as in [Operating by mode › RTTY](#rtty) and
+  [PSK31 / PSK63](#psk31-and-psk63-digu).
 
   ![Digi tab](manual/tab-rtty.jpg)
 
-  **Receive in**: **RTTY (LSB)** (the radio's RTTY mode, the standard),
+  **Mode**: **RTTY**, **PSK31** or **PSK63** (PSK in DIGU; FT8 / FT4 stop).
+  For PSK: the status (where it listens, the quality), the text, **AFC**,
+  **Squelch**, **Clear**, the operating rows below, and **Carrier** −10 /
+  +10. For RTTY, **Receive in**: **RTTY (LSB)** (the radio's RTTY mode, the standard),
   **DIGL** or **DIGU** (AFSK; DIGU's mark is the upper tone, which the
   decoder follows; both stop FT8 / FT4). Then **Decode on / off**, the
   status (how it listens, whether it has locked on, when it transmits), the
@@ -1463,9 +1502,9 @@ Bluetooth keyboard on a phone, or Android's DeX):
 | Space | PTT (hold) |
 | + / − | Zoom |
 | F | Frequency entry |
-| F1–F12 | CW memories (CW modes), the Digi tab's macros (F1–F8, RTTY) or voice macros (voice modes) |
+| F1–F12 | CW memories (CW modes), the Digi tab's macros (F1–F8, RTTY and PSK) or voice macros (voice modes) |
 | ⌘1–⌘9, ⌘0 | As F1–F10, for a keyboard without F-keys (an iPad's Magic Keyboard); Ctrl with the digit on Android and a PC keyboard (not while Ctrl keys the CW paddles) |
-| Esc | Stop CW text, RTTY text or a voice macro |
+| Esc | Stop CW text, RTTY or PSK text, or a voice macro |
 | Scroll | Tune; ⌘- or Ctrl-scroll zooms |
 
 **Apple Pencil** drags tune ten times finer, for zero-beating.

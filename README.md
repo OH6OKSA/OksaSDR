@@ -31,7 +31,7 @@ SmartLink (or your own VPN), it is a complete station control surface.
 [tester guide](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md#android) for installing it.
 
 **[User manual](docs/mobile/MANUAL.md)** — every function, with screenshots,
-and how to operate each mode: SSB, CW, AM, FM, FT8 / FT4, RTTY and RADE
+and how to operate each mode: SSB, CW, AM, FM, FT8 / FT4, RTTY, PSK31 / PSK63 and RADE
 (also the app's *Manual* button).
 
 **[OksaSDR Users on Facebook](https://www.facebook.com/groups/1468327561855382)** — questions, problem reports,
@@ -96,6 +96,11 @@ radio interface, with no computer running alongside.
   (RTTY on the mark frequency). Shift, speed, reverse, mark, a squelch and
   the text so far, which also runs along the top of the waterfall. A tap
   on a signal, an RTTY spot or Autotune tunes it in.
+- **PSK31 and PSK63, received and sent**, on the same **Digi** tab (Mode),
+  in DIGU as the standard has them: a tap on a signal puts the decoder
+  there (a green band marks it), AFC follows it, and the same macros, text
+  field and Log (ADIF PSK31 / PSK63 on the signal's frequency) work; text
+  goes out on the frequency received. A PSK spot tunes to the signal.
 - **Notch filters (TNF)**: press and hold on the display (or *+ TNF*) for
   a new notch, set its width, depth and permanent and *Add* it, so a stray
   hold adds none; tap one for its settings or remove; drawn through
@@ -309,6 +314,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | CW straight key and paddles on air | ✅ Checked on the FLEX at 10 W: straight key, paddles (elements on time at 30 WPM), iambic A and B squeeze |
 | Transmit lock (SB / OA) | ✅ Checked on the FLEX without transmitting (build 141) |
 | RTTY decoding and sending | ✅ Contest stations decoded live (build 141); DIGL / DIGU decoded live (IT9EJW, SV1EKI); sent at 10 W and decoded by RBN skimmers across Europe (OE9GHV 33 dB, GM0UDL 27 dB) |
+| PSK31 / PSK63 | ✅ PSK31 decoded live (LZ1AEY's CQ on 14.071) and a PSK31 QSO at 25 W with F6FPU near Lyon, answering our first CQ (2026-11-02); the decoder tested to -12 dB SNR, AFC and a neighbour 100 Hz away |
 | CW decoder | ✅ Decodes a strong signal cleanly and weak stations' calls (8–45 WPM, Sens filter against noise) |
 | LAN discovery on iOS | ⏳ Needs Apple's multicast entitlement. Connect by IP for now. |
 | LAN discovery on Android | 🧪 Built in; to be verified on the radio's own network |

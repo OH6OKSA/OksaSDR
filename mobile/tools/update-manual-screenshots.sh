@@ -146,7 +146,8 @@ printf 'wait %s\npopup bandChooser\nshot bandchooser\n' "$FILL" | plan bandchoos
 # fill; the TX tab's FM repeater section and Lock row; RTTY with a test
 # text through the decoder, its panel and the Digi tab with RTTY on (the
 # top, then the calls heard and macros: the phone run's tab-rtty is
-# replaced). Back on 14.074 DIGU after.
+# replaced); PSK31 on 14.0695 with a test signal 6 Hz off the carrier.
+# Back on 14.074 DIGU after.
 plan modes 440x956 "${src[@]}" <<PLAN
 ready
 wait 20000
@@ -194,6 +195,16 @@ scroll 200
 wait 800
 shot digi-operating
 close
+textmode PSK31
+wait 2000
+freq 14.0695
+wait 15000
+textclear
+pskfeed +6 CQ CQ CQ de OH2XYZ OH2XYZ OH2XYZ pse k
+wait 14000
+shot mode-psk
+textmode RTTY
+wait 2000
 freq 14.074
 mode DIGU
 wait 3000
@@ -238,7 +249,7 @@ jpg memory-edit 440x380+0+280
 for t in "${tabs[@]}"; do
     jpg "tab-$t" 440x520+0+436
 done
-for m in usb cw am fm rtty; do
+for m in usb cw am fm rtty psk; do
     jpg "mode-$m" "" 330x
 done
 jpg rtty-panel 440x440+0+172
