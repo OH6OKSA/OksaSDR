@@ -1155,6 +1155,9 @@ set(CORE_SOURCES
     src/core/CallsignLookupService.cpp
     src/core/RttyDecoder.cpp
     src/core/RttyEncoder.cpp
+    src/core/PskVaricode.cpp
+    src/core/PskEncoder.cpp
+    src/core/PskDecoder.cpp
     src/core/VoiceSignalDetector.cpp
     src/core/SpectrogramBuffer.cpp
     src/core/SignalClassifier.cpp

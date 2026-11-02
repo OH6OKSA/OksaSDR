@@ -193,6 +193,12 @@ target_link_libraries(rtty_decoder_weak_signal_test PRIVATE aethercore Qt6::Core
 add_test(NAME rtty_decoder_weak_signal_test COMMAND rtty_decoder_weak_signal_test)
 set_tests_properties(rtty_decoder_weak_signal_test PROPERTIES TIMEOUT 240)
 
+# PSK31 / PSK63: PskEncoder through PskDecoder (Varicode, AFC, noise).
+add_executable(psk_roundtrip_test tests/psk_roundtrip_test.cpp)
+target_link_libraries(psk_roundtrip_test PRIVATE aethercore Qt6::Core)
+add_test(NAME psk_roundtrip_test COMMAND psk_roundtrip_test)
+set_tests_properties(psk_roundtrip_test PROPERTIES TIMEOUT 240)
+
 # Actual backend/model/audio/parser wiring with injected PCM; binds no sockets.
 add_executable(pcm_compatibility_test tests/pcm_compatibility_test.cpp)
 target_link_libraries(pcm_compatibility_test PRIVATE aethercore Qt6::Core)
