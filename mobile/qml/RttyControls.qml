@@ -391,6 +391,17 @@ ColumnLayout {
                 inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
                 background: Rectangle { color: Theme.surfaceRaised; radius: 4 }
             }
+            // What it sends now, the placeholders filled (or what is missing).
+            Label {
+                objectName: "macroPreview"
+                Layout.preferredWidth: macroEditor.width - 2 * macroEditor.padding
+                text: qsTr("Sends: %1").arg(Engine.previewText(macroText.text))
+                color: Theme.textDim
+                font.pixelSize: 12
+                wrapMode: Text.WordWrap
+                maximumLineCount: 4
+                elide: Text.ElideRight
+            }
             RowLayout {
                 Layout.fillWidth: true
                 AppButton {

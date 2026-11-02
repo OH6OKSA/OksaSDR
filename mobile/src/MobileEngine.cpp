@@ -5100,6 +5100,7 @@ void MobileEngine::applyCallInfo(const CallsignInfo& info)
 QVariantMap MobileEngine::callInfoMap(const CallsignInfo& info) const
 {
     QVariantMap m{{QStringLiteral("call"), info.call}, {QStringLiteral("name"), info.prefixOnly ? QString() : info.displayName()},
+                  {QStringLiteral("firstName"), info.prefixOnly ? QString() : info.firstName.trimmed()},
                   {QStringLiteral("qth"), info.prefixOnly ? QString() : info.displayLocation()},
                   {QStringLiteral("country"), info.country}, {QStringLiteral("grid"), info.grid},
                   {QStringLiteral("prefixOnly"), info.prefixOnly}, {QStringLiteral("lotw"), info.lotw},

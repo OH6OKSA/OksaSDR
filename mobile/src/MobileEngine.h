@@ -840,6 +840,9 @@ public:
     // unkeying. False (and a notice) when it cannot go.
     Q_INVOKABLE bool sendText(const QString& text);
     Q_INVOKABLE bool sendTextMacro(int index);
+    // What text would send now, its placeholders filled (the macro editor's
+    // preview), or why it could not.
+    Q_INVOKABLE QString previewText(const QString& text) const;
     // Stops at once, the rest of the queue dropped.
     Q_INVOKABLE void stopTextTx();
     void testRttyFeed(const QString& text);

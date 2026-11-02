@@ -125,16 +125,33 @@ QString MobileEngine::expandTextMacro(const QString& text, QString* error) const
         out.replace(QLatin1String("{GRID}"), myGrid().toUpper());
     }
     out.replace(QLatin1String("{RST}"), QStringLiteral("599"));
-    // The first name the lookup found for the call being worked; without
-    // one the word goes and the line reads on ("TNX FOR QSO 73").
+    // The operator's first name from the lookup (QRZ's fname); a club's or
+    // a special call's name is no first name (OE100OEVSV's "Austrian Amateur
+    // Radio Society" went out as "TNX FOR QSO AUSTRIAN 73"). Without one the
+    // word goes and the line reads on ("TNX FOR QSO 73").
     QString name;
     if (m_callLookup.value(QStringLiteral("call")).toString().compare(m_workedCall, Qt::CaseInsensitive) == 0) {
-        name = m_callLookup.value(QStringLiteral("name")).toString().section(QLatin1Char(' '), 0, 0).toUpper();
+        const QString first = m_callLookup.value(QStringLiteral("firstName")).toString().simplified();
+        if (!first.isEmpty() && first.count(QLatin1Char(' ')) <= 1 && !first.contains(QLatin1Char('"'))) {
+            name = first.section(QLatin1Char(' '), 0, 0).toUpper();
+        }
     }
     out.replace(QLatin1String("{NAME}"), name);
     static const QRegularExpression spaces(QStringLiteral("[ ]{2,}"));
     out.replace(spaces, QStringLiteral(" "));
     return out;
+}
+
+QString MobileEngine::previewText(const QString& text) const
+{
+    QString error;
+    const QString expanded = expandTextMacro(text, &error);
+    if (!error.isEmpty()) {
+        return error;
+    }
+    QString shown = RttyEncoder::sendable(expanded).trimmed();
+    shown.replace(QStringLiteral("\r\n"), QStringLiteral(" / "));
+    return shown;
 }
 
 bool MobileEngine::sendTextMacro(int index)

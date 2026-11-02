@@ -454,6 +454,18 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
     } else if (command == QLatin1String("mode")) {
         m_engine.setMode(arg);
         *delayMs = 1500;
+    } else if (command == QLatin1String("slice")) {
+        // That slice (by letter) active only; TX stays where it is (txslice
+        // makes it both: a restore after it went to that slice, not to the
+        // one tested).
+        for (const QVariant& v : m_engine.slices()) {
+            const QVariantMap m = v.toMap();
+            if (m.value(QStringLiteral("letter")).toString() == arg) {
+                m_engine.selectSlice(m.value(QStringLiteral("id")).toInt());
+                qInfo().noquote() << "shot-plan: slice" << arg << "active";
+            }
+        }
+        *delayMs = 1500;
     } else if (command == QLatin1String("txslice")) {
         // That slice (by letter) active and the TX slice, as the operator
         // had it before a test moved TX.
@@ -837,6 +849,10 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                           << d.value(QStringLiteral("mode")).toString() << d.value(QStringLiteral("band")).toString()
                           << "rst" << d.value(QStringLiteral("rst")).toString() << "| slice"
                           << QString::number(m_engine.frequencyMhz(), 'f', 6) << m_engine.mode();
+        *delayMs = 100;
+    } else if (command == QLatin1String("preview")) {
+        // TEXT as a Digi macro would send it now (MobileEngine::previewText).
+        qInfo().noquote() << "shot-plan: preview" << m_engine.workedCall() << "->" << m_engine.previewText(args.join(QLatin1Char(' ')));
         *delayMs = 100;
     } else if (command == QLatin1String("logread")) {
         // "on" / "off" sets Worked before from the logbook, "now" reads what
