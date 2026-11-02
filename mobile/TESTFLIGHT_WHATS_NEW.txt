@@ -9,12 +9,13 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- RTTY on either sideband, logged and spotted right: received in DIGL or DIGU, a logged QSO goes in as RTTY on the signal's mark frequency (it was DATA on the carrier), and an RTTY spot keeps DIGL / DIGU, tuning its mark onto the tone.
-- From build 144: RTTY has its own tab, Controls > RTTY: the radio's RTTY mode (LSB, the standard) or AFSK in DIGL or DIGU, the decoder following the sideband. Reverse fixed; the squelch no longer drops letters on USB.
-- From build 144: worked before from your Wavelog logbook, in every mode (Log tab > Wavelog); the QRZ.com Logbook both ways (needs a QRZ subscription); a shared ADIF file in iCloud Drive, Google Drive or OneDrive for a desktop logger (Log4OM, N1MM...): its QSOs count as worked before, and each QSO you log is added to it.
-- From build 142: Mac Backspace and no text box on a double click (thanks Pentti OH6PP); a clearer QRZ.com message (thanks Sloan Davis); the manual's Operating by mode.
+- RTTY transmit on the Digi tab (Controls > Digi, the RTTY tab grown): eight ready macros (CQ, Answer, QSO, BTU, 73 SK, QRZ?, AGN?, Locator; F1–F8 on a keyboard; press and hold to edit, with {HIS}, {NAME} from QRZ.com and {RST} filled in), a field to type and send, Stop (Esc), the calls heard as buttons, and Log. Sent as audio from the TX slice in RTTY, DIGL or DIGU. [TX]
+- Switching RTTY / DIGL / DIGU keeps the station tuned in.
+- From build 145: RTTY in DIGL / DIGU logged as RTTY on the mark; an RTTY spot keeps DIGL / DIGU.
+- From build 144: RTTY receive in the radio's RTTY mode (LSB, the standard), DIGL or DIGU; worked before from Wavelog, the QRZ.com Logbook or a shared ADIF file in iCloud Drive, Google Drive or OneDrive.
 
-RECENT (builds 94–141)
+RECENT (builds 94–142)
+- Mac Backspace (thanks Pentti OH6PP); a clearer QRZ.com message (thanks Sloan Davis).
 - The transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger).
 - QSOs to Logger32 (thanks Juho Kontio); the manual's Getting started.
 - Less battery: the spectrum drawn by the graphics chip (thanks Mike VA3MW); "2 analog" meters; held step buttons repeat (thanks Larry); wider bar meters (thanks Juho).
@@ -30,7 +31,8 @@ PLEASE TRY
 - The Log tab: log a few contacts, save your QRZ.com account and share the ADIF file to your logbook.
 - FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - The FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
-- New: Controls > RTTY in RTTY, DIGL and DIGU on an RTTY station; worked before from Wavelog, QRZ.com or a shared ADIF file in iCloud Drive.
+- New: Controls > Digi on an RTTY station: answer a CQ with Answer at low power, finish with 73 SK, then Log. [TX]
+- Worked before from Wavelog, the QRZ.com Logbook or a shared ADIF file in iCloud Drive.
 - Spots and the DX cluster; the eSSB tab at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM

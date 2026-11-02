@@ -144,7 +144,9 @@ printf 'wait %s\npopup bandChooser\nshot bandchooser\n' "$FILL" | plan bandchoos
 # Each mode on a phone (Operating by mode): this app's active slice tuned
 # to a frequency for the mode, receive only, the waterfall given time to
 # fill; the TX tab's FM repeater section and Lock row; RTTY with a test
-# text through the decoder and its panel. Back on 14.074 DIGU after.
+# text through the decoder, its panel and the Digi tab with RTTY on (the
+# top, then the calls heard and macros: the phone run's tab-rtty is
+# replaced). Back on 14.074 DIGU after.
 plan modes 440x956 "${src[@]}" <<PLAN
 ready
 wait 20000
@@ -176,12 +178,21 @@ close
 freq 14.085
 mode RTTY
 wait 15000
-rttyfeed CQ TEST OH6OKSA OH6OKSA OH6OKSA K
+rttyfeed CQ CQ DE OH2XYZ OH2XYZ OH2XYZ PSE K
 wait 8000
 shot mode-rtty
 popup rttyPanel
 wait 1500
 shot rtty-panel
+close
+drawer 11
+wait 1500
+scroll 0
+wait 800
+shot tab-rtty
+scroll 200
+wait 800
+shot digi-operating
 close
 freq 14.074
 mode DIGU
@@ -231,6 +242,7 @@ for m in usb cw am fm rtty; do
     jpg "mode-$m" "" 330x
 done
 jpg rtty-panel 440x440+0+172
+jpg digi-operating 440x332+0+536
 jpg fm-tx 440x160+0+532
 jpg tx-lock 440x110+0+596
 echo "Updated $OUT"

@@ -271,14 +271,18 @@ as long as the mark stays the higher frequency, so either way receives it.
    bpsk31.com describes: **CQ** ("CQ CQ CQ DE OH6OKSA x3 PSE K"),
    **Answer** ("HIS HIS DE OH6OKSA x3 KN"), **QSO** (the report and BTU),
    **BTU**, **73 SK**, **QRZ?**, **AGN?** and **Locator**. A tap sends one,
-   press and hold edits it (its name and text; **Default** brings the
-   original back). In a macro {CALL} is your call, {HIS} the call being
+   press and hold edits it (its name and text, with a line showing what
+   it sends to the call being worked; **Default** brings the original
+   back). In a macro {CALL} is your call, {HIS} the call being
    worked, {NAME} its first name from the lookup, {RST} 599 and {GRID}
    your locator. **Text to send** and **Send** (or Return) send a line;
    sent while text is going out, a macro or a line follows without
-   unkeying. **Stop** (or Esc) stops at once. **Log** puts the call being
+   unkeying. **Stop** (or Esc) stops at once. **Log QSO** puts the call being
    worked into the log as RTTY on the signal's mark (599 both ways; the
    Log tab for anything more).
+
+   ![Operating on the Digi tab](manual/digi-operating.jpg)
+
 4. **Transmitting**: from this slice, which must be the TX slice, at the
    FTx tab's TX level, with the speech processor off while it sends. RTTY
    goes out as audio tones in all three ways, the mark always the higher
@@ -1136,8 +1140,19 @@ Reporter) and **RTTY**.
   New-NetFirewallRule -DisplayName 'Logger32 TCP 52001 (portproxy)' -Direction Inbound -Protocol TCP -LocalPort 52001 -RemoteAddress 192.168.2.6 -Action Allow -Profile Any
   ```
 
-  A coming Logger32 version lets you choose the address it listens on;
-  then neither is needed.
+  Coming in a later Logger32 version, not in a released one yet (a test
+  version from its developer works for Juho Kontio): the address in
+  `logger32.ini`,
+
+  ```
+  [TCP Server Settings]
+  TCP Server LocalIP=192.168.1.5
+  ```
+
+  with which Logger32 listens on all the PC's networks and the port
+  forward (`netsh`) is not needed; Windows' firewall must still let the
+  phone in (the `New-NetFirewallRule` line, if the firewall is on). Until
+  that version is out, use the port forward above.
   QSOs that cannot be sent wait on the device and go with the next QSO, the
   next start or every two minutes; the line under the field says how many
   wait. Clear the address to stop. (Asked by Juho Kontio.)
@@ -1356,7 +1371,7 @@ Reporter) and **RTTY**.
   text so far (sent text as [TX] lines), **Autotune**, **Squelch** and
   **Clear**; **Call** with the calls heard; the eight **macros** (tap sends,
   press and hold edits; F1-F8); **Text to send** with **Send** and
-  **Stop**; **Log**; then **Shift**, speed, **Reverse** and the mark tone.
+  **Stop**; **Log QSO**; then **Shift**, speed, **Reverse** and the mark tone.
   The text also runs along the top of the waterfall, where a tap opens the
   receive settings over the display.
 
@@ -1447,8 +1462,8 @@ Bluetooth keyboard on a phone, or Android's DeX):
 | Space | PTT (hold) |
 | + / − | Zoom |
 | F | Frequency entry |
-| F1–F12 | CW memories (CW modes) or voice macros (voice modes) |
-| Esc | Stop CW text or a voice macro |
+| F1–F12 | CW memories (CW modes), the Digi tab's macros (F1–F8, RTTY) or voice macros (voice modes) |
+| Esc | Stop CW text, RTTY text or a voice macro |
 | Scroll | Tune; ⌘- or Ctrl-scroll zooms |
 
 **Apple Pencil** drags tune ten times finer, for zero-beating.
