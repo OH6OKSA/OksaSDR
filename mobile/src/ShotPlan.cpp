@@ -514,7 +514,7 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             const qsizetype tx = text.lastIndexOf(QLatin1String("[TX]"));
             const QString since = tx < 0 ? text : text.mid(tx);
             const bool cqOk = args.value(1) != QLatin1String("cq")
-                || since.contains(QRegularExpression(QStringLiteral("\\bCQ\\b")));
+                || since.contains(QRegularExpression(QStringLiteral("\\bCQ\\b"), QRegularExpression::CaseInsensitiveOption));
             const QStringList calls = m_engine.textCalls();
             if (!calls.isEmpty() && cqOk && m_growthClock.elapsed() >= 1500) {
                 done = true;
@@ -525,7 +525,8 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             const qsizetype tx = text.lastIndexOf(QLatin1String("[TX]"));
             const qsizetype lineEnd = tx < 0 ? 0 : text.indexOf(QLatin1Char('\n'), tx);
             const QString heard = lineEnd < 0 ? QString() : text.mid(lineEnd + 1).trimmed();
-            static const QRegularExpression over(QStringLiteral("(^|\\s)(K|KN|SK|BK|PSE K)$"));
+            // PSK operators type in lower case ("pse k").
+            static const QRegularExpression over(QStringLiteral("(^|\\s)(K|KN|SK|BK|PSE K)$"), QRegularExpression::CaseInsensitiveOption);
             done = heard.size() >= 6 && over.match(heard).hasMatch() && m_growthClock.elapsed() >= 1500;
             what = heard.right(80);
         }
