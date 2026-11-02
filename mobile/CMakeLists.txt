@@ -47,6 +47,7 @@ qt_add_executable(aether-mobile
     src/MobileEngineQrzLog.cpp
     src/MobileEngineSharedAdif.cpp
     src/MobileEngineLogger32.cpp
+    src/MobileEngineAmp.cpp
     src/MobileEngineFreeDv.cpp
     src/PskReporterUpload.cpp
     src/TrackpadScrollPhases.h
@@ -132,6 +133,7 @@ qt_add_qml_module(aether-mobile
         qml/DigiControls.qml
         qml/FreeDvControls.qml
         qml/RttyControls.qml
+        qml/AmpControls.qml
         qml/PhoneOperatePage.qml
         qml/StationsDialog.qml
         qml/StepButton.qml

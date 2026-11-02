@@ -706,6 +706,7 @@ MobileEngine::MobileEngine(QObject* parent)
     setupQrzLog();
     setupSharedAdif();
     setupLogger32();
+    setupAmp();
     m_cty = std::make_unique<CtyDatParser>();
     m_cty->loadFromResource(QStringLiteral(":/cty.dat"));
     {

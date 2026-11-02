@@ -126,21 +126,25 @@ Popup {
         }
         Label {
             Layout.fillWidth: true
-            text: qsTr("These are the radio's own settings, as in SmartSDR's Radio Setup: changes are written to the radio.")
+            text: setup.section === 6
+                  ? qsTr("The amplifier is not a setting of the radio: this device reaches it directly, and the address stays on this device.")
+                  : qsTr("These are the radio's own settings, as in SmartSDR's Radio Setup: changes are written to the radio.")
             color: Theme.textDim
             font.pixelSize: 13
             wrapMode: Text.Wrap
         }
+        // Seven in a row where each gets 80 px, else 4 + 3.
         GridLayout {
             Layout.fillWidth: true
-            columns: 6
+            columns: width >= 7 * 80 ? 7 : 4
             columnSpacing: 4
             rowSpacing: 4
             Repeater {
-                model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("Network"), qsTr("XVTR")]
+                model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("Network"), qsTr("XVTR"), qsTr("Amp")]
                 delegate: AppButton {
                     required property int index
                     required property string modelData
+                    objectName: "setupTab" + index
                     text: modelData
                     checked: setup.section === index
                     focusPolicy: Qt.NoFocus
@@ -452,6 +456,65 @@ Popup {
                         focusPolicy: Qt.NoFocus
                         Layout.fillWidth: true
                         onClicked: { Engine.addTransverter(); refreshSoon.restart() }
+                    }
+                }
+
+                // ---- Amp: an RF-KIT RF2K-S read over its REST API, read
+                // only (MobileEngineAmp.cpp); kept on this device ----
+                ColumnLayout {
+                    spacing: Theme.spacing / 2
+                    Heading { text: qsTr("RF-KIT RF2K-S") }
+                    TextSetting {
+                        objectName: "ampAddress"
+                        label: qsTr("Address  (%1)").arg(Engine.amp.address || qsTr("not set"))
+                        current: Engine.amp.address || ""
+                        hint: qsTr("e.g. 192.168.1.60:8080")
+                        upper: false
+                        onSaved: (t) => Engine.setAmpAddress(t)
+                    }
+                    OnOff {
+                        visible: !!Engine.amp.set
+                        label: qsTr("Read the amplifier")
+                        on: !!Engine.amp.on
+                        onToggled: (v) => Engine.setAmpOn(v)
+                    }
+                    Label {
+                        objectName: "ampSetupState"
+                        visible: !!Engine.amp.set
+                        Layout.fillWidth: true
+                        text: {
+                            const a = Engine.amp
+                            if (!a.on) return qsTr("Off.")
+                            if (a.state === "connected")
+                                return qsTr("Connected: %1%2.").arg(a.device || "RF-KIT").arg(a.name ? " " + a.name : "")
+                            if (a.state === "failed") return qsTr("Not reached: %1.").arg(a.error)
+                            if (a.state === "connecting") return qsTr("Connecting…")
+                            return qsTr("Read while connected to a radio.")
+                        }
+                        color: Engine.amp.state === "connected" ? "#00cc66"
+                             : Engine.amp.state === "failed" ? Theme.transmit : Theme.textDim
+                        font.pixelSize: 13
+                        wrapMode: Text.Wrap
+                    }
+                    AppButton {
+                        visible: !!Engine.amp.set
+                        text: qsTr("Forget the amplifier")
+                        focusPolicy: Qt.NoFocus
+                        onClicked: Engine.setAmpAddress("")
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("The address of the amplifier's network port (8080 unless you set another after a colon). This device reaches it directly, on the same network or over your VPN when away: not through the radio, and not over SmartLink. Once set, Controls gets an Amp tab with what the amplifier reports: forward and reflected power, SWR, temperature, voltage, current, band, tuner and antenna.")
+                        color: Theme.textDim
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("Read only in this version: nothing is sent that changes the amplifier. Operate / Standby, the antenna and the error reset come once tested on a real RF2K-S.")
+                        color: Theme.textDim
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
                     }
                 }
             }

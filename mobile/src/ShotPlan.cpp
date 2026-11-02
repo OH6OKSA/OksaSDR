@@ -4,6 +4,7 @@
 
 #include <QAccessible>
 #include <QCoreApplication>
+#include <QGuiApplication>
 #include <QDir>
 #include <QFile>
 #include <QPointer>
@@ -484,6 +485,34 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         m_engine.setRfPower(arg.toInt());
         qInfo() << "shot-plan: RF power" << arg.toInt() << "W";
         *delayMs = 1500;
+    } else if (command == QLatin1String("amp")) {
+        // The amplifier's address (Radio Setup › Amp); "off" forgets it,
+        // "pause" / "resume" are its Read the amplifier switch.
+        if (arg == QLatin1String("pause") || arg == QLatin1String("resume")) {
+            m_engine.setAmpOn(arg == QLatin1String("resume"));
+        } else {
+            m_engine.setAmpAddress(arg == QLatin1String("off") ? QString() : arg);
+        }
+        qInfo().noquote() << "shot-plan: amp" << arg;
+        *delayMs = 500;
+    } else if (command == QLatin1String("appstate")) {
+        // The application state as the system reports it (background and
+        // back): active, inactive, hidden or suspended.
+        const Qt::ApplicationState state = arg == QLatin1String("suspended") ? Qt::ApplicationSuspended
+            : arg == QLatin1String("hidden")   ? Qt::ApplicationHidden
+            : arg == QLatin1String("inactive") ? Qt::ApplicationInactive
+                                               : Qt::ApplicationActive;
+        QWindowSystemInterface::handleApplicationStateChanged<QWindowSystemInterface::SynchronousDelivery>(state, true);
+        qInfo().noquote() << "shot-plan: app state" << arg << QGuiApplication::applicationState();
+        *delayMs = 500;
+    } else if (command == QLatin1String("ampstate")) {
+        // What the Amp tab shows: the link and every reading.
+        const QVariantMap a = m_engine.amp();
+        QStringList parts;
+        for (auto it = a.cbegin(); it != a.cend(); ++it) {
+            parts << it.key() + QLatin1Char('=') + it.value().toString();
+        }
+        qInfo().noquote() << "shot-plan: amp" << parts.join(QLatin1Char(' '));
     } else if (command == QLatin1String("slices")) {
         // Every slice on the radio, the TX slice and the power: what a test
         // left behind.

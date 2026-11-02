@@ -4,6 +4,7 @@
 #include "QsoLog.h"
 #include "RadioListModel.h"
 
+#include "core/RfkitProtocol.h"
 #include "core/TxCoordinator.h"
 #include "core/backends/flex/SmartLinkClient.h"
 #include "core/backends/flex/WanConnection.h"
@@ -35,6 +36,7 @@ class Ft8Engine;
 
 namespace AetherSDR {
 class AudioEngine;
+class RfkitConnection;
 class DxClusterClient;
 class FreeDvClient;
 class CwRxModel;
@@ -280,6 +282,13 @@ class MobileEngine : public QObject {
     // Logger32 on the operator's PC: each logged QSO as an ADIF record over
     // TCP (MobileEngineLogger32.cpp).
     Q_PROPERTY(QVariantMap logger32 READ logger32 NOTIFY logger32Changed)
+    // An RF-KIT RF2K-S amplifier read over its REST API, read only
+    // (MobileEngineAmp.cpp): set, address, on, state ("off", "connecting",
+    // "connected", "failed"), error, target; once read: device, name,
+    // firmware, operate ("OPERATE" / "STANDBY"), fwd, refl (W), swr, temp
+    // (°C), volts, amps, band, freq, status, tuner, tunerSetup, iface,
+    // ifaceError, antenna, antennas. A reading not in yet is absent.
+    Q_PROPERTY(QVariantMap amp READ amp NOTIFY ampChanged)
     Q_PROPERTY(bool memoriesWritable READ memoriesWritable NOTIFY memoriesChanged)
     // The radio's tracking notch filters (Flex TNF): {id, freq (MHz),
     // width (Hz), depth 1-3, permanent}; tnfEnabled is the global switch.
@@ -1018,6 +1027,11 @@ public:
     // "host" or "host:port" (52001 when not given); empty turns it off.
     Q_INVOKABLE void setLogger32(const QString& hostPort);
     QVariantMap logger32() const;
+    // The amplifier's "host" or "host:port" (8080 when not given); empty
+    // forgets it. A new address turns reading on.
+    Q_INVOKABLE void setAmpAddress(const QString& hostPort);
+    Q_INVOKABLE void setAmpOn(bool on);
+    QVariantMap amp() const;
     // Opens the share sheet with the log as an ADIF file
     // ("OksaSDR-log-<date>.adi"): mail, Files, AirDrop, a logbook app, or
     // TQSL for LoTW. False when there is nothing to share.
@@ -1509,6 +1523,7 @@ signals:
     void qrzLogChanged();
     void sharedAdifChanged();
     void logger32Changed();
+    void ampChanged();
     void tnfsChanged();
     void tnfCreateRequested(double freqMhz);
     void txChainChanged();
@@ -1740,6 +1755,15 @@ private:
     QTimer m_logger32Retry;
     QString m_logger32Status;
     QString m_logger32StatusKind;
+    // ---- The amplifier (MobileEngineAmp.cpp) ----
+    void setupAmp();
+    void updateAmpLink();
+    RfkitConnection* m_amp{nullptr};
+    Rfkit::Status m_ampStatus;
+    bool m_ampWanted{false};
+    QString m_ampTarget;  // "host:port" being read
+    QString m_ampState{QStringLiteral("off")};
+    QString m_ampError;
     void syncDigiAudio();
     void onDigiSlot(qint64 slotMs);
     void handleDigiDecodes(const QVariantList& decodes, qint64 slotMs);

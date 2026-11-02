@@ -49,8 +49,9 @@ ipad_shots=(overview infopanel slicerow spectrum filter agc antenna mode frequen
 phone_shots=(phone-portrait phone-menu memory-edit)
 for t in "${tabs[@]}"; do phone_shots+=("tab-$t"); done
 modes_shots=(mode-usb mode-cw mode-am mode-fm fm-tx tx-lock mode-rtty rtty-panel tab-rtty digi-operating mode-psk)
+amp_shots=(tab-amp setup-amp)
 all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${phone_shots[@]}" phone-landscape bandchooser
-           "${modes_shots[@]}" cw-paddles rade-on ft8-running)
+           "${modes_shots[@]}" "${amp_shots[@]}" cw-paddles rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
     printf '%s\n' "${all_shots[@]}" | sort -u
     exit 0
@@ -232,6 +233,35 @@ if want "${modes_shots[@]}"; then
     } | plan modes 440x956 "${src[@]}"
 fi
 
+# The Amp tab and Radio Setup › Amp against a stand-in RF2K-S
+# (rf2k-mock.py, transmitting, on this computer's own network address and
+# the API's port 8080, so the address reads as an amplifier's would); the
+# app forgets the amplifier after.
+if want "${amp_shots[@]}" && [ "$DRY" = 0 ]; then
+    lan="$(ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p')"
+    python3 "$ROOT/mobile/tools/rf2k-mock.py" --bind "${lan:-127.0.0.1}" --port 8080 --keyed --operate \
+        --name Shack >"$TMP/rf2k-mock.log" 2>&1 &
+    mock=$!
+    sleep 1
+    if ! kill -0 "$mock" 2>/dev/null; then
+        echo "  the RF2K-S stand-in did not start (port 8080 taken?): $(tail -1 "$TMP/rf2k-mock.log")" >&2
+    fi
+fi
+if want "${amp_shots[@]}"; then
+    {
+        printf 'ready\namp %s\nwait 4000\n' "${lan:-127.0.0.1}"
+        if want tab-amp; then printf 'drawer 12\nwait 1500\nscroll 0\nwait 800\nshot tab-amp\nclose\n'; fi
+        if want setup-amp; then printf 'popup radioSetup\nwait 800\nclick setupTab6\nwait 1500\nshot setup-amp\nclose\n'; fi
+        printf 'amp off\nwait 1000\n'
+    } | plan amp 440x956 "${src[@]}"
+    if [ "$DRY" = 0 ]; then
+        kill "$mock" 2>/dev/null || true
+        wait "$mock" 2>/dev/null || true
+        # Read only: the stand-in counts any request that would change it.
+        tail -1 "$TMP/rf2k-mock.log" | sed 's/^/  RF2K-S stand-in: /'
+    fi
+fi
+
 # Situations (they change this app's slice and put it back: CW, then
 # DIGU again; RADE and FT8 restore what they found, 14.074 DIGU).
 if want cw-paddles; then
@@ -292,6 +322,8 @@ done
 for m in usb cw am fm rtty psk; do
     jpg "mode-$m" "" 330x
 done
+jpg tab-amp 440x520+0+436
+jpg setup-amp 418x700+11+40 330x
 jpg rtty-panel 440x440+0+172
 jpg digi-operating 440x332+0+536
 jpg fm-tx 440x160+0+532

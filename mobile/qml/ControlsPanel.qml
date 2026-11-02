@@ -4,8 +4,9 @@ import QtQuick.Layouts
 import AetherMobile
 
 // The operating controls in sections (DSP, Audio, TX, eSSB, CW, View,
-// Profiles, Memory, Log, FTx, FreeDV, Digi). In the slide-in drawer they are
-// tabs, one at a time.
+// Profiles, Memory, Log, FTx, FreeDV, Digi, and Amp once an amplifier is
+// set up in Radio Setup). In the slide-in drawer they are tabs, one at a
+// time.
 // Pinned to the iPad's side (multiSelect) they are toggle buttons, as
 // AetherSDR's applet buttons: every chosen section shows, one under another.
 ColumnLayout {
@@ -34,9 +35,20 @@ ColumnLayout {
         { name: "Digi", button: qsTr("FTx"), title: qsTr("FT8 / FT4"), component: digiSection },
         { name: "FreeDV", button: qsTr("FreeDV"), title: qsTr("FreeDV"), component: freedvSection },
         { name: "RTTY", button: qsTr("Digi"), title: qsTr("Digi (RTTY, PSK)"), component: rttySection },
-    ]
-    // One row of all on a wide panel, else rows of six (6 + 6).
-    readonly property int buttonColumns: panel.width >= 700 ? sections.length : 6
+    ].concat(ampSet ? [{ name: "Amp", button: qsTr("Amp"), title: qsTr("Amplifier"), component: ampSection }] : [])
+    // A bool of its own: Engine.amp changes with every reading, and a new
+    // sections list would rebuild every tab.
+    readonly property bool ampSet: !!Engine.amp.set
+    // One row of all on a wide panel, else rows of six (6 + 6); with the
+    // Amp tab rows of seven (7 + 6) where the widest label still fits at
+    // 12 px, else 5 + 5 + 3 (a low side drawer, 667 x 375, cut "FreeDV").
+    readonly property int buttonColumns: {
+        if (panel.width >= 700) return sections.length
+        if (sections.length <= 12) return 6
+        // The label at 12 px and the buttons' 2 + 2 px padding.
+        const need = widestButton * 12 / Theme.buttonFont + 4
+        return (panel.width - 6 * 4) / 7 >= need ? 7 : 5
+    }
     // The widest label at the buttons' type size: where six to a row are
     // narrower (a side drawer, 698 x 668 cut "FreeDV"), every section
     // button's type shrinks alike until it fits, down to 12 px.
@@ -45,6 +57,12 @@ ColumnLayout {
     function buttonFont(width) {
         return Math.max(12, Math.min(Theme.buttonFont, Math.floor(Theme.buttonFont * (width - 6) / widestButton)))
     }
+    // One button's width from the panel's (the buttons share a row alike):
+    // the type follows it, not the button's own width, which the type's
+    // implicit width feeds back into while the grid changes (the Amp tab
+    // coming or going looped).
+    readonly property real buttonCellWidth: (panel.width - (buttonColumns - 1) * 4) / buttonColumns
+    readonly property int sectionButtonFont: buttonFont(buttonCellWidth)
 
     function toggleSection(name) {
         const list = Engine.pinnedSections.slice()
@@ -84,7 +102,7 @@ ColumnLayout {
                     required property var modelData
                     text: modelData.button
                     checked: tabs.currentIndex === index
-                    font.pixelSize: panel.buttonFont(width)
+                    font.pixelSize: panel.sectionButtonFont
                     leftPadding: 2
                     rightPadding: 2
                     Layout.fillWidth: true
@@ -132,7 +150,7 @@ ColumnLayout {
                 required property var modelData
                 text: modelData.button
                 checked: Engine.pinnedSections.indexOf(modelData.name) >= 0
-                font.pixelSize: panel.buttonFont(width)
+                font.pixelSize: panel.sectionButtonFont
                 leftPadding: 2
                 rightPadding: 2
                 Layout.fillWidth: true
@@ -289,4 +307,5 @@ ColumnLayout {
     Component { id: digiSection; DigiControls {} }
     Component { id: freedvSection; FreeDvControls {} }
     Component { id: rttySection; RttyControls {} }
+    Component { id: ampSection; AmpControls {} }
 }
