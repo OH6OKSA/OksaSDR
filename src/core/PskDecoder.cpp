@@ -124,6 +124,12 @@ void PskDecoder::appendMono(const QByteArray& mono, const PcmEpochLease& source,
     }
 }
 
+int PskDecoder::bufferedMs() const
+{
+    QMutexLocker lock(&m_bufMutex);
+    return static_cast<int>(m_ringBuf.size() / static_cast<int>(sizeof(float)) * 1000 / static_cast<int>(kSampleRate));
+}
+
 void PskDecoder::resetInput()
 {
     QMutexLocker lock(&m_bufMutex);

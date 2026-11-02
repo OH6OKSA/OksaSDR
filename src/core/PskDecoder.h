@@ -45,6 +45,10 @@ public:
 
     static constexpr double kAfcRangeHz = 25.0;
 
+    // Audio fed but not decoded yet (ms). A feed faster than real time (a
+    // test) paces itself by it: more than the 4 s buffer starts it over.
+    int bufferedMs() const;
+
 public slots:
     // As RttyDecoder's: stereo float at 24 kHz (a test feed), trimmed to
     // the newest 4 s when it comes faster than it is read.
@@ -74,7 +78,7 @@ private:
     static constexpr int kSamplesPerSymbol = 16;  // after decimation
 
     std::unique_ptr<QThread> m_workerThread;
-    QMutex m_bufMutex;
+    mutable QMutex m_bufMutex;
     QByteArray m_ringBuf;
     PcmEpochLease m_source;  // protected together with the ring buffer
     bool m_typedSource = false;

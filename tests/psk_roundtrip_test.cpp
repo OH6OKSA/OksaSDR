@@ -177,10 +177,16 @@ QString decode(const QString& text, const Run& r, QString* sent, double* tracked
         if (const std::optional<DecoderPcmBlock> block = adapter.accept(*frame)) {
             decoder.feedPcmBlock(*block);
         }
+        // About 50x real time, but never more than a second ahead of the
+        // decoder: on a loaded machine its thread falls behind, and a full
+        // 4 s buffer starts it over (the text lost; a flaky failure).
         if ((offset / 480) % 25 == 0) {
             pumpUntil([] { return false; }, 10);
+            pumpUntil([&] { return decoder.bufferedMs() < 1000; }, 10000);
         }
     }
+    // Everything decoded (less than one 10 ms chunk left), then its text out.
+    pumpUntil([&] { return decoder.bufferedMs() < 10; }, 10000);
     pumpUntil([] { return false; }, 400);
     *trackedHz = decoder.trackedHz();
     decoder.stop();
