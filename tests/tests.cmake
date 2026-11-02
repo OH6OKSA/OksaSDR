@@ -179,6 +179,13 @@ target_link_libraries(rtty_decoder_pcm_test PRIVATE aethercore Qt6::Core)
 add_test(NAME rtty_decoder_pcm_test COMMAND rtty_decoder_pcm_test)
 set_tests_properties(rtty_decoder_pcm_test PROPERTIES TIMEOUT 30)
 
+# RttyEncoder's audio through the real RttyDecoder worker: the text sent is
+# the text read, on both sidebands, with shifts after spaces.
+add_executable(rtty_encoder_roundtrip_test tests/rtty_encoder_roundtrip_test.cpp)
+target_link_libraries(rtty_encoder_roundtrip_test PRIVATE aethercore Qt6::Core)
+add_test(NAME rtty_encoder_roundtrip_test COMMAND rtty_encoder_roundtrip_test)
+set_tests_properties(rtty_encoder_roundtrip_test PROPERTIES TIMEOUT 60)
+
 # Actual backend/model/audio/parser wiring with injected PCM; binds no sockets.
 add_executable(pcm_compatibility_test tests/pcm_compatibility_test.cpp)
 target_link_libraries(pcm_compatibility_test PRIVATE aethercore Qt6::Core)

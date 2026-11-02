@@ -1154,6 +1154,7 @@ set(CORE_SOURCES
     src/core/QrzClient.cpp
     src/core/CallsignLookupService.cpp
     src/core/RttyDecoder.cpp
+    src/core/RttyEncoder.cpp
     src/core/VoiceSignalDetector.cpp
     src/core/SpectrogramBuffer.cpp
     src/core/SignalClassifier.cpp
