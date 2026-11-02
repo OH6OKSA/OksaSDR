@@ -77,21 +77,25 @@ void MobileEngine::setTextMacro(int index, const QString& label, const QString& 
     if (index < 0 || index >= kTextMacroCount) {
         return;
     }
-    AppSettings::instance().setValue(macroLabelKey(index), label.trimmed());
-    AppSettings::instance().setValue(macroTextKey(index), text);
+    if (label.trimmed() == QLatin1String(kTextMacroDefaults[index].label)
+        && text == QLatin1String(kTextMacroDefaults[index].text)) {
+        AppSettings::instance().remove(macroLabelKey(index));
+        AppSettings::instance().remove(macroTextKey(index));
+    } else {
+        AppSettings::instance().setValue(macroLabelKey(index), label.trimmed());
+        AppSettings::instance().setValue(macroTextKey(index), text);
+    }
     AppSettings::instance().save();
     emit textMacrosChanged();
 }
 
-void MobileEngine::resetTextMacro(int index)
+QVariantMap MobileEngine::defaultTextMacro(int index) const
 {
     if (index < 0 || index >= kTextMacroCount) {
-        return;
+        return {};
     }
-    AppSettings::instance().remove(macroLabelKey(index));
-    AppSettings::instance().remove(macroTextKey(index));
-    AppSettings::instance().save();
-    emit textMacrosChanged();
+    return {{QStringLiteral("label"), QString::fromLatin1(kTextMacroDefaults[index].label)},
+            {QStringLiteral("text"), QString::fromLatin1(kTextMacroDefaults[index].text)}};
 }
 
 QStringList MobileEngine::textCalls() const

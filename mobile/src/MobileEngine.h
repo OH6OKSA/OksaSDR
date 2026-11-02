@@ -829,9 +829,12 @@ public:
     // mark, shift and speed (Baudot, continuous-phase FSK, a little noise),
     // fed in real time to the running decoder.
     QVariantList textMacros() const;
+    // Saved as given; the default's own name and text keep no setting, so
+    // the macro follows the default.
     Q_INVOKABLE void setTextMacro(int index, const QString& label, const QString& text);
-    // Back to its default (fldigi's set, as bpsk31.com writes a QSO).
-    Q_INVOKABLE void resetTextMacro(int index);
+    // Its default {label, text} (fldigi's set, as bpsk31.com writes a QSO),
+    // for the editor to show before Save.
+    Q_INVOKABLE QVariantMap defaultTextMacro(int index) const;
     QStringList textCalls() const;
     bool textTransmitting() const { return m_textTransmitting; }
     // Transmit text in the mode received (RTTY: AFSK at the way's tones,

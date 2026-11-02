@@ -404,15 +404,18 @@ ColumnLayout {
             }
             RowLayout {
                 Layout.fillWidth: true
+                // The default into the fields, to see and Save (or Cancel).
                 AppButton {
+                    objectName: "macroDefault"
                     text: qsTr("Default")
                     Layout.fillWidth: true
                     onClicked: {
-                        Engine.resetTextMacro(macroEditor.index)
-                        macroEditor.close()
+                        const d = Engine.defaultTextMacro(macroEditor.index)
+                        macroEditor.label = d.label
+                        macroEditor.text = d.text
                     }
                 }
-                AppButton { text: qsTr("Cancel"); Layout.fillWidth: true; onClicked: macroEditor.close() }
+                AppButton { objectName: "macroCancel"; text: qsTr("Cancel"); Layout.fillWidth: true; onClicked: macroEditor.close() }
                 AppButton {
                     objectName: "macroSave"
                     text: qsTr("Save")

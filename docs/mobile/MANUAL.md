@@ -272,8 +272,8 @@ as long as the mark stays the higher frequency, so either way receives it.
    **Answer** ("HIS HIS DE OH6OKSA x3 KN"), **QSO** (the report and BTU),
    **BTU**, **73 SK**, **QRZ?**, **AGN?** and **Locator**. A tap sends one,
    press and hold edits it (its name and text, with a line showing what
-   it sends to the call being worked; **Default** brings the original
-   back). In a macro {CALL} is your call, {HIS} the call being
+   it sends to the call being worked; **Default** puts the original in
+   the fields, **Save** keeps it). In a macro {CALL} is your call, {HIS} the call being
    worked, {NAME} its first name from the lookup, {RST} 599 and {GRID}
    your locator. **Text to send** and **Send** (or Return) send a line;
    sent while text is going out, a macro or a line follows without
