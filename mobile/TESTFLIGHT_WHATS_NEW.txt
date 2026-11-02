@@ -9,13 +9,9 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- PSK31 and PSK63 on the Digi tab (Mode row): in DIGU, tap a signal on the display to read it (a green band marks it, AFC follows it), the same macros, text field, Stop and Log (ADIF PSK31 / PSK63); text goes out on the frequency received. A PSK spot tunes to the signal. [TX]
-- ⌘1–⌘9, ⌘0 work as F1–F10 for macros (an iPad's Magic Keyboard has no F-keys).
-- RTTY reads weak signals better (the bit clock samples mid-bit).
-- Mac: typing in text fields works without the press-and-hold detour (thanks Pentti OH6PP).
-- A macro's Default shows the original in the editor; Digi's Log QSO logs the QSO's start.
-- From build 146: RTTY transmit on the Digi tab (macros, text field, Stop, calls heard, Log).
-- From builds 144–145: RTTY receive in RTTY (LSB), DIGL or DIGU; worked before from Wavelog, QRZ.com or a shared ADIF file.
+- Amplifier, read only: an RF-KIT RF2K-S over its network port. Set its address in Radio Setup › Amp; Controls gets an Amp tab with Operate / Standby, forward and reflected power, SWR, temperature, voltage, current, band, tuner and antenna (thanks Sebastian DG5CST). Nothing is sent that changes the amplifier; control comes after a test on a real RF2K-S.
+- From build 147: PSK31 / PSK63 on the Digi tab; ⌘1–⌘0 as F1–F10; RTTY reads weak signals better; Mac typing (thanks Pentti OH6PP).
+- From builds 144–146: RTTY receive and transmit on the Digi tab; worked before from Wavelog, QRZ.com or a shared ADIF file.
 
 RECENT (builds 94–142)
 - Mac Backspace (thanks Pentti OH6PP); a clearer QRZ.com message (thanks Sloan Davis).
@@ -34,7 +30,8 @@ PLEASE TRY
 - The Log tab: log a few contacts, save your QRZ.com account and share the ADIF file to your logbook.
 - FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - The FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
-- New: Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
+- Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
+- New: have an RF2K-S? Enter its address in Radio Setup › Amp and tell me what the Amp tab shows.
 - Worked before from Wavelog, the QRZ.com Logbook or a shared ADIF file in iCloud Drive.
 - Spots and the DX cluster; the eSSB tab at low power with a second receiver. [TX]
 

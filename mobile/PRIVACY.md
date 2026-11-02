@@ -11,8 +11,8 @@ through TestFlight and as the Android beta from
 The app collects no personal data. Nothing you do in the app is sent to the
 developer. It connects to a third-party service only when you use a feature
 that needs it (SmartLink, QRZ.com, a DX cluster, PSK Reporter, your own
-Wavelog or Cloudlog logbook, Logger32 on your PC, a time server for FT8 /
-FT4), as listed below.
+Wavelog or Cloudlog logbook, Logger32 on your PC, your amplifier, a time
+server for FT8 / FT4), as listed below.
 
 ## Network use
 
@@ -75,6 +75,11 @@ these services:
   you log is sent with its ADIF fields to Logger32 on that PC (your own
   computer, on your network or through your VPN). QSOs that could not be
   sent wait on the device until they can.
+- **An amplifier** (RF-KIT RF2K-S), only if you enter its address in Radio
+  Setup › Amp: while the app is on screen and connected to a radio it reads
+  the amplifier's state and meters from that address (your own device, on
+  your network or through your VPN). Nothing is sent to it but those
+  requests to read.
 - **Developer link** (Log tab), off unless turned on: for the developer's
   own devices; it sends the app's log, and screenshots when asked, to the
   address set there.

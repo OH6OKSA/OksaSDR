@@ -924,7 +924,9 @@ them back into the drawer. The buttons are all one size, in rows of six:
 **DSP**, **Audio**, **TX**, **eSSB** (this device's microphone
 processing), **CW**, **View**, **Prof** (profiles), **Mem** (memory),
 **Log**, **FTx** (FT8 / FT4), **FreeDV** (RADE digital voice and FreeDV
-Reporter) and **RTTY**.
+Reporter) and **Digi** (RTTY, PSK31, PSK63). With an amplifier set up
+([Radio Setup › Amp](#9-radio-setup)) an **Amp** tab joins them, in rows
+of seven.
 
 ![iPad in portrait with the controls pinned under the display](manual/ipad-portrait.jpg)
 
@@ -1415,6 +1417,30 @@ Reporter) and **RTTY**.
   The text also runs along the top of the waterfall, where a tap opens the
   receive settings over the display.
 
+- **Amp** — an RF-KIT **RF2K-S** amplifier, read over its own network
+  interface (its REST API), once its address is set in
+  [Radio Setup › Amp](#9-radio-setup). **Read only in this version**: the
+  tab shows what the amplifier reports and sends nothing that changes it.
+
+  ![Amp tab](manual/tab-amp.jpg)
+
+  At the top the amplifier's name and its state, **OPERATE** (red) or
+  **STANDBY**, as the amplifier reports it (shown, not a button), and the
+  link: *Read from 192.168.1.60:8080, every half second*, *Connecting…*,
+  or *not reached* with the reason (the app keeps trying every 5 s). Then
+  **Forward** (0-1600 W) and **Reflected** (0-200 W) power and **SWR**
+  (red from 2:1; held at – in receive), on the amplifier's own scales; the
+  PA's **Temperature**, **Voltage** and **Current**; the **Band** and
+  **Frequency** the amplifier is on; the active **Antenna** (1-4, EXT for
+  the external one); the **Tuner** (mode and network); the **Interface**
+  the amplifier follows the radio with (UNIV, CAT, UDP or TCI); its
+  **Status** text and **Firmware**. An error the amplifier reports shows in
+  red under them. A reading not received yet shows as –, never 0.
+
+  The amplifier is read while the app is on screen and connected to a
+  radio, and stops in the background. Operate / Standby, the antenna and
+  the error reset will come once tested on a real RF2K-S.
+
 ## 9. Radio Setup
 
 **Setup** in the top row (on an iPhone: **⋯** → *Radio Setup*) holds the
@@ -1447,6 +1473,16 @@ radio.
   max power (dBm of drive to the transverter at its IF, kept within what the
   radio allows) and *Receive only*; *Remove* deletes it. The radio says when
   a transverter is valid.
+- **Amp** — not a setting of the radio: the amplifier this device reads
+  for the [Amp tab](#8-controls), kept on this device. **RF-KIT RF2K-S**:
+  its **Address** (the IP address or host name of the amplifier's network
+  port, `:port` after it when not 8080) with *Save*; **Read the amplifier**
+  on or off; the link's state; *Forget the amplifier* removes it and the
+  Amp tab. This device reaches the amplifier directly: on the same network,
+  or over your VPN when away — not through the radio, and not over
+  SmartLink. Read only in this version.
+
+  ![Radio Setup › Amp](manual/setup-amp.jpg)
 
 **A new radio.** When the app connects to a radio that has no callsign yet —
 a new or reset radio — it offers *Set up* once, a few seconds after
@@ -1478,6 +1514,8 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 | *Set the radio's callsign first* / *The DX cluster needs a callsign* | FT8 / FT4, or the DX cluster, needs a callsign | Setup → Radio → Callsign (the DX cluster can also take one under Spots) |
 | *The radio takes transmit audio from its … input* | PTT would send the radio's own microphone | Controls → TX → **Use this device's microphone** |
 | *The 3D view was too slow …* / *The app stopped while the 3D view was on …* | The app went back to the 2D waterfall | View → 3D to try again |
+| Amp: *not reached: Connection refused* or *timed out* | Nothing answers at the amplifier's address and port from this device | Check the address (Radio Setup › Amp) and the port (8080 unless changed on the amplifier); away from home the VPN must be up; on an iPhone, iPad or Mac allow Local Network for OksaSDR |
+| Amp: *Not an RF-KIT amplifier* | Something else answered at that address (a router, another web page) | Check the amplifier's address and port |
 
 ## 11. Keyboard and Apple Pencil
 

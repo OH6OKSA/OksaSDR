@@ -5,6 +5,8 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
+Build 148 / beta 61 (the user, 2026-11-02: "tehdään nuo molemmat", the render script fixes and the amplifier's read-only step): the RF-KIT RF2K-S read only (step 1 of the amplifier plan, below): Radio Setup › Amp and the Controls Amp tab, upstream's RfkitConnection in a read-only mode, tested against the stand-in mobile/tools/rf2k-mock.py with every failure (refused, not an RF-KIT, timed out, link lost) and the switch, background and forget paths, never a PUT or POST. To verify: Sebastian Schu DG5CST on his RF2K-S. The render tool: --only NAME,... renders just the pictures named (a minute or two instead of 15-18), update-docs.sh --sweep runs the layout sweep first and once, and the manual's RADE and FT8 runs give the TX slice back (--screenshot quit before the tests' restore; FT8's tuning moved TX too), checked on the FLEX.
+
 Build 147 / beta 60 (the user, 2026-11-02: "Ota 1-3 ja digi välilehden vaihe 2"): PSK31 / PSK63, step 2 of the Digi tab (below), and three things from the user's build 146 tests on the iPad: a macro's Default shows the original in the editor (it closed it, so what came back could not be seen); ⌘1-⌘9, ⌘0 as F1-F10 (the Magic Keyboard has no F-keys; Ctrl on Android; Qt hands ⌘ on as ControlModifier); RTTY's bit clock sampling mid-bit (each edge pulled it toward the bit edges: -3 dB errors 1.3-4.0 % to 0.1-0.6 %, -6 dB 14.8-21.7 % to 8.1-12.6 %, tests/rtty_decoder_weak_signal_test). PSK: PskVaricode / PskEncoder / PskDecoder in the core (tests/psk_roundtrip_test: clean both speeds 6 / 12 / 20 Hz off, PSK31 -10 dB 1.9 %, -12 dB ~17 %, PSK63 -8 dB 1.4 %, a station 100 Hz away left alone, noise alone through the squelch none, AFC holding after the signal); the Digi tab's Mode row, a tap setting the carrier at the signal's centre, AFC, a green band on the display, PSK spots, the macros and field sending on the frequency received, Log as ADIF PSK / PSK31 or PSK63. Live: LZ1AEY's PSK31 CQ decoded on 14.07109 (2026-11-02 ~17:05 local); a QSO attempt found him gone, and the next run met the cabin's power cut (one phase out, the radio and its router unreachable ~17:15-17:50). Then the first PSK31 QSO: our CQ on 14.0705 at 25 W answered by F6FPU (Eric, Roussillon nr Lyon, JN25JI), reports and names exchanged through the tab's macros and field (his report IMD -16 dB, quality 98 % on his over), his 73; the run's over wait missed his final SK (decoded "va"), so the QSO went in by the Log path with its start time (logqso: PSK / PSK31 14.070500, 25 W, name and QTH from QRZ.com, sent to Wavelog). No PSK Reporter reports of the CQ (few receivers report PSK31). Not tested live: the RTTY clock fix (no RTTY on 20 m in the evening); the Digi tab's Log QSO time, which was the moment Log was pressed, now the time the call was picked. Also in 147: Pentti Pärnänen OH6PP's Mac typing (build 146 log: "first responder: none", the app's window not key, so UIKit gave the keys to no one and macOS beeped; typing worked after a text box opened and closed): when a text field takes focus on a Mac with no key routing, the app activates its window as Qt does (key window, its view the first responder), and logs the routing before and after. Not testable here (no Mac): to verify on Pentti's MacBook. Layout sweep against build 146's: 27 sizes, no layout decision changed, no QML warnings (a first run straight after the screenshots, the RADE shot having moved TX to slice C, showed the TX tag's 27 px; run again with TX on A, clean); build 147's is the new baseline. Screenshots refreshed, the manual's PSK31 picture (mode-psk) new; the Digi tab in PSK checked at 360 px and on the iPad. Later for PSK: reporting PSK31 decodes to PSK Reporter, as fldigi does.
 
 Build 146 / beta 59 (2026-11-02, the user: "tee ha push"): RTTY transmit, step 1 of the Digi tab (below): the RTTY tab became Digi, with the calls heard as buttons, eight macros after fldigi's set (F1-F8, press and hold edits, a line showing what a macro sends), Text to send, Stop (Esc) and Log; RttyEncoder (ITA2 with US figures, 45.45 baud CPFSK, 1.5 stop bits, a mark lead and two LTRS) sends AFSK from the TX slice in RTTY, DIGL and DIGU through the FT8 / FT4 path. Switching RTTY / DIGL / DIGU keeps the station tuned in (the dial stayed put, the signal 2.3 kHz off the tones: the user's DIGU test on build 145); calls with long suffixes (OE100OEVSV) among the calls heard; {NAME} only from an operator's first name in the lookup (it sent a club's "AUSTRIAN"). Tested: the encoder against the decoder on both sidebands (10 checks); live at 10 W on 14.0875, RBN skimmers in eight countries decoding the CQs on the mark; the first QSO, OE100OEVSV (Vienna) on 7.0433 at 25 W, answered, worked and logged by the tab's buttons and sent to Wavelog; IT9EJW decoded in RTTY and DIGU on 21.0964. Layout sweep against build 144's (no build 145 sweep was kept): 27 sizes, no layout decision changed, no QML warnings; build 146's sweep is the new baseline. Screenshots refreshed; the manual's Digi tab picture now shows RTTY on, and a new one the calls heard and the macros (RTTY step 3). The manual: Logger32's coming logger32.ini setting for the address it listens on (Juho Kontio, 2026-11-02: a test version from Logger32's developer listens on all networks with it, no port forward; the firewall still needs the port). Not in a released Logger32 yet: the port forward stays the way until then; update the manual when the release has it. To verify: RTTY transmit from an iPhone, an iPad and an Android phone (the audio path is FT8's, verified on devices); F1-F8 and Esc on the iPad's Magic Keyboard.
@@ -669,11 +671,29 @@ full-screen drawer of build 137):
   above 1000 Hz, the Fox's replies) and the SuperFox decoder. *To discuss.*
 
 Amplifiers and the tuner (planned 2026-10-29, its own build; asked by
-Sebastian Schu DG5CST for the RF2K-S and Bill Arcand for the Tuner Genius):
-- Controls gets an **Amp** tab, the twelfth button (kept free in build
-  139's rows of six): the operating side, the state, Operate / Standby,
-  Tune, the meters. Radio Setup's tab below holds the setup (addresses,
-  turning them on).
+Sebastian Schu DG5CST for the RF2K-S, Bill Arcand for the Tuner Genius and
+Dennis Daniel for the FlexRadio amplifier and tuner):
+- **Step 1, the RF2K-S read only (build 148 / beta 61):** RfkitProtocol /
+  RfkitConnection taken from upstream (#6596, tested there on an RF2K-S,
+  firmware G200C267) with their tests, plus a read-only mode (only GET
+  requests reach the wire; the control calls are refused, tested on the
+  loopback stand-in) and a poll period (500 ms on the phone, 3 requests a
+  tick). Radio Setup › **Amp**: the address (host or host:port, 8080 by
+  default), Read the amplifier on / off, Forget. Controls › **Amp**, the
+  13th button, only once an amplifier is set up (rows of seven then): name,
+  OPERATE / STANDBY shown, forward / reflected / SWR bars on the
+  amplifier's scales, temperature, voltage, current, band, frequency,
+  antenna, tuner, interface, status, firmware, the amplifier's error.
+  Read while the app is on screen and connected to a radio. Tested with
+  mobile/tools/rf2k-mock.py (the API's documents, keying cycles; counts
+  any PUT / POST): readings live, refused, not an RF-KIT, timed out, link
+  lost, off and back, background and back, forgotten; 0 writes in every
+  run. Next: Sebastian on his RF2K-S (port 8081), then step 2 (Operate /
+  Standby, antenna, error reset; the gate below).
+- Controls gets an **Amp** tab (the twelfth button went to Digi in build
+  140; the Amp tab is the 13th and shows only when set up): the operating
+  side, the state, Operate / Standby, Tune, the meters. Radio Setup's tab
+  holds the setup (addresses, turning them on).
 - Radio Setup gets an **Amplifier & tuner** tab:
   - **4O3A Power Genius XL**, found through the radio: model, state,
     Operate / Standby (relayed by the radio, so over SmartLink too).

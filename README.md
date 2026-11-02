@@ -101,6 +101,13 @@ radio interface, with no computer running alongside.
   there (a green band marks it), AFC follows it, and the same macros, text
   field and Log (ADIF PSK31 / PSK63 on the signal's frequency) work; text
   goes out on the frequency received. A PSK spot tunes to the signal.
+- **Amplifier: RF-KIT RF2K-S, read only** (first step): its address in
+  Radio Setup › Amp, and Controls gets an **Amp** tab with what the
+  amplifier reports over its own network port: Operate / Standby, forward
+  and reflected power, SWR, temperature, voltage, current, band, frequency,
+  tuner, antenna and interface, read twice a second. The phone reaches the
+  amplifier directly (same network or VPN), and nothing is sent that
+  changes it; control comes after a test on a real RF2K-S.
 - **Notch filters (TNF)**: press and hold on the display (or *+ TNF*) for
   a new notch, set its width, depth and permanent and *Add* it, so a stray
   hold adds none; tap one for its settings or remove; drawn through
@@ -314,6 +321,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | CW straight key and paddles on air | ✅ Checked on the FLEX at 10 W: straight key, paddles (elements on time at 30 WPM), iambic A and B squeeze |
 | Transmit lock (SB / OA) | ✅ Checked on the FLEX without transmitting (build 141) |
 | RTTY decoding and sending | ✅ Contest stations decoded live (build 141); DIGL / DIGU decoded live (IT9EJW, SV1EKI); sent at 10 W and decoded by RBN skimmers across Europe (OE9GHV 33 dB, GM0UDL 27 dB) |
+| RF-KIT RF2K-S amplifier (read only) | 🧪 Tested against a stand-in of its REST API (the API upstream tested on an RF2K-S): readings, a lost link, a wrong device, no PUT or POST ever sent; to verify on a real RF2K-S |
 | PSK31 / PSK63 | ✅ PSK31 decoded live (LZ1AEY's CQ on 14.071) and a PSK31 QSO at 25 W with F6FPU near Lyon, answering our first CQ (2026-11-02); the decoder tested to -12 dB SNR, AFC and a neighbour 100 Hz away |
 | CW decoder | ✅ Decodes a strong signal cleanly and weak stations' calls (8–45 WPM, Sens filter against noise) |
 | LAN discovery on iOS | ⏳ Needs Apple's multicast entitlement. Connect by IP for now. |
