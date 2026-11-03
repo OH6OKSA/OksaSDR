@@ -69,7 +69,7 @@ AppButton {
             Text {
                 id: lockLine
                 anchors.horizontalCenter: parent.horizontalCenter
-                visible: Engine.txLock && !Engine.tuning && ptt.enabled
+                visible: (Engine.txLock || ptt.txStandby) && !Engine.tuning && ptt.enabled
                 text: ptt.txStandby ? qsTr("hold to arm") : qsTr("OA %1").arg(ptt.armedLeft())
                 font.pixelSize: Math.max(11, ptt.fontPx * 0.4)
                 color: ptt.txStandby ? Theme.textDim : "white"

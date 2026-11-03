@@ -87,6 +87,10 @@ class MobileEngine : public QObject {
     // minutes after the last transmission. Off by default; remembered.
     Q_PROPERTY(bool txLock READ txLock WRITE setTxLock NOTIFY txLockChanged)
     Q_PROPERTY(bool txLocked READ txLocked NOTIFY txLockChanged)
+    // With the lock off: in standby (SB) once after each start of the app,
+    // until a second's hold arms it for the rest of the run (Larry Averbeck:
+    // the operator aware of transmitting from the first press).
+    Q_PROPERTY(bool txArmAtStart READ txArmAtStart WRITE setTxArmAtStart NOTIFY txLockChanged)
     Q_PROPERTY(int txArmedSeconds READ txArmedSeconds NOTIFY txLockChanged)
     Q_PROPERTY(QStringList bandPlans READ bandPlans CONSTANT)
     // Receive audio coding: "Auto" (Opus when remote: SmartLink, a tailnet,
@@ -586,6 +590,8 @@ public:
     Q_INVOKABLE void togglePtt();
     bool txLock() const;
     void setTxLock(bool on);
+    bool txArmAtStart() const;
+    void setTxArmAtStart(bool on);
     // The lock on and not armed: transmitting is refused.
     bool txLocked() const;
     // Armed: the seconds left (0 in standby or with the lock off).
@@ -1964,6 +1970,7 @@ private:
     QString m_lastSpotCall;
     void applyCallInfo(const CallsignInfo& info);
     void pttToggleLimitReached();
+    void txArmTick();
     void syncDigiAudioLater();
     int m_dvkRecordSlot{0};
     static QString dvkStateName(int status);
@@ -1987,6 +1994,7 @@ private:
     qint64 m_txArmedUntilMs{0};
     QTimer m_txArmHold;
     QTimer m_txArmTick;
+    bool m_txStartArmed{false};  // txArmAtStart: armed once in this run
     bool txLockRefuses(const char* what);
     // DX cluster: its spots go to the radio ("spot add", as the desktop),
     // deduplicated per call within 1 kHz and sent at most RbnRateLimit a

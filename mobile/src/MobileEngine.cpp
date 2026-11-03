@@ -6298,7 +6298,30 @@ void MobileEngine::setTxLock(bool on)
 
 bool MobileEngine::txLocked() const
 {
-    return txLock() && m_txArmedUntilMs == 0;
+    if (!txLock()) {
+        return txArmAtStart() && !m_txStartArmed;
+    }
+    return m_txArmedUntilMs == 0;
+}
+
+bool MobileEngine::txArmAtStart() const
+{
+    return AppSettings::instance().value(QStringLiteral("MobileTxArmAtStart"), QStringLiteral("False")).toString()
+        == QLatin1String("True");
+}
+
+void MobileEngine::setTxArmAtStart(bool on)
+{
+    if (on == txArmAtStart()) {
+        return;
+    }
+    AppSettings::instance().setValue(QStringLiteral("MobileTxArmAtStart"), on ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    // Turned on now, it takes effect at the next start: the operator who
+    // just chose it knows the app is ready to transmit.
+    m_txStartArmed = on;
+    qCInfo(lcMobile) << "transmit: arm once after start" << (on ? "on" : "off");
+    emit txLockChanged();
 }
 
 int MobileEngine::txArmedSeconds() const
@@ -6313,34 +6336,47 @@ void MobileEngine::armTransmit()
 {
     m_txArmHold.stop();
     if (!txLock()) {
+        // Arm once after start: armed for the rest of this run.
+        if (txArmAtStart() && !m_txStartArmed) {
+            m_txStartArmed = true;
+            mobile::haptic(mobile::Haptic::Press);
+            qCInfo(lcMobile) << "transmit: armed for this run";
+            emit txLockChanged();
+        }
         return;
     }
     const bool was = m_txArmedUntilMs != 0;
     m_txArmedUntilMs = QDateTime::currentMSecsSinceEpoch() + kTxArmMs;
     if (!m_txArmTick.isActive()) {
         m_txArmTick.setInterval(1000);
-        // Each second: the countdown, kept full while transmitting; at its
-        // end, standby again.
-        connect(&m_txArmTick, &QTimer::timeout, this, [this] {
-            if (m_txArmedUntilMs == 0) {
-                m_txArmTick.stop();
-                return;
-            }
-            const qint64 now = QDateTime::currentMSecsSinceEpoch();
-            if (transmitting() || tuning() || m_cwKeyHeld || m_cwPaddleHeld || m_pttHeld) {
-                m_txArmedUntilMs = now + kTxArmMs;
-            } else if (now >= m_txArmedUntilMs) {
-                m_txArmedUntilMs = 0;
-                m_txArmTick.stop();
-                qCInfo(lcMobile) << "transmit lock: standby again, five minutes without transmitting";
-            }
-            emit txLockChanged();
-        }, Qt::UniqueConnection);
+        // A member function: Qt::UniqueConnection refuses a lambda, and the
+        // countdown was never connected, so OA stayed at 5:00 and never
+        // went back to SB (Larry Averbeck, beta 62).
+        connect(&m_txArmTick, &QTimer::timeout, this, &MobileEngine::txArmTick, Qt::UniqueConnection);
         m_txArmTick.start();
     }
     if (!was) {
         mobile::haptic(mobile::Haptic::Press);
         qCInfo(lcMobile) << "transmit lock: armed for five minutes after the last transmission";
+    }
+    emit txLockChanged();
+}
+
+// Each second while armed: the countdown, kept full while transmitting;
+// at its end, standby again.
+void MobileEngine::txArmTick()
+{
+    if (m_txArmedUntilMs == 0) {
+        m_txArmTick.stop();
+        return;
+    }
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (transmitting() || tuning() || m_cwKeyHeld || m_cwPaddleHeld || m_pttHeld) {
+        m_txArmedUntilMs = now + kTxArmMs;
+    } else if (now >= m_txArmedUntilMs) {
+        m_txArmedUntilMs = 0;
+        m_txArmTick.stop();
+        qCInfo(lcMobile) << "transmit lock: standby again, five minutes without transmitting";
     }
     emit txLockChanged();
 }

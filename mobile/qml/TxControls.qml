@@ -406,12 +406,36 @@ ColumnLayout {
             onClicked: Engine.txLock = true
         }
     }
+    // With the lock off, standby once after each start of the app until a
+    // second's hold (Larry Averbeck: aware of transmitting from the first
+    // press); the lock itself starts in standby anyway.
     RowLayout {
         Layout.fillWidth: true
-        visible: Engine.txLock
+        visible: !Engine.txLock
+        Label { text: qsTr("At start"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+        AppButton {
+            objectName: "txArmAtStartOff"
+            text: qsTr("Ready")
+            checked: !Engine.txArmAtStart
+            Layout.fillWidth: true
+            onClicked: Engine.txArmAtStart = false
+        }
+        AppButton {
+            objectName: "txArmAtStartOn"
+            text: qsTr("Hold to arm")
+            checked: Engine.txArmAtStart
+            Layout.fillWidth: true
+            onClicked: Engine.txArmAtStart = true
+        }
+    }
+    RowLayout {
+        Layout.fillWidth: true
+        visible: Engine.txLock || Engine.txLocked
         Label {
             Layout.fillWidth: true
-            text: Engine.txLocked
+            text: !Engine.txLock
+                  ? qsTr("SB since the app started: hold PTT, KEY, TUNE or CQ for a second to arm until it closes.")
+                  : Engine.txLocked
                   ? qsTr("SB, standby: hold PTT, KEY, TUNE or CQ for a second to arm.")
                   : qsTr("OA, armed: %1 min left, five minutes after each transmission.")
                         .arg(Math.ceil(Engine.txArmedSeconds / 60))
@@ -421,7 +445,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "txStandby"
-            visible: !Engine.txLocked
+            visible: Engine.txLock && !Engine.txLocked
             text: qsTr("Standby")
             onClicked: Engine.standbyTransmit()
         }
