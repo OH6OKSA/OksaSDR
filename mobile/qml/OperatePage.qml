@@ -95,7 +95,12 @@ Page {
             objectName: "infoProbeFit"
             measureOnly: true
             showStep: false
-            fontScale: page.infoFit
+            // Never below half: as a band change drops the slice for a
+            // moment, infoFit went negative and so did the probe's icon
+            // sizes (Canvas "Incorrect argument radius", build 149 on an
+            // iPad). Below 0.66 the panel goes under the frequency and this
+            // measure is not used.
+            fontScale: Math.max(0.5, page.infoFit)
         }
     }
     // PTT height, shared with the drawer's copy of the button.

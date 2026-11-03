@@ -128,12 +128,19 @@ Item {
         function onActiveFocusItemChanged() {
             const p = keys.page
             const item = p.Window.window ? p.Window.window.activeFocusItem : null
-            if (!p.visible || p.activeFocus || keys.keepsKeyboard(item)) {
+            // The page itself, not p.activeFocus: that is true for a control
+            // inside the page too (the tablet's pinned panel), and a slider
+            // there kept the keys (build 149 on an iPad: Space and the
+            // arrows went to an EQ band).
+            if (!p.visible || item === p || keys.keepsKeyboard(item)) {
                 return
             }
             Qt.callLater(() => {
                 const now = p.Window.window ? p.Window.window.activeFocusItem : null
-                if (p.visible && !p.activeFocus && !keys.keepsKeyboard(now)) {
+                if (p.visible && now !== p && !keys.keepsKeyboard(now)) {
+                    // Inside the page's focus scope the control would get
+                    // it straight back from forceActiveFocus.
+                    if (now) now.focus = false
                     p.forceActiveFocus()
                 }
             })
