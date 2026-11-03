@@ -287,6 +287,8 @@ class MobileEngine : public QObject {
     // "connecting", "connected", "failed"), error, target, pending (the
     // command waiting for the amplifier's answer: "operate", "standby",
     // "antenna N", "reset"), result / resultOk (the last command's outcome);
+    // tune ("", "standby": asking for STANDBY, "carrier": the tune carrier
+    // on), tuneLeft (s), tunePower (W);
     // once read: device, name, firmware, operate ("OPERATE" / "STANDBY"),
     // fwd, refl (W), swr, temp (°C), volts, amps, band, freq, status, tuner,
     // tunerSetup, iface, ifaceError, antenna, antennas, antennaList ({label,
@@ -1060,6 +1062,12 @@ public:
     Q_INVOKABLE void ampSetOperate(bool operate);
     Q_INVOKABLE void ampSelectAntenna(int number);
     Q_INVOKABLE void ampResetError();
+    // A tune carrier for the amplifier's own tuner (its API cannot start a
+    // tune): STANDBY first, then the radio's TUNE at 4-39 W for up to 20 s,
+    // kept on while the app is away (the amplifier's screen over VNC), off
+    // once the amplifier has tuned. Asked on the page first.
+    Q_INVOKABLE void ampTune();
+    Q_INVOKABLE void ampTuneStop();
     QVariantMap amp() const;
     // Opens the share sheet with the log as an ADIF file
     // ("OksaSDR-log-<date>.adi"): mail, Files, AirDrop, a logbook app, or
@@ -1407,8 +1415,9 @@ public:
     Q_INVOKABLE void toggleTune();
     // ATU: start a tune cycle, or bypass when already tuned on this frequency.
     Q_INVOKABLE void atuPressed();
-    // Ends every transmission this client keyed (PTT, tune, ATU cycle).
-    Q_INVOKABLE void stopTransmit(const QString& reason);
+    // Ends every transmission this client keyed (PTT, tune, ATU cycle);
+    // keepAmpTune leaves the amplifier's tune carrier (ampTune) running.
+    Q_INVOKABLE void stopTransmit(const QString& reason, bool keepAmpTune = false);
     // Switch the radio's transmit audio input to this device's microphone.
     Q_INVOKABLE void useDeviceMicrophone();
     // Dev/screenshot runs: leave the radio's mic input alone.
@@ -1796,6 +1805,9 @@ private:
     void updateAmpPollRate();
     bool ampCommandAllowed(const char* what);
     void ampCommandDone(const QString& result, bool ok);
+    void startAmpTuneCarrier();
+    void checkAmpTune();
+    void endAmpTune(const QString& result, bool ok);
     RfkitConnection* m_amp{nullptr};
     Rfkit::Status m_ampStatus;
     bool m_ampWanted{false};
@@ -1807,6 +1819,12 @@ private:
     QString m_ampPending;
     QString m_ampResult;
     bool m_ampResultOk{false};
+    QString m_ampTune;  // "", "standby", "carrier"
+    QTimer* m_ampTuneTimer{nullptr};
+    QElapsedTimer m_ampTuneClock;
+    bool m_ampTuneSawTuning{false};
+    bool m_ampTuneKeyed{false};  // the radio has reported the carrier on
+    int m_ampTuneLeftShown{-1};
     void syncDigiAudio();
     void onDigiSlot(qint64 slotMs);
     void handleDigiDecodes(const QVariantList& decodes, qint64 slotMs);

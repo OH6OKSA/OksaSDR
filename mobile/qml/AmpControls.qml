@@ -9,7 +9,8 @@ import AetherMobile
 // interface, as the amplifier reports them; with Control on (Radio Setup ›
 // Amp), Operate / Standby, the internal antennas and the error reset, each
 // confirmed first, none while the radio transmits, and shown only as the
-// amplifier reads them back. The tab shows once an amplifier is set up.
+// amplifier reads them back; and Tune, a carrier for the amplifier's own
+// tuner (Engine.ampTune). The tab shows once an amplifier is set up.
 ColumnLayout {
     id: ampTab
     spacing: Theme.spacing / 2
@@ -21,6 +22,9 @@ ColumnLayout {
     // A command can go: control on, the amplifier read, the radio in
     // receive and no other command waiting for its answer.
     readonly property bool canCommand: control && reading && !transmitting && !a.pending
+    // The tune carrier for the amplifier's tuner is on, or STANDBY is
+    // being asked for it.
+    readonly property bool tuneRunning: !!a.tune
     function antennaState(n) {
         const list = a.antennaList || []
         for (let i = 0; i < list.length; ++i)
@@ -283,6 +287,28 @@ ColumnLayout {
                 }
             }
         }
+        // Tune: the amplifier's own tuner needs a carrier and its Tune
+        // pressed (on its screen, or over VNC); this sends the carrier, in
+        // STANDBY, and keeps it while the app is away, 20 s at most.
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 4
+            Label { text: qsTr("Tuner"); color: Theme.textDim; font.pixelSize: 15; Layout.fillWidth: true }
+            AppButton {
+                objectName: "ampTune"
+                text: ampTab.a.tune === "carrier" ? qsTr("Stop  %1 s").arg(ampTab.a.tuneLeft)
+                    : ampTab.tuneRunning ? qsTr("Stop") : qsTr("Tune")
+                checked: ampTab.tuneRunning
+                enabled: ampTab.tuneRunning || (ampTab.canCommand && ampTab.a.operate !== undefined)
+                Accessible.name: ampTab.tuneRunning ? qsTr("Stop the tune carrier") : qsTr("Tune carrier for the amplifier's tuner")
+                Layout.preferredWidth: Math.max(Theme.buttonWidth * 2 + 4, implicitWidth)
+                // Outside the amplifier's 4-39 W the engine refuses with the
+                // reason, no question first.
+                onClicked: ampTab.tuneRunning ? Engine.ampTuneStop()
+                         : Engine.tunePower < 4 || Engine.tunePower > 39 ? Engine.ampTune()
+                         : confirm.ask("tune", 0)
+            }
+        }
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacing
@@ -296,10 +322,14 @@ ColumnLayout {
             Label {
                 objectName: "ampCommandState"
                 Layout.fillWidth: true
-                text: ampTab.a.pending ? qsTr("Asking the amplifier…")
+                text: ampTab.a.tune === "carrier"
+                      ? (ampTab.a.tuner === "TUNING" ? qsTr("The amplifier is tuning…")
+                         : qsTr("Carrier on at %1 W: press Tune on the amplifier's screen (VNC).").arg(Engine.tunePower))
+                    : ampTab.a.pending ? qsTr("Asking the amplifier…")
                     : ampTab.transmitting ? qsTr("Not while transmitting.")
                     : ampTab.a.result || ""
-                color: ampTab.a.pending || ampTab.transmitting ? Theme.textDim
+                color: ampTab.a.tune === "carrier" ? Theme.warning
+                     : ampTab.a.pending || ampTab.transmitting ? Theme.textDim
                      : ampTab.a.resultOk ? "#00cc66" : Theme.transmit
                 font.pixelSize: 13
                 wrapMode: Text.Wrap
@@ -311,7 +341,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.topMargin: Theme.spacing / 2
         text: ampTab.control
-              ? qsTr("Each change asks you first and none works while the radio transmits; the tab shows only what the amplifier reads back.")
+              ? qsTr("Each change asks you first and none works while the radio transmits; the tab shows only what the amplifier reads back. Tune sends the carrier the amplifier's tuner needs; its Tune is pressed on the amplifier's own screen.")
               : qsTr("Read only: nothing is sent that changes the amplifier. Control in Radio Setup › Amp adds Operate / Standby, the antenna and the error reset.")
         color: Theme.textDim
         font.pixelSize: 12
@@ -353,6 +383,7 @@ ColumnLayout {
                 text: confirm.action === "operate" ? qsTr("Put the amplifier in OPERATE?")
                     : confirm.action === "standby" ? qsTr("Put the amplifier in STANDBY?")
                     : confirm.action === "antenna" ? qsTr("Switch the amplifier to antenna %1?").arg(confirm.antenna)
+                    : confirm.action === "tune" ? qsTr("Send a tune carrier for the amplifier?")
                     : qsTr("Reset the amplifier's error?")
                 color: Theme.text
                 font.pixelSize: 18
@@ -367,6 +398,8 @@ ColumnLayout {
                       ? qsTr("The radio's signal goes past the amplifier, not amplified.")
                     : confirm.action === "antenna"
                       ? qsTr("The amplifier's output moves from %1 to antenna %2. Check that antenna %2 is connected and suits this band.").arg(confirm.activeAntenna).arg(confirm.antenna)
+                    : confirm.action === "tune"
+                      ? qsTr("The amplifier goes to STANDBY and the radio transmits a TUNE carrier at %1 W for up to 20 s, also while you open the amplifier's own screen (VNC) to press its Tune. It stops by itself once the amplifier has tuned, or after 20 s.").arg(Engine.tunePower)
                       : qsTr("Clear the RF-KIT's error state? Make sure the cause of the error has been resolved first.")
                 color: Theme.textDim
                 font.pixelSize: 15
@@ -385,6 +418,7 @@ ColumnLayout {
                     text: confirm.action === "operate" ? qsTr("Operate")
                         : confirm.action === "standby" ? qsTr("Standby")
                         : confirm.action === "antenna" ? qsTr("Antenna %1").arg(confirm.antenna)
+                        : confirm.action === "tune" ? qsTr("Tune")
                         : qsTr("Reset")
                     checked: true
                     Layout.fillWidth: true
@@ -395,6 +429,7 @@ ColumnLayout {
                         if (what === "operate" || what === "standby") Engine.ampSetOperate(what === "operate")
                         else if (what === "antenna") Engine.ampSelectAntenna(n)
                         else if (what === "reset") Engine.ampResetError()
+                        else if (what === "tune") Engine.ampTune()
                     }
                 }
             }

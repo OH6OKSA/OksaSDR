@@ -538,6 +538,20 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             parts << it.key() + QLatin1Char('=') + it.value().toString();
         }
         qInfo().noquote() << "shot-plan: amp" << parts.join(QLatin1Char(' '));
+    } else if (command == QLatin1String("amptune")) {
+        // start: the Amp tab's Tune as confirmed (the tune carrier for the
+        // amplifier's tuner); stop: its Stop.
+        if (arg == QLatin1String("stop")) {
+            m_engine.ampTuneStop();
+        } else {
+            m_engine.ampTune();
+        }
+        qInfo().noquote() << "shot-plan: amptune" << arg << "->" << m_engine.amp().value(QStringLiteral("tune")).toString()
+                          << m_engine.amp().value(QStringLiteral("result")).toString();
+    } else if (command == QLatin1String("tunepower")) {
+        // The TX tab's Tune power (put it back after a test).
+        m_engine.setTunePower(arg.toInt());
+        *delayMs = 800;
     } else if (command == QLatin1String("slices")) {
         // Every slice on the radio, the TX slice and the power: what a test
         // left behind.
@@ -549,7 +563,8 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                               << (m.value(QStringLiteral("tx")).toBool() ? "TX" : "")
                               << (m.value(QStringLiteral("active")).toBool() ? "active" : "");
         }
-        qInfo() << "shot-plan: RF power" << m_engine.rfPower() << "W";
+        qInfo() << "shot-plan: RF power" << m_engine.rfPower() << "W, tune power" << m_engine.tunePower()
+                << "W, tuning" << m_engine.tuning() << ", transmitting" << m_engine.radioTransmitting();
     } else if (command == QLatin1String("waittx") || command == QLatin1String("waitcall")
                || command == QLatin1String("waitover")) {
         // At most MS: waittx until this app's text has gone out; waitcall

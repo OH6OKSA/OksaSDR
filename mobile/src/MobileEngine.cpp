@@ -842,8 +842,11 @@ MobileEngine::MobileEngine(QObject* parent)
         AppSettings::instance().save();
     });
     connect(qApp, &QGuiApplication::applicationStateChanged, this, [this](Qt::ApplicationState state) {
+        // Nothing transmits while the app is away, but the amplifier's tune
+        // carrier (ampTune): asked for that, bounded to 20 s, so the
+        // amplifier's own screen can be opened to press its Tune.
         if (state != Qt::ApplicationActive) {
-            stopTransmit(QStringLiteral("application inactive"));
+            stopTransmit(QStringLiteral("application inactive"), true);
         }
         update3DGuard();
         qCInfo(lcMobile) << "app state:" << state;
@@ -2910,7 +2913,7 @@ void MobileEngine::atuPressed()
     qCInfo(lcMobile) << "ATU tune cycle started";
 }
 
-void MobileEngine::stopTransmit(const QString& reason)
+void MobileEngine::stopTransmit(const QString& reason, bool keepAmpTune)
 {
     if (m_digiTransmitting || m_digiState != QLatin1String("idle")) {
         digiHalt();
@@ -2923,8 +2926,12 @@ void MobileEngine::stopTransmit(const QString& reason)
         m_cwxInput = {};
     }
     if (m_session.radioModel().transmitModel().isTuning() && m_tuneInput.valid()) {
-        m_tuneInput.stop();
-        qCInfo(lcMobile).noquote() << "tune stopped:" << reason;
+        if (keepAmpTune && m_ampTune == QLatin1String("carrier")) {
+            qCInfo(lcMobile).noquote() << "tune kept for the amplifier's tuner:" << reason;
+        } else {
+            m_tuneInput.stop();
+            qCInfo(lcMobile).noquote() << "tune stopped:" << reason;
+        }
     }
     if (m_atuInput.valid()
         && m_session.radioModel().transmitModel().atuStatus() == ATUStatus::InProgress) {

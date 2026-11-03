@@ -49,6 +49,9 @@ class MobileEngine;
 //   appstate STATE          the app's state as the system sets it: active, inactive,
 //                           hidden, suspended (background and back)
 //   ampstate                log the Amp tab's link state and readings
+//   amptune start|stop      the Amp tab's Tune as confirmed (a tune carrier for the
+//                           amplifier's tuner) / its Stop
+//   tunepower W             the TX tab's Tune power (put it back after)
 //   click NAME              clicked() on the visible buttons with this objectName
 //   tapname NAME            a tap through the window on that control's middle
 //   ready                   wait until connected with a slice (up to 30 s),

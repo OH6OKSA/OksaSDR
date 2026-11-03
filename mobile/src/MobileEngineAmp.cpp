@@ -14,11 +14,24 @@
 // SmartLink. It is read while the app is on screen and connected to a
 // radio: every half second in receive, every 250 ms (the desktop's rate)
 // while the radio transmits, so the power readings follow the keying.
+//
+// The tuner: the API reads it but cannot start a tune (upstream's applet
+// shows it read only; a community-modified server with a tune command is
+// not the vendor's API). The RF2K-S tunes in STANDBY on a 4-39 W carrier
+// when its own Tune is pressed (manual 06/25, 7.2-7.3), so owners open its
+// screen over VNC while the radio sends a carrier, which on one phone
+// stopped as the app left the screen (Jeff Stinger, build 149). ampTune
+// asks for STANDBY, then keys the radio's TUNE and keeps it while the app
+// is away, for 20 s at most, stopping once the amplifier reports a tune
+// done, the amplifier in OPERATE, more than 39 W from the radio, or the
+// link to either lost.
 
 #include "MobileEngine.h"
 
 #include "core/AppSettings.h"
 #include "core/RfkitConnection.h"
+#include "models/RadioModel.h"
+#include "models/TransmitModel.h"
 
 #include <QGuiApplication>
 #include <QLoggingCategory>
@@ -33,6 +46,14 @@ const QString kOnKey = QStringLiteral("MobileAmpRf2kOn");
 const QString kControlKey = QStringLiteral("MobileAmpRf2kControl");
 constexpr int kPollMs = 500;
 constexpr int kPollTxMs = 250;
+constexpr int kTuneSeconds = 20;
+constexpr int kTuneMinWatts = 4;
+constexpr int kTuneMaxWatts = 39;
+// The radio's forward power may read a little over the setting; past this
+// the carrier is not one the amplifier tunes with.
+constexpr double kTuneStopWatts = 45.0;
+constexpr int kTuneStandbyWaitMs = 5000;
+constexpr int kTuneKeyWaitMs = 3000;
 
 // "host" or "host:port"; the API's port 8080 when not given. False for a
 // port that is not a number in range.
@@ -104,6 +125,9 @@ void MobileEngine::setupAmp()
         if (!m_ampPending.isEmpty()) {
             ampCommandDone(tr("The link was lost before the amplifier answered: it may or may not have done it."), false);
         }
+        if (!m_ampTune.isEmpty()) {
+            endAmpTune(tr("The link to the amplifier was lost: the tune carrier stopped."), false);
+        }
         emit ampChanged();
     });
     connect(m_amp, &RfkitConnection::connectionFailed, this, [this](const QString& error) {
@@ -119,11 +143,15 @@ void MobileEngine::setupAmp()
         if (!m_ampPending.isEmpty()) {
             ampCommandDone(tr("The link was lost before the amplifier answered: it may or may not have done it."), false);
         }
+        if (!m_ampTune.isEmpty()) {
+            endAmpTune(tr("The link to the amplifier was lost: the tune carrier stopped."), false);
+        }
         emit ampChanged();
     });
     connect(m_amp, &RfkitConnection::statusUpdated, this, [this](const Rfkit::Status& status) {
         m_ampStatus = status;
         emit ampChanged();
+        checkAmpTune();
     });
     connect(m_amp, &RfkitConnection::commandFinished, this,
             [this](const QString& path, bool accepted, bool answered, const QString& reason) {
@@ -144,6 +172,18 @@ void MobileEngine::setupAmp()
             // is unknown until it is read again.
             qCInfo(lcMobile).noquote() << "amp: no answer from the RF2K-S to" << m_ampPending << "(" + path + "):" << reason;
             ampCommandDone(tr("No answer from the amplifier (%1): it may or may not have done it. The tab shows its state once it is read again.").arg(reason), false);
+        }
+        // The tune's STANDBY refused or unanswered: no carrier.
+        if (!accepted && m_ampTune == QLatin1String("standby")) {
+            endAmpTune(m_ampResult + QLatin1Char(' ') + tr("No tune carrier was sent."), false);
+        }
+    });
+    m_ampTuneTimer = new QTimer(this);
+    m_ampTuneTimer->setInterval(250);
+    connect(m_ampTuneTimer, &QTimer::timeout, this, &MobileEngine::checkAmpTune);
+    connect(this, &MobileEngine::connectionStateChanged, this, [this] {
+        if (!m_connected && !m_ampTune.isEmpty()) {
+            endAmpTune(tr("The radio was disconnected: no tune carrier."), false);
         }
     });
     connect(this, &MobileEngine::connectionStateChanged, this, &MobileEngine::updateAmpLink);
@@ -174,7 +214,9 @@ void MobileEngine::updateAmpLink()
     const QString spec = AppSettings::instance().value(kHostKey).toString().trimmed();
     const bool on = AppSettings::instance().value(kOnKey).toString() == QLatin1String("1");
     const Qt::ApplicationState app = qApp->applicationState();
-    const bool onScreen = app == Qt::ApplicationActive || app == Qt::ApplicationInactive;
+    // Kept while the tune carrier runs with the app away: the amplifier's
+    // readback is what stops it once tuned.
+    const bool onScreen = app == Qt::ApplicationActive || app == Qt::ApplicationInactive || !m_ampTune.isEmpty();
     const bool want = on && splitAmpAddress(spec, &host, &port) && m_connected && onScreen;
     const QString target = QStringLiteral("%1:%2").arg(host).arg(port);
     if (want == m_ampWanted && (!want || target == m_ampTarget)) {
@@ -188,7 +230,8 @@ void MobileEngine::updateAmpLink()
     m_ampStatus = {};
     m_ampError.clear();
     m_ampPending.clear();
-    m_ampResult.clear();
+    // The last result stays: back from the amplifier's own screen, the tab
+    // still says how the tune ended.
     if (want) {
         m_ampState = QStringLiteral("connecting");
         qCInfo(lcMobile).noquote() << "amp: reading the RF2K-S at" << target;
@@ -210,6 +253,7 @@ void MobileEngine::setAmpAddress(const QString& hostPort)
         return;
     }
     AppSettings::instance().setValue(kHostKey, spec);
+    m_ampResult.clear();
     // A new address is meant to be read; forgetting it turns it off, and
     // control with it (a new amplifier starts read only).
     AppSettings::instance().setValue(kOnKey, spec.isEmpty() ? QStringLiteral("0") : QStringLiteral("1"));
@@ -326,6 +370,159 @@ void MobileEngine::ampResetError()
     emit ampChanged();
 }
 
+void MobileEngine::ampTune()
+{
+    if (!m_ampTune.isEmpty() || !ampCommandAllowed("the tune carrier")) {
+        return;
+    }
+    const int watts = tunePower();
+    QString why;
+    if (!m_ampStatus.operate) {
+        why = tr("The amplifier's mode is not read yet.");
+    } else if (!tuneAvailable()) {
+        why = tr("The radio cannot send a tune carrier now.");
+    } else if (watts < kTuneMinWatts || watts > kTuneMaxWatts) {
+        why = tr("Tune power is %1 W: the RF2K-S tunes with 4 to 39 W (10 W or more is best). Set Tune power on the TX tab.").arg(watts);
+    } else if (txLocked()) {
+        why = tr("Transmit is locked (SB): hold PTT, KEY, TUNE or CQ for a second to arm it.");
+    }
+    if (!why.isEmpty()) {
+        qCInfo(lcMobile).noquote() << "amp: no tune carrier -" << why;
+        m_ampResult = why;
+        m_ampResultOk = false;
+        emit ampChanged();
+        return;
+    }
+    m_ampResult.clear();
+    if (*m_ampStatus.operate == Rfkit::OperateMode::Operate) {
+        // Tuned in STANDBY only: the carrier must not be amplified.
+        m_ampTune = QStringLiteral("standby");
+        m_ampPending = QStringLiteral("standby");
+        qCInfo(lcMobile) << "amp: tune: asking the RF2K-S for STANDBY first";
+        m_amp->setOperate(false);
+        m_ampTuneClock.start();
+        m_ampTuneTimer->start();
+        updateAmpLink();
+        emit ampChanged();
+        return;
+    }
+    startAmpTuneCarrier();
+}
+
+void MobileEngine::startAmpTuneCarrier()
+{
+    if (radioTransmitting() || !tuneAvailable()) {
+        endAmpTune(tr("The radio cannot send a tune carrier now."), false);
+        return;
+    }
+    RadioModel& rm = m_session.radioModel();
+    m_tuneInput = rm.localTxController()->capture(TxController::Activity::Tune);
+    if (!m_tuneInput.start()) {
+        m_tuneInput.stop();
+        endAmpTune(tr("The radio did not accept the tune request."), false);
+        return;
+    }
+    m_ampTune = QStringLiteral("carrier");
+    m_ampTuneSawTuning = false;
+    m_ampTuneKeyed = false;
+    m_ampTuneClock.start();
+    m_ampTuneTimer->start();
+    qCInfo(lcMobile).noquote() << "amp: tune carrier keyed at" << tunePower() << "W for up to" << kTuneSeconds << "s";
+    updateAmpLink();
+    emit ampChanged();
+}
+
+// Every 250 ms and with every reading while a tune runs.
+void MobileEngine::checkAmpTune()
+{
+    if (m_ampTune == QLatin1String("standby")) {
+        if (m_ampPending.isEmpty() && m_ampStatus.operate && *m_ampStatus.operate == Rfkit::OperateMode::Standby) {
+            qCInfo(lcMobile) << "amp: tune: the RF2K-S is in STANDBY";
+            startAmpTuneCarrier();
+        } else if (m_ampTuneClock.elapsed() > kTuneStandbyWaitMs) {
+            endAmpTune(tr("The amplifier did not go to STANDBY: no tune carrier was sent."), false);
+        }
+        return;
+    }
+    if (m_ampTune != QLatin1String("carrier")) {
+        return;
+    }
+    const qint64 ms = m_ampTuneClock.elapsed();
+    const bool tuning = m_session.radioModel().transmitModel().isTuning();
+    if (tuning) {
+        m_ampTuneKeyed = true;
+    }
+    if (m_ampStatus.operate && *m_ampStatus.operate == Rfkit::OperateMode::Operate) {
+        endAmpTune(tr("The amplifier went to OPERATE: the tune carrier stopped."), false);
+        return;
+    }
+    if (m_ampTuneKeyed && !tuning) {
+        endAmpTune(tr("The tune carrier stopped."), false);
+        return;
+    }
+    if (!m_ampTuneKeyed && ms > kTuneKeyWaitMs) {
+        endAmpTune(tr("The radio did not start the tune carrier."), false);
+        return;
+    }
+    if (m_ampTuneKeyed && m_forwardPowerW > kTuneStopWatts) {
+        endAmpTune(tr("The radio sent %1 W, more than the amplifier tunes with (4 to 39 W): the tune carrier stopped.")
+                       .arg(qRound(m_forwardPowerW)), false);
+        return;
+    }
+    if (m_ampStatus.tuner) {
+        if (m_ampStatus.tuner->mode == Rfkit::TunerMode::AutoTuning) {
+            if (!m_ampTuneSawTuning) {
+                qCInfo(lcMobile) << "amp: tune: the RF2K-S is tuning";
+            }
+            m_ampTuneSawTuning = true;
+        } else if (m_ampTuneSawTuning) {
+            // Read with the carrier still on: the SWR it tuned to, when the
+            // amplifier shows the carrier.
+            const bool swrRead = m_ampStatus.power && m_ampStatus.power->forward.value >= 1.0;
+            endAmpTune(swrRead ? tr("The amplifier tuned (SWR %1). Put it in OPERATE when you are ready.")
+                                     .arg(m_ampStatus.power->swr.value, 0, 'f', 2)
+                               : tr("The amplifier tuned. Put it in OPERATE when you are ready."), true);
+            return;
+        }
+    }
+    if (ms >= kTuneSeconds * 1000) {
+        endAmpTune(m_ampTuneSawTuning ? tr("The amplifier was still tuning after 20 s: the tune carrier stopped.")
+                                      : tr("No tune seen in 20 s: the tune carrier stopped."), false);
+        return;
+    }
+    // The seconds left, once a second.
+    const int left = int((kTuneSeconds * 1000 - ms + 999) / 1000);
+    if (left != m_ampTuneLeftShown) {
+        m_ampTuneLeftShown = left;
+        emit ampChanged();
+    }
+}
+
+void MobileEngine::endAmpTune(const QString& result, bool ok)
+{
+    const bool carrier = m_ampTune == QLatin1String("carrier");
+    // Cleared first: the carrier's stop below is this session's own.
+    m_ampTune.clear();
+    m_ampTuneTimer->stop();
+    m_ampTuneLeftShown = -1;
+    if (carrier && m_tuneInput.valid() && m_session.radioModel().transmitModel().isTuning()) {
+        m_tuneInput.stop();
+        qCInfo(lcMobile) << "tune stopped: the amplifier's tune ended";
+    }
+    m_ampResult = result;
+    m_ampResultOk = ok;
+    qCInfo(lcMobile).noquote() << "amp: tune ended:" << result;
+    updateAmpLink();
+    emit ampChanged();
+}
+
+void MobileEngine::ampTuneStop()
+{
+    if (!m_ampTune.isEmpty()) {
+        endAmpTune(tr("Stopped."), true);
+    }
+}
+
 void MobileEngine::setAmpOn(bool on)
 {
     AppSettings::instance().setValue(kOnKey, on ? QStringLiteral("1") : QStringLiteral("0"));
@@ -346,7 +543,11 @@ QVariantMap MobileEngine::amp() const
                   {QStringLiteral("resultOk"), m_ampResultOk},
                   {QStringLiteral("state"), m_ampState},
                   {QStringLiteral("error"), m_ampError},
-                  {QStringLiteral("target"), m_ampTarget}};
+                  {QStringLiteral("target"), m_ampTarget},
+                  {QStringLiteral("tune"), m_ampTune},
+                  {QStringLiteral("tuneLeft"), m_ampTune == QLatin1String("carrier")
+                       ? std::max<qint64>(0, (kTuneSeconds * 1000 - m_ampTuneClock.elapsed() + 999) / 1000) : kTuneSeconds},
+                  {QStringLiteral("tunePower"), tunePower()}};
     const Rfkit::Status& s = m_ampStatus;
     // A reading not in yet is left out (the page shows "–"), never 0.
     if (s.info) {
