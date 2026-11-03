@@ -4,8 +4,9 @@
     mobile/tools/rf2k-mock.py [--port 8080] [--bind 0.0.0.0] [--name NAME]
                               [--tx-cycle S | --keyed] [--forward W] [--swr X]
                               [--operate] [--error TEXT] [--status TEXT]
-                              [--slow MS] [--drop-after N] [--not-rfkit]
-                              [--log FILE]
+                              [--antennas 1,2] [--active N]
+                              [--refuse PATH,...] [--slow MS] [--drop-after N]
+                              [--drop-on-write] [--not-rfkit] [--log FILE]
 
 Answers the RF-KIT REST API (OpenAPI 0.9.0, the shapes upstream's
 RfkitProtocol parses and a real RF2K-S sends: {"antennas":[...]} for the
@@ -17,12 +18,18 @@ picture), else it stays in receive.
 
 Every request is printed as "METHOD /path"; a PUT or POST (a command that
 would change the amplifier) is answered as the API does but printed as
-"WRITE", and the summary at the end (Ctrl-C, or --log FILE written as it
-goes) counts them: the app's read-only step must leave it at 0.
+"WRITE" with its body and the new state, and the summary at the end
+(Ctrl-C, or --log FILE written as it goes) counts them: with the app's
+Control off it must stay at 0. Commands change the stand-in as a real
+RF2K-S would: PUT /operate-mode, PUT /antennas/active (an internal antenna
+listed in --antennas, else 409), POST /error/reset (clears --error).
+--refuse answers 409 "Function currently disabled" to the commands on those
+paths, as the API does while a function is disabled.
 
 Failure cases for the app's link handling: --slow MS delays every answer,
 --drop-after N closes the listening socket after N requests (the amplifier
-switched off), --not-rfkit answers /info with a web page (a router at that
+switched off), --drop-on-write does that at the first command, which gets
+no answer, --not-rfkit answers /info with a web page (a router at that
 address).
 """
 import argparse
@@ -72,14 +79,13 @@ def documents(args, state):
         "/tuner": {"mode": "AUTO", "setup": "CL", "L": {"value": 120, "unit": "nH"},
                    "C": {"value": 47, "unit": "pF"}},
         "/antennas": {"antennas": [
-            {"type": "INTERNAL", "number": 1, "state": "ACTIVE" if state["antenna"] == 1 else "AVAILABLE"},
-            {"type": "INTERNAL", "number": 2, "state": "ACTIVE" if state["antenna"] == 2 else "AVAILABLE"},
-            {"type": "INTERNAL", "number": 3, "state": "DISABLED"},
-            {"type": "INTERNAL", "number": 4, "state": "DISABLED"},
-            {"type": "EXTERNAL", "state": "AVAILABLE"}]},
+            {"type": "INTERNAL", "number": n,
+             "state": "ACTIVE" if state["antenna"] == n else "AVAILABLE" if n in state["antennas"] else "DISABLED"}
+            for n in (1, 2, 3, 4)] + [{"type": "EXTERNAL", "state": "AVAILABLE"}]},
         "/antennas/active": {"type": "INTERNAL", "number": state["antenna"]},
         "/operate-mode": {"operate_mode": "OPERATE" if state["operate"] else "STANDBY"},
-        "/operational-interface": {"operational_interface": "CAT", **({"error": args.error} if args.error else {})},
+        "/operational-interface": {"operational_interface": "CAT",
+                                   **({"error": state["error"]} if state["error"] else {})},
     }
 
 
@@ -95,12 +101,18 @@ def main() -> int:
     ap.add_argument("--operate", action="store_true")
     ap.add_argument("--error", default="")
     ap.add_argument("--status", default="OK")
+    ap.add_argument("--antennas", default="1,2", help="internal antennas set up (the rest DISABLED)")
+    ap.add_argument("--active", type=int, default=1, help="the active internal antenna")
+    ap.add_argument("--refuse", default="", help="answer 409 to commands on these paths (comma separated)")
     ap.add_argument("--slow", type=int, default=0, help="ms before each answer")
     ap.add_argument("--drop-after", type=int, default=0)
+    ap.add_argument("--drop-on-write", action="store_true", help="go away at the first command, unanswered")
     ap.add_argument("--not-rfkit", action="store_true")
     ap.add_argument("--log", help="append every request here")
     args = ap.parse_args()
-    state = {"operate": args.operate, "antenna": 1}
+    state = {"operate": args.operate, "antenna": args.active, "error": args.error,
+             "antennas": {int(n) for n in args.antennas.split(",") if n.strip()} | {args.active}}
+    refused = {p.strip() for p in args.refuse.split(",") if p.strip()}
     log = open(args.log, "a", buffering=1) if args.log else None
     server_box = {}
 
@@ -120,11 +132,12 @@ def main() -> int:
             self.end_headers()
             self.wfile.write(data)
 
-        def note(self, kind):
+        def note(self, kind, extra=""):
             with LOCK:
                 COUNTS[kind] += 1
                 total = COUNTS["GET"] + COUNTS["WRITE"]
-            line = f"{time.strftime('%H:%M:%S')} {'WRITE ' if kind == 'WRITE' else ''}{self.command} {self.path}"
+            line = (f"{time.strftime('%H:%M:%S')} {'WRITE ' if kind == 'WRITE' else ''}{self.command} {self.path}"
+                    + (f" {extra}" if extra else ""))
             print(line, flush=True)
             if log:
                 log.write(line + "\n")
@@ -147,25 +160,57 @@ def main() -> int:
             n = int(self.headers.get("Content-Length") or 0)
             return json.loads(self.rfile.read(n) or b"{}") if n else {}
 
+        def dropped(self):
+            # The amplifier switched off as the command arrived: no answer.
+            if not args.drop_on_write:
+                return False
+            self.note("WRITE", "-> no answer: the amplifier goes away")
+            self.close_connection = True
+            self.connection.close()
+            threading.Thread(target=server_box["srv"].shutdown, daemon=True).start()
+            return True
+
+        def refuse(self):
+            self.answer(409, {"status": "error", "reason": "Function currently disabled"})
+
         def do_PUT(self):
-            self.note("WRITE")
             req = self.body()
-            if self.path == "/operate-mode":
-                state["operate"] = req.get("operate_mode") == "OPERATE"
+            if self.dropped():
+                return
+            if self.path in refused:
+                self.note("WRITE", f"{json.dumps(req)} -> 409 refused")
+                self.refuse()
+            elif self.path == "/operate-mode" and req.get("operate_mode") in ("OPERATE", "STANDBY"):
+                state["operate"] = req["operate_mode"] == "OPERATE"
+                self.note("WRITE", f"{json.dumps(req)} -> {'OPERATE' if state['operate'] else 'STANDBY'}")
                 self.answer(200, documents(args, state)["/operate-mode"])
             elif self.path == "/antennas/active":
-                if req.get("type") == "INTERNAL" and req.get("number") in (1, 2):
+                if req.get("type") == "INTERNAL" and req.get("number") in state["antennas"]:
                     state["antenna"] = req["number"]
+                    self.note("WRITE", f"{json.dumps(req)} -> antenna {state['antenna']}")
                     self.answer(200, documents(args, state)["/antennas/active"])
                 else:
+                    self.note("WRITE", f"{json.dumps(req)} -> 409 not available")
                     self.answer(409, {"status": "error", "reason": "antenna not available"})
             else:
+                self.note("WRITE", f"{json.dumps(req)} -> 400/404")
                 self.answer(404, {"status": "error", "reason": "no such endpoint"})
 
         def do_POST(self):
-            self.note("WRITE")
             self.body()
-            self.answer(200, {} if self.path == "/error/reset" else {"status": "error"})
+            if self.dropped():
+                return
+            if self.path in refused:
+                self.note("WRITE", "-> 409 refused")
+                self.refuse()
+            elif self.path == "/error/reset":
+                was = state["error"]
+                state["error"] = ""
+                self.note("WRITE", f"-> error cleared (was {was or 'none'})")
+                self.answer(200, {})
+            else:
+                self.note("WRITE", "-> 404")
+                self.answer(404, {"status": "error", "reason": "no such endpoint"})
 
     srv = ThreadingHTTPServer((args.bind, args.port), Handler)
     server_box["srv"] = srv

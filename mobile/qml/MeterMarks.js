@@ -23,3 +23,19 @@ function marks(kind, min, max, red) {
 function redFrom(kind, red) {
     return kind === "S" ? -73 : red
 }
+
+// The name a face shows for a meter: "PA Temp", the amplifier's readings
+// as "Amp …" (narrow faces: "PA", "Amp", the value's unit and the scale
+// telling which reading it is).
+function meterName(kind, narrow) {
+    if (kind === "PA temp") return narrow ? "PA" : "PA Temp"
+    if (kind.indexOf("Amp ") === 0) return narrow ? "Amp" : "Amp " + ampLabel(kind)
+    return kind
+}
+
+// An amplifier reading as the meter chooser names it under "Amplifier".
+function ampLabel(kind) {
+    const names = { "Amp power": "Power", "Amp refl": "Refl", "Amp SWR": "SWR",
+                    "Amp temp": "Temp", "Amp volts": "Volts", "Amp current": "Current" }
+    return names[kind] || kind
+}

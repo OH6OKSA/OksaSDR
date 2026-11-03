@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import AetherMobile
+import "MeterMarks.js" as MeterMarks
 
 // One selectable meter face (SmartSDR style). Tap to choose what it shows.
 // TX meters read only while the radio is on the air; otherwise they show "–".
@@ -38,10 +39,40 @@ Item {
     // Width the analog face needs at its height (no empty sides).
     readonly property real analogFitWidth: gauge.fitWidth
 
+    // The amplifier's readings are offered while one is set up.
+    readonly property bool ampSet: !!Engine.amp.set
+    function ampLive(v) { return Engine.amp.state === "connected" && v !== undefined }
+
     // value, min, max, text, alarm level and whether the reading is live
     readonly property var reading: {
         const tx = Engine.radioTransmitting
+        // The amplifier's readings (an RF2K-S, Radio Setup › Amp) on its own
+        // display's scales: forward 0-1600 W, reflected 0-200 W red from
+        // 2:1 at the present power, SWR red from 2:1. Temperature red from
+        // 70 °C (it trips to standby at 72 °C: ARRL's review, QST Nov 2022);
+        // voltage and current around its 50 V PA, no alarm level known.
+        const amp = kind.indexOf("Amp ") === 0 ? Engine.amp : null
+        const fwd = amp && amp.fwd !== undefined ? amp.fwd : 0
         switch (kind) {
+        case "Amp power":
+            return { v: fwd, min: 0, max: 1600, live: ampLive(amp.fwd),
+                     text: "Amp " + fwd.toFixed(0) + " W", red: 1500 }
+        case "Amp refl":
+            return { v: amp.refl || 0, min: 0, max: 200, live: ampLive(amp.refl),
+                     text: "Refl " + (amp.refl || 0).toFixed(0) + " W",
+                     red: fwd >= 1 ? Math.max(1, Math.round(fwd * 0.111)) : 1e9 }
+        case "Amp SWR":
+            return { v: fwd >= 1 ? (amp.swr || 1) : 1, min: 1, max: 3, live: ampLive(amp.swr) && fwd >= 1,
+                     text: "SWR " + (fwd >= 1 && amp.swr !== undefined ? amp.swr.toFixed(2) : "–"), red: 2 }
+        case "Amp temp":
+            return { v: amp.temp || 0, min: 0, max: 100, live: ampLive(amp.temp),
+                     text: "Amp " + (amp.temp || 0).toFixed(0) + " °C", red: 70 }
+        case "Amp volts":
+            return { v: amp.volts || 0, min: 40, max: 60, live: ampLive(amp.volts),
+                     text: "Amp " + (amp.volts || 0).toFixed(1) + " V", red: 1e9 }
+        case "Amp current":
+            return { v: amp.amps || 0, min: 0, max: 60, live: ampLive(amp.amps),
+                     text: "Amp " + (amp.amps || 0).toFixed(1) + " A", red: 1e9 }
         case "S":
             return { v: Engine.sMeterDbm, min: -127, max: -13, live: true, text: Engine.sMeterText, red: 1e9 }
         case "Power":
@@ -159,7 +190,7 @@ Item {
     TapHandler { onTapped: chooser.open() }
     // One button to a screen reader: what it measures and the reading.
     Accessible.role: Accessible.Button
-    Accessible.name: qsTr("%1 meter: %2").arg(meter.kind === "S" ? qsTr("S") : meter.kind)
+    Accessible.name: qsTr("%1 meter: %2").arg(meter.kind === "S" ? qsTr("S") : MeterMarks.meterName(meter.kind, false))
                      .arg(meter.reading.live ? (meter.analog ? gauge.valueText : bars.valueText) : qsTr("no reading"))
     Accessible.description: qsTr("Choose what the meter shows")
     Accessible.onPressAction: chooser.open()
@@ -199,6 +230,7 @@ Item {
                                    : [{ label: qsTr("2 analog"), style: "analog2" }])
                     delegate: AppButton {
                         required property var modelData
+                        objectName: "meterStyle" + modelData.style
                         text: modelData.label
                         checked: meter.style === modelData.style
                         focusPolicy: Qt.NoFocus
@@ -252,16 +284,51 @@ Item {
                     id: section
                     required property var modelData
                     spacing: Theme.spacing / 2
+                    // The radio's readings, then the amplifier's under their
+                    // own label (re-read only when an amplifier comes or goes).
+                    readonly property var kinds: {
+                        meter.ampSet
+                        return Engine.meterKindsFor(meter.side, section.modelData.tx)
+                    }
+                    readonly property var radioKinds: kinds.filter(k => k.indexOf("Amp ") !== 0)
+                    readonly property var ampKinds: kinds.filter(k => k.indexOf("Amp ") === 0)
                     Label { text: section.modelData.title; color: Theme.textDim; font.pixelSize: Math.round(Theme.buttonFont * 0.85) }
                     GridLayout {
                         columns: 4
                         columnSpacing: 4
                         rowSpacing: 4
                         Repeater {
-                            model: Engine.meterKindsFor(meter.side, section.modelData.tx)
+                            model: section.radioKinds
                             delegate: AppButton {
                                 required property string modelData
+                                objectName: "meterKind" + modelData.replace(/ /g, "") + (section.modelData.tx ? "Tx" : "Rx")
                                 text: modelData
+                                checked: (section.modelData.tx ? meter.txKind : meter.rxKind) === modelData
+                                focusPolicy: Qt.NoFocus
+                                Layout.preferredWidth: chooser.cellWidth
+                                Layout.preferredHeight: Theme.touchTarget
+                                onClicked: Engine.setMeter(meter.side, section.modelData.tx, modelData)
+                            }
+                        }
+                    }
+                    Label {
+                        visible: section.ampKinds.length > 0
+                        text: qsTr("Amplifier")
+                        color: Theme.textDim
+                        font.pixelSize: Math.round(Theme.buttonFont * 0.8)
+                    }
+                    GridLayout {
+                        visible: section.ampKinds.length > 0
+                        columns: 4
+                        columnSpacing: 4
+                        rowSpacing: 4
+                        Repeater {
+                            model: section.ampKinds
+                            delegate: AppButton {
+                                required property string modelData
+                                objectName: "meterKind" + modelData.replace(/ /g, "") + (section.modelData.tx ? "Tx" : "Rx")
+                                text: MeterMarks.ampLabel(modelData)
+                                Accessible.name: qsTr("Amplifier %1").arg(text)
                                 checked: (section.modelData.tx ? meter.txKind : meter.rxKind) === modelData
                                 focusPolicy: Qt.NoFocus
                                 Layout.preferredWidth: chooser.cellWidth

@@ -394,6 +394,10 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: change each radio setting a little, check the radio's status brings it "
                        "back, restore it, then quit (no keying; VOX, antennas, MTU, callsign left out)."));
     parser.addOption(echoAuditOption);
+    const QCommandLineOption echoAuditOnlyOption(QStringLiteral("echo-audit-only"),
+        QStringLiteral("Development: with --echo-audit, only the settings whose name contains <text>."),
+        QStringLiteral("text"));
+    parser.addOption(echoAuditOnlyOption);
     const QCommandLineOption memoryEditTestOption(QStringLiteral("memory-edit-test"),
         QStringLiteral("Development: save a memory \"OksaSDR test\", edit it into an FM repeater memory "
                        "(29.620, -0.1 MHz, CTCSS 88.5), recall it and log the slice's TX offset, put the slice "
@@ -739,6 +743,7 @@ int main(int argc, char* argv[])
     }
     if (parser.isSet(echoAuditOption)) {
         auto* audit = new AetherSDR::mobile::EchoAudit(engine, &app);
+        audit->setOnly(parser.value(echoAuditOnlyOption));
         QObject::connect(audit, &AetherSDR::mobile::EchoAudit::finished, &app, &QCoreApplication::quit);
         QTimer::singleShot(14000, audit, &AetherSDR::mobile::EchoAudit::start);
     }

@@ -21,6 +21,8 @@ class EchoAudit : public QObject {
     Q_OBJECT
 public:
     explicit EchoAudit(MobileEngine& engine, QObject* parent = nullptr);
+    // Only the settings whose name contains this (--echo-audit-only).
+    void setOnly(const QString& only) { m_only = only; }
     void start();
 
 signals:
@@ -37,6 +39,7 @@ private:
     void step();
 
     MobileEngine& m_engine;
+    QString m_only;
     std::vector<Item> m_items;
     size_t m_index = 0;
     int m_phase = 0;  // 0 change, 1 check+restore, 2 check restore

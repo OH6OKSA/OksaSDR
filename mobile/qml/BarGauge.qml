@@ -122,7 +122,7 @@ Item {
 
     // Header: the S unit or the meter's name (left, blue), the value alone
     // (right), as on the analog face.
-    readonly property string shortName: kind === "PA temp" ? (width < 120 ? qsTr("PA") : qsTr("PA Temp")) : kind
+    readonly property string shortName: MeterMarks.meterName(kind, width < 120)
     readonly property var parts: text.trim().split(/\s+/)
     readonly property string valueText: {
         if (!live) return "–"

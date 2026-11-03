@@ -485,6 +485,30 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         m_engine.setRfPower(arg.toInt());
         qInfo() << "shot-plan: RF power" << arg.toInt() << "W";
         *delayMs = 1500;
+    } else if (command == QLatin1String("status")) {
+        // OBJECT | K=V K=V: as the radio's status, so a page can be tried
+        // with hardware this radio does not have; commands it sends still
+        // go to the radio.
+        const QString line = args.join(QLatin1Char(' '));
+        const qsizetype bar = line.indexOf(QLatin1String(" | "));
+        const QString object = (bar >= 0 ? line.left(bar) : line).trimmed();
+        QMap<QString, QString> kvs;
+        for (const QString& kv : (bar >= 0 ? line.mid(bar + 3) : QString()).split(QLatin1Char(' '), Qt::SkipEmptyParts)) {
+            const qsizetype eq = kv.indexOf(QLatin1Char('='));
+            if (eq > 0) {
+                kvs.insert(kv.left(eq), kv.mid(eq + 1));
+            }
+        }
+        m_engine.injectStatusForTest(object, kvs);
+        qInfo().noquote() << "shot-plan: status" << object << kvs.keys().join(QLatin1Char(','));
+        *delayMs = 300;
+    } else if (command == QLatin1String("ptt")) {
+        // The radio keyed as PTT held, for what must not happen while it
+        // transmits (the amplifier's commands); a DIGU TX slice with no
+        // audio sends no carrier.
+        m_engine.setPtt(arg == QLatin1String("on"), QStringLiteral("shot plan"));
+        qInfo().noquote() << "shot-plan: PTT" << arg;
+        *delayMs = 1500;
     } else if (command == QLatin1String("amp")) {
         // The amplifier's address (Radio Setup › Amp); "off" forgets it,
         // "pause" / "resume" are its Read the amplifier switch.

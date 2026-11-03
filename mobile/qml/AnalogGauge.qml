@@ -199,7 +199,16 @@ Item {
     // Header: the S unit or the meter's name (left, blue), title (middle,
     // large faces), the value alone (right): the reading's text starts with
     // the name ("PA 16 °C", "Mic -20 dB"), which repeated it.
-    readonly property string shortName: kind === "PA temp" ? qsTr("PA Temp") : kind
+    // The full name where it fits beside the value ("PA Temp 17 °C"), else
+    // the short one ("Amp 698 W"), so the value is never crowded out.
+    readonly property string shortName: fullNameMetrics.advanceWidth + valueMetrics.advanceWidth + 20 <= width
+                                        ? MeterMarks.meterName(kind, false) : MeterMarks.meterName(kind, true)
+    TextMetrics {
+        id: fullNameMetrics
+        font.pixelSize: gauge.headerFont
+        font.bold: true
+        text: MeterMarks.meterName(gauge.kind, false)
+    }
     readonly property var parts: text.trim().split(/\s+/)
     readonly property string valueText: {
         if (!live) return "–"

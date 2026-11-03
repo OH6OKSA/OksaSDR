@@ -6,6 +6,7 @@
 #include <QMetaProperty>
 
 #include <cmath>
+#include <utility>
 
 namespace AetherSDR::mobile {
 
@@ -141,6 +142,7 @@ void EchoAudit::build()
                        [e](const QVariant& v) { e->setEqBand(false, 0, v.toInt()); }, nudge(2, 10)});
     // Radio Setup (callsign, name, tune mode and MTU left out)
     for (const char* key : {"remoteOn", "muteLocalWhenRemote", "maxPower", "txDelay", "interlockTimeoutS",
+                            "accTxDelay", "tx1Delay", "tx2Delay", "tx3Delay",
                             "cwDelay", "iambic", "swapPaddles", "micBias", "micBoost", "lineoutGain",
                             "lineoutMute", "headphoneGain", "headphoneMute"}) {
         const QString k = QString::fromLatin1(key);
@@ -153,6 +155,74 @@ void EchoAudit::build()
                                const int x = v.toInt();
                                return QVariant(x >= 95 ? x - 5 : x + 5);
                            }});
+    }
+    // The TX REQ inputs' polarity: only while no band takes that input, as
+    // flipping it on a live input could key the radio.
+    const QVariantList bands = e->radioSetup().value(QStringLiteral("txBands")).toList();
+    auto inputInUse = [&bands](const char* field) {
+        for (const QVariant& b : bands) {
+            if (b.toMap().value(QString::fromLatin1(field)).toBool()) {
+                return true;
+            }
+        }
+        return false;
+    };
+    for (const auto& [key, field] : {std::pair{"rcaTxReqPolarity", "rcaTxReq"}, std::pair{"accTxReqPolarity", "accTxReq"}}) {
+        const QString k = QString::fromLatin1(key);
+        if (inputInUse(field)) {
+            qInfo().noquote() << "echo-audit: setup" << k << "left out: a band takes that input";
+            continue;
+        }
+        m_items.push_back({QStringLiteral("setup ") + k, [e, k] { return e->radioSetup().value(k); },
+                           [e, k](const QVariant& v) { e->setRadioSetup(k, v); },
+                           [](const QVariant& v) { return QVariant(v.toInt() ? 0 : 1); }});
+    }
+    // One band's TX band settings (630 m, else the last band the radio
+    // lists: one not in use for transmitting), as Radio Setup sends them.
+    int bandId = -1;
+    QString bandName;
+    for (const QVariant& b : bands) {
+        const QVariantMap m = b.toMap();
+        if (bandId < 0 || m.value(QStringLiteral("name")).toString() == QLatin1String("630")
+            || (bandName != QLatin1String("630") && m.value(QStringLiteral("id")).toInt() > bandId)) {
+            bandId = m.value(QStringLiteral("id")).toInt();
+            bandName = m.value(QStringLiteral("name")).toString();
+        }
+    }
+    const int polarityHigh = e->radioSetup().value(QStringLiteral("rcaTxReqPolarity")).toInt()
+                             | e->radioSetup().value(QStringLiteral("accTxReqPolarity")).toInt();
+    for (const char* key : {"rfPower", "tunePower", "inhibit", "hwAlc", "accTx", "tx1", "tx2", "tx3",
+                            "rcaTxReq", "accTxReq"}) {
+        if (bandId < 0) {
+            break;
+        }
+        const QString f = QString::fromLatin1(key);
+        // A TX REQ input turned on with an active-high polarity reads an
+        // open input as a request to transmit.
+        if ((f == QLatin1String("rcaTxReq") || f == QLatin1String("accTxReq")) && polarityHigh) {
+            qInfo().noquote() << "echo-audit: txband" << bandName << f << "left out: active-high TX REQ";
+            continue;
+        }
+        auto get = [e, bandId, f] {
+            for (const QVariant& b : e->radioSetup().value(QStringLiteral("txBands")).toList()) {
+                const QVariantMap m = b.toMap();
+                if (m.value(QStringLiteral("id")).toInt() == bandId) {
+                    return m.value(f);
+                }
+            }
+            return QVariant();
+        };
+        m_items.push_back({QStringLiteral("txband %1 %2").arg(bandName, f), get,
+                           [e, bandId, f](const QVariant& v) {
+                               e->setRadioSetup(QStringLiteral("txBand"),
+                                                QVariantMap{{QStringLiteral("id"), bandId},
+                                                            {QStringLiteral("field"), f},
+                                                            {QStringLiteral("value"), v}});
+                           },
+                           nudge(5, 100)});
+    }
+    if (!m_only.isEmpty()) {
+        std::erase_if(m_items, [this](const Item& it) { return !it.name.contains(m_only); });
     }
 }
 

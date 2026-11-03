@@ -38,6 +38,10 @@ class MobileEngine;
 //   mode NAME               the active slice's mode (USB shows the squelch row;
 //                           put the mode back after)
 //   rfpower W               the TX power (to put it back after a cut-short run)
+//   status OBJECT | K=V ... a status line as if the radio had sent it (hardware not
+//                           at hand, e.g. "usb_cable FT1 | type=cat plugged_in=1")
+//   ptt on|off              key / unkey the radio as PTT held (the TX slice: make it a
+//                           DIGU slice with no audio for a carrier-free test)
 //   txslice LETTER          that slice active and TX (to put TX back after a test)
 //   slices                  log every slice (frequency, mode, TX, active) and the power
 //   amp HOST[:PORT]|off     the amplifier's address (Radio Setup › Amp); off forgets it,

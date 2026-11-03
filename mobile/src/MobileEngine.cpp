@@ -2203,6 +2203,12 @@ QStringList MobileEngine::meterKindsFor(const QString& side, bool tx) const
     if (side.startsWith(QLatin1String("right"))) {
         kinds.removeAll(QStringLiteral("Mic"));
     }
+    // The amplifier's readings on every meter, receive and transmit, while
+    // one is set up (Radio Setup › Amp; Sebastian Schu DG5CST).
+    if (m_ampSet) {
+        kinds << QStringLiteral("Amp power") << QStringLiteral("Amp refl") << QStringLiteral("Amp SWR")
+              << QStringLiteral("Amp temp") << QStringLiteral("Amp volts") << QStringLiteral("Amp current");
+    }
     return kinds;
 }
 
@@ -7864,6 +7870,38 @@ QVariantMap MobileEngine::radioSetup() const
     d[QStringLiteral("maxPower")] = tx.maxPowerLevel();
     d[QStringLiteral("txDelay")] = tx.txDelay();
     d[QStringLiteral("interlockTimeoutS")] = tx.interlockTimeout() / 1000;
+    // Keying an amplifier, as SmartSDR's and the desktop's Transmit tab:
+    // each output's delay after PTT, the TX REQ inputs' polarity, and the
+    // TX band settings (per band: power, the outputs and inputs that work
+    // there), kept in the radio's TX profile.
+    d[QStringLiteral("accTxDelay")] = tx.accTxDelay();
+    d[QStringLiteral("tx1Delay")] = tx.tx1Delay();
+    d[QStringLiteral("tx2Delay")] = tx.tx2Delay();
+    d[QStringLiteral("tx3Delay")] = tx.tx3Delay();
+    d[QStringLiteral("rcaTxReqPolarity")] = tx.rcaTxReqPolarity();
+    d[QStringLiteral("accTxReqPolarity")] = tx.accTxReqPolarity();
+    d[QStringLiteral("txProfile")] = tx.activeProfile();
+    QVariantList bands;
+    for (const auto& b : rm.txBandSettings()) {
+        bands << QVariantMap{{QStringLiteral("id"), b.bandId}, {QStringLiteral("name"), b.bandName},
+                             {QStringLiteral("rfPower"), b.rfPower}, {QStringLiteral("tunePower"), b.tunePower},
+                             {QStringLiteral("inhibit"), b.inhibit}, {QStringLiteral("hwAlc"), b.hwAlc},
+                             {QStringLiteral("accTxReq"), b.accTxReq}, {QStringLiteral("rcaTxReq"), b.rcaTxReq},
+                             {QStringLiteral("accTx"), b.accTx}, {QStringLiteral("tx1"), b.tx1},
+                             {QStringLiteral("tx2"), b.tx2}, {QStringLiteral("tx3"), b.tx3}};
+    }
+    d[QStringLiteral("txBands")] = bands;
+    // Hardware PTT (the RCA PTT, ACC or mic jack) sends the analog mic
+    // whatever the TX source (SmartSDR 4.3; only a radio that reports it).
+    d[QStringLiteral("pttMicOverrideKnown")] = tx.havePttMicOverride();
+    d[QStringLiteral("pttMicOverride")] = tx.pttMicOverride();
+    // This device's own setting, as the desktop's Inhibit during TUNE: the
+    // outputs held open while TUNE (or the ATU) transmits, so tuning does
+    // not key the amplifier (the engine applies it on the TX band).
+    for (const char* k : {"TuneInhibitTx1", "TuneInhibitTx2", "TuneInhibitTx3", "TuneInhibitAccTx"}) {
+        d[QString::fromLatin1(k)] = AppSettings::instance().value(QString::fromLatin1(k), QStringLiteral("False")).toString()
+                                    == QLatin1String("True");
+    }
     d[QStringLiteral("tuneMode")] = tx.tuneMode();
     d[QStringLiteral("showTxInWaterfall")] = tx.showTxInWaterfall();
     d[QStringLiteral("cwDelay")] = tx.cwDelay();
@@ -7907,6 +7945,60 @@ void MobileEngine::setRadioSetup(const QString& key, const QVariant& value)
     } else if (key == QLatin1String("interlockTimeoutS") && flex) {
         // The radio takes the timeout in milliseconds (FlexLib Radio.cs).
         rm.sendCommand(QStringLiteral("interlock set timeout=%1").arg(std::max(0, value.toInt()) * 1000));
+    } else if ((key == QLatin1String("accTxDelay") || key == QLatin1String("tx1Delay")
+                || key == QLatin1String("tx2Delay") || key == QLatin1String("tx3Delay")) && flex) {
+        // Each keying output's delay after PTT (ms), as the desktop's
+        // Timings; the radio's RF waits for TX delay.
+        const QString field = key == QLatin1String("accTxDelay") ? QStringLiteral("acc_tx_delay")
+                            : key == QLatin1String("tx1Delay")   ? QStringLiteral("tx1_delay")
+                            : key == QLatin1String("tx2Delay")   ? QStringLiteral("tx2_delay")
+                                                                 : QStringLiteral("tx3_delay");
+        rm.sendCommand(QStringLiteral("interlock set %1=%2").arg(field).arg(std::clamp(value.toInt(), 0, 1000)));
+    } else if ((key == QLatin1String("rcaTxReqPolarity") || key == QLatin1String("accTxReqPolarity")) && flex) {
+        // 0 active low (a contact to ground transmits), 1 active high.
+        rm.sendCommand(QStringLiteral("interlock set %1=%2")
+                           .arg(key == QLatin1String("rcaTxReqPolarity") ? QStringLiteral("rca_txreq_polarity")
+                                                                          : QStringLiteral("acc_txreq_polarity"))
+                           .arg(value.toInt() ? 1 : 0));
+    } else if (key == QLatin1String("pttMicOverride") && flex) {
+        tx.setPttMicOverride(value.toBool());
+    } else if (key == QLatin1String("TuneInhibitTx1") || key == QLatin1String("TuneInhibitTx2")
+               || key == QLatin1String("TuneInhibitTx3") || key == QLatin1String("TuneInhibitAccTx")) {
+        AppSettings::instance().setValue(key, value.toBool() ? QStringLiteral("True") : QStringLiteral("False"));
+        // The desktop's "None" entry follows the four.
+        bool any = false;
+        for (const char* k : {"TuneInhibitTx1", "TuneInhibitTx2", "TuneInhibitTx3", "TuneInhibitAccTx"}) {
+            any |= AppSettings::instance().value(QString::fromLatin1(k), QStringLiteral("False")).toString() == QLatin1String("True");
+        }
+        AppSettings::instance().setValue(QStringLiteral("TuneInhibitNone"), any ? QStringLiteral("False") : QStringLiteral("True"));
+        AppSettings::instance().save();
+    } else if (key == QLatin1String("txBand") && flex) {
+        // {id, field, value}: one TX band setting, as the desktop's TX Band
+        // Settings sends it: power and inhibit / HW ALC to the band's
+        // transmit settings, the outputs and TX REQ inputs to its interlock.
+        const QVariantMap m = value.toMap();
+        const int id = m.value(QStringLiteral("id")).toInt();
+        const QString field = m.value(QStringLiteral("field")).toString();
+        if (!rm.txBandSettings().contains(id)) {
+            return;
+        }
+        static const QHash<QString, QString> transmitFields{
+            {QStringLiteral("rfPower"), QStringLiteral("rfpower")}, {QStringLiteral("tunePower"), QStringLiteral("tunepower")},
+            {QStringLiteral("inhibit"), QStringLiteral("inhibit")}, {QStringLiteral("hwAlc"), QStringLiteral("hwalc_enabled")}};
+        static const QHash<QString, QString> interlockFields{
+            {QStringLiteral("accTx"), QStringLiteral("acc_tx_enabled")}, {QStringLiteral("rcaTxReq"), QStringLiteral("rca_txreq_enable")},
+            {QStringLiteral("accTxReq"), QStringLiteral("acc_txreq_enable")}, {QStringLiteral("tx1"), QStringLiteral("tx1_enabled")},
+            {QStringLiteral("tx2"), QStringLiteral("tx2_enabled")}, {QStringLiteral("tx3"), QStringLiteral("tx3_enabled")}};
+        if (field == QLatin1String("rfPower") || field == QLatin1String("tunePower")) {
+            rm.sendCommand(QStringLiteral("transmit bandset %1 %2=%3").arg(id).arg(transmitFields.value(field))
+                               .arg(std::clamp(m.value(QStringLiteral("value")).toInt(), 0, 100)));
+        } else if (transmitFields.contains(field)) {
+            rm.sendCommand(QStringLiteral("transmit bandset %1 %2=%3").arg(id).arg(transmitFields.value(field))
+                               .arg(m.value(QStringLiteral("value")).toBool() ? 1 : 0));
+        } else if (interlockFields.contains(field)) {
+            rm.sendCommand(QStringLiteral("interlock bandset %1 %2=%3").arg(id).arg(interlockFields.value(field))
+                               .arg(m.value(QStringLiteral("value")).toBool() ? 1 : 0));
+        }
     } else if (key == QLatin1String("tuneMode")) {
         tx.setTuneMode(value.toString());
     } else if (key == QLatin1String("showTxInWaterfall")) {
@@ -7948,6 +8040,96 @@ void MobileEngine::setRadioSetup(const QString& key, const QVariant& value)
                                .arg(rm.networkMtuParam(mtu)));
         }
     }
+}
+
+QVariantMap MobileEngine::usbCables()
+{
+    RadioModel& rm = m_session.radioModel();
+    QVariantList cables;
+    for (const UsbCable& c : rm.usbCableModel().cables()) {
+        QVariantList bits;
+        for (const UsbCableBit& b : c.bits) {
+            bits << QVariantMap{{QStringLiteral("enabled"), b.enabled}, {QStringLiteral("source"), b.source},
+                                {QStringLiteral("sourceRxAnt"), b.sourceRxAnt}, {QStringLiteral("sourceTxAnt"), b.sourceTxAnt},
+                                {QStringLiteral("sourceSlice"), b.sourceSlice}, {QStringLiteral("output"), b.output},
+                                {QStringLiteral("band"), b.band}, {QStringLiteral("lowMhz"), b.lowFreqMhz},
+                                {QStringLiteral("highMhz"), b.highFreqMhz}, {QStringLiteral("activeHigh"), b.activeHigh},
+                                {QStringLiteral("pttDependent"), b.pttDependent}, {QStringLiteral("pttDelay"), b.pttDelayMs},
+                                {QStringLiteral("txDelay"), b.txDelayMs}};
+        }
+        cables << QVariantMap{{QStringLiteral("sn"), c.serialNumber}, {QStringLiteral("type"), c.type},
+                              {QStringLiteral("enabled"), c.enabled}, {QStringLiteral("present"), c.present},
+                              {QStringLiteral("name"), c.name}, {QStringLiteral("speed"), c.speed},
+                              {QStringLiteral("dataBits"), c.dataBits}, {QStringLiteral("parity"), c.parity},
+                              {QStringLiteral("stopBits"), c.stopBits}, {QStringLiteral("flow"), c.flowControl},
+                              {QStringLiteral("source"), c.source}, {QStringLiteral("sourceRxAnt"), c.sourceRxAnt},
+                              {QStringLiteral("sourceTxAnt"), c.sourceTxAnt}, {QStringLiteral("sourceSlice"), c.sourceSlice},
+                              {QStringLiteral("autoReport"), c.autoReport}, {QStringLiteral("activeHigh"), c.activeHigh},
+                              {QStringLiteral("ldpaBand"), c.ldpaBand}, {QStringLiteral("preamp"), c.preamp},
+                              {QStringLiteral("bits"), bits}};
+    }
+    QVariantList slices;
+    for (int i = 0; i < std::max(1, rm.maxSlices()); ++i) {
+        slices << i;
+    }
+    return {{QStringLiteral("cables"), cables},
+            {QStringLiteral("antennas"), rm.knownAntennaTokens()},
+            {QStringLiteral("slices"), slices}};
+}
+
+void MobileEngine::setUsbCable(const QString& sn, const QString& key, const QString& value)
+{
+    RadioModel& rm = m_session.radioModel();
+    if (!m_connected || !rm.usesFlexCommandPlane() || !rm.usbCableModel().cables().contains(sn)) {
+        return;
+    }
+    qCInfo(lcMobile).noquote() << "usb cable" << sn << key << "=" << value;
+    // The radio takes a name's spaces as 0x7F (FlexLib, the desktop). It
+    // sends no status for a cable setting (seen on the FLEX-6600M: the new
+    // value shows only on the next connect), so its OK is what the page
+    // shows, as FlexLib keeps the value it set.
+    const QString wire = key == QLatin1String("name") ? QString(value).replace(QLatin1Char(' '), QChar(0x7F)) : value;
+    rm.sendCmdPublic(QStringLiteral("usb_cable set %1 %2=%3").arg(sn, key, wire),
+                     [&rm, sn, key, wire](int code, const QString& body) {
+        if (code != 0) {
+            qCWarning(lcMobile).noquote() << "usb cable" << sn << key << "refused:" << Qt::hex << code << body;
+            return;
+        }
+        rm.usbCableModel().applyStatus(sn, {{key, wire}});
+    });
+}
+
+void MobileEngine::setUsbCableBit(const QString& sn, int bit, const QString& key, const QString& value)
+{
+    RadioModel& rm = m_session.radioModel();
+    if (!m_connected || !rm.usesFlexCommandPlane() || bit < 0 || bit > 7 || !rm.usbCableModel().cables().contains(sn)) {
+        return;
+    }
+    qCInfo(lcMobile).noquote() << "usb cable" << sn << "bit" << bit << key << "=" << value;
+    rm.sendCmdPublic(QStringLiteral("usb_cable setbit %1 %2 %3=%4").arg(sn).arg(bit).arg(key, value),
+                     [&rm, sn, bit, key, value](int code, const QString& body) {
+        if (code != 0) {
+            qCWarning(lcMobile).noquote() << "usb cable" << sn << "bit" << bit << key << "refused:" << Qt::hex << code << body;
+            return;
+        }
+        rm.usbCableModel().applyStatus(sn, {{QStringLiteral("_bit_number"), QString::number(bit)}, {key, value}});
+    });
+}
+
+void MobileEngine::removeUsbCable(const QString& sn)
+{
+    RadioModel& rm = m_session.radioModel();
+    if (!m_connected || !rm.usesFlexCommandPlane() || !rm.usbCableModel().cables().contains(sn)) {
+        return;
+    }
+    qCInfo(lcMobile).noquote() << "usb cable" << sn << "removed";
+    rm.sendCmdPublic(QStringLiteral("usb_cable remove %1").arg(sn), [&rm, sn](int code, const QString& body) {
+        if (code != 0) {
+            qCWarning(lcMobile).noquote() << "usb cable" << sn << "remove refused:" << Qt::hex << code << body;
+            return;
+        }
+        rm.usbCableModel().handleRemoved(sn);
+    });
 }
 
 bool MobileEngine::setupSuggested() const

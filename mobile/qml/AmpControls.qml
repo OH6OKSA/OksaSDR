@@ -3,17 +3,62 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import AetherMobile
 
-// The amplifier: an RF-KIT RF2K-S read over its own REST API, read only
+// The amplifier: an RF-KIT RF2K-S over its own REST API
 // (MobileEngineAmp.cpp). Its state, forward and reflected power, SWR, the
 // PA's temperature, voltage and current, band, frequency, tuner, antenna and
-// interface, as the amplifier reports them. Set up in Radio Setup › Amp; the
-// tab shows once an amplifier is set up there.
+// interface, as the amplifier reports them; with Control on (Radio Setup ›
+// Amp), Operate / Standby, the internal antennas and the error reset, each
+// confirmed first, none while the radio transmits, and shown only as the
+// amplifier reads them back. The tab shows once an amplifier is set up.
 ColumnLayout {
     id: ampTab
     spacing: Theme.spacing / 2
 
     readonly property var a: Engine.amp
     readonly property bool reading: a.state === "connected"
+    readonly property bool control: !!a.control
+    readonly property bool transmitting: Engine.radioTransmitting
+    // A command can go: control on, the amplifier read, the radio in
+    // receive and no other command waiting for its answer.
+    readonly property bool canCommand: control && reading && !transmitting && !a.pending
+    function antennaState(n) {
+        const list = a.antennaList || []
+        for (let i = 0; i < list.length; ++i)
+            if (list[i].type === "INTERNAL" && list[i].number === n) return list[i].state
+        return ""
+    }
+    readonly property var external: {
+        const list = a.antennaList || []
+        for (let i = 0; i < list.length; ++i)
+            if (list[i].type === "EXTERNAL") return list[i]
+        return null
+    }
+
+    // Forward peak, as the desktop applet's forward gauge: the highest
+    // reading of the last 3 s, the marker falling back over the full scale
+    // in about 3.7 s. Between the amplifier's readings (half a second in
+    // receive, 250 ms while transmitting) it keeps the peaks in sight.
+    readonly property real fwdNow: reading && a.fwd !== undefined ? a.fwd : 0
+    property var fwdSamples: []
+    property real fwdPeak: 0
+    function recordForward() {
+        const now = Date.now()
+        fwdSamples = fwdSamples.filter(x => now - x[0] <= 3000).concat([[now, fwdNow]])
+        if (fwdNow >= fwdPeak) fwdPeak = fwdNow
+    }
+    onFwdNowChanged: Qt.callLater(recordForward)
+    onReadingChanged: { fwdSamples = []; fwdPeak = 0 }
+    Timer {
+        interval: 100
+        repeat: true
+        running: ampTab.fwdPeak > ampTab.fwdNow
+        onTriggered: {
+            const now = Date.now()
+            ampTab.fwdSamples = ampTab.fwdSamples.filter(x => now - x[0] <= 3000)
+            const windowMax = ampTab.fwdSamples.reduce((m, x) => Math.max(m, x[1]), ampTab.fwdNow)
+            ampTab.fwdPeak = Math.max(windowMax, ampTab.fwdPeak - 1600 / 3.7 * 0.1)
+        }
+    }
     function num(v, digits, unit) {
         return v === undefined ? "–" : Number(v).toFixed(digits) + (unit ? " " + unit : "")
     }
@@ -100,6 +145,8 @@ ColumnLayout {
             live: ampTab.reading && ampTab.a.fwd !== undefined
             value: ampTab.a.fwd || 0
             text: qsTr("Forward") + " " + ampTab.num(ampTab.a.fwd, 0, "W")
+            peak: ampTab.fwdPeak
+            showPeak: true
         }
         BarGauge {
             objectName: "ampReflected"
@@ -161,12 +208,196 @@ ColumnLayout {
         font.bold: true
         wrapMode: Text.Wrap
     }
+
+    // ---- Control (Radio Setup › Amp › Control the amplifier) ----
+    ColumnLayout {
+        Layout.fillWidth: true
+        Layout.topMargin: Theme.spacing / 2
+        visible: ampTab.control
+        spacing: Theme.spacing / 2
+
+        // Operate / Standby as a pair, the amplifier's present mode the dark
+        // one; the other asks first.
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 4
+            Label { text: qsTr("Mode"); color: Theme.textDim; font.pixelSize: 15; Layout.fillWidth: true }
+            AppButton {
+                objectName: "ampStandby"
+                text: qsTr("Standby")
+                checked: ampTab.a.operate === "STANDBY"
+                enabled: ampTab.canCommand && ampTab.a.operate !== undefined
+                Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                onClicked: if (!checked) confirm.ask("standby", 0)
+            }
+            AppButton {
+                objectName: "ampOperateButton"
+                text: qsTr("Operate")
+                checked: ampTab.a.operate === "OPERATE"
+                enabled: ampTab.canCommand && ampTab.a.operate !== undefined
+                Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                onClicked: if (!checked) confirm.ask("operate", 0)
+            }
+        }
+        // The internal antennas 1-4, the active one dark; one the amplifier
+        // has not set up is dim. The external antenna is shown, not switched.
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 4
+            Label { text: qsTr("Antenna"); color: Theme.textDim; font.pixelSize: 15; Layout.fillWidth: true }
+            Repeater {
+                // A fixed model: the buttons stay while the readings change.
+                model: 4
+                delegate: AppButton {
+                    required property int index
+                    readonly property int number: index + 1
+                    readonly property string antState: ampTab.antennaState(number)
+                    objectName: "ampAntenna" + number
+                    visible: antState !== ""
+                    text: number
+                    checked: antState === "ACTIVE"
+                    // The active one stays bright (it is the present state);
+                    // a tap on it asks nothing.
+                    enabled: ampTab.canCommand && antState !== "DISABLED"
+                    Accessible.name: qsTr("Antenna %1").arg(number)
+                    Layout.preferredWidth: Theme.touchTarget
+                    onClicked: if (!checked) confirm.ask("antenna", number)
+                }
+            }
+            Rectangle {
+                visible: ampTab.external !== null
+                readonly property bool active: !!ampTab.external && ampTab.external.state === "ACTIVE"
+                Accessible.role: Accessible.StaticText
+                Accessible.name: active ? qsTr("External antenna, active") : qsTr("External antenna, not active")
+                radius: Theme.radius
+                color: active ? Theme.buttonFaceOn : "transparent"
+                border.color: Theme.textDim
+                implicitWidth: extText.implicitWidth + 12
+                implicitHeight: Theme.touchTarget
+                Label {
+                    id: extText
+                    anchors.centerIn: parent
+                    text: ampTab.external ? ampTab.external.label.replace(/^External/i, "EXT") : ""
+                    color: parent.active ? Theme.buttonTextOn : Theme.textDim
+                    font.pixelSize: Theme.buttonFont
+                }
+            }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Theme.spacing
+            AppButton {
+                objectName: "ampReset"
+                text: qsTr("Reset error")
+                enabled: ampTab.canCommand
+                Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                onClicked: confirm.ask("reset", 0)
+            }
+            Label {
+                objectName: "ampCommandState"
+                Layout.fillWidth: true
+                text: ampTab.a.pending ? qsTr("Asking the amplifier…")
+                    : ampTab.transmitting ? qsTr("Not while transmitting.")
+                    : ampTab.a.result || ""
+                color: ampTab.a.pending || ampTab.transmitting ? Theme.textDim
+                     : ampTab.a.resultOk ? "#00cc66" : Theme.transmit
+                font.pixelSize: 13
+                wrapMode: Text.Wrap
+            }
+        }
+    }
+
     Label {
         Layout.fillWidth: true
         Layout.topMargin: Theme.spacing / 2
-        text: qsTr("Read only: this version shows what the amplifier reports and changes nothing on it. Operate / Standby, the antenna and the error reset come once tested on a real RF2K-S.")
+        text: ampTab.control
+              ? qsTr("Each change asks you first and none works while the radio transmits; the tab shows only what the amplifier reads back.")
+              : qsTr("Read only: nothing is sent that changes the amplifier. Control in Radio Setup › Amp adds Operate / Standby, the antenna and the error reset.")
         color: Theme.textDim
         font.pixelSize: 12
         wrapMode: Text.WordWrap
+    }
+
+    // One confirmation per change, naming it, as the app's other offers
+    // (SetupSuggestion); it closes by itself when the change could no
+    // longer go (the radio keyed, the link lost, control turned off).
+    Dialog {
+        id: confirm
+        objectName: "ampConfirm"
+        property string action: ""
+        property int antenna: 0
+        function ask(what, n) {
+            action = what
+            antenna = n
+            open()
+        }
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(440, parent ? parent.width - 24 : 400)
+        modal: true
+        padding: Theme.spacing
+        background: Rectangle { color: Theme.surface; radius: Theme.radius; border.color: Theme.accent; border.width: 2 }
+        readonly property bool stillPossible: ampTab.canCommand
+        onStillPossibleChanged: if (!stillPossible && opened) close()
+        // "antenna 1" for an internal one, the external one by its label.
+        readonly property string activeAntenna: {
+            const label = ampTab.a.antenna || ""
+            return /^[0-9]+$/.test(label) ? qsTr("antenna %1").arg(label) : (label || qsTr("the present antenna"))
+        }
+
+        contentItem: ColumnLayout {
+            spacing: Theme.spacing
+            Label {
+                objectName: "ampConfirmTitle"
+                Layout.fillWidth: true
+                text: confirm.action === "operate" ? qsTr("Put the amplifier in OPERATE?")
+                    : confirm.action === "standby" ? qsTr("Put the amplifier in STANDBY?")
+                    : confirm.action === "antenna" ? qsTr("Switch the amplifier to antenna %1?").arg(confirm.antenna)
+                    : qsTr("Reset the amplifier's error?")
+                color: Theme.text
+                font.pixelSize: 18
+                font.bold: true
+                wrapMode: Text.Wrap
+            }
+            Label {
+                Layout.fillWidth: true
+                text: confirm.action === "operate"
+                      ? qsTr("The next transmission goes through the amplifier: check that the radio's power suits it.")
+                    : confirm.action === "standby"
+                      ? qsTr("The radio's signal goes past the amplifier, not amplified.")
+                    : confirm.action === "antenna"
+                      ? qsTr("The amplifier's output moves from %1 to antenna %2. Check that antenna %2 is connected and suits this band.").arg(confirm.activeAntenna).arg(confirm.antenna)
+                      : qsTr("Clear the RF-KIT's error state? Make sure the cause of the error has been resolved first.")
+                color: Theme.textDim
+                font.pixelSize: 15
+                wrapMode: Text.Wrap
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                AppButton {
+                    objectName: "ampConfirmNo"
+                    text: qsTr("Cancel")
+                    Layout.fillWidth: true
+                    onClicked: confirm.close()
+                }
+                AppButton {
+                    objectName: "ampConfirmYes"
+                    text: confirm.action === "operate" ? qsTr("Operate")
+                        : confirm.action === "standby" ? qsTr("Standby")
+                        : confirm.action === "antenna" ? qsTr("Antenna %1").arg(confirm.antenna)
+                        : qsTr("Reset")
+                    checked: true
+                    Layout.fillWidth: true
+                    onClicked: {
+                        const what = confirm.action
+                        const n = confirm.antenna
+                        confirm.close()
+                        if (what === "operate" || what === "standby") Engine.ampSetOperate(what === "operate")
+                        else if (what === "antenna") Engine.ampSelectAntenna(n)
+                        else if (what === "reset") Engine.ampResetError()
+                    }
+                }
+            }
+        }
     }
 }

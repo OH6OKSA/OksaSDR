@@ -21,8 +21,78 @@ Popup {
     property var d: ({})
     property var xvtrs: []
     property int section: 0
-    function refresh() { d = Engine.radioSetup(); xvtrs = Engine.transverters() }
+    // Another tab starts at its top (a long tab's scroll left a short one
+    // out of sight).
+    onSectionChanged: scroll.contentItem.contentY = 0
+    // The TX band settings' band buttons: re-made only when the radio's
+    // band list changes (not on every read, which would drop a tap).
+    property var txBandList: []
+    property string txBandKey: ""
+    property int txBandId: -1
+    readonly property var txBand: {
+        const list = d.txBands || []
+        for (let i = 0; i < list.length; ++i)
+            if (list[i].id === txBandId) return list[i]
+        return null
+    }
+    function bandLabel(name) { return /^[0-9]+$/.test(name) ? name + "m" : name }
+    // USB cables: the cable buttons and the sources' antenna and slice
+    // choices re-made only when they change, as the band buttons.
+    property var usb: ({ cables: [], antennas: [], slices: [] })
+    property var usbList: []
+    property string usbKey: ""
+    property string usbSn: ""
+    property int usbBit: 0
+    property var antennaChoices: []
+    property var sliceChoices: []
+    readonly property var cable: {
+        const list = usb.cables || []
+        for (let i = 0; i < list.length; ++i)
+            if (list[i].sn === usbSn) return list[i]
+        return null
+    }
+    function setUsb(key, value) { Engine.setUsbCable(usbSn, key, String(value)); refreshSoon.restart() }
+    function setUsbBit(key, value) { Engine.setUsbCableBit(usbSn, usbBit, key, String(value)); refreshSoon.restart() }
+    function refreshUsb() {
+        usb = Engine.usbCables()
+        const list = usb.cables || []
+        const key = list.map(c => c.sn + ":" + c.name + ":" + c.present).join(",")
+            + "|" + (usb.antennas || []).join(",") + "|" + (usb.slices || []).length
+        if (key !== usbKey) {
+            usbKey = key
+            usbList = list.map(c => ({ sn: c.sn, label: (c.name || c.sn) + (c.present ? "" : qsTr(" (unplugged)")) }))
+            antennaChoices = (usb.antennas || []).map(a => ({ label: a, value: a }))
+            sliceChoices = (usb.slices || []).map(i => ({ label: String.fromCharCode(65 + i), value: String(i) }))
+            if (!list.some(c => c.sn === usbSn)) usbSn = list.length > 0 ? list[0].sn : ""
+        }
+    }
+    function refresh() {
+        d = Engine.radioSetup()
+        xvtrs = Engine.transverters()
+        refreshUsb()
+        const list = d.txBands || []
+        const key = list.map(b => b.id + ":" + b.name).join(",")
+        if (key !== txBandKey) {
+            txBandKey = key
+            txBandList = list.map(b => ({ id: b.id, name: b.name }))
+            // The band the radio is on, else the first.
+            if (!list.some(b => b.id === txBandId)) {
+                const here = list.find(b => bandLabel(b.name) === Engine.activeBand)
+                txBandId = here ? here.id : (list.length > 0 ? list[0].id : -1)
+            }
+        }
+    }
     function set(key, value) { Engine.setRadioSetup(key, value); refreshSoon.restart() }
+    function setBand(field, value) { set("txBand", { id: txBandId, field: field, value: value }) }
+    // A change that could key the radio by itself asks first: a TX REQ
+    // input read active high (an open input then requests transmit).
+    function setRisky(title, text, apply, yes) {
+        risky.heading = title
+        risky.text = text
+        risky.apply = apply
+        risky.yes = yes || qsTr("Switch")
+        risky.open()
+    }
     onOpened: refresh()
     Timer { interval: 1000; repeat: true; running: setup.opened; onTriggered: setup.refresh() }
     Timer { id: refreshSoon; interval: 300; onTriggered: setup.refresh() }
@@ -48,8 +118,128 @@ Popup {
         signal toggled(bool on)
         Layout.fillWidth: true
         Label { text: onOff.label; color: Theme.text; font.pixelSize: 15; Layout.fillWidth: true; wrapMode: Text.Wrap }
-        AppButton { text: qsTr("Off"); checked: !onOff.on; focusPolicy: Qt.NoFocus; Layout.preferredWidth: 64; onClicked: onOff.toggled(false) }
-        AppButton { text: qsTr("On"); checked: onOff.on; focusPolicy: Qt.NoFocus; Layout.preferredWidth: 64; onClicked: onOff.toggled(true) }
+        AppButton {
+            objectName: onOff.objectName.length > 0 ? onOff.objectName + "Off" : ""
+            text: qsTr("Off"); checked: !onOff.on; focusPolicy: Qt.NoFocus; Layout.preferredWidth: 64; onClicked: onOff.toggled(false)
+        }
+        AppButton {
+            objectName: onOff.objectName.length > 0 ? onOff.objectName + "On" : ""
+            text: qsTr("On"); checked: onOff.on; focusPolicy: Qt.NoFocus; Layout.preferredWidth: 64; onClicked: onOff.toggled(true)
+        }
+    }
+    // One of a few values as a row (or rows) of the app's buttons, the
+    // current one dark; options [{label, value}].
+    component Choice: ColumnLayout {
+        id: choice
+        property string label
+        property var options: []
+        property var current
+        property int columns: 4
+        signal chosen(var value)
+        Layout.fillWidth: true
+        spacing: 2
+        Label { visible: choice.label.length > 0; text: choice.label; color: Theme.text; font.pixelSize: 15; Layout.fillWidth: true; wrapMode: Text.Wrap }
+        GridLayout {
+            Layout.fillWidth: true
+            columns: choice.columns
+            columnSpacing: 4
+            rowSpacing: 4
+            Repeater {
+                model: choice.options
+                delegate: AppButton {
+                    required property var modelData
+                    objectName: choice.objectName.length > 0 ? choice.objectName + String(modelData.value).replace(/[^A-Za-z0-9]/g, "") : ""
+                    text: modelData.label
+                    checked: String(choice.current) === String(modelData.value)
+                    focusPolicy: Qt.NoFocus
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    onClicked: if (!checked) choice.chosen(modelData.value)
+                }
+            }
+        }
+    }
+    // Where a USB cable's frequency or band comes from (FlexLib's sources),
+    // and which antenna or slice for the ones that name one.
+    component SourceChoice: ColumnLayout {
+        id: source
+        property var item: ({})
+        signal setKey(string key, string value)
+        Layout.fillWidth: true
+        spacing: Theme.spacing / 2
+        Choice {
+            objectName: source.objectName.length > 0 ? source.objectName : ""
+            label: qsTr("Frequency from")
+            columns: 4
+            options: [{ label: qsTr("None"), value: "None" }, { label: qsTr("TX pan"), value: "tx_pan" },
+                      { label: qsTr("TX slice"), value: "tx_slice" }, { label: qsTr("Active slice"), value: "active_slice" },
+                      { label: qsTr("TX antenna"), value: "tx_ant" }, { label: qsTr("RX antenna"), value: "rx_ant" },
+                      { label: qsTr("Slice"), value: "ordinal_slice" }]
+            current: source.item.source || "None"
+            onChosen: (v) => source.setKey("source", v)
+        }
+        Choice {
+            visible: source.item.source === "tx_ant" || source.item.source === "rx_ant"
+            label: source.item.source === "tx_ant" ? qsTr("Transmit antenna") : qsTr("Receive antenna")
+            columns: 4
+            options: setup.antennaChoices
+            current: source.item.source === "tx_ant" ? source.item.sourceTxAnt : source.item.sourceRxAnt
+            onChosen: (v) => source.setKey(source.item.source === "tx_ant" ? "source_tx_ant" : "source_rx_ant", v)
+        }
+        Choice {
+            visible: source.item.source === "ordinal_slice"
+            label: qsTr("Slice")
+            columns: 8
+            options: setup.sliceChoices
+            current: source.item.sourceSlice
+            onChosen: (v) => source.setKey("source_slice", v)
+        }
+    }
+    // A serial port's settings (CAT and Passthrough cables).
+    component SerialSettings: ColumnLayout {
+        id: serial
+        property var item: ({})
+        signal setKey(string key, string value)
+        Layout.fillWidth: true
+        spacing: Theme.spacing / 2
+        Choice {
+            objectName: "usbSpeed"
+            label: qsTr("Speed (baud)")
+            columns: 5
+            options: [300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200, 230400, 460800, 921600]
+                     .map(b => ({ label: String(b), value: String(b) }))
+            current: String(serial.item.speed || "")
+            onChosen: (v) => serial.setKey("speed", v)
+        }
+        Choice {
+            label: qsTr("Data bits")
+            columns: 4
+            options: [{ label: "7", value: "7" }, { label: "8", value: "8" }]
+            current: String(serial.item.dataBits || "")
+            onChosen: (v) => serial.setKey("data_bits", v)
+        }
+        Choice {
+            label: qsTr("Parity")
+            columns: 5
+            options: ["none", "odd", "even", "mark", "space"].map(p => ({ label: p, value: p }))
+            current: serial.item.parity || ""
+            onChosen: (v) => serial.setKey("parity", v)
+        }
+        Choice {
+            label: qsTr("Stop bits")
+            columns: 4
+            options: [{ label: "1", value: "1" }, { label: "2", value: "2" }]
+            current: String(serial.item.stopBits || "")
+            onChosen: (v) => serial.setKey("stop_bits", v)
+        }
+        Choice {
+            label: qsTr("Flow control")
+            columns: 4
+            options: [{ label: qsTr("None"), value: "none" }, { label: "RTS/CTS", value: "rts_cts" },
+                      { label: "DTR/DSR", value: "dtr_dsr" }, { label: "XON/XOFF", value: "xon_xoff" }]
+            current: serial.item.flow || ""
+            onChosen: (v) => serial.setKey("flow_control", v)
+        }
     }
     // A slider that writes when released (not a command per pixel).
     component Level: ColumnLayout {
@@ -133,14 +323,14 @@ Popup {
             font.pixelSize: 13
             wrapMode: Text.Wrap
         }
-        // Seven in a row where each gets 80 px, else 4 + 3.
+        // Eight in a row where each gets 84 px ("Phone/CW" whole), else 4 + 4.
         GridLayout {
             Layout.fillWidth: true
-            columns: width >= 7 * 80 ? 7 : 4
+            columns: width >= 8 * 84 ? 8 : 4
             columnSpacing: 4
             rowSpacing: 4
             Repeater {
-                model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("Network"), qsTr("XVTR"), qsTr("Amp")]
+                model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("Network"), qsTr("XVTR"), qsTr("Amp"), qsTr("USB")]
                 delegate: AppButton {
                     required property int index
                     required property string modelData
@@ -257,6 +447,189 @@ Popup {
                             Layout.fillWidth: true
                             onClicked: setup.set("tuneMode", "two_tone")
                         }
+                    }
+
+                    // ---- Keying an amplifier: SmartSDR's Timings and
+                    // Interlocks and its TX Band Settings, as the desktop's
+                    // Transmit tab, so no other program is needed ----
+                    Heading { text: qsTr("Keying outputs: delay after PTT") }
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("Each output closes this long after PTT, and the radio's signal waits for TX delay, so an amplifier's relays are set before RF arrives (an amplifier needs about 20 ms: e.g. TX1 20 ms, TX delay 30 ms). Kept in the radio's TX profile (%1).").arg(setup.d.txProfile || "–")
+                        color: Theme.textDim
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
+                    }
+                    Level {
+                        label: qsTr("RCA TX1")
+                        unit: " ms"
+                        to: 500
+                        stepSize: 5
+                        current: setup.d.tx1Delay || 0
+                        onCommitted: (v) => setup.set("tx1Delay", v)
+                    }
+                    Level {
+                        label: qsTr("RCA TX2")
+                        unit: " ms"
+                        to: 500
+                        stepSize: 5
+                        current: setup.d.tx2Delay || 0
+                        onCommitted: (v) => setup.set("tx2Delay", v)
+                    }
+                    Level {
+                        label: qsTr("RCA TX3")
+                        unit: " ms"
+                        to: 500
+                        stepSize: 5
+                        current: setup.d.tx3Delay || 0
+                        onCommitted: (v) => setup.set("tx3Delay", v)
+                    }
+                    Level {
+                        label: qsTr("ACC TX")
+                        unit: " ms"
+                        to: 500
+                        stepSize: 5
+                        current: setup.d.accTxDelay || 0
+                        onCommitted: (v) => setup.set("accTxDelay", v)
+                    }
+
+                    Heading { text: qsTr("TX REQ inputs") }
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("A footswitch or sequencer on a TX REQ input keys the radio, on the bands where that input is on (below). Active low: a contact to ground transmits, the usual way. Active high: a high level transmits, and so does an open input.")
+                        color: Theme.textDim
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
+                    }
+                    Repeater {
+                        model: [{ key: "rcaTxReqPolarity", band: "rcaTxReq", label: qsTr("RCA TX REQ"), name: "Rca" },
+                                { key: "accTxReqPolarity", band: "accTxReq", label: qsTr("ACC TX REQ"), name: "Acc" }]
+                        delegate: RowLayout {
+                            id: polarity
+                            required property var modelData
+                            Layout.fillWidth: true
+                            readonly property bool high: (setup.d[modelData.key] || 0) === 1
+                            Label { text: polarity.modelData.label; color: Theme.text; font.pixelSize: 15; Layout.fillWidth: true; wrapMode: Text.Wrap }
+                            AppButton {
+                                objectName: "txReq" + polarity.modelData.name + "Low"
+                                text: qsTr("Active low")
+                                checked: !polarity.high
+                                Layout.preferredWidth: Math.max(Theme.buttonWidth * 1.5, implicitWidth)
+                                onClicked: if (polarity.high) setup.set(polarity.modelData.key, 0)
+                            }
+                            AppButton {
+                                objectName: "txReq" + polarity.modelData.name + "High"
+                                text: qsTr("Active high")
+                                checked: polarity.high
+                                Layout.preferredWidth: Math.max(Theme.buttonWidth * 1.5, implicitWidth)
+                                onClicked: {
+                                    if (polarity.high) return
+                                    const key = polarity.modelData.key
+                                    setup.setRisky(qsTr("%1 active high?").arg(polarity.modelData.label),
+                                                   qsTr("An open input then keys the radio: with nothing plugged in, the radio transmits on every band where %1 is on. Switch only with a sequencer that drives the input high to transmit.").arg(polarity.modelData.label),
+                                                   () => setup.set(key, 1))
+                                }
+                            }
+                        }
+                    }
+
+                    OnOff {
+                        objectName: "pttMicOverride"
+                        visible: !!setup.d.pttMicOverrideKnown
+                        label: qsTr("PTT mic override (a hardware PTT sends the analog mic, whatever the TX source)")
+                        on: !!setup.d.pttMicOverride
+                        onToggled: (v) => setup.set("pttMicOverride", v)
+                    }
+
+                    Heading { text: qsTr("Inhibit during TUNE (this device)") }
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("The outputs held open while TUNE or the ATU transmits, so tuning at low power does not key the amplifier; they close again after. This device's setting, as the desktop's.")
+                        color: Theme.textDim
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
+                    }
+                    OnOff { objectName: "tuneInhibitTx1"; label: qsTr("RCA TX1"); on: !!setup.d.TuneInhibitTx1; onToggled: (v) => setup.set("TuneInhibitTx1", v) }
+                    OnOff { objectName: "tuneInhibitTx2"; label: qsTr("RCA TX2"); on: !!setup.d.TuneInhibitTx2; onToggled: (v) => setup.set("TuneInhibitTx2", v) }
+                    OnOff { objectName: "tuneInhibitTx3"; label: qsTr("RCA TX3"); on: !!setup.d.TuneInhibitTx3; onToggled: (v) => setup.set("TuneInhibitTx3", v) }
+                    OnOff { objectName: "tuneInhibitAccTx"; label: qsTr("ACC TX"); on: !!setup.d.TuneInhibitAccTx; onToggled: (v) => setup.set("TuneInhibitAccTx", v) }
+
+                    Heading { text: qsTr("TX band settings") }
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("Per band: the power, and which keying outputs and TX REQ inputs work there (TX profile %1). Pick a band:").arg(setup.d.txProfile || "–")
+                        color: Theme.textDim
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
+                    }
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columns: width >= 7 * 64 ? 7 : 5
+                        columnSpacing: 4
+                        rowSpacing: 4
+                        Repeater {
+                            model: setup.txBandList
+                            delegate: AppButton {
+                                required property var modelData
+                                objectName: "txBand" + modelData.name
+                                text: setup.bandLabel(modelData.name)
+                                checked: setup.txBandId === modelData.id
+                                Layout.fillWidth: true
+                                Layout.preferredWidth: 1
+                                onClicked: setup.txBandId = modelData.id
+                            }
+                        }
+                    }
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        visible: setup.txBand !== null
+                        spacing: Theme.spacing / 2
+                        readonly property var b: setup.txBand || ({})
+                        readonly property string band: setup.txBand ? setup.bandLabel(setup.txBand.name) : ""
+                        Level {
+                            label: qsTr("RF power on %1").arg(parent.band)
+                            unit: " %"
+                            current: parent.b.rfPower || 0
+                            onCommitted: (v) => setup.setBand("rfPower", v)
+                        }
+                        Level {
+                            label: qsTr("Tune power on %1").arg(parent.band)
+                            unit: " %"
+                            current: parent.b.tunePower || 0
+                            onCommitted: (v) => setup.setBand("tunePower", v)
+                        }
+                        OnOff { objectName: "txBandTx1"; label: qsTr("RCA TX1 output"); on: !!parent.b.tx1; onToggled: (v) => setup.setBand("tx1", v) }
+                        OnOff { objectName: "txBandTx2"; label: qsTr("RCA TX2 output"); on: !!parent.b.tx2; onToggled: (v) => setup.setBand("tx2", v) }
+                        OnOff { objectName: "txBandTx3"; label: qsTr("RCA TX3 output"); on: !!parent.b.tx3; onToggled: (v) => setup.setBand("tx3", v) }
+                        OnOff { objectName: "txBandAccTx"; label: qsTr("ACC TX output"); on: !!parent.b.accTx; onToggled: (v) => setup.setBand("accTx", v) }
+                        OnOff {
+                            objectName: "txBandRcaTxReq"
+                            label: qsTr("RCA TX REQ input")
+                            on: !!parent.b.rcaTxReq
+                            onToggled: (v) => {
+                                if (v && setup.d.rcaTxReqPolarity === 1)
+                                    setup.setRisky(qsTr("RCA TX REQ on %1?").arg(parent.band),
+                                                   qsTr("The input is set active high: with nothing plugged in, the radio transmits on %1 as soon as this is on.").arg(parent.band),
+                                                   () => setup.setBand("rcaTxReq", true))
+                                else
+                                    setup.setBand("rcaTxReq", v)
+                            }
+                        }
+                        OnOff {
+                            objectName: "txBandAccTxReq"
+                            label: qsTr("ACC TX REQ input")
+                            on: !!parent.b.accTxReq
+                            onToggled: (v) => {
+                                if (v && setup.d.accTxReqPolarity === 1)
+                                    setup.setRisky(qsTr("ACC TX REQ on %1?").arg(parent.band),
+                                                   qsTr("The input is set active high: with nothing plugged in, the radio transmits on %1 as soon as this is on.").arg(parent.band),
+                                                   () => setup.setBand("accTxReq", true))
+                                else
+                                    setup.setBand("accTxReq", v)
+                            }
+                        }
+                        OnOff { objectName: "txBandInhibit"; label: qsTr("PTT inhibit (no transmitting on %1)").arg(parent.band); on: !!parent.b.inhibit; onToggled: (v) => setup.setBand("inhibit", v) }
+                        OnOff { objectName: "txBandHwAlc"; label: qsTr("Hardware ALC (the amplifier's, at the ALC jack)"); on: !!parent.b.hwAlc; onToggled: (v) => setup.setBand("hwAlc", v) }
                     }
                 }
 
@@ -459,8 +832,9 @@ Popup {
                     }
                 }
 
-                // ---- Amp: an RF-KIT RF2K-S read over its REST API, read
-                // only (MobileEngineAmp.cpp); kept on this device ----
+                // ---- Amp: an RF-KIT RF2K-S over its REST API, read only
+                // unless Control is on (MobileEngineAmp.cpp); kept on this
+                // device ----
                 ColumnLayout {
                     spacing: Theme.spacing / 2
                     Heading { text: qsTr("RF-KIT RF2K-S") }
@@ -477,6 +851,13 @@ Popup {
                         label: qsTr("Read the amplifier")
                         on: !!Engine.amp.on
                         onToggled: (v) => Engine.setAmpOn(v)
+                    }
+                    OnOff {
+                        objectName: "ampControl"
+                        visible: !!Engine.amp.set
+                        label: qsTr("Control the amplifier")
+                        on: !!Engine.amp.control
+                        onToggled: (v) => Engine.setAmpControl(v)
                     }
                     Label {
                         objectName: "ampSetupState"
@@ -504,17 +885,282 @@ Popup {
                     }
                     Label {
                         Layout.fillWidth: true
-                        text: qsTr("The address of the amplifier's network port (8080 unless you set another after a colon). This device reaches it directly, on the same network or over your VPN when away: not through the radio, and not over SmartLink. Once set, Controls gets an Amp tab with what the amplifier reports: forward and reflected power, SWR, temperature, voltage, current, band, tuner and antenna.")
+                        text: qsTr("The address of the amplifier's network port (8080 unless you set another after a colon). This device reaches it directly, on the same network or over your VPN when away: not through the radio, and not over SmartLink. Once set, Controls gets an Amp tab with what the amplifier reports: forward and reflected power, SWR, temperature, voltage, current, band, tuner and antenna. Every meter can show the amplifier's readings too.")
                         color: Theme.textDim
                         font.pixelSize: 12
                         wrapMode: Text.WordWrap
                     }
                     Label {
                         Layout.fillWidth: true
-                        text: qsTr("Read only in this version: nothing is sent that changes the amplifier. Operate / Standby, the antenna and the error reset come once tested on a real RF2K-S.")
+                        text: qsTr("Control off: read only, nothing is sent that changes the amplifier. Control on: the Amp tab also gets Operate / Standby, the internal antennas and the error reset. Each asks you first, none works while the radio transmits, and the tab shows only what the amplifier reads back.")
                         color: Theme.textDim
                         font.pixelSize: 12
                         wrapMode: Text.WordWrap
+                    }
+                }
+
+                // ---- USB: serial cables in the radio's USB ports, as
+                // SmartSDR's and the desktop's USB Cables (frequency or
+                // band data for an amplifier, a tuner, an antenna switch) ----
+                ColumnLayout {
+                    spacing: Theme.spacing / 2
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("USB-serial (FTDI) cables in the radio's USB ports, as SmartSDR's USB Cables: they give an amplifier, a tuner or an antenna switch the frequency (CAT), the band (BCD, Bit) or a serial port (Passthrough). A cable shows here once plugged into the radio; its settings stay in the radio.")
+                        color: Theme.textDim
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
+                    }
+                    Label {
+                        objectName: "usbNone"
+                        visible: setup.usbList.length === 0
+                        Layout.fillWidth: true
+                        text: qsTr("No USB cables: plug a USB-serial cable into one of the radio's USB ports.")
+                        color: Theme.text
+                        font.pixelSize: 15
+                        wrapMode: Text.Wrap
+                    }
+                    GridLayout {
+                        Layout.fillWidth: true
+                        visible: setup.usbList.length > 1
+                        columns: 2
+                        columnSpacing: 4
+                        rowSpacing: 4
+                        Repeater {
+                            model: setup.usbList
+                            delegate: AppButton {
+                                required property var modelData
+                                required property int index
+                                objectName: "usbCable" + index
+                                text: modelData.label
+                                checked: setup.usbSn === modelData.sn
+                                Layout.fillWidth: true
+                                Layout.preferredWidth: 1
+                                onClicked: setup.usbSn = modelData.sn
+                            }
+                        }
+                    }
+                    ColumnLayout {
+                        id: cableEditor
+                        Layout.fillWidth: true
+                        visible: setup.cable !== null
+                        spacing: Theme.spacing / 2
+                        readonly property var c: setup.cable || ({})
+                        readonly property string family: c.type === "vbcd" || c.type === "bcd_vbcd" ? "bcd" : (c.type || "")
+                        Info { label: qsTr("Serial number"); value: cableEditor.c.sn || "" }
+                        Info { label: qsTr("State"); value: cableEditor.c.present ? qsTr("Plugged in") : qsTr("Not plugged in") }
+                        TextSetting {
+                            label: qsTr("Name  (%1)").arg(cableEditor.c.name || qsTr("none"))
+                            current: cableEditor.c.name || ""
+                            hint: qsTr("e.g. ACOM 2000A")
+                            upper: false
+                            onSaved: (t) => setup.setUsb("name", t)
+                        }
+                        OnOff { objectName: "usbEnable"; label: qsTr("Enabled"); on: !!cableEditor.c.enabled; onToggled: (v) => setup.setUsb("enable", v ? "1" : "0") }
+                        Choice {
+                            objectName: "usbType"
+                            label: qsTr("Type")
+                            columns: 5
+                            options: [{ label: "CAT", value: "cat" }, { label: "BCD", value: "bcd" }, { label: "Bit", value: "bit" },
+                                      { label: "LDPA", value: "ldpa" }, { label: qsTr("Pass"), value: "passthrough" }]
+                            current: cableEditor.family
+                            onChosen: (v) => setup.setUsb("type", v)
+                        }
+
+                        // CAT: the frequency as CAT text (Kenwood style), e.g. to an amplifier
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            visible: cableEditor.family === "cat"
+                            spacing: Theme.spacing / 2
+                            SourceChoice { objectName: "usbCatSource"; item: cableEditor.c; onSetKey: (k, v) => setup.setUsb(k, v) }
+                            OnOff { objectName: "usbAutoReport"; label: qsTr("Report the frequency by itself (auto report)"); on: !!cableEditor.c.autoReport; onToggled: (v) => setup.setUsb("auto_report", v ? "1" : "0") }
+                            SerialSettings { item: cableEditor.c; onSetKey: (k, v) => setup.setUsb(k, v) }
+                        }
+                        // BCD: the band as BCD lines, for an amplifier's or antenna switch's band input
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            visible: cableEditor.family === "bcd"
+                            spacing: Theme.spacing / 2
+                            Choice {
+                                objectName: "usbBcdType"
+                                label: qsTr("BCD bands")
+                                columns: 3
+                                options: [{ label: "HF", value: "bcd" }, { label: "VHF", value: "vbcd" }, { label: "HF + VHF", value: "bcd_vbcd" }]
+                                current: cableEditor.c.type
+                                onChosen: (v) => setup.setUsb("type", v)
+                            }
+                            Choice {
+                                objectName: "usbBcdPolarity"
+                                label: qsTr("Polarity")
+                                columns: 2
+                                options: [{ label: qsTr("Active high"), value: "active_high" }, { label: qsTr("Active low"), value: "active_low" }]
+                                current: cableEditor.c.activeHigh === false ? "active_low" : "active_high"
+                                onChosen: (v) => setup.setUsb("polarity", v)
+                            }
+                            SourceChoice { objectName: "usbBcdSource"; item: cableEditor.c; onSetKey: (k, v) => setup.setUsb(k, v) }
+                        }
+                        // Bit: eight lines, each on for a band or a frequency range
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            visible: cableEditor.family === "bit"
+                            spacing: Theme.spacing / 2
+                            readonly property var b: (cableEditor.c.bits || [])[setup.usbBit] || ({})
+                            Choice {
+                                objectName: "usbBit"
+                                label: qsTr("Bit")
+                                columns: 8
+                                options: [0, 1, 2, 3, 4, 5, 6, 7].map(i => ({ label: String(i), value: i }))
+                                current: setup.usbBit
+                                onChosen: (v) => setup.usbBit = v
+                            }
+                            OnOff { objectName: "usbBitEnable"; label: qsTr("Bit %1 enabled").arg(setup.usbBit); on: !!parent.b.enabled; onToggled: (v) => setup.setUsbBit("enable", v ? "1" : "0") }
+                            SourceChoice { objectName: "usbBitSource"; item: parent.b; onSetKey: (k, v) => setup.setUsbBit(k, v) }
+                            Choice {
+                                objectName: "usbBitOutput"
+                                label: qsTr("On for")
+                                columns: 2
+                                options: [{ label: qsTr("A band"), value: "band" }, { label: qsTr("A frequency range"), value: "freq_range" }]
+                                current: parent.b.output || ""
+                                onChosen: (v) => setup.setUsbBit("output", v)
+                            }
+                            Choice {
+                                objectName: "usbBitBand"
+                                visible: parent.b.output === "band"
+                                label: qsTr("Band")
+                                columns: 5
+                                options: setup.txBandList.map(x => ({ label: setup.bandLabel(x.name), value: x.name }))
+                                current: parent.b.band || ""
+                                onChosen: (v) => setup.setUsbBit("band", v)
+                            }
+                            TextSetting {
+                                visible: parent.b.output === "freq_range"
+                                label: qsTr("From, MHz  (%1)").arg(Number(parent.b.lowMhz || 0).toFixed(3))
+                                current: Number(parent.b.lowMhz || 0).toFixed(3)
+                                hint: "14.000"
+                                upper: false
+                                onSaved: (t) => setup.setUsbBit("low_freq", Number(t.replace(",", ".")).toFixed(3))
+                            }
+                            TextSetting {
+                                visible: parent.b.output === "freq_range"
+                                label: qsTr("To, MHz  (%1)").arg(Number(parent.b.highMhz || 0).toFixed(3))
+                                current: Number(parent.b.highMhz || 0).toFixed(3)
+                                hint: "14.350"
+                                upper: false
+                                onSaved: (t) => setup.setUsbBit("high_freq", Number(t.replace(",", ".")).toFixed(3))
+                            }
+                            Choice {
+                                objectName: "usbBitPolarity"
+                                label: qsTr("Polarity")
+                                columns: 2
+                                options: [{ label: qsTr("Active high"), value: "active_high" }, { label: qsTr("Active low"), value: "active_low" }]
+                                current: parent.b.activeHigh === false ? "active_low" : "active_high"
+                                onChosen: (v) => setup.setUsbBit("polarity", v)
+                            }
+                            OnOff { objectName: "usbBitPtt"; label: qsTr("Only while transmitting (PTT dependent)"); on: !!parent.b.pttDependent; onToggled: (v) => setup.setUsbBit("ptt_dependent", v ? "1" : "0") }
+                            Level {
+                                visible: !!parent.b.pttDependent
+                                label: qsTr("PTT delay")
+                                unit: " ms"
+                                to: 500
+                                stepSize: 5
+                                current: parent.b.pttDelay || 0
+                                onCommitted: (v) => setup.setUsbBit("ptt_delay", v)
+                            }
+                            Level {
+                                visible: !!parent.b.pttDependent
+                                label: qsTr("TX delay")
+                                unit: " ms"
+                                to: 500
+                                stepSize: 5
+                                current: parent.b.txDelay || 0
+                                onCommitted: (v) => setup.setUsbBit("tx_delay", v)
+                            }
+                        }
+                        // LDPA: a FlexRadio LDPA (2 m / 4 m) amplifier's band and preamp
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            visible: cableEditor.family === "ldpa"
+                            spacing: Theme.spacing / 2
+                            Choice {
+                                objectName: "usbLdpaBand"
+                                label: qsTr("Band")
+                                columns: 2
+                                options: [{ label: "2 m", value: "2" }, { label: "4 m", value: "4" }]
+                                current: cableEditor.c.ldpaBand || ""
+                                onChosen: (v) => setup.setUsb("band", v)
+                            }
+                            OnOff { objectName: "usbLdpaPreamp"; label: qsTr("Preamp"); on: !!cableEditor.c.preamp; onToggled: (v) => setup.setUsb("preamp", v ? "1" : "0") }
+                            SourceChoice { objectName: "usbLdpaSource"; item: cableEditor.c; onSetKey: (k, v) => setup.setUsb(k, v) }
+                        }
+                        // Passthrough: a serial port through the radio
+                        SerialSettings {
+                            visible: cableEditor.family === "passthrough"
+                            item: cableEditor.c
+                            onSetKey: (k, v) => setup.setUsb(k, v)
+                        }
+                        AppButton {
+                            objectName: "usbForget"
+                            visible: !cableEditor.c.present
+                            text: qsTr("Forget this cable")
+                            onClicked: setup.setRisky(qsTr("Forget %1?").arg(cableEditor.c.name || cableEditor.c.sn),
+                                                      qsTr("The radio drops this cable's settings; plugged in again, it starts unconfigured."),
+                                                      () => Engine.removeUsbCable(setup.usbSn), qsTr("Forget"))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // A setting that could key the radio by itself asks first (the app's
+    // offer pattern, as the amplifier's confirmations).
+    Dialog {
+        id: risky
+        objectName: "setupRisky"
+        property string heading
+        property string text
+        property string yes
+        property var apply: null
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(440, parent ? parent.width - 24 : 400)
+        modal: true
+        padding: Theme.spacing
+        background: Rectangle { color: Theme.surface; radius: Theme.radius; border.color: Theme.transmit; border.width: 2 }
+        contentItem: ColumnLayout {
+            spacing: Theme.spacing
+            Label {
+                Layout.fillWidth: true
+                text: risky.heading
+                color: Theme.text
+                font.pixelSize: 18
+                font.bold: true
+                wrapMode: Text.Wrap
+            }
+            Label {
+                Layout.fillWidth: true
+                text: risky.text
+                color: Theme.textDim
+                font.pixelSize: 15
+                wrapMode: Text.Wrap
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                AppButton {
+                    objectName: "setupRiskyNo"
+                    text: qsTr("Cancel")
+                    Layout.fillWidth: true
+                    onClicked: risky.close()
+                }
+                AppButton {
+                    objectName: "setupRiskyYes"
+                    text: risky.yes
+                    checked: true
+                    Layout.fillWidth: true
+                    onClicked: {
+                        const f = risky.apply
+                        risky.close()
+                        if (f) f()
                     }
                 }
             }

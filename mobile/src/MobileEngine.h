@@ -282,12 +282,15 @@ class MobileEngine : public QObject {
     // Logger32 on the operator's PC: each logged QSO as an ADIF record over
     // TCP (MobileEngineLogger32.cpp).
     Q_PROPERTY(QVariantMap logger32 READ logger32 NOTIFY logger32Changed)
-    // An RF-KIT RF2K-S amplifier read over its REST API, read only
-    // (MobileEngineAmp.cpp): set, address, on, state ("off", "connecting",
-    // "connected", "failed"), error, target; once read: device, name,
-    // firmware, operate ("OPERATE" / "STANDBY"), fwd, refl (W), swr, temp
-    // (°C), volts, amps, band, freq, status, tuner, tunerSetup, iface,
-    // ifaceError, antenna, antennas. A reading not in yet is absent.
+    // An RF-KIT RF2K-S amplifier over its REST API (MobileEngineAmp.cpp):
+    // set, address, on, control (commands allowed), state ("off",
+    // "connecting", "connected", "failed"), error, target, pending (the
+    // command waiting for the amplifier's answer: "operate", "standby",
+    // "antenna N", "reset"), result / resultOk (the last command's outcome);
+    // once read: device, name, firmware, operate ("OPERATE" / "STANDBY"),
+    // fwd, refl (W), swr, temp (°C), volts, amps, band, freq, status, tuner,
+    // tunerSetup, iface, ifaceError, antenna, antennas, antennaList ({label,
+    // type, number, state} each). A reading not in yet is absent.
     Q_PROPERTY(QVariantMap amp READ amp NOTIFY ampChanged)
     Q_PROPERTY(bool memoriesWritable READ memoriesWritable NOTIFY memoriesChanged)
     // The radio's tracking notch filters (Flex TNF): {id, freq (MHz),
@@ -625,6 +628,24 @@ public:
     // a radio needs on first use. radioSetup() reads them (the page polls);
     // setRadioSetup() writes one by key. They change the radio, not the app.
     Q_INVOKABLE QVariantMap radioSetup() const;
+    // USB cables in the radio's USB ports (FTDI serial adapters), as
+    // SmartSDR's and the desktop's USB Cables: frequency and band data for an
+    // amplifier, a tuner or an antenna switch. Each {sn, type (cat, bcd,
+    // vbcd, bcd_vbcd, bit, ldpa, passthrough, invalid), enabled, present,
+    // name, speed, dataBits, parity, stopBits, flow, source, sourceRxAnt,
+    // sourceTxAnt, sourceSlice, autoReport, activeHigh, ldpaBand, preamp,
+    // bits: 8 x {enabled, source, sourceRxAnt, sourceTxAnt, sourceSlice,
+    // output, band, lowMhz, highMhz, activeHigh, pttDependent, pttDelay,
+    // txDelay}}; antennas and slices list the sources' choices.
+    Q_INVOKABLE QVariantMap usbCables();
+    // One setting as the radio's usb_cable command takes it (FlexLib's
+    // names: type, enable, name, speed, data_bits, parity, stop_bits,
+    // flow_control, source, source_rx_ant, source_tx_ant, source_slice,
+    // auto_report, polarity, band, preamp); a bit's with its index 0-7.
+    Q_INVOKABLE void setUsbCable(const QString& sn, const QString& key, const QString& value);
+    Q_INVOKABLE void setUsbCableBit(const QString& sn, int bit, const QString& key, const QString& value);
+    // Forgets an unplugged cable's settings on the radio.
+    Q_INVOKABLE void removeUsbCable(const QString& sn);
     Q_INVOKABLE void setRadioSetup(const QString& key, const QVariant& value);
     // The radio's transverters (Radio Setup › XVTR, as the desktop's tab):
     // index, name, rfMhz, ifMhz, loMhz, loErrorMhz, rxGain, maxPowerDbm,
@@ -1031,6 +1052,14 @@ public:
     // forgets it. A new address turns reading on.
     Q_INVOKABLE void setAmpAddress(const QString& hostPort);
     Q_INVOKABLE void setAmpOn(bool on);
+    // Commands to the amplifier (off by default): only with this on does
+    // anything but a reading reach it.
+    Q_INVOKABLE void setAmpControl(bool on);
+    // Each asks once (the page confirms first) and is refused while the
+    // radio transmits; the amplifier's own readback shows the result.
+    Q_INVOKABLE void ampSetOperate(bool operate);
+    Q_INVOKABLE void ampSelectAntenna(int number);
+    Q_INVOKABLE void ampResetError();
     QVariantMap amp() const;
     // Opens the share sheet with the log as an ADIF file
     // ("OksaSDR-log-<date>.adi"): mail, Files, AirDrop, a logbook app, or
@@ -1225,6 +1254,12 @@ public:
     {
         appendCwDecoded(text);
         emit cwDecoderChanged();
+    }
+    // Development (render tool `status`): a status line as if the radio
+    // had sent it, for hardware not at hand (a USB cable).
+    void injectStatusForTest(const QString& object, const QMap<QString, QString>& kvs)
+    {
+        m_session.radioModel().handleStatusForTest(object, kvs);
     }
     int cwDecoderSensitivity() const;
     void setCwDecoderSensitivity(int sens);
@@ -1758,12 +1793,20 @@ private:
     // ---- The amplifier (MobileEngineAmp.cpp) ----
     void setupAmp();
     void updateAmpLink();
+    void updateAmpPollRate();
+    bool ampCommandAllowed(const char* what);
+    void ampCommandDone(const QString& result, bool ok);
     RfkitConnection* m_amp{nullptr};
     Rfkit::Status m_ampStatus;
     bool m_ampWanted{false};
+    bool m_ampFastPoll{false};
+    bool m_ampSet{false};
     QString m_ampTarget;  // "host:port" being read
     QString m_ampState{QStringLiteral("off")};
     QString m_ampError;
+    QString m_ampPending;
+    QString m_ampResult;
+    bool m_ampResultOk{false};
     void syncDigiAudio();
     void onDigiSlot(qint64 slotMs);
     void handleDigiDecodes(const QVariantList& decodes, qint64 slotMs);

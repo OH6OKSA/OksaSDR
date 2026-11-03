@@ -64,6 +64,7 @@ RowLayout {
         columnSpacing: 4
         rowSpacing: 4
         MeterBadge {
+            objectName: "meterLeft"
             side: "left"
             dialHeight: bar.dialHeight
             maxWidth: bar.leftPair ? bar.pairMaxWidth : bar.meterMaxWidth
@@ -181,6 +182,7 @@ RowLayout {
         rowSpacing: 4
         layoutDirection: bar.rightPair ? Qt.RightToLeft : Qt.LeftToRight
         MeterBadge {
+            objectName: "meterRight"
             side: "right"
             dialHeight: bar.dialHeight
             maxWidth: bar.rightPair ? bar.pairMaxWidth : bar.meterMaxWidth
