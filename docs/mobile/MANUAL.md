@@ -42,7 +42,8 @@ portrait, a foldable's inner screen) behind **⋯**, as are **Manual** and
 
 **Once, for everything**
 - **Connect** ([1](#1-connecting)): by the radio's IP address or host name
-  on the same network, from anywhere over SmartLink, or over your own VPN.
+  on the same network (several radios kept on a list), from anywhere over
+  SmartLink, or over your own VPN or Tailscale.
 - **A slice of its own**: the app opens one on the radio. When the radio's
   slices are all in use by other programs, *No slice* shows
   ([Notices](#10-notices-and-problems)).
@@ -402,13 +403,21 @@ The first page lists the ways to reach a radio:
   does not sign you out. Each radio's card says whether it is free
   (*Available*) or *In use by* and the station using it (e.g. another
   computer running SmartSDR).
-- **By IP address or host name** — tap the address field and enter your
-  radio's IP address on the keypad (SmartSDR's radio chooser and your
-  router's device list both show it), then *Connect*. **ABC** switches to
-  the device's keyboard for a host name instead: a name your home network's
-  or VPN's DNS knows, or a dynamic DNS name. It is looked up when you
-  connect, and the name is what the app remembers. A hardware keyboard
-  types digits and letters on the keypad too.
+- **By IP address or host name** — the radios you have entered, one card
+  each: your name for it, or what the radio calls itself (its name and
+  model, learned when you connect), with the address and *last used* on
+  the one you connected to last. Tap a card to connect. **+ Add a radio**
+  opens the keypad: enter the radio's IP address (SmartSDR's radio chooser
+  and your router's device list both show it), then *Connect*; the radio
+  joins the list. **ABC** switches to the device's keyboard for a host name
+  instead: a name your home network's or VPN's DNS knows, a dynamic DNS
+  name, or a Tailscale MagicDNS name (with the Tailscale app on, e.g. a
+  friend's radio shared on your tailnet). A name is looked up at each
+  connect, so it keeps following the radio. **✎** beside a card gives it a
+  name of your own, changes its address (on the keypad, *OK*) or removes
+  it (*Remove*, then *Remove it?*). The list is kept on this device only.
+  A hardware keyboard types digits and letters on the keypad too. (Several
+  radios asked by Mike Walker VA3MW.)
   The device must reach the radio on the same network or over a VPN. Do
   not forward the radio's ports to the internet: its connection has no
   password, so anyone who found it could control the radio and transmit,
@@ -1540,10 +1549,20 @@ radio.
 ![Radio Setup](manual/setup.jpg)
 
 - **Radio** — callsign (what `{CALL}` sends), the radio's name in radio
-  lists, *Remote on* (SmartLink may power the radio on), muting the radio's
-  own audio while remote, **Connected stations** (every program on the radio,
-  multiFLEX; *Disconnect* ends another station's session after asking, which
-  frees its slices), and the model, serial, firmware, region and address.
+  lists (letters, digits and . , / - only, as the radio takes it), **This
+  station's name** (how this device shows in the radio's
+  station list and to other stations, sent at once and on every connect;
+  spaces become dashes), *Remote on* (SmartLink may power the radio on),
+  muting the radio's own audio while remote, whether **multiFLEX** is on
+  (several stations at once), **Connected stations** (every program on the
+  radio; *Disconnect* ends another station's session after asking, which
+  frees its slices), and the model, serial, firmware, region, address and
+  options. **License**: the subscription, when it expires, the highest
+  licensed SmartSDR version and the radio ID. **GPS** (a radio with GPS
+  fitted): its status, satellites tracked and visible, grid, position,
+  altitude, frequency error and UTC. **Restart the radio…** restarts it
+  after asking: every station loses the radio for about a minute; over
+  SmartLink, connect again by hand.
 - **Transmit** — maximum power, TX delay, transmit timeout (0 = off) and the
   TUNE signal (single or two tone). Then what an amplifier, a sequencer or
   a preamp needs, as in SmartSDR's Radio Setup (so no other program is
@@ -1573,14 +1592,51 @@ radio.
 
   ![Radio Setup › Transmit: the TX band settings](manual/setup-txband.jpg)
 - **Phone/CW** — microphone bias and boost (the radio's own microphone
-  inputs; this device's microphone gain is the TX tab's Mic level); the CW
-  keyer's break-in delay,
-  iambic mode (off, A, B) and swapped paddles.
-- **Audio** — the radio's line out and headphone levels and muting.
-- **Network** — the network MTU: the largest packet the radio sends the app
-  (1450 by default, as in SmartSDR and the desktop). Lower it if the
-  waterfall or audio break up over a VPN or tunnel; over Tailscale at most
-  1200 is used.
+  inputs; this device's microphone gain is the TX tab's Mic level), and
+  **Mic level meter in receive too**; the CW keyer's break-in delay,
+  iambic mode (off, A, B) and swapped paddles, the **CW sideband** (*CWU*,
+  upper, as usual, or *CWL*, lower) and **CWX text at the keyer's speed**
+  (CW memories and typed CW at the radio's keyer speed). **RTTY**: the
+  radio's default RTTY mark (2125 Hz as usual), the mark a new RTTY slice
+  starts with.
+- **Audio** — the radio's line out and headphone levels and muting, and on
+  a model with a front speaker (an M model) muting that speaker.
+- **RX** — what the radio's receiver is set to, as SmartSDR's Receive and
+  Filters pages:
+  - **Frequency calibration** — the radio measures a steady carrier of known
+    frequency and sets its own frequency offset from it. Enter the carrier's
+    frequency (MHz: a GPS-locked source, or a time station such as WWV on
+    10 or 15 MHz, strong and in the clear) and press **Calibrate**: it asks
+    first, says the offset now, then shows *Calibrating…* and the result in
+    ppb. If the radio refuses, the old offset is put back; if it reports no
+    end in 20 s, the page says what the offset was, to enter it back.
+    **Frequency offset** sets the offset by hand (parts per billion).
+  - **10 MHz reference** — the radio's frequency reference: *Auto*, *TCXO*,
+    *GPSDO* (with one fitted) or an *External* 10 MHz input. A change asks
+    first: on an input with no signal the radio unlocks and drifts. Below it
+    the source in use and whether the radio is locked.
+  - **Binaural receive** — on or off, as the radio reports it.
+  - **Filters: low latency 0 … 3 sharp** — the radio's filter sharpness for
+    *Voice*, *CW* and *Digital*: 0 the least delay, 3 the sharpest skirts,
+    or *Auto* (the radio chooses). **Low-latency digital filters** (for
+    PACTOR and the like) shows as the radio reports it.
+
+  ![Radio Setup › RX](manual/setup-rx.jpg)
+
+  FLEX firmware 4.3 refuses the commands that change multiFLEX, binaural
+  receive and the low-latency digital filters ("could not parse"), so the
+  app shows them as the radio reports them.
+- **Network** — the radio's address as it reports it (IP address, netmask,
+  gateway, MAC), and how it gets one: **DHCP**, or **Static** with the IP
+  address, netmask and gateway and **Apply the static address…**. Either
+  change asks first: the radio restarts with it (every station loses it for
+  about a minute), so connect again at the new address. A wrong static
+  address can leave the radio out of reach until it is set back at the
+  radio. **Private addresses only** shows whether the radio takes stations
+  only from private network addresses. Then the network MTU: the largest
+  packet the radio sends the app (1450 by default, as in SmartSDR and the
+  desktop). Lower it if the waterfall or audio break up over a VPN or
+  tunnel; over Tailscale at most 1200 is used.
 - **XVTR** — the radio's transverters, as the desktop's XVTR tab: *Add
   transverter* creates one; for each, its name (shown on the band buttons),
   RF frequency (the band, MHz), IF frequency (the radio's, MHz; LO = RF −

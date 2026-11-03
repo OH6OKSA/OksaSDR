@@ -80,7 +80,8 @@ radio interface, with no computer running alongside.
   and range (or Auto), and the 3D floor, gain and smoothing in the View
   tab, remembered on the device; plus the radio's own FFT average, FFT
   frames/s and waterfall speed.
-- **Band** beside −/+ zooms out to the whole band.
+- **Band** beside −/+ zooms out to the whole band. View › Zoom buttons
+  puts −/+, Band and B/S at the right for a right hand.
 - RF gain; the radio's memory channels (recall, save, edit name,
   frequency and mode, delete).
 - **Spots and DX cluster**: the radio's spots (from every program on it)
@@ -203,7 +204,9 @@ radio interface, with no computer running alongside.
   the speaker goes quiet at the press, so receive never reaches the air.
 - **Transmit lock** (TX tab, off by default): nothing transmits in
   standby until PTT, KEY, Space, TUNE or CQ is held for a second; then it
-  stays armed for five minutes after the last transmission.
+  stays armed for five minutes after the last transmission, counting down
+  on PTT. With the lock off, **At start: Hold to arm** keeps PTT in
+  standby at each start until held once.
 - CW: in CW modes the PTT button is the straight key or two paddles (dit,
   dah) with the app's iambic keyer (A/B, squeeze; also [ ] or left/right
   Ctrl on a keyboard or USB paddle adapter), with the sidetone played on
@@ -279,11 +282,16 @@ radio interface, with no computer running alongside.
   it.
 - Network quality in the top row (as the desktop's indicator), with
   link timing, packet loss per stream and traffic on tap.
-- **Radio Setup** (top row): callsign, radio name, remote, transmit limits
-  and timing, keying an amplifier (output delays, TX REQ, TX band
-  settings), USB cables, microphone, CW keyer and the radio's audio
-  outputs; offered
-  once when a radio has no callsign yet (a new radio).
+- **Several radios by IP address or host name** on the Connect page, each
+  with your name for it or the radio's own: a dynamic DNS or Tailscale
+  MagicDNS name is looked up at each connect.
+- **Radio Setup** (top row), as SmartSDR's: callsign, radio and station
+  names, remote, multiFLEX, license, GPS, restarting the radio, transmit
+  limits and timing, keying an amplifier (output delays, TX REQ, TX band
+  settings), USB cables, microphone, CW keyer and sideband, the RTTY mark,
+  the radio's audio outputs, receive (frequency calibration, the 10 MHz
+  reference, filter sharpness) and the radio's network address (DHCP or
+  static); offered once when a radio has no callsign yet (a new radio).
 - App version and build in the top row; **Manual** opens the
   [user manual](docs/mobile/MANUAL.md).
 - Built-in demo radio, so you can try it without a radio.
@@ -327,7 +335,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | RX audio on device | ✅ In daily use by testers, also with Bluetooth headsets |
 | Voice transmit on air (device mic, Bluetooth headset) | ✅ Used on air by testers. Test at low power or into a dummy load first. |
 | SmartLink remote (sign in, connect from anywhere, Opus audio) | ✅ Supported |
-| Remote over your own VPN (connect by IP) | ✅ In use by testers (OpenVPN, WireGuard, Tailscale; also over 5G) |
+| Remote over your own VPN (connect by IP) | ✅ In use by testers (OpenVPN, WireGuard, Tailscale; also over 5G); several radios kept on a list since build 151 |
 | FT8 / FT4 in the app | ✅ QSOs logged on the air from the iPad and a FLEX; 157 PSKReporter spots from two 10 W CQs; several slices decoding at once; Answer CQ worked three stations by itself (build 141) |
 | RADE digital voice | 🧪 Built in; reports with RADE stations welcome |
 | FreeDV Reporter (qso.freedv.org) | ✅ The app's RADE listed on qso.freedv.org (build 112) |
@@ -343,10 +351,11 @@ landscape and Android pictures are taken from the devices.</sub>
 | VoiceOver / TalkBack names | 🧪 Every control named (build 139); reports from screen-reader users welcome |
 | CWX (CW memories, CW text) on air | ✅ Used on air by a tester (POTA/WWFF replies); checked at 10 W with the sidetone in step |
 | CW straight key and paddles on air | ✅ Checked on the FLEX at 10 W: straight key, paddles (elements on time at 30 WPM), iambic A and B squeeze |
-| Transmit lock (SB / OA) | ✅ Checked on the FLEX without transmitting (build 141) |
+| Transmit lock (SB / OA) | ✅ Checked on the FLEX without transmitting (build 141); the countdown back to SB and Hold to arm at start checked in build 151 |
 | RTTY decoding and sending | ✅ Contest stations decoded live (build 141); DIGL / DIGU decoded live (IT9EJW, SV1EKI); sent at 10 W and decoded by RBN skimmers across Europe (OE9GHV 33 dB, GM0UDL 27 dB) |
 | RF-KIT RF2K-S amplifier | ✅ Readings checked on a real RF2K-S (Sebastian Schu DG5CST, build 148). 🧪 Control (Operate / Standby, antenna, error reset) tested against a stand-in of its REST API: confirmations, a refusal (409), no answer, a lost link, never while transmitting (checked keyed on the FLEX); to verify on a real RF2K-S. 🧪 Tune's carrier (build 150) keyed on the FLEX at 5 W against the stand-in: STANDBY first, kept with the app in the background, off once tuned, after 20 s, on Stop, with the amplifier in OPERATE, on a lost link, and the radio unkeying by itself when the app was killed |
-| Macros panel by PTT (CW memories, Digi macros, voice keyer) | 🧪 Built in (build 150); checked on phones and tablets in USB, CW and RTTY without sending; reports welcome |
+| Macros panel by PTT (CW memories, Digi macros, voice keyer) | ✅ In use by a tester since build 150 (Tyler K0OTC: "It looks good"); checked on phones and tablets in USB, CW and RTTY without sending |
+| Radio Setup › RX, Network and the rest of SmartSDR's Radio Setup (build 151) | 🧪 Each setting written from the page and set back on the FLEX-6600M (4.3.16); calibration, the reference, a static address and the restart only to their question so far; multiFLEX, binaural and the low-latency digital filters shown only (that firmware refuses their commands) |
 | PSK31 / PSK63 | ✅ PSK31 decoded live (LZ1AEY's CQ on 14.071) and a PSK31 QSO at 25 W with F6FPU near Lyon, answering our first CQ (2026-11-02); the decoder tested to -12 dB SNR, AFC and a neighbour 100 Hz away |
 | CW decoder | ✅ Decodes a strong signal cleanly and weak stations' calls (8–45 WPM, Sens filter against noise) |
 | LAN discovery on iOS | ⏳ Needs Apple's multicast entitlement. Connect by IP for now. |

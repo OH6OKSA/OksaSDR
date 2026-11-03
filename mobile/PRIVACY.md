@@ -23,7 +23,10 @@ these services:
   name is looked up through your device's own DNS), or to a radio
   discovered on your local network. Control commands, spectrum, waterfall and
   audio travel directly between your device and your radio. They go through a
-  VPN only if you route them that way.
+  VPN only if you route them that way. The station name (the app's name, or
+  the one you set in Radio Setup) goes to the radio, which shows it to its
+  other stations; the radio's GPS position, if it has GPS, is only shown in
+  Radio Setup.
 - **Local network discovery.** It listens for radio and accessory discovery
   broadcasts on the local network. iOS asks for permission ("Local Network")
   before this is allowed.
@@ -142,4 +145,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-10-29 (host names for the radio)
+Last updated: 2026-11-03 (the station name and the radio's GPS in Radio Setup)

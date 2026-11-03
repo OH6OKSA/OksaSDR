@@ -49,7 +49,7 @@ ipad_shots=(overview infopanel slicerow spectrum filter agc antenna mode frequen
 phone_shots=(phone-portrait phone-menu memory-edit)
 for t in "${tabs[@]}"; do phone_shots+=("tab-$t"); done
 modes_shots=(mode-usb mode-cw mode-am mode-fm fm-tx tx-lock mode-rtty rtty-panel tab-rtty digi-operating mode-psk)
-amp_shots=(tab-amp amp-controls amp-confirm amp-tune setup-amp setup-txband setup-usb meter-amp)
+amp_shots=(tab-amp amp-controls amp-confirm amp-tune setup-amp setup-txband setup-rx setup-usb meter-amp)
 all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${phone_shots[@]}" phone-landscape bandchooser
            "${modes_shots[@]}" "${amp_shots[@]}" cw-paddles macros rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
@@ -77,7 +77,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 if [ "$DRY" = 0 ]; then
-    cmake --build "$BUILD" --target aether-mobile --parallel >/dev/null
+    cmake --build "$BUILD" --target aether-mobile --parallel "$(nproc)" >/dev/null
 fi
 mkdir -p "$OUT"
 
@@ -254,11 +254,13 @@ if want "${amp_shots[@]}"; then
     {
         printf 'ready\namp %s\nwait 4000\n' "${lan:-127.0.0.1}"
         # Control on, as the user turns it on (the Amp tab's rows need it).
-        printf 'popup radioSetup\nwait 800\nclick setupTab6\nwait 1500\ntapname ampControlOn\nwait 1000\n'
+        printf 'popup radioSetup\nwait 800\nclick setupTab7\nwait 1500\ntapname ampControlOn\nwait 1000\n'
         if want setup-amp; then printf 'shot setup-amp\n'; fi
         if want setup-txband; then printf 'click setupTab1\nwait 1500\nshowname txBandHwAlcOn\nwait 800\nshot setup-txband\n'; fi
+        # The radio's receiver: calibration, reference and filters (shown).
+        if want setup-rx; then printf 'click setupTab4\nwait 2000\nshot setup-rx\n'; fi
         # The radio's own USB cables, as they are (only shown, nothing set).
-        if want setup-usb; then printf 'click setupTab7\nwait 2000\nshot setup-usb\n'; fi
+        if want setup-usb; then printf 'click setupTab8\nwait 2000\nshot setup-usb\n'; fi
         printf 'close\nwait 600\n'
         if want tab-amp amp-controls amp-confirm amp-tune; then printf 'drawer 12\nwait 1500\nscroll 0\nwait 800\n'; fi
         if want tab-amp; then printf 'shot tab-amp\n'; fi
@@ -357,6 +359,7 @@ done
 jpg tab-amp 440x520+0+436
 jpg setup-amp 418x700+11+40 330x
 jpg setup-txband 418x700+11+40 330x
+jpg setup-rx 418x825+11+40 330x
 jpg setup-usb 418x700+11+40 330x
 jpg amp-controls 440x520+0+436
 jpg amp-confirm 440x420+0+395

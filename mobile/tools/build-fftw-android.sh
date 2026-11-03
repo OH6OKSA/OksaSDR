@@ -30,7 +30,7 @@ for prec in double float; do
         -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
         -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF \
         -DCMAKE_INSTALL_PREFIX="$PREFIX" $extra
-    cmake --build "$work/build-$prec" --parallel
+    cmake --build "$work/build-$prec" --parallel "$(nproc)"
     cmake --install "$work/build-$prec"
 done
 ls -la "$PREFIX/lib"

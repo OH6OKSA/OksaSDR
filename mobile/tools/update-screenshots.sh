@@ -47,7 +47,7 @@ APP="$BUILD/mobile/aether-mobile"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-cmake --build "$BUILD" --target aether-mobile --parallel >/dev/null
+cmake --build "$BUILD" --target aether-mobile --parallel "$(nproc)" >/dev/null
 mkdir -p "$OUT"
 
 # The radio takes two GUI clients, and a run's client is freed some seconds

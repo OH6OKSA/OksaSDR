@@ -56,7 +56,7 @@ else
 fi
 
 if [ -n "$SWEEP" ]; then
-    cmake --build "$ROOT/build-mobile" --target aether-mobile --parallel >/dev/null
+    cmake --build "$ROOT/build-mobile" --target aether-mobile --parallel "$(nproc)" >/dev/null
     echo "Layout sweep into $SWEEP..."
     python3 "$TOOLS/render-sweep.py" "$SWEEP" --radio "$RADIO"
     if [ -n "$BASELINE" ]; then
