@@ -75,9 +75,15 @@ Item {
                      text: "Amp " + (amp.amps || 0).toFixed(1) + " A", red: 1e9 }
         case "S":
             return { v: Engine.sMeterDbm, min: -127, max: -13, live: true, text: Engine.sMeterText, red: 1e9 }
-        case "Power":
-            return { v: Engine.forwardPowerW, min: 0, max: 120, live: tx,
-                     text: Engine.forwardPowerW.toFixed(0) + " W", red: 100 }
+        case "Power": {
+            // As the desktop's gauge: 0-120 W red from 100, an Aurora or a
+            // radio over 100 W 0-600 red from 500, QRP (20 W or less) to
+            // 1.2 times its power, red from it.
+            const rated = Engine.ratedPowerW
+            const scale = rated > 100 ? 600 : rated > 0 && rated <= 20 ? rated * 1.2 : 120
+            return { v: Engine.forwardPowerW, min: 0, max: scale, live: tx,
+                     text: Engine.forwardPowerW.toFixed(0) + " W", red: scale * 5 / 6 }
+        }
         case "SWR":
             return { v: Engine.swrValid ? Engine.swr : 1, min: 1, max: 3, live: tx && Engine.swrValid,
                      text: "SWR " + (Engine.swrValid ? Engine.swr.toFixed(1) : "–"), red: 2.5 }

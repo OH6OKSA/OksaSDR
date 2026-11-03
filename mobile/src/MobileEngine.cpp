@@ -921,6 +921,9 @@ MobileEngine::MobileEngine(QObject* parent)
         }
     };
     connect(&rm, &RadioModel::infoChanged, this, refreshBands);
+    // The Power meter's scale follows the radio's model and power limit.
+    connect(&rm, &RadioModel::infoChanged, this, &MobileEngine::ratedPowerChanged);
+    connect(&rm.transmitModel(), &TransmitModel::maxPowerLevelChanged, this, &MobileEngine::ratedPowerChanged);
     // The radio's name and model for its saved entry, as they arrive.
     connect(&rm, &RadioModel::infoChanged, this, &MobileEngine::noteSavedRadioName);
     connect(this, &MobileEngine::connectionStateChanged, this, refreshBands);
@@ -1616,6 +1619,13 @@ void MobileEngine::storeSavedRadios(const QJsonArray& radios)
                                      QString::fromUtf8(QJsonDocument(radios).toJson(QJsonDocument::Compact)));
     AppSettings::instance().save();
     emit savedRadiosChanged();
+}
+
+int MobileEngine::ratedPowerW() const
+{
+    const RadioModel& rm = m_session.radioModel();
+    const int maxW = rm.transmitModel().maxPowerLevel();
+    return rm.model().startsWith(QLatin1String("AU-")) && maxW <= 100 ? 500 : maxW;
 }
 
 QVariantList MobileEngine::savedRadios() const

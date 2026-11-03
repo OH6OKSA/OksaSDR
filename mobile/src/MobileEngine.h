@@ -521,6 +521,11 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QVariantMap txChain READ txChain NOTIFY txChainChanged)
     Q_PROPERTY(double compReductionDb READ compReductionDb NOTIFY txMetersChanged)
     Q_PROPERTY(double forwardPowerW READ forwardPowerW NOTIFY txMetersChanged)
+    // The power the radio is rated for, for the Power meter's scale (Sloan
+    // Davis: on an Aurora it turned red past 100 W): the radio's
+    // max_power_level, 500 W for an Aurora (AU-), whose max_power_level
+    // reports only the exciter's 100 W, as the desktop's gauge (#484).
+    Q_PROPERTY(int ratedPowerW READ ratedPowerW NOTIFY ratedPowerChanged)
     Q_PROPERTY(double swr READ swr NOTIFY txMetersChanged)
     Q_PROPERTY(bool swrValid READ swrValid NOTIFY txMetersChanged)
     Q_PROPERTY(bool radioTransmitting READ radioTransmitting NOTIFY txMetersChanged)
@@ -1360,6 +1365,7 @@ public:
     Q_INVOKABLE void setTxChain(const QString& key, const QVariant& value);
     double compReductionDb() const;
     double forwardPowerW() const { return m_forwardPowerW; }
+    int ratedPowerW() const;
     double swr() const { return m_swr; }
     bool swrValid() const { return m_swrValid; }
     // Radio actually on the air (MOX, tune, ATU, VOX); TX-only meters show
@@ -1547,6 +1553,7 @@ signals:
     void rfPowerChanged();
     void micGainChanged();
     void txMetersChanged();
+    void ratedPowerChanged();
     void dspChanged();
     void meterSelectionChanged();
     void tuneStateChanged();
