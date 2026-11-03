@@ -49,9 +49,9 @@ ipad_shots=(overview infopanel slicerow spectrum filter agc antenna mode frequen
 phone_shots=(phone-portrait phone-menu memory-edit)
 for t in "${tabs[@]}"; do phone_shots+=("tab-$t"); done
 modes_shots=(mode-usb mode-cw mode-am mode-fm fm-tx tx-lock mode-rtty rtty-panel tab-rtty digi-operating mode-psk)
-amp_shots=(tab-amp amp-controls amp-confirm setup-amp setup-txband setup-usb meter-amp)
+amp_shots=(tab-amp amp-controls amp-confirm amp-tune setup-amp setup-txband setup-usb meter-amp)
 all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${phone_shots[@]}" phone-landscape bandchooser
-           "${modes_shots[@]}" "${amp_shots[@]}" cw-paddles rade-on ft8-running)
+           "${modes_shots[@]}" "${amp_shots[@]}" cw-paddles macros rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
     printf '%s\n' "${all_shots[@]}" | sort -u
     exit 0
@@ -238,8 +238,8 @@ fi
 # readings, against a stand-in RF2K-S (rf2k-mock.py, transmitting, antennas
 # 1-3 set up, on this computer's own network address and the API's port
 # 8080, so the address reads as an amplifier's would). Nothing is sent to
-# it (the confirmation is cancelled); the meters get their choices back and
-# the app forgets the amplifier after.
+# it and nothing is keyed (the confirmations, Tune's too, are cancelled);
+# the meters get their choices back and the app forgets the amplifier after.
 if want "${amp_shots[@]}" && [ "$DRY" = 0 ]; then
     lan="$(ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p')"
     python3 "$ROOT/mobile/tools/rf2k-mock.py" --bind "${lan:-127.0.0.1}" --port 8080 --keyed --operate \
@@ -260,12 +260,13 @@ if want "${amp_shots[@]}"; then
         # The radio's own USB cables, as they are (only shown, nothing set).
         if want setup-usb; then printf 'click setupTab7\nwait 2000\nshot setup-usb\n'; fi
         printf 'close\nwait 600\n'
-        if want tab-amp amp-controls amp-confirm; then printf 'drawer 12\nwait 1500\nscroll 0\nwait 800\n'; fi
+        if want tab-amp amp-controls amp-confirm amp-tune; then printf 'drawer 12\nwait 1500\nscroll 0\nwait 800\n'; fi
         if want tab-amp; then printf 'shot tab-amp\n'; fi
-        if want amp-controls amp-confirm; then printf 'showname ampReset\nwait 800\n'; fi
+        if want amp-controls amp-confirm amp-tune; then printf 'showname ampReset\nwait 800\n'; fi
         if want amp-controls; then printf 'shot amp-controls\n'; fi
         if want amp-confirm; then printf 'tapname ampAntenna2\nwait 1000\nshot amp-confirm\ntapname ampConfirmNo\nwait 600\n'; fi
-        if want tab-amp amp-controls amp-confirm; then printf 'close\nwait 600\n'; fi
+        if want amp-tune; then printf 'tapname ampTune\nwait 1000\nshot amp-tune\ntapname ampConfirmNo\nwait 600\n'; fi
+        if want tab-amp amp-controls amp-confirm amp-tune; then printf 'close\nwait 600\n'; fi
         if want meter-amp; then
             # Amp power at the right and amp SWR at the left in transmit,
             # shown with the transmit preview; then the radio's Power and
@@ -291,6 +292,12 @@ fi
 if want cw-paddles; then
     printf 'ready\nmode CW\nwait 25000\nshot cw-paddles\nmode DIGU\nwait 2000\n' \
         | plan cw-paddles 440x956 "${src[@]}" --cw-paddles on
+fi
+# The Macros panel in CW (the CW memories), opened by its button and closed
+# again; nothing is sent.
+if want macros; then
+    printf 'ready\nmode CW\nwait 6000\ntapname macrosButton\nwait 1500\nshot macros\ntapname macrosButton\nwait 600\nmode DIGU\nwait 2000\n' \
+        | plan macros 440x956 "${src[@]}"
 fi
 # The tests end their runs: RADE on 10 s after the start, the picture at
 # 40 s, RADE off with the slice and the TX slice back at 42 s; FT8 put back
@@ -331,6 +338,7 @@ jpg ipad-portrait "" 600x
 jpg phone-menu 440x230+0+0
 jpg bandchooser "" 700x
 jpg cw-paddles 440x200+0+756
+jpg macros 440x430+0+526
 jpg rade-on 440x620+0+0
 jpg ft8-running "" 330x
 jpg tx-meters 985x140+0+200
@@ -352,6 +360,7 @@ jpg setup-txband 418x700+11+40 330x
 jpg setup-usb 418x700+11+40 330x
 jpg amp-controls 440x520+0+436
 jpg amp-confirm 440x420+0+395
+jpg amp-tune 440x432+0+383
 jpg meter-amp 440x100+0+208
 jpg rtty-panel 440x440+0+172
 jpg digi-operating 440x332+0+536

@@ -109,8 +109,11 @@ radio interface, with no computer running alongside.
   while transmitting); every meter can show its readings too. With
   *Control the amplifier* on (off by default): Operate / Standby, the
   internal antenna and the error reset, each confirmed first, none while
-  the radio transmits, shown only as the amplifier reads it back. The
-  phone reaches the amplifier directly (same network or VPN).
+  the radio transmits, shown only as the amplifier reads it back; and
+  **Tune**, the carrier the amplifier's own tuner needs (in STANDBY, 4-39
+  W, kept while you open the amplifier's screen over VNC to press its
+  Tune, stopping once it has tuned or after 20 s). The phone reaches the
+  amplifier directly (same network or VPN).
 - **Keying an amplifier from Radio Setup**, as in SmartSDR, so no other
   program is needed: on Transmit each keying output's delay after PTT
   (RCA TX1-TX3, ACC TX), the TX REQ inputs' polarity, the TX band
@@ -185,6 +188,11 @@ radio interface, with no computer running alongside.
 - **Voice keyer**: twelve voice macros F1–F12. With SmartSDR+ they are the
   radio's DVK; without it the app records and plays them itself, kept on
   the device. *Listen* plays one back without transmitting.
+- **Macros by PTT**: a button beside PTT opens the macros of the mode
+  you are in over the display, buttons only, so no scrolling past the
+  tabs' sliders: the CW memories with the call being worked, the RTTY /
+  PSK macros or the voice keyer; a tap sends, Stop stops, and PTT stays
+  in use while it is open.
 - **eSSB**: the processing of the device's microphone, AetherSDR's
   client-side TX chain, on a tab of its own as on the desktop: gate, EQ
   (low cut, bass, presence) and compressor, with the Mic meter reading the
@@ -260,7 +268,8 @@ radio interface, with no computer running alongside.
   the drawer carries it at the bottom, never covering it.
 - Apple Pencil drags tune 10× finer, for zero-beating.
 - Magic Keyboard and trackpad: arrows tune, Space is PTT, +/− zoom, F opens
-  frequency entry, scroll tunes and ⌘-scroll zooms.
+  frequency entry, scroll tunes and ⌘-scroll zooms; a slider, switch or
+  list used on the page never keeps the keyboard from them.
 - Safe-area aware: notch, Dynamic Island and the home indicator.
 - VoiceOver and TalkBack: every control has a spoken name; a double tap
   acts and a swipe moves a slider one step.
@@ -336,7 +345,8 @@ landscape and Android pictures are taken from the devices.</sub>
 | CW straight key and paddles on air | ✅ Checked on the FLEX at 10 W: straight key, paddles (elements on time at 30 WPM), iambic A and B squeeze |
 | Transmit lock (SB / OA) | ✅ Checked on the FLEX without transmitting (build 141) |
 | RTTY decoding and sending | ✅ Contest stations decoded live (build 141); DIGL / DIGU decoded live (IT9EJW, SV1EKI); sent at 10 W and decoded by RBN skimmers across Europe (OE9GHV 33 dB, GM0UDL 27 dB) |
-| RF-KIT RF2K-S amplifier | ✅ Readings checked on a real RF2K-S (Sebastian Schu DG5CST, build 148). 🧪 Control (Operate / Standby, antenna, error reset) tested against a stand-in of its REST API: confirmations, a refusal (409), no answer, a lost link, never while transmitting (checked keyed on the FLEX); to verify on a real RF2K-S |
+| RF-KIT RF2K-S amplifier | ✅ Readings checked on a real RF2K-S (Sebastian Schu DG5CST, build 148). 🧪 Control (Operate / Standby, antenna, error reset) tested against a stand-in of its REST API: confirmations, a refusal (409), no answer, a lost link, never while transmitting (checked keyed on the FLEX); to verify on a real RF2K-S. 🧪 Tune's carrier (build 150) keyed on the FLEX at 5 W against the stand-in: STANDBY first, kept with the app in the background, off once tuned, after 20 s, on Stop, with the amplifier in OPERATE, on a lost link, and the radio unkeying by itself when the app was killed |
+| Macros panel by PTT (CW memories, Digi macros, voice keyer) | 🧪 Built in (build 150); checked on phones and tablets in USB, CW and RTTY without sending; reports welcome |
 | PSK31 / PSK63 | ✅ PSK31 decoded live (LZ1AEY's CQ on 14.071) and a PSK31 QSO at 25 W with F6FPU near Lyon, answering our first CQ (2026-11-02); the decoder tested to -12 dB SNR, AFC and a neighbour 100 Hz away |
 | CW decoder | ✅ Decodes a strong signal cleanly and weak stations' calls (8–45 WPM, Sens filter against noise) |
 | LAN discovery on iOS | ⏳ Needs Apple's multicast entitlement. Connect by IP for now. |

@@ -146,7 +146,8 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
    the **TX filter** (100-3100 Hz), the radio's TX equalizer (Audio) and
    this device's own processing on the **eSSB** tab (gate, EQ, compressor).
 4. **Voice keyer**: F1-F12 on the TX tab record and send voice macros
-   (*Listen* plays one without transmitting).
+   (*Listen* plays one without transmitting). The **Macros** button by
+   PTT opens them over the display, without scrolling the TX tab.
 5. A headset: Controls → Audio → Audio output (Bluetooth, USB-C on
    Android, or the speaker).
 
@@ -174,7 +175,8 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
 3. **Memories** M1-M12 send text through the radio at the set speed
    (`{CALL}` is your callsign, `{HIS}` the call in the Log tab); on a
    keyboard F1-F12 (⌘1-⌘0 without F-keys), Esc stops. **Live** sends
-   letters as you type.
+   letters as you type. The **Macros** button by PTT opens the memories
+   over the display, with the call being worked.
 
 ### AM and SAM
 
@@ -268,7 +270,8 @@ as long as the mark stays the higher frequency, so either way receives it.
 3. **Operating** (the Digi tab, under the text): **Call** shows the call
    being worked (the Log tab's, as on the CW tab) and the calls the text
    holds (after DE, or twice) as buttons; a tap picks one, ✕ clears it.
-   The **macros** (F1-F8 or ⌘1-⌘8 on a keyboard) follow fldigi's set and the QSO
+   The **macros** (F1-F8 or ⌘1-⌘8 on a keyboard, or the **Macros** button
+   by PTT) follow fldigi's set and the QSO
    bpsk31.com describes: **CQ** ("CQ CQ CQ DE OH6OKSA x3 PSE K"),
    **Answer** ("HIS HIS DE OH6OKSA x3 KN"), **QSO** (the report and BTU),
    **BTU**, **73 SK**, **QRZ?**, **AGN?** and **Locator**. A tap sends one,
@@ -326,7 +329,8 @@ passband, so the slice stays put and the decoder is moved to the signal.
    the Digi tab in PSK31 (or PSK63) and tunes so the signal sounds at the
    carrier, then onto the signal itself.
 3. **Operating** is as in RTTY (above): the calls heard as buttons, the
-   eight macros (F1-F8, ⌘1-⌘8), **Text to send**, **Stop**, **Log QSO**.
+   eight macros (F1-F8, ⌘1-⌘8, the **Macros** button by PTT), **Text to
+   send**, **Stop**, **Log QSO**.
    PSK has lower case, and most PSK operators type in it.
 4. **Transmitting**: on the frequency received (where AFC holds the
    station), as fldigi sends; from this slice, which must be the TX slice,
@@ -362,6 +366,8 @@ passband, so the slice stays put and the decoder is moved to the signal.
 - **Transmit lock** (TX tab → Lock): in standby (SB) nothing transmits
   until you hold PTT, KEY, Space, TUNE or CQ for a second; then it stays
   armed (OA) for five minutes after your last transmission.
+- **Macros** by PTT: the mode's memories or macros over the display
+  ([7](#7-transmitting-ptt-key-and-tune)).
 - **TUNE** and the **ATU** (TX tab) at the tune power; **Split**
   ([6](#6-split)); memories (Mem tab), spots and the DX cluster on the
   display; **REC** / **PLAY** of the slice in the info panel's row; the
@@ -432,7 +438,7 @@ mode, a DSP that runs, the shown tab) is **lit blue**; the others are dark.
 | Slice row | The two [meters](#4-meters-and-slices) at the ends, the slices in between |
 | Panadapter and waterfall | The [spectrum display](#5-panadapter-and-waterfall) |
 | Step buttons | Tune by −1 kHz … +1 kHz, or by the radio's STEP ×1, ×10, ×100 (with an FM step: the step, 100 kHz, 1 MHz, 10 MHz) |
-| PTT / KEY | [Transmit](#7-transmitting-ptt-key-and-tune) |
+| PTT / KEY | [Transmit](#7-transmitting-ptt-key-and-tune), with **Macros** beside it (the mode's memories or macros) |
 
 On an iPad or tablet the controls can stay pinned at the side (as above) or
 open as a drawer. On a phone they open as a drawer from the **Controls**
@@ -910,6 +916,20 @@ offers **Off**.
   radio.
 - **TUNE** (Controls → TX) sends a carrier at the tune power; while it is on,
   the big button reads TUNE and pressing it stops the carrier.
+- **Macros** — the button beside Controls in a phone's PTT row (beside
+  PTT on a tablet, before the controls button at the end of a phone's
+  landscape row) opens the macros of the mode you are in over the
+  display, so reaching them takes no scrolling past the tabs' sliders: in
+  CW the memories M1-M12, with the call being worked (`{HIS}`) and the
+  calls heard; in RTTY and PSK the Digi tab's macros; in the voice modes
+  the voice keyer F1-F12 (the slot sending is lit; an empty one says to
+  record it on the TX tab). A tap sends, **Stop** stops; editing stays on
+  the tabs (press and hold there). PTT, the paddles and the display stay
+  in use while it is open; ✕ or the button again closes it, and so does
+  opening the controls. It is the same set F1-F12 send on a keyboard, and
+  it never takes the keyboard.
+
+  ![The Macros panel in CW](manual/macros.jpg)
 
 The button is always on top. On a phone an open controls drawer carries its
 own copy at the bottom, beside **Close** (which closes the drawer) and **▲**
@@ -921,8 +941,9 @@ controls; on a phone the power and SWR show beside PTT while you
 transmit.
 
 Safety: transmit goes through AetherSDR's TX controller. The transmitter
-unkeys on release, on disconnect, when the app leaves the screen, when the
-layout changes and when the microphone input leaves the device. If the radio
+unkeys on release, on disconnect, when the app leaves the screen (but the
+amplifier's tune carrier, [Amp](#8-controls) › Tune, for 20 s at most),
+when the layout changes and when the microphone input leaves the device. If the radio
 refuses to transmit, its reason pops up (for example *No transmit slice is
 assigned* or *The selected TX antenna cannot transmit on this frequency*).
 
@@ -1455,7 +1476,8 @@ of seven.
 
   The amplifier is read while the app is on screen and connected to a
   radio: twice a second in receive, four times a second while the radio
-  transmits, so the power follows the keying. It stops in the background.
+  transmits, so the power follows the keying. It stops in the background
+  (but during Tune, below).
 
   **Control** (with Control the amplifier on), under the readings:
   - **Mode** — *Standby* and *Operate*, the amplifier's present mode dark;
@@ -1484,6 +1506,29 @@ of seven.
   not have done it*, and the tab shows its state again once it is read.
 
   ![Asking before a change](manual/amp-confirm.jpg)
+
+  **Tune** (with Control on) is for the amplifier's own tuner. RF-KIT's
+  API reads the tuner but cannot start a tune, so its Tune is pressed on
+  the amplifier's screen (at the amplifier, or over VNC) while the radio
+  sends a carrier; on a phone the carrier used to stop as the app left
+  the screen for the VNC app. Tune asks first (*Send a tune carrier for
+  the amplifier?*), puts the amplifier in STANDBY if it is in OPERATE (the
+  RF2K-S tunes in standby), then sends the radio's TUNE carrier at the TX
+  tab's Tune power and keeps it on while the app is away, for 20 s at
+  most; the button shows *Stop* and the seconds left. Open the
+  amplifier's screen and press its Tune: the carrier stops by itself once
+  the amplifier reports the tune done (*The amplifier tuned (SWR 1.15).
+  Put it in OPERATE when you are ready.*); then put it in OPERATE with
+  Mode. The carrier also stops when the amplifier goes to OPERATE, the
+  radio sends more than 45 W, the link to the radio or the amplifier
+  drops, TUNE is pressed elsewhere, on *Stop*, and after 20 s (*No tune
+  seen in 20 s*). The RF2K-S tunes with 4-39 W in, 10 W or more best:
+  outside that, or with the transmit lock in standby, Tune says why and
+  sends nothing. If the app is closed or stops, the radio ends the carrier
+  itself as the connection drops. The amplifier's TCI interface does not
+  help here: the RF2K-S takes only the frequency over TCI.
+
+  ![Tune asks first](manual/amp-tune.jpg)
 
 ## 9. Radio Setup
 
@@ -1549,8 +1594,8 @@ radio.
   amplifier's network port, `:port` after it when not 8080) with *Save*;
   **Read the amplifier** on or off; **Control the amplifier** on or off
   (off until you turn it on: then nothing that changes the amplifier is
-  ever sent; on: the Amp tab's Mode, Antenna and Reset error, each asking
-  first); the link's state; *Forget the amplifier* removes it, the Amp tab
+  ever sent; on: the Amp tab's Mode, Antenna, Reset error and Tune, each
+  asking first); the link's state; *Forget the amplifier* removes it, the Amp tab
   and Control (a new address starts read only). This device reaches the
   amplifier directly: on the same network, or over your VPN when away —
   not through the radio, and not over SmartLink.
@@ -1619,6 +1664,8 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 | Amp: *The amplifier did not take it: … (HTTP 409)* | The amplifier refused the change: the function is disabled on it, or it does not allow an antenna change now | Check the amplifier's own display and settings; the tab keeps showing its real state |
 | Amp: *No answer from the amplifier* or *The link was lost before the amplifier answered* | The link dropped while the change was on its way | Look at the amplifier's display: it may or may not have done it; the tab shows its state again once it is read |
 | Amp: Mode, Antenna and Reset error are dim | The radio is transmitting, a change waits for its answer, or the link is down; with no Mode or Antenna rows at all, Control is off | Wait for receive or the answer; check the link line at the top; Radio Setup › Amp › Control the amplifier |
+| Amp: *Tune power is … W: the RF2K-S tunes with 4 to 39 W …* | The TX tab's Tune power is outside the amplifier's tuning range | Controls → TX → Tune power 10-39 W |
+| Amp: *No tune seen in 20 s* | The amplifier's Tune was not pressed, or the amplifier did not report tuning, within the 20 s | Press Tune on the amplifier's screen sooner after the carrier starts; check that its tuner is in AUTO, not bypassed |
 
 ## 11. Keyboard and Apple Pencil
 
@@ -1647,6 +1694,10 @@ Bluetooth keyboard on a phone, or Android's DeX):
 | ⌘1–⌘9, ⌘0 | As F1–F10, for a keyboard without F-keys (an iPad's Magic Keyboard); Ctrl with the digit on Android and a PC keyboard (not while Ctrl keys the CW paddles) |
 | Esc | Stop CW text, RTTY or PSK text, or a voice macro |
 | Scroll | Tune; ⌘- or Ctrl-scroll zooms |
+
+Sliders, switches and lists do not keep the keyboard: after one is used
+(on a tablet's side panel or in the drawer), Space and the arrows work on
+the page again at once. A text field keeps it until you tap outside it.
 
 **Apple Pencil** drags tune ten times finer, for zero-beating.
 

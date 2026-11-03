@@ -78,9 +78,10 @@ these services:
 - **An amplifier** (RF-KIT RF2K-S), only if you enter its address in Radio
   Setup › Amp: while the app is on screen and connected to a radio it reads
   the amplifier's state and meters from that address (your own device, on
-  your network or through your VPN). With Control the amplifier on, it also
-  sends the changes you confirm there (Operate / Standby, the antenna, an
-  error reset); nothing else is sent to it.
+  your network or through your VPN), and for up to 20 s in the background
+  during a Tune you started. With Control the amplifier on, it also sends
+  the changes you confirm there (Operate / Standby, the antenna, an error
+  reset, and Standby before a Tune); nothing else is sent to it.
 - **Developer link** (Log tab), off unless turned on: for the developer's
   own devices; it sends the app's log, and screenshots when asked, to the
   address set there.

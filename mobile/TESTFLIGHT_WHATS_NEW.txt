@@ -9,16 +9,16 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- RF2K-S control: turn on Radio Setup › Amp › Control the amplifier; the Amp tab gets Operate / Standby, antenna and Reset error, each asking first, none while transmitting (thanks Sebastian DG5CST).
-- A peak marker on the amp's Forward bar; every meter can show the amp's power, SWR, temperature, voltage or current (thanks Sebastian).
-- Radio Setup as SmartSDR's: amp keying on Transmit (TX1–TX3 / ACC delays, TX REQ, TX band settings, inhibit during TUNE); USB cables (CAT, BCD, Bit) for an amp's band data.
-- From build 147: PSK31 / PSK63 on the Digi tab; ⌘1–⌘0 as F1–F10; Mac typing (thanks Pentti OH6PP).
+- Macros by PTT: a button beside PTT opens your mode's macros over the display, buttons only: CW memories, Digi macros or the voice keyer (thanks Tyler K0OTC).
+- RF2K-S Tune: with Control on, Tune on the Amp tab puts the amp in Standby and keeps a tune carrier (4–39 W) up to 20 s while you press Tune on its screen over VNC; it stops once tuned (thanks Jeff Stinger).
+- Space and the arrows always reach the page: no slider, switch or list keeps the keyboard.
+- From build 149: RF2K-S control and the amp on every meter (thanks Sebastian DG5CST); amp keying and USB cables in Radio Setup.
 
-RECENT (builds 94–146)
-- RTTY on the Digi tab; worked before from Wavelog, QRZ.com or a shared ADIF file.
-- Mac Backspace (thanks Pentti OH6PP); a clearer QRZ.com message (thanks Sloan Davis).
+RECENT (builds 94–148)
+- PSK31 / PSK63 and RTTY on the Digi tab; ⌘1–⌘0 as F1–F10; worked before from Wavelog, QRZ.com or a shared ADIF file.
+- Mac typing and Backspace (thanks Pentti OH6PP); a clearer QRZ.com message (thanks Sloan Davis).
 - The transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger).
-- QSOs to Logger32 (thanks Juho Kontio); the manual's Getting started.
+- QSOs to Logger32 (thanks Juho Kontio).
 - Less battery: the spectrum drawn by the graphics chip (thanks Mike VA3MW); "2 analog" meters; held step buttons repeat (thanks Larry); wider bar meters (thanks Juho).
 - CW paddles at the phone's edges; QRZ.com details in logged QSOs; slice volume by the speaker icon (thanks Wayne WA2N); FTx CQ POTA filter (thanks Ryland WW4GA).
 - FreeDV tab with FreeDV Reporter; FTx (FT8 / FT4) with PSK Reporter; Wavelog / Cloudlog; transverters.
@@ -33,7 +33,7 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - The FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: have an RF2K-S? Turn on Control in Radio Setup › Amp, try Operate / Standby and an antenna in receive, and tell me how it goes.
+- New: the Macros button by PTT in CW and SSB. Have an RF2K-S? Try Control and Tune (Radio Setup › Amp) and tell me how it goes.
 - Worked before from Wavelog, the QRZ.com Logbook or a shared ADIF file in iCloud Drive.
 - The eSSB tab at low power with a second receiver. [TX]
 
