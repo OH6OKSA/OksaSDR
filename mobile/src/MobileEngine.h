@@ -1,6 +1,7 @@
 #pragma once
 
 #include "models/BandPlanManager.h"
+#include <QJsonArray>
 #include "QsoLog.h"
 #include "RadioListModel.h"
 
@@ -163,6 +164,12 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QString activeBand READ activeBand NOTIFY frequencyChanged)
     Q_PROPERTY(bool bandsAvailable READ bandsAvailable NOTIFY connectionStateChanged)
     Q_PROPERTY(QString lastAddress READ lastAddress NOTIFY lastAddressChanged)
+    // Radios entered by IP address or host name (Mike Walker VA3MW: several,
+    // friends' radios shared over Tailscale too), in the order added:
+    // address (as entered, a name looked up at each connect), name (the
+    // user's, may be empty), radio (what the radio called itself at the last
+    // connect: nickname and model), last (the one connected or tried last).
+    Q_PROPERTY(QVariantList savedRadios READ savedRadios NOTIFY savedRadiosChanged)
     Q_PROPERTY(QString smartLinkState READ smartLinkState NOTIFY smartLinkChanged)
     Q_PROPERTY(QString smartLinkAccount READ smartLinkAccount NOTIFY smartLinkChanged)
     Q_PROPERTY(QString smartLinkEmail READ smartLinkEmail NOTIFY smartLinkChanged)
@@ -708,6 +715,11 @@ public:
     QStringList bands() const;
     bool bandsAvailable() const;
     QString lastAddress() const;
+    QVariantList savedRadios() const;
+    // Entry `index` gets a new address (an IP address or host name, else
+    // false) and the user's name for it (empty: the radio's own).
+    Q_INVOKABLE bool editSavedRadio(int index, const QString& address, const QString& name);
+    Q_INVOKABLE void removeSavedRadio(int index);
 
     // SmartLink (remote access through FlexRadio's service). State is
     // "signedOut", "signingIn", "signedIn" or "offline" (signed in, server
@@ -1524,6 +1536,7 @@ signals:
     void transmitStateChanged();
     void filterChanged();
     void lastAddressChanged();
+    void savedRadiosChanged();
     void controlsVisibleChanged();
     void tuneRowsChanged();
     void smartLinkChanged();
@@ -2210,6 +2223,14 @@ private:
     QString m_connectionState{QStringLiteral("idle")};
     QString m_lastError;
     QString m_radioName;
+    // The saved radio's address this connection was made to, to learn what
+    // the radio calls itself (empty for SmartLink and the radios found on
+    // the network).
+    QString m_savedRadioAddress;
+    QJsonArray loadSavedRadios() const;
+    void storeSavedRadios(const QJsonArray& radios);
+    void rememberSavedRadio(const QString& address);
+    void noteSavedRadioName();
     double m_sMeterDbm{-130.0};
     QTimer m_panPixelsTimer;
     QTimer m_panMoveTimer;

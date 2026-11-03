@@ -21,6 +21,10 @@ Dialog {
     readonly property int keyHeight: Math.max(36, Math.min(60, (parent.height - 16 - 2 * padding - 90 - 5 * Theme.spacing) / 5))
 
     property string entry: ""
+    // What the dialog opens with (a saved radio's address when editing it,
+    // empty for a new one) and its button's word.
+    property string startEntry: ""
+    property string actionText: qsTr("Connect")
     // The device's keyboard for a name instead of the keypad.
     property bool letters: false
     signal connectRequested(string address)
@@ -49,7 +53,7 @@ Dialog {
     }
 
     onAboutToShow: {
-        entry = Engine.lastAddress
+        entry = startEntry
         letters = !ipLike
     }
     onOpened: focusEntry()
@@ -107,7 +111,7 @@ Dialog {
             Layout.fillWidth: true
             Layout.preferredHeight: 52
             font.pixelSize: 22
-            placeholderText: qsTr("e.g. radio.example.org")
+            placeholderText: qsTr("e.g. radio.example.org or my-flex (MagicDNS)")
             color: dialog.complete || text.length === 0 ? Theme.text : Theme.warning
             inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
                               | Qt.ImhPreferLowercase
@@ -124,6 +128,7 @@ Dialog {
                 model: ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "⌫"]
                 delegate: AppButton {
                     required property string modelData
+                    objectName: "addressKey" + (modelData === "⌫" ? "Back" : modelData === "." ? "Dot" : modelData)
                     text: modelData === "⌫" ? "" : modelData
                     font.pixelSize: 26
                     Layout.fillWidth: true
@@ -160,7 +165,8 @@ Dialog {
             AppButton {
                 Layout.fillWidth: true
                 Layout.preferredHeight: dialog.keyHeight
-                text: qsTr("Connect")
+                objectName: "addressAction"
+                text: dialog.actionText
                 font.pixelSize: 22
                 enabled: dialog.complete
                 onClicked: dialog.commit()

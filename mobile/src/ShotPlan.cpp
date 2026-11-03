@@ -653,6 +653,10 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             m_engine.setRadioSetup(arg.left(eq), arg.mid(eq + 1));
         }
         *delayMs = 1000;
+    } else if (command == QLatin1String("disconnect")) {
+        // As the top row's Disconnect: back to the Connect page.
+        m_engine.disconnectRadio();
+        *delayMs = 2000;
     } else if (command == QLatin1String("setupget")) {
         // KEY,...: what Radio Setup shows for those keys now (radioSetup()).
         const QVariantMap d = m_engine.radioSetup();

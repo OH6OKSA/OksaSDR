@@ -253,33 +253,57 @@ Page {
                 font.pixelSize: 17
                 Layout.topMargin: Theme.spacing
             }
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: Theme.spacing
-                // Opens the app's keypad: text fields did not take every
-                // keyboard (a tester's iPad with a hardware keyboard).
-                AppButton {
-                    id: addressField
-                    objectName: "addressField"
-                    readonly property string address: Engine.lastAddress
+            // The radios entered here, in the order added (Mike Walker VA3MW:
+            // several, friends' radios shared over Tailscale too, where
+            // changing the one address took trial and error): a tap connects,
+            // ✎ names, changes or removes one.
+            Repeater {
+                model: Engine.savedRadios
+                delegate: RowLayout {
+                    id: savedRow
+                    required property int index
+                    required property var modelData
+                    readonly property string address: modelData.address || ""
+                    readonly property string userName: modelData.name || ""
+                    readonly property string radioName: modelData.radio || ""
                     Layout.fillWidth: true
-                    Layout.preferredHeight: Theme.touchTarget
-                    text: address.length > 0 ? address : qsTr("Enter the radio's IP address or name")
-                    font.pixelSize: 18
-                    focusPolicy: Qt.NoFocus
-                    onClicked: addressDialog.open()
+                    spacing: Theme.spacing
+                    RadioRow {
+                        objectName: "savedRadio" + savedRow.index
+                        title: savedRow.userName || savedRow.radioName || savedRow.address
+                        subtitle: [savedRow.userName.length > 0 ? savedRow.radioName : "",
+                                   savedRow.userName.length > 0 || savedRow.radioName.length > 0 ? savedRow.address : "",
+                                   savedRow.modelData.last ? qsTr("last used") : ""].filter(t => t.length > 0).join("  ·  ")
+                        onClicked: Engine.connectToAddress(savedRow.address)
+                    }
+                    AppButton {
+                        objectName: "savedRadioEdit" + savedRow.index
+                        text: "✎"
+                        font.pixelSize: 22
+                        Accessible.name: qsTr("Edit %1").arg(savedRow.address)
+                        Layout.preferredWidth: Theme.touchTarget
+                        Layout.preferredHeight: 2 * Theme.touchTarget
+                        enabled: Engine.connectionState === "idle"
+                        onClicked: radioEditor.edit(savedRow.index, savedRow.modelData)
+                    }
                 }
-                AppButton {
-                    text: qsTr("Connect")
-                    Layout.preferredHeight: Theme.touchTarget
-                    enabled: Engine.connectionState === "idle"
-                    onClicked: addressField.address.length > 0 ? Engine.connectToAddress(addressField.address)
-                                                               : addressDialog.open()
+            }
+            AppButton {
+                objectName: "addRadio"
+                text: qsTr("+ Add a radio")
+                Layout.fillWidth: true
+                Layout.preferredHeight: Theme.touchTarget
+                enabled: Engine.connectionState === "idle"
+                onClicked: {
+                    addressDialog.forEditor = false
+                    addressDialog.startEntry = ""
+                    addressDialog.actionText = qsTr("Connect")
+                    addressDialog.open()
                 }
             }
             Label {
                 Layout.fillWidth: true
-                text: qsTr("Enter your own radio's IP address, or a host name that leads to it (ABC on the keypad). SmartSDR's radio chooser and your router's device list both show the address. This device must reach the radio on the same network or over a VPN. It is remembered on this device only.")
+                text: qsTr("Enter a radio's IP address, or a host name that leads to it (ABC on the keypad): a dynamic DNS name, or a Tailscale MagicDNS name with the Tailscale app on. SmartSDR's radio chooser and your router's device list both show the address. This device must reach the radio on the same network or over a VPN. Each radio is kept on this list, on this device only; ✎ names or removes one.")
                 color: Theme.textDim
                 font.pixelSize: 14
                 wrapMode: Text.Wrap
@@ -290,6 +314,98 @@ Page {
     LogPage { id: logPage }
     AddressDialog {
         id: addressDialog
-        onConnectRequested: (address) => Engine.connectToAddress(address)
+        // A new radio connects (and joins the list); a saved one's new
+        // address goes back to its editor.
+        property bool forEditor: false
+        onConnectRequested: (address) => forEditor ? (radioEditor.address = address) : Engine.connectToAddress(address)
+    }
+    // A saved radio: the user's name for it, its address (on the keypad) and
+    // removing it (asked again on the button).
+    Dialog {
+        id: radioEditor
+        objectName: "radioEditor"
+        property int index: -1
+        property string address: ""
+        property string radioName: ""
+        property bool removing: false
+        function edit(i, radio) {
+            index = i
+            address = radio.address || ""
+            radioName = radio.radio || ""
+            nameField.text = radio.name || ""
+            removing = false
+            open()
+        }
+        modal: true
+        anchors.centerIn: parent
+        width: Math.min(420, parent.width - 24)
+        padding: Theme.spacing
+        background: Rectangle { color: Theme.surface; radius: Theme.radius; border.color: Theme.surfaceRaised }
+        Timer { id: removeTimer; interval: 3000; onTriggered: radioEditor.removing = false }
+        contentItem: ColumnLayout {
+            spacing: Theme.spacing
+            Label { text: qsTr("Radio"); color: Theme.text; font.pixelSize: 20; font.bold: true }
+            Label { text: qsTr("Name"); color: Theme.textDim; font.pixelSize: 15 }
+            TextField {
+                id: nameField
+                objectName: "radioEditorName"
+                Accessible.name: qsTr("Name for this radio")
+                Layout.fillWidth: true
+                font.pixelSize: 18
+                placeholderText: radioEditor.radioName.length > 0 ? radioEditor.radioName : qsTr("e.g. Mike's FLEX")
+                inputMethodHints: Qt.ImhNoPredictiveText
+                maximumLength: 40
+            }
+            Label { text: qsTr("IP address or host name"); color: Theme.textDim; font.pixelSize: 15 }
+            AppButton {
+                objectName: "radioEditorAddress"
+                text: radioEditor.address
+                font.pixelSize: 18
+                Layout.fillWidth: true
+                Layout.preferredHeight: Theme.touchTarget
+                onClicked: {
+                    addressDialog.forEditor = true
+                    addressDialog.startEntry = radioEditor.address
+                    addressDialog.actionText = qsTr("OK")
+                    addressDialog.open()
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.spacing
+                AppButton {
+                    objectName: "radioEditorRemove"
+                    text: radioEditor.removing ? qsTr("Remove it?") : qsTr("Remove")
+                    leftPadding: 12
+                    rightPadding: 12
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: {
+                        if (radioEditor.removing) {
+                            Engine.removeSavedRadio(radioEditor.index)
+                            radioEditor.close()
+                        } else {
+                            radioEditor.removing = true
+                            removeTimer.restart()
+                        }
+                    }
+                }
+                Item { Layout.fillWidth: true }
+                AppButton {
+                    text: qsTr("Cancel")
+                    leftPadding: 12
+                    rightPadding: 12
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: radioEditor.close()
+                }
+                AppButton {
+                    objectName: "radioEditorSave"
+                    text: qsTr("Save")
+                    leftPadding: 12
+                    rightPadding: 12
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: if (Engine.editSavedRadio(radioEditor.index, radioEditor.address, nameField.text)) radioEditor.close()
+                }
+            }
+        }
     }
 }

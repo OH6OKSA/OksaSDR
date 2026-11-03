@@ -81,6 +81,9 @@
 #include <QPointer>
 #include <QHostAddress>
 #include <QHostInfo>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QPermissions>
 #include <QJSEngine>
 #include <QLoggingCategory>
@@ -124,6 +127,16 @@ constexpr double kS9Dbm = -73.0;
 // The radio's remote_audio_tx VITA-49 port (FlexLib).
 constexpr quint16 kRadioTxAudioPort = 4991;
 const QString kLastAddressKey = QStringLiteral("MobileLastRadioAddress");
+const QString kSavedRadiosKey = QStringLiteral("MobileSavedRadios");
+constexpr int kMaxSavedRadios = 30;
+
+// An IP address or a host name (RFC 1123 labels), as a radio may be entered.
+bool isAddressOrHostName(const QString& entered)
+{
+    static const QRegularExpression kHostName(QStringLiteral(
+        "^(?=.{1,253}$)[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\\.?$"));
+    return !QHostAddress(entered).isNull() || kHostName.match(entered).hasMatch();
+}
 const QString kControlsVisibleKey = QStringLiteral("MobileControlsVisible");
 const QString kTuneRowsShownKey = QStringLiteral("MobileTuneRowsShown");
 const QString kRadioStepButtonsKey = QStringLiteral("MobileRadioStepButtons");
@@ -908,6 +921,8 @@ MobileEngine::MobileEngine(QObject* parent)
         }
     };
     connect(&rm, &RadioModel::infoChanged, this, refreshBands);
+    // The radio's name and model for its saved entry, as they arrive.
+    connect(&rm, &RadioModel::infoChanged, this, &MobileEngine::noteSavedRadioName);
     connect(this, &MobileEngine::connectionStateChanged, this, refreshBands);
     connect(&rm, &RadioModel::sliceRemoved, this, [this](int) { applyBeatCancel(); });
     connect(&rm, &RadioModel::sliceRemoved, this, [this](int id) {
@@ -1176,6 +1191,7 @@ void MobileEngine::connectToRadio(int row)
     if (!radio || m_connectionState != QLatin1String("idle")) {
         return;
     }
+    m_savedRadioAddress.clear();
     RadioInfo info;
     info.family = radio->family;
     info.serial = radio->serial;
@@ -1203,11 +1219,10 @@ void MobileEngine::connectToAddress(const QString& host)
         return;
     }
     // A host name (Sebastian Schu DG5CST: a dynamic DNS name; or a name the
-    // VPN's or home network's DNS knows): looked up, then connected to as
-    // its address. The first IPv4 address, which the radio listens on.
-    static const QRegularExpression kHostName(QStringLiteral(
-        "^(?=.{1,253}$)[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\\.?$"));
-    if (!kHostName.match(entered).hasMatch()) {
+    // VPN's or home network's DNS knows, Tailscale's MagicDNS too): looked
+    // up, then connected to as its address. The first IPv4 address, which
+    // the radio listens on.
+    if (!isAddressOrHostName(entered)) {
         setLastError(tr("“%1” is not an IP address or a host name.").arg(entered));
         return;
     }
@@ -1250,6 +1265,8 @@ void MobileEngine::connectToHostAddress(const QString& entered, const QHostAddre
     AppSettings::instance().setValue(kLastAddressKey, entered);
     AppSettings::instance().save();
     emit lastAddressChanged();
+    rememberSavedRadio(entered);
+    m_savedRadioAddress = entered;
     connectWithInfo(info, entered);
 }
 
@@ -1515,6 +1532,7 @@ void MobileEngine::connectSmartLinkRadio(int index)
     if (index < 0 || index >= m_wanRadios.size() || m_connectionState != QLatin1String("idle")) {
         return;
     }
+    m_savedRadioAddress.clear();
     const WanRadioInfo& radio = m_wanRadios.at(index);
     if (radio.publicTlsPort <= 0 || radio.publicIp.isEmpty()) {
         setLastError(tr("%1 is not reachable through SmartLink right now.").arg(radio.nickname));
@@ -1575,6 +1593,129 @@ void MobileEngine::answerCertificate(bool accept)
 QString MobileEngine::lastAddress() const
 {
     return AppSettings::instance().value(kLastAddressKey).toString();
+}
+
+// The list as stored, or, before there was one, the one address the app
+// remembered.
+QJsonArray MobileEngine::loadSavedRadios() const
+{
+    const QString stored = AppSettings::instance().value(kSavedRadiosKey).toString();
+    if (stored.isEmpty()) {
+        QJsonArray radios;
+        if (const QString last = lastAddress(); !last.isEmpty()) {
+            radios.append(QJsonObject{{QStringLiteral("address"), last}});
+        }
+        return radios;
+    }
+    return QJsonDocument::fromJson(stored.toUtf8()).array();
+}
+
+void MobileEngine::storeSavedRadios(const QJsonArray& radios)
+{
+    AppSettings::instance().setValue(kSavedRadiosKey,
+                                     QString::fromUtf8(QJsonDocument(radios).toJson(QJsonDocument::Compact)));
+    AppSettings::instance().save();
+    emit savedRadiosChanged();
+}
+
+QVariantList MobileEngine::savedRadios() const
+{
+    const QString last = lastAddress();
+    QVariantList out;
+    for (const QJsonValue& v : loadSavedRadios()) {
+        QVariantMap radio = v.toObject().toVariantMap();
+        radio.insert(QStringLiteral("last"), radio.value(QStringLiteral("address")).toString() == last);
+        out.append(radio);
+    }
+    return out;
+}
+
+// A new address joins the list as it is connected to (or tried: a remote
+// radio may be off now); one already there keeps its place.
+void MobileEngine::rememberSavedRadio(const QString& address)
+{
+    QJsonArray radios = loadSavedRadios();
+    for (const QJsonValue& v : std::as_const(radios)) {
+        if (v.toObject().value(QStringLiteral("address")).toString().compare(address, Qt::CaseInsensitive) == 0) {
+            storeSavedRadios(radios);  // the last one's mark moves
+            return;
+        }
+    }
+    if (radios.size() >= kMaxSavedRadios) {
+        radios.removeFirst();
+    }
+    radios.append(QJsonObject{{QStringLiteral("address"), address}});
+    storeSavedRadios(radios);
+}
+
+// What the radio connected to by a saved address calls itself, shown under
+// the user's name for it.
+void MobileEngine::noteSavedRadioName()
+{
+    if (!m_connected || m_savedRadioAddress.isEmpty()) {
+        return;
+    }
+    const RadioModel& rm = m_session.radioModel();
+    const QString nickname = rm.nickname().trimmed();
+    const QString model = rm.model().trimmed();
+    const QString radio = nickname.isEmpty() ? model
+                        : model.isEmpty()    ? nickname
+                                             : nickname + QStringLiteral(" — ") + model;
+    if (radio.isEmpty()) {
+        return;
+    }
+    QJsonArray radios = loadSavedRadios();
+    for (qsizetype i = 0; i < radios.size(); ++i) {
+        QJsonObject o = radios.at(i).toObject();
+        if (o.value(QStringLiteral("address")).toString().compare(m_savedRadioAddress, Qt::CaseInsensitive) == 0) {
+            if (o.value(QStringLiteral("radio")).toString() != radio) {
+                o.insert(QStringLiteral("radio"), radio);
+                radios.replace(i, o);
+                storeSavedRadios(radios);
+            }
+            return;
+        }
+    }
+}
+
+bool MobileEngine::editSavedRadio(int index, const QString& address, const QString& name)
+{
+    QJsonArray radios = loadSavedRadios();
+    const QString entered = address.trimmed();
+    if (index < 0 || index >= radios.size() || !isAddressOrHostName(entered)) {
+        return false;
+    }
+    QJsonObject o = radios.at(index).toObject();
+    if (o.value(QStringLiteral("address")).toString() != entered) {
+        o.remove(QStringLiteral("radio"));  // another radio, perhaps
+        if (o.value(QStringLiteral("address")).toString() == lastAddress()) {
+            AppSettings::instance().setValue(kLastAddressKey, entered);
+            emit lastAddressChanged();
+        }
+    }
+    o.insert(QStringLiteral("address"), entered);
+    if (name.trimmed().isEmpty()) {
+        o.remove(QStringLiteral("name"));
+    } else {
+        o.insert(QStringLiteral("name"), name.trimmed().left(40));
+    }
+    radios.replace(index, o);
+    storeSavedRadios(radios);
+    return true;
+}
+
+void MobileEngine::removeSavedRadio(int index)
+{
+    QJsonArray radios = loadSavedRadios();
+    if (index < 0 || index >= radios.size()) {
+        return;
+    }
+    if (radios.at(index).toObject().value(QStringLiteral("address")).toString() == lastAddress()) {
+        AppSettings::instance().setValue(kLastAddressKey, QString());
+        emit lastAddressChanged();
+    }
+    radios.removeAt(index);
+    storeSavedRadios(radios);
 }
 
 bool MobileEngine::controlsVisible() const
@@ -7376,6 +7517,7 @@ void MobileEngine::onConnectionStateChanged(bool connected)
         setKeepScreenAwake(true);
         watchHeadsetLink();
         setConnectionState(QStringLiteral("connected"));
+        noteSavedRadioName();
         selectActiveSlice();
         // A slice RADE left muted when the app last went away.
         QTimer::singleShot(3000, this, [this] { healRadeMute(); });
