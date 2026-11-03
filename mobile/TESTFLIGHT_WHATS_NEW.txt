@@ -9,11 +9,13 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Amplifier, read only: an RF-KIT RF2K-S over its network port. Set its address in Radio Setup › Amp; Controls gets an Amp tab with Operate / Standby, forward and reflected power, SWR, temperature, voltage, current, band, tuner and antenna (thanks Sebastian DG5CST). Nothing is sent that changes the amplifier; control comes after a test on a real RF2K-S.
-- From build 147: PSK31 / PSK63 on the Digi tab; ⌘1–⌘0 as F1–F10; RTTY reads weak signals better; Mac typing (thanks Pentti OH6PP).
-- From builds 144–146: RTTY receive and transmit on the Digi tab; worked before from Wavelog, QRZ.com or a shared ADIF file.
+- RF2K-S control: turn on Radio Setup › Amp › Control the amplifier; the Amp tab gets Operate / Standby, antenna and Reset error, each asking first, none while transmitting (thanks Sebastian DG5CST).
+- A peak marker on the amp's Forward bar; every meter can show the amp's power, SWR, temperature, voltage or current (thanks Sebastian).
+- Radio Setup as SmartSDR's: amp keying on Transmit (TX1–TX3 / ACC delays, TX REQ, TX band settings, inhibit during TUNE); USB cables (CAT, BCD, Bit) for an amp's band data.
+- From build 147: PSK31 / PSK63 on the Digi tab; ⌘1–⌘0 as F1–F10; Mac typing (thanks Pentti OH6PP).
 
-RECENT (builds 94–142)
+RECENT (builds 94–146)
+- RTTY on the Digi tab; worked before from Wavelog, QRZ.com or a shared ADIF file.
 - Mac Backspace (thanks Pentti OH6PP); a clearer QRZ.com message (thanks Sloan Davis).
 - The transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger).
 - QSOs to Logger32 (thanks Juho Kontio); the manual's Getting started.
@@ -31,9 +33,9 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - The FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: have an RF2K-S? Enter its address in Radio Setup › Amp and tell me what the Amp tab shows.
+- New: have an RF2K-S? Turn on Control in Radio Setup › Amp, try Operate / Standby and an antenna in receive, and tell me how it goes.
 - Worked before from Wavelog, the QRZ.com Logbook or a shared ADIF file in iCloud Drive.
-- Spots and the DX cluster; the eSSB tab at low power with a second receiver. [TX]
+- The eSSB tab at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM
 Right after it happens, open Log in the top row, tap Copy, and paste the text into an email to oh6oksa@gmail.com. Add your device model, radio model and what you were doing. Screenshots or a screen recording help a lot.

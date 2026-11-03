@@ -101,13 +101,24 @@ radio interface, with no computer running alongside.
   there (a green band marks it), AFC follows it, and the same macros, text
   field and Log (ADIF PSK31 / PSK63 on the signal's frequency) work; text
   goes out on the frequency received. A PSK spot tunes to the signal.
-- **Amplifier: RF-KIT RF2K-S, read only** (first step): its address in
-  Radio Setup › Amp, and Controls gets an **Amp** tab with what the
-  amplifier reports over its own network port: Operate / Standby, forward
-  and reflected power, SWR, temperature, voltage, current, band, frequency,
-  tuner, antenna and interface, read twice a second. The phone reaches the
-  amplifier directly (same network or VPN), and nothing is sent that
-  changes it; control comes after a test on a real RF2K-S.
+- **Amplifier: RF-KIT RF2K-S**: its address in Radio Setup › Amp, and
+  Controls gets an **Amp** tab with what the amplifier reports over its
+  own network port: Operate / Standby, forward power with a 3-second peak
+  marker, reflected power, SWR, temperature, voltage, current, band,
+  frequency, tuner, antenna and interface (twice a second, four times
+  while transmitting); every meter can show its readings too. With
+  *Control the amplifier* on (off by default): Operate / Standby, the
+  internal antenna and the error reset, each confirmed first, none while
+  the radio transmits, shown only as the amplifier reads it back. The
+  phone reaches the amplifier directly (same network or VPN).
+- **Keying an amplifier from Radio Setup**, as in SmartSDR, so no other
+  program is needed: on Transmit each keying output's delay after PTT
+  (RCA TX1-TX3, ACC TX), the TX REQ inputs' polarity, the TX band
+  settings (per band: RF and tune power, which outputs and TX REQ inputs
+  work there, PTT inhibit, hardware ALC) and the outputs held open during
+  TUNE; on USB the radio's USB-serial cables (CAT, BCD, Bit, LDPA,
+  passthrough) that give an amplifier or antenna switch the frequency or
+  band.
 - **Notch filters (TNF)**: press and hold on the display (or *+ TNF*) for
   a new notch, set its width, depth and permanent and *Add* it, so a stray
   hold adds none; tap one for its settings or remove; drawn through
@@ -260,7 +271,9 @@ radio interface, with no computer running alongside.
 - Network quality in the top row (as the desktop's indicator), with
   link timing, packet loss per stream and traffic on tap.
 - **Radio Setup** (top row): callsign, radio name, remote, transmit limits
-  and timing, microphone, CW keyer and the radio's audio outputs; offered
+  and timing, keying an amplifier (output delays, TX REQ, TX band
+  settings), USB cables, microphone, CW keyer and the radio's audio
+  outputs; offered
   once when a radio has no callsign yet (a new radio).
 - App version and build in the top row; **Manual** opens the
   [user manual](docs/mobile/MANUAL.md).
@@ -311,6 +324,8 @@ landscape and Android pictures are taken from the devices.</sub>
 | FreeDV Reporter (qso.freedv.org) | ✅ The app's RADE listed on qso.freedv.org (build 112) |
 | PSK Reporter, Wavelog / Cloudlog | ✅ Spots on pskreporter.info; QSOs sent to a Wavelog logbook; Wavelog read back for worked before (tested with a 19 000-QSO logbook); QRZ.com Logbook both ways and a shared ADIF file (to test with real accounts and cloud folders) |
 | Transverters (XVTR) in Radio Setup | 🧪 Built in; reports with a transverter welcome |
+| Amplifier keying in Radio Setup › Transmit (output delays, TX REQ, TX band settings) | ✅ Every setting written from the page and read back on the FLEX-6600M (build 149); reports from stations with an amplifier welcome |
+| USB cables in Radio Setup › USB (CAT, BCD, Bit, LDPA, passthrough) | 🧪 A real CAT cable's settings shown and one changed and set back on the FLEX (build 149); the other types tried with stand-in cables; reports with a cable plugged in welcome |
 | Mac (Apple silicon), the iPad app from TestFlight | ✅ In use by testers; typing straight into the fields (the text box on press and hold since build 140, Backspace since 142) |
 | Log tab, ADIF export and import, QRZ.com lookup | ✅ In use by testers |
 | Several slices and panadapters, multiFLEX | ✅ Supported |
@@ -321,7 +336,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | CW straight key and paddles on air | ✅ Checked on the FLEX at 10 W: straight key, paddles (elements on time at 30 WPM), iambic A and B squeeze |
 | Transmit lock (SB / OA) | ✅ Checked on the FLEX without transmitting (build 141) |
 | RTTY decoding and sending | ✅ Contest stations decoded live (build 141); DIGL / DIGU decoded live (IT9EJW, SV1EKI); sent at 10 W and decoded by RBN skimmers across Europe (OE9GHV 33 dB, GM0UDL 27 dB) |
-| RF-KIT RF2K-S amplifier (read only) | 🧪 Tested against a stand-in of its REST API (the API upstream tested on an RF2K-S): readings, a lost link, a wrong device, no PUT or POST ever sent; to verify on a real RF2K-S |
+| RF-KIT RF2K-S amplifier | ✅ Readings checked on a real RF2K-S (Sebastian Schu DG5CST, build 148). 🧪 Control (Operate / Standby, antenna, error reset) tested against a stand-in of its REST API: confirmations, a refusal (409), no answer, a lost link, never while transmitting (checked keyed on the FLEX); to verify on a real RF2K-S |
 | PSK31 / PSK63 | ✅ PSK31 decoded live (LZ1AEY's CQ on 14.071) and a PSK31 QSO at 25 W with F6FPU near Lyon, answering our first CQ (2026-11-02); the decoder tested to -12 dB SNR, AFC and a neighbour 100 Hz away |
 | CW decoder | ✅ Decodes a strong signal cleanly and weak stations' calls (8–45 WPM, Sens filter against noise) |
 | LAN discovery on iOS | ⏳ Needs Apple's multicast entitlement. Connect by IP for now. |

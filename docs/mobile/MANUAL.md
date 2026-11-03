@@ -667,9 +667,20 @@ An analog meter keeps its size, as a wider face would also grow taller.
 
 ![Meter chooser](manual/meter.jpg)
 
+![The amplifier's readings on the meters while transmitting](manual/meter-amp.jpg)
+
 Receive offers S, Mic, PA temperature and supply voltage; transmit adds
 Power, SWR, ALC and Compression, which the radio reads only while
-transmitting, and leaves S out (it has nothing to read on the air). **Mic** is on the left meter and its lower bar
+transmitting, and leaves S out (it has nothing to read on the air).
+With an amplifier set up ([Radio Setup › Amp](#9-radio-setup)), every
+meter, in receive and in transmit, also offers its readings under
+**Amplifier**: *Power* (0-1600 W), *Refl* (0-200 W, red from 2:1 at the
+present power), *SWR* (red from 2:1, – below 1 W), *Temp* (0-100 °C, red
+from 70: the RF2K-S goes to standby at 72 °C), *Volts* (40-60 V) and
+*Current* (0-60 A). The meter names them *Amp Power*, *Amp Temp*… where
+there is room and *Amp* where not (the value's unit and the scale tell
+which). Forget the amplifier, and a meter showing one of them goes back
+to its usual reading. **Mic** is on the left meter and its lower bar
 (on a tablet the side panel covers the right one). With this device's microphone it shows the
 level of the audio as it is sent (after the processing in Controls → eSSB):
 while you transmit, and in receive too while Controls → TX or eSSB is open,
@@ -1417,29 +1428,62 @@ of seven.
   The text also runs along the top of the waterfall, where a tap opens the
   receive settings over the display.
 
-- **Amp** — an RF-KIT **RF2K-S** amplifier, read over its own network
+- **Amp** — an RF-KIT **RF2K-S** amplifier, over its own network
   interface (its REST API), once its address is set in
-  [Radio Setup › Amp](#9-radio-setup). **Read only in this version**: the
-  tab shows what the amplifier reports and sends nothing that changes it.
+  [Radio Setup › Amp](#9-radio-setup). The tab shows what the amplifier
+  reports; with **Control the amplifier** on (Radio Setup › Amp, off until
+  you turn it on) it also switches Operate / Standby and the antenna and
+  resets an error, each after asking you.
 
   ![Amp tab](manual/tab-amp.jpg)
 
   At the top the amplifier's name and its state, **OPERATE** (red) or
-  **STANDBY**, as the amplifier reports it (shown, not a button), and the
-  link: *Read from 192.168.1.60:8080, every half second*, *Connecting…*,
-  or *not reached* with the reason (the app keeps trying every 5 s). Then
-  **Forward** (0-1600 W) and **Reflected** (0-200 W) power and **SWR**
-  (red from 2:1; held at – in receive), on the amplifier's own scales; the
-  PA's **Temperature**, **Voltage** and **Current**; the **Band** and
-  **Frequency** the amplifier is on; the active **Antenna** (1-4, EXT for
-  the external one); the **Tuner** (mode and network); the **Interface**
-  the amplifier follows the radio with (UNIV, CAT, UDP or TCI); its
-  **Status** text and **Firmware**. An error the amplifier reports shows in
-  red under them. A reading not received yet shows as –, never 0.
+  **STANDBY**, as the amplifier reports it, and the link: *Read from
+  192.168.1.60:8080, every half second*, *Connecting…*, or *not reached*
+  with the reason (the app keeps trying every 5 s). Then **Forward**
+  (0-1600 W) and **Reflected** (0-200 W) power and **SWR** (red from 2:1;
+  held at – in receive), on the amplifier's own scales. Forward has an
+  amber peak marker: the highest reading of the last 3 seconds, falling
+  back slowly, as on the desktop's amplifier panel, so the peaks of speech
+  or CW show between readings. Then the PA's **Temperature**, **Voltage**
+  and **Current**; the **Band** and **Frequency** the amplifier is on; the
+  active **Antenna** (1-4, EXT for the external one); the **Tuner** (mode
+  and network); the **Interface** the amplifier follows the radio with
+  (UNIV, CAT, UDP or TCI); its **Status** text and **Firmware**. An error
+  the amplifier reports shows in red under them. A reading not received
+  yet shows as –, never 0.
 
   The amplifier is read while the app is on screen and connected to a
-  radio, and stops in the background. Operate / Standby, the antenna and
-  the error reset will come once tested on a real RF2K-S.
+  radio: twice a second in receive, four times a second while the radio
+  transmits, so the power follows the keying. It stops in the background.
+
+  **Control** (with Control the amplifier on), under the readings:
+  - **Mode** — *Standby* and *Operate*, the amplifier's present mode dark;
+    tap the other one to switch.
+  - **Antenna** — the internal antennas *1*-*4*, the active one dark; one
+    the amplifier has not set up is dim. *EXT* lights while the
+    amplifier's external antenna is in use: shown, not switched from the
+    app.
+  - *Reset error* — clears the amplifier's error state (it latches to
+    protect the amplifier); deal with the cause first.
+
+  ![The Amp tab's controls](manual/amp-controls.jpg)
+
+  Each asks first, naming the change (*Put the amplifier in OPERATE?*,
+  *Switch the amplifier to antenna 2?*, *Reset the amplifier's error?*),
+  and goes only with the button that names it; *Cancel* or a tap beside
+  the question sends nothing. Before Operate, check that the radio's power
+  suits the amplifier. None of them works while the radio transmits
+  (*Not while transmitting.*: the amplifier's relays must not switch with
+  RF on them), and a question still open closes by itself when the radio
+  keys, the link drops or Control is turned off. One change at a time:
+  *Asking the amplifier…* until it answers. The tab changes only when the
+  amplifier reads the new state back. If it refuses, its reason shows in
+  red (*The amplifier did not take it: Function currently disabled (HTTP
+  409)*); if no answer comes, *No answer from the amplifier: it may or may
+  not have done it*, and the tab shows its state again once it is read.
+
+  ![Asking before a change](manual/amp-confirm.jpg)
 
 ## 9. Radio Setup
 
@@ -1456,7 +1500,33 @@ radio.
   multiFLEX; *Disconnect* ends another station's session after asking, which
   frees its slices), and the model, serial, firmware, region and address.
 - **Transmit** — maximum power, TX delay, transmit timeout (0 = off) and the
-  TUNE signal (single or two tone).
+  TUNE signal (single or two tone). Then what an amplifier, a sequencer or
+  a preamp needs, as in SmartSDR's Radio Setup (so no other program is
+  needed), kept in the radio's TX profile (its name is shown):
+  - **Keying outputs: delay after PTT** — *RCA TX1*, *RCA TX2*, *RCA TX3*
+    and *ACC TX* (the accessory connector's TX): how long after PTT each
+    output closes, in ms. The radio's signal waits for **TX delay**, so set
+    the amplifier's output early enough for its relays (about 20 ms): for
+    example TX1 20 ms and TX delay 30 ms.
+  - **TX REQ inputs** — *RCA TX REQ* and *ACC TX REQ*: a footswitch or
+    sequencer there keys the radio on the bands where the input is on.
+    *Active low* (a contact to ground transmits) is the usual; *Active high*
+    asks first, as an open input then keys the radio. **PTT mic override**
+    (a radio with SmartSDR 4.3 or later): on, a hardware PTT (the RCA PTT,
+    ACC or the mic jack) sends the analog mic whatever the TX source.
+  - **Inhibit during TUNE (this device)** — *RCA TX1*, *TX2*, *TX3*, *ACC
+    TX*: the outputs held open while TUNE or the ATU transmits, so tuning
+    at low power does not key the amplifier; they close again after. This
+    device's setting (as the desktop's), not the radio's.
+  - **TX band settings** — pick a band (the one the radio is on is
+    picked first), then for that band: **RF power** and **Tune power** (%),
+    which outputs close there (**RCA TX1 / TX2 / TX3**, **ACC TX**: e.g.
+    the amplifier's PTT only on the bands it covers), the **TX REQ inputs**
+    that work there, **PTT inhibit** (no transmitting on that band) and
+    **Hardware ALC** (the amplifier's ALC at the ALC jack). Turning a TX
+    REQ input on while it is set active high asks first.
+
+  ![Radio Setup › Transmit: the TX band settings](manual/setup-txband.jpg)
 - **Phone/CW** — microphone bias and boost (the radio's own microphone
   inputs; this device's microphone gain is the TX tab's Mic level); the CW
   keyer's break-in delay,
@@ -1474,15 +1544,45 @@ radio.
   radio allows) and *Receive only*; *Remove* deletes it. The radio says when
   a transverter is valid.
 - **Amp** — not a setting of the radio: the amplifier this device reads
-  for the [Amp tab](#8-controls), kept on this device. **RF-KIT RF2K-S**:
-  its **Address** (the IP address or host name of the amplifier's network
-  port, `:port` after it when not 8080) with *Save*; **Read the amplifier**
-  on or off; the link's state; *Forget the amplifier* removes it and the
-  Amp tab. This device reaches the amplifier directly: on the same network,
-  or over your VPN when away — not through the radio, and not over
-  SmartLink. Read only in this version.
+  for the [Amp tab](#8-controls) and the meters, kept on this device.
+  **RF-KIT RF2K-S**: its **Address** (the IP address or host name of the
+  amplifier's network port, `:port` after it when not 8080) with *Save*;
+  **Read the amplifier** on or off; **Control the amplifier** on or off
+  (off until you turn it on: then nothing that changes the amplifier is
+  ever sent; on: the Amp tab's Mode, Antenna and Reset error, each asking
+  first); the link's state; *Forget the amplifier* removes it, the Amp tab
+  and Control (a new address starts read only). This device reaches the
+  amplifier directly: on the same network, or over your VPN when away —
+  not through the radio, and not over SmartLink.
 
   ![Radio Setup › Amp](manual/setup-amp.jpg)
+- **USB** — USB-serial (FTDI) cables in the radio's USB ports, as
+  SmartSDR's *USB Cables*: they give an amplifier, a tuner or an antenna
+  switch the frequency or the band without a computer. A cable shows once
+  plugged into the radio (one it remembers but is unplugged says so;
+  *Forget this cable* drops its settings after asking). For each: its
+  **Name**, **Enabled**, and its **Type**:
+  - **CAT** — the frequency as CAT text (e.g. to an ACOM or SPE amplifier):
+    **Frequency from** (none, the TX pan, the TX slice, the active slice,
+    a transmit or receive antenna, or a slice by letter), **auto report**
+    (sent as it changes, not only when asked), and the serial port:
+    speed, data bits, parity, stop bits, flow control, as the amplifier
+    wants them.
+  - **BCD** — the band as BCD lines (HF, VHF or both), active high or low,
+    for an amplifier's or antenna switch's band input.
+  - **Bit** — eight lines (*Bit 0-7*), each on for a band or a frequency
+    range, active high or low, from a source as above, and if wanted only
+    while transmitting, with a PTT delay and a TX delay (ms): e.g. an
+    antenna relay per band.
+  - **LDPA** — a FlexRadio 2 m / 4 m LDPA amplifier: its band and preamp.
+  - **Pass** (passthrough) — a serial port through the radio, with its
+    port settings.
+
+  The radio keeps these settings; it answers each change with an OK
+  rather than a status, so the page shows a change once the radio has
+  taken it.
+
+  ![Radio Setup › USB](manual/setup-usb.jpg)
 
 **A new radio.** When the app connects to a radio that has no callsign yet —
 a new or reset radio — it offers *Set up* once, a few seconds after
@@ -1516,6 +1616,9 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 | *The 3D view was too slow …* / *The app stopped while the 3D view was on …* | The app went back to the 2D waterfall | View → 3D to try again |
 | Amp: *not reached: Connection refused* or *timed out* | Nothing answers at the amplifier's address and port from this device | Check the address (Radio Setup › Amp) and the port (8080 unless changed on the amplifier); away from home the VPN must be up; on an iPhone, iPad or Mac allow Local Network for OksaSDR |
 | Amp: *Not an RF-KIT amplifier* | Something else answered at that address (a router, another web page) | Check the amplifier's address and port |
+| Amp: *The amplifier did not take it: … (HTTP 409)* | The amplifier refused the change: the function is disabled on it, or it does not allow an antenna change now | Check the amplifier's own display and settings; the tab keeps showing its real state |
+| Amp: *No answer from the amplifier* or *The link was lost before the amplifier answered* | The link dropped while the change was on its way | Look at the amplifier's display: it may or may not have done it; the tab shows its state again once it is read |
+| Amp: Mode, Antenna and Reset error are dim | The radio is transmitting, a change waits for its answer, or the link is down; with no Mode or Antenna rows at all, Control is off | Wait for receive or the answer; check the link line at the top; Radio Setup › Amp › Control the amplifier |
 
 ## 11. Keyboard and Apple Pencil
 

@@ -49,7 +49,7 @@ ipad_shots=(overview infopanel slicerow spectrum filter agc antenna mode frequen
 phone_shots=(phone-portrait phone-menu memory-edit)
 for t in "${tabs[@]}"; do phone_shots+=("tab-$t"); done
 modes_shots=(mode-usb mode-cw mode-am mode-fm fm-tx tx-lock mode-rtty rtty-panel tab-rtty digi-operating mode-psk)
-amp_shots=(tab-amp setup-amp)
+amp_shots=(tab-amp amp-controls amp-confirm setup-amp setup-txband setup-usb meter-amp)
 all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${phone_shots[@]}" phone-landscape bandchooser
            "${modes_shots[@]}" "${amp_shots[@]}" cw-paddles rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
@@ -233,14 +233,17 @@ if want "${modes_shots[@]}"; then
     } | plan modes 440x956 "${src[@]}"
 fi
 
-# The Amp tab and Radio Setup › Amp against a stand-in RF2K-S
-# (rf2k-mock.py, transmitting, on this computer's own network address and
-# the API's port 8080, so the address reads as an amplifier's would); the
-# app forgets the amplifier after.
+# The Amp tab (with Control on), its confirmation, Radio Setup › Amp and
+# Transmit's TX band settings, and the meters with the amplifier's
+# readings, against a stand-in RF2K-S (rf2k-mock.py, transmitting, antennas
+# 1-3 set up, on this computer's own network address and the API's port
+# 8080, so the address reads as an amplifier's would). Nothing is sent to
+# it (the confirmation is cancelled); the meters get their choices back and
+# the app forgets the amplifier after.
 if want "${amp_shots[@]}" && [ "$DRY" = 0 ]; then
     lan="$(ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p')"
     python3 "$ROOT/mobile/tools/rf2k-mock.py" --bind "${lan:-127.0.0.1}" --port 8080 --keyed --operate \
-        --name Shack >"$TMP/rf2k-mock.log" 2>&1 &
+        --antennas 1,2,3 --name Shack >"$TMP/rf2k-mock.log" 2>&1 &
     mock=$!
     sleep 1
     if ! kill -0 "$mock" 2>/dev/null; then
@@ -250,14 +253,35 @@ fi
 if want "${amp_shots[@]}"; then
     {
         printf 'ready\namp %s\nwait 4000\n' "${lan:-127.0.0.1}"
-        if want tab-amp; then printf 'drawer 12\nwait 1500\nscroll 0\nwait 800\nshot tab-amp\nclose\n'; fi
-        if want setup-amp; then printf 'popup radioSetup\nwait 800\nclick setupTab6\nwait 1500\nshot setup-amp\nclose\n'; fi
+        # Control on, as the user turns it on (the Amp tab's rows need it).
+        printf 'popup radioSetup\nwait 800\nclick setupTab6\nwait 1500\ntapname ampControlOn\nwait 1000\n'
+        if want setup-amp; then printf 'shot setup-amp\n'; fi
+        if want setup-txband; then printf 'click setupTab1\nwait 1500\nshowname txBandHwAlcOn\nwait 800\nshot setup-txband\n'; fi
+        # The radio's own USB cables, as they are (only shown, nothing set).
+        if want setup-usb; then printf 'click setupTab7\nwait 2000\nshot setup-usb\n'; fi
+        printf 'close\nwait 600\n'
+        if want tab-amp amp-controls amp-confirm; then printf 'drawer 12\nwait 1500\nscroll 0\nwait 800\n'; fi
+        if want tab-amp; then printf 'shot tab-amp\n'; fi
+        if want amp-controls amp-confirm; then printf 'showname ampReset\nwait 800\n'; fi
+        if want amp-controls; then printf 'shot amp-controls\n'; fi
+        if want amp-confirm; then printf 'tapname ampAntenna2\nwait 1000\nshot amp-confirm\ntapname ampConfirmNo\nwait 600\n'; fi
+        if want tab-amp amp-controls amp-confirm; then printf 'close\nwait 600\n'; fi
+        if want meter-amp; then
+            # Amp power at the right and amp SWR at the left in transmit,
+            # shown with the transmit preview; then the radio's Power and
+            # SWR back, as the other pictures have them.
+            printf 'tapname meterRight\nwait 800\ntapname meterKindAmppowerTx\nwait 400\nclose\nwait 500\n'
+            printf 'tapname meterLeft\nwait 800\ntapname meterKindAmpSWRTx\nwait 400\nclose\nwait 500\n'
+            printf 'preview-tx on\nwait 2000\nshot meter-amp\npreview-tx off\nwait 800\n'
+            printf 'tapname meterRight\nwait 800\ntapname meterKindPowerTx\nwait 400\nclose\nwait 500\n'
+            printf 'tapname meterLeft\nwait 800\ntapname meterKindSWRTx\nwait 400\nclose\nwait 500\n'
+        fi
         printf 'amp off\nwait 1000\n'
     } | plan amp 440x956 "${src[@]}"
     if [ "$DRY" = 0 ]; then
         kill "$mock" 2>/dev/null || true
         wait "$mock" 2>/dev/null || true
-        # Read only: the stand-in counts any request that would change it.
+        # Nothing sent: the stand-in counts any request that would change it.
         tail -1 "$TMP/rf2k-mock.log" | sed 's/^/  RF2K-S stand-in: /'
     fi
 fi
@@ -324,6 +348,11 @@ for m in usb cw am fm rtty psk; do
 done
 jpg tab-amp 440x520+0+436
 jpg setup-amp 418x700+11+40 330x
+jpg setup-txband 418x700+11+40 330x
+jpg setup-usb 418x700+11+40 330x
+jpg amp-controls 440x520+0+436
+jpg amp-confirm 440x420+0+395
+jpg meter-amp 440x100+0+208
 jpg rtty-panel 440x440+0+172
 jpg digi-operating 440x332+0+536
 jpg fm-tx 440x160+0+532
