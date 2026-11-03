@@ -12,11 +12,12 @@ import AetherMobile
 Item {
     id: keys
     visible: false
-    // The page, its frequency dialog and controls drawer (which stays open
-    // while operating: it does not keep the keyboard).
+    // The page, its frequency dialog, controls drawer and macros panel
+    // (which stay open while operating: they do not keep the keyboard).
     property Item page
     property var freqDialog
     property var drawer
+    property var macros
     property bool spacePtt: false
 
     CwKeyboardPaddles { id: paddles }
@@ -108,20 +109,44 @@ Item {
         const kids = keys.page && keys.page.Overlay.overlay ? keys.page.Overlay.overlay.children : []
         for (let i = 0; i < kids.length; ++i) {
             if (!kids[i].visible) continue
-            let drawerItem = false
-            for (let it = keys.drawer ? keys.drawer.contentItem : null; it; it = it.parent) {
-                if (it === kids[i]) {
-                    drawerItem = true
-                    break
-                }
-            }
-            if (!drawerItem) return true
+            if (!keys.within(keys.drawer, kids[i]) && !keys.within(keys.macros, kids[i])) return true
+        }
+        return false
+    }
+    // True if this overlay child holds the popup's content.
+    function within(popup, kid) {
+        for (let it = popup ? popup.contentItem : null; it; it = it.parent) {
+            if (it === kid) return true
         }
         return false
     }
     function keepsKeyboard(item) {
         return keys.popupOpen()
             || (item !== null && (item.cursorPosition !== undefined || item.keepsKeyboard === true))
+    }
+    function giveBack() {
+        const p = keys.page
+        const now = p.Window.window ? p.Window.window.activeFocusItem : null
+        if (p.visible && now !== p && !keys.keepsKeyboard(now)) {
+            // Inside the page every focus scope between the control and the
+            // page is let go too (the pinned panel's scroll view, a section's
+            // Loader): the page's forceActiveFocus otherwise hands the focus
+            // down that chain again, to the scroll view, and only another
+            // round gave it to the page.
+            let inPage = false
+            for (let it = now; it; it = it.parent) {
+                if (it === p) {
+                    inPage = true
+                    break
+                }
+            }
+            if (inPage) {
+                for (let it = now; it !== p; it = it.parent) it.focus = false
+            } else if (now) {
+                now.focus = false
+            }
+            p.forceActiveFocus()
+        }
     }
     Connections {
         target: keys.page ? keys.page.Window.window : null
@@ -135,15 +160,17 @@ Item {
             if (!p.visible || item === p || keys.keepsKeyboard(item)) {
                 return
             }
-            Qt.callLater(() => {
-                const now = p.Window.window ? p.Window.window.activeFocusItem : null
-                if (p.visible && now !== p && !keys.keepsKeyboard(now)) {
-                    // Inside the page's focus scope the control would get
-                    // it straight back from forceActiveFocus.
-                    if (now) now.focus = false
-                    p.forceActiveFocus()
-                }
-            })
+            Qt.callLater(keys.giveBack)
         }
+    }
+    // A ComboBox keeps the focus when its list closes, which changes no
+    // focus item, so nothing above runs: Space then opened the list again.
+    // Looked at again while anything but the page has the keyboard.
+    Timer {
+        interval: 300
+        repeat: true
+        running: !!keys.page && keys.page.visible && !!keys.page.Window.window
+                 && keys.page.Window.activeFocusItem !== keys.page
+        onTriggered: keys.giveBack()
     }
 }

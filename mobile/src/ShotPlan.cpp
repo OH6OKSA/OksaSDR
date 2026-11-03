@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <memory>
 
 namespace AetherSDR::mobile {
 
@@ -793,6 +794,71 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         } else {
             qInfo().noquote() << QStringLiteral("shot-plan: a11y %1 controls named, %2 without a name").arg(named).arg(unnamed);
         }
+    } else if (command == QLatin1String("focussweep")) {
+        // Every control in view that takes the keyboard on a press (a
+        // slider, a switch, a ComboBox: Qt's ClickFocus), text entry left
+        // out: given the focus as a tap would give it, then looked at 0.8 s
+        // later, the page should have the keyboard back (Space PTT
+        // and the arrows on an iPad). No press, so nothing changes. One line
+        // per control that kept it, then the count.
+        QList<QPointer<QQuickItem>> controls;
+        for (QObject* root : m_qml.rootObjects()) {
+            for (QObject* o : allObjects(root)) {
+                auto* item = qobject_cast<QQuickItem*>(o);
+                if (!item || !o->inherits("QQuickControl") || o->inherits("QQuickTextField")
+                    || o->inherits("QQuickTextArea") || !item->isVisible() || !seen(item)) {
+                    continue;
+                }
+                if (o->property("focusPolicy").toInt() & Qt::ClickFocus) {
+                    controls << item;
+                }
+            }
+        }
+        QPointer<QQuickWindow> w(window);
+        auto kept = std::make_shared<int>(0);
+        // One at a time, each looked at 0.8 s after it got the focus (the
+        // page's own check runs every 0.3 s): a schedule laid out up front
+        // looked before the hand-back while a frame of the pinned panel's
+        // 5000 px held the event loop for a second.
+        auto step = std::make_shared<std::function<void(int)>>();
+        *step = [this, w, controls, kept, step](int i) {
+            if (i >= controls.size()) {
+                qInfo().noquote() << "shot-plan: focussweep" << controls.size() << "controls," << *kept << "kept the keyboard";
+                return;
+            }
+            const QPointer<QQuickItem> control = controls.at(i);
+            if (!w || !control) {
+                (*step)(i + 1);
+                return;
+            }
+            control->forceActiveFocus(Qt::MouseFocusReason);
+            QTimer::singleShot(800, this, [w, control, kept, step, i] {
+                if (w && control) {
+                    QQuickItem* now = w->activeFocusItem();
+                    if (now == control || (now && control->isAncestorOf(now))) {
+                        ++*kept;
+                        // Where it is: the nearest named ancestors, and on screen.
+                        QStringList path;
+                        for (QQuickItem* p = control->parentItem(); p && path.size() < 3; p = p->parentItem()) {
+                            if (!p->objectName().isEmpty()) {
+                                path << p->objectName();
+                            }
+                        }
+                        const QPointF at = control->mapToScene(QPointF(0, 0));
+                        QAccessibleInterface* a11y = QAccessible::queryAccessibleInterface(control);
+                        qInfo().noquote() << "shot-plan: focussweep kept:" << control->metaObject()->className()
+                                          << control->objectName() << control->property("text").toString()
+                                          << (a11y ? a11y->text(QAccessible::Name) : QString())
+                                          << "in" << path.join(QLatin1Char('/')) << "at" << int(at.x()) << int(at.y());
+                    }
+                }
+                (*step)(i + 1);
+            });
+        };
+        (*step)(0);
+        // The plan waits for the sweep (a control in 0.8 s and a busy
+        // frame or so).
+        *delayMs = int(controls.size()) * 1300 + 1500;
     } else if (command == QLatin1String("focusaudit")) {
         // Every text field in view, as a finger would: scrolled into view,
         // tapped (it should take the keyboard), then a tap at FX,FY outside

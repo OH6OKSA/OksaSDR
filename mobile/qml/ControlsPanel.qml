@@ -52,8 +52,13 @@ ColumnLayout {
     // The widest label at the buttons' type size: where six to a row are
     // narrower (a side drawer, 698 x 668 cut "FreeDV"), every section
     // button's type shrinks alike until it fits, down to 12 px.
+    // Measured again when the type size changes: advanceWidth() alone is not
+    // a dependency, so a size changed after start kept the old width (the
+    // label 58 px at 12 px type, and the Amp tab's 7 + 6 rows fell to
+    // 5 + 5 + 3 on a 430 pt phone).
     FontMetrics { id: buttonMetrics; font.pixelSize: Theme.buttonFont }
-    readonly property real widestButton: Math.max(...sections.map(s => buttonMetrics.advanceWidth(s.button)))
+    readonly property real widestButton: buttonMetrics.font.pixelSize > 0
+        ? Math.max(...sections.map(s => buttonMetrics.advanceWidth(s.button))) : 0
     function buttonFont(width) {
         return Math.max(12, Math.min(Theme.buttonFont, Math.floor(Theme.buttonFont * (width - 6) / widestButton)))
     }
