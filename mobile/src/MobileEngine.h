@@ -448,6 +448,9 @@ class MobileEngine : public QObject {
     // the auto-tracked range (Auto off freezes it); the trace is auto-ranged
     // or set by reference level (top) and range.
     Q_PROPERTY(bool wfAutoLevel READ wfAutoLevel WRITE setWfAutoLevel NOTIFY displayLevelsChanged)
+    // The display's corner buttons mirrored for a right hand (Larry
+    // Averbeck): zoom, Band and B/S at the right, + Slice / + Pan at the left.
+    Q_PROPERTY(bool displayButtonsRight READ displayButtonsRight WRITE setDisplayButtonsRight NOTIFY displayLevelsChanged)
     Q_PROPERTY(int wfBlackLevel READ wfBlackLevel WRITE setWfBlackLevel NOTIFY displayLevelsChanged)
     Q_PROPERTY(int wfColorGain READ wfColorGain WRITE setWfColorGain NOTIFY displayLevelsChanged)
     Q_PROPERTY(bool traceAutoRange READ traceAutoRange WRITE setTraceAutoRange NOTIFY displayLevelsChanged)
@@ -1191,6 +1194,8 @@ public:
     Q_INVOKABLE void togglePlay();
     bool wfAutoLevel() const { return displayInt("MobileWfAuto", 1) != 0; }
     void setWfAutoLevel(bool on) { setDisplayInt("MobileWfAuto", on ? 1 : 0); }
+    bool displayButtonsRight() const { return displayInt("MobileDisplayButtonsRight", 0) != 0; }
+    void setDisplayButtonsRight(bool on) { setDisplayInt("MobileDisplayButtonsRight", on ? 1 : 0); }
     int wfBlackLevel() const { return displayInt("MobileWfBlack", 50); }
     int spectrumSplit() const { return displayInt("MobileSpectrumSplit", 0); }
     void setSpectrumSplit(int percent) { setDisplayInt("MobileSpectrumSplit", percent <= 0 ? 0 : std::clamp(percent, 10, 90)); }

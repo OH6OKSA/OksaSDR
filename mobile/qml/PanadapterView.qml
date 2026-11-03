@@ -581,8 +581,10 @@ Rectangle {
         // In a low panadapter (a phone in landscape) it would lie under the
         // zoom / Band and + Slice / + Pan buttons: then between them.
         readonly property bool besideButtons: y + height > zoomRow.y - 2
-        x: besideButtons ? zoomRow.x + zoomRow.width + 4 : 0
-        width: (besideButtons ? addRow.x - 4 : parent.width) - x
+        readonly property Item leftRow: Engine.displayButtonsRight ? addRow : zoomRow
+        readonly property Item rightRow: Engine.displayButtonsRight ? zoomRow : addRow
+        x: besideButtons ? leftRow.x + leftRow.width + 4 : 0
+        width: (besideButtons ? rightRow.x - 4 : parent.width) - x
         y: parent.height * spectrum.spectrumFraction + spectrum.axisHeight
         // Room for two lines from the first letter, so the bar keeps its height.
         height: 2 * cwFont.height + 8
@@ -873,17 +875,25 @@ Rectangle {
 
     // Zoom out / in, bottom left of the waterfall as in AetherSDR. Together
     // the size of one step button below (eight across the same width), each
-    // half of it.
+    // half of it. View › Display buttons › Right (Larry Averbeck, a right
+    // hand) mirrors the corners: this row at the right, B/S nearest the
+    // middle and − + at the edge, + Slice / + Pan at the left.
     Row {
         id: zoomRow
         readonly property real stepWidth: (panArea.width - 7 * Theme.spacing / 2) / 8
         z: 5
-        anchors.left: parent.left
+        // By x, not by swapping anchors at run time: a phone that switched
+        // kept + Pan over the zoom buttons.
+        x: Engine.displayButtonsRight ? parent.width - width - 6 : 6
         anchors.bottom: parent.bottom
-        anchors.margins: 6
+        anchors.bottomMargin: 6
         spacing: 2
+        layoutDirection: Engine.displayButtonsRight ? Qt.RightToLeft : Qt.LeftToRight
         Repeater {
-            model: [{ label: "−", factor: 2.0 }, { label: "+", factor: 0.5 }]
+            // Right to left the first is rightmost: + then −, read − +.
+            model: Engine.displayButtonsRight
+                   ? [{ label: "+", factor: 0.5 }, { label: "−", factor: 2.0 }]
+                   : [{ label: "−", factor: 2.0 }, { label: "+", factor: 0.5 }]
             delegate: AppButton {
                 required property var modelData
                 text: modelData.label
@@ -1042,10 +1052,11 @@ Rectangle {
     Row {
         id: addRow
         z: 5
-        anchors.right: parent.right
+        x: Engine.displayButtonsRight ? 6 : parent.width - width - 6
         anchors.bottom: parent.bottom
-        anchors.margins: 6
+        anchors.bottomMargin: 6
         spacing: 2
+        layoutDirection: Engine.displayButtonsRight ? Qt.RightToLeft : Qt.LeftToRight
         readonly property real cellWidth: Math.max(32, zoomRow.stepWidth / 2 - 1)
         // The app shows one panadapter; any others still stream to the device
         // (bandwidth, packet loss) and hold the radio's panadapter slots.

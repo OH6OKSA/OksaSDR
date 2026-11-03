@@ -65,6 +65,29 @@ ColumnLayout {
             onClicked: Engine.radioStepButtons = true
         }
     }
+    // The display's corner buttons: zoom, Band and B/S at the left (as the
+    // desktop) or mirrored to the right for a right hand (Larry Averbeck),
+    // + Slice / + Pan then at the left.
+    RowLayout {
+        Layout.fillWidth: true
+        Label { text: qsTr("Zoom buttons"); color: Theme.textDim; font.pixelSize: 15; Layout.fillWidth: true }
+        AppButton {
+            objectName: "displayButtonsLeft"
+            text: qsTr("Left")
+            checked: !Engine.displayButtonsRight
+            Layout.preferredWidth: Theme.buttonWidth
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.displayButtonsRight = false
+        }
+        AppButton {
+            objectName: "displayButtonsRight"
+            text: qsTr("Right")
+            checked: Engine.displayButtonsRight
+            Layout.preferredWidth: Theme.buttonWidth
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.displayButtonsRight = true
+        }
+    }
     // Spots on the display (the radio's, from every client) and this app's
     // DX cluster connection, whose spots go to the radio.
     RowLayout {
