@@ -12,5 +12,12 @@ ScrollView {
     clip: true
     contentWidth: availableWidth
     rightPadding: overflows ? ScrollBar.vertical.width + 2 : 0
-    ScrollBar.vertical.policy: overflows ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
+    // Placed as ScrollView's own bar is (a replaced bar sat at the left).
+    ScrollBar.vertical: AppScrollBar {
+        parent: scroll
+        x: scroll.mirrored ? 0 : scroll.width - width
+        y: scroll.topPadding
+        height: scroll.availableHeight
+        policy: scroll.overflows ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
+    }
 }

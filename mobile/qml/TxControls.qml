@@ -92,7 +92,7 @@ ColumnLayout {
                 focusPolicy: Qt.NoFocus
                 onClicked: Engine.ctcssOn = true
             }
-            ComboBox {
+            AppComboBox {
                 Accessible.name: qsTr("CTCSS tone")
                 // Its text field would be read again, without a name.
                 Component.onCompleted: contentItem.Accessible.ignored = true

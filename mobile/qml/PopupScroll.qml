@@ -29,7 +29,7 @@ Flickable {
         // Beside the bar, not under it, while it shows.
         width: scroll.width - (scroll.overflows ? bar.width + 2 : 0)
     }
-    ScrollBar.vertical: ScrollBar {
+    ScrollBar.vertical: AppScrollBar {
         id: bar
         policy: scroll.overflows ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
     }

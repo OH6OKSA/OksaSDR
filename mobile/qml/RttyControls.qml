@@ -167,7 +167,7 @@ ColumnLayout {
         contentHeight: rttyTextLabel.implicitHeight
         boundsBehavior: Flickable.StopAtBounds
         readonly property bool overflows: contentHeight > height + 1
-        ScrollBar.vertical: ScrollBar { policy: rttyText.overflows ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff }
+        ScrollBar.vertical: AppScrollBar { policy: rttyText.overflows ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff }
         Label {
             id: rttyTextLabel
             width: rttyText.width - 12

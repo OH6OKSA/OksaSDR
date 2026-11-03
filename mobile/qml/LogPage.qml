@@ -72,7 +72,7 @@ Popup {
             Layout.fillHeight: true
             clip: true
             // A bar at the right while the log is longer than the view.
-            ScrollBar.vertical: ScrollBar {
+            ScrollBar.vertical: AppScrollBar {
                 policy: list.contentHeight > list.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
             }
             // Only while the page is open: every new line replaces the model,

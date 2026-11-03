@@ -162,7 +162,7 @@ ColumnLayout {
             boundsBehavior: Flickable.StopAtBounds
             // A bar while the editor is taller than the window, the fields
             // clear of it.
-            ScrollBar.vertical: ScrollBar {
+            ScrollBar.vertical: AppScrollBar {
                 id: editBar
                 policy: editScroll.overflows ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
             }
@@ -300,7 +300,7 @@ ColumnLayout {
                         focusPolicy: Qt.NoFocus
                         onClicked: editDialog.ctcss = true
                     }
-                    ComboBox {
+                    AppComboBox {
                         Accessible.name: qsTr("CTCSS tone")
                         // Its text field would be read again, without a name.
                         Component.onCompleted: contentItem.Accessible.ignored = true

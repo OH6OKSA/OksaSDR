@@ -660,7 +660,7 @@ ColumnLayout {
         boundsBehavior: Flickable.StopAtBounds
         model: digi.useList ? digi.shown : []
         readonly property bool overflows: contentHeight > height + 1
-        ScrollBar.vertical: ScrollBar { policy: decodeList.overflows ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff }
+        ScrollBar.vertical: AppScrollBar { policy: decodeList.overflows ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff }
         delegate: DecodeRow {
             width: decodeList.width - (decodeList.overflows ? decodeList.ScrollBar.vertical.width + 2 : 0)
         }

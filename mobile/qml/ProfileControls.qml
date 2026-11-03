@@ -21,7 +21,7 @@ ColumnLayout {
         spacing: Theme.spacing / 2
 
         Label { text: section.title; color: Theme.textDim; font.pixelSize: 16 }
-        ComboBox {
+        AppComboBox {
             id: picker
             Accessible.name: section.title
             // Its text field would be read again, without a name.
