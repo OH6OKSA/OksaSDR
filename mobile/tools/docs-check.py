@@ -173,6 +173,11 @@ def check_notes(errors):
         errors.append(f"{NOTES}: {len(text)} characters, TestFlight takes {NOTES_LIMIT}")
     if re.search(r"[äöåÄÖÅ]", text):
         errors.append(f"{NOTES}: Finnish letters; the notes for testers are in English")
+    # App Store Connect refuses What to Test with a Dingbats symbol (build
+    # 151: "Text for whatsNew contains invalid characters: '[✎]'"), and the
+    # build then reaches no external tester.
+    for ch in sorted(set(re.findall(r"[\u2700-\u27bf]", text))):
+        errors.append(f"{NOTES}: '{ch}' (U+{ord(ch):04X}), a Dingbats symbol App Store Connect refuses")
 
 
 def main():

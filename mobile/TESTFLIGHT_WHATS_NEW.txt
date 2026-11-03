@@ -9,7 +9,7 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Several radios on the Connect page, by IP address or name (Tailscale MagicDNS too); ✎ names or removes one (thanks Mike VA3MW).
+- Several radios on the Connect page, by IP address or name (Tailscale MagicDNS too); the pencil names or removes one (thanks Mike VA3MW).
 - Radio Setup gets the rest of SmartSDR's: an RX tab (calibration, 10 MHz reference, filters), station name, license, GPS, Restart, DHCP / static IP, CW sideband and more. Risky changes ask first.
 - The transmit lock counts down to SB again; TX › At start: Hold to arm (thanks Larry Averbeck).
 - View › Zoom buttons Left / Right (thanks Larry).
