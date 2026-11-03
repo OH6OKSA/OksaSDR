@@ -332,6 +332,70 @@ int main(int argc, char** argv)
         conn.disconnect();
     }
 
+    // ── Each command's outcome (OksaSDR's control step shows it) ──────────
+    {
+        StubAmp amp;
+        RfkitConnection conn;
+        QSignalSpy connectedSpy(&conn, &RfkitConnection::connected);
+        QSignalSpy doneSpy(&conn, &RfkitConnection::commandFinished);
+        conn.connectNetwork(QStringLiteral("127.0.0.1"), amp.port());
+        spin([&] { return connectedSpy.count() > 0; });
+        spinFor(300);
+        report("no command, no outcome: polls never report one", doneSpy.isEmpty());
+
+        conn.setOperate(true);
+        report("an accepted command reports once, accepted, with its path",
+               spin([&] { return doneSpy.count() == 1; })
+                   && doneSpy.at(0).at(0).toString() == "/operate-mode" && doneSpy.at(0).at(1).toBool()
+                   && doneSpy.at(0).at(2).toBool() && doneSpy.at(0).at(3).toString().isEmpty());
+
+        amp.routes["PUT /antennas/active"] = {409, R"({"status":"error","reason":"antenna change not allowed"})"};
+        conn.selectAntenna({Rfkit::AntennaType::Internal, 2});
+        report("a refused command reports the device's reason and status",
+               spin([&] { return doneSpy.count() == 2; })
+                   && doneSpy.at(1).at(0).toString() == "/antennas/active" && !doneSpy.at(1).at(1).toBool()
+                   && doneSpy.at(1).at(2).toBool()
+                   && doneSpy.at(1).at(3).toString() == "antenna change not allowed (HTTP 409)");
+        report("a refusal is the device answering: still connected", conn.isConnected());
+
+        amp.routes["POST /error/reset"] = {409, QByteArray()};
+        conn.resetError();
+        report("a refusal without a reason reports the HTTP status",
+               spin([&] { return doneSpy.count() == 3; })
+                   && !doneSpy.at(2).at(1).toBool() && doneSpy.at(2).at(2).toBool()
+                   && doneSpy.at(2).at(3).toString() == "HTTP 409");
+
+        // A command dropped with the session reports nothing.
+        amp.replyDelayMs = 300;
+        const auto seen = amp.requests.size();
+        report("still connected and polling before the drop",
+               conn.isConnected() && spin([&] { return amp.requests.size() > seen; }));
+        const int before = doneSpy.count();
+        conn.setOperate(true);
+        conn.disconnect();
+        spinFor(800);
+        report("a command dropped by disconnect() reports nothing", doneSpy.count() == before);
+    }
+
+    // ── A command lost in transit (the 4 s transfer timeout) ──────────────
+    {
+        StubAmp amp;
+        RfkitConnection conn;
+        QSignalSpy connectedSpy(&conn, &RfkitConnection::connected);
+        QSignalSpy doneSpy(&conn, &RfkitConnection::commandFinished);
+        conn.connectNetwork(QStringLiteral("127.0.0.1"), amp.port());
+        spin([&] { return connectedSpy.count() > 0; });
+        spinFor(300);
+        amp.replyDelayMs = 4600;
+        spinFor(100);
+        conn.setOperate(true);
+        report("a command lost in transit reports it unanswered, with the transport error",
+               spin([&] { return doneSpy.count() == 1; }, 15000)
+                   && doneSpy.at(0).at(0).toString() == "/operate-mode" && !doneSpy.at(0).at(1).toBool()
+                   && !doneSpy.at(0).at(2).toBool() && !doneSpy.at(0).at(3).toString().isEmpty());
+        conn.disconnect();
+    }
+
     // ── Commands queued behind a slow reply reach the amp in click order ──
     {
         StubAmp amp;

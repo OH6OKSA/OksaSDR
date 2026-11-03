@@ -251,9 +251,13 @@ void RfkitConnection::onReplyFinished(QNetworkReply* reply, const Request& reque
     const bool brokeInTransit = netError != QNetworkReply::NoError
         && netError < QNetworkReply::ContentAccessDenied;
     if (oversize || deadline || http == 0 || brokeInTransit) {
-        onTransportFailure(oversize ? tr("Response too large")
-                           : deadline ? tr("Response took too long")
-                                      : reply->errorString(), request);
+        const QString error = oversize ? tr("Response too large")
+                            : deadline ? tr("Response took too long")
+                                       : reply->errorString();
+        if (request.command) {
+            emit commandFinished(request.path, false, false, error);
+        }
+        onTransportFailure(error, request);
         return;
     }
 
@@ -279,6 +283,12 @@ void RfkitConnection::onReplyFinished(QNetworkReply* reply, const Request& reque
             if (!m_deliberateDisconnect && m_autoReconnect) { armReconnect(); }
             return;
         }
+        if (request.command) {
+            emit commandFinished(request.path, false, true,
+                                 apiError && !apiError->reason.isEmpty()
+                                     ? QStringLiteral("%1 (HTTP %2)").arg(apiError->reason).arg(http)
+                                     : reason);
+        }
         pump();
         return;
     }
@@ -298,6 +308,9 @@ void RfkitConnection::onReplyFinished(QNetworkReply* reply, const Request& reque
 
     if (applyReply(request, body)) {
         emit statusUpdated(m_status);
+    }
+    if (request.command) {
+        emit commandFinished(request.path, true, true, {});
     }
     pump();
 }

@@ -77,6 +77,14 @@ signals:
     void connectionFailed(const QString& errorString);
     // Full current snapshot, emitted when a reply actually changed something.
     void statusUpdated(const AetherSDR::Rfkit::Status& status);
+    // A control command's outcome, once per command that reached the wire:
+    // accepted (2xx; the readback that follows shows the new state);
+    // refused, answered with the device's reason (e.g. 409 while changes are
+    // not allowed); or unanswered, with the transport error, when whether
+    // the device acted on it is unknown. A command dropped with the session
+    // (disconnect) reports nothing; disconnected() / connectionFailed() say
+    // why.
+    void commandFinished(const QString& path, bool accepted, bool answered, const QString& reason);
 
 private:
     struct Request {
