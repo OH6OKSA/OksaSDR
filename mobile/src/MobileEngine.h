@@ -658,6 +658,14 @@ public:
     // Forgets an unplugged cable's settings on the radio.
     Q_INVOKABLE void removeUsbCable(const QString& sn);
     Q_INVOKABLE void setRadioSetup(const QString& key, const QVariant& value);
+    // Receive › Calibration's Start, as the desktop's: the cal frequency
+    // set, freq_error_ppb cleared, radio pll_start, done when the radio's
+    // pll_done goes 0 then 1 (calState: "", "starting", "running", "done",
+    // "error", "timeout"; radioSetup() carries it).
+    Q_INVOKABLE void startCalibration();
+    // Radio › Restart the radio (asked first on the page): radio reboot, and
+    // the app disconnects as the radio goes away.
+    Q_INVOKABLE void rebootRadio();
     // The radio's transverters (Radio Setup › XVTR, as the desktop's tab):
     // index, name, rfMhz, ifMhz, loMhz, loErrorMhz, rxGain, maxPowerDbm,
     // maxPowerMin/Max (the radio's range for that IF), rxOnly, valid.
@@ -1693,6 +1701,11 @@ private:
     // Sets the core's AudioCompression for the coming connection.
     void applyAudioCompression(const QHostAddress& radio, bool wan);
     bool m_redactIdentity{false};
+    QString m_calState;
+    QString m_calResult;
+    bool m_calRunningSeen{false};
+    int m_calPrevPpb{0};  // the offset before a calibration cleared it
+    int m_calRun{0};
     int m_splitRxId{-1};
     int m_splitTxId{-1};
     bool m_splitPending{false};

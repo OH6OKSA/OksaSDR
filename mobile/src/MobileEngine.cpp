@@ -881,6 +881,23 @@ MobileEngine::MobileEngine(QObject* parent)
     });
     connect(&rm, &RadioModel::sliceAdded, this, &MobileEngine::onSliceAdded);
     connect(&rm, &RadioModel::otherClientsChanged, this, [this](int, const QStringList&) { emit stationsChanged(); });
+    // Calibration's end, as the desktop reads it: pll_done 0 while the radio
+    // calibrates, then 1 with the new freq_error_ppb.
+    connect(&rm, &RadioModel::statusReceived, this, [this](const QString& object, const QMap<QString, QString>& kvs) {
+        if (object != QLatin1String("radio") || !kvs.contains(QStringLiteral("pll_done"))
+            || (m_calState != QLatin1String("starting") && m_calState != QLatin1String("running"))) {
+            return;
+        }
+        const QString done = kvs.value(QStringLiteral("pll_done"));
+        if (done == QLatin1String("0")) {
+            m_calRunningSeen = true;
+            m_calState = QStringLiteral("running");
+        } else if (done == QLatin1String("1") && m_calRunningSeen) {
+            m_calState = QStringLiteral("done");
+            m_calResult = kvs.value(QStringLiteral("freq_error_ppb"));
+            qCInfo(lcMobile).noquote() << "calibration: done, freq_error_ppb" << m_calResult;
+        }
+    });
     // Transverter bands follow the radio's xvtr status (infoChanged) and the
     // connection.
     const auto refreshBands = [this] {
@@ -7958,7 +7975,133 @@ QVariantMap MobileEngine::radioSetup() const
     d[QStringLiteral("headphoneGain")] = rm.headphoneGain();
     d[QStringLiteral("headphoneMute")] = rm.headphoneMute();
     d[QStringLiteral("networkMtu")] = rm.networkMtuSetting();
+
+    // The rest of SmartSDR's Radio Setup, as the desktop has it (the user:
+    // an operator may have only this app). Each "...Known" says whether the
+    // radio offers it, as the desktop's capability gates.
+    d[QStringLiteral("stationName")] = AppSettings::instance().effectiveStationName();
+    d[QStringLiteral("canReboot")] = m_caps.canReboot;
+    d[QStringLiteral("multiFlexKnown")] = m_caps.hasMultiClientSessions;
+    d[QStringLiteral("multiFlex")] = rm.multiFlexEnabled();
+    d[QStringLiteral("options")] = rm.radioOptions();
+    d[QStringLiteral("licenseKnown")] = m_caps.hasLicenseInfo;
+    d[QStringLiteral("licenseSubscription")] = rm.licenseSubscription();
+    d[QStringLiteral("licenseExpiration")] = rm.licenseExpirationDate();
+    d[QStringLiteral("licenseMaxVersion")] = rm.licenseMaxVersion();
+    d[QStringLiteral("licenseRadioId")] = m_redactIdentity ? QStringLiteral("(hidden)") : rm.licenseRadioId();
+    // GPS: status only (the desktop sends it nothing), with a GPS fitted.
+    d[QStringLiteral("gpsKnown")] = rm.hasGpsSetupHardware();
+    d[QStringLiteral("gpsStatus")] = rm.gpsStatus();
+    d[QStringLiteral("gpsTracked")] = rm.gpsTracked();
+    d[QStringLiteral("gpsVisible")] = rm.gpsVisible();
+    d[QStringLiteral("gpsGrid")] = rm.gpsGrid();
+    d[QStringLiteral("gpsLat")] = rm.gpsLat();
+    d[QStringLiteral("gpsLon")] = rm.gpsLon();
+    d[QStringLiteral("gpsAltitude")] = rm.gpsAltitude();
+    d[QStringLiteral("gpsSpeed")] = rm.gpsSpeed();
+    d[QStringLiteral("gpsFreqError")] = rm.gpsFreqError();
+    d[QStringLiteral("gpsTime")] = rm.gpsTime();
+    // Network: the radio's address as it reports it, DHCP or a static
+    // address the client may write, private-IP enforcement.
+    d[QStringLiteral("netConfigKnown")] = m_caps.hasClientNetworkConfig;
+    d[QStringLiteral("radioIp")] = rm.ip();
+    d[QStringLiteral("netmask")] = rm.netmask();
+    d[QStringLiteral("gateway")] = rm.gateway();
+    d[QStringLiteral("mac")] = m_redactIdentity ? QStringLiteral("(hidden)") : rm.mac();
+    d[QStringLiteral("networkName")] = rm.networkName();
+    d[QStringLiteral("hasStaticIp")] = rm.hasStaticIp();
+    d[QStringLiteral("staticIp")] = rm.staticIp();
+    d[QStringLiteral("staticNetmask")] = rm.staticNetmask();
+    d[QStringLiteral("staticGateway")] = rm.staticGateway();
+    d[QStringLiteral("privateIpKnown")] = m_caps.hasPrivateIpConnectionPolicy;
+    d[QStringLiteral("enforcePrivateIp")] = rm.enforcePrivateIp();
+    // Receive: calibration, the 10 MHz reference, binaural.
+    d[QStringLiteral("calFreq")] = rm.calFreqMhz();
+    d[QStringLiteral("freqErrorPpb")] = rm.freqErrorPpb();
+    d[QStringLiteral("calState")] = m_calState;
+    d[QStringLiteral("calResult")] = m_calResult;
+    d[QStringLiteral("calPrevPpb")] = m_calPrevPpb;
+    d[QStringLiteral("oscSetting")] = rm.oscSetting().trimmed().toLower() == QLatin1String("ext") ? QStringLiteral("external")
+                                                                                                    : rm.oscSetting().trimmed().toLower();
+    d[QStringLiteral("oscState")] = rm.oscState().trimmed().toLower() == QLatin1String("ext") ? QStringLiteral("external")
+                                                                                                : rm.oscState().trimmed().toLower();
+    d[QStringLiteral("oscLocked")] = rm.oscLocked();
+    d[QStringLiteral("tcxoPresent")] = rm.tcxoPresent();
+    d[QStringLiteral("gpsdoPresent")] = rm.gpsdoPresent();
+    d[QStringLiteral("extPresent")] = rm.extPresent();
+    d[QStringLiteral("binauralRx")] = rm.binauralRx();
+    // Filters: the radio's sharpness per mode (0-3) or automatic, and the
+    // low-latency filters for the digital modes.
+    d[QStringLiteral("filtersKnown")] = m_caps.hasSharpFilters;
+    d[QStringLiteral("filterVoice")] = rm.filterSharpnessVoice();
+    d[QStringLiteral("filterVoiceAuto")] = rm.filterSharpnessVoiceAuto();
+    d[QStringLiteral("filterCw")] = rm.filterSharpnessCw();
+    d[QStringLiteral("filterCwAuto")] = rm.filterSharpnessCwAuto();
+    d[QStringLiteral("filterDigital")] = rm.filterSharpnessDigital();
+    d[QStringLiteral("filterDigitalAuto")] = rm.filterSharpnessDigitalAuto();
+    d[QStringLiteral("lowLatencyDigital")] = rm.lowLatencyDigital();
+    // The front speaker of an M model (its name ends in M).
+    d[QStringLiteral("frontSpeakerKnown")] = rm.model().endsWith(QLatin1Char('M'));
+    d[QStringLiteral("frontSpeakerMute")] = rm.frontSpeakerMute();
+    // Phone & CW: the meter in receive, CW on the lower sideband, CWX in
+    // step with the radio's keyer speed, the radio's default RTTY mark.
+    d[QStringLiteral("metInRx")] = tx.metInRx();
+    d[QStringLiteral("cwlEnabled")] = tx.cwlEnabled();
+    d[QStringLiteral("syncCwx")] = tx.syncCwx();
+    d[QStringLiteral("rttyMarkDefault")] = rm.rttyMarkDefault();
     return d;
+}
+
+void MobileEngine::startCalibration()
+{
+    RadioModel& rm = m_session.radioModel();
+    if (!m_connected || !rm.usesFlexCommandPlane() || m_calState == QLatin1String("starting")
+        || m_calState == QLatin1String("running")) {
+        return;
+    }
+    const int run = ++m_calRun;
+    m_calState = QStringLiteral("starting");
+    m_calResult.clear();
+    m_calRunningSeen = false;
+    m_calPrevPpb = rm.freqErrorPpb();
+    const QString freq = QString::number(rm.calFreqMhz(), 'f', 6);
+    qCInfo(lcMobile).noquote() << "calibration: start at" << freq << "MHz";
+    rm.sendCommand(QStringLiteral("radio set cal_freq=") + freq);
+    rm.sendCommand(QStringLiteral("radio set freq_error_ppb=0"));
+    QPointer<MobileEngine> self(this);
+    rm.sendCmdPublic(QStringLiteral("radio pll_start"), [self, run](int code, const QString& body) {
+        QMetaObject::invokeMethod(self, [self, run, code, body] {
+            if (!self || self->m_calRun != run || self->m_calState != QLatin1String("starting")) {
+                return;
+            }
+            if (code == 0) {
+                self->m_calState = QStringLiteral("running");
+            } else {
+                // Refused, nothing measured: the offset cleared above goes back.
+                self->m_calState = QStringLiteral("error");
+                self->m_calResult = QStringLiteral("0x%1").arg(code, 0, 16).toUpper();
+                self->m_session.radioModel().sendCommand(
+                    QStringLiteral("radio set freq_error_ppb=%1").arg(self->m_calPrevPpb));
+                qCWarning(lcMobile).noquote() << "calibration: radio pll_start refused:" << self->m_calResult << body;
+            }
+        });
+    });
+    // As the desktop's: 20 s for the radio to report the end.
+    QTimer::singleShot(20000, this, [this, run] {
+        if (m_calRun == run && (m_calState == QLatin1String("starting") || m_calState == QLatin1String("running"))) {
+            m_calState = QStringLiteral("timeout");
+            qCInfo(lcMobile) << "calibration: no end reported in 20 s";
+        }
+    });
+}
+
+void MobileEngine::rebootRadio()
+{
+    if (!m_connected || !m_caps.canReboot) {
+        return;
+    }
+    qCInfo(lcMobile) << "radio: reboot asked from Radio Setup";
+    m_session.radioModel().rebootRadio();
 }
 
 void MobileEngine::setRadioSetup(const QString& key, const QVariant& value)
@@ -7973,10 +8116,7 @@ void MobileEngine::setRadioSetup(const QString& key, const QVariant& value)
     if (key == QLatin1String("callsign")) {
         setCallsign(value.toString());
     } else if (key == QLatin1String("nickname") && flex) {
-        const QString name = value.toString().trimmed();
-        if (!name.isEmpty()) {
-            rm.sendCommand(QStringLiteral("radio name ") + name);
-        }
+        rm.setRadioNickname(value.toString().trimmed());
     } else if (key == QLatin1String("remoteOn")) {
         rm.setRemoteOnEnabled(value.toBool());
     } else if (key == QLatin1String("muteLocalWhenRemote") && flex) {
@@ -8015,6 +8155,72 @@ void MobileEngine::setRadioSetup(const QString& key, const QVariant& value)
         }
         AppSettings::instance().setValue(QStringLiteral("TuneInhibitNone"), any ? QStringLiteral("False") : QStringLiteral("True"));
         AppSettings::instance().save();
+    } else if (key == QLatin1String("stationName")) {
+        // How the other stations list this device (multiFLEX), sent now
+        // and on every connect after, as the handshake sends it (spaces as
+        // dashes: a space ends the radio's value).
+        const QString name = value.toString().trimmed().left(32);
+        const QString wire = AppSettings::instance().renameEffectiveStation(name);
+        if (!wire.isEmpty()) {
+            AppSettings::instance().setValue(QStringLiteral("StationName"), name);
+            AppSettings::instance().save();
+            rm.sendCommand(QStringLiteral("client station ") + wire);
+        }
+    } else if (key == QLatin1String("staticIp") && flex && m_caps.hasClientNetworkConfig) {
+        // {ip, netmask, gateway}, or empty for DHCP, as the desktop applies
+        // it (asked first on the page: the radio's address may change).
+        const QVariantMap m = value.toMap();
+        const QString ip = m.value(QStringLiteral("ip")).toString().trimmed();
+        if (ip.isEmpty()) {
+            rm.sendCommand(QStringLiteral("radio static_net_params reset"));
+        } else {
+            rm.sendCommand(QStringLiteral("radio static_net_params ip=%1 gateway=%2 netmask=%3")
+                               .arg(ip, m.value(QStringLiteral("gateway")).toString().trimmed(),
+                                    m.value(QStringLiteral("netmask")).toString().trimmed()));
+        }
+    } else if (key == QLatin1String("calFreq") && flex) {
+        const double mhz = value.toDouble();
+        if (mhz > 0.0 && mhz < 1000.0) {
+            rm.sendCommand(QStringLiteral("radio set cal_freq=") + QString::number(mhz, 'f', 6));
+        }
+    } else if (key == QLatin1String("freqErrorPpb") && flex) {
+        rm.sendCommand(QStringLiteral("radio set freq_error_ppb=%1").arg(std::clamp(value.toInt(), -100000, 100000)));
+    } else if (key == QLatin1String("oscillator") && flex) {
+        const QString src = value.toString();
+        if (src == QLatin1String("auto") || src == QLatin1String("tcxo") || src == QLatin1String("gpsdo")
+            || src == QLatin1String("external")) {
+            rm.sendCommand(QStringLiteral("radio oscillator ") + src);
+        }
+    } else if ((key == QLatin1String("filterLevel") || key == QLatin1String("filterAuto")) && flex && m_caps.hasSharpFilters) {
+        // {mode: voice | cw | digital, value}: the radio's filter sharpness.
+        const QVariantMap m = value.toMap();
+        const QString mode = m.value(QStringLiteral("mode")).toString();
+        if (mode != QLatin1String("voice") && mode != QLatin1String("cw") && mode != QLatin1String("digital")) {
+            return;
+        }
+        if (key == QLatin1String("filterLevel")) {
+            rm.setFilterSharpness(mode, std::clamp(m.value(QStringLiteral("value")).toInt(), 0, 3));
+        } else {
+            rm.setFilterSharpnessAuto(mode, m.value(QStringLiteral("value")).toBool());
+        }
+    } else if (key == QLatin1String("frontSpeakerMute") && flex) {
+        rm.setFrontSpeakerMute(value.toBool());
+    } else if (key == QLatin1String("metInRx") && flex) {
+        rm.sendCommand(QStringLiteral("transmit set met_in_rx=%1").arg(value.toBool() ? 1 : 0));
+    } else if (key == QLatin1String("cwlEnabled") && flex) {
+        tx.setCwlEnabled(value.toBool());
+    } else if (key == QLatin1String("syncCwx") && flex) {
+        // No status follows (fw 4.3.16): the model takes the radio's yes.
+        const bool on = value.toBool();
+        rm.sendCmdPublic(QStringLiteral("cw synccwx %1").arg(on ? 1 : 0), [&tx, on](int code, const QString&) {
+            if (code == 0) {
+                TransmitDelta d;
+                d.syncCwx = on;
+                tx.applyChanges(d);
+            }
+        });
+    } else if (key == QLatin1String("rttyMarkDefault") && flex) {
+        rm.setRttyMarkDefault(std::clamp(value.toInt(), 100, 4000));
     } else if (key == QLatin1String("txBand") && flex) {
         // {id, field, value}: one TX band setting, as the desktop's TX Band
         // Settings sends it: power and inhibit / HW ALC to the band's
@@ -8440,7 +8646,7 @@ void MobileEngine::setCallsign(const QString& callsign)
         return;
     }
     if (rm.usesFlexCommandPlane()) {
-        rm.sendCommand(QStringLiteral("radio callsign ") + call);
+        rm.setRadioCallsign(call);
     }
     rm.setStationCallsign(call);
     qCInfo(lcMobile) << "callsign set to" << call;

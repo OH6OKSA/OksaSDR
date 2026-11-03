@@ -12035,6 +12035,70 @@ void RadioModel::setFrontSpeakerMute(bool m)
     }
 }
 
+void RadioModel::setFilterSharpness(const QString& mode, int level)
+{
+    sendCmd(QStringLiteral("radio filter_sharpness %1 level=%2").arg(mode).arg(level),
+            [this, mode, level](int code, const QString&) {
+        if (code != 0) return;
+        if (mode == QLatin1String("voice"))        m_filterVoice = level;
+        else if (mode == QLatin1String("cw"))      m_filterCw = level;
+        else if (mode == QLatin1String("digital")) m_filterDigital = level;
+        emit infoChanged();
+    });
+}
+
+void RadioModel::setFilterSharpnessAuto(const QString& mode, bool on)
+{
+    sendCmd(QStringLiteral("radio filter_sharpness %1 auto_level=%2").arg(mode).arg(on ? 1 : 0),
+            [this, mode, on](int code, const QString&) {
+        if (code != 0) return;
+        if (mode == QLatin1String("voice"))        m_filterVoiceAuto = on;
+        else if (mode == QLatin1String("cw"))      m_filterCwAuto = on;
+        else if (mode == QLatin1String("digital")) m_filterDigitalAuto = on;
+        emit infoChanged();
+    });
+}
+
+void RadioModel::setRttyMarkDefault(int hz)
+{
+    sendCmd(QStringLiteral("radio set rtty_mark_default=%1").arg(hz), [this, hz](int code, const QString&) {
+        if (code != 0) return;
+        m_rttyMarkDefault = hz;
+        for (SliceModel* s : m_slices)
+            s->setRttyMarkDefault(m_rttyMarkDefault);
+        emit infoChanged();
+    });
+}
+
+QString RadioModel::setRadioNickname(const QString& nickname)
+{
+    QString name;
+    for (const QChar ch : nickname) {
+        if ((ch >= QLatin1Char('a') && ch <= QLatin1Char('z')) || (ch >= QLatin1Char('A') && ch <= QLatin1Char('Z'))
+            || (ch >= QLatin1Char('0') && ch <= QLatin1Char('9')) || ch == QLatin1Char('.') || ch == QLatin1Char(',')
+            || ch == QLatin1Char('/') || ch == QLatin1Char('-')) {
+            name.append(ch);
+        }
+    }
+    if (name.isEmpty()) return {};
+    sendCmd(QStringLiteral("radio name ") + name, [this, name](int code, const QString&) {
+        if (code != 0) return;
+        m_nickname = name;
+        emit infoChanged();
+    });
+    return name;
+}
+
+void RadioModel::setRadioCallsign(const QString& callsign)
+{
+    sendCmd(QStringLiteral("radio callsign ") + callsign, [this, callsign](int code, const QString&) {
+        if (code != 0 || callsign == m_callsign) return;
+        m_callsign = callsign;
+        emit callsignChanged(this->callsign());
+        emit infoChanged();
+    });
+}
+
 void RadioModel::handleSliceStatus(int id,
                                     const QMap<QString, QString>& kvs,
                                     bool removed)

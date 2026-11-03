@@ -41,6 +41,7 @@ RowLayout {
 
     RepeatButton {
         id: down
+        objectName: fine.objectName.length > 0 ? fine.objectName + "Down" : ""
         text: "−"
         Accessible.name: fine.accessibleName ? qsTr("%1, one step down").arg(fine.accessibleName) : qsTr("One step down")
         Layout.preferredWidth: Theme.touchTarget
@@ -66,6 +67,7 @@ RowLayout {
     }
     RepeatButton {
         id: up
+        objectName: fine.objectName.length > 0 ? fine.objectName + "Up" : ""
         text: "+"
         Accessible.name: fine.accessibleName ? qsTr("%1, one step up").arg(fine.accessibleName) : qsTr("One step up")
         Layout.preferredWidth: Theme.touchTarget

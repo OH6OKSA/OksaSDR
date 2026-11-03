@@ -653,6 +653,15 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             m_engine.setRadioSetup(arg.left(eq), arg.mid(eq + 1));
         }
         *delayMs = 1000;
+    } else if (command == QLatin1String("setupget")) {
+        // KEY,...: what Radio Setup shows for those keys now (radioSetup()).
+        const QVariantMap d = m_engine.radioSetup();
+        QStringList shown;
+        for (const QString& key : arg.split(QLatin1Char(','), Qt::SkipEmptyParts)) {
+            shown << key + QLatin1Char('=') + d.value(key).toString();
+        }
+        qInfo().noquote() << "shot-plan: setupget" << shown.join(QLatin1Char(' '));
+        *delayMs = 100;
     } else if (command == QLatin1String("tapname") || command == QLatin1String("showname")
                || command == QLatin1String("holdname")) {
         // A finger on the named control's middle, through the window system

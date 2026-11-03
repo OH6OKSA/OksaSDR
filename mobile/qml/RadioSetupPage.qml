@@ -84,8 +84,10 @@ Popup {
     }
     function set(key, value) { Engine.setRadioSetup(key, value); refreshSoon.restart() }
     function setBand(field, value) { set("txBand", { id: txBandId, field: field, value: value }) }
-    // A change that could key the radio by itself asks first: a TX REQ
-    // input read active high (an open input then requests transmit).
+    // A change that could key the radio by itself asks first (a TX REQ
+    // input read active high: an open input then requests transmit), and
+    // so does one that can lose the radio or its frequency (a restart, an
+    // address, the reference, a calibration).
     function setRisky(title, text, apply, yes) {
         risky.heading = title
         risky.text = text
@@ -262,6 +264,7 @@ Popup {
         // except while a finger is on it.
         FineSlider {
             id: slider
+            objectName: level.objectName.length > 0 ? level.objectName + "Slider" : ""
             accessibleName: level.label
             Layout.fillWidth: true
             from: level.from
@@ -287,6 +290,7 @@ Popup {
             Layout.fillWidth: true
             TextField {
                 id: field
+                objectName: textSetting.objectName.length > 0 ? textSetting.objectName + "Field" : ""
                 Accessible.name: textSetting.label
                 Layout.fillWidth: true
                 font.pixelSize: 17
@@ -296,6 +300,7 @@ Popup {
             }
             AppButton {
                 id: saveButton
+                objectName: textSetting.objectName.length > 0 ? textSetting.objectName + "Save" : ""
                 text: qsTr("Save")
                 enabled: field.text.trim().length > 0
                 focusPolicy: Qt.NoFocus
@@ -323,14 +328,15 @@ Popup {
             font.pixelSize: 13
             wrapMode: Text.Wrap
         }
-        // Eight in a row where each gets 84 px ("Phone/CW" whole), else 4 + 4.
+        // Nine in a row where each gets 84 px ("Phone/CW" whole), else 5 + 4,
+        // 3 + 3 + 3 on the narrowest.
         GridLayout {
             Layout.fillWidth: true
-            columns: width >= 8 * 84 ? 8 : 4
+            columns: width >= 9 * 84 ? 9 : width >= 5 * 68 ? 5 : 3
             columnSpacing: 4
             rowSpacing: 4
             Repeater {
-                model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("Network"), qsTr("XVTR"), qsTr("Amp"), qsTr("USB")]
+                model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("RX"), qsTr("Network"), qsTr("XVTR"), qsTr("Amp"), qsTr("USB")]
                 delegate: AppButton {
                     required property int index
                     required property string modelData
@@ -368,6 +374,16 @@ Popup {
                         upper: false
                         onSaved: (t) => setup.set("nickname", t)
                     }
+                    // How the radio lists this device to its other stations
+                    // (the desktop's Station Name).
+                    TextSetting {
+                        objectName: "setupStationName"
+                        label: qsTr("This station's name  (%1)").arg(setup.d.stationName || "–")
+                        current: setup.d.stationName || ""
+                        hint: qsTr("Shown to the radio's other stations")
+                        upper: false
+                        onSaved: (t) => setup.set("stationName", t)
+                    }
                     Heading { text: qsTr("Remote") }
                     OnOff {
                         label: qsTr("Remote on (SmartLink may power the radio on)")
@@ -380,6 +396,15 @@ Popup {
                         onToggled: (v) => setup.set("muteLocalWhenRemote", v)
                     }
                     Heading { text: qsTr("Stations") }
+                    // Several stations at once (multiFLEX), as the radio
+                    // reports it: firmware 4.3 refuses "radio set mf_enable"
+                    // (could not parse), so it is shown, not set.
+                    Info {
+                        objectName: "setupMultiFlex"
+                        visible: !!setup.d.multiFlexKnown
+                        label: qsTr("multiFLEX (several stations)")
+                        value: setup.d.multiFlex ? qsTr("On") : qsTr("Off")
+                    }
                     AppButton {
                         text: qsTr("Connected stations (%1)…").arg(Engine.stations.length)
                         leftPadding: 16
@@ -396,6 +421,42 @@ Popup {
                     Info { label: qsTr("Firmware"); value: setup.d.version || "" }
                     Info { label: qsTr("Region"); value: setup.d.region || "" }
                     Info { label: qsTr("Address"); value: setup.d.ip || "" }
+                    Info { label: qsTr("Options"); value: setup.d.options || "" }
+                    Heading { visible: !!setup.d.licenseKnown; text: qsTr("License") }
+                    Info { visible: !!setup.d.licenseKnown; label: qsTr("Subscription"); value: setup.d.licenseSubscription || "" }
+                    Info { visible: !!setup.d.licenseKnown; label: qsTr("Expires"); value: setup.d.licenseExpiration || "" }
+                    Info { visible: !!setup.d.licenseKnown; label: qsTr("Highest licensed version"); value: setup.d.licenseMaxVersion || "" }
+                    Info { visible: !!setup.d.licenseKnown; label: qsTr("Radio ID"); value: setup.d.licenseRadioId || "" }
+                    // GPS, with one fitted: what the radio reports (nothing
+                    // to set, as on the desktop).
+                    Heading { visible: !!setup.d.gpsKnown; text: qsTr("GPS") }
+                    Info { visible: !!setup.d.gpsKnown; label: qsTr("Status"); value: setup.d.gpsStatus || "" }
+                    Info {
+                        visible: !!setup.d.gpsKnown
+                        label: qsTr("Satellites")
+                        value: qsTr("%1 tracked, %2 visible").arg(setup.d.gpsTracked || 0).arg(setup.d.gpsVisible || 0)
+                    }
+                    Info { visible: !!setup.d.gpsKnown; label: qsTr("Grid"); value: setup.d.gpsGrid || "" }
+                    Info { visible: !!setup.d.gpsKnown; label: qsTr("Latitude"); value: setup.d.gpsLat || "" }
+                    Info { visible: !!setup.d.gpsKnown; label: qsTr("Longitude"); value: setup.d.gpsLon || "" }
+                    Info { visible: !!setup.d.gpsKnown; label: qsTr("Altitude"); value: setup.d.gpsAltitude || "" }
+                    Info { visible: !!setup.d.gpsKnown; label: qsTr("Frequency error"); value: setup.d.gpsFreqError || "" }
+                    Info { visible: !!setup.d.gpsKnown; label: qsTr("UTC"); value: setup.d.gpsTime || "" }
+                    // Restart the radio (asked first): every station loses
+                    // it until it is back, a minute or so.
+                    AppButton {
+                        objectName: "setupReboot"
+                        visible: !!setup.d.canReboot
+                        text: qsTr("Restart the radio…")
+                        leftPadding: 16
+                        rightPadding: 16
+                        Layout.topMargin: Theme.spacing
+                        Layout.preferredHeight: Theme.touchTarget
+                        focusPolicy: Qt.NoFocus
+                        onClicked: setup.setRisky(qsTr("Restart the radio?"),
+                                                  qsTr("Every station connected to it loses the radio until it has started again, about a minute. Over SmartLink, connect again by hand."),
+                                                  () => Engine.rebootRadio(), qsTr("Restart"))
+                    }
                 }
 
                 // ---- Transmit ----
@@ -639,6 +700,12 @@ Popup {
                     Heading { text: qsTr("Microphone") }
                     OnOff { label: qsTr("Mic bias (electret microphones)"); on: !!setup.d.micBias; onToggled: (v) => setup.set("micBias", v) }
                     OnOff { label: qsTr("Mic boost (+20 dB)"); on: !!setup.d.micBoost; onToggled: (v) => setup.set("micBoost", v) }
+                    OnOff {
+                        objectName: "setupMetInRx"
+                        label: qsTr("Mic level meter in receive too")
+                        on: !!setup.d.metInRx
+                        onToggled: (v) => setup.set("metInRx", v)
+                    }
                     // This device's microphone gain is the TX tab's Mic level.
                     Heading { text: qsTr("CW keyer") }
                     Level {
@@ -669,6 +736,33 @@ Popup {
                         }
                     }
                     OnOff { label: qsTr("Swap paddles"); on: !!setup.d.swapPaddles; onToggled: (v) => setup.set("swapPaddles", v) }
+                    // CW on the upper or the lower sideband (the radio's CW
+                    // mode; CWL as the desktop's Sideband).
+                    Choice {
+                        objectName: "setupCwSideband"
+                        label: qsTr("CW sideband")
+                        options: [{ label: qsTr("CWU (upper)"), value: false }, { label: qsTr("CWL (lower)"), value: true }]
+                        columns: 2
+                        current: !!setup.d.cwlEnabled
+                        onChosen: (v) => setup.set("cwlEnabled", v)
+                    }
+                    OnOff {
+                        objectName: "setupSyncCwx"
+                        label: qsTr("CWX text at the keyer's speed")
+                        on: !!setup.d.syncCwx
+                        onToggled: (v) => setup.set("syncCwx", v)
+                    }
+                    Heading { text: qsTr("RTTY") }
+                    Level {
+                        objectName: "setupRttyMark"
+                        label: qsTr("The radio's default RTTY mark")
+                        unit: " Hz"
+                        from: 300
+                        to: 3000
+                        stepSize: 5
+                        current: setup.d.rttyMarkDefault || 2125
+                        onCommitted: (v) => setup.set("rttyMarkDefault", v)
+                    }
                 }
 
                 // ---- Audio ----
@@ -679,6 +773,160 @@ Popup {
                     OnOff { label: qsTr("Line out muted"); on: !!setup.d.lineoutMute; onToggled: (v) => setup.set("lineoutMute", v) }
                     Level { label: qsTr("Headphones"); current: setup.d.headphoneGain || 0; onCommitted: (v) => setup.set("headphoneGain", v) }
                     OnOff { label: qsTr("Headphones muted"); on: !!setup.d.headphoneMute; onToggled: (v) => setup.set("headphoneMute", v) }
+                    OnOff {
+                        objectName: "setupFrontSpeaker"
+                        visible: !!setup.d.frontSpeakerKnown
+                        label: qsTr("Front speaker muted")
+                        on: !!setup.d.frontSpeakerMute
+                        onToggled: (v) => setup.set("frontSpeakerMute", v)
+                    }
+                }
+
+                // ---- RX: calibration, the 10 MHz reference, binaural
+                // receive and the radio's filters, as the desktop's Receive
+                // and Filters pages ----
+                ColumnLayout {
+                    id: rx
+                    spacing: Theme.spacing / 2
+                    readonly property var calWords: ({ "starting": qsTr("Starting…"), "running": qsTr("Calibrating…"),
+                                                       "error": qsTr("The radio refused (%1); the offset is back at %2 ppb.").arg(setup.d.calResult || "").arg(setup.d.calPrevPpb || 0),
+                                                       "timeout": qsTr("No end reported in 20 s. The offset was %1 ppb before: enter it below to go back.").arg(setup.d.calPrevPpb || 0),
+                                                       "done": qsTr("Done: %1 ppb").arg(setup.d.calResult || "–") })
+                    function oscLabel(v) {
+                        return v === "auto" ? qsTr("Auto") : v === "tcxo" ? qsTr("TCXO") : v === "gpsdo" ? qsTr("GPSDO")
+                             : v === "external" ? qsTr("External 10 MHz") : (v || "").toUpperCase()
+                    }
+                    Heading { text: qsTr("Frequency calibration") }
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("The radio measures a steady carrier of known frequency (a GPS-locked source, or a time station such as WWV on 10 or 15 MHz, strong and in the clear) and sets its own frequency offset from it. Or enter the offset yourself.")
+                        color: Theme.textDim
+                        font.pixelSize: 13
+                        wrapMode: Text.Wrap
+                    }
+                    TextSetting {
+                        objectName: "setupCalFreq"
+                        label: qsTr("Calibration frequency  (%1 MHz)").arg(Number(setup.d.calFreq || 0).toFixed(6))
+                        current: Number(setup.d.calFreq || 0).toFixed(6)
+                        hint: qsTr("MHz, e.g. 15.000000")
+                        upper: false
+                        onSaved: (t) => { const v = parseFloat(t.replace(",", ".")); if (v > 0) setup.set("calFreq", v) }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        AppButton {
+                            objectName: "setupCalStart"
+                            text: qsTr("Calibrate")
+                            enabled: setup.d.calState !== "starting" && setup.d.calState !== "running"
+                            leftPadding: 16
+                            rightPadding: 16
+                            focusPolicy: Qt.NoFocus
+                            onClicked: setup.setRisky(qsTr("Calibrate on %1 MHz?").arg(Number(setup.d.calFreq || 0).toFixed(6)),
+                                                      qsTr("The radio clears its frequency offset (now %1 ppb) and measures it again on that carrier. Without a strong, steady carrier there it measures noise: check the frequency first.").arg(setup.d.freqErrorPpb || 0),
+                                                      () => Engine.startCalibration(), qsTr("Calibrate"))
+                        }
+                        Label {
+                            Layout.fillWidth: true
+                            text: rx.calWords[setup.d.calState || ""] || ""
+                            color: setup.d.calState === "done" ? "#00cc66"
+                                 : setup.d.calState === "error" || setup.d.calState === "timeout" ? Theme.transmit : Theme.textDim
+                            font.pixelSize: 13
+                            wrapMode: Text.Wrap
+                        }
+                    }
+                    TextSetting {
+                        objectName: "setupFreqError"
+                        label: qsTr("Frequency offset  (%1 ppb)").arg(setup.d.freqErrorPpb || 0)
+                        current: String(setup.d.freqErrorPpb || 0)
+                        hint: qsTr("parts per billion")
+                        upper: false
+                        onSaved: (t) => { const v = parseInt(t); if (!isNaN(v)) setup.set("freqErrorPpb", v) }
+                    }
+                    Heading { text: qsTr("10 MHz reference") }
+                    // The sources the radio has (as the desktop offers them);
+                    // a change asks first: on an input with no signal the
+                    // radio unlocks and drifts.
+                    Choice {
+                        objectName: "setupOsc"
+                        options: {
+                            const o = [{ label: qsTr("Auto"), value: "auto" }]
+                            const st = setup.d.oscState || ""
+                            const cur = setup.d.oscSetting || ""
+                            if (st.length > 0 || setup.d.tcxoPresent || cur === "tcxo") o.push({ label: qsTr("TCXO"), value: "tcxo" })
+                            if (setup.d.gpsdoPresent || cur === "gpsdo" || st === "gpsdo") o.push({ label: qsTr("GPSDO"), value: "gpsdo" })
+                            if (st.length > 0 || setup.d.extPresent || cur === "external") o.push({ label: qsTr("External"), value: "external" })
+                            return o
+                        }
+                        columns: 4
+                        current: setup.d.oscSetting || ""
+                        onChosen: (v) => setup.setRisky(qsTr("Use %1 as the reference?").arg(rx.oscLabel(v)),
+                                                        qsTr("The radio's frequency reference changes. With no signal on the chosen input the radio unlocks and its frequency drifts."),
+                                                        () => setup.set("oscillator", v), qsTr("Switch"))
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        readonly property string st: setup.d.oscState || ""
+                        text: st.length === 0 ? qsTr("Waiting for the radio's oscillator status")
+                            : (setup.d.oscSetting === "auto" && st !== "auto" ? qsTr("Auto → %1").arg(rx.oscLabel(st)) : rx.oscLabel(st))
+                              + (setup.d.oscLocked ? qsTr(", locked") : qsTr(", not locked"))
+                              + (st === "external" && !setup.d.extPresent ? qsTr(" (no signal found)") : "")
+                        color: st.length === 0 ? Theme.textDim : setup.d.oscLocked ? "#00cc66" : Theme.transmit
+                        font.pixelSize: 13
+                        wrapMode: Text.Wrap
+                    }
+                    // Binaural receive and the digital modes' low-latency
+                    // filters as the radio reports them: firmware 4.3 refuses
+                    // "radio set binaural_rx" and "low_latency_digital_modes"
+                    // (could not parse), so they are shown, not set.
+                    Heading { text: qsTr("Receive audio") }
+                    Info {
+                        objectName: "setupBinaural"
+                        label: qsTr("Binaural receive")
+                        value: setup.d.binauralRx ? qsTr("On") : qsTr("Off")
+                    }
+                    // The radio's filter sharpness per mode: 0 the least delay
+                    // (low latency), 3 the sharpest skirts; Auto lets the
+                    // radio choose. As the desktop's Filters page.
+                    Heading { visible: !!setup.d.filtersKnown; text: qsTr("Filters: low latency 0 … 3 sharp") }
+                    Repeater {
+                        model: setup.d.filtersKnown
+                               ? [{ mode: "voice", label: qsTr("Voice"), level: setup.d.filterVoice, auto: setup.d.filterVoiceAuto },
+                                  { mode: "cw", label: qsTr("CW"), level: setup.d.filterCw, auto: setup.d.filterCwAuto },
+                                  { mode: "digital", label: qsTr("Digital"), level: setup.d.filterDigital, auto: setup.d.filterDigitalAuto }]
+                               : []
+                        delegate: RowLayout {
+                            required property var modelData
+                            Layout.fillWidth: true
+                            spacing: 4
+                            Label { text: modelData.label; color: Theme.text; font.pixelSize: 15; Layout.fillWidth: true }
+                            Repeater {
+                                model: 4
+                                delegate: AppButton {
+                                    required property int index
+                                    objectName: "setupFilter" + parent.modelData.mode + index
+                                    text: index
+                                    checked: !parent.modelData.auto && parent.modelData.level === index
+                                    enabled: !parent.modelData.auto
+                                    focusPolicy: Qt.NoFocus
+                                    Layout.preferredWidth: 40
+                                    onClicked: setup.set("filterLevel", { mode: parent.modelData.mode, value: index })
+                                }
+                            }
+                            AppButton {
+                                objectName: "setupFilterAuto" + modelData.mode
+                                text: qsTr("Auto")
+                                checked: !!modelData.auto
+                                focusPolicy: Qt.NoFocus
+                                onClicked: setup.set("filterAuto", { mode: modelData.mode, value: !checked })
+                            }
+                        }
+                    }
+                    Info {
+                        objectName: "setupLowLatency"
+                        visible: !!setup.d.filtersKnown
+                        label: qsTr("Low-latency digital filters")
+                        value: setup.d.lowLatencyDigital ? qsTr("On") : qsTr("Off")
+                    }
                 }
 
                 // ---- Network ----
@@ -692,6 +940,111 @@ Popup {
                         if (n === 0) acc = setup.d.networkMtu || 1450
                         acc = Math.max(576, Math.min(9000, acc + dir * (n < 10 ? 10 : 50)))
                         setup.set("networkMtu", acc)
+                    }
+                    // The radio's address as it reports it, and how it gets
+                    // one: DHCP, or a static address written to it (asked
+                    // first: the radio may move to another address).
+                    Heading { text: qsTr("The radio's address") }
+                    Info { label: qsTr("IP address"); value: setup.d.radioIp || setup.d.ip || "" }
+                    Info { label: qsTr("Netmask"); value: setup.d.netmask || "" }
+                    Info { label: qsTr("Gateway"); value: setup.d.gateway || "" }
+                    Info { label: qsTr("MAC"); value: setup.d.mac || "" }
+                    Info { visible: (setup.d.networkName || "").length > 0; label: qsTr("Network"); value: setup.d.networkName || "" }
+                    ColumnLayout {
+                        id: ipConfig
+                        visible: !!setup.d.netConfigKnown
+                        Layout.fillWidth: true
+                        spacing: Theme.spacing / 2
+                        property bool editStatic: false
+                        readonly property bool showStatic: editStatic || !!setup.d.hasStaticIp
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Label { text: qsTr("Address by"); color: Theme.text; font.pixelSize: 15; Layout.fillWidth: true }
+                            AppButton {
+                                objectName: "setupDhcp"
+                                text: qsTr("DHCP")
+                                checked: !setup.d.hasStaticIp && !ipConfig.editStatic
+                                focusPolicy: Qt.NoFocus
+                                Layout.preferredWidth: Theme.buttonWidth * 1.4
+                                onClicked: {
+                                    ipConfig.editStatic = false
+                                    if (setup.d.hasStaticIp)
+                                        setup.setRisky(qsTr("Let the radio take its address by DHCP?"),
+                                                       qsTr("The radio restarts with the new setting (every station loses it for about a minute) and may get a new address: connect again there."),
+                                                       () => setup.set("staticIp", {}), qsTr("Use DHCP"))
+                                }
+                            }
+                            AppButton {
+                                objectName: "setupStatic"
+                                text: qsTr("Static")
+                                checked: ipConfig.showStatic
+                                focusPolicy: Qt.NoFocus
+                                Layout.preferredWidth: Theme.buttonWidth * 1.4
+                                onClicked: ipConfig.editStatic = true
+                            }
+                        }
+                        GridLayout {
+                            visible: ipConfig.showStatic
+                            Layout.fillWidth: true
+                            columns: 2
+                            columnSpacing: Theme.spacing
+                            Label { text: qsTr("IP address"); color: Theme.textDim; font.pixelSize: 15 }
+                            TextField {
+                                id: staticIpField
+                                objectName: "setupStaticIp"
+                                Accessible.name: qsTr("Static IP address")
+                                Layout.fillWidth: true
+                                font.pixelSize: 17
+                                placeholderText: setup.d.staticIp || "192.168.1.60"
+                                inputMethodHints: Qt.ImhPreferNumbers | Qt.ImhNoPredictiveText
+                            }
+                            Label { text: qsTr("Netmask"); color: Theme.textDim; font.pixelSize: 15 }
+                            TextField {
+                                id: staticMaskField
+                                Accessible.name: qsTr("Static netmask")
+                                Layout.fillWidth: true
+                                font.pixelSize: 17
+                                placeholderText: setup.d.staticNetmask || "255.255.255.0"
+                                inputMethodHints: Qt.ImhPreferNumbers | Qt.ImhNoPredictiveText
+                            }
+                            Label { text: qsTr("Gateway"); color: Theme.textDim; font.pixelSize: 15 }
+                            TextField {
+                                id: staticGwField
+                                Accessible.name: qsTr("Static gateway")
+                                Layout.fillWidth: true
+                                font.pixelSize: 17
+                                placeholderText: setup.d.staticGateway || "192.168.1.1"
+                                inputMethodHints: Qt.ImhPreferNumbers | Qt.ImhNoPredictiveText
+                            }
+                        }
+                        AppButton {
+                            objectName: "setupStaticApply"
+                            visible: ipConfig.showStatic
+                            readonly property string ip: staticIpField.text.trim() || setup.d.staticIp || ""
+                            readonly property string mask: staticMaskField.text.trim() || setup.d.staticNetmask || ""
+                            readonly property string gw: staticGwField.text.trim() || setup.d.staticGateway || ""
+                            readonly property bool valid: /^\d{1,3}(\.\d{1,3}){3}$/.test(ip) && /^\d{1,3}(\.\d{1,3}){3}$/.test(mask)
+                                                         && /^\d{1,3}(\.\d{1,3}){3}$/.test(gw)
+                            // Something to write: DHCP now, or a field changed.
+                            readonly property bool changed: !setup.d.hasStaticIp || ip !== (setup.d.staticIp || "")
+                                                           || mask !== (setup.d.staticNetmask || "") || gw !== (setup.d.staticGateway || "")
+                            text: qsTr("Apply the static address…")
+                            enabled: valid && changed
+                            leftPadding: 16
+                            rightPadding: 16
+                            focusPolicy: Qt.NoFocus
+                            onClicked: setup.setRisky(qsTr("Give the radio %1?").arg(ip),
+                                                      qsTr("Netmask %1, gateway %2. The radio restarts at that address (every station loses it for about a minute): connect again there. A wrong address can leave the radio out of reach until it is set back at the radio.").arg(mask).arg(gw),
+                                                      () => setup.set("staticIp", { ip: ip, netmask: mask, gateway: gw }), qsTr("Apply"))
+                        }
+                    }
+                    // Whether only stations on private addresses may connect
+                    // (the radio's own guard), as the radio reports it.
+                    Info {
+                        objectName: "setupPrivateIp"
+                        visible: !!setup.d.privateIpKnown
+                        label: qsTr("Private addresses only")
+                        value: setup.d.enforcePrivateIp ? qsTr("On") : qsTr("Off")
                     }
                     Heading { text: qsTr("Network MTU") }
                     Label {

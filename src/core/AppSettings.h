@@ -138,6 +138,9 @@ public:
     QString effectiveGuiClientId() const;
     QString persistentGuiClientId() const;
     QString effectiveStationName() const;
+    // The station renamed while running: the protocol-safe name the next
+    // handshake sends (not for an automation identity, which keeps its own).
+    QString renameEffectiveStation(const QString& name);
     QString automationIdentity() const;
     QString automationAgentName() const;
     bool guiClientIdentityIsTransient() const;

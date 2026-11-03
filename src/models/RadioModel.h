@@ -594,6 +594,22 @@ public:
     void setHeadphoneGain(int v);
     void setHeadphoneMute(bool m);
     void setFrontSpeakerMute(bool m);
+    // The filter sharpness of one mode ("voice", "cw", "digital"), as
+    // FlexLib's FilterSharpness* setters: the radio takes it (R|0) but
+    // reports no status for it (fw 4.3.16), so the model follows the reply.
+    void setFilterSharpness(const QString& mode, int level);
+    void setFilterSharpnessAuto(const QString& mode, bool on);
+    // The radio's default RTTY mark, likewise without a status (fw 4.3.16).
+    void setRttyMarkDefault(int hz);
+    // The radio's name, as FlexLib's Nickname: only letters, digits and
+    // . , / - (FlexBackend::requestRadioNickname's set), taken by the model
+    // on the radio's OK, as the radio sends no status for it (fw 4.3.16).
+    // Returns the name sent, empty if nothing was.
+    QString setRadioNickname(const QString& nickname);
+    // The radio's callsign (radio callsign), likewise taken on the OK: the
+    // radio's value wins in callsign(), and without this it stayed the old
+    // one, so setting the old call back sent nothing (fw 4.3.16).
+    void setRadioCallsign(const QString& callsign);
     QHostAddress radioAddress() const { return m_lastInfo.address; }
 
     int     filterSharpnessVoice()     const { return m_filterVoice; }

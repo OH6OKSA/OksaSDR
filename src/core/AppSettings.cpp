@@ -1427,6 +1427,15 @@ QString AppSettings::effectiveGuiClientId() const
 
 QString AppSettings::persistentGuiClientId() const { return m_persistentGuiClientId; }
 QString AppSettings::effectiveStationName() const { return m_effectiveStationName; }
+
+QString AppSettings::renameEffectiveStation(const QString& name)
+{
+    const QString safe = GuiClientIdentityPolicy::protocolSafeStation(name);
+    if (!safe.isEmpty() && m_automationIdentity.isEmpty()) {
+        m_effectiveStationName = safe;
+    }
+    return safe;
+}
 QString AppSettings::automationIdentity() const { return m_automationIdentity; }
 QString AppSettings::automationAgentName() const { return m_automationAgentName; }
 bool AppSettings::guiClientIdentityIsTransient() const { return m_guiClientIdentityTransient; }
