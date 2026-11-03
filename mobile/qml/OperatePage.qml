@@ -18,6 +18,7 @@ Page {
         page: page
         freqDialog: freqDialog
         drawer: controlsDrawer
+        macros: macrosPanel
     }
     Keys.onPressed: (event) => { if (operateKeys.press(event)) event.accepted = true }
     Keys.onReleased: (event) => { if (operateKeys.release(event)) event.accepted = true }
@@ -425,18 +426,48 @@ Page {
         }
 
         // PTT along the bottom: under the display (the pinned panel keeps
-        // the side's full height), the full width otherwise.
+        // the side's full height), the full width otherwise, the macros
+        // button beside it (MacrosPanel).
         // In portrait the drawer covers this and carries a copy; hidden then
         // so no second PTT peeks out under the drawer.
-        PttButton {
-            id: ptt
-            visible: !(controlsDrawer.visible && page.portrait) && !digiHidden
+        RowLayout {
+            id: pttRow
+            visible: !(controlsDrawer.visible && page.portrait) && !ptt.digiHidden
             Layout.row: page.twoColumns ? 1 : (page.panelPinned ? 2 : 1)
             Layout.column: 0
             Layout.fillWidth: true
+            // A layout in a layout fills the height by default: the row took
+            // the display's room (1366 x 1024).
+            Layout.fillHeight: false
             Layout.preferredHeight: page.pttHeight
-            fontPx: 32
+            spacing: Theme.spacing / 2
+            AppButton {
+                objectName: "macrosButton"
+                visible: macrosPanel.available
+                text: qsTr("Macros")
+                font.pixelSize: 17
+                checked: macrosPanel.opened
+                focusPolicy: Qt.NoFocus
+                Layout.preferredWidth: Math.max(110, implicitWidth)
+                Layout.fillHeight: true
+                onClicked: macrosPanel.opened ? macrosPanel.close() : macrosPanel.open()
+            }
+            PttButton {
+                id: ptt
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                fontPx: 32
+            }
         }
+    }
+
+    // The mode's macros over the display, above the PTT row (Tyler Akerman
+    // K0OTC), as wide as the display's side at most; the drawer opening
+    // closes it.
+    MacrosPanel {
+        id: macrosPanel
+        anchorItem: pttRow
+        maxWidth: Math.min(page.leftWidth, 720)
     }
 
     // With the panel hidden, controls slide in from the right over the
@@ -461,6 +492,7 @@ Page {
         dim: false
         dragMargin: 0
         onAboutToShow: {
+            macrosPanel.close()
             Engine.setPtt(false, "controls drawer opened")
             Engine.setCwKey(false, "controls drawer opened")
         }

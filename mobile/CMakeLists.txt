@@ -134,6 +134,7 @@ qt_add_qml_module(aether-mobile
         qml/FreeDvControls.qml
         qml/RttyControls.qml
         qml/AmpControls.qml
+        qml/MacrosPanel.qml
         qml/PhoneOperatePage.qml
         qml/StationsDialog.qml
         qml/StepButton.qml

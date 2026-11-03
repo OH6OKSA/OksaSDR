@@ -18,6 +18,7 @@ Page {
         page: page
         freqDialog: freqDialog
         drawer: controlsDrawer
+        macros: macrosPanel
     }
     Keys.onPressed: (event) => { if (operateKeys.press(event)) event.accepted = true }
     Keys.onReleased: (event) => { if (operateKeys.release(event)) event.accepted = true }
@@ -332,6 +333,7 @@ Page {
             // Portrait: only the step buttons, gone with B/S. Landscape: the
             // controls button and PTT stay when B/S hides the steps.
             RowLayout {
+                id: stepRow
                 visible: page.landscape || Engine.tuneRowsShown
                 Layout.fillWidth: true
                 spacing: 4
@@ -372,8 +374,22 @@ Page {
                     visible: !Engine.tuneRowsShown
                     Layout.fillWidth: true
                 }
-                // Landscape: the controls button and PTT end this row, so
-                // the low screen keeps its height for the spectrum.
+                // Landscape: the macros, the controls button and PTT end
+                // this row, so the low screen keeps its height for the
+                // spectrum.
+                AppButton {
+                    objectName: "macrosButton"
+                    visible: page.landscape && macrosPanel.available
+                    text: qsTr("Macros")
+                    font.pixelSize: 13
+                    checked: macrosPanel.opened
+                    focusPolicy: Qt.NoFocus
+                    leftPadding: 4
+                    rightPadding: 4
+                    Layout.preferredWidth: Math.max(Theme.touchTarget * 1.4, implicitWidth)
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: macrosPanel.opened ? macrosPanel.close() : macrosPanel.open()
+                }
                 AppButton {
                     visible: page.landscape
                     Accessible.name: qsTr("Controls")
@@ -423,6 +439,7 @@ Page {
                 color: Engine.swrValid && Engine.swr > 2.5 ? Theme.transmit : Theme.text
             }
             RowLayout {
+                id: pttRow
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
                 PttButton {
@@ -457,6 +474,20 @@ Page {
                         }
                     }
                 }
+                // The macros of this mode a tap from PTT (MacrosPanel).
+                AppButton {
+                    objectName: "macrosButton"
+                    visible: macrosPanel.available
+                    text: qsTr("Macros")
+                    font.pixelSize: 15
+                    checked: macrosPanel.opened
+                    focusPolicy: Qt.NoFocus
+                    leftPadding: 6
+                    rightPadding: 6
+                    Layout.preferredWidth: Math.max(76, implicitWidth)
+                    Layout.preferredHeight: page.pttHeight
+                    onClicked: macrosPanel.opened ? macrosPanel.close() : macrosPanel.open()
+                }
                 PttButton {
                     id: ptt
                     visible: !controlsDrawer.visible && !digiHidden
@@ -469,6 +500,13 @@ Page {
                 }
             }
         }
+    }
+
+    // The mode's macros over the display, above the PTT row (Tyler Akerman
+    // K0OTC); the drawer opening closes it.
+    MacrosPanel {
+        id: macrosPanel
+        anchorItem: page.landscape ? stepRow : pttRow
     }
 
     // Controls slide in over the waterfall: from the right in landscape, from
@@ -490,6 +528,7 @@ Page {
         dragMargin: 0
         // A drawer opening while PTT is held would hide the button.
         onAboutToShow: {
+            macrosPanel.close()
             Engine.setPtt(false, "controls drawer opened")
             Engine.setCwKey(false, "controls drawer opened")
         }
