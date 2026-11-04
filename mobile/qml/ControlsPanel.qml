@@ -38,7 +38,7 @@ ColumnLayout {
     ].concat(ampSet ? [{ name: "Amp", button: qsTr("Amp"), title: qsTr("Amplifier"), component: ampSection }] : [])
     // A bool of its own: Engine.amp changes with every reading, and a new
     // sections list would rebuild every tab.
-    readonly property bool ampSet: !!Engine.amp.set || !!Engine.pgxl.present || !!Engine.tgxl.present
+    readonly property bool ampSet: !!Engine.amp.set || !!Engine.pgxl.present || !!Engine.tgxl.present || !!Engine.ag.present
     // One row of all on a wide panel, else rows of six (6 + 6); with the
     // Amp tab rows of seven (7 + 6) where the widest label still fits at
     // 12 px, else 5 + 5 + 3 (a low side drawer, 667 x 375, cut "FreeDV").
@@ -318,7 +318,7 @@ ColumnLayout {
         ColumnLayout {
             spacing: Theme.spacing
             AmpControls { visible: !!Engine.amp.set; Layout.fillWidth: true }
-            GeniusControls { visible: !!Engine.pgxl.present || !!Engine.tgxl.present; Layout.fillWidth: true }
+            GeniusControls { visible: !!Engine.pgxl.present || !!Engine.tgxl.present || !!Engine.ag.present; Layout.fillWidth: true }
         }
     }
 }

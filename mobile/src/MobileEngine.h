@@ -38,6 +38,7 @@ class Ft8Engine;
 namespace AetherSDR {
 class AudioEngine;
 class RfkitConnection;
+class AntennaGeniusModel;
 class DxClusterClient;
 class FreeDvClient;
 class CwRxModel;
@@ -323,6 +324,9 @@ class MobileEngine : public QObject {
     // relays them and as the app reads them directly (MobileEngine4o3a.cpp).
     Q_PROPERTY(QVariantMap pgxl READ pgxl NOTIFY pgxlChanged)
     Q_PROPERTY(QVariantMap tgxl READ tgxl NOTIFY tgxlChanged)
+    // 4O3A Antenna Genius (MobileEngine4o3a.cpp): read at the address set in
+    // Radio Setup › Amp, its two radio ports' band and antennas.
+    Q_PROPERTY(QVariantMap ag READ ag NOTIFY agChanged)
     // APD (adaptive pre-distortion) on a radio that offers it (FLEX-8000,
     // Aurora; the radio's "apd configurable=1"): configurable, enabled,
     // equalizerActive, samplers [{ant, selected, available}] for ANT1, ANT2,
@@ -707,6 +711,14 @@ public:
     Q_INVOKABLE void removeUsbCable(const QString& sn);
     QVariantMap pgxl() const;
     QVariantMap tgxl() const;
+    QVariantMap ag() const;
+    // The antenna for an AG radio port (1 = A, 2 = B): RX, and TX where the
+    // antenna may transmit on the port's band. Control on, not while that
+    // port or the radio transmits.
+    Q_INVOKABLE void agSelectAntenna(int port, int antenna);
+    // An SO2R TGXL's active channel (1 = A, 2 = B): the one its meters and
+    // Tune belong to ("activate ch=").
+    Q_INVOKABLE void tgxlActivateChannel(int channel);
     // Each confirmed on the page; refused unless control is on (Radio Setup
     // › Amp), the tuner's relays and antenna also while the radio transmits.
     Q_INVOKABLE void pgxlSetOperate(bool on);
@@ -1681,6 +1693,7 @@ signals:
     void ampChanged();
     void pgxlChanged();
     void tgxlChanged();
+    void agChanged();
     void apdChanged();
     void tnfsChanged();
     void tnfCreateRequested(double freqMhz);
@@ -1930,6 +1943,13 @@ private:
     bool pgxlOperating() const;
     class PgxlConnection* m_pgxlConn{nullptr};
     class TgxlConnection* m_tgxlConn{nullptr};
+    AntennaGeniusModel* m_ag{nullptr};
+    QString m_agLinkError, m_agNotice;
+    // An SO2R TGXL: no 3way in its info reply; its active channel and B side
+    // from its status.
+    bool m_tgxlSo2r{false};
+    int m_tgxlActive{0};
+    QVariantMap m_tgxlSides;
     QString m_pgxlLinkError, m_tgxlLinkError, m_pgxlNotice, m_tgxlNotice;
     bool m_pgxlPending{false};
     double m_pgxlDirectFwd{0}, m_pgxlDirectSwr{1}, m_pgxlRelayFwd{0}, m_pgxlRelaySwr{1};

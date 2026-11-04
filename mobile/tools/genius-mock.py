@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""A stand-in for 4O3A's Power Genius XL (TCP 9008) and Tuner Genius XL
-(TCP 9010), for testing the app's direct links without the devices.
+"""A stand-in for 4O3A's Power Genius XL (TCP 9008), Tuner Genius XL
+(TCP 9010) and, with --ag, Antenna Genius (TCP 9007), for testing the
+app's direct links without the devices.
 
     mobile/tools/genius-mock.py [--bind ADDR] [--pgxl-port 9008] [--tgxl-port 9010]
                                 [--auth CODE] [--transmit] [--radio HOST]
@@ -38,9 +39,10 @@ import time
 
 LOCK = threading.Lock()
 PGXL = {"state": "STANDBY", "fanmode": "STANDARD", "meffa": "STANDBY"}
-TGXL = {"operate": 1, "tuning": 0, "relayC1": 44, "relayL": 12, "relayC2": 8, "antA": 0, "bypass": 0}
+TGXL = {"active": 1, "ag": 0, "operate": 1, "tuning": 0, "relayC1": 44, "relayL": 12, "relayC2": 8, "antA": 0, "bypass": 0}
 TGXL_CLIENTS = []
-TGXL_TUNE_END = [0.0]   # when the running autotune ends
+TGXL_TUNE_END = [0.0]
+TGXL_SO2R = [False]      # --tgxl-so2r: the two-channel model (B on 40 m)   # when the running autotune ends
 RADIO_SEND = {}   # device name -> send(cmd) on its radio connection (--radio)
 
 
@@ -76,9 +78,11 @@ def tgxl_status(seq):
         t.update(fwd="41.76", swr="%.4f" % -(9.5 + (3.0 - left) * 5.0), ptt=1)
     else:
         t.update(fwd="21.42", swr="-60.0000", ptt=0)
+    so2r = TGXL_SO2R[0]
+    t.update(freqB="7074.000" if so2r else "0.000", bandB=3 if so2r else 0, modeB=1 if so2r else 0)
     return ("S{seq}|status fwd={fwd} peak={fwd} max=62.43 swr={swr} pttA={ptt} bandA=6 modeA=1 flexA=FLEX-8600 "
-            "freqA=14161.500 bypassA={bypass} bypassRxA=0 antA={antA} pttB=0 bandB=0 modeB=0 flexB=FLEX-8600 "
-            "freqB=0.000 bypassB=0 bypassRxB=0 antB=0 state={operate} active=1 tuning={tuning} bypass={bypass} ag=0 "
+            "freqA=14161.500 bypassA={bypass} bypassRxA=0 antA={antA} pttB=0 bandB={bandB} modeB={modeB} flexB=FLEX-8600 "
+            "freqB={freqB} bypassB=0 bypassRxB=0 antB=0 state={operate} active={active} tuning={tuning} bypass={bypass} ag={ag} "
             "relayC1={relayC1} relayL={relayL} relayC2={relayC2}").format(seq=seq, **t)
 
 
@@ -220,6 +224,16 @@ def tgxl_handler(conn, peer, args):
                     state = tgxl_state()
                 conn.sendall(f"R{seq}|0|\n".encode())
                 push_tgxl("S0|" + state)
+            elif cmd.startswith("activate ch="):
+                # SO2R: the channel the meters and Tune belong to (1 = A, 2 = B).
+                ch = words.get("ch", "")
+                if TGXL_SO2R[0] and ch in ("1", "2"):
+                    with LOCK:
+                        TGXL["active"] = int(ch)
+                    conn.sendall(f"R{seq}|0|\n".encode())
+                    push_tgxl("S0|" + tgxl_state() + f" active={ch}")
+                else:
+                    conn.sendall(f"R{seq}|50000013|\n".encode())
             elif cmd.startswith("activate "):
                 ant = words.get("ant", "")
                 if args.tgxl_3way and ant in ("1", "2", "3"):
@@ -266,6 +280,92 @@ def tgxl_handler(conn, peer, args):
                 conn.sendall(f"R{seq}|50000015|\n".encode())
     finally:
         TGXL_CLIENTS.remove(conn)
+
+
+AG_ANTENNAS = [("Yagi_20-10", 0x03E0, 0x03E0), ("Dipole_40", 0x0008, 0x0008), ("Vertical_80", 0x002E, 0x002E),
+               ("Beverage", 0x0000, 0x003E), ("Wire_60", 0x0800, 0x0800), ("Antenna_6", 0, 0),
+               ("Antenna_7", 0, 0), ("Antenna_8", 0, 0)]
+AG_BANDS = [("None", 0.0, 0.0), ("160m", 1.6, 2.2), ("80m", 3.3, 4.0), ("40m", 6.8, 7.4), ("30m", 9.9, 10.35),
+            ("20m", 13.8, 14.55), ("17m", 17.868, 18.368), ("15m", 20.8, 21.65), ("12m", 24.69, 25.19),
+            ("10m", 27.8, 29.9), ("6m", 49.8, 52.2), ("60m", 5.0, 6.0), ("Custom_1", 0, 0), ("Custom_2", 0, 0),
+            ("Custom_3", 0, 0), ("Custom_4", 0, 0)]
+AG_PORTS = {1: {"auto": 1, "source": "AUTO", "band": 5, "rxant": 1, "txant": 1, "tx": 0, "inhibit": 0},
+            2: {"auto": 1, "source": "AUTO", "band": 3, "rxant": 2, "txant": 2, "tx": 0, "inhibit": 0}}
+AG_CLIENTS = []
+
+
+def ag_port_line(n):
+    p = AG_PORTS[n]
+    return ("port {n} auto={auto} source={source} band={band} rxant={rxant} txant={txant} inband=0 tx={tx} "
+            "inhibit={inhibit}").format(n=n, **p)
+
+
+def ag_handler(conn, peer, args):
+    # 4O3A's Antenna Genius TCP/IP API (github.com/4o3a/genius-api-docs):
+    # "V<a.b.c> AG[ AUTH]", C<seq>|cmd, R<seq>|<hex>|<body> (several R lines
+    # and an empty one for a list), S0|port ... after `sub port all`.
+    log("AG client", peer[0])
+    lan = conn.getsockname()[0].rsplit(".", 1)[0] + "."
+    ask = args.auth and not (args.radio and peer[0] == args.radio) and (args.ask_lan or not peer[0].startswith(lan))
+    conn.sendall(("V4.0.22 AG AUTH\r\n" if ask else "V4.0.22 AG\r\n").encode())
+    authed = not ask
+    AG_CLIENTS.append(conn)
+    try:
+        for line in lines(conn):
+            if not line.startswith("C"):
+                continue
+            seq, _, cmd = line[1:].partition("|")
+            words = dict(kv.partition("=")[::2] for kv in cmd.split()[2:]) if cmd.startswith("port set") else {}
+            if cmd != "ping":
+                log("AG <-", "auth code=<code>" if cmd.startswith("auth ") else cmd)
+            out = []
+            if not authed:
+                if cmd == "auth code=" + args.auth:
+                    authed = True
+                    out.append(f"R{seq}|0|")
+                else:
+                    out.append(f"R{seq}|FF|")
+            elif cmd == "info get":
+                out.append(f"R{seq}|0|info v=4.0.22 date=2023-08-22 btl=1.6 hw=2.0 serial=9A-3A-DC name=Antenna_Genius "
+                           f"ports=2 antennas=8 mode=master uptime=3600")
+            elif cmd == "antenna list":
+                for i, (nm, tx, rx) in enumerate(AG_ANTENNAS, 1):
+                    out.append(f"R{seq}|0|antenna {i} name={nm} tx={tx:04X} rx={rx:04X} inband=0000")
+                out.append(f"R{seq}|0|")
+            elif cmd == "band list":
+                for i, (nm, a, b) in enumerate(AG_BANDS):
+                    out.append(f"R{seq}|0|band {i} name={nm} freq_start={a:.6f} freq_stop={b:.6f}")
+                out.append(f"R{seq}|0|")
+            elif cmd.startswith("port get "):
+                n = int(cmd.split()[2])
+                # Followed by the empty terminator, as the engine's model (made
+                # against a real AG) reads it; the document shows the line alone.
+                if n in AG_PORTS:
+                    out += [f"R{seq}|0|" + ag_port_line(n), f"R{seq}|0|"]
+                else:
+                    out.append(f"R{seq}|50000013|")
+            elif cmd.startswith("port set "):
+                n = int(cmd.split()[2])
+                with LOCK:
+                    for k in ("auto", "band", "rxant", "txant"):
+                        if k in words:
+                            AG_PORTS[n][k] = int(words[k])
+                    if "source" in words:
+                        AG_PORTS[n]["source"] = words["source"]
+                    push = "S0|" + ag_port_line(n)
+                out.append(f"R{seq}|0|")
+                for c in list(AG_CLIENTS):
+                    try:
+                        c.sendall((push + "\r\n").encode())
+                    except OSError:
+                        pass
+            elif cmd.startswith(("sub ", "unsub ", "keepalive")) or cmd == "ping":
+                out.append(f"R{seq}|0|")
+            else:
+                out.append(f"R{seq}|50000015|")
+            conn.sendall("".join(o + "\r\n" for o in out).encode())
+    finally:
+        AG_CLIENTS.remove(conn)
 
 
 def radio_link(args, name, create):
@@ -422,8 +522,15 @@ def main():
     ap.add_argument("--radio-tune", action="store_true",
                     help="with --radio-tgxl, key the radio's tune carrier for the 3 s autotune, as the real tuner (transmits!)")
     ap.add_argument("--tgxl-3way", action="store_true", help="the TGXL is the 3-antenna (1x3) model: info says 3way=1")
+    ap.add_argument("--tgxl-so2r", action="store_true", help="the TGXL is the two-channel SO2R model (B on 40 m, activate ch=)")
+    ap.add_argument("--ag", action="store_true", help="an Antenna Genius stand-in too (TCP 9007, 8 antennas, ports A and B)")
+    ap.add_argument("--ag-port", type=int, default=9007)
     ap.add_argument("--advertise", default="", help="with --radio, the address the radio is told (default: ours toward it)")
     args = ap.parse_args()
+    TGXL_SO2R[0] = args.tgxl_so2r
+    TGXL["ag"] = 1 if args.ag else 0
+    if args.ag:
+        threading.Thread(target=serve, args=(args.ag_port, args.bind, lambda c, p: ag_handler(c, p, args)), daemon=True).start()
     if args.radio:
         threading.Thread(target=radio_link, daemon=True, args=(args, "PGXL",
             "amplifier create ip={ip} port=%d model=PowerGeniusXL serial_num=MOCK-PGXL ant=ANT1:PORTA" % args.pgxl_port)).start()

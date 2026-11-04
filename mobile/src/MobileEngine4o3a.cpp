@@ -30,6 +30,7 @@
 #include "core/PgxlConnection.h"
 #include "core/TgxlConnection.h"
 #include "models/AmpModel.h"
+#include "models/AntennaGeniusModel.h"
 #include "models/MeterModel.h"
 #include "models/RadioModel.h"
 #include "models/TransmitModel.h"
@@ -50,6 +51,9 @@ const QString kPgxlIpKey = QStringLiteral("PGXL_ManualIp");
 const QString kTgxlIpKey = QStringLiteral("TGXL_ManualIp");
 const QString kPgxlAuthSecret = QStringLiteral("PgxlAuthCode");
 const QString kTgxlAuthSecret = QStringLiteral("TgxlAuthCode");
+const QString kAgControlKey = QStringLiteral("MobileAgControl");
+const QString kAgIpKey = QStringLiteral("AG_ManualIp");
+const QString kAgAuthSecret = QStringLiteral("AgAuthCode");
 // A relayed reading counts as live this long (AccessoryPanelWidgets' 1.5 s).
 constexpr qint64 kRelayFreshMs = 1500;
 
@@ -76,6 +80,79 @@ void MobileEngine::setup4o3a()
     m_tgxlConn->setAutoReconnect(true);
     rm.amplifier().setDirectConnection(m_pgxlConn);
     rm.tunerModel().setDirectConnection(m_tgxlConn);
+
+    // The Antenna Genius, at the address set in Radio Setup › Amp. Band recall
+    // off: nothing goes to it but the operator's own antenna choice (it and
+    // a TGXL keep their own band memories).
+    m_ag = new AntennaGeniusModel(this);
+    m_ag->setBandRecall(false);
+    m_ag->setAutoReconnect(true);
+    connect(m_ag, &AntennaGeniusModel::authCodeRequired, this, [this](quint64 attempt) {
+        m_ag->setAuthCodeForAttempt(attempt, loadSecret(kAgAuthSecret), !secureStoreAvailable());
+    });
+    connect(m_ag, &AntennaGeniusModel::authCodeAccepted, this, [](const QString& code) { saveSecret(kAgAuthSecret, code); });
+    connect(m_ag, &AntennaGeniusModel::connectionError, this, [this](const QString& msg) {
+        m_agLinkError = msg;
+        emit agChanged();
+    });
+    connect(m_ag, &AntennaGeniusModel::connected, this, [this] {
+        m_agLinkError.clear();
+        emit agChanged();
+    });
+    // What the AG says of itself, into the shared log once its info reply is in.
+    connect(m_ag, &AntennaGeniusModel::deviceInfoChanged, this, [this] {
+        const AgDeviceInfo& d = m_ag->connectedDevice();
+        qCInfo(lcMobile).noquote() << "AG says: name=" + d.name << "serial=" + d.serial << "version=" + d.version
+                                   << "ports=" + QString::number(d.radioPorts) << "antennas=" + QString::number(d.antennaPorts)
+                                   << "mode=" + d.mode;
+    });
+    connect(m_ag, &AntennaGeniusModel::antennasChanged, this, [this] {
+        QStringList names;
+        for (const AgAntennaInfo& a : m_ag->antennas())
+            names << QStringLiteral("%1 %2 tx=%3 rx=%4").arg(a.id).arg(a.name)
+                         .arg(a.txBandMask, 4, 16, QLatin1Char('0')).arg(a.rxBandMask, 4, 16, QLatin1Char('0'));
+        qCInfo(lcMobile).noquote() << "AG antennas:" << names.join(QStringLiteral("; "));
+    });
+    for (auto sig : {&AntennaGeniusModel::disconnected, &AntennaGeniusModel::antennasChanged,
+                     &AntennaGeniusModel::bandsChanged, &AntennaGeniusModel::deviceInfoChanged}) {
+        connect(m_ag, sig, this, [this] { emit agChanged(); });
+    }
+    connect(m_ag, &AntennaGeniusModel::portStatusChanged, this, [this](int port) {
+        const AgPortStatus p = port == 1 ? m_ag->portA() : m_ag->portB();
+        qCInfo(lcMobile).noquote() << QStringLiteral("AG port %1: band %2 rx %3 tx %4 %5%6%7")
+            .arg(port == 1 ? "A" : "B", m_ag->bandName(p.band), m_ag->antennaName(p.rxAntenna), m_ag->antennaName(p.txAntenna),
+                 p.autoMode ? QStringLiteral("auto") : QStringLiteral("manual"),
+                 p.transmitting ? QStringLiteral(" tx") : QString(), p.inhibited ? QStringLiteral(" inhibited") : QString());
+        emit agChanged();
+    });
+
+    // An SO2R TGXL (no 3way in its info reply): its active channel and both
+    // sides, from its own status.
+    connect(m_tgxlConn, &TgxlConnection::statusUpdated, this, [this](const QMap<QString, QString>& kvs) {
+        bool changed = false;
+        if (kvs.contains(QStringLiteral("serial")) && kvs.contains(QStringLiteral("version"))) {
+            const bool so2r = kvs.value(QStringLiteral("3way")) != QLatin1String("1");
+            if (so2r != m_tgxlSo2r) { m_tgxlSo2r = so2r; changed = true; }
+        }
+        if (kvs.contains(QStringLiteral("active"))) {
+            const int a = kvs.value(QStringLiteral("active")).toInt();
+            if (a != m_tgxlActive) { m_tgxlActive = a; changed = true; }
+        }
+        for (const char* k : {"freqA", "freqB", "bandA", "bandB", "antA", "antB", "modeA", "modeB", "flexA", "flexB", "bypassA", "bypassB"}) {
+            const QString key = QString::fromLatin1(k);
+            if (kvs.contains(key) && m_tgxlSides.value(key).toString() != kvs.value(key)) {
+                m_tgxlSides[key] = kvs.value(key);
+                changed = true;
+            }
+        }
+        if (changed) emit tgxlChanged();
+    });
+    connect(m_tgxlConn, &TgxlConnection::stateUpdated, this, [this](const QMap<QString, QString>& kvs) {
+        if (kvs.contains(QStringLiteral("active"))) {
+            const int a = kvs.value(QStringLiteral("active")).toInt();
+            if (a != m_tgxlActive) { m_tgxlActive = a; emit tgxlChanged(); }
+        }
+    });
 
     // An AUTH greeting asks for the device's code: the one kept in the
     // secure store, saved only once the device has accepted it.
@@ -314,6 +391,16 @@ void MobileEngine::connect4o3a()
     } else if (m_tgxlConn->isConnected() || m_tgxlConn->isConnecting()) {
         m_tgxlConn->disconnect();
     }
+    // The Antenna Genius: only at an address set here (the radio does not
+    // report it).
+    const QString agIp = s.value(kAgIpKey).toString().trimmed();
+    if (up && !agIp.isEmpty()) {
+        if (!m_ag->isConnected() && !m_ag->isConnecting() && !m_ag->isAuthBlocked()) {
+            m_ag->connectToAddress(agIp, 9007);
+        }
+    } else if (m_ag->isConnected() || m_ag->isConnecting()) {
+        m_ag->disconnectFromDevice();
+    }
 }
 
 void MobileEngine::disconnect4o3a()
@@ -321,6 +408,12 @@ void MobileEngine::disconnect4o3a()
     if (!m_pgxlConn) return;
     m_pgxlConn->disconnect();
     m_tgxlConn->disconnect();
+    m_ag->disconnectFromDevice();
+    m_agNotice.clear();
+    m_tgxlSo2r = false;
+    m_tgxlActive = 0;
+    m_tgxlSides.clear();
+    emit agChanged();
     m_pgxlPending = false;
     m_pgxlNotice.clear();
     m_tgxlNotice.clear();
@@ -400,6 +493,83 @@ QVariantMap MobileEngine::pgxl() const
     return d;
 }
 
+QVariantMap MobileEngine::ag() const
+{
+    QVariantMap d;
+    if (!m_ag) return d;
+    const QString ip = AppSettings::instance().value(kAgIpKey).toString().trimmed();
+    const bool direct = m_ag->isConnected();
+    d[QStringLiteral("present")] = direct || !ip.isEmpty();
+    d[QStringLiteral("direct")] = direct;
+    d[QStringLiteral("connecting")] = m_ag->isConnecting();
+    d[QStringLiteral("authBlocked")] = m_ag->isAuthBlocked();
+    d[QStringLiteral("linkError")] = m_agLinkError;
+    d[QStringLiteral("ip")] = ip;
+    d[QStringLiteral("manualIp")] = ip;
+    d[QStringLiteral("control")] = settingOn(kAgControlKey);
+    d[QStringLiteral("notice")] = m_agNotice;
+    const AgDeviceInfo& dev = m_ag->connectedDevice();
+    d[QStringLiteral("name")] = QString(dev.name).replace(QLatin1Char('_'), QLatin1Char(' '));
+    d[QStringLiteral("version")] = dev.version;
+    QVariantList ports;
+    if (direct) {
+        const int count = std::max(1, dev.radioPorts);
+        for (int id = 1; id <= std::min(count, 2); ++id) {
+            const AgPortStatus p = id == 1 ? m_ag->portA() : m_ag->portB();
+            const int band = m_ag->effectiveBand(id);
+            QVariantList choices;
+            for (const AgAntennaInfo& a : m_ag->antennas()) {
+                if (band > 0 && !m_ag->canRxOnBand(a.id, band) && !m_ag->canTxOnBand(a.id, band)) continue;
+                choices.append(QVariantMap{{QStringLiteral("id"), a.id},
+                                           {QStringLiteral("name"), QString(a.name).replace(QLatin1Char('_'), QLatin1Char(' '))},
+                                           {QStringLiteral("tx"), band > 0 && m_ag->canTxOnBand(a.id, band)}});
+            }
+            ports.append(QVariantMap{
+                {QStringLiteral("id"), id},
+                {QStringLiteral("letter"), id == 1 ? QStringLiteral("A") : QStringLiteral("B")},
+                {QStringLiteral("band"), band > 0 ? m_ag->bandName(band) : QString()},
+                {QStringLiteral("rx"), p.rxAntenna},
+                {QStringLiteral("txAnt"), p.txAntenna},
+                {QStringLiteral("rxName"), QString(m_ag->antennaName(p.rxAntenna)).replace(QLatin1Char('_'), QLatin1Char(' '))},
+                {QStringLiteral("txName"), QString(m_ag->antennaName(p.txAntenna)).replace(QLatin1Char('_'), QLatin1Char(' '))},
+                {QStringLiteral("auto"), p.autoMode},
+                {QStringLiteral("transmitting"), p.transmitting},
+                {QStringLiteral("inhibited"), p.inhibited},
+                {QStringLiteral("choices"), choices}});
+        }
+    }
+    d[QStringLiteral("ports")] = ports;
+    return d;
+}
+
+void MobileEngine::agSelectAntenna(int port, int antenna)
+{
+    if (!m_ag || port < 1 || port > 2 || antenna < 1) return;
+    const AgPortStatus p = port == 1 ? m_ag->portA() : m_ag->portB();
+    if (!m_connected || !settingOn(kAgControlKey)) {
+        m_agNotice = tr("Turn on control in Radio Setup › Amp first.");
+    } else if (!m_ag->isConnected()) {
+        m_agNotice = tr("The Antenna Genius is not connected.");
+    } else if (p.transmitting || radioTransmitting()) {
+        m_agNotice = tr("Not while the radio transmits.");
+    } else {
+        m_agNotice.clear();
+        qCInfo(lcMobile) << "AG port" << port << "antenna" << antenna;
+        m_ag->selectAntenna(port, antenna);
+        emit agChanged();
+        return;
+    }
+    qCInfo(lcMobile) << "AG port" << port << "antenna" << antenna << "refused:" << m_agNotice;
+    emit agChanged();
+}
+
+void MobileEngine::tgxlActivateChannel(int channel)
+{
+    if (channel < 1 || channel > 2 || !m_tgxlConn || !m_tgxlConn->isConnected() || !m_tgxlSo2r) return;
+    if (!geniusCommandAllowed(true, true, channel == 1 ? "channel A" : "channel B")) return;
+    m_tgxlConn->sendCommand(QStringLiteral("activate ch=%1").arg(channel));
+}
+
 QVariantMap MobileEngine::tgxl() const
 {
     TunerModel& t = const_cast<MobileEngine*>(this)->m_session.radioModel().tunerModel();
@@ -424,6 +594,10 @@ QVariantMap MobileEngine::tgxl() const
     d[QStringLiteral("relayC2")] = t.relayC2();
     d[QStringLiteral("antenna")] = t.antennaA() + 1;  // 1-3, 0 unknown
     d[QStringLiteral("antennaSwitch")] = t.hasAntennaSwitch();
+    // SO2R: the active channel and both sides as the tuner reports them.
+    d[QStringLiteral("so2r")] = direct && m_tgxlSo2r;
+    d[QStringLiteral("active")] = m_tgxlActive;
+    d[QStringLiteral("sides")] = m_tgxlSides;
     d[QStringLiteral("fwd")] = t.fwdPower();
     d[QStringLiteral("swr")] = t.swr();
     d[QStringLiteral("alert")] = t.alert();
@@ -515,8 +689,30 @@ void MobileEngine::tgxlSetAntenna(int antenna)
 void MobileEngine::setGeniusSetting(const QString& device, const QString& key, const QVariant& value)
 {
     const bool tuner = device == QLatin1String("tgxl");
-    if (!tuner && device != QLatin1String("pgxl")) return;
     AppSettings& s = AppSettings::instance();
+    if (device == QLatin1String("ag")) {
+        if (key == QLatin1String("control")) {
+            s.setValue(kAgControlKey, value.toBool() ? QStringLiteral("True") : QStringLiteral("False"));
+            m_agNotice.clear();
+        } else if (key == QLatin1String("address")) {
+            s.setValue(kAgIpKey, value.toString().trimmed());
+            m_ag->disconnectFromDevice();
+            m_agLinkError.clear();
+        } else if (key == QLatin1String("authCode")) {
+            const QString code = value.toString().trimmed();
+            if (code.isEmpty() || code.size() > 128 || code.contains(QLatin1Char('|'))) return;
+            removeSecret(kAgAuthSecret);
+            m_ag->disconnectFromDevice();
+            m_ag->setAuthCode(code);
+        } else {
+            return;
+        }
+        s.save();
+        connect4o3a();
+        emit agChanged();
+        return;
+    }
+    if (!tuner && device != QLatin1String("pgxl")) return;
     if (key == QLatin1String("control")) {
         s.setValue(tuner ? kTgxlControlKey : kPgxlControlKey, value.toBool() ? QStringLiteral("True") : QStringLiteral("False"));
         (tuner ? m_tgxlNotice : m_pgxlNotice).clear();

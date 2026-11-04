@@ -1388,6 +1388,57 @@ Popup {
                             }
                         }
                     }
+                    // 4O3A's Antenna Genius: the radio does not report it, so it
+                    // is read only at an address set here (TCP 9007).
+                    ColumnLayout {
+                        readonly property var a: Engine.ag
+                        Layout.fillWidth: true
+                        spacing: Theme.spacing / 2
+                        DeviceHeading { text: qsTr("4O3A Antenna Genius") }
+                        Label {
+                            objectName: "agSetupState"
+                            Layout.fillWidth: true
+                            text: !parent.a.ip ? qsTr("Not set: enter its address to read it (the radio does not report an Antenna Genius).")
+                                : parent.a.direct ? qsTr("Read directly at %1%2.").arg(parent.a.ip).arg(parent.a.name ? " (" + parent.a.name + (parent.a.version ? ", v" + parent.a.version : "") + ")" : "")
+                                : parent.a.authBlocked ? qsTr("%1 asks for a remote code: this device reaches it from outside its own network (a VPN or the internet). Enter the Authorization code set in its utility under Remote code below, then Save.").arg(parent.a.ip)
+                                : parent.a.connecting ? qsTr("Connecting to %1…").arg(parent.a.ip)
+                                : parent.a.linkError ? qsTr("%1 not reached (%2): it needs the station's network or a VPN.").arg(parent.a.ip).arg(parent.a.linkError)
+                                : qsTr("At %1 while connected to a radio.").arg(parent.a.ip)
+                            color: parent.a.direct ? "#00cc66" : parent.a.authBlocked ? Theme.transmit : Theme.textDim
+                            font.pixelSize: Theme.px(13)
+                            wrapMode: Text.Wrap
+                        }
+                        OnOff {
+                            objectName: "agControl"
+                            label: qsTr("Control the antenna switch")
+                            on: !!parent.a.control
+                            onToggled: (v) => Engine.setGeniusSetting("ag", "control", v)
+                        }
+                        TextSetting {
+                            objectName: "agAddress"
+                            label: qsTr("Address  (the device's own)")
+                            current: parent.a.manualIp || ""
+                            hint: qsTr("The Antenna Genius's own address, e.g. 192.168.1.60")
+                            upper: false
+                            onSaved: (t) => Engine.setGeniusSetting("ag", "address", t)
+                        }
+                        TextSetting {
+                            objectName: "agAuthCode"
+                            visible: !!parent.a.authBlocked
+                            label: qsTr("Remote code (the device's Authorization code)")
+                            current: ""
+                            hint: qsTr("The code set in the device's utility")
+                            upper: false
+                            onSaved: (t) => Engine.setGeniusSetting("ag", "authCode", t)
+                        }
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("Its two radio ports' band and RX / TX antennas show on Controls › Amp. Control on: an antenna is chosen there, asked first, never while that port or the radio transmits. OksaSDR sends nothing else to it: the Antenna Genius and a Tuner Genius keep their own antenna for each band.")
+                            color: Theme.textDim
+                            font.pixelSize: Theme.px(12)
+                            wrapMode: Text.WordWrap
+                        }
+                    }
                     Label {
                         Layout.fillWidth: true
                         text: qsTr("A Power Genius XL or Tuner Genius XL connected to the radio shows on the Amp tab by itself: the radio relays its state, power and SWR and its Operate / Standby (over SmartLink too); this device also reads it directly at its address (ports 9008 and 9010; on the same network or your VPN) for its supply, temperatures, the tuner's relays and antenna switch. A remote code, when the device asks for one, is kept in this device's secure store once the device has accepted it. Control on: the Amp tab's buttons change the device, each asked first; the devices guard their own SWR, power and temperature, and the tuner's relays and antenna wait while the radio transmits.")

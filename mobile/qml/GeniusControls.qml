@@ -17,6 +17,7 @@ ColumnLayout {
 
     readonly property var p: Engine.pgxl
     readonly property var t: Engine.tgxl
+    readonly property var g: Engine.ag
     readonly property bool transmitting: Engine.radioTransmitting
     function num(v, digits, unit) {
         return v === undefined || v === null || v < 0 ? "–" : Number(v).toFixed(digits) + (unit ? " " + unit : "")
@@ -313,6 +314,35 @@ ColumnLayout {
             // Stopping a tune is never asked.
             onClicked: genius.t.tuning ? Engine.tgxlTune() : confirm.ask("tgxlTune")
         }
+        // An SO2R tuner: which channel (radio port) its meters and Tune
+        // belong to, and what each side is on, as the tuner reports them.
+        RowLayout {
+            objectName: "tgxlChannelRow"
+            visible: !!genius.t.so2r
+            Layout.fillWidth: true
+            spacing: 4
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Channel") + "\n" + qsTr("A %1 · B %2")
+                      .arg(genius.t.sides && genius.t.sides.freqA ? (parseFloat(genius.t.sides.freqA) / 1000).toFixed(3) : "–")
+                      .arg(genius.t.sides && genius.t.sides.freqB ? (parseFloat(genius.t.sides.freqB) / 1000).toFixed(3) : "–")
+                color: Theme.textDim
+                font.pixelSize: Theme.px(13)
+                wrapMode: Text.Wrap
+            }
+            Repeater {
+                model: 2
+                delegate: AppButton {
+                    required property int index
+                    objectName: "tgxlChannel" + (index === 0 ? "A" : "B")
+                    text: index === 0 ? "A" : "B"
+                    checked: genius.t.active === index + 1
+                    enabled: tuner.canMove
+                    Layout.preferredWidth: Theme.touchTarget
+                    onClicked: if (!checked) confirm.ask("tgxlChannel", index === 0 ? "A" : "B")
+                }
+            }
+        }
         // One label column for the relays and the antenna row, so the bars
         // and the antenna buttons start at the same x and end under + (the
         // antenna buttons sat at their own widths, out of line, build 152).
@@ -383,6 +413,84 @@ ColumnLayout {
         }
     }
 
+    // ================= Antenna Genius =================
+    // Its radio ports' band and antennas, read at the address set in Radio
+    // Setup › Amp; with Control on an antenna is chosen here (asked first),
+    // never while that port or the radio transmits.
+    ColumnLayout {
+        id: agBox
+        visible: !!genius.g.present
+        Layout.fillWidth: true
+        Layout.topMargin: genius.p.present || genius.t.present ? Theme.spacing : 0
+        spacing: Theme.spacing / 2
+        readonly property bool canSelect: !!genius.g.control && !!genius.g.direct && !genius.transmitting
+        RowLayout {
+            Layout.fillWidth: true
+            Label { Layout.fillWidth: true; text: qsTr("Antenna Genius"); color: Theme.text; font.pixelSize: Theme.px(17); font.bold: true; elide: Text.ElideRight }
+        }
+        Label {
+            Layout.fillWidth: true
+            text: genius.g.direct ? qsTr("Read directly at %1.").arg(genius.g.ip)
+                : genius.g.authBlocked ? qsTr("At %1 it asks for a remote code (its Authorization code): enter it in Radio Setup › Amp.").arg(genius.g.ip)
+                : genius.g.connecting ? qsTr("At %1: connecting…").arg(genius.g.ip)
+                : genius.g.linkError ? qsTr("%1 not reached (%2): it needs the station's network or a VPN.").arg(genius.g.ip).arg(genius.g.linkError)
+                : qsTr("At %1.").arg(genius.g.ip)
+            color: Theme.textDim
+            font.pixelSize: Theme.px(13)
+            wrapMode: Text.Wrap
+        }
+        Repeater {
+            model: genius.g.ports ? genius.g.ports.length : 0
+            delegate: ColumnLayout {
+                required property int index
+                readonly property var port: genius.g.ports[index] || ({})
+                Layout.fillWidth: true
+                spacing: 4
+                Label {
+                    Layout.fillWidth: true
+                    text: qsTr("Port %1  %2").arg(port.letter || "").arg(port.band || qsTr("no band"))
+                          + (port.transmitting ? "  " + qsTr("TX") : "") + (port.inhibited ? "  " + qsTr("inhibited") : "")
+                    color: port.transmitting ? Theme.transmit : Theme.text
+                    font.pixelSize: Theme.px(15)
+                    font.bold: true
+                }
+                Label {
+                    Layout.fillWidth: true
+                    text: qsTr("RX %1 · TX %2 · %3").arg(port.rxName || "–").arg(port.txName || "–")
+                          .arg(port.auto ? qsTr("auto") : qsTr("manual"))
+                    color: Theme.textDim
+                    font.pixelSize: Theme.px(13)
+                    wrapMode: Text.Wrap
+                }
+                Flow {
+                    Layout.fillWidth: true
+                    spacing: 4
+                    Repeater {
+                        model: port.choices || []
+                        delegate: AppButton {
+                            required property var modelData
+                            objectName: "agPort" + port.letter + "Ant" + modelData.id
+                            text: modelData.name + (modelData.tx ? "" : "  (" + qsTr("RX") + ")")
+                            checked: port.rx === modelData.id
+                            enabled: agBox.canSelect && !port.transmitting
+                            onClicked: if (!checked) confirm.ask("agAntenna", { port: port.id, letter: port.letter, id: modelData.id, name: modelData.name, tx: modelData.tx })
+                        }
+                    }
+                }
+            }
+        }
+        Label {
+            objectName: "agNotice"
+            Layout.fillWidth: true
+            text: genius.g.notice ? genius.g.notice
+                : !genius.g.control ? qsTr("Control is off: turn it on in Radio Setup › Amp to choose antennas from here.") : ""
+            visible: text.length > 0
+            color: genius.g.notice ? Theme.warning : Theme.textDim
+            font.pixelSize: Theme.px(13)
+            wrapMode: Text.Wrap
+        }
+    }
+
     // One confirmation per change, naming it (as the RF2K-S's).
     Dialog {
         id: confirm
@@ -408,7 +516,11 @@ ColumnLayout {
             "tgxlBypass": [qsTr("Bypass the Tuner Genius XL?"), qsTr("The signal goes past the tuner's network, untuned."), qsTr("Bypass")],
             "tgxlStandby": [qsTr("Put the Tuner Genius XL in STANDBY?"), qsTr("The tuner stops tuning and passes the signal through."), qsTr("Standby")],
             "tgxlTune": [qsTr("Tune with the Tuner Genius XL?"), qsTr("The tuner keys the radio for a tune carrier itself, and keys or holds its amplifier as its own setting says. Tap Stop tuning to end it."), qsTr("Tune")],
-            "tgxlAntenna": [qsTr("Switch the tuner to antenna %1?").arg(confirm.arg), qsTr("Check that antenna %1 is connected and suits this band.").arg(confirm.arg), qsTr("Antenna %1").arg(confirm.arg)]
+            "tgxlAntenna": [qsTr("Switch the tuner to antenna %1?").arg(confirm.arg), qsTr("Check that antenna %1 is connected and suits this band.").arg(confirm.arg), qsTr("Antenna %1").arg(confirm.arg)],
+            "tgxlChannel": [qsTr("Make channel %1 the tuner's active one?").arg(confirm.arg), qsTr("Its meters and Tune then belong to radio port %1.").arg(confirm.arg), qsTr("Channel %1").arg(confirm.arg)],
+            "agAntenna": [qsTr("Switch port %1 to %2?").arg(confirm.arg ? confirm.arg.letter : "").arg(confirm.arg ? confirm.arg.name : ""),
+                          confirm.arg && confirm.arg.tx ? qsTr("Receive and transmit on it.") : qsTr("Receive on it; transmit stays on the antenna the Antenna Genius allows on this band."),
+                          qsTr("Switch")]
         })
         readonly property var w: words[action] || ["", "", ""]
         contentItem: ColumnLayout {
@@ -434,6 +546,8 @@ ColumnLayout {
                         else if (a === "tgxlStandby") Engine.tgxlSetOperate(false)
                         else if (a === "tgxlTune") Engine.tgxlTune()
                         else if (a === "tgxlAntenna") Engine.tgxlSetAntenna(v)
+                        else if (a === "tgxlChannel") Engine.tgxlActivateChannel(v === "A" ? 1 : 2)
+                        else if (a === "agAntenna") Engine.agSelectAntenna(v.port, v.id)
                     }
                 }
             }

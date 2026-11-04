@@ -920,7 +920,7 @@ void AntennaGeniusModel::processResponse(int seq, int code, const QString& body)
                     m_prevBandA = ps.band;
                     emit portStatusChanged(1);
                     // On initial connect, recall saved antenna for this band.
-                    if (ps.band > 0) {
+                    if (ps.band > 0 && m_bandRecall) {
                         int saved = recallBandAntenna(1, ps.band);
                         if (saved > 0)
                             selectAntenna(1, saved);
@@ -930,7 +930,7 @@ void AntennaGeniusModel::processResponse(int seq, int code, const QString& body)
                     m_portB.portId = 2;
                     m_prevBandB = ps.band;
                     emit portStatusChanged(2);
-                    if (ps.band > 0) {
+                    if (ps.band > 0 && m_bandRecall) {
                         int saved = recallBandAntenna(2, ps.band);
                         if (saved > 0)
                             selectAntenna(2, saved);
@@ -1140,6 +1140,11 @@ void AntennaGeniusModel::setRadioFrequency(double freqMhz)
 
     if (matchedBand == 0) return;
 
+    // Band recall off (OksaSDR): nothing is sent on a band change.
+    if (!m_bandRecall) {
+        return;
+    }
+
     // ShackSwitch manages its own band→antenna mapping — don't override it.
     const bool isShackSwitch = m_device.name.contains("ShackSwitch", Qt::CaseInsensitive);
     if (isShackSwitch) {
@@ -1181,6 +1186,11 @@ void AntennaGeniusModel::onBandChanged(int portId, int oldBand, int oldAnt, int 
 {
     qCDebug(lcTuner) << "AntennaGenius: port" << portId << "band changed"
              << bandName(oldBand) << "→" << bandName(newBand);
+
+    // Band recall off (OksaSDR): nothing is sent on a band change.
+    if (!m_bandRecall) {
+        return;
+    }
 
     // ShackSwitch manages its own band→antenna mapping — don't override it.
     const bool isShackSwitch = m_device.name.contains("ShackSwitch", Qt::CaseInsensitive);

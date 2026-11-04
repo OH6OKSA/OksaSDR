@@ -121,6 +121,13 @@ public:
     // Set auto-mode for a port.
     void setAutoMode(int portId, bool on);
 
+    // The desktop's band recall: on a band change the antenna last used on
+    // the new band is sent to the AG (asserted even when the AG already shows
+    // it). On by default; OksaSDR turns it off, so nothing is written to the
+    // AG but the operator's own choice (the AG and a TGXL keep their own
+    // band memories).
+    void setBandRecall(bool on) { m_bandRecall = on; }
+
     // Check if an antenna has TX or RX permission for a given band.
     bool canTxOnBand(int antennaId, int bandId) const;
     bool canRxOnBand(int antennaId, int bandId) const;
@@ -258,6 +265,7 @@ private:
     QTimer* m_keepAlive{nullptr};
 
     // Auto-reconnect
+    bool    m_bandRecall{true};
     bool    m_autoReconnect{false};
     // Global "Reconnect automatically" and the connected device's "Connect
     // automatically" (ShackSwitch and Antenna Genius keep separate toggles).
