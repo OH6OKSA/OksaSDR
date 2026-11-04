@@ -425,6 +425,15 @@ The first page lists the ways to reach a radio:
   the phone anyway. SmartLink or a VPN is the way from outside. (Host
   names asked by Sebastian Schu DG5CST.)
 
+**Another station on the radio.** A radio with multiFLEX off takes one
+station at a time. When another (SmartSDR, AetherSDR on a PC) is on it,
+the app asks *Another station is on the radio* and names it: **Disconnect
+it and connect** ends that station's session and connects this one,
+**Cancel** stops. Over SmartLink the radio may refuse this app instead;
+the page then says why, and the same question follows. To share the radio
+between stations, turn multiFLEX on in SmartSDR's Radio Setup. (Reported
+by Juho Kontio, whose app crashed when the radio refused it.)
+
 The top row shows the app version, **Manual** and **Log** (see
 [Reporting a problem](#12-reporting-a-problem)).
 
@@ -1703,12 +1712,22 @@ radio.
   amplifier directly: on the same network, or over your VPN when away —
   not through the radio, and not over SmartLink.
   **4O3A Power Genius XL** and **Tuner Genius XL**: each one's state (found
-  by the radio, read directly at its address, or through the radio only),
-  **Control the amplifier / tuner** (off until you turn it on), the
-  **Address** (empty: the one the radio reports; *Use the radio's address*
-  goes back to it), and **Remote code** when the device asks for one (as
-  set in its utility; kept in this device's secure store once the device
-  has accepted it).
+  by the radio and read directly at its address, read directly at an
+  address you set, or through the radio only),
+  **Control the amplifier / tuner** (off until you turn it on; the buttons
+  it allows are on **Controls › Amp**: Standby / Operate and the fan, the
+  tuner's Standby / Bypass / Operate, Tune, relays and antenna), the
+  **Address** — the device's own address, not the radio's: the radio
+  reports it (it shows in the empty field); enter one when the radio
+  reports none or your VPN shows the device at another address, and
+  *Use the address the radio reports* (or *Clear the address*) goes back —
+  and **Remote code** when the device asks for one (as set in its
+  utility's Remote settings; kept in this device's secure store once the
+  device has accepted it). Away from home the device is reached over a VPN
+  that routes your station's network, e.g. WireGuard or a Tailscale subnet
+  router (a PC, Raspberry Pi or Apple TV at the station sharing its
+  network); SmartLink carries only what the radio relays (state, power,
+  SWR, Operate / Standby).
 
   ![Radio Setup › Amp](manual/setup-amp.jpg)
 - **USB** — USB-serial (FTDI) cables in the radio's USB ports, as
@@ -1815,7 +1834,11 @@ the page again at once. A text field keeps it until you tap outside it.
 
 Open **Log** right after the problem (on an iPhone behind **⋯**), tap
 **Copy** (or **Share**) and send the text to oh6oksa@gmail.com together with
-your device model and what you were doing. The log header shows the app
+your device model and what you were doing. After a crash, open the app
+again: the log is also kept in a file as the app runs, and Log shows *The
+previous run ended in a crash* in red with its own **Share** and **Copy**:
+that log ends with the crash and where in the app it happened. (Juho
+Kontio's crash left no log to send.) The log header shows the app
 version and build. **Clear** empties the log, so the next copy starts from
 a known point. **Developer link** (with a PC address) is only for the
 developer's own devices: leave it off.

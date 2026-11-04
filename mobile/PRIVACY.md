@@ -130,8 +130,12 @@ your device, except as part of the normal connection to your radio.
   Wavelog / Cloudlog API key are kept in
   the device's secure store (Keychain on Apple devices); a SmartLink
   password is never stored.
-- The in-app diagnostic log is kept in memory only. It is shared only if
-  you copy or share it yourself.
+- The in-app diagnostic log (what the app did: connections, commands sent
+  to the radio, errors) is also written to a file in the app's own
+  storage as it runs, so that after a crash the next start can show the
+  run that crashed (Log › Previous run); each start replaces the run
+  before the last. It stays on the device and is shared only if you copy
+  or share it yourself.
 
 Deleting the app deletes all of this data (on Android the copy of the log
 in Documents › OksaSDR stays until you delete it).
@@ -152,4 +156,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-11-04 (4O3A Power Genius XL and Tuner Genius XL)
+Last updated: 2026-11-04 (the diagnostic log file for crash reports)

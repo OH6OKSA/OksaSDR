@@ -9,13 +9,12 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- 4O3A Power Genius XL and Tuner Genius XL on the Amp tab: readings (on the meters too), Operate / Standby, the fan, Tune, relays, antenna. Control is off until you turn it on in Radio Setup › Amp; each change asks first.
-- APD on a FLEX-8000 or Aurora: TX tab On / Off, sampler ports in Radio Setup › Transmit.
-- The Power meter follows your radio: 0-600 W on an Aurora (thanks Sloan Davis), 2 kW with a PGXL in Operate.
-- The radio list shows each address on a line of its own (thanks Mike VA3MW).
-- A SmartLink crash fixed (thanks Juho Kontio).
-- The meter chooser: receive and transmit in boxes tagged RX / TX.
-- From build 151: several radios by IP or name (thanks Mike VA3MW); the rest of Radio Setup; Larry Averbeck's transmit lock, zoom and scroll bars.
+- A SmartLink crash at Connect fixed (thanks Juho Kontio): with multiFLEX off and another station on the radio.
+- Another station on the radio: the app names it and asks to disconnect it or cancel (before: an empty display or no answer).
+- The log survives a crash: Log then shows the previous run's log with Share and Copy.
+- PGXL / TGXL setup clearer (thanks Ben Morris): where the buttons are (Controls > Amp), the address is the device's own.
+- From build 152: 4O3A Power Genius XL and Tuner Genius XL (experimental), APD, the Power meter by your radio (thanks Sloan Davis), the meter chooser's RX / TX boxes.
+- From build 151: several radios by IP or name (thanks Mike VA3MW); the rest of Radio Setup.
 
 RECENT (builds 94–150)
 - RF2K-S control and Tune, the amp on every meter (thanks Sebastian DG5CST, Jeff Stinger); Macros by PTT (thanks Tyler K0OTC).
