@@ -11,20 +11,28 @@ namespace AetherSDR::mobile {
 
 // The most recent log lines, shown on the in-app Log page so testers can
 // copy what happened (PTT releases, zoom requests, commands sent to the
-// radio) without a debugger. Radio status chatter is left out.
+// radio) without a debugger. Radio status chatter is left out. The same
+// lines go to a file as they come, and a crash signal adds its name and the
+// call stack there, so the next start can show what the run that crashed
+// did last (a crash took the in-memory log with it: Juho Kontio, build 152).
 class LogBuffer : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_SINGLETON
     Q_PROPERTY(QStringList lines READ lines NOTIFY linesChanged)
+    // The previous run's log file (its last part), empty when there is none.
+    Q_PROPERTY(QString previousRun READ previousRun CONSTANT)
+    // The previous run ended in a crash signal.
+    Q_PROPERTY(bool previousRunCrashed READ previousRunCrashed CONSTANT)
 
 public:
     ~LogBuffer() override;
     static LogBuffer* instance();
     static LogBuffer* create(QQmlEngine* qmlEngine, QJSEngine* jsEngine);
 
-    // Installs the message handler; the previous handler still receives
-    // every message.
+    // Installs the message handler (the previous handler still receives
+    // every message), moves the last run's file aside and opens this run's,
+    // and installs the crash signal handlers.
     static void install();
 
     QStringList lines() const { return m_lines; }
@@ -35,6 +43,10 @@ public:
     // iOS share sheet (Mail, Messages, …); copies where there is none.
     Q_INVOKABLE bool share() const;
     Q_INVOKABLE void clear();
+    QString previousRun() const;
+    bool previousRunCrashed() const;
+    Q_INVOKABLE void copyPreviousRun() const;
+    Q_INVOKABLE bool sharePreviousRun() const;
     // GUI thread only; the message handler queues calls here.
     void append(const QString& line);
 

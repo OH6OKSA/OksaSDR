@@ -6,6 +6,7 @@ import AetherMobile
 // Recent app log for testers: copy it and send it to the developer.
 Popup {
     id: popup
+    objectName: "logPage"
     modal: true
     anchors.centerIn: parent
     width: parent.width * 0.95
@@ -36,6 +37,31 @@ Popup {
             }
             AppButton { text: qsTr("Clear"); onClicked: LogBuffer.clear() }
             AppButton { text: qsTr("Close"); onClicked: popup.close() }
+        }
+
+        // The previous run's log, kept in a file as it ran: after a crash it
+        // ends with the crash and the call stack.
+        RowLayout {
+            Layout.fillWidth: true
+            visible: LogBuffer.previousRun.length > 0
+            Label {
+                Layout.fillWidth: true
+                text: LogBuffer.previousRunCrashed ? qsTr("The previous run ended in a crash: send its log.")
+                                                   : qsTr("The previous run's log")
+                color: LogBuffer.previousRunCrashed ? Theme.transmit : Theme.textDim
+                font.pixelSize: 15
+                wrapMode: Text.Wrap
+            }
+            AppButton { objectName: "previousRunShare"; text: qsTr("Share"); onClicked: LogBuffer.sharePreviousRun() }
+            AppButton {
+                objectName: "previousRunCopy"
+                text: previousCopied.running ? qsTr("Copied ✓") : qsTr("Copy")
+                onClicked: {
+                    LogBuffer.copyPreviousRun()
+                    previousCopied.restart()
+                }
+                Timer { id: previousCopied; interval: 2000 }
+            }
         }
 
         // Developer link (off by default): streams this log to a developer's
