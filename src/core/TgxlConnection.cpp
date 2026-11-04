@@ -545,13 +545,28 @@ void TgxlConnection::adjustRelay(int relay, int direction)
     if (!m_connected) return;
     if (relay < 0 || relay > 2) return;
     int move = (direction > 0) ? 1 : -1;
-    sendCommand(QString("tune relay=%1 move=%2").arg(relay).arg(move));
+    // 4O3A's TGXL protocol description numbers the relays from 1 (1 = C1,
+    // 2 = L, 3 = C2); callers pass 0..2 in that order. Sent as 0..2, C1
+    // was relay 0 (not in the protocol), L moved C1 and C2 moved L.
+    sendCommand(QString("tune relay=%1 move=%2").arg(relay + 1).arg(move));
 }
 
 void TgxlConnection::requestAutotune()
 {
     if (!m_connected) return;
     sendCommand("autotune");
+}
+
+void TgxlConnection::requestOperate(bool on)
+{
+    if (!m_connected) return;
+    sendCommand(QStringLiteral("operate set=%1").arg(on ? 1 : 0));
+}
+
+void TgxlConnection::requestBypass(bool on)
+{
+    if (!m_connected) return;
+    sendCommand(QStringLiteral("bypass set=%1").arg(on ? 1 : 0));
 }
 
 void TgxlConnection::pollStatus()

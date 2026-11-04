@@ -97,6 +97,26 @@ void TunerModel::applyChanges(const TunerDelta& d)
 
 void TunerModel::applyDirectTuning(const QMap<QString, QString>& kvs)
 {
+    // The device's own state (0 = STANDBY, 1 = OPERATE) and global bypass,
+    // as 4O3A documents them: what the panel shows when the radio does not
+    // report the tuner (with a radio handle, its relayed status rules). The
+    // info reply's 3way=1 marks the three-antenna model, absent on SO2R.
+    if (kvs.contains(QStringLiteral("serial")) && kvs.contains(QStringLiteral("version"))) {
+        const bool threeWay = kvs.value(QStringLiteral("3way")) == QLatin1String("1");
+        if (m_oneByThree != threeWay) { m_oneByThree = threeWay; emit stateChanged(); }
+    }
+    if (m_handle.isEmpty()) {
+        bool moved = false;
+        if (kvs.contains(QStringLiteral("state"))) {
+            const bool op = kvs.value(QStringLiteral("state")) == QLatin1String("1");
+            if (m_operate != op) { m_operate = op; moved = true; }
+        }
+        if (kvs.contains(QStringLiteral("bypass"))) {
+            const bool by = kvs.value(QStringLiteral("bypass")) == QLatin1String("1");
+            if (m_bypass != by) { m_bypass = by; moved = true; }
+        }
+        if (moved) emit stateChanged();
+    }
     if (!kvs.contains(QStringLiteral("tuning"))) return;
     const bool tuning = kvs.value(QStringLiteral("tuning")) == QLatin1String("1");
     if (m_tuning == tuning) return;
@@ -116,9 +136,15 @@ void TunerModel::clearTuning()
 void TunerModel::setOperate(bool on)
 {
     if (m_handle.isEmpty()) {
+        // A TGXL the radio does not report, reached at its address: 4O3A's
+        // protocol takes "operate set=" directly (the radio's relay is only
+        // one way to it).
+        if (m_directConn && m_directConn->isConnected()) {
+            m_directConn->requestOperate(on);
+            if (m_operate != on) { m_operate = on; emit stateChanged(); }
+            return;
+        }
         qCDebug(lcTuner) << "TunerModel::setOperate: no handle yet, ignoring";
-        // A TGXL reached by manual IP alone (a non-Flex radio) is present and
-        // on screen, but only a Flex relays operate/standby. Say so.
         if (m_directPresence) {
             emit relayedCommandRefused(QStringLiteral("operate"));
         }
@@ -134,6 +160,11 @@ void TunerModel::setOperate(bool on)
 void TunerModel::setBypass(bool on)
 {
     if (m_handle.isEmpty()) {
+        if (m_directConn && m_directConn->isConnected()) {
+            m_directConn->requestBypass(on);
+            if (m_bypass != on) { m_bypass = on; emit stateChanged(); }
+            return;
+        }
         qCDebug(lcTuner) << "TunerModel::setBypass: no handle yet, ignoring";
         if (m_directPresence) {
             emit relayedCommandRefused(QStringLiteral("bypass"));
@@ -149,7 +180,7 @@ void TunerModel::setBypass(bool on)
 
 void TunerModel::setOperateAndBypass(bool operate, bool bypass, bool operateFirst)
 {
-    if (m_handle.isEmpty()) {
+    if (m_handle.isEmpty() && !(m_directConn && m_directConn->isConnected())) {
         qCDebug(lcTuner) << "TunerModel::setOperateAndBypass: no handle yet, ignoring";
         // One press, one refusal: the two setters below would each refuse.
         if (m_directPresence) {
@@ -322,7 +353,7 @@ void TunerModel::setDirectConnection(TgxlConnection* conn)
             }
             if (kvs.contains("swr")) {
                 float rl = kvs.value("swr").toFloat();  // return loss in dB (negative from TGXL)
-                float rho = std::pow(10.0f, rl / 20.0f);  // rl is already negative
+                float rho = std::pow(10.0f, -std::fabs(rl) / 20.0f);  // return loss, either sign (4O3A: "SWR [db]")
                 float ratio = (rho < 0.999f) ? (1.0f + rho) / (1.0f - rho) : 99.9f;
                 m_swr = ratio;
                 meters = true;
@@ -339,7 +370,11 @@ void TunerModel::setDirectConnection(TgxlConnection* conn)
                 || kvs.contains(QStringLiteral("modeB"))) {
                 auto readPort = [&kvs](QChar side) {
                     TunerPortInfo p;
-                    p.live = kvs.value(QStringLiteral("mode%1").arg(side)) == QLatin1String("1");
+                    // Live when the port has a band or a frequency, whatever
+                    // feeds it (mode 0 RF sense, 1 FLEX, 2 CAT, 3 P2B, 4 BCD per
+                    // 4O3A); mode 1 alone left a CAT or BCD station all dead.
+                    p.live = kvs.value(QStringLiteral("band%1").arg(side)).toInt() != 0
+                             || kvs.value(QStringLiteral("freq%1").arg(side)).toDouble() > 0.0;
                     p.source = kvs.value(QStringLiteral("flex%1").arg(side));
                     p.freqKhz = kvs.value(QStringLiteral("freq%1").arg(side)).toDouble();
                     p.ptt = kvs.value(QStringLiteral("ptt%1").arg(side)) == QLatin1String("1");
@@ -392,7 +427,7 @@ void TunerModel::setDirectConnection(TgxlConnection* conn)
             }
             if (kvs.contains("swr")) {
                 float rl = kvs.value("swr").toFloat();  // return loss in dB (negative from TGXL)
-                float rho = std::pow(10.0f, rl / 20.0f);  // rl is already negative
+                float rho = std::pow(10.0f, -std::fabs(rl) / 20.0f);  // return loss, either sign (4O3A: "SWR [db]")
                 float ratio = (rho < 0.999f) ? (1.0f + rho) / (1.0f - rho) : 99.9f;
                 m_swr = ratio;
                 meters = true;

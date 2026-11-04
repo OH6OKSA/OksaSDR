@@ -61,6 +61,10 @@ public:
     // is required. Bypasses the firmware's `tgxl autotune` command path
     // (broken in firmware 4.2 — see issue tracker for "TUNE button on TGXL").
     void requestAutotune();
+    // 4O3A's protocol: "operate set=1|0" (OPERATE / STANDBY) and "bypass
+    // set=1|0" (BYPASS / IN LINE), for a tuner the radio does not relay.
+    void requestOperate(bool on);
+    void requestBypass(bool on);
 
     // Send an arbitrary command to the TGXL (e.g. "activate ant=2")
     quint32 sendCommand(const QString& cmd);

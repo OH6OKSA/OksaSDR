@@ -11,7 +11,7 @@ the V version line (with " AUTH" and the auth handshake under --auth),
 C<seq>|cmd -> R<seq>|code|body, S0| state pushes and M| alerts. The PGXL
 answers info, setup read, status, setup writes (fan mode) and the radio's
 relayed operate=0/1 (STANDBY / IDLE, IDLE being OPERATE unkeyed); the TGXL
-answers info and status, the radio's relayed operate set= / bypass set=, steps its relays (tune relay=R move=D), switches
+answers info and status, the radio's relayed operate set= / bypass set=, steps its relays (tune relay=1..3 move=D, 1 = C1), switches
 its antenna (activate ant=N) and runs a 3 s autotune that ends with a new
 solution and a "Tuned SWR" alert. --transmit reports the amplifier keyed at
 1 kW. Every command received is printed, so a test can check what the app
@@ -128,7 +128,9 @@ def handshake(conn, version, auth, ok_reply, auth_prefix, peer=None, radio="", a
     if cmd == auth_prefix + auth:
         conn.sendall(f"R{seq}|0|{ok_reply}\n".encode())
         return it
-    conn.sendall(f"R{seq}|5000002D|\n".encode())
+    # The TGXL refuses with code 0 and "Unauthorized" (4O3A's protocol); the
+    # PGXL's refusal is not documented, an error code stands in.
+    conn.sendall((f"R{seq}|0|Unauthorized\n" if ok_reply == "auth OK" else f"R{seq}|5000002D|\n").encode())
     conn.close()
     return iter(())
 
@@ -189,12 +191,18 @@ def tgxl_handler(conn, peer, args):
                 log("TGXL <-", cmd)
             words = dict(kv.partition("=")[::2] for kv in cmd.split()[1:])
             if cmd == "info":
-                conn.sendall(f"R{seq}|0|serial=TGXL-0001 version=1.2.17\n".encode())
+                # As 4O3A's protocol description: "info ..." with 3way=1 on the
+                # three-antenna model (absent on the SO2R one).
+                conn.sendall(f"R{seq}|0|info serial=TGXL-0001 version=1.2.17 nickname=Tuner_Genius_XL"
+                             f"{' 3way=1' if args.tgxl_3way else ''}\n".encode())
+            elif cmd == "ifconf read":
+                conn.sendall(f"R{seq}|0|ifconf dhcp=1 ip={conn.getsockname()[0]} netmask=255.255.255.0 gateway=0.0.0.0\n".encode())
             elif cmd == "status":
                 with LOCK:
                     conn.sendall((tgxl_status(seq) + "\n").encode())
             elif cmd.startswith("tune "):
-                name = {"0": "relayC1", "1": "relayL", "2": "relayC2"}.get(words.get("relay"))
+                # 4O3A numbers the relays 1 = C1, 2 = L, 3 = C2.
+                name = {"1": "relayC1", "2": "relayL", "3": "relayC2"}.get(words.get("relay"))
                 if name and words.get("move") in ("1", "-1"):
                     with LOCK:
                         TGXL[name] = max(0, min(255, TGXL[name] + int(words["move"])))
@@ -213,7 +221,7 @@ def tgxl_handler(conn, peer, args):
                 push_tgxl("S0|" + state)
             elif cmd.startswith("activate "):
                 ant = words.get("ant", "")
-                if ant in ("1", "2", "3"):
+                if args.tgxl_3way and ant in ("1", "2", "3"):
                     with LOCK:
                         TGXL["antA"] = int(ant) - 1
                         state = tgxl_state()
@@ -336,6 +344,7 @@ def main():
     ap.add_argument("--radio-raw", default="", help="with --radio, append every line the radio sends to this file")
     ap.add_argument("--radio-tune", action="store_true",
                     help="with --radio-tgxl, key the radio's tune carrier for the 3 s autotune, as the real tuner (transmits!)")
+    ap.add_argument("--tgxl-3way", action="store_true", help="the TGXL is the 3-antenna (1x3) model: info says 3way=1")
     ap.add_argument("--advertise", default="", help="with --radio, the address the radio is told (default: ours toward it)")
     args = ap.parse_args()
     if args.radio:
