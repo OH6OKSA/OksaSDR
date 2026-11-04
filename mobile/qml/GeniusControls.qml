@@ -161,6 +161,18 @@ ColumnLayout {
                 onClicked: if (!checked) confirm.ask("pgxlOperate")
             }
         }
+        // Why the mode buttons are dim with Control on: an amplifier the radio
+        // does not report (read only at an address set here: Standby / Operate
+        // go through the radio, as on the desktop).
+        Label {
+            objectName: "pgxlModeNote"
+            visible: !!genius.p.control && !genius.p.radio
+            Layout.fillWidth: true
+            text: qsTr("Standby / Operate go through the radio, and the radio does not report this amplifier: check its connection to the radio.")
+            color: Theme.textDim
+            font.pixelSize: 13
+            wrapMode: Text.Wrap
+        }
         RowLayout {
             visible: !!genius.p.canWriteFan
             Layout.fillWidth: true

@@ -1297,8 +1297,10 @@ Popup {
                                 objectName: modelData.id + "SetupState"
                                 Layout.fillWidth: true
                                 text: !d.present ? qsTr("Not found: the radio reports none, and no address is set.")
-                                    : d.direct ? qsTr("Found by the radio, and read directly at %1.").arg(d.ip)
+                                    : d.direct ? (d.radio ? qsTr("Found by the radio, and read directly at %1.").arg(d.ip)
+                                                          : qsTr("Read directly at %1 (the radio does not report it).").arg(d.ip))
                                     : d.authBlocked ? qsTr("At %1 it asks for its remote code: enter it below.").arg(d.ip)
+                                    : !d.ip ? qsTr("Through the radio only: it reports no address for it. Enter the device's own address below to read it directly too.")
                                     : d.connecting ? qsTr("Connecting to %1…").arg(d.ip)
                                     : d.linkError ? qsTr("Through the radio only; %1 not reached directly (%2).").arg(d.ip || "–").arg(d.linkError)
                                     : qsTr("Through the radio.")
@@ -1312,17 +1314,39 @@ Popup {
                                 on: !!d.control
                                 onToggled: (v) => Engine.setGeniusSetting(modelData.id, "control", v)
                             }
+                            // Where the buttons are (Ben Morris, build 152: Control on, but
+                            // where does it go from Standby to Operate?).
+                            Label {
+                                visible: !!d.control && !!d.present
+                                Layout.fillWidth: true
+                                text: modelData.id === "pgxl"
+                                      ? qsTr("Standby / Operate and the fan: Controls › Amp.")
+                                      : qsTr("Standby / Bypass / Operate, Tune, the relays and the antenna: Controls › Amp.")
+                                color: Theme.textDim
+                                font.pixelSize: 13
+                                wrapMode: Text.Wrap
+                            }
                             TextSetting {
                                 objectName: modelData.id + "Address"
-                                label: qsTr("Address  (%1)").arg(d.manualIp ? d.manualIp : qsTr("the radio's: %1").arg(d.ip || "–"))
+                                // The device's own address: the radio only reports it.
+                                label: d.manualIp ? qsTr("Address  (your own: %1)").arg(d.manualIp)
+                                     : d.radioIp ? qsTr("Address  (as the radio reports it)")
+                                     : qsTr("Address  (the radio reports none)")
                                 current: d.manualIp || ""
-                                hint: qsTr("Empty: the address the radio reports")
+                                // The reported address shows in the empty field; with none
+                                // reported the device can only be reached at one entered here.
+                                hint: d.radioIp ? qsTr("%1, from the radio").arg(d.radioIp)
+                                                : qsTr("The device's own address, e.g. 192.168.1.50")
                                 upper: false
                                 onSaved: (t) => Engine.setGeniusSetting(modelData.id, "address", t)
                             }
                             AppButton {
                                 visible: (d.manualIp || "").length > 0
-                                text: qsTr("Use the radio's address")
+                                // Back to the reported address, or with none reported just
+                                // the entry cleared (build 152 said "Use the radio's
+                                // address", which read as the radio's own IP).
+                                text: d.radioIp ? qsTr("Use the address the radio reports (%1)").arg(d.radioIp)
+                                                : qsTr("Clear the address")
                                 focusPolicy: Qt.NoFocus
                                 onClicked: Engine.setGeniusSetting(modelData.id, "address", "")
                             }

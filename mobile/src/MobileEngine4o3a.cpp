@@ -243,6 +243,7 @@ QVariantMap MobileEngine::pgxl() const
     d[QStringLiteral("ip")] = AppSettings::instance().value(kPgxlIpKey).toString().trimmed().isEmpty()
                                   ? amp.ip() : AppSettings::instance().value(kPgxlIpKey).toString().trimmed();
     d[QStringLiteral("manualIp")] = AppSettings::instance().value(kPgxlIpKey).toString().trimmed();
+    d[QStringLiteral("radioIp")] = amp.ip();   // the device's address as the radio reports it
     d[QStringLiteral("direct")] = direct;
     d[QStringLiteral("connecting")] = m_pgxlConn && m_pgxlConn->isConnecting();
     d[QStringLiteral("authBlocked")] = m_pgxlConn && m_pgxlConn->isAuthBlocked();
@@ -288,6 +289,7 @@ QVariantMap MobileEngine::tgxl() const
     d[QStringLiteral("ip")] = AppSettings::instance().value(kTgxlIpKey).toString().trimmed().isEmpty()
                                   ? t.tgxlIp() : AppSettings::instance().value(kTgxlIpKey).toString().trimmed();
     d[QStringLiteral("manualIp")] = AppSettings::instance().value(kTgxlIpKey).toString().trimmed();
+    d[QStringLiteral("radioIp")] = t.tgxlIp();
     d[QStringLiteral("direct")] = direct;
     d[QStringLiteral("connecting")] = m_tgxlConn && m_tgxlConn->isConnecting();
     d[QStringLiteral("authBlocked")] = m_tgxlConn && m_tgxlConn->isAuthBlocked();
