@@ -21,9 +21,12 @@ ColumnLayout {
         signal changed(int hz)
         Layout.fillWidth: true
         property int acc: 0
+        // On the step's grid: from an odd value (9999 at the limit) plain
+        // ±10 ran …19, 9, −1 past zero (the user on Android, build 152).
         function step(n, dir) {
             if (n === 0) acc = hz
-            acc += dir * (n < 10 ? 10 : n < 25 ? 50 : 100)
+            const s = n < 10 ? 10 : n < 25 ? 50 : 100
+            acc = (dir > 0 ? Math.floor(acc / s) : Math.ceil(acc / s)) * s + dir * s
             changed(acc)
         }
         AppButton {
