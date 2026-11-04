@@ -278,16 +278,23 @@ void checkSetupAuthcode(const QMap<QString, QString>& setupRead, const QString& 
                                    {QStringLiteral("fanmode"), QStringLiteral("STANDARD")}});
     emit connection.setupRead(setupRead);
     model.setFanMode(QStringLiteral("broadcast"));
+    // The group is read again first; the write follows its reply.
     CHECK(sent.size() == 1);
     if (sent.isEmpty()) {
         return;
     }
-    CHECK(sent.constFirst().contains(QStringLiteral("|setup nickname=PGXL-HOME meffa=AUTO"
-                                                    " ledintens=74 fanmode=BROADCAST")));
-    CHECK(sent.constFirst().trimmed().endsWith(expectedTail));
-    CHECK(sent.constFirst().contains(QStringLiteral("authcode=")) == (expectedTail == QLatin1String("authcode=")));
+    CHECK(sent.constFirst().contains(QStringLiteral("|setup read")));
+    emit connection.setupRead(setupRead);
+    CHECK(sent.size() == 2);
+    if (sent.size() < 2) {
+        return;
+    }
+    CHECK(sent.constLast().contains(QStringLiteral("|setup nickname=PGXL-HOME meffa=AUTO"
+                                                   " ledintens=74 fanmode=BROADCAST")));
+    CHECK(sent.constLast().trimmed().endsWith(expectedTail));
+    CHECK(sent.constLast().contains(QStringLiteral("authcode=")) == (expectedTail == QLatin1String("authcode=")));
     if (mustNotLeak) {
-        CHECK(!sent.constFirst().contains(QStringLiteral("1234")));
+        CHECK(!sent.constLast().contains(QStringLiteral("1234")));
     }
 }
 

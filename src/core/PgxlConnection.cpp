@@ -486,6 +486,12 @@ void PgxlConnection::finishHandshake()
     emit connected();
 }
 
+void PgxlConnection::requestSetupRead()
+{
+    if (!m_connected) return;
+    m_setupReadSeq = sendCommand("setup read");
+}
+
 void PgxlConnection::sendAuthentication()
 {
     if (m_authCode.isEmpty()) {
@@ -551,7 +557,11 @@ void PgxlConnection::setTransmitting(bool tx)
 
 quint32 PgxlConnection::sendCommand(const QString& cmd)
 {
-    quint32 seq = ++m_seq;
+    // 4O3A's PGXL API: "<seq_number> = sequence number, numeric, 1 to 255".
+    // Past 255 it starts again at 2 (1 is the auth command's); at the 4-10 Hz
+    // poll that is about a minute in.
+    if (++m_seq > 255) m_seq = 2;
+    quint32 seq = m_seq;
     QString line = QString("C%1|%2\n").arg(seq).arg(cmd);
     if (m_commandWriter) {
         m_commandWriter(line.toUtf8());

@@ -92,6 +92,31 @@ bool peerSaw(QTcpSocket* peer, const char* needle)
     return g_clientTraffic.contains(needle);
 }
 
+// Where in g_clientTraffic the last `setup read` answered by the test sits
+// (-1: none since the traffic was cleared).
+qsizetype g_lastAnsweredRead = -1;
+
+// The model reads the group again right before each write (a stale read
+// could carry an empty authcode= back over a code set since): answer the
+// newest `setup read` as the amplifier would, then the write follows.
+bool answerSetupRead(QTcpSocket* peer)
+{
+    if (!spin([&] {
+            peerSaw(peer, "");
+            return g_clientTraffic.lastIndexOf("|setup read") > g_lastAnsweredRead;
+        })) {
+        return false;
+    }
+    const qsizetype at = g_clientTraffic.lastIndexOf("|setup read");
+    const qsizetype c = g_clientTraffic.lastIndexOf('C', at);
+    const QByteArray seq = g_clientTraffic.mid(c + 1, at - c - 1);
+    g_lastAnsweredRead = at;
+    peer->write("R" + seq + "|0|ledintens=141 txdelay=16 inactivity-timeout=0"
+                " nickname=PowerGeniusXL authcode=\n");
+    peer->flush();
+    return true;
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
@@ -268,14 +293,15 @@ int main(int argc, char** argv)
         spin([&] { return false; }, 150);
         CHECK(!peerSaw(peer, "setup nickname="));
 
-        // Fan mode, however, still goes out — as the single key, which is what
-        // shipped before the group write existed. The group form's whole point
-        // is carrying the values we are not changing, and here we do not have
-        // them; refusing would make fan mode less available than it was, on
-        // any firmware that answers `setup read` with an error.
+        // Nor does fan mode: no single-key `setup fanmode=` either. That form
+        // is in no document or capture, and a firmware that blanks the keys
+        // left out would clear the nickname and the remote code (4O3A
+        // document audit, 2026-11-04).
         g_clientTraffic.clear();
+        g_lastAnsweredRead = -1;
         model.setFanMode(QStringLiteral("contest"));
-        CHECK(spin([&] { return peerSaw(peer, "setup fanmode=CONTEST"); }));
+        spin([&] { return false; }, 150);
+        CHECK(!peerSaw(peer, "setup fanmode="));
         CHECK(!g_clientTraffic.contains("nickname="));
 
         // The `setup read` reply, verbatim off the amplifier. Note that it
@@ -290,6 +316,7 @@ int main(int argc, char** argv)
         // order, carrying back the four values it is not changing:
         //   setup nickname=PowerGeniusXL meffa=OFF ledintens=141 fanmode=STANDARD authcode=
         model.setMeffaEnabled(false);
+        CHECK(answerSetupRead(peer));
         CHECK(spin([&] {
             return peerSaw(peer, "setup nickname=PowerGeniusXL meffa=OFF"
                                  " ledintens=141 fanmode=STANDARD authcode=");
@@ -311,6 +338,7 @@ int main(int argc, char** argv)
         CHECK(spin([&] { return model.meffa() == QLatin1String("OFF"); }));
         CHECK(!model.meffaEnabled());
         model.setMeffaEnabled(true);
+        CHECK(answerSetupRead(peer));
         CHECK(spin([&] {
             return peerSaw(peer, "setup nickname=PowerGeniusXL meffa=AUTO"
                                  " ledintens=141 fanmode=CONTEST authcode=");
@@ -323,6 +351,7 @@ int main(int argc, char** argv)
         // as a single key it would name fanmode and leave the other four out
         // of a write to the group that holds them.
         model.setFanMode(QStringLiteral("broadcast"));
+        CHECK(answerSetupRead(peer));
         CHECK(spin([&] {
             return peerSaw(peer, "setup nickname=PowerGeniusXL meffa=AUTO"
                                  " ledintens=141 fanmode=BROADCAST authcode=");
@@ -337,10 +366,12 @@ int main(int argc, char** argv)
         // already repainted with the new one. An operator on SSB (class AAB,
         // so STANDBY) hit this on every fan change.
         g_clientTraffic.clear();
+        g_lastAnsweredRead = -1;
         peer->write("S0|state=IDLE fanmode=CONTEST meffa=STANDBY\n");
         peer->flush();
         CHECK(spin([&] { return model.meffa() == QLatin1String("STANDBY"); }));
         model.setFanMode(QStringLiteral("standard"));
+        CHECK(answerSetupRead(peer));
         CHECK(spin([&] {
             return peerSaw(peer, "setup nickname=PowerGeniusXL meffa=AUTO"
                                  " ledintens=141 fanmode=STANDARD authcode=");
@@ -355,13 +386,17 @@ int main(int argc, char** argv)
         // meffa=OFF one poll after the operator enabled MEffA and turn it
         // straight back off.
         g_clientTraffic.clear();
+        g_lastAnsweredRead = -1;
         peer->write("S0|state=IDLE fanmode=CONTEST meffa=OFF\n");
         peer->flush();
         CHECK(spin([&] { return model.meffa() == QLatin1String("OFF"); }));
         model.setMeffaEnabled(true);                 // commands AUTO
+        CHECK(answerSetupRead(peer));
         CHECK(spin([&] { return peerSaw(peer, "meffa=AUTO"); }));
         g_clientTraffic.clear();
+        g_lastAnsweredRead = -1;
         model.setFanMode(QStringLiteral("contest")); // device still says OFF
+        CHECK(answerSetupRead(peer));
         CHECK(spin([&] {
             return peerSaw(peer, "setup nickname=PowerGeniusXL meffa=AUTO"
                                  " ledintens=141 fanmode=CONTEST authcode=");

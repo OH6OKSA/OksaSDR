@@ -23,8 +23,9 @@ a non-GUI client on the radio's TCP 4992, "amplifier create ip= port=
 model= serial_num= ant=", "keepalive enable" and a ping every few seconds.
 The radio then reports them to every client, SmartLink ones included, as
 it would the real devices, and they go when this exits (the connection
-closes). No interlock and no meters are created, so the radio's transmit
-is not gated on the stand-ins. Every line the radio sends about them is
+closes). No interlock is created, so the radio's transmit is not gated on
+the stand-ins; --radio-meters adds the PGXL's meters (FWD, RL, DRV, ID,
+TEMP) on the radio, their values streamed to its VITA-49 port 4991. Every line the radio sends about them is
 printed ("RADIO ->"). --radio-tune makes the TGXL's autotune key the
 radio's tune carrier for its 3 s, as the real tuner does: that TRANSMITS,
 at the radio's tune power, on its TX slice.
@@ -302,10 +303,68 @@ def radio_link(args, name, create):
             except OSError:
                 return
 
+    # The PGXL's five meters, as 4O3A's amplifier-to-radio API lists them;
+    # their values go to the radio's VITA-49 port as the FLEX metering
+    # protocol has them (PCC 0x8002, meter id and value per 32-bit word).
+    meters = {}          # name -> (meter id, stream id)
+    meter_specs = [("FWD", "30.0", "63.01", "DBM"), ("RL", "34.0", "60.0", "DB"),
+                   ("DRV", "10.0", "50.00", "DBM"), ("ID", "0.0", "70.0", "AMPS"),
+                   ("TEMP", "0.0", "100.0", "TEMP_C")]
+    keyed = [False]      # the radio transmitting (its interlock status)
+    my_handle = [0]      # this connection's client handle (the H line)
+
+    def meter_values():
+        operate = PGXL["state"] != "STANDBY"
+        if keyed[0] and operate:
+            return {"FWD": 54.77, "RL": 25.0, "DRV": 41.76, "ID": 12.0, "TEMP": 33.0}  # 300 W from 15 W
+        return {"FWD": 0.0, "RL": 34.0, "DRV": 41.76 if keyed[0] else 10.0, "ID": 0.0, "TEMP": 31.0}
+
+    def scale(unit, v):
+        if unit in ("DB", "DBM"):
+            return int(round(v * 128)) & 0xFFFF
+        if unit == "AMPS":
+            return int(round(v * 256)) & 0xFFFF
+        if unit in ("TEMPC", "TEMP_C"):
+            return int(round(v * 64)) & 0xFFFF
+        return int(v) & 0xFFFF
+
+    udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    udp.bind(("", 0))
+
+    def meter_sender():
+        import struct
+        count = 0
+        while True:
+            time.sleep(0.1)
+            if not meters:
+                continue
+            vals = meter_values()
+            by_stream = {}
+            for nm, unit in ((m[0], m[3]) for m in meter_specs):
+                if nm in meters:
+                    mid, sid = meters[nm]
+                    by_stream.setdefault(sid, []).append((mid << 16) | scale(unit, vals[nm]))
+            for sid, words in by_stream.items():
+                size = 4 + len(words)
+                hdr = (0x3 << 28) | (1 << 27) | ((count & 0xF) << 16) | size
+                pkt = struct.pack(">IIII", hdr, sid, 0x001C2D, (0x534C << 16) | 0x8002)
+                pkt += b"".join(struct.pack(">I", w) for w in words)
+                try:
+                    udp.sendto(pkt, (args.radio, 4991))
+                except OSError:
+                    pass
+            count += 1
+
     def register():
         send("sub amplifier all")
         send(create.format(ip=own))
         send("keepalive enable")
+        if name == "PGXL" and args.radio_meters:
+            # The radio takes a client's VITA-49 from the UDP port it named.
+            send(f"client udpport {udp.getsockname()[1]}")
+            for nm, lo, hi, unit in meter_specs:
+                send(f"meter create name={nm} type=AMP min={lo} max={hi} units={unit}")
+            threading.Thread(target=meter_sender, daemon=True).start()
         threading.Thread(target=pinger, daemon=True).start()
 
     registered = False
@@ -316,10 +375,24 @@ def radio_link(args, name, create):
         if line.startswith("H") and not registered:
             registered = True
             log("RADIO handle", line[1:])
+            try:
+                my_handle[0] = int(line[1:], 16)
+            except ValueError:
+                pass
             threading.Thread(target=register, daemon=True).start()
         elif line.startswith("R"):
             n, _, rest = line[1:].partition("|")
             cmd = pending.pop(int(n), None) if n.isdigit() else None
+            if cmd is not None and cmd.startswith("meter create") and rest.startswith("0|"):
+                # R<seq>|0|<meter number>,<stream id>
+                # The FLEX-6600M (protocol 1.4.0.0) answers the number alone,
+                # and lists the meter with num=<this client's handle>: that
+                # handle is the stream id then.
+                try:
+                    mid, _, sid = rest[2:].partition(",")
+                    meters[cmd.split("name=")[1].split()[0]] = (int(mid), int(sid, 16) if sid else my_handle[0])
+                except ValueError:
+                    pass
             if cmd is not None:
                 log("RADIO ->", line, "(" + cmd.split(" ip=")[0] + ")")
             elif not rest.startswith("0|"):
@@ -327,6 +400,8 @@ def radio_link(args, name, create):
         elif line.startswith("V"):
             log("RADIO version", line[1:])
         elif any(w in line for w in ("amplifier", "tgxl", "interlock", "|M", "message")) and "|slice " not in line:
+            if "interlock" in line and " state=" in line:
+                keyed[0] = " state=TRANSMITTING" in line
             log("RADIO ->", line[:400])
     log("RADIO link closed")
 
@@ -342,6 +417,8 @@ def main():
     ap.add_argument("--radio", default="", help="register the stand-ins with this FLEX radio (TCP 4992)")
     ap.add_argument("--radio-tgxl", action="store_true", help="with --radio, register the TGXL too")
     ap.add_argument("--radio-raw", default="", help="with --radio, append every line the radio sends to this file")
+    ap.add_argument("--radio-meters", action="store_true",
+                    help="with --radio, the PGXL creates its five meters on the radio and streams their values (FWD, RL, DRV, ID, TEMP)")
     ap.add_argument("--radio-tune", action="store_true",
                     help="with --radio-tgxl, key the radio's tune carrier for the 3 s autotune, as the real tuner (transmits!)")
     ap.add_argument("--tgxl-3way", action="store_true", help="the TGXL is the 3-antenna (1x3) model: info says 3way=1")

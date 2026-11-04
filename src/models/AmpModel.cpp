@@ -215,12 +215,30 @@ void AmpModel::applySetupGroup(const QMap<QString, QString>& kvs)
     // operated has — canWriteSetup() is false until this reply lands, and the
     // control that reads it has no other signal to learn that from.
     if (becameWritable && !m_meffa.isEmpty()) emit meffaChanged(m_meffa);
+    if (m_setupWritePending) {
+        m_setupWritePending = false;
+        sendSetupGroup(m_pendingMeffa, m_pendingFan);
+    }
 }
 
 void AmpModel::writeSetupGroup(const QString& meffa, const QString& fanMode)
 {
     if (!m_directConn || !m_directConn->isConnected()) return;
     if (!m_haveSetupGroup) return;   // see canWriteSetup()
+    // Read the group again first and write from that: the connect-time read
+    // could be stale (another client may have set a remote code since, and
+    // writing the old empty authcode= back would clear it). The write goes
+    // when the reply lands (applySetupGroup); a second change meanwhile
+    // replaces the first.
+    m_pendingMeffa = meffa;
+    m_pendingFan = fanMode;
+    m_setupWritePending = true;
+    m_directConn->requestSetupRead();
+}
+
+void AmpModel::sendSetupGroup(const QString& meffa, const QString& fanMode)
+{
+    if (!m_directConn || !m_directConn->isConnected()) return;
 
     // Same shape the vendor utility sends:
     //   setup nickname=PowerGeniusXL meffa=OFF ledintens=141 fanmode=STANDARD authcode=
@@ -268,12 +286,10 @@ void AmpModel::setFanMode(const QString& mode)
         writeSetupGroup(meffaWriteWord(), fan);
         return;
     }
-    // Group not known yet (`setup read` unanswered, or no MEffA state reported, as
-    // on firmware that errors on `setup read`): send the single key rather than drop
-    // the operator's choice. The group form needs the unchanged values, which we
-    // don't have here.
-    if (m_directConn && m_directConn->isConnected())
-        m_directConn->sendCommand(QStringLiteral("setup fanmode=%1").arg(fan));
+    // Group not known yet (`setup read` unanswered, or no MEffA state reported):
+    // nothing is sent. A single-key `setup fanmode=` is in no document or
+    // capture, and a firmware that blanks the keys left out would clear the
+    // nickname and the remote code (the 4O3A document audit, 2026-11-04).
 }
 
 void AmpModel::applyChanges(const AmpDelta& d)

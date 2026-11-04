@@ -104,6 +104,8 @@ private:
     // place, so a fan-mode change and a MEffA change cannot disagree about
     // what a write looks like.
     void writeSetupGroup(const QString& meffa, const QString& fanMode);
+    // The write itself, from the group just read.
+    void sendSetupGroup(const QString& meffa, const QString& fanMode);
     // The word a `setup` write may carry for MEffA — AUTO or OFF, never the
     // ACTIVE / STANDBY the status frame reports. See the definition.
     QString meffaWriteWord() const;
@@ -178,6 +180,11 @@ private:
     // The settable word we last commanded (AUTO / OFF), empty once the
     // amplifier's own report agrees with it. See meffaWriteWord().
     QString m_meffaIntent;
+    // A setup write waiting for the fresh `setup read` it asked for: the group
+    // and its authcode as the amplifier holds them now, not as at connect.
+    bool    m_setupWritePending{false};
+    QString m_pendingMeffa;
+    QString m_pendingFan;
     QString m_fanMode;
     bool        m_havePortInfo{false};
     QMap<QString, QString> m_antennaOutputs;   // "ANT1" -> "PORTA"

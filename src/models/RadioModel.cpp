@@ -884,6 +884,11 @@ void RadioModel::setupBackend(const QString& family)
                     [this](const QString& verb, int code, const QString& message) {
                 qCWarning(lcProtocol).noquote() << "RadioModel: the radio refused" << verb
                     << QStringLiteral("0x%1").arg(code, 8, 16, QLatin1Char('0')) << message;
+                // 500000A7, "Invalid amplifier - could not find by handle": the
+                // handle is stale (the device re-registered). Ask the radio for
+                // its amplifiers again so the next press has the current one.
+                if (static_cast<quint32>(code) == 0x500000A7u)
+                    sendCommand(QStringLiteral("sub amplifier all"));
                 emit geniusCommandRefused(verb.startsWith(QLatin1String("amp.")) ? QStringLiteral("amp")
                                                                                  : QStringLiteral("tuner"),
                                           message.isEmpty() ? QStringLiteral("code 0x%1").arg(code, 8, 16, QLatin1Char('0'))

@@ -53,6 +53,9 @@ public:
                                bool credentialStoreUnavailable = false);
 
     quint32 sendCommand(const QString& cmd);
+    // A fresh `setup read`; its reply comes as setupRead(). AmpModel reads the
+    // group again right before each write (see AmpModel::writeSetupGroup).
+    void requestSetupRead();
 
     // Poll fast only while keyed (as TgxlConnection). Measured: the PGXL meter yields
     // ~10 Hz of distinct values however fast it is polled (32.9 Hz of frames carried
