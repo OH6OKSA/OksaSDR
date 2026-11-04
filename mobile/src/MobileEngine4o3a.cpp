@@ -144,7 +144,7 @@ void MobileEngine::setup4o3a()
     });
     connect(&rm.meterModel(), &MeterModel::tgxlMetersChanged, this, [this](float, float) { emit tgxlChanged(); });
     for (auto sig : {&AmpModel::presenceChanged}) {
-        connect(&rm.amplifier(), sig, this, [this](bool) { connect4o3a(); emit pgxlChanged(); });
+        connect(&rm.amplifier(), sig, this, [this](bool) { connect4o3a(); emit pgxlChanged(); emit meterSelectionChanged(); });
     }
     connect(&rm.amplifier(), &AmpModel::stateChanged, this, [this] { m_pgxlPending = false; emit pgxlChanged(); emit ratedPowerChanged(); });
     connect(&rm.amplifier(), &AmpModel::ampStateChanged, this, [this](const QString&) { emit pgxlChanged(); });
@@ -152,7 +152,7 @@ void MobileEngine::setup4o3a()
     connect(&rm.amplifier(), &AmpModel::portsChanged, this, &MobileEngine::pgxlChanged);
     connect(&rm.amplifier(), &AmpModel::meffaChanged, this, [this](const QString&) { emit pgxlChanged(); });
     connect(&rm.amplifier(), &AmpModel::telemetryUpdated, this, [this](const QMap<QString, QString>&) { emit pgxlChanged(); });
-    connect(&rm.tunerModel(), &TunerModel::presenceChanged, this, [this](bool) { connect4o3a(); emit tgxlChanged(); });
+    connect(&rm.tunerModel(), &TunerModel::presenceChanged, this, [this](bool) { connect4o3a(); emit tgxlChanged(); emit meterSelectionChanged(); });
     connect(&rm.tunerModel(), &TunerModel::stateChanged, this, [this] {
         if (!m_tgxlConn->isConnected()) connect4o3a();
         emit tgxlChanged();

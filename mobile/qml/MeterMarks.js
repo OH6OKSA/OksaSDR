@@ -30,6 +30,8 @@ function redFrom(kind, red) {
 function meterName(kind, narrow) {
     if (kind === "PA temp") return narrow ? "PA" : "PA Temp"
     if (kind.indexOf("Amp ") === 0) return narrow ? "Amp" : "Amp " + ampLabel(kind)
+    if (kind === "Tuner power") return narrow ? "Tuner" : "Tuner Power"
+    if (kind === "Tuner SWR") return narrow ? "Tuner" : "Tuner SWR"
     return kind
 }
 

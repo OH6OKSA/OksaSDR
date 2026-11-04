@@ -1,4 +1,5 @@
 #include "MobileEngine.h"
+#include "core/PgxlConnection.h"
 #include <QFile>
 #include <QDir>
 #include <QFileInfo>
@@ -2376,10 +2377,16 @@ QStringList MobileEngine::meterKindsFor(const QString& side, bool tx) const
         kinds.removeAll(QStringLiteral("Mic"));
     }
     // The amplifier's readings on every meter, receive and transmit, while
-    // one is set up (Radio Setup › Amp; Sebastian Schu DG5CST).
-    if (m_ampSet) {
+    // one is set up (Radio Setup › Amp; Sebastian Schu DG5CST), or a Power
+    // Genius XL is there (the radio reports it, or the app reads it).
+    const RadioModel& rm = m_session.radioModel();
+    if (m_ampSet || rm.amplifier().present() || (m_pgxlConn && m_pgxlConn->isConnected())) {
         kinds << QStringLiteral("Amp power") << QStringLiteral("Amp refl") << QStringLiteral("Amp SWR")
               << QStringLiteral("Amp temp") << QStringLiteral("Amp volts") << QStringLiteral("Amp current");
+    }
+    // A Tuner Genius XL's power and SWR, as the RF2K-S's under Amplifier.
+    if (const_cast<RadioModel&>(rm).tunerModel().isPresent()) {
+        kinds << QStringLiteral("Tuner power") << QStringLiteral("Tuner SWR");
     }
     return kinds;
 }

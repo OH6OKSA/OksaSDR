@@ -82,6 +82,16 @@ Item {
         case "Amp current":
             return { v: amp.amps || 0, min: 0, max: pgxlAmp ? 70 : 60, live: ampLive(amp.amps),
                      text: "Amp " + (amp.amps || 0).toFixed(1) + " A", red: 1e9 }
+        // A Tuner Genius XL: the power through it on the desktop applet's
+        // 0-2000 W, SWR red from 2.5 (– below 5 W).
+        case "Tuner power":
+            return { v: Engine.tgxl.fwd || 0, min: 0, max: 2000, live: !!Engine.tgxl.present,
+                     text: "Tuner " + (Engine.tgxl.fwd || 0).toFixed(0) + " W", red: 1500 }
+        case "Tuner SWR": {
+            const on = (Engine.tgxl.fwd || 0) >= 5
+            return { v: on ? Math.max(1, Engine.tgxl.swr || 1) : 1, min: 1, max: 3, live: !!Engine.tgxl.present && on,
+                     text: "SWR " + (on ? Number(Engine.tgxl.swr || 1).toFixed(2) : "–"), red: 2.5 }
+        }
         case "S":
             return { v: Engine.sMeterDbm, min: -127, max: -13, live: true, text: Engine.sMeterText, red: 1e9 }
         case "Power": {
@@ -304,10 +314,12 @@ Item {
                     // own label (re-read only when an amplifier comes or goes).
                     readonly property var kinds: {
                         meter.ampSet
+                        Engine.tgxl.present
                         return Engine.meterKindsFor(meter.side, section.modelData.tx)
                     }
-                    readonly property var radioKinds: kinds.filter(k => k.indexOf("Amp ") !== 0)
+                    readonly property var radioKinds: kinds.filter(k => k.indexOf("Amp ") !== 0 && k.indexOf("Tuner ") !== 0)
                     readonly property var ampKinds: kinds.filter(k => k.indexOf("Amp ") === 0)
+                    readonly property var tunerKinds: kinds.filter(k => k.indexOf("Tuner ") === 0)
                     Label { text: section.modelData.title; color: Theme.textDim; font.pixelSize: Math.round(Theme.buttonFont * 0.85) }
                     GridLayout {
                         columns: 4
@@ -345,6 +357,32 @@ Item {
                                 objectName: "meterKind" + modelData.replace(/ /g, "") + (section.modelData.tx ? "Tx" : "Rx")
                                 text: MeterMarks.ampLabel(modelData)
                                 Accessible.name: qsTr("Amplifier %1").arg(text)
+                                checked: (section.modelData.tx ? meter.txKind : meter.rxKind) === modelData
+                                focusPolicy: Qt.NoFocus
+                                Layout.preferredWidth: chooser.cellWidth
+                                Layout.preferredHeight: Theme.touchTarget
+                                onClicked: Engine.setMeter(meter.side, section.modelData.tx, modelData)
+                            }
+                        }
+                    }
+                    Label {
+                        visible: section.tunerKinds.length > 0
+                        text: qsTr("Tuner")
+                        color: Theme.textDim
+                        font.pixelSize: Math.round(Theme.buttonFont * 0.8)
+                    }
+                    GridLayout {
+                        visible: section.tunerKinds.length > 0
+                        columns: 4
+                        columnSpacing: 4
+                        rowSpacing: 4
+                        Repeater {
+                            model: section.tunerKinds
+                            delegate: AppButton {
+                                required property string modelData
+                                objectName: "meterKind" + modelData.replace(/ /g, "") + (section.modelData.tx ? "Tx" : "Rx")
+                                text: modelData === "Tuner power" ? qsTr("Power") : qsTr("SWR")
+                                Accessible.name: qsTr("Tuner %1").arg(text)
                                 checked: (section.modelData.tx ? meter.txKind : meter.rxKind) === modelData
                                 focusPolicy: Qt.NoFocus
                                 Layout.preferredWidth: chooser.cellWidth

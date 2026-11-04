@@ -701,7 +701,9 @@ there is room and *Amp* where not (the value's unit and the scale tell
 which). Forget the amplifier, and a meter showing one of them goes back
 to its usual reading. A Power Genius XL the radio reports gives these
 readings too when no RF2K-S is set up: Power on 0-2000 W red from 1500,
-Current on 0-70 A. **Mic** is on the left meter and its lower bar
+Current on 0-70 A. A Tuner Genius XL adds **Tuner**: *Power* (the power
+through it, 0-2000 W) and *SWR* (red from 2.5, – below 5 W), so the four
+meters can follow the amplifier and the tuner without the Amp tab open. **Mic** is on the left meter and its lower bar
 (on a tablet the side panel covers the right one). With this device's microphone it shows the
 level of the audio as it is sent (after the processing in Controls → eSSB):
 while you transmit, and in receive too while Controls → TX or eSSB is open,

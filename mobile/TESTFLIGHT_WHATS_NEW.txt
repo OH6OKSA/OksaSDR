@@ -9,7 +9,7 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- 4O3A Power Genius XL and Tuner Genius XL on the Amp tab: readings, Operate / Standby, the fan, Tune, the tuner's relays and antenna switch. Control is off until you turn it on in Radio Setup › Amp; each change asks first.
+- 4O3A Power Genius XL and Tuner Genius XL on the Amp tab: readings (on the meters too), Operate / Standby, the fan, Tune, relays, antenna. Control is off until you turn it on in Radio Setup › Amp; each change asks first.
 - APD on a FLEX-8000 or Aurora: TX tab On / Off, sampler ports in Radio Setup › Transmit.
 - The Power meter follows your radio: 0-600 W on an Aurora (thanks Sloan Davis), 2 kW with a PGXL in Operate.
 - The radio list shows each address on a line of its own (thanks Mike VA3MW).
