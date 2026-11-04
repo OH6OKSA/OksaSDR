@@ -435,10 +435,15 @@ void WanConnection::processLine(const QString& line)
         break;
 
     case MessageType::Response: {
-        auto it = m_pendingCallbacks.find(msg.sequence);
-        if (it != m_pendingCallbacks.end()) {
-            it.value()(msg.resultCode, msg.object);
-            m_pendingCallbacks.erase(it);
+        // Out of the map before it runs: a callback can end the session (a
+        // refused "client gui", with multiFLEX off and another station on
+        // the radio, disconnects), and resetSessionState() then clears the
+        // map under it, so erasing the iterator afterwards freed a freed
+        // node (AddressSanitizer: heap use after free; the SmartLink app
+        // crashing at Connect, reported by Juho Kontio).
+        auto callback = m_pendingCallbacks.take(msg.sequence);
+        if (callback) {
+            callback(msg.resultCode, msg.object);
         }
         break;
     }
