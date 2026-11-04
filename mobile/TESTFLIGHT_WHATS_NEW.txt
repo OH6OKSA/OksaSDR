@@ -13,6 +13,7 @@ NEW IN THIS BUILD
 - APD on a FLEX-8000 or Aurora: TX tab On / Off, sampler ports in Radio Setup › Transmit.
 - The Power meter follows your radio: 0-600 W on an Aurora (thanks Sloan Davis), 2 kW with a PGXL in Operate.
 - The radio list shows each address on a line of its own (thanks Mike VA3MW).
+- A SmartLink crash fixed (thanks Juho Kontio).
 - From build 151: several radios by IP or name (thanks Mike VA3MW); the rest of Radio Setup; Larry Averbeck's transmit lock, zoom buttons and scroll bars.
 
 RECENT (builds 94–150)
@@ -20,8 +21,8 @@ RECENT (builds 94–150)
 - PSK31 / PSK63 and RTTY on the Digi tab; ⌘1–⌘0 as F1–F10; worked before from Wavelog, QRZ.com or a shared ADIF file.
 - The transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger).
 - Mac typing (thanks Pentti OH6PP); QSOs to Logger32 (thanks Juho Kontio).
-- Less battery: the spectrum drawn by the graphics chip (thanks Mike VA3MW); held step buttons repeat (thanks Larry); wider bar meters (thanks Juho).
-- CW paddles at the phone's edges; slice volume by the speaker icon (thanks Wayne WA2N); FTx CQ POTA filter (thanks Ryland WW4GA).
+- Less battery: the spectrum drawn by the graphics chip (thanks Mike VA3MW); held step buttons repeat (thanks Larry).
+- CW paddles at the phone's edges; slice volume by the speaker icon (thanks Wayne WA2N).
 - FreeDV tab with FreeDV Reporter; FTx (FT8 / FT4) with PSK Reporter; Wavelog / Cloudlog; transverters.
 
 PLEASE TRY
