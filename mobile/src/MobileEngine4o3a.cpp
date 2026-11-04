@@ -250,7 +250,12 @@ QVariantMap MobileEngine::pgxl() const
     d[QStringLiteral("linkError")] = m_pgxlLinkError;
     d[QStringLiteral("control")] = settingOn(kPgxlControlKey);
     d[QStringLiteral("state")] = amp.stateText();
-    d[QStringLiteral("operate")] = amp.operate();
+    // Read only directly (the radio does not report it): its own state word
+    // says it, so Mode does not show Standby under an OPERATE chip.
+    const QString st = amp.stateText();
+    d[QStringLiteral("operate")] = amp.present()
+        ? amp.operate()
+        : (st == QLatin1String("IDLE") || st.startsWith(QLatin1String("TRANSMIT")));
     d[QStringLiteral("pending")] = m_pgxlPending;
     d[QStringLiteral("alert")] = amp.alert();
     d[QStringLiteral("notice")] = m_pgxlNotice;
