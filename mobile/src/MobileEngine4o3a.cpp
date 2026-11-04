@@ -21,6 +21,8 @@
 // while the radio transmits.
 
 #include "MobileEngine.h"
+
+#include <memory>
 #include "SecureStore.h"
 
 #include "core/AppSettings.h"
@@ -102,6 +104,40 @@ void MobileEngine::setup4o3a()
         connect(m_tgxlConn, sig, this, [this] {
             if (m_tgxlConn->isConnected()) m_tgxlLinkError.clear();
             emit tgxlChanged();
+        });
+    }
+
+    // What each device says of itself, into the log a tester shares: its info
+    // reply (serial, version, 3way on a 1x3 TGXL) and its first status after
+    // each connect, the keys its firmware uses (an SO2R TGXL's channel fields,
+    // a PGXL's setup group without its remote code).
+    {
+        auto logFirst = [](const char* device, const QMap<QString, QString>& kvs, bool* logged) {
+            if (*logged) return;
+            QStringList fields;
+            for (auto it = kvs.constBegin(); it != kvs.constEnd(); ++it) {
+                if (it.key().contains(QLatin1String("auth"), Qt::CaseInsensitive)
+                    || it.key() == QLatin1String("code"))
+                    fields << it.key() + QStringLiteral("=<hidden>");
+                else
+                    fields << it.key() + QLatin1Char('=') + it.value();
+            }
+            qCInfo(lcMobile).noquote() << device << "says:" << fields.join(QLatin1Char(' '));
+            // The info reply carries serial and version; the first status
+            // with fields beyond those ends the logging until the next connect.
+            if (!kvs.contains(QStringLiteral("serial"))) *logged = true;
+        };
+        auto tgxlLogged = std::make_shared<bool>(false);
+        auto pgxlLogged = std::make_shared<bool>(false);
+        connect(m_tgxlConn, &TgxlConnection::connected, this, [tgxlLogged] { *tgxlLogged = false; });
+        connect(m_pgxlConn, &PgxlConnection::connected, this, [pgxlLogged] { *pgxlLogged = false; });
+        connect(m_tgxlConn, &TgxlConnection::statusUpdated, this,
+                [logFirst, tgxlLogged](const QMap<QString, QString>& kvs) { logFirst("TGXL", kvs, tgxlLogged.get()); });
+        connect(m_pgxlConn, &PgxlConnection::statusUpdated, this,
+                [logFirst, pgxlLogged](const QMap<QString, QString>& kvs) { logFirst("PGXL", kvs, pgxlLogged.get()); });
+        connect(m_pgxlConn, &PgxlConnection::setupRead, this, [logFirst](const QMap<QString, QString>& kvs) {
+            bool once = false;
+            logFirst("PGXL setup", kvs, &once);
         });
     }
 

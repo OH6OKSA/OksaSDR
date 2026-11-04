@@ -11457,6 +11457,28 @@ void RadioModel::onStatusReceived(const QString& object,
             const QString handle = m.captured(1);
             const QString model = kvs.value("model");
             qCDebug(lcProtocol) << "RadioModel: amplifier status handle=" << handle << "model=" << model;
+            {
+                // What the radio says about a 4O3A device, into the log a tester
+                // shares: once per change of its lasting fields (an SO2R TGXL or
+                // an Antenna Genius setup is read from these). The fields that
+                // move while tuning or keyed are left out of the comparison.
+                static QHash<QString, QString> lastLogged;
+                QStringList lasting;
+                for (auto it = kvs.constBegin(); it != kvs.constEnd(); ++it) {
+                    const QString& k = it.key();
+                    if (k == QLatin1String("tuning") || k.startsWith(QLatin1String("relay"))
+                        || k.startsWith(QLatin1String("ptt")) || k == QLatin1String("fwd")
+                        || k == QLatin1String("swr"))
+                        continue;
+                    lasting << k + QLatin1Char('=') + it.value();
+                }
+                const QString line = lasting.join(QLatin1Char(' '));
+                QString& last = lastLogged[handle];
+                if (line != last) {
+                    last = line;
+                    qCInfo(lcProtocol).noquote() << "RadioModel: amplifier" << handle << line;
+                }
+            }
 
             // Handle removal (kvs form)
             if (kvs.contains("removed")) {
