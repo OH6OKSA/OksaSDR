@@ -126,6 +126,15 @@ WanConnection::WanConnection(QObject* parent)
 WanConnection::~WanConnection()
 {
     disconnectFromRadio();
+    // m_socket is declared before m_readBuffer, m_heartbeat and
+    // m_pendingCallbacks, so it destructs after them, and a socket still
+    // closing emits disconnected() on its way out: onTlsDisconnected() then
+    // cleared the already destroyed m_pendingCallbacks (a heap use after
+    // free, AddressSanitizer: the SmartLink app crashing as it closed, with
+    // another station on the radio; reported by Juho Kontio). Nothing may reach this
+    // object from the socket once its destruction has begun.
+    m_socket.disconnect(this);
+    m_socket.abort();
 }
 
 // ─── Connection ──────────────────────────────────────────────────────────────
