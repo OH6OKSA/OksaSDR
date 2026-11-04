@@ -23,9 +23,12 @@ ColumnLayout {
     }
     function link(d, name) {
         if (d.direct) return qsTr("%1 read directly at %2.").arg(name).arg(d.ip)
-        if (d.authBlocked) return qsTr("%1 at %2 wants its remote code: enter it in Radio Setup › Amp.").arg(name).arg(d.ip)
-        if (d.connecting) return qsTr("Connecting to %1 at %2…").arg(name).arg(d.ip)
-        if (d.linkError) return qsTr("%1 at %2 not reached directly (%3): the radio's relay only.").arg(name).arg(d.ip || "–").arg(d.linkError)
+        if (d.authBlocked) return qsTr("%1 at %2 asks for a remote code (its Authorization code): enter it in Radio Setup › Amp. Until then through the radio only.").arg(name).arg(d.ip)
+        // "%1 at %2: connecting" keeps the name at the start ("Connecting to
+        // The tuner at …" read wrong, build 152).
+        if (d.connecting) return qsTr("%1 at %2: connecting…").arg(name).arg(d.ip)
+        // What still works and what does not, not only that the link failed.
+        if (d.linkError) return qsTr("%1 at %2 not reached directly (%3): Standby / Operate, power and SWR come through the radio; the rest needs the station's network or a VPN.").arg(name).arg(d.ip || "–").arg(d.linkError)
         return d.radio ? qsTr("%1 through the radio.").arg(name) : ""
     }
 
@@ -94,7 +97,11 @@ ColumnLayout {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 44
                 kind: qsTr("Forward")
-                min: 0; max: 2000; red: 1500
+                // 0–100 W until the power passes 100 W (back under 80 W): a 15 W tune
+                // carrier on a 2 kW scale was a sliver nobody saw (build 152).
+                property real autoMax: 100
+                onValueChanged: autoMax = value >= 100 ? 2000 : value < 80 ? 100 : autoMax
+                min: 0; max: autoMax; red: autoMax > 100 ? 1500 : 1e9
                 live: !!genius.p.metersLive
                 value: genius.p.fwd || 0
                 text: qsTr("Forward") + " " + genius.num(genius.p.fwd, 0, "W")
@@ -250,7 +257,11 @@ ColumnLayout {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 44
                 kind: qsTr("Forward")
-                min: 0; max: 2000; red: 1500
+                // 0–100 W until the power passes 100 W (back under 80 W): a 15 W tune
+                // carrier on a 2 kW scale was a sliver nobody saw (build 152).
+                property real autoMax: 100
+                onValueChanged: autoMax = value >= 100 ? 2000 : value < 80 ? 100 : autoMax
+                min: 0; max: autoMax; red: autoMax > 100 ? 1500 : 1e9
                 live: true
                 value: genius.t.fwd || 0
                 text: qsTr("Forward") + " " + genius.num(genius.t.fwd, 0, "W")

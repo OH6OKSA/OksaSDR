@@ -873,6 +873,22 @@ void RadioModel::setupBackend(const QString& family)
 
         if (auto* flex = dynamic_cast<FlexBackend*>(m_backend.get())) {
             flex->setCommandSink([this](const QString& cmd){ sendCommand(cmd); });
+            // Relayed amplifier / tuner verbs keep the radio's answer: a refusal
+            // is shown, not dropped (the TGXL Tune that did nothing).
+            flex->setReplyCommandSink([this](const QString& cmd, std::function<void(int, const QString&)> reply) {
+                qCDebug(lcProtocol) << "RadioModel::sendCommand:" << cmd
+                         << "connected:" << isConnected() << "wan:" << (m_wanConn != nullptr);
+                sendCmd(cmd, [reply](int code, const QString& body) { reply(code, body); });
+            });
+            connect(flex, &FlexBackend::relayedCommandRefused, this,
+                    [this](const QString& verb, int code, const QString& message) {
+                qCWarning(lcProtocol).noquote() << "RadioModel: the radio refused" << verb
+                    << QStringLiteral("0x%1").arg(code, 8, 16, QLatin1Char('0')) << message;
+                emit geniusCommandRefused(verb.startsWith(QLatin1String("amp.")) ? QStringLiteral("amp")
+                                                                                 : QStringLiteral("tuner"),
+                                          message.isEmpty() ? QStringLiteral("code 0x%1").arg(code, 8, 16, QLatin1Char('0'))
+                                                            : message);
+            });
             flex->setTxCommandSink([this](const QString& cmd, const TxCoordinator::Command& fence) {
                 sendTxKeyingCommand(cmd, fence);
             });

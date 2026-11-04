@@ -7,6 +7,7 @@
 #include <QDateTime>
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QPointer>
 #include <QThread>
 #include <QVersionNumber>
 
@@ -130,6 +131,11 @@ FlexBackend::~FlexBackend()
 void FlexBackend::setCommandSink(std::function<void(const QString&)> sink)
 {
     m_sink = std::move(sink);
+}
+
+void FlexBackend::setReplyCommandSink(std::function<void(const QString&, std::function<void(int, const QString&)>)> sink)
+{
+    m_replySink = std::move(sink);
 }
 
 void FlexBackend::setFirmwareVersionProvider(std::function<QString()> provider)
@@ -968,7 +974,16 @@ void FlexBackend::invokeExtension(const QString& ns, const QString& verb,
         return;
     }
 
-    send(cmd);
+    if (m_replySink) {
+        QPointer<FlexBackend> self(this);
+        const QString v = verb;
+        m_replySink(cmd, [self, v](int code, const QString& body) {
+            if (code != 0 && self)
+                emit self->relayedCommandRefused(v, code, body);
+        });
+    } else {
+        send(cmd);
+    }
     // Fire-and-forget on the wire: the real device state returns asynchronously
     // via the amplifier/tgxl status decode. Acknowledge dispatch so an awaiting
     // caller (requestId != 0) completes; our own RadioModel routes pass 0.

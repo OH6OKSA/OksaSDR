@@ -44,6 +44,11 @@ public:
     // Where the core verbs emit their SmartSDR command strings — RadioModel's
     // existing sendCommand() funnel, so verbs reuse the one wire-write path.
     void setCommandSink(std::function<void(const QString&)> sink);
+    // The amplifier / tuner verbs the radio relays to a 4O3A device (amp.operate,
+    // tuner.operate, tuner.bypass, tuner.autotune) go through THIS sink when set,
+    // with a reply callback, so a refusal (e.g. 5000003C "Tuner on ANT1:PORTA but
+    // TX antenna is ANT1") reaches the operator instead of vanishing.
+    void setReplyCommandSink(std::function<void(const QString&, std::function<void(int, const QString&)>)> sink);
     // Primary keying verbs use an operation-fenced writer, never the generic
     // command sink. The bool distinguishes key-on from cleanup, not authority.
     // Trusted engine composition supplies the original operation at dispatch.
@@ -207,6 +212,11 @@ public:
     void decodeProfileStatus(const QString& profileType, const QString& rawBody);
     void decodeProfileFlags(const QMap<QString, QString>& kvs);
 
+signals:
+    // A relayed amplifier / tuner verb the radio refused: the verb, the
+    // radio's code and its message.
+    void relayedCommandRefused(const QString& verb, int code, const QString& message);
+
 private:
     void send(const QString& cmd);
     void sendTx(const QString& cmd, const TxCoordinator::Command& command);
@@ -218,6 +228,7 @@ private:
     PanadapterStream* m_panStream{nullptr};     // owned; lives on m_networkThread
     QThread*          m_networkThread{nullptr}; // owned (this-parented)
     std::function<void(const QString&)> m_sink;
+    std::function<void(const QString&, std::function<void(int, const QString&)>)> m_replySink;
     std::function<void(const QString&, const TxCoordinator::Command&)> m_txSink;
     std::function<void(const QString&)> m_sliceSink;
     std::function<QString()> m_modelProvider;

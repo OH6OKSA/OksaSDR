@@ -105,6 +105,24 @@ Popup {
         font.pixelSize: 14
         Layout.topMargin: Theme.spacing / 2
     }
+    // One device's section on the Amp tab: a rule above and the name large
+    // and bold, so RF-KIT, Power Genius and Tuner Genius read as separate
+    // blocks (as a small dim Heading they ran together, build 152).
+    component DeviceHeading: ColumnLayout {
+        property alias text: deviceName.text
+        Layout.fillWidth: true
+        Layout.topMargin: Theme.spacing
+        spacing: Theme.spacing / 2
+        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: Theme.textDim; opacity: 0.5 }
+        Label {
+            id: deviceName
+            color: Theme.text
+            font.pixelSize: 19
+            font.bold: true
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+        }
+    }
     component Info: RowLayout {
         property string label
         property string value
@@ -1222,7 +1240,7 @@ Popup {
                 // device ----
                 ColumnLayout {
                     spacing: Theme.spacing / 2
-                    Heading { text: qsTr("RF-KIT RF2K-S") }
+                    DeviceHeading { text: qsTr("RF-KIT RF2K-S") }
                     TextSetting {
                         objectName: "ampAddress"
                         label: qsTr("Address  (%1)").arg(Engine.amp.address || qsTr("not set"))
@@ -1292,17 +1310,21 @@ Popup {
                             readonly property var d: modelData.d
                             Layout.fillWidth: true
                             spacing: Theme.spacing / 2
-                            Heading { text: modelData.name }
+                            DeviceHeading { text: modelData.name }
                             Label {
                                 objectName: modelData.id + "SetupState"
                                 Layout.fillWidth: true
                                 text: !d.present ? qsTr("Not found: the radio reports none, and no address is set.")
                                     : d.direct ? (d.radio ? qsTr("Found by the radio, and read directly at %1.").arg(d.ip)
                                                           : qsTr("Read directly at %1 (the radio does not report it).").arg(d.ip))
-                                    : d.authBlocked ? qsTr("At %1 it asks for its remote code: enter it below.").arg(d.ip)
+                                    // Which code, where it is set and why it is asked: "its
+                                    // remote code" alone left testers guessing (build 152).
+                                    : d.authBlocked && /rejected|Invalid/.test(d.linkError || "")
+                                        ? qsTr("%1 did not accept that remote code. Enter the Authorization code set in the device's own utility (its Network settings) under Remote code below, then Save.").arg(d.ip)
+                                    : d.authBlocked ? qsTr("%1 asks for a remote code: this device reaches it from outside its own network (a VPN or the internet). Enter the Authorization code set in the device's own utility (its Network settings) under Remote code below, then Save. Until then it works through the radio only.").arg(d.ip)
                                     : !d.ip ? qsTr("Through the radio only: it reports no address for it. Enter the device's own address below to read it directly too.")
                                     : d.connecting ? qsTr("Connecting to %1…").arg(d.ip)
-                                    : d.linkError ? qsTr("Through the radio only; %1 not reached directly (%2).").arg(d.ip || "–").arg(d.linkError)
+                                    : d.linkError ? qsTr("Through the radio only: %1 not reached directly (%2). Standby / Operate, power and SWR work through the radio (over SmartLink too); the supply, temperatures, fan and relays need the station's network or a VPN.").arg(d.ip || "–").arg(d.linkError)
                                     : qsTr("Through the radio.")
                                 color: d.direct ? "#00cc66" : d.authBlocked ? Theme.transmit : Theme.textDim
                                 font.pixelSize: 13
@@ -1353,9 +1375,9 @@ Popup {
                             TextSetting {
                                 objectName: modelData.id + "AuthCode"
                                 visible: !!d.authBlocked
-                                label: qsTr("Remote code")
+                                label: qsTr("Remote code (the device's Authorization code)")
                                 current: ""
-                                hint: qsTr("As set in the device's utility")
+                                hint: qsTr("The code set in the device's utility")
                                 upper: false
                                 onSaved: (t) => Engine.setGeniusSetting(modelData.id, "authCode", t)
                             }

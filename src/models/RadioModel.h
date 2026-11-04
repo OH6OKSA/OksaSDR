@@ -1287,6 +1287,9 @@ signals:
     // "Cannot transmit since another client is transmitting or sending a
     // CW/CWX message". Without it the key just stays silent.
     void cwKeyRefused(const QString& message);
+    // The radio refused a relayed 4O3A verb: device "amp" or "tuner", and the
+    // radio's message (e.g. "Tuner on ANT1:PORTA but TX antenna is ANT1").
+    void geniusCommandRefused(const QString& device, const QString& message);
     // Accepted local PTT intent, including re-engage during a deferred tail.
     // Not radio readback: never use this to publish observed transmit state.
     void localTransmitEngaged();

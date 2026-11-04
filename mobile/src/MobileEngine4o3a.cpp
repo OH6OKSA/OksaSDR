@@ -166,6 +166,29 @@ void MobileEngine::setup4o3a()
         if (m_connectionState == QLatin1String("connected")) connect4o3a();
         else if (m_connectionState == QLatin1String("idle")) disconnect4o3a();
     });
+    // The direct links poll fast from the moment the radio keys (tune too), as
+    // the desktop does, not one 250 ms receive poll later; the devices' own
+    // ptt fields drop the rate again.
+    connect(&rm.transmitModel(), &TransmitModel::transmittingChanged, this, [this](bool on) {
+        if (!on) return;
+        if (m_tgxlConn) m_tgxlConn->setTransmitting(true);
+        if (m_pgxlConn) m_pgxlConn->setTransmitting(true);
+    });
+    connect(&rm.tunerModel(), &TunerModel::stateChanged, this, [this, &rm] {
+        if (rm.tunerModel().isTuning() && m_tgxlConn) m_tgxlConn->setTransmitting(true);
+    });
+    // The radio's own refusal of a relayed command, word for word: a Tune or
+    // Operate that did nothing now says why.
+    connect(&rm, &RadioModel::geniusCommandRefused, this, [this](const QString& device, const QString& message) {
+        if (device == QLatin1String("amp")) {
+            m_pgxlPending = false;
+            m_pgxlNotice = tr("The radio refused it: %1").arg(message);
+            emit pgxlChanged();
+        } else {
+            m_tgxlNotice = tr("The radio refused it: %1").arg(message);
+            emit tgxlChanged();
+        }
+    });
     connect(&rm.tunerModel(), &TunerModel::relayedCommandRefused, this, [this](const QString&) {
         m_tgxlNotice = tr("The tuner takes Operate and Bypass only through the radio; it is reached by its address only.");
         emit tgxlChanged();
