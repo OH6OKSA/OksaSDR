@@ -1302,12 +1302,17 @@ Popup {
                     }
                     // 4O3A's amplifier and tuner: found by the radio, read
                     // through it and directly (MobileEngine4o3a.cpp).
+                    // A fixed model, the live state read in the delegate: with the
+                    // state maps in the model every telemetry frame (4 Hz, 60 Hz
+                    // keyed) rebuilt both rows, so a tap on On landed on a button
+                    // already replaced and the address field lost its typing (Ben
+                    // Morris, build 152: On took continuous tapping).
                     Repeater {
-                        model: [{ id: "pgxl", name: qsTr("4O3A Power Genius XL"), d: Engine.pgxl, port: 9008 },
-                                { id: "tgxl", name: qsTr("4O3A Tuner Genius XL"), d: Engine.tgxl, port: 9010 }]
+                        model: [{ id: "pgxl", name: qsTr("4O3A Power Genius XL"), port: 9008 },
+                                { id: "tgxl", name: qsTr("4O3A Tuner Genius XL"), port: 9010 }]
                         delegate: ColumnLayout {
                             required property var modelData
-                            readonly property var d: modelData.d
+                            readonly property var d: modelData.id === "pgxl" ? Engine.pgxl : Engine.tgxl
                             Layout.fillWidth: true
                             spacing: Theme.spacing / 2
                             DeviceHeading { text: modelData.name }

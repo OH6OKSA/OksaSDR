@@ -319,14 +319,22 @@ ColumnLayout {
         TextMetrics { id: tunerLabelMetrics; font.pixelSize: 15; text: qsTr("Antenna") }
         // The relays, a step at a time (the direct link only).
         Repeater {
-            model: genius.t.direct ? [{ r: 0, l: "C1", v: genius.t.relayC1 }, { r: 1, l: "L", v: genius.t.relayL }, { r: 2, l: "C2", v: genius.t.relayC2 }] : []
+            // Fixed rows, the values read live (the values in the model
+            // rebuilt the rows on every tuner frame, 60 Hz keyed, and a − / +
+            // press could land on a row already replaced).
+            // A count, not an array: the same 3 on every frame leaves the rows
+            // alone (a new array each time would rebuild them).
+            model: genius.t.direct ? 3 : 0
             delegate: RowLayout {
-                required property var modelData
+                required property int index
+                readonly property var modelData: [{ r: 0, l: "C1" }, { r: 1, l: "L" }, { r: 2, l: "C2" }][index]
+                readonly property int v: index === 0 ? (genius.t.relayC1 || 0)
+                                       : index === 1 ? (genius.t.relayL || 0) : (genius.t.relayC2 || 0)
                 Layout.fillWidth: true
                 spacing: 4
                 Label { text: modelData.l; color: Theme.text; font.pixelSize: 15; Layout.preferredWidth: Math.ceil(tunerLabelMetrics.advanceWidth) + 4 }
-                ProgressBar { from: 0; to: 255; value: modelData.v; Layout.fillWidth: true }
-                Label { text: modelData.v; color: Theme.text; font.pixelSize: 15; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 36 }
+                ProgressBar { from: 0; to: 255; value: v; Layout.fillWidth: true }
+                Label { text: v; color: Theme.text; font.pixelSize: 15; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 36 }
                 AppButton {
                     objectName: "tgxlRelay" + modelData.l + "Down"
                     text: "−"
