@@ -314,7 +314,7 @@ shot tab-genius
 close
 wait 600
 ' \
-        "radiostatus amplifier 0x00000001 model=PowerGeniusXL ip=$glan serial_num=MOCK ant=ANT1:PORTA,ANT2:NONE state=IDLE" \
+        "radiostatus amplifier 0x00000001 model=PowerGeniusXL ip=$glan serial_num=MOCK ant=ANT1:PORTA,ANT2:NONE state=STANDBY" \
         "radiostatus amplifier 0x00000002 model=TunerGeniusXL ip=$glan serial_num=MOCKT operate=1 bypass=0 tuning=0 relayC1=44 relayL=12 relayC2=8 antA=0 one_by_three=1 ant=ANT1,ANT2" \
         | plan genius 440x956 "${src[@]}"
     if [ "$DRY" = 0 ]; then

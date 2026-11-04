@@ -599,7 +599,7 @@ is a touch target with its choices behind it:
 | Lock | Tuning lock open / locked | Lock or unlock tuning (flashes when a tune is refused) |
 | Dot | Record: hollow, red and blinking while recording | Record this slice's receive audio in the radio (tap again to stop) |
 | Triangle | Play: dim until something is recorded, filled while playing | Play the recording back; with PTT held during playback it goes on the air (the radio's quick record, as SmartSDR's REC / PLAY) |
-| **SPLIT** | Split on (amber) or off (grey); shown while the radio can transmit and has a slice free for it | Start or end [split](#6-split); hold to pick the offset |
+| **SPLIT** | Split on (amber) or off (grey); shown while the radio can transmit and has a slice free for it (always with split by XIT) | Start or end [split](#6-split); hold to pick the offset |
 | **QSK** | In CW modes: break-in on (bright) or off | — |
 | **NB NR ANF NRL …** | Every DSP the radio offers, bright when on (on an iPhone the rarer ones only while on) | Filters and DSP |
 
@@ -894,6 +894,14 @@ offers **Off**.
 
 ![Split offset chooser](manual/split.jpg)
 
+**Split by XIT** (Controls → TX → Split *XIT*): no second slice, for a
+radio whose slices other programs hold (as a Maestro user splits). **SPLIT**
+then turns on the XIT of the slice you are on: it transmits 1 kHz up in CW,
+5 kHz in voice, and keeps receiving where it is. Hold SPLIT for **+1**,
+**+2** or **+5 kHz** (XIT reaches ±9.999 kHz). The **XIT** row on the RX
+tab shows the offset and moves it; SPLIT again (or XIT off there) ends it.
+*Second slice* is the way above.
+
 ## 7. Transmitting: PTT, KEY and TUNE
 
 - **PTT** — hold to transmit from the device's microphone; release to stop.
@@ -955,7 +963,9 @@ offers **Off**.
   the tabs (press and hold there). PTT, the paddles and the display stay
   in use while it is open; ✕ or the button again closes it, and so does
   opening the controls. It is the same set F1-F12 send on a keyboard, and
-  it never takes the keyboard.
+  it never takes the keyboard. With the CW decoder on (or RTTY / PSK
+  received) its latest two lines show at the top of the panel, since the
+  panel covers the strip at the top of the waterfall.
 
   ![The Macros panel in CW](manual/macros.jpg)
 
@@ -1041,8 +1051,8 @@ seven.
   (on: the radio sends the audio of a digital-mode program on a computer
   instead of the microphone; left on after FT8, the microphone goes
   nowhere), **PTT**
-  (*Hold to talk* or *Tap on / off*) and the transmit filter (low and high
-  cut). On a FLEX-8000 or Aurora, **APD** *Off* / *On*: adaptive
+  (*Hold to talk* or *Tap on / off*), **Split** (*Second slice* or
+  *XIT*, [6](#6-split)) and the transmit filter (low and high cut). On a FLEX-8000 or Aurora, **APD** *Off* / *On*: adaptive
   pre-distortion, where the radio measures its own transmission and
   pre-distorts it so the amplifier's IMD falls; the line under it says
   whether it is correcting (*active*) or learns from the next transmission
@@ -1570,22 +1580,26 @@ seven.
   the TGXL's 9010; on the same network or your VPN) for more. A line under
   each name says how it is read.
   - **Power Genius XL**: its state (*OPERATE*, *STANDBY*, *TRANSMIT A* /
-    *B*, a fault), **Forward** (0-2000 W, red from 1500), **SWR** (red from
+    *B*, a fault), **Forward** (0-100 W, past 100 W 0-2000 W, red from
+    1500), **SWR** (red from
     2.5, – below 5 W) and **Drive** (the radio's power into it, 0-100 W),
     current, supply (the PA's volts and the mains), PA and harmonic-load
     temperatures, the bands and bias of its ports A and B, an alert when it
     shows one; **Mode** *Standby* / *Operate* and **Fan** *Standard* /
     *Contest* / *Broadcast* (until the amplifier restarts).
   - **Tuner Genius XL**: its state (*OPERATE*, *BYPASS*, *STANDBY*,
-    *TUNING*), forward power and SWR, **Mode** *Standby* / *Bypass* /
-    *Operate*, **Tune** (it keys the radio for its tune carrier itself, and
+    *TUNING*), forward power (0-100 W as for the amplifier, so a tune
+    carrier reads) and SWR, **Mode** *Standby* / *Bypass* / *Operate*, **Tune** (it keys the radio for its tune carrier itself, and
     keys or holds its amplifier as its own utility says; *Stop tuning*
     ends it), the relays **C1**, **L** and **C2** a step at a time with − /
     +, and on a 1x3 model **Antenna** 1-3; an alert such as *Tuned SWR
     1.13:1*.
 
   The buttons change a device only with **Control** on in Radio Setup ›
-  Amp, and each change asks first (stopping a tune does not). The devices
+  Amp, and each change asks first (stopping a tune does not). A command
+  the radio refuses says *The radio refused it:* with the radio's own
+  words. A tuner the radio does not report, reached at its address alone,
+  takes Standby / Bypass / Operate directly. The devices
   guard their own SWR, power and temperature, and the radio waits for the
   amplifier before it transmits; the tuner's relays and antenna switch wait
   while the radio transmits.
@@ -1721,8 +1735,10 @@ radio.
   reports it (it shows in the empty field); enter one when the radio
   reports none or your VPN shows the device at another address, and
   *Use the address the radio reports* (or *Clear the address*) goes back —
-  and **Remote code** when the device asks for one (as set in its
-  utility's Remote settings; kept in this device's secure store once the
+  and **Remote code** when the device asks for one: the device's
+  *Authorization code* (set in its utility's Network settings), asked when
+  this device reaches it from outside its own network (a VPN or the
+  internet; until then it works through the radio only; kept in this device's secure store once the
   device has accepted it). Away from home the device is reached over a VPN
   that routes your station's network, e.g. WireGuard or a Tailscale subnet
   router (a PC, Raspberry Pi or Apple TV at the station sharing its
