@@ -434,6 +434,20 @@ the page then says why, and the same question follows. To share the radio
 between stations, turn multiFLEX on in SmartSDR's Radio Setup. (Reported
 by Juho Kontio, whose app crashed when the radio refused it.)
 
+**Check the connection.** When a radio does not connect, **Why? Check the
+connection** (or *Check the connection* any time) goes through the way to
+the radio last tried, step by step, and says which step fails and what to
+do: this device's network; a host name looked up; where the radio is from
+here (this network, another private network that needs a route or a VPN
+on, a Tailscale address, the internet with its port forwards); the radio's
+own port (TCP 4992): answered, refused, or no answer (wrong network, the
+VPN off, a firewall; on an iPhone or iPad also the Local Network
+permission); and on an answer what the radio says: its firmware, the
+stations on it and whether multiFLEX is on. For a SmartLink radio: signed
+in, the radio listed and its status, its station slots. Nothing on the
+radio is changed: the check reads and closes without connecting a station.
+Each step also goes into the log.
+
 The top row shows the app version, **Manual** and **Log** (see
 [Reporting a problem](#12-reporting-a-problem)).
 
@@ -1125,7 +1139,12 @@ seven.
     offered above the memories (*Call*) and on the Log tab (*Heard in CW*).
 - **View** — **Band plan** (the strip at the foot of the spectrum: *Off*,
   *ARRL (US)*, *IARU Region 1 / 2 / 3*, *RAC (Canada)* or *SSA
-  (Sweden)*), **Spots** (shown or hidden) and the **DX cluster**,
+  (Sweden)*), **Text size** (*System* follows the system's text size —
+  iOS Settings › Display & Brightness › Text Size, Android's font size —
+  or a fixed *100 % / 115 % / 130 %*; the panels', dialogs' and setup
+  pages' text grows, the operating screen's dense controls and the
+  buttons keep their size so they still fit; the app stops at 135 %),
+  **Spots** (shown or hidden) and the **DX cluster**,
   2D waterfall or 3D, waterfall levels, spectrum range, 3D floor, smoothing
   and gain.
   - **Spot filters** — which spots show: *All*, *CW*, *Phone* or *Digital*
@@ -1592,8 +1611,18 @@ seven.
     carrier reads) and SWR, **Mode** *Standby* / *Bypass* / *Operate*, **Tune** (it keys the radio for its tune carrier itself, and
     keys or holds its amplifier as its own utility says; *Stop tuning*
     ends it), the relays **C1**, **L** and **C2** a step at a time with − /
-    +, and on a 1x3 model **Antenna** 1-3; an alert such as *Tuned SWR
-    1.13:1*.
+    +, on a 1x3 model **Antenna** 1-3, and on an SO2R model **Channel**
+    *A* / *B* (the radio port its meters and Tune belong to, with each
+    side's frequency); an alert such as *Tuned SWR 1.13:1*.
+  - **Antenna Genius** (at the address set in Radio Setup › Amp): each
+    radio port's band, RX and TX antenna, *auto* or *manual*, *TX* while
+    it transmits, *inhibited*; and the antennas the Antenna Genius allows
+    on that band as buttons (one only for receive marked *(RX)*). A tap
+    switches the port to it (asked first): receive, and transmit where the
+    antenna may transmit on the band (else the TX antenna stays). Not
+    while that port or the radio transmits. OksaSDR sends the Antenna
+    Genius nothing else: it and a Tuner Genius keep their own antenna for
+    each band.
 
   The buttons change a device only with **Control** on in Radio Setup ›
   Amp, and each change asks first (stopping a tune does not). A command
@@ -1748,6 +1777,11 @@ radio.
   the Address, and the Remote code set (the device then asks for it).
   SmartLink carries only what the radio relays (state, power, SWR,
   Operate / Standby).
+  **4O3A Antenna Genius**: the radio does not report one, so it is read
+  at the **Address** set here (its own, TCP 9007; on the station's network
+  or a VPN), with its state, name and version; **Control the antenna
+  switch** (off until turned on: the Amp tab's antenna buttons) and its
+  **Remote code** when it asks, as for the PGXL and TGXL.
 
   ![Radio Setup › Amp](manual/setup-amp.jpg)
 - **USB** — USB-serial (FTDI) cables in the radio's USB ports, as
@@ -1858,7 +1892,11 @@ your device model and what you were doing. After a crash, open the app
 again: the log is also kept in a file as the app runs, and Log shows *The
 previous run ended in a crash* in red with its own **Share** and **Copy**:
 that log ends with the crash and where in the app it happened. (Juho
-Kontio's crash left no log to send.) The log header shows the app
+Kontio's crash left no log to send.) With a Power Genius XL, Tuner Genius
+XL or Antenna Genius the log also holds what the radio and the devices
+report of themselves (a remote code hidden), the meters they make on the
+radio and each transmission's highest readings: send it after a moment on
+Controls › Amp. The log header shows the app
 version and build. **Clear** empties the log, so the next copy starts from
 a known point. **Developer link** (with a PC address) is only for the
 developer's own devices: leave it off.

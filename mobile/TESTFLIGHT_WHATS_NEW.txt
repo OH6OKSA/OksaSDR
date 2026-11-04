@@ -9,12 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- A SmartLink crash at Connect fixed (thanks Juho Kontio). Another station on the radio: the app names it and asks to disconnect it or cancel.
-- The log survives a crash: Log then shows the previous run's log with Share and Copy.
-- PGXL / TGXL (thanks Ben Morris): Control On no longer takes many taps. Build 152 moved the wrong TGXL relays (L moved C1, C2 moved L): avoid them there; fixed to 4O3A's protocol. The 1x3 antenna switch, clearer setup texts, the radio's refusals shown, 0-100 W bars for a tune.
-- Split by XIT, no second slice: Controls > TX > Split (thanks Sebastian DG5CST).
-- The CW / RTTY decoder's text in the Macros panel (thanks Tyler K0OTC).
-- From build 152: PGXL / TGXL (experimental), APD, the Power meter by your radio (thanks Sloan Davis).
+- Check the connection: when a radio does not connect, the Connect page says which step fails (network, VPN or route, the radio's port, station slots, SmartLink) and what to do.
+- Text size follows the system's (or View > Text size): panels, dialogs and setup grow; the operating screen keeps its size.
+- Antenna Genius (thanks Ben Morris): its ports' band and antennas on the Amp tab, chosen there with Control on. An SO2R Tuner Genius XL's channel A / B.
+- PGXL safer writes per 4O3A's documents; the devices' reports and meters go into the log you send.
+- From build 153: the SmartLink crash fixed (thanks Juho Kontio), split by XIT (thanks Sebastian DG5CST), the decoder in Macros (thanks Tyler K0OTC), PGXL / TGXL fixes.
 
 RECENT (builds 94–150)
 - RF2K-S control and Tune, the amp on every meter (thanks Sebastian DG5CST, Jeff Stinger); Macros by PTT (thanks Tyler K0OTC).
@@ -35,7 +34,7 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - The FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: Split by XIT, the decoder in Macros.
+- New: Check the connection on a radio that does not connect; View > Text size.
 - Worked before from Wavelog, the QRZ.com Logbook or a shared ADIF file in iCloud Drive.
 - The eSSB tab at low power with a second receiver. [TX]
 
