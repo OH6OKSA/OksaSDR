@@ -38,9 +38,9 @@ ColumnLayout {
             visible: cs.toggleKey.length === 0
             text: cs.title
             color: Theme.textDim
-            font.pixelSize: 13
+            font.pixelSize: Theme.px(13)
             elide: Text.ElideRight
-            Layout.preferredWidth: 64
+            Layout.preferredWidth: Theme.px(64)
         }
         FineSlider {
             id: csSlider
@@ -53,8 +53,8 @@ ColumnLayout {
         Label {
             text: (csSlider.shown > 0 && cs.from < 0 ? "+" : "") + csSlider.shown.toFixed(0) + cs.unit
             color: Theme.textDim
-            font.pixelSize: 13
-            Layout.preferredWidth: 52
+            font.pixelSize: Theme.px(13)
+            Layout.preferredWidth: Theme.px(52)
             horizontalAlignment: Text.AlignRight
         }
     }
@@ -65,7 +65,7 @@ ColumnLayout {
         text: Engine.cwMode ? qsTr("eSSB processes speech from this device's microphone; CW does not use it.")
                             : qsTr("eSSB processes this device's microphone while it transmits.")
         color: Theme.textDim
-        font.pixelSize: 15
+        font.pixelSize: Theme.px(15)
         wrapMode: Text.WordWrap
     }
     ColumnLayout {
@@ -76,7 +76,7 @@ ColumnLayout {
             Layout.fillWidth: true
             text: qsTr("This device's microphone: processing before it is sent")
             color: Theme.textDim
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
             wrapMode: Text.WordWrap
         }
         ChainSlider { title: qsTr("Gate"); toggleKey: "gateOn"; key: "gateThreshold"; from: -80; to: 0 }
@@ -89,7 +89,7 @@ ColumnLayout {
                 Layout.preferredWidth: 64
                 onClicked: Engine.setTxChain("eqOn", !checked)
             }
-            Label { text: qsTr("Low cut"); color: Theme.textDim; font.pixelSize: 13 }
+            Label { text: qsTr("Low cut"); color: Theme.textDim; font.pixelSize: Theme.px(13) }
             Repeater {
                 model: [0, 100, 150, 200, 300]
                 delegate: AppButton {
@@ -109,7 +109,7 @@ ColumnLayout {
         ChainSlider { title: qsTr("Comp"); toggleKey: "compOn"; key: "compThreshold"; from: -60; to: 0 }
         RowLayout {
             Layout.fillWidth: true
-            Label { text: qsTr("Ratio"); color: Theme.textDim; font.pixelSize: 13; Layout.preferredWidth: 64 }
+            Label { text: qsTr("Ratio"); color: Theme.textDim; font.pixelSize: Theme.px(13); Layout.preferredWidth: Theme.px(64) }
             Repeater {
                 model: [2, 3, 4, 8]
                 delegate: AppButton {
@@ -126,8 +126,8 @@ ColumnLayout {
                 text: Engine.radioTransmitting && Engine.txChain.compOn
                       ? Engine.compReductionDb.toFixed(0) + " dB" : ""
                 color: Theme.warning
-                font.pixelSize: 13
-                Layout.preferredWidth: 52
+                font.pixelSize: Theme.px(13)
+                Layout.preferredWidth: Theme.px(52)
                 horizontalAlignment: Text.AlignRight
             }
         }

@@ -72,11 +72,11 @@ ColumnLayout {
         property string label
         property string value
         Layout.fillWidth: true
-        Label { text: parent.label; color: Theme.textDim; font.pixelSize: 15; Layout.fillWidth: true }
+        Label { text: parent.label; color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
         Label {
             text: parent.value
             color: Theme.text
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
             font.bold: true
             horizontalAlignment: Text.AlignRight
             elide: Text.ElideRight
@@ -91,7 +91,7 @@ ColumnLayout {
             Layout.fillWidth: true
             text: (ampTab.a.device || "RF2K-S") + (ampTab.a.name ? "  " + ampTab.a.name : "")
             color: Theme.text
-            font.pixelSize: 17
+            font.pixelSize: Theme.px(17)
             font.bold: true
             elide: Text.ElideRight
         }
@@ -110,7 +110,7 @@ ColumnLayout {
                 anchors.centerIn: parent
                 text: ampTab.a.operate || ""
                 color: ampTab.a.operate === "OPERATE" ? "white" : Theme.text
-                font.pixelSize: 14
+                font.pixelSize: Theme.px(14)
                 font.bold: true
             }
         }
@@ -127,7 +127,7 @@ ColumnLayout {
             return qsTr("Read while connected to a radio.")
         }
         color: ampTab.reading ? Theme.textDim : (ampTab.a.state === "failed" ? Theme.transmit : Theme.textDim)
-        font.pixelSize: 13
+        font.pixelSize: Theme.px(13)
         wrapMode: Text.Wrap
     }
 
@@ -208,7 +208,7 @@ ColumnLayout {
         visible: !!ampTab.a.ifaceError
         text: qsTr("Amplifier error: %1").arg(ampTab.a.ifaceError || "")
         color: Theme.transmit
-        font.pixelSize: 15
+        font.pixelSize: Theme.px(15)
         font.bold: true
         wrapMode: Text.Wrap
     }
@@ -225,7 +225,7 @@ ColumnLayout {
         RowLayout {
             Layout.fillWidth: true
             spacing: 4
-            Label { text: qsTr("Mode"); color: Theme.textDim; font.pixelSize: 15; Layout.fillWidth: true }
+            Label { text: qsTr("Mode"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
             AppButton {
                 objectName: "ampStandby"
                 text: qsTr("Standby")
@@ -248,7 +248,7 @@ ColumnLayout {
         RowLayout {
             Layout.fillWidth: true
             spacing: 4
-            Label { text: qsTr("Antenna"); color: Theme.textDim; font.pixelSize: 15; Layout.fillWidth: true }
+            Label { text: qsTr("Antenna"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
             Repeater {
                 // A fixed model: the buttons stay while the readings change.
                 model: 4
@@ -293,7 +293,7 @@ ColumnLayout {
         RowLayout {
             Layout.fillWidth: true
             spacing: 4
-            Label { text: qsTr("Tuner"); color: Theme.textDim; font.pixelSize: 15; Layout.fillWidth: true }
+            Label { text: qsTr("Tuner"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
             AppButton {
                 objectName: "ampTune"
                 text: ampTab.a.tune === "carrier" ? qsTr("Stop  %1 s").arg(ampTab.a.tuneLeft)
@@ -331,7 +331,7 @@ ColumnLayout {
                 color: ampTab.a.tune === "carrier" ? Theme.warning
                      : ampTab.a.pending || ampTab.transmitting ? Theme.textDim
                      : ampTab.a.resultOk ? "#00cc66" : Theme.transmit
-                font.pixelSize: 13
+                font.pixelSize: Theme.px(13)
                 wrapMode: Text.Wrap
             }
         }
@@ -344,7 +344,7 @@ ColumnLayout {
               ? qsTr("Each change asks you first and none works while the radio transmits; the tab shows only what the amplifier reads back. Tune sends the carrier the amplifier's tuner needs; its Tune is pressed on the amplifier's own screen.")
               : qsTr("Read only: nothing is sent that changes the amplifier. Control in Radio Setup › Amp adds Operate / Standby, the antenna and the error reset.")
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
 
@@ -386,7 +386,7 @@ ColumnLayout {
                     : confirm.action === "tune" ? qsTr("Send a tune carrier for the amplifier?")
                     : qsTr("Reset the amplifier's error?")
                 color: Theme.text
-                font.pixelSize: 18
+                font.pixelSize: Theme.px(18)
                 font.bold: true
                 wrapMode: Text.Wrap
             }
@@ -402,7 +402,7 @@ ColumnLayout {
                       ? qsTr("The amplifier goes to STANDBY and the radio transmits a TUNE carrier at %1 W for up to 20 s, also while you open the amplifier's own screen (VNC) to press its Tune. It stops by itself once the amplifier has tuned, or after 20 s.").arg(Engine.tunePower)
                       : qsTr("Clear the RF-KIT's error state? Make sure the cause of the error has been resolved first.")
                 color: Theme.textDim
-                font.pixelSize: 15
+                font.pixelSize: Theme.px(15)
                 wrapMode: Text.Wrap
             }
             RowLayout {

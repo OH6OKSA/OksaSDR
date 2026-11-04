@@ -17,13 +17,13 @@ ColumnLayout {
         Label {
             text: qsTr("Callsign")
             color: Theme.textDim
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
         }
         Label {
             Layout.fillWidth: true
             text: Engine.callsign.length > 0 ? Engine.callsign : qsTr("not set (Setup → Radio)")
             color: Engine.callsign.length > 0 ? Theme.text : Theme.warning
-            font.pixelSize: 17
+            font.pixelSize: Theme.px(17)
             font.bold: true
         }
     }
@@ -33,7 +33,7 @@ ColumnLayout {
     // swapped paddles (set here or in Setup > Phone/CW).
     RowLayout {
         Layout.fillWidth: true
-        Label { text: qsTr("Key"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+        Label { text: qsTr("Key"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
         AppButton {
             text: qsTr("Straight key")
             checked: !Engine.cwPaddles
@@ -50,7 +50,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         visible: Engine.cwPaddles
-        Label { text: qsTr("Iambic"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+        Label { text: qsTr("Iambic"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
         AppButton {
             text: "A"
             checked: Engine.cwIambicMode === 0
@@ -81,7 +81,7 @@ ColumnLayout {
         Layout.fillWidth: true
         text: qsTr("Dit and dah take PTT's place; hold both for a squeeze. B adds one more element after a squeeze, A does not. Swap puts dah on the left.")
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
 
@@ -92,7 +92,7 @@ ColumnLayout {
         Layout.topMargin: Theme.spacing / 2
         text: qsTr("Paddles on a keyboard   (left key dit, right key dah)")
         color: Theme.textDim
-        font.pixelSize: 15
+        font.pixelSize: Theme.px(15)
         wrapMode: Text.WordWrap
     }
     RowLayout {
@@ -124,7 +124,7 @@ ColumnLayout {
             }
         }
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
 
@@ -139,7 +139,7 @@ ColumnLayout {
         Label {
             text: qsTr("Call")
             color: Theme.textDim
-            font.pixelSize: 12
+            font.pixelSize: Theme.px(12)
         }
         AppButton {
             visible: Engine.workedCall.length > 0
@@ -224,7 +224,7 @@ ColumnLayout {
             Layout.columnSpan: cwxRow.oneRow ? 1 : 3
             placeholderText: liveButton.checked ? qsTr("Type: each letter goes now") : qsTr("CW text to send")
             inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
-            font.pixelSize: 16
+            font.pixelSize: Theme.px(16)
             onAccepted: {
                 if (liveButton.checked) {
                     Engine.sendCwxChar(" ")
@@ -292,7 +292,7 @@ ColumnLayout {
         }
     }
 
-    Label { text: qsTr("Speed  %1 WPM").arg(Engine.cwSpeed); color: Theme.textDim; font.pixelSize: 15 }
+    Label { text: qsTr("Speed  %1 WPM").arg(Engine.cwSpeed); color: Theme.textDim; font.pixelSize: Theme.px(15) }
     FineSlider {
         accessibleName: qsTr("CW speed")
         Layout.fillWidth: true
@@ -302,7 +302,7 @@ ColumnLayout {
         value: Engine.cwSpeed
         onMoved: (v) => Engine.cwSpeed = Math.round(v)
     }
-    Label { text: qsTr("Pitch  %1 Hz").arg(Engine.cwPitch); color: Theme.textDim; font.pixelSize: 15 }
+    Label { text: qsTr("Pitch  %1 Hz").arg(Engine.cwPitch); color: Theme.textDim; font.pixelSize: Theme.px(15) }
     FineSlider {
         accessibleName: qsTr("CW pitch")
         Layout.fillWidth: true
@@ -347,7 +347,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         visible: Engine.cwDecoderEnabled
-        Label { text: qsTr("Sens"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+        Label { text: qsTr("Sens"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
         Slider {
             id: sensSlider
             Accessible.name: qsTr("CW decoder sensitivity")
@@ -361,7 +361,7 @@ ColumnLayout {
         Label {
             text: Math.round(sensSlider.value)
             color: Theme.textDim
-            font.pixelSize: 13
+            font.pixelSize: Theme.px(13)
             Layout.preferredWidth: 28
             horizontalAlignment: Text.AlignRight
         }
@@ -383,7 +383,7 @@ ColumnLayout {
                     text: Engine.cwMode ? (Engine.cwDecoderStats.length > 0 ? Engine.cwDecoderStats : qsTr("Listening…"))
                                         : qsTr("Decoder runs in CW mode")
                     color: Theme.textDim
-                    font.pixelSize: 13
+                    font.pixelSize: Theme.px(13)
                     Layout.fillWidth: true
                 }
                 AppButton {
@@ -398,7 +398,7 @@ ColumnLayout {
                 text: Engine.cwDecodedText
                 color: Theme.text
                 font.family: "monospace"
-                font.pixelSize: 14
+                font.pixelSize: Theme.px(14)
                 wrapMode: Text.WrapAnywhere
                 elide: Text.ElideLeft
                 verticalAlignment: Text.AlignBottom
@@ -425,7 +425,7 @@ ColumnLayout {
             Label {
                 text: qsTr("Memory M%1   ({CALL} = your callsign, {HIS} = the call being worked)").arg(memoryEditor.index + 1)
                 color: Theme.textDim
-                font.pixelSize: 14
+                font.pixelSize: Theme.px(14)
                 // From the popup's fixed width: wrapped, not past its edge.
                 Layout.preferredWidth: memoryEditor.width - 2 * memoryEditor.padding
                 wrapMode: Text.WordWrap
@@ -434,7 +434,7 @@ ColumnLayout {
                 id: memoryField
                 Accessible.name: qsTr("Memory M%1 text").arg(memoryEditor.index + 1)
                 Layout.fillWidth: true
-                font.pixelSize: 17
+                font.pixelSize: Theme.px(17)
                 inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
                 onAccepted: save.clicked()
             }

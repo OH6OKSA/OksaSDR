@@ -36,8 +36,8 @@ ColumnLayout {
         property string label
         property string value
         Layout.fillWidth: true
-        Label { text: parent.label; color: Theme.textDim; font.pixelSize: 15; Layout.fillWidth: true }
-        Label { text: parent.value; color: Theme.text; font.pixelSize: 15; font.bold: true; horizontalAlignment: Text.AlignRight }
+        Label { text: parent.label; color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+        Label { text: parent.value; color: Theme.text; font.pixelSize: Theme.px(15); font.bold: true; horizontalAlignment: Text.AlignRight }
     }
     component Chip: Rectangle {
         property string word
@@ -47,7 +47,7 @@ ColumnLayout {
         border.color: hot ? Theme.transmit : Theme.textDim
         implicitWidth: chipText.implicitWidth + 16
         implicitHeight: chipText.implicitHeight + 8
-        Label { id: chipText; anchors.centerIn: parent; text: parent.word; color: parent.hot ? "white" : Theme.text; font.pixelSize: 14; font.bold: true }
+        Label { id: chipText; anchors.centerIn: parent; text: parent.word; color: parent.hot ? "white" : Theme.text; font.pixelSize: Theme.px(14); font.bold: true }
     }
 
     // ================= Power Genius XL =================
@@ -60,7 +60,7 @@ ColumnLayout {
 
         RowLayout {
             Layout.fillWidth: true
-            Label { Layout.fillWidth: true; text: qsTr("Power Genius XL"); color: Theme.text; font.pixelSize: 17; font.bold: true; elide: Text.ElideRight }
+            Label { Layout.fillWidth: true; text: qsTr("Power Genius XL"); color: Theme.text; font.pixelSize: Theme.px(17); font.bold: true; elide: Text.ElideRight }
             // IDLE is OPERATE not keyed, as the amplifier's own panel says it.
             Chip {
                 objectName: "pgxlState"
@@ -74,7 +74,7 @@ ColumnLayout {
             Layout.fillWidth: true
             text: genius.link(genius.p, qsTr("The amplifier"))
             color: Theme.textDim
-            font.pixelSize: 13
+            font.pixelSize: Theme.px(13)
             wrapMode: Text.Wrap
         }
         Label {
@@ -83,7 +83,7 @@ ColumnLayout {
             Layout.fillWidth: true
             text: genius.p.alert || ""
             color: Theme.transmit
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
             font.bold: true
             wrapMode: Text.Wrap
         }
@@ -150,7 +150,7 @@ ColumnLayout {
         RowLayout {
             Layout.fillWidth: true
             spacing: 4
-            Label { text: qsTr("Mode"); color: Theme.textDim; font.pixelSize: 15; Layout.fillWidth: true }
+            Label { text: qsTr("Mode"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
             AppButton {
                 objectName: "pgxlStandby"
                 text: qsTr("Standby")
@@ -177,14 +177,14 @@ ColumnLayout {
             Layout.fillWidth: true
             text: qsTr("Standby / Operate go through the radio, and the radio does not report this amplifier: check its connection to the radio.")
             color: Theme.textDim
-            font.pixelSize: 13
+            font.pixelSize: Theme.px(13)
             wrapMode: Text.Wrap
         }
         RowLayout {
             visible: !!genius.p.canWriteFan
             Layout.fillWidth: true
             spacing: 4
-            Label { text: qsTr("Fan"); color: Theme.textDim; font.pixelSize: 15; Layout.fillWidth: true }
+            Label { text: qsTr("Fan"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
             Repeater {
                 model: [{ v: "STANDARD", l: qsTr("Standard") }, { v: "CONTEST", l: qsTr("Contest") }, { v: "BROADCAST", l: qsTr("Broadcast") }]
                 delegate: AppButton {
@@ -205,7 +205,7 @@ ColumnLayout {
                 : genius.p.pending ? qsTr("Waiting for the amplifier…") : ""
             visible: text.length > 0
             color: genius.p.notice ? Theme.warning : Theme.textDim
-            font.pixelSize: 13
+            font.pixelSize: Theme.px(13)
             wrapMode: Text.Wrap
         }
     }
@@ -223,7 +223,7 @@ ColumnLayout {
 
         RowLayout {
             Layout.fillWidth: true
-            Label { Layout.fillWidth: true; text: qsTr("Tuner Genius XL"); color: Theme.text; font.pixelSize: 17; font.bold: true }
+            Label { Layout.fillWidth: true; text: qsTr("Tuner Genius XL"); color: Theme.text; font.pixelSize: Theme.px(17); font.bold: true }
             Chip {
                 objectName: "tgxlState"
                 word: genius.t.tuning ? qsTr("TUNING") : !genius.t.operate ? qsTr("STANDBY") : genius.t.bypass ? qsTr("BYPASS") : qsTr("OPERATE")
@@ -234,7 +234,7 @@ ColumnLayout {
             Layout.fillWidth: true
             text: genius.link(genius.t, qsTr("The tuner"))
             color: Theme.textDim
-            font.pixelSize: 13
+            font.pixelSize: Theme.px(13)
             wrapMode: Text.Wrap
         }
         Label {
@@ -243,7 +243,7 @@ ColumnLayout {
             Layout.fillWidth: true
             text: genius.t.alert || ""
             color: Theme.warning
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
             font.bold: true
             wrapMode: Text.Wrap
         }
@@ -280,7 +280,7 @@ ColumnLayout {
         RowLayout {
             Layout.fillWidth: true
             spacing: 4
-            Label { text: qsTr("Mode"); color: Theme.textDim; font.pixelSize: 15; Layout.fillWidth: true }
+            Label { text: qsTr("Mode"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
             AppButton {
                 objectName: "tgxlStandby"
                 text: qsTr("Standby")
@@ -316,7 +316,7 @@ ColumnLayout {
         // One label column for the relays and the antenna row, so the bars
         // and the antenna buttons start at the same x and end under + (the
         // antenna buttons sat at their own widths, out of line, build 152).
-        TextMetrics { id: tunerLabelMetrics; font.pixelSize: 15; text: qsTr("Antenna") }
+        TextMetrics { id: tunerLabelMetrics; font.pixelSize: Theme.px(15); text: qsTr("Antenna") }
         // The relays, a step at a time (the direct link only).
         Repeater {
             // Fixed rows, the values read live (the values in the model
@@ -332,9 +332,9 @@ ColumnLayout {
                                        : index === 1 ? (genius.t.relayL || 0) : (genius.t.relayC2 || 0)
                 Layout.fillWidth: true
                 spacing: 4
-                Label { text: modelData.l; color: Theme.text; font.pixelSize: 15; Layout.preferredWidth: Math.ceil(tunerLabelMetrics.advanceWidth) + 4 }
+                Label { text: modelData.l; color: Theme.text; font.pixelSize: Theme.px(15); Layout.preferredWidth: Math.ceil(tunerLabelMetrics.advanceWidth) + 4 }
                 ProgressBar { from: 0; to: 255; value: v; Layout.fillWidth: true }
-                Label { text: v; color: Theme.text; font.pixelSize: 15; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 36 }
+                Label { text: v; color: Theme.text; font.pixelSize: Theme.px(15); horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 36 }
                 AppButton {
                     objectName: "tgxlRelay" + modelData.l + "Down"
                     text: "−"
@@ -355,7 +355,7 @@ ColumnLayout {
             visible: !!genius.t.antennaSwitch && !!genius.t.direct
             Layout.fillWidth: true
             spacing: 4
-            Label { text: qsTr("Antenna"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: Math.ceil(tunerLabelMetrics.advanceWidth) + 4 }
+            Label { text: qsTr("Antenna"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: Math.ceil(tunerLabelMetrics.advanceWidth) + 4 }
             Repeater {
                 model: 3
                 delegate: AppButton {
@@ -378,7 +378,7 @@ ColumnLayout {
                 : genius.transmitting && genius.t.direct ? qsTr("The relays and the antenna wait until the radio is in receive.") : ""
             visible: text.length > 0
             color: genius.t.notice ? Theme.warning : Theme.textDim
-            font.pixelSize: 13
+            font.pixelSize: Theme.px(13)
             wrapMode: Text.Wrap
         }
     }
@@ -413,8 +413,8 @@ ColumnLayout {
         readonly property var w: words[action] || ["", "", ""]
         contentItem: ColumnLayout {
             spacing: Theme.spacing
-            Label { Layout.fillWidth: true; text: confirm.w[0]; color: Theme.text; font.pixelSize: 18; font.bold: true; wrapMode: Text.Wrap }
-            Label { Layout.fillWidth: true; text: confirm.w[1]; color: Theme.textDim; font.pixelSize: 15; wrapMode: Text.Wrap }
+            Label { Layout.fillWidth: true; text: confirm.w[0]; color: Theme.text; font.pixelSize: Theme.px(18); font.bold: true; wrapMode: Text.Wrap }
+            Label { Layout.fillWidth: true; text: confirm.w[1]; color: Theme.textDim; font.pixelSize: Theme.px(15); wrapMode: Text.Wrap }
             RowLayout {
                 Layout.fillWidth: true
                 AppButton { objectName: "geniusConfirmNo"; text: qsTr("Cancel"); Layout.fillWidth: true; onClicked: confirm.close() }

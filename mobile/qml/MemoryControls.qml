@@ -19,7 +19,7 @@ ColumnLayout {
             Accessible.name: qsTr("Name for the current frequency")
             Layout.fillWidth: true
             placeholderText: qsTr("Name for the current frequency")
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
             onAccepted: saveButton.clicked()
         }
         AppButton {
@@ -39,7 +39,7 @@ ColumnLayout {
             : Engine.memoriesWritable ? qsTr("Tap to tune; press and hold to edit or delete.")
             : qsTr("Tap to tune.")
         color: Theme.textDim
-        font.pixelSize: 14
+        font.pixelSize: Theme.px(14)
         wrapMode: Text.WordWrap
     }
     Repeater {
@@ -62,10 +62,10 @@ ColumnLayout {
                     Accessible.ignored: true
                     text: (modelData.freq).toFixed(4)
                     font.family: "monospace"
-                    font.pixelSize: 15
+                    font.pixelSize: Theme.px(15)
                     color: Theme.buttonText
                 }
-                Label { Accessible.ignored: true; text: modelData.mode; font.pixelSize: 13; color: Theme.buttonTextDim }
+                Label { Accessible.ignored: true; text: modelData.mode; font.pixelSize: Theme.px(13); color: Theme.buttonTextDim }
                 // FM repeater: the shift and the CTCSS tone, e.g. "−7.6 88.5".
                 Label {
                     Accessible.ignored: true
@@ -73,13 +73,13 @@ ColumnLayout {
                     text: (modelData.dir === "down" ? "\u2212" + modelData.offset.toFixed(1)
                            : modelData.dir === "up" ? "+" + modelData.offset.toFixed(1) : "")
                           + (modelData.ctcss && modelData.tone ? (modelData.dir !== "simplex" ? " " : "") + modelData.tone : "")
-                    font.pixelSize: 13
+                    font.pixelSize: Theme.px(13)
                     color: Theme.accent
                 }
                 Label {
                     Accessible.ignored: true
                     text: modelData.name
-                    font.pixelSize: 14
+                    font.pixelSize: Theme.px(14)
                     color: Theme.buttonText
                     elide: Text.ElideRight
                     Layout.fillWidth: true
@@ -182,7 +182,7 @@ ColumnLayout {
                     id: nameEdit
                     Accessible.name: qsTr("Memory name")
                     Layout.fillWidth: true
-                    font.pixelSize: 15
+                    font.pixelSize: Theme.px(15)
                     onAccepted: freqEdit.forceActiveFocus()
                 }
                 Label { text: qsTr("Frequency (MHz)"); color: Theme.textDim; font.pixelSize: Theme.smallFont }
@@ -192,7 +192,7 @@ ColumnLayout {
                         id: freqEdit
                         Accessible.name: qsTr("Memory frequency in MHz")
                         Layout.fillWidth: true
-                        font.pixelSize: 15
+                        font.pixelSize: Theme.px(15)
                         font.family: "monospace"
                         inputMethodHints: Qt.ImhFormattedNumbersOnly
                         color: isNaN(editDialog.freqValue) ? "#b3261e" : "#1a1a1a"
@@ -273,11 +273,11 @@ ColumnLayout {
                         id: shiftEdit
                         Accessible.name: qsTr("Repeater shift in MHz")
                         Layout.preferredWidth: 80
-                        font.pixelSize: 15
+                        font.pixelSize: Theme.px(15)
                         horizontalAlignment: TextInput.AlignRight
                         inputMethodHints: Qt.ImhFormattedNumbersOnly
                     }
-                    Label { text: "MHz"; color: Theme.textDim; font.pixelSize: 13 }
+                    Label { text: "MHz"; color: Theme.textDim; font.pixelSize: Theme.px(13) }
                 }
                 RowLayout {
                     visible: editDialog.fm

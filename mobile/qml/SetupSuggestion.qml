@@ -28,14 +28,14 @@ Dialog {
         Label {
             text: qsTr("This radio looks new")
             color: Theme.text
-            font.pixelSize: 20
+            font.pixelSize: Theme.px(20)
             font.bold: true
         }
         Label {
             Layout.fillWidth: true
             text: qsTr("It has no callsign yet. Set up its basics now — callsign, name, transmit limits, CW keyer and audio outputs? You can change them later from Setup.")
             color: Theme.textDim
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
             wrapMode: Text.Wrap
         }
         RowLayout {

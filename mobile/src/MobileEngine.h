@@ -78,6 +78,14 @@ class MobileEngine : public QObject {
     // from build 78), "classic" (light, dark when on, as before) or "light"
     // (dark, light when on).
     Q_PROPERTY(QString buttonStyle READ buttonStyle WRITE setButtonStyle NOTIFY buttonStyleChanged)
+    // Text size: "system" follows the system's text size (iOS Dynamic Type,
+    // Android's font scale), or "100" / "115" / "130" percent. textScale is
+    // the factor every text size in the theme is multiplied by, held to
+    // 0.88-1.35 so the layouts still fit (the largest accessibility sizes
+    // stop at 135 %).
+    Q_PROPERTY(QString textSize READ textSize WRITE setTextSize NOTIFY textScaleChanged)
+    Q_PROPERTY(double textScale READ textScale NOTIFY textScaleChanged)
+    Q_PROPERTY(double systemTextScale READ systemTextScaleValue NOTIFY textScaleChanged)
     // PTT as a switch (tap on, tap off) instead of hold-to-talk; remembered.
     // A latched transmission stops by itself after kPttToggleLimitS.
     Q_PROPERTY(bool pttToggle READ pttToggle WRITE setPttToggle NOTIFY pttToggleChanged)
@@ -621,6 +629,10 @@ public:
     QString bandPlan() const;
     void setBandPlan(const QString& name);
     QString buttonStyle() const;
+    QString textSize() const;
+    void setTextSize(const QString& size);
+    double textScale() const;
+    double systemTextScaleValue() const { return m_systemTextScale; }
     void setButtonStyle(const QString& style);
     bool pttToggle() const;
     void setPttToggle(bool on);
@@ -1582,6 +1594,7 @@ signals:
     void callsignChanged();
     void bandPlanChanged();
     void buttonStyleChanged();
+    void textScaleChanged();
     void pttToggleChanged();
     void txLockChanged();
     void audioCompressionChanged();
@@ -2255,6 +2268,7 @@ private:
     bool m_smartLinkRetried{false};   // one re-sign-in after a refused session
     QTimer m_wanReconnectTimer;
     QString m_smartLinkState{QStringLiteral("signedOut")};
+    double m_systemTextScale{1.0};   // read at start and on each return to the front
     // The connection doctor's state (MobileEngineDoctor.cpp). m_lastTarget is
     // the radio last tried: an address or host name, or "smartlink:<serial>".
     QString m_lastTarget;

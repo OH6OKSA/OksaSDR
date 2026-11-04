@@ -22,10 +22,10 @@ ColumnLayout {
         visible: Engine.fmMode
         Layout.fillWidth: true
         spacing: Theme.spacing / 2
-        Label { text: qsTr("FM repeater"); color: Theme.textDim; font.pixelSize: 16 }
+        Label { text: qsTr("FM repeater"); color: Theme.textDim; font.pixelSize: Theme.px(16) }
         RowLayout {
             Layout.fillWidth: true
-            Label { text: qsTr("Offset"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+            Label { text: qsTr("Offset"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
             Repeater {
                 model: [{ key: "simplex", label: qsTr("Simplex") }, { key: "down", label: "−" }, { key: "up", label: "+" }]
                 delegate: AppButton {
@@ -42,7 +42,7 @@ ColumnLayout {
         RowLayout {
             Layout.fillWidth: true
             visible: Engine.repeaterDir !== "simplex"
-            Label { text: qsTr("Shift"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+            Label { text: qsTr("Shift"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
             Repeater {
                 model: [0.6, 1.6, 5.0, 7.6]
                 delegate: AppButton {
@@ -62,7 +62,7 @@ ColumnLayout {
                 id: shiftField
                 Accessible.name: qsTr("Repeater shift in MHz")
                 Layout.preferredWidth: 76
-                font.pixelSize: 15
+                font.pixelSize: Theme.px(15)
                 horizontalAlignment: TextInput.AlignRight
                 inputMethodHints: Qt.ImhFormattedNumbersOnly
                 Binding on text { when: !shiftField.activeFocus; value: Engine.repeaterOffsetMhz.toFixed(3) }
@@ -71,11 +71,11 @@ ColumnLayout {
                     if (!isNaN(v) && v >= 0 && v <= 100) Engine.repeaterOffsetMhz = v
                 }
             }
-            Label { text: "MHz"; color: Theme.textDim; font.pixelSize: 13 }
+            Label { text: "MHz"; color: Theme.textDim; font.pixelSize: Theme.px(13) }
         }
         RowLayout {
             Layout.fillWidth: true
-            Label { text: qsTr("Tone"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+            Label { text: qsTr("Tone"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
             AppButton {
                 text: qsTr("Off")
                 checked: !Engine.ctcssOn
@@ -111,7 +111,7 @@ ColumnLayout {
             Layout.fillWidth: true
             text: qsTr("The radio transmits on the frequency moved by the offset and sends the tone; receive stays on the frequency shown.")
             color: Theme.textDim
-            font.pixelSize: 12
+            font.pixelSize: Theme.px(12)
             wrapMode: Text.WordWrap
         }
     }
@@ -159,9 +159,9 @@ ColumnLayout {
         visible: Engine.hasTuner && Engine.atuStatusText.length > 0
         text: qsTr("ATU: %1").arg(Engine.atuStatusText)
         color: Theme.textDim
-        font.pixelSize: 13
+        font.pixelSize: Theme.px(13)
     }
-    Label { text: qsTr("Tune power  %1").arg(Engine.tunePower); color: Theme.textDim; font.pixelSize: 15 }
+    Label { text: qsTr("Tune power  %1").arg(Engine.tunePower); color: Theme.textDim; font.pixelSize: Theme.px(15) }
     FineSlider {
         accessibleName: qsTr("Tune power")
         Layout.fillWidth: true
@@ -174,7 +174,7 @@ ColumnLayout {
     }
 
     // ---- Power ----
-    Label { text: qsTr("RF power  %1").arg(Engine.rfPower); color: Theme.textDim; font.pixelSize: 15 }
+    Label { text: qsTr("RF power  %1").arg(Engine.rfPower); color: Theme.textDim; font.pixelSize: Theme.px(15) }
     FineSlider {
         accessibleName: qsTr("RF power")
         Layout.fillWidth: true
@@ -246,7 +246,7 @@ ColumnLayout {
             visible: pl.toggleKey.length === 0
             text: pl.title
             color: Theme.textDim
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
             Layout.preferredWidth: 64
         }
         FineSlider {
@@ -261,7 +261,7 @@ ColumnLayout {
         Label {
             text: Math.round(plSlider.shown)
             color: Theme.textDim
-            font.pixelSize: 13
+            font.pixelSize: Theme.px(13)
             Layout.preferredWidth: 28
             horizontalAlignment: Text.AlignRight
         }
@@ -309,7 +309,7 @@ ColumnLayout {
               ? qsTr("Mic level  %1%2 dB").arg(Engine.micGainDb > 0 ? "+" : "").arg(Math.round(Engine.micGainDb))
               : qsTr("Mic level  %1").arg(Engine.radioMicLevel)
         color: Theme.textDim
-        font.pixelSize: 15
+        font.pixelSize: Theme.px(15)
     }
     FineSlider {
         id: micSlider
@@ -329,7 +329,7 @@ ColumnLayout {
               ? qsTr("This device's microphone: with Mic chosen for a meter, speak as on air and set the level so speech peaks near -10 dB. While this tab is open the meter moves before PTT; nothing is sent.")
               : qsTr("This device's microphone: set it so speech peaks near -10 dB on the Mic meter while you transmit.")
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
     AppButton {
@@ -360,7 +360,7 @@ ColumnLayout {
                   ? qsTr("On: the radio sends the audio from DAX (a digital-mode program on a computer), not the microphone.")
                   : qsTr("Off: the radio sends the microphone.")
             color: Engine.dax ? Theme.text : Theme.textDim
-            font.pixelSize: 12
+            font.pixelSize: Theme.px(12)
             wrapMode: Text.WordWrap
         }
     }
@@ -370,7 +370,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         visible: !Engine.cwMode
-        Label { text: qsTr("PTT"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+        Label { text: qsTr("PTT"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
         AppButton {
             text: qsTr("Hold to talk")
             checked: !Engine.pttToggle
@@ -390,7 +390,7 @@ ColumnLayout {
     // programs hold (Seb DG5CST, a FLEX-6400M shared with a station PC).
     RowLayout {
         Layout.fillWidth: true
-        Label { text: qsTr("Split"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+        Label { text: qsTr("Split"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
         AppButton {
             objectName: "splitBySlice"
             text: qsTr("Second slice")
@@ -412,7 +412,7 @@ ColumnLayout {
               ? qsTr("SPLIT turns this slice's XIT on: it transmits 1 kHz up in CW, 5 kHz in voice (hold SPLIT for +1 / +2 / +5 kHz) and receives where it is. No second slice; the XIT row on the RX tab shows and moves it.")
               : qsTr("SPLIT opens a second slice for transmit, 1 kHz up in CW, 5 kHz in voice. It needs a free slice on the radio.")
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
 
@@ -421,7 +421,7 @@ ColumnLayout {
     // after the last transmission.
     RowLayout {
         Layout.fillWidth: true
-        Label { text: qsTr("Lock"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+        Label { text: qsTr("Lock"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
         AppButton {
             objectName: "txLockOff"
             text: qsTr("Off")
@@ -443,7 +443,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         visible: !Engine.txLock
-        Label { text: qsTr("At start"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+        Label { text: qsTr("At start"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
         AppButton {
             objectName: "txArmAtStartOff"
             text: qsTr("Ready")
@@ -471,7 +471,7 @@ ColumnLayout {
                   : qsTr("OA, armed: %1 min left, five minutes after each transmission.")
                         .arg(Math.ceil(Engine.txArmedSeconds / 60))
             color: Engine.txLocked ? Theme.textDim : Theme.transmit
-            font.pixelSize: 12
+            font.pixelSize: Theme.px(12)
             wrapMode: Text.WordWrap
         }
         AppButton {
@@ -489,7 +489,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         visible: !!Engine.apd.configurable
-        Label { text: qsTr("APD"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+        Label { text: qsTr("APD"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
         AppButton {
             objectName: "apdOff"
             text: qsTr("Off")
@@ -514,7 +514,7 @@ ColumnLayout {
         text: Engine.apd.equalizerActive ? qsTr("APD active: correcting the transmission on this band and power.")
                                          : qsTr("APD ready: it learns from the next transmission.")
         color: Engine.apd.equalizerActive ? "#00cc66" : Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
 
@@ -522,12 +522,12 @@ ColumnLayout {
     Label {
         text: qsTr("TX filter  %1 – %2 Hz").arg(Engine.txFilterLow).arg(Engine.txFilterHigh)
         color: Theme.textDim
-        font.pixelSize: 15
+        font.pixelSize: Theme.px(15)
         Layout.topMargin: Theme.spacing / 2
     }
     RowLayout {
         Layout.fillWidth: true
-        Label { text: qsTr("Low"); color: Theme.textDim; font.pixelSize: 13 }
+        Label { text: qsTr("Low"); color: Theme.textDim; font.pixelSize: Theme.px(13) }
         FineSlider {
             accessibleName: qsTr("TX filter low cut")
             Layout.fillWidth: true
@@ -539,7 +539,7 @@ ColumnLayout {
     }
     RowLayout {
         Layout.fillWidth: true
-        Label { text: qsTr("High"); color: Theme.textDim; font.pixelSize: 13 }
+        Label { text: qsTr("High"); color: Theme.textDim; font.pixelSize: Theme.px(13) }
         FineSlider {
             accessibleName: qsTr("TX filter high cut")
             Layout.fillWidth: true
@@ -563,7 +563,7 @@ ColumnLayout {
               : Engine.dvkState === "preview" ? qsTr("Voice keyer: listening to F%1").arg(Engine.dvkActiveId)
               : qsTr("Voice keyer: sending F%1").arg(Engine.dvkActiveId)
         color: Engine.dvkState === "idle" ? Theme.textDim : Theme.warning
-        font.pixelSize: 15
+        font.pixelSize: Theme.px(15)
     }
     GridLayout {
         visible: !Engine.cwMode && Engine.dvkState !== "unavailable"
@@ -618,7 +618,7 @@ ColumnLayout {
                 Layout.maximumWidth: 320
                 wrapMode: Text.Wrap
                 color: Theme.textDim
-                font.pixelSize: 13
+                font.pixelSize: Theme.px(13)
                 text: Engine.dvkOnRadio
                       ? qsTr("Record speaks into this device's microphone; the radio keeps up to 10 s. "
                              + "Recording and listening do not transmit.")

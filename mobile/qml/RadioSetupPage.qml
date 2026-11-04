@@ -102,7 +102,7 @@ Popup {
     // ---- pieces ----
     component Heading: Label {
         color: Theme.textDim
-        font.pixelSize: 14
+        font.pixelSize: Theme.px(14)
         Layout.topMargin: Theme.spacing / 2
     }
     // One device's section on the Amp tab: a rule above and the name large
@@ -117,7 +117,7 @@ Popup {
         Label {
             id: deviceName
             color: Theme.text
-            font.pixelSize: 19
+            font.pixelSize: Theme.px(19)
             font.bold: true
             Layout.fillWidth: true
             wrapMode: Text.Wrap
@@ -127,8 +127,8 @@ Popup {
         property string label
         property string value
         Layout.fillWidth: true
-        Label { text: parent.label; color: Theme.textDim; font.pixelSize: 15; Layout.fillWidth: true }
-        Label { text: parent.value.length > 0 ? parent.value : "–"; color: Theme.text; font.pixelSize: 15; font.bold: true }
+        Label { text: parent.label; color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+        Label { text: parent.value.length > 0 ? parent.value : "–"; color: Theme.text; font.pixelSize: Theme.px(15); font.bold: true }
     }
     // On/off as two of the app's buttons, the current one dark.
     component OnOff: RowLayout {
@@ -137,7 +137,7 @@ Popup {
         property bool on
         signal toggled(bool on)
         Layout.fillWidth: true
-        Label { text: onOff.label; color: Theme.text; font.pixelSize: 15; Layout.fillWidth: true; wrapMode: Text.Wrap }
+        Label { text: onOff.label; color: Theme.text; font.pixelSize: Theme.px(15); Layout.fillWidth: true; wrapMode: Text.Wrap }
         AppButton {
             objectName: onOff.objectName.length > 0 ? onOff.objectName + "Off" : ""
             text: qsTr("Off"); checked: !onOff.on; focusPolicy: Qt.NoFocus; Layout.preferredWidth: 64; onClicked: onOff.toggled(false)
@@ -158,7 +158,7 @@ Popup {
         signal chosen(var value)
         Layout.fillWidth: true
         spacing: 2
-        Label { visible: choice.label.length > 0; text: choice.label; color: Theme.text; font.pixelSize: 15; Layout.fillWidth: true; wrapMode: Text.Wrap }
+        Label { visible: choice.label.length > 0; text: choice.label; color: Theme.text; font.pixelSize: Theme.px(15); Layout.fillWidth: true; wrapMode: Text.Wrap }
         GridLayout {
             Layout.fillWidth: true
             columns: choice.columns
@@ -276,7 +276,7 @@ Popup {
         Label {
             text: level.label + "  " + Math.round(slider.busy ? slider.shown : level.current) + level.unit
             color: Theme.text
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
         }
         // Sent on release, each − / + step on its own; follows the radio
         // except while a finger is on it.
@@ -303,7 +303,7 @@ Popup {
         signal saved(string text)
         Layout.fillWidth: true
         spacing: 2
-        Label { text: textSetting.label; color: Theme.text; font.pixelSize: 15 }
+        Label { text: textSetting.label; color: Theme.text; font.pixelSize: Theme.px(15) }
         RowLayout {
             Layout.fillWidth: true
             TextField {
@@ -311,7 +311,7 @@ Popup {
                 objectName: textSetting.objectName.length > 0 ? textSetting.objectName + "Field" : ""
                 Accessible.name: textSetting.label
                 Layout.fillWidth: true
-                font.pixelSize: 17
+                font.pixelSize: Theme.px(17)
                 placeholderText: textSetting.current.length > 0 ? textSetting.current : textSetting.hint
                 inputMethodHints: textSetting.upper ? (Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText) : Qt.ImhNoPredictiveText
                 onAccepted: saveButton.clicked()
@@ -334,7 +334,7 @@ Popup {
         spacing: Theme.spacing / 2
         RowLayout {
             Layout.fillWidth: true
-            Label { text: qsTr("Radio Setup"); color: Theme.text; font.pixelSize: 22; font.bold: true; Layout.fillWidth: true }
+            Label { text: qsTr("Radio Setup"); color: Theme.text; font.pixelSize: Theme.px(22); font.bold: true; Layout.fillWidth: true }
             AppButton { text: qsTr("Close"); focusPolicy: Qt.NoFocus; onClicked: setup.close() }
         }
         Label {
@@ -343,7 +343,7 @@ Popup {
                   ? qsTr("The amplifier is not a setting of the radio: this device reaches it directly, and the address stays on this device.")
                   : qsTr("These are the radio's own settings, as in SmartSDR's Radio Setup: changes are written to the radio.")
             color: Theme.textDim
-            font.pixelSize: 13
+            font.pixelSize: Theme.px(13)
             wrapMode: Text.Wrap
         }
         // Nine in a row where each gets 84 px ("Phone/CW" whole), else 5 + 4,
@@ -526,7 +526,7 @@ Popup {
                     RowLayout {
                         visible: !!Engine.apd.configurable
                         Layout.fillWidth: true
-                        Label { text: qsTr("Equalizer"); color: Theme.text; font.pixelSize: 15; Layout.fillWidth: true }
+                        Label { text: qsTr("Equalizer"); color: Theme.text; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
                         AppButton {
                             objectName: "apdReset"
                             text: qsTr("Reset")
@@ -568,7 +568,7 @@ Popup {
                         Layout.fillWidth: true
                         text: qsTr("Each output closes this long after PTT, and the radio's signal waits for TX delay, so an amplifier's relays are set before RF arrives (an amplifier needs about 20 ms: e.g. TX1 20 ms, TX delay 30 ms). Kept in the radio's TX profile (%1).").arg(setup.d.txProfile || "–")
                         color: Theme.textDim
-                        font.pixelSize: 12
+                        font.pixelSize: Theme.px(12)
                         wrapMode: Text.WordWrap
                     }
                     Level {
@@ -609,7 +609,7 @@ Popup {
                         Layout.fillWidth: true
                         text: qsTr("A footswitch or sequencer on a TX REQ input keys the radio, on the bands where that input is on (below). Active low: a contact to ground transmits, the usual way. Active high: a high level transmits, and so does an open input.")
                         color: Theme.textDim
-                        font.pixelSize: 12
+                        font.pixelSize: Theme.px(12)
                         wrapMode: Text.WordWrap
                     }
                     Repeater {
@@ -620,7 +620,7 @@ Popup {
                             required property var modelData
                             Layout.fillWidth: true
                             readonly property bool high: (setup.d[modelData.key] || 0) === 1
-                            Label { text: polarity.modelData.label; color: Theme.text; font.pixelSize: 15; Layout.fillWidth: true; wrapMode: Text.Wrap }
+                            Label { text: polarity.modelData.label; color: Theme.text; font.pixelSize: Theme.px(15); Layout.fillWidth: true; wrapMode: Text.Wrap }
                             AppButton {
                                 objectName: "txReq" + polarity.modelData.name + "Low"
                                 text: qsTr("Active low")
@@ -657,7 +657,7 @@ Popup {
                         Layout.fillWidth: true
                         text: qsTr("The outputs held open while TUNE or the ATU transmits, so tuning at low power does not key the amplifier; they close again after. This device's setting, as the desktop's.")
                         color: Theme.textDim
-                        font.pixelSize: 12
+                        font.pixelSize: Theme.px(12)
                         wrapMode: Text.WordWrap
                     }
                     OnOff { objectName: "tuneInhibitTx1"; label: qsTr("RCA TX1"); on: !!setup.d.TuneInhibitTx1; onToggled: (v) => setup.set("TuneInhibitTx1", v) }
@@ -670,7 +670,7 @@ Popup {
                         Layout.fillWidth: true
                         text: qsTr("Per band: the power, and which keying outputs and TX REQ inputs work there (TX profile %1). Pick a band:").arg(setup.d.txProfile || "–")
                         color: Theme.textDim
-                        font.pixelSize: 12
+                        font.pixelSize: Theme.px(12)
                         wrapMode: Text.WordWrap
                     }
                     GridLayout {
@@ -768,7 +768,7 @@ Popup {
                     }
                     RowLayout {
                         Layout.fillWidth: true
-                        Label { text: qsTr("Iambic"); color: Theme.text; font.pixelSize: 15; Layout.fillWidth: true }
+                        Label { text: qsTr("Iambic"); color: Theme.text; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
                         AppButton { text: qsTr("Off"); checked: !setup.d.iambic; focusPolicy: Qt.NoFocus; Layout.preferredWidth: 56; onClicked: setup.set("iambic", false) }
                         AppButton {
                             text: "A"
@@ -851,7 +851,7 @@ Popup {
                         Layout.fillWidth: true
                         text: qsTr("The radio measures a steady carrier of known frequency (a GPS-locked source, or a time station such as WWV on 10 or 15 MHz, strong and in the clear) and sets its own frequency offset from it. Or enter the offset yourself.")
                         color: Theme.textDim
-                        font.pixelSize: 13
+                        font.pixelSize: Theme.px(13)
                         wrapMode: Text.Wrap
                     }
                     TextSetting {
@@ -880,7 +880,7 @@ Popup {
                             text: rx.calWords[setup.d.calState || ""] || ""
                             color: setup.d.calState === "done" ? "#00cc66"
                                  : setup.d.calState === "error" || setup.d.calState === "timeout" ? Theme.transmit : Theme.textDim
-                            font.pixelSize: 13
+                            font.pixelSize: Theme.px(13)
                             wrapMode: Text.Wrap
                         }
                     }
@@ -921,7 +921,7 @@ Popup {
                               + (setup.d.oscLocked ? qsTr(", locked") : qsTr(", not locked"))
                               + (st === "external" && !setup.d.extPresent ? qsTr(" (no signal found)") : "")
                         color: st.length === 0 ? Theme.textDim : setup.d.oscLocked ? "#00cc66" : Theme.transmit
-                        font.pixelSize: 13
+                        font.pixelSize: Theme.px(13)
                         wrapMode: Text.Wrap
                     }
                     // Binaural receive and the digital modes' low-latency
@@ -948,7 +948,7 @@ Popup {
                             required property var modelData
                             Layout.fillWidth: true
                             spacing: 4
-                            Label { text: modelData.label; color: Theme.text; font.pixelSize: 15; Layout.fillWidth: true }
+                            Label { text: modelData.label; color: Theme.text; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
                             Repeater {
                                 model: 4
                                 delegate: AppButton {
@@ -1009,7 +1009,7 @@ Popup {
                         readonly property bool showStatic: editStatic || !!setup.d.hasStaticIp
                         RowLayout {
                             Layout.fillWidth: true
-                            Label { text: qsTr("Address by"); color: Theme.text; font.pixelSize: 15; Layout.fillWidth: true }
+                            Label { text: qsTr("Address by"); color: Theme.text; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
                             AppButton {
                                 objectName: "setupDhcp"
                                 text: qsTr("DHCP")
@@ -1038,31 +1038,31 @@ Popup {
                             Layout.fillWidth: true
                             columns: 2
                             columnSpacing: Theme.spacing
-                            Label { text: qsTr("IP address"); color: Theme.textDim; font.pixelSize: 15 }
+                            Label { text: qsTr("IP address"); color: Theme.textDim; font.pixelSize: Theme.px(15) }
                             TextField {
                                 id: staticIpField
                                 objectName: "setupStaticIp"
                                 Accessible.name: qsTr("Static IP address")
                                 Layout.fillWidth: true
-                                font.pixelSize: 17
+                                font.pixelSize: Theme.px(17)
                                 placeholderText: setup.d.staticIp || "192.168.1.60"
                                 inputMethodHints: Qt.ImhPreferNumbers | Qt.ImhNoPredictiveText
                             }
-                            Label { text: qsTr("Netmask"); color: Theme.textDim; font.pixelSize: 15 }
+                            Label { text: qsTr("Netmask"); color: Theme.textDim; font.pixelSize: Theme.px(15) }
                             TextField {
                                 id: staticMaskField
                                 Accessible.name: qsTr("Static netmask")
                                 Layout.fillWidth: true
-                                font.pixelSize: 17
+                                font.pixelSize: Theme.px(17)
                                 placeholderText: setup.d.staticNetmask || "255.255.255.0"
                                 inputMethodHints: Qt.ImhPreferNumbers | Qt.ImhNoPredictiveText
                             }
-                            Label { text: qsTr("Gateway"); color: Theme.textDim; font.pixelSize: 15 }
+                            Label { text: qsTr("Gateway"); color: Theme.textDim; font.pixelSize: Theme.px(15) }
                             TextField {
                                 id: staticGwField
                                 Accessible.name: qsTr("Static gateway")
                                 Layout.fillWidth: true
-                                font.pixelSize: 17
+                                font.pixelSize: Theme.px(17)
                                 placeholderText: setup.d.staticGateway || "192.168.1.1"
                                 inputMethodHints: Qt.ImhPreferNumbers | Qt.ImhNoPredictiveText
                             }
@@ -1101,7 +1101,7 @@ Popup {
                         Layout.fillWidth: true
                         text: qsTr("Largest packet the radio sends this app (VITA-49 over UDP). 1450 suits most networks and VPNs; lower it if the waterfall or audio break up over a tunnel. Over Tailscale at most 1200 is used.")
                         color: Theme.textDim
-                        font.pixelSize: 13
+                        font.pixelSize: Theme.px(13)
                         wrapMode: Text.Wrap
                     }
                     RowLayout {
@@ -1116,7 +1116,7 @@ Popup {
                             horizontalAlignment: Text.AlignHCenter
                             text: (setup.d.networkMtu || 1450) + " " + qsTr("bytes")
                             color: Theme.text
-                            font.pixelSize: 20
+                            font.pixelSize: Theme.px(20)
                             font.bold: true
                         }
                         RepeatButton {
@@ -1150,7 +1150,7 @@ Popup {
                         Layout.fillWidth: true
                         text: qsTr("Transverters: each adds a band with its name to the band buttons. RF is the band's frequency, IF the radio's (LO = RF − IF); the LO error corrects the converter's offset; max power is the drive to the transverter at its IF.")
                         color: Theme.textDim
-                        font.pixelSize: 13
+                        font.pixelSize: Theme.px(13)
                         wrapMode: Text.Wrap
                     }
                     Repeater {
@@ -1224,7 +1224,7 @@ Popup {
                         Layout.fillWidth: true
                         text: qsTr("No transverters on this radio.")
                         color: Theme.textDim
-                        font.pixelSize: 15
+                        font.pixelSize: Theme.px(15)
                     }
                     AppButton {
                         objectName: "addTransverter"
@@ -1277,7 +1277,7 @@ Popup {
                         }
                         color: Engine.amp.state === "connected" ? "#00cc66"
                              : Engine.amp.state === "failed" ? Theme.transmit : Theme.textDim
-                        font.pixelSize: 13
+                        font.pixelSize: Theme.px(13)
                         wrapMode: Text.Wrap
                     }
                     AppButton {
@@ -1290,14 +1290,14 @@ Popup {
                         Layout.fillWidth: true
                         text: qsTr("The address of the amplifier's network port (8080 unless you set another after a colon). This device reaches it directly, on the same network or over your VPN when away: not through the radio, and not over SmartLink. Once set, Controls gets an Amp tab with what the amplifier reports: forward and reflected power, SWR, temperature, voltage, current, band, tuner and antenna. Every meter can show the amplifier's readings too.")
                         color: Theme.textDim
-                        font.pixelSize: 12
+                        font.pixelSize: Theme.px(12)
                         wrapMode: Text.WordWrap
                     }
                     Label {
                         Layout.fillWidth: true
                         text: qsTr("Control off: read only, nothing is sent that changes the amplifier. Control on: the Amp tab also gets Operate / Standby, the internal antennas and the error reset. Each asks you first, none works while the radio transmits, and the tab shows only what the amplifier reads back.")
                         color: Theme.textDim
-                        font.pixelSize: 12
+                        font.pixelSize: Theme.px(12)
                         wrapMode: Text.WordWrap
                     }
                     // 4O3A's amplifier and tuner: found by the radio, read
@@ -1332,7 +1332,7 @@ Popup {
                                     : d.linkError ? qsTr("Through the radio only: %1 not reached directly (%2). Standby / Operate, power and SWR work through the radio (over SmartLink too); the supply, temperatures, fan and relays need the station's network or a VPN.").arg(d.ip || "–").arg(d.linkError)
                                     : qsTr("Through the radio.")
                                 color: d.direct ? "#00cc66" : d.authBlocked ? Theme.transmit : Theme.textDim
-                                font.pixelSize: 13
+                                font.pixelSize: Theme.px(13)
                                 wrapMode: Text.Wrap
                             }
                             OnOff {
@@ -1350,7 +1350,7 @@ Popup {
                                       ? qsTr("Standby / Operate and the fan: Controls › Amp.")
                                       : qsTr("Standby / Bypass / Operate, Tune, the relays and the antenna: Controls › Amp.")
                                 color: Theme.textDim
-                                font.pixelSize: 13
+                                font.pixelSize: Theme.px(13)
                                 wrapMode: Text.Wrap
                             }
                             TextSetting {
@@ -1392,7 +1392,7 @@ Popup {
                         Layout.fillWidth: true
                         text: qsTr("A Power Genius XL or Tuner Genius XL connected to the radio shows on the Amp tab by itself: the radio relays its state, power and SWR and its Operate / Standby (over SmartLink too); this device also reads it directly at its address (ports 9008 and 9010; on the same network or your VPN) for its supply, temperatures, the tuner's relays and antenna switch. A remote code, when the device asks for one, is kept in this device's secure store once the device has accepted it. Control on: the Amp tab's buttons change the device, each asked first; the devices guard their own SWR, power and temperature, and the tuner's relays and antenna wait while the radio transmits.")
                         color: Theme.textDim
-                        font.pixelSize: 12
+                        font.pixelSize: Theme.px(12)
                         wrapMode: Text.WordWrap
                     }
                 }
@@ -1406,7 +1406,7 @@ Popup {
                         Layout.fillWidth: true
                         text: qsTr("USB-serial (FTDI) cables in the radio's USB ports, as SmartSDR's USB Cables: they give an amplifier, a tuner or an antenna switch the frequency (CAT), the band (BCD, Bit) or a serial port (Passthrough). A cable shows here once plugged into the radio; its settings stay in the radio.")
                         color: Theme.textDim
-                        font.pixelSize: 12
+                        font.pixelSize: Theme.px(12)
                         wrapMode: Text.WordWrap
                     }
                     Label {
@@ -1415,7 +1415,7 @@ Popup {
                         Layout.fillWidth: true
                         text: qsTr("No USB cables: plug a USB-serial cable into one of the radio's USB ports.")
                         color: Theme.text
-                        font.pixelSize: 15
+                        font.pixelSize: Theme.px(15)
                         wrapMode: Text.Wrap
                     }
                     GridLayout {
@@ -1631,7 +1631,7 @@ Popup {
                 Layout.fillWidth: true
                 text: risky.heading
                 color: Theme.text
-                font.pixelSize: 18
+                font.pixelSize: Theme.px(18)
                 font.bold: true
                 wrapMode: Text.Wrap
             }
@@ -1639,7 +1639,7 @@ Popup {
                 Layout.fillWidth: true
                 text: risky.text
                 color: Theme.textDim
-                font.pixelSize: 15
+                font.pixelSize: Theme.px(15)
                 wrapMode: Text.Wrap
             }
             RowLayout {

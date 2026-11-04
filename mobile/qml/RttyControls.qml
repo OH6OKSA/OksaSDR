@@ -155,7 +155,7 @@ ColumnLayout {
     FontMetrics {
         id: rttyLine
         font.family: "monospace"
-        font.pixelSize: 14
+        font.pixelSize: Theme.px(14)
     }
     Flickable {
         id: rttyText
@@ -226,7 +226,7 @@ ColumnLayout {
         Label {
             text: qsTr("Call")
             color: Theme.textDim
-            font.pixelSize: 12
+            font.pixelSize: Theme.px(12)
         }
         AppButton {
             visible: Engine.workedCall.length > 0
@@ -258,7 +258,7 @@ ColumnLayout {
             Layout.preferredWidth: 1
             text: qsTr("Calls heard show here; or type one on the Log tab.")
             color: Theme.textDim
-            font.pixelSize: 12
+            font.pixelSize: Theme.px(12)
             wrapMode: Text.WordWrap
         }
         Item { Layout.fillWidth: true; visible: Engine.workedCall.length > 0 || heardCalls.count > 0 }
@@ -308,7 +308,7 @@ ColumnLayout {
             placeholderText: qsTr("Text to send")
             // RTTY has capitals only; PSK has both cases.
             inputMethodHints: rtty.pskMode ? Qt.ImhNoPredictiveText : Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
-            font.pixelSize: 16
+            font.pixelSize: Theme.px(16)
             onAccepted: sendButton.clicked()
             // F1-F8 (or ⌘ / Ctrl with 1-8) and Esc work while typing too.
             Keys.onPressed: (event) => {
@@ -382,7 +382,7 @@ ColumnLayout {
             horizontalAlignment: Text.AlignHCenter
             text: qsTr("%1 Hz").arg(Math.round(rtty.k.trackedHz))
             color: Theme.text
-            font.pixelSize: 16
+            font.pixelSize: Theme.px(16)
         }
         AppButton {
             objectName: "pskCarrierUp"
@@ -442,7 +442,7 @@ ColumnLayout {
                : qsTr("Macros and the text field transmit RTTY from this slice, which must be the TX slice, at the FTx tab's TX level; the mark always the higher radio frequency."))
               + " " + qsTr("In a macro {CALL} is your call, {HIS} the call being worked, {NAME} its name from the lookup, {RST} 599, {GRID} your locator. The text also runs along the top of the waterfall; a tap on it opens the receive settings over the display.")
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
 
@@ -465,7 +465,7 @@ ColumnLayout {
             Label {
                 text: qsTr("Macro F%1: {CALL} = your call, {HIS} = the call being worked, {NAME}, {RST}, {GRID}").arg(macroEditor.index + 1)
                 color: Theme.textDim
-                font.pixelSize: 14
+                font.pixelSize: Theme.px(14)
                 Layout.preferredWidth: macroEditor.width - 2 * macroEditor.padding
                 wrapMode: Text.WordWrap
             }
@@ -474,7 +474,7 @@ ColumnLayout {
                 Accessible.name: qsTr("Macro F%1 name").arg(macroEditor.index + 1)
                 Layout.fillWidth: true
                 placeholderText: qsTr("Name on the button")
-                font.pixelSize: 16
+                font.pixelSize: Theme.px(16)
             }
             TextArea {
                 id: macroText
@@ -482,7 +482,7 @@ ColumnLayout {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 5 * font.pixelSize * 1.4
                 wrapMode: TextEdit.Wrap
-                font.pixelSize: 16
+                font.pixelSize: Theme.px(16)
                 font.family: "monospace"
                 inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
                 background: Rectangle { color: Theme.surfaceRaised; radius: 4 }
@@ -493,7 +493,7 @@ ColumnLayout {
                 Layout.preferredWidth: macroEditor.width - 2 * macroEditor.padding
                 text: qsTr("Sends: %1").arg(Engine.previewText(macroText.text))
                 color: Theme.textDim
-                font.pixelSize: 12
+                font.pixelSize: Theme.px(12)
                 wrapMode: Text.WordWrap
                 maximumLineCount: 4
                 elide: Text.ElideRight

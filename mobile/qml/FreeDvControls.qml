@@ -28,14 +28,14 @@ ColumnLayout {
     Label {
         text: qsTr("RADE digital voice")
         color: Theme.textDim
-        font.pixelSize: 14
+        font.pixelSize: Theme.px(14)
     }
     Label {
         visible: !Engine.radeAvailable
         Layout.fillWidth: true
         text: qsTr("RADE is not in this build.")
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
     RowLayout {
@@ -62,7 +62,7 @@ ColumnLayout {
                 return line
             }
             color: Engine.radeStatus.synced ? "#00cc66" : Theme.textDim
-            font.pixelSize: 12
+            font.pixelSize: Theme.px(12)
             wrapMode: Text.WordWrap
         }
     }
@@ -100,7 +100,7 @@ ColumnLayout {
         visible: text.length > 0
         text: Engine.freedvStatus
         color: Engine.freedvLive ? "#00cc66" : Theme.textDim
-        font.pixelSize: 13
+        font.pixelSize: Theme.px(13)
         wrapMode: Text.WordWrap
     }
     TextField {
@@ -111,14 +111,14 @@ ColumnLayout {
         placeholderText: qsTr("Message shown there (optional)")
         text: Engine.freedvMessage
         maximumLength: 80
-        font.pixelSize: 14
+        font.pixelSize: Theme.px(14)
         onEditingFinished: Engine.freedvMessage = text
     }
     Label {
         Layout.fillWidth: true
         text: qsTr("While RADE is on, your callsign, grid, frequency, when you transmit and the stations you hear (callsign and SNR) go to qso.freedv.org, as FreeDV does.")
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
 
@@ -131,7 +131,7 @@ ColumnLayout {
         Label {
             text: qsTr("Stations (%1)").arg(Engine.freedvStations.length)
             color: Theme.textDim
-            font.pixelSize: 14
+            font.pixelSize: Theme.px(14)
             Layout.fillWidth: true
         }
         AppButton {
@@ -153,7 +153,7 @@ ColumnLayout {
         text: Engine.freedvAllBands ? qsTr("No stations on FreeDV Reporter right now.")
                                     : qsTr("No stations on this band right now; All bands shows the rest.")
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
     Repeater {
@@ -182,7 +182,7 @@ ColumnLayout {
                     Label {
                         text: station.modelData.callsign + (station.modelData.you ? " " + qsTr("(you)") : "")
                         color: Theme.text
-                        font.pixelSize: 15
+                        font.pixelSize: Theme.px(15)
                         font.bold: true
                     }
                     Label {
@@ -191,13 +191,13 @@ ColumnLayout {
                                station.modelData.km !== undefined ? qsTr("%1 km").arg(station.modelData.km) : ""]
                               .filter(s => s && s.length > 0).join(" · ")
                         color: Theme.textDim
-                        font.pixelSize: 12
+                        font.pixelSize: Theme.px(12)
                         elide: Text.ElideRight
                     }
                     Label {
                         text: station.modelData.mhz.toFixed(3)
                         color: Theme.text
-                        font.pixelSize: 15
+                        font.pixelSize: Theme.px(15)
                         font.family: "monospace"
                     }
                 }
@@ -213,7 +213,7 @@ ColumnLayout {
                            station.modelData.message || ""]
                           .filter(s => s.length > 0).join(" · ")
                     color: station.modelData.tx ? Theme.transmit : Theme.textDim
-                    font.pixelSize: 12
+                    font.pixelSize: Theme.px(12)
                     wrapMode: Text.WordWrap
                 }
             }

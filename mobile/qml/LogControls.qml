@@ -49,7 +49,7 @@ ColumnLayout {
             Accessible.name: qsTr("Callsign")
             Layout.fillWidth: true
             placeholderText: qsTr("Callsign")
-            font.pixelSize: 20
+            font.pixelSize: Theme.px(20)
             font.family: "monospace"
             font.capitalization: Font.AllUppercase
             inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
@@ -81,7 +81,7 @@ ColumnLayout {
         Label {
             text: qsTr("Heard in CW")
             color: Theme.textDim
-            font.pixelSize: 12
+            font.pixelSize: Theme.px(12)
         }
         Repeater {
             id: cwCallRepeater
@@ -136,7 +136,7 @@ ColumnLayout {
                 text: card.info.name ? card.info.name : (card.info.error ? card.info.error : (card.info.call ? "" : qsTr("Looking up…")))
                 visible: text.length > 0
                 color: Theme.text
-                font.pixelSize: 16
+                font.pixelSize: Theme.px(16)
                 font.bold: !!card.info.name
                 elide: Text.ElideRight
             }
@@ -145,7 +145,7 @@ ColumnLayout {
                 text: [card.info.qth, card.info.qth ? "" : card.info.country].filter(s => s && s.length > 0).join(", ")
                 visible: text.length > 0
                 color: Theme.text
-                font.pixelSize: 14
+                font.pixelSize: Theme.px(14)
                 wrapMode: Text.WordWrap
             }
             Label {
@@ -163,7 +163,7 @@ ColumnLayout {
                 }
                 visible: text.length > 0
                 color: Theme.textDim
-                font.pixelSize: 13
+                font.pixelSize: Theme.px(13)
                 wrapMode: Text.WordWrap
             }
             Label {
@@ -172,7 +172,7 @@ ColumnLayout {
                 text: logTab.worked.dupe ? qsTr("DUPE on this band and mode · worked %n time(s)", "", logTab.worked.worked)
                                          : qsTr("Worked %n time(s) before", "", logTab.worked.worked)
                 color: logTab.worked.dupe ? Theme.transmit : Theme.warning
-                font.pixelSize: 13
+                font.pixelSize: Theme.px(13)
                 font.bold: logTab.worked.dupe
             }
             Label {
@@ -180,7 +180,7 @@ ColumnLayout {
                 visible: !!card.info.prefixOnly && Engine.qrzUser.length === 0
                 text: qsTr("Country from the prefix; a QRZ.com account (below) adds name and QTH.")
                 color: Theme.textDim
-                font.pixelSize: 12
+                font.pixelSize: Theme.px(12)
                 wrapMode: Text.WordWrap
             }
         }
@@ -189,24 +189,24 @@ ColumnLayout {
     // ---- Reports and what the radio gives ----
     RowLayout {
         Layout.fillWidth: true
-        Label { text: qsTr("Sent"); color: Theme.textDim; font.pixelSize: 15 }
+        Label { text: qsTr("Sent"); color: Theme.textDim; font.pixelSize: Theme.px(15) }
         TextField {
             id: rstSent
             Accessible.name: qsTr("Report sent")
             property bool edited: false
             Layout.preferredWidth: 64
-            font.pixelSize: 16
+            font.pixelSize: Theme.px(16)
             horizontalAlignment: TextInput.AlignHCenter
             inputMethodHints: Qt.ImhDigitsOnly
             onTextEdited: edited = true
         }
-        Label { text: qsTr("Rcvd"); color: Theme.textDim; font.pixelSize: 15 }
+        Label { text: qsTr("Rcvd"); color: Theme.textDim; font.pixelSize: Theme.px(15) }
         TextField {
             id: rstRcvd
             Accessible.name: qsTr("Report received")
             property bool edited: false
             Layout.preferredWidth: 64
-            font.pixelSize: 16
+            font.pixelSize: Theme.px(16)
             horizontalAlignment: TextInput.AlignHCenter
             inputMethodHints: Qt.ImhDigitsOnly
             onTextEdited: edited = true
@@ -223,7 +223,7 @@ ColumnLayout {
             return parts.filter(s => s && String(s).length > 0).join(" · ")
         }
         color: Theme.textDim
-        font.pixelSize: 13
+        font.pixelSize: Theme.px(13)
         wrapMode: Text.WordWrap
     }
     TextField {
@@ -231,13 +231,13 @@ ColumnLayout {
         Accessible.name: qsTr("Comment")
         Layout.fillWidth: true
         placeholderText: qsTr("Comment")
-        font.pixelSize: 15
+        font.pixelSize: Theme.px(15)
     }
 
     // ---- POTA / WWFF ----
     RowLayout {
         Layout.fillWidth: true
-        Label { text: qsTr("Their park"); color: Theme.textDim; font.pixelSize: 14; Layout.preferredWidth: 84 }
+        Label { text: qsTr("Their park"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.preferredWidth: 84 }
         Repeater {
             model: ["", "POTA", "WWFF"]
             delegate: AppButton {
@@ -258,12 +258,12 @@ ColumnLayout {
         visible: theirSig.value.length > 0
         Layout.fillWidth: true
         placeholderText: theirSig.value === "POTA" ? qsTr("Park, e.g. US-1234") : qsTr("Reference, e.g. OHFF-0001")
-        font.pixelSize: 15
+        font.pixelSize: Theme.px(15)
         inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
     }
     RowLayout {
         Layout.fillWidth: true
-        Label { text: qsTr("My park"); color: Theme.textDim; font.pixelSize: 14; Layout.preferredWidth: 84 }
+        Label { text: qsTr("My park"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.preferredWidth: 84 }
         Repeater {
             model: ["", "POTA", "WWFF"]
             delegate: AppButton {
@@ -285,7 +285,7 @@ ColumnLayout {
         visible: mySig.value.length > 0
         Layout.fillWidth: true
         placeholderText: qsTr("My reference")
-        font.pixelSize: 15
+        font.pixelSize: Theme.px(15)
         inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
     }
 
@@ -317,7 +317,7 @@ ColumnLayout {
     Label {
         text: Engine.qsoCount > 0 ? qsTr("Log: %n contact(s)", "", Engine.qsoCount) : qsTr("No contacts logged yet.")
         color: Theme.textDim
-        font.pixelSize: 14
+        font.pixelSize: Theme.px(14)
     }
     AppButton {
         visible: Engine.qsoCount > 0
@@ -331,7 +331,7 @@ ColumnLayout {
         Layout.fillWidth: true
         text: qsTr("Log file: %1").arg(Engine.qsoLogLocation)
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
     // Contacts from another logbook (or another device's OksaSDR log): an
@@ -349,7 +349,7 @@ ColumnLayout {
         Layout.fillWidth: true
         visible: text.length > 0
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
     FileDialog {
@@ -384,20 +384,20 @@ ColumnLayout {
                   + "  " + (modelData.RST_SENT || "") + "/" + (modelData.RST_RCVD || "")
                   + (modelData.SIG_INFO ? "  " + modelData.SIG_INFO : "")
             color: Theme.text
-            font.pixelSize: 14
+            font.pixelSize: Theme.px(14)
             font.family: "monospace"
             elide: Text.ElideRight
         }
     }
 
     // ---- Station and QRZ.com ----
-    Label { text: qsTr("Station"); color: Theme.textDim; font.pixelSize: 14; Layout.topMargin: Theme.spacing }
+    Label { text: qsTr("Station"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
     RowLayout {
         Layout.fillWidth: true
         Label {
             text: (logTab.defaults.myCall || qsTr("(radio callsign not set)"))
             color: Theme.text
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
             Layout.preferredWidth: 120
         }
         TextField {
@@ -405,7 +405,7 @@ ColumnLayout {
             Accessible.name: qsTr("My grid")
             Layout.fillWidth: true
             placeholderText: qsTr("My grid, e.g. KP22")
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
             inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
             text: Engine.myGrid
             onEditingFinished: Engine.myGrid = text
@@ -427,7 +427,7 @@ ColumnLayout {
             Layout.fillWidth: true
             Layout.columnSpan: qrzRow.oneRow ? 1 : 2
             placeholderText: qsTr("QRZ.com user")
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
             text: Engine.qrzUser
             inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
         }
@@ -436,7 +436,7 @@ ColumnLayout {
             Accessible.name: qsTr("QRZ.com password")
             Layout.fillWidth: true
             placeholderText: Engine.qrzUser.length > 0 ? qsTr("password (saved)") : qsTr("password")
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
         }
         AppButton {
             id: qrzSave
@@ -456,26 +456,26 @@ ColumnLayout {
         color: Engine.qrzStatusKind === "ok" ? "#00cc66"
              : Engine.qrzStatusKind === "failed" ? Theme.transmit
              : Engine.qrzStatusKind === "unreachable" ? Theme.warning : Theme.textDim
-        font.pixelSize: 13
+        font.pixelSize: Theme.px(13)
         wrapMode: Text.WordWrap
     }
     Label {
         Layout.fillWidth: true
         text: qsTr("QRZ.com's full records (name, QTH, grid) need their XML subscription; without it the card shows the country from the prefix. The password stays in this device's secure store.")
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
 
     // ---- Wavelog / Cloudlog: each logged QSO to the online logbook ----
-    Label { text: qsTr("Wavelog / Cloudlog"); color: Theme.textDim; font.pixelSize: 14; Layout.topMargin: Theme.spacing }
+    Label { text: qsTr("Wavelog / Cloudlog"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
     TextField {
         id: onlineUrlField
         Accessible.name: qsTr("Logbook address")
         objectName: "onlineLogUrl"
         Layout.fillWidth: true
         placeholderText: qsTr("Logbook address, e.g. https://log.example.com")
-        font.pixelSize: 15
+        font.pixelSize: Theme.px(15)
         text: Engine.onlineLog.url || ""
         inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
     }
@@ -494,7 +494,7 @@ ColumnLayout {
             Layout.fillWidth: true
             Layout.columnSpan: onlineKeyRow.oneRow ? 1 : 2
             placeholderText: Engine.onlineLog.hasKey ? qsTr("API key (saved)") : qsTr("API key (read & write)")
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
         }
         TextField {
             id: onlineStationField
@@ -502,7 +502,7 @@ ColumnLayout {
             Layout.preferredWidth: 90
             Layout.fillWidth: !onlineKeyRow.oneRow
             placeholderText: qsTr("Station ID")
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
             text: Engine.onlineLog.stationId || ""
             inputMethodHints: Qt.ImhDigitsOnly
         }
@@ -525,7 +525,7 @@ ColumnLayout {
                  ? "  (" + qsTr("%1 waiting").arg(Engine.onlineLog.pending) + ")" : "")
         color: Engine.onlineLog.statusKind === "ok" ? "#00cc66"
              : Engine.onlineLog.statusKind === "failed" ? Theme.transmit : Theme.textDim
-        font.pixelSize: 13
+        font.pixelSize: Theme.px(13)
         wrapMode: Text.WordWrap
     }
     // The logbook read back (Wavelog): its QSOs count as worked before,
@@ -565,7 +565,7 @@ ColumnLayout {
             text: Engine.onlineLog.readStatus || ""
             color: Engine.onlineLog.readStatusKind === "ok" ? "#00cc66"
                  : Engine.onlineLog.readStatusKind === "failed" ? Theme.transmit : Theme.textDim
-            font.pixelSize: 13
+            font.pixelSize: Theme.px(13)
             wrapMode: Text.WordWrap
         }
         AppButton {
@@ -581,13 +581,13 @@ ColumnLayout {
         text: qsTr("Every QSO you log (and FT8 / FT4 logs) also goes to your Wavelog or Cloudlog logbook. The station ID is the station location's number there (Station Locations). QSOs that cannot be sent wait and go later. Clear the address to stop. The key stays in this device's secure store.")
               + " " + qsTr("Worked before from the logbook reads your Wavelog logbook's QSOs (every station location; at each start only the new ones), so worked before, dupes, New call / DXCC and the FTx colours know them; they stay apart from this app's log. Needs Wavelog 1.8 or newer; Cloudlog cannot send its QSOs.")
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
 
     // ---- QRZ.com Logbook, both ways: each logged QSO there, its QSOs read
     // back as worked before ----
-    Label { text: qsTr("QRZ.com Logbook"); color: Theme.textDim; font.pixelSize: 14; Layout.topMargin: Theme.spacing }
+    Label { text: qsTr("QRZ.com Logbook"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
     RowLayout {
         Layout.fillWidth: true
         PasswordField {
@@ -596,7 +596,7 @@ ColumnLayout {
             objectName: "qrzLogKey"
             Layout.fillWidth: true
             placeholderText: Engine.qrzLog.hasKey ? qsTr("API key (saved)") : qsTr("Logbook API key")
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
         }
         AppButton {
             text: qsTr("Save")
@@ -623,7 +623,7 @@ ColumnLayout {
                  ? "  (" + qsTr("%1 waiting").arg(Engine.qrzLog.pending) + ")" : "")
         color: Engine.qrzLog.statusKind === "ok" ? "#00cc66"
              : Engine.qrzLog.statusKind === "failed" ? Theme.transmit : Theme.textDim
-        font.pixelSize: 13
+        font.pixelSize: Theme.px(13)
         wrapMode: Text.WordWrap
     }
     RowLayout {
@@ -661,7 +661,7 @@ ColumnLayout {
             text: Engine.qrzLog.readStatus || ""
             color: Engine.qrzLog.readStatusKind === "ok" ? "#00cc66"
                  : Engine.qrzLog.readStatusKind === "failed" ? Theme.transmit : Theme.textDim
-            font.pixelSize: 13
+            font.pixelSize: Theme.px(13)
             wrapMode: Text.WordWrap
         }
         AppButton {
@@ -676,13 +676,13 @@ ColumnLayout {
         Layout.fillWidth: true
         text: qsTr("With the logbook's API key (QRZ.com › Logbook › Settings), every QSO you log also goes to your QRZ.com logbook; QSOs that cannot be sent wait and go later. Worked before from the logbook reads its QSOs back (at each start only the new ones), counted once with this app's log and Wavelog's. QRZ.com's Logbook API needs a QRZ subscription. The key stays in this device's secure store.")
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
 
     // ---- A shared ADIF file (iCloud Drive, Google Drive, OneDrive...), both
     // ways, for loggers without a cloud API ----
-    Label { text: qsTr("Shared ADIF file"); color: Theme.textDim; font.pixelSize: 14; Layout.topMargin: Theme.spacing }
+    Label { text: qsTr("Shared ADIF file"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
     RowLayout {
         Layout.fillWidth: true
         Label {
@@ -690,7 +690,7 @@ ColumnLayout {
             Layout.fillWidth: true
             text: Engine.sharedAdif.set === true ? Engine.sharedAdif.name : qsTr("No file chosen")
             color: Engine.sharedAdif.set === true ? Theme.text : Theme.textDim
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
             elide: Text.ElideMiddle
         }
         AppButton {
@@ -718,7 +718,7 @@ ColumnLayout {
                      ? "  (" + qsTr("%1 waiting").arg(Engine.sharedAdif.pending) + ")" : "")
             color: Engine.sharedAdif.statusKind === "ok" ? "#00cc66"
                  : Engine.sharedAdif.statusKind === "failed" ? Theme.transmit : Theme.textDim
-            font.pixelSize: 13
+            font.pixelSize: Theme.px(13)
             wrapMode: Text.WordWrap
         }
         AppButton {
@@ -733,7 +733,7 @@ ColumnLayout {
         Layout.fillWidth: true
         text: qsTr("For a logging program without a cloud connection (Log4OM, N1MM, DXKeeper, MacLoggerDX…): put an ADIF file in iCloud Drive, Google Drive, OneDrive, Dropbox or Nextcloud (export one from the program, or share this app's log there) and choose it here. Its QSOs count as worked before, read at each start and with Read now, and every QSO you log is added to its end for the program to import. The app only adds to the file, never changes what is in it.")
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
     FileDialog {
@@ -748,7 +748,7 @@ ColumnLayout {
 
     // ---- Logger32 on the operator's PC: each logged QSO over TCP (Juho
     // Kontio) ----
-    Label { text: qsTr("Logger32"); color: Theme.textDim; font.pixelSize: 14; Layout.topMargin: Theme.spacing }
+    Label { text: qsTr("Logger32"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
     // One row where the hint fits beside Save, else Save under the field.
     GridLayout {
         id: logger32Row
@@ -761,7 +761,7 @@ ColumnLayout {
             objectName: "logger32Host"
             Layout.fillWidth: true
             placeholderText: qsTr("PC address, e.g. 192.168.1.10:52001")
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
             text: Engine.logger32.host || ""
             inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
         }
@@ -782,14 +782,14 @@ ColumnLayout {
                  ? "  (" + qsTr("%1 waiting").arg(Engine.logger32.pending) + ")" : "")
         color: Engine.logger32.statusKind === "ok" ? "#00cc66"
              : Engine.logger32.statusKind === "failed" ? Theme.transmit : Theme.textDim
-        font.pixelSize: 13
+        font.pixelSize: Theme.px(13)
         wrapMode: Text.WordWrap
     }
     Label {
         Layout.fillWidth: true
         text: qsTr("Every QSO you log (and FT8 / FT4 logs) also goes to Logger32 on your PC, over its TCP port (52001 unless you give another after a colon). Away from home this needs your VPN to reach the PC, and Windows' firewall must let the port in. QSOs that cannot be sent wait and go later. Clear the address to stop.")
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
 }

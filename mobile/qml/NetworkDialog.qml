@@ -26,12 +26,12 @@ Popup {
         property string value
         property color valueColor: Theme.text
         Layout.fillWidth: true
-        Label { text: parent.label; color: Theme.textDim; font.pixelSize: 14; Layout.fillWidth: true }
-        Label { text: parent.value; color: parent.valueColor; font.pixelSize: 14; font.bold: true }
+        Label { text: parent.label; color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.fillWidth: true }
+        Label { text: parent.value; color: parent.valueColor; font.pixelSize: Theme.px(14); font.bold: true }
     }
     component Section: Label {
         color: Theme.accent
-        font.pixelSize: 13
+        font.pixelSize: Theme.px(13)
         font.bold: true
         Layout.topMargin: 6
     }
@@ -119,7 +119,7 @@ Popup {
             text: qsTr("App CPU adds up all the app's threads; a thread near 100 % is one core full. %1 shows apps no GPU load: frames drawn per second falling well below the display's rate means the graphics are not keeping up.")
                   .arg(Qt.platform.os === "ios" ? "iOS" : Qt.platform.os === "android" ? "Android" : qsTr("The system"))
             color: Theme.textDim
-            font.pixelSize: 12
+            font.pixelSize: Theme.px(12)
             wrapMode: Text.Wrap
         }
     }

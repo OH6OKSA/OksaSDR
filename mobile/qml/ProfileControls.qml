@@ -20,7 +20,7 @@ ColumnLayout {
         Layout.fillWidth: true
         spacing: Theme.spacing / 2
 
-        Label { text: section.title; color: Theme.textDim; font.pixelSize: 16 }
+        Label { text: section.title; color: Theme.textDim; font.pixelSize: Theme.px(16) }
         AppComboBox {
             id: picker
             Accessible.name: section.title
@@ -41,7 +41,7 @@ ColumnLayout {
                 Accessible.name: qsTr("New %1 profile name").arg(section.title)
                 Layout.fillWidth: true
                 placeholderText: qsTr("Save as…")
-                font.pixelSize: 15
+                font.pixelSize: Theme.px(15)
                 onAccepted: saveButton.clicked()
             }
             AppButton {
@@ -70,7 +70,7 @@ ColumnLayout {
             visible: section.hint.length > 0
             text: section.hint
             color: Theme.textDim
-            font.pixelSize: 12
+            font.pixelSize: Theme.px(12)
             wrapMode: Text.Wrap
         }
     }

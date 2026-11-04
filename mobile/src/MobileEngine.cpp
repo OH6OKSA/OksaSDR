@@ -1,4 +1,5 @@
 #include "MobileEngine.h"
+#include "TextScale.h"
 #include "core/PgxlConnection.h"
 #include <QFile>
 #include <QDir>
@@ -909,6 +910,19 @@ MobileEngine::MobileEngine(QObject* parent)
     connect(qApp, &QCoreApplication::aboutToQuit, this, [] {
         AppSettings::instance().setValue(QStringLiteral("Mobile3DRunning"), 0);
         AppSettings::instance().save();
+    });
+    // The system's text size, at start and each time the app comes back (it
+    // may have been changed in Settings meanwhile).
+    m_systemTextScale = systemTextScale();
+    qCInfo(lcMobile) << "system text size" << m_systemTextScale << "app text scale" << textScale();
+    connect(qApp, &QGuiApplication::applicationStateChanged, this, [this](Qt::ApplicationState state) {
+        if (state != Qt::ApplicationActive) return;
+        const double v = systemTextScale();
+        if (std::abs(v - m_systemTextScale) > 0.001) {
+            m_systemTextScale = v;
+            qCInfo(lcMobile) << "system text size now" << v << "app text scale" << textScale();
+            emit textScaleChanged();
+        }
     });
     connect(qApp, &QGuiApplication::applicationStateChanged, this, [this](Qt::ApplicationState state) {
         // Nothing transmits while the app is away, but the amplifier's tune
@@ -6593,6 +6607,28 @@ void MobileEngine::tuneToSpot(int index)
         m_rttySpotTries = 8;
         emit rttyAutotuneRequested(spot.rxFreqMhz, 150.0, false);
     }
+}
+
+QString MobileEngine::textSize() const
+{
+    const QString v = AppSettings::instance().value(QStringLiteral("MobileTextSize"), QStringLiteral("system")).toString();
+    return (v == QLatin1String("100") || v == QLatin1String("115") || v == QLatin1String("130")) ? v : QStringLiteral("system");
+}
+
+void MobileEngine::setTextSize(const QString& size)
+{
+    if (size == textSize()) return;
+    AppSettings::instance().setValue(QStringLiteral("MobileTextSize"), size);
+    AppSettings::instance().save();
+    qCInfo(lcMobile) << "text size" << size << "scale" << textScale();
+    emit textScaleChanged();
+}
+
+double MobileEngine::textScale() const
+{
+    const QString size = textSize();
+    const double v = size == QLatin1String("system") ? m_systemTextScale : size.toDouble() / 100.0;
+    return std::clamp(v, 0.88, 1.35);
 }
 
 QString MobileEngine::buttonStyle() const

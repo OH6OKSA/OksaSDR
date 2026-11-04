@@ -241,7 +241,7 @@ ColumnLayout {
             objectName: "digiPresence"
             text: qsTr("Auto stops after %1 min untouched").arg(Engine.digiPresenceMin)
             color: Theme.textDim
-            font.pixelSize: 14
+            font.pixelSize: Theme.px(14)
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
         }
@@ -296,7 +296,7 @@ ColumnLayout {
         visible: digi.settingsShown && Engine.pskReporter && Engine.pskReporterStatus.length > 0
         text: Engine.pskReporterStatus
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
     // The device clock, judged from the decodes' DT: FT8 fails beyond about
@@ -315,7 +315,7 @@ ColumnLayout {
             text: qsTr("This device's clock looks %1 s off (the decodes' DT). FT8 needs it within a second: set Date & Time to automatic.")
                   .arg((digi.qso.clockOffset > 0 ? "+" : "") + Number(digi.qso.clockOffset || 0).toFixed(1))
             color: "#ffffff"
-            font.pixelSize: 13
+            font.pixelSize: Theme.px(13)
             wrapMode: Text.WordWrap
         }
     }
@@ -338,7 +338,7 @@ ColumnLayout {
                                      + Math.round(Math.abs(correction) * 1000))
               : qsTr("FT8 / FT4 run on this device's clock: no time server reached yet.")
         color: server === "" && Math.abs(Number(digi.qso.clockOffset || 0)) >= 0.3 ? Theme.warning : Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
     RowLayout {
@@ -347,7 +347,7 @@ ColumnLayout {
         Label {
             text: qsTr("TX %1 Hz").arg(Engine.digiTxHz)
             color: Theme.textDim
-            font.pixelSize: 14
+            font.pixelSize: Theme.px(14)
             Layout.fillWidth: true
         }
         AppButton {
@@ -389,7 +389,7 @@ ColumnLayout {
         Label {
             text: qsTr("TX level %1 dB").arg(Engine.digiTxLevelDb)
             color: Theme.textDim
-            font.pixelSize: 14
+            font.pixelSize: Theme.px(14)
             Layout.fillWidth: true
         }
         AppButton {
@@ -422,7 +422,7 @@ ColumnLayout {
               .arg((digi.qso.lastTxSwr || 0) > 0 ? qsTr(", SWR %1").arg(Number(digi.qso.lastTxSwr).toFixed(1)) : "")
               .arg(Engine.rfPower)
         color: Theme.textDim
-        font.pixelSize: 13
+        font.pixelSize: Theme.px(13)
         wrapMode: Text.WordWrap
     }
 
@@ -466,7 +466,7 @@ ColumnLayout {
         visible: Engine.digiRunning && Engine.digiDecodes.length === 0
         text: qsTr("Decodes appear at the end of each %1 s slot. Tap a CQ to answer it; tap the waterfall inside the passband to set the TX audio frequency.").arg(digi.slotSeconds)
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
 
@@ -564,14 +564,14 @@ ColumnLayout {
               ? qsTr("%1 of the last %2 decodes").arg(digi.shown.length).arg(Engine.digiDecodes.length)
               : qsTr("None of the last %1 decodes match").arg(Engine.digiDecodes.length)
         color: Theme.textDim
-        font.pixelSize: 11
+        font.pixelSize: Theme.px(11)
     }
     Label {
         Layout.fillWidth: true
         visible: digi.settingsShown && Engine.digiDecodes.length > 0
         text: qsTr("Green CQ · pink / magenta new DXCC · amber new CQ zone · red new continent or your call · cyan a new call (light: new on this band) · yellow your TX · grey worked before on this band and mode")
         color: Theme.textDim
-        font.pixelSize: 11
+        font.pixelSize: Theme.px(11)
         wrapMode: Text.WordWrap
     }
 
@@ -627,7 +627,7 @@ ColumnLayout {
                                       .arg(row.text)
             color: parent.lit ? "#101010" : row.hl === "b4" ? Theme.textDim : Theme.text
             font.family: "monospace"
-            font.pixelSize: 13
+            font.pixelSize: Theme.px(13)
             elide: Text.ElideRight
         }
         onClicked: {

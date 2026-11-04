@@ -22,7 +22,7 @@ Popup {
             Label {
                 text: qsTr("Log (%1 lines)").arg(popup.opened ? LogBuffer.lines.length : 0)
                 color: Theme.text
-                font.pixelSize: 22
+                font.pixelSize: Theme.px(22)
                 Layout.fillWidth: true
             }
             AppButton { text: qsTr("Share"); onClicked: LogBuffer.share() }
@@ -49,7 +49,7 @@ Popup {
                 text: LogBuffer.previousRunCrashed ? qsTr("The previous run ended in a crash: send its log.")
                                                    : qsTr("The previous run's log")
                 color: LogBuffer.previousRunCrashed ? Theme.transmit : Theme.textDim
-                font.pixelSize: 15
+                font.pixelSize: Theme.px(15)
                 wrapMode: Text.Wrap
             }
             AppButton { objectName: "previousRunShare"; text: qsTr("Share"); onClicked: LogBuffer.sharePreviousRun() }
@@ -73,20 +73,20 @@ Popup {
                 checked: DevLink.enabled
                 onToggled: DevLink.enabled = checked
             }
-            Label { text: qsTr("Developer link"); color: Theme.text; font.pixelSize: 15 }
+            Label { text: qsTr("Developer link"); color: Theme.text; font.pixelSize: Theme.px(15) }
             TextField {
                 Accessible.name: qsTr("Developer link PC address")
                 Layout.fillWidth: true
                 text: DevLink.host
                 placeholderText: qsTr("PC address")
                 inputMethodHints: Qt.ImhPreferNumbers | Qt.ImhNoPredictiveText
-                font.pixelSize: 15
+                font.pixelSize: Theme.px(15)
                 onEditingFinished: DevLink.host = text
             }
             Label {
                 text: DevLink.status
                 color: DevLink.status === "connected" ? Theme.accent : Theme.textDim
-                font.pixelSize: 13
+                font.pixelSize: Theme.px(13)
                 elide: Text.ElideRight
                 Layout.maximumWidth: 160
             }
@@ -112,7 +112,7 @@ Popup {
                 color: modelData.indexOf("PTT") >= 0 || modelData.indexOf("zoom") >= 0
                        ? Theme.warning : Theme.textDim
                 font.family: "monospace"
-                font.pixelSize: 12
+                font.pixelSize: Theme.px(12)
                 wrapMode: Text.WrapAnywhere
             }
         }

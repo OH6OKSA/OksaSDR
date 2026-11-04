@@ -63,6 +63,14 @@ QtObject {
     readonly property int touchTarget: Math.max(44, Math.round(48 * scale))
     // Standard button (the band buttons' size); PTT and KEY are larger.
     readonly property int buttonWidth: Math.round(56 * scale)
+    // The system's text size (Engine.textScale: iOS Dynamic Type, Android's
+    // font scale, or View › Text size) for the text that is read: the panels'
+    // and dialogs' labels, explanations and lists, through px(). The
+    // operating screen's dense controls (frequency, info row, meters, the
+    // step and band rows, PTT) and the buttons' own text keep their size: at
+    // 115 % a phone's step row and PTT row no longer fit its width.
+    readonly property real textScale: Engine.textScale
+    function px(n) { return Math.round(n * textScale) }
     readonly property int buttonFont: Math.max(12, Math.round(14 * scale))
     readonly property int labelFont: Math.max(12, Math.round(15 * scale))
     readonly property int smallFont: Math.max(10, Math.round(12 * scale))

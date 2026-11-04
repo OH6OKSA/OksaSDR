@@ -15,7 +15,7 @@ ColumnLayout {
 
     RowLayout {
         Layout.fillWidth: true
-        Label { text: qsTr("Equalizer"); color: Theme.textDim; font.pixelSize: 16; Layout.fillWidth: true }
+        Label { text: qsTr("Equalizer"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
         AppButton { text: qsTr("RX"); checked: !eq.tx; focusPolicy: Qt.NoFocus; onClicked: eq.tx = false }
         AppButton { text: qsTr("TX"); checked: eq.tx; focusPolicy: Qt.NoFocus; onClicked: eq.tx = true }
     }
@@ -58,7 +58,7 @@ ColumnLayout {
                         Layout.alignment: Qt.AlignHCenter
                         text: (eq.bands[band.index] > 0 ? "+" : "") + eq.bands[band.index]
                         color: Theme.text
-                        font.pixelSize: 12
+                        font.pixelSize: Theme.px(12)
                     }
                     Slider {
                         Accessible.name: qsTr("%1 band").arg(band.modelData)
@@ -75,7 +75,7 @@ ColumnLayout {
                         Layout.alignment: Qt.AlignHCenter
                         text: band.modelData
                         color: Theme.textDim
-                        font.pixelSize: 12
+                        font.pixelSize: Theme.px(12)
                     }
                 }
             }

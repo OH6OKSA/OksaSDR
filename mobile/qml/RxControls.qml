@@ -49,7 +49,7 @@ ColumnLayout {
             text: (row.hz > 0 ? "+" : "") + row.hz + " Hz"
             color: row.on ? Theme.text : Theme.textDim
             horizontalAlignment: Text.AlignHCenter
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
             Layout.fillWidth: true
             TapHandler { onTapped: row.changed(0) }
         }
@@ -103,7 +103,7 @@ ColumnLayout {
         Label {
             text: Math.round(squelchSlider.shown)
             color: Engine.squelchOn ? Theme.text : Theme.textDim
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
             horizontalAlignment: Text.AlignRight
             Layout.preferredWidth: 28
         }

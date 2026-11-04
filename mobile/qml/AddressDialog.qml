@@ -88,7 +88,7 @@ Dialog {
         Label {
             text: qsTr("Radio IP address or host name")
             color: Theme.textDim
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
         }
         Label {
             visible: !dialog.letters
@@ -100,7 +100,7 @@ Dialog {
             color: dialog.entry.length > 0 ? (dialog.complete ? Theme.text : Theme.warning) : Theme.textDim
             fontSizeMode: Text.HorizontalFit
             minimumPixelSize: 18
-            font.pixelSize: 34
+            font.pixelSize: Theme.px(34)
             font.family: "monospace"
         }
         TextField {
@@ -110,7 +110,7 @@ Dialog {
             visible: dialog.letters
             Layout.fillWidth: true
             Layout.preferredHeight: 52
-            font.pixelSize: 22
+            font.pixelSize: Theme.px(22)
             placeholderText: qsTr("e.g. radio.example.org or my-flex (MagicDNS)")
             color: dialog.complete || text.length === 0 ? Theme.text : Theme.warning
             inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
@@ -130,7 +130,7 @@ Dialog {
                     required property string modelData
                     objectName: "addressKey" + (modelData === "⌫" ? "Back" : modelData === "." ? "Dot" : modelData)
                     text: modelData === "⌫" ? "" : modelData
-                    font.pixelSize: 26
+                    font.pixelSize: Theme.px(26)
                     Layout.fillWidth: true
                     Layout.preferredHeight: dialog.keyHeight
                     BackspaceIcon {
@@ -148,7 +148,7 @@ Dialog {
                 Layout.fillWidth: true
                 Layout.preferredHeight: dialog.keyHeight
                 text: qsTr("Cancel")
-                font.pixelSize: 20
+                font.pixelSize: Theme.px(20)
                 onClicked: dialog.close()
             }
             AppButton {
@@ -157,7 +157,7 @@ Dialog {
                 leftPadding: 14
                 rightPadding: 14
                 text: dialog.letters ? "123" : "ABC"
-                font.pixelSize: 20
+                font.pixelSize: Theme.px(20)
                 focusPolicy: Qt.NoFocus
                 Accessible.name: dialog.letters ? qsTr("Number keypad") : qsTr("Keyboard for a host name")
                 onClicked: dialog.letters = !dialog.letters
@@ -167,7 +167,7 @@ Dialog {
                 Layout.preferredHeight: dialog.keyHeight
                 objectName: "addressAction"
                 text: dialog.actionText
-                font.pixelSize: 22
+                font.pixelSize: Theme.px(22)
                 enabled: dialog.complete
                 onClicked: dialog.commit()
             }

@@ -73,7 +73,7 @@ Dialog {
             color: dialog.entry.length > 0 ? Theme.text : Theme.textDim
             fontSizeMode: Text.HorizontalFit
             minimumPixelSize: 20
-            font.pixelSize: 40
+            font.pixelSize: Theme.px(40)
             font.family: "monospace"
             horizontalAlignment: Text.AlignRight
         }
@@ -97,7 +97,7 @@ Dialog {
                 delegate: AppButton {
                     required property string modelData
                     text: modelData === "⌫" ? "" : modelData
-                    font.pixelSize: 26
+                    font.pixelSize: Theme.px(26)
                     Layout.fillWidth: true
                     Layout.preferredHeight: dialog.keyHeight
                     BackspaceIcon {
@@ -122,14 +122,14 @@ Dialog {
                 Layout.fillWidth: true
                 Layout.preferredHeight: dialog.keyHeight
                 text: qsTr("Cancel")
-                font.pixelSize: 20
+                font.pixelSize: Theme.px(20)
                 onClicked: dialog.close()
             }
             AppButton {
                 Layout.fillWidth: true
                 Layout.preferredHeight: dialog.keyHeight
                 text: qsTr("Tune")
-                font.pixelSize: 24
+                font.pixelSize: Theme.px(24)
                 enabled: dialog.entry.length > 0 && Engine.slices.length > 0
                 onClicked: dialog.commit()
             }

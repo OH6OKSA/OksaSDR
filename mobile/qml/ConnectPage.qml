@@ -35,9 +35,9 @@ Page {
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 2
-                Label { text: row.title; color: Theme.text; font.pixelSize: 20; elide: Text.ElideRight; Layout.fillWidth: true }
-                Label { text: row.subtitle; visible: text.length > 0; color: Theme.textDim; font.pixelSize: 15; elide: Text.ElideRight; Layout.fillWidth: true }
-                Label { text: row.detail; visible: text.length > 0; color: Theme.textDim; font.pixelSize: 15; elide: Text.ElideRight; Layout.fillWidth: true }
+                Label { text: row.title; color: Theme.text; font.pixelSize: Theme.px(20); elide: Text.ElideRight; Layout.fillWidth: true }
+                Label { text: row.subtitle; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
+                Label { text: row.detail; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
             }
             Rectangle {
                 visible: row.enabled
@@ -50,7 +50,7 @@ Page {
                     anchors.centerIn: parent
                     text: qsTr("Connect ›")
                     color: Theme.buttonText
-                    font.pixelSize: 16
+                    font.pixelSize: Theme.px(16)
                 }
             }
         }
@@ -79,11 +79,11 @@ Page {
                 Label {
                     text: qsTr("OksaSDR")
                     color: Theme.text
-                    font.pixelSize: 34
+                    font.pixelSize: Theme.px(34)
                     font.bold: true
                     Layout.fillWidth: true
                 }
-                Label { text: "v" + Engine.appVersion; color: Theme.textDim; font.pixelSize: 13 }
+                Label { text: "v" + Engine.appVersion; color: Theme.textDim; font.pixelSize: Theme.px(13) }
                 AppButton { text: qsTr("Manual"); onClicked: Qt.openUrlExternally(Engine.manualUrl) }
                 AppButton { text: qsTr("Log"); onClicked: logPage.open() }
             }
@@ -93,7 +93,7 @@ Page {
                 visible: Engine.connectionState !== "idle" || Engine.lastError.length > 0
                 text: Engine.connectionState === "connecting" ? qsTr("Connecting…") : Engine.lastError
                 color: Engine.connectionState === "connecting" ? Theme.textDim : Theme.warning
-                font.pixelSize: 17
+                font.pixelSize: Theme.px(17)
                 wrapMode: Text.Wrap
             }
             // The connection doctor: what blocks the connection, step by step
@@ -115,7 +115,7 @@ Page {
             Label {
                 text: Engine.radios.count > 0 ? qsTr("On this network") : qsTr("Searching this network…")
                 color: Theme.textDim
-                font.pixelSize: 17
+                font.pixelSize: Theme.px(17)
             }
             Repeater {
                 model: Engine.radios
@@ -140,7 +140,7 @@ Page {
             Label {
                 text: qsTr("SmartLink (remote)")
                 color: Theme.textDim
-                font.pixelSize: 17
+                font.pixelSize: Theme.px(17)
                 Layout.topMargin: Theme.spacing
             }
             Rectangle {
@@ -163,7 +163,7 @@ Page {
                             Layout.fillWidth: true
                             text: qsTr("Sign in with your FlexRadio SmartLink account to use your radio from anywhere.")
                             color: Theme.textDim
-                            font.pixelSize: 14
+                            font.pixelSize: Theme.px(14)
                             wrapMode: Text.Wrap
                         }
                         TextField {
@@ -173,14 +173,14 @@ Page {
                             text: Engine.smartLinkEmail
                             placeholderText: qsTr("E-mail")
                             inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
-                            font.pixelSize: 17
+                            font.pixelSize: Theme.px(17)
                         }
                         PasswordField {
                             id: passwordField
                             Accessible.name: qsTr("SmartLink password")
                             Layout.fillWidth: true
                             placeholderText: qsTr("Password")
-                            font.pixelSize: 17
+                            font.pixelSize: Theme.px(17)
                             onAccepted: signIn.clicked()
                         }
                         AppButton {
@@ -211,7 +211,7 @@ Page {
                             Label {
                                 text: Engine.smartLinkAccount.length > 0 ? Engine.smartLinkAccount : qsTr("Signed in")
                                 color: Theme.text
-                                font.pixelSize: 16
+                                font.pixelSize: Theme.px(16)
                                 elide: Text.ElideRight
                                 Layout.fillWidth: true
                             }
@@ -241,13 +241,13 @@ Page {
                             visible: Engine.smartLinkState === "offline"
                             text: qsTr("SmartLink server not reachable. Retrying…")
                             color: Theme.warning
-                            font.pixelSize: 14
+                            font.pixelSize: Theme.px(14)
                         }
                         Label {
                             visible: Engine.smartLinkState === "signedIn" && Engine.smartLinkRadios.length === 0
                             text: qsTr("No radios on this account are online.")
                             color: Theme.textDim
-                            font.pixelSize: 14
+                            font.pixelSize: Theme.px(14)
                         }
                         Repeater {
                             model: Engine.smartLinkRadios
@@ -268,7 +268,7 @@ Page {
             Label {
                 text: qsTr("By IP address or host name")
                 color: Theme.textDim
-                font.pixelSize: 17
+                font.pixelSize: Theme.px(17)
                 Layout.topMargin: Theme.spacing
             }
             // The radios entered here, in the order added (Mike Walker VA3MW:
@@ -301,7 +301,7 @@ Page {
                     AppButton {
                         objectName: "savedRadioEdit" + savedRow.index
                         text: "✎"
-                        font.pixelSize: 22
+                        font.pixelSize: Theme.px(22)
                         Accessible.name: qsTr("Edit %1").arg(savedRow.address)
                         Layout.preferredWidth: Theme.touchTarget
                         Layout.fillHeight: true
@@ -327,7 +327,7 @@ Page {
                 Layout.fillWidth: true
                 text: qsTr("Enter a radio's IP address, or a host name that leads to it (ABC on the keypad): a dynamic DNS name, or a Tailscale MagicDNS name with the Tailscale app on. SmartSDR's radio chooser and your router's device list both show the address. This device must reach the radio on the same network or over a VPN. Each radio is kept on this list, on this device only; ✎ names or removes one.")
                 color: Theme.textDim
-                font.pixelSize: 14
+                font.pixelSize: Theme.px(14)
                 wrapMode: Text.Wrap
             }
         }
@@ -366,23 +366,23 @@ Page {
         Timer { id: removeTimer; interval: 3000; onTriggered: radioEditor.removing = false }
         contentItem: ColumnLayout {
             spacing: Theme.spacing
-            Label { text: qsTr("Radio"); color: Theme.text; font.pixelSize: 20; font.bold: true }
-            Label { text: qsTr("Name"); color: Theme.textDim; font.pixelSize: 15 }
+            Label { text: qsTr("Radio"); color: Theme.text; font.pixelSize: Theme.px(20); font.bold: true }
+            Label { text: qsTr("Name"); color: Theme.textDim; font.pixelSize: Theme.px(15) }
             TextField {
                 id: nameField
                 objectName: "radioEditorName"
                 Accessible.name: qsTr("Name for this radio")
                 Layout.fillWidth: true
-                font.pixelSize: 18
+                font.pixelSize: Theme.px(18)
                 placeholderText: radioEditor.radioName.length > 0 ? radioEditor.radioName : qsTr("e.g. Mike's FLEX")
                 inputMethodHints: Qt.ImhNoPredictiveText
                 maximumLength: 40
             }
-            Label { text: qsTr("IP address or host name"); color: Theme.textDim; font.pixelSize: 15 }
+            Label { text: qsTr("IP address or host name"); color: Theme.textDim; font.pixelSize: Theme.px(15) }
             AppButton {
                 objectName: "radioEditorAddress"
                 text: radioEditor.address
-                font.pixelSize: 18
+                font.pixelSize: Theme.px(18)
                 Layout.fillWidth: true
                 Layout.preferredHeight: Theme.touchTarget
                 onClicked: {
@@ -448,7 +448,7 @@ Page {
                 Label {
                     text: qsTr("Connection check")
                     color: Theme.text
-                    font.pixelSize: 20
+                    font.pixelSize: Theme.px(20)
                     font.bold: true
                     Layout.fillWidth: true
                 }
@@ -467,7 +467,7 @@ Page {
                       ? qsTr("SmartLink radio %1").arg(Engine.connectionCheckTarget.substring(10))
                       : qsTr("To %1").arg(Engine.connectionCheckTarget)
                 color: Theme.textDim
-                font.pixelSize: 14
+                font.pixelSize: Theme.px(14)
                 elide: Text.ElideRight
             }
             ScrollView {
@@ -497,18 +497,18 @@ Page {
                                 color: modelData.state === "ok" ? "#00cc66"
                                      : modelData.state === "fail" ? Theme.transmit
                                      : modelData.state === "warn" ? Theme.warning : Theme.textDim
-                                font.pixelSize: 15
+                                font.pixelSize: Theme.px(15)
                                 font.bold: true
                             }
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 2
-                                Label { text: modelData.title; color: Theme.text; font.pixelSize: 16; font.bold: true; Layout.fillWidth: true; wrapMode: Text.Wrap }
+                                Label { text: modelData.title; color: Theme.text; font.pixelSize: Theme.px(16); font.bold: true; Layout.fillWidth: true; wrapMode: Text.Wrap }
                                 Label {
                                     visible: text.length > 0
                                     text: modelData.detail
                                     color: Theme.textDim
-                                    font.pixelSize: 14
+                                    font.pixelSize: Theme.px(14)
                                     Layout.fillWidth: true
                                     wrapMode: Text.Wrap
                                 }
@@ -523,7 +523,7 @@ Page {
                     Layout.fillWidth: true
                     text: Engine.connectionCheckRunning ? qsTr("Checking…") : qsTr("Nothing on the radio is changed by the check.")
                     color: Theme.textDim
-                    font.pixelSize: 13
+                    font.pixelSize: Theme.px(13)
                     wrapMode: Text.Wrap
                 }
                 AppButton {

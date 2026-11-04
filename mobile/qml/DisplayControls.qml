@@ -14,7 +14,7 @@ ColumnLayout {
     implicitWidth: 200
 
     // Band plan strip along the bottom of the spectrum.
-    Label { text: qsTr("Band plan"); color: Theme.textDim; font.pixelSize: 16 }
+    Label { text: qsTr("Band plan"); color: Theme.textDim; font.pixelSize: Theme.px(16) }
     Flow {
         Layout.fillWidth: true
         spacing: 4
@@ -36,7 +36,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         Layout.topMargin: Theme.spacing / 2
-        Label { text: qsTr("Bands and steps"); color: Theme.textDim; font.pixelSize: 16; Layout.fillWidth: true }
+        Label { text: qsTr("Bands and steps"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
         AppButton {
             text: Engine.tuneRowsShown ? qsTr("Shown") : qsTr("Hidden")
             checked: Engine.tuneRowsShown
@@ -70,7 +70,7 @@ ColumnLayout {
     // + Slice / + Pan then at the left.
     RowLayout {
         Layout.fillWidth: true
-        Label { text: qsTr("Zoom buttons"); color: Theme.textDim; font.pixelSize: 15; Layout.fillWidth: true }
+        Label { text: qsTr("Zoom buttons"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
         AppButton {
             objectName: "displayButtonsLeft"
             text: qsTr("Left")
@@ -88,12 +88,45 @@ ColumnLayout {
             onClicked: Engine.displayButtonsRight = true
         }
     }
+    // Text size: the system's (iOS Dynamic Type, Android's font scale) or a
+    // fixed one; every text in the app follows (Theme.textScale), held to
+    // 88-135 % so the layouts still fit.
+    ColumnLayout {
+        Layout.fillWidth: true
+        spacing: 4
+        RowLayout {
+            Layout.fillWidth: true
+            Label { text: qsTr("Text size"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+            Repeater {
+                model: [{ v: "system", l: qsTr("System") }, { v: "100", l: "100 %" }, { v: "115", l: "115 %" }, { v: "130", l: "130 %" }]
+                delegate: AppButton {
+                    required property var modelData
+                    objectName: "textSize" + modelData.v
+                    text: modelData.l
+                    checked: Engine.textSize === modelData.v
+                    Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                    focusPolicy: Qt.NoFocus
+                    onClicked: Engine.textSize = modelData.v
+                }
+            }
+        }
+        Label {
+            Layout.fillWidth: true
+            visible: Engine.textSize === "system"
+            text: Engine.systemTextScale > 1.351
+                  ? qsTr("The system's text size is %1 %; the app stops at 135 % so its rows still fit.").arg(Math.round(Engine.systemTextScale * 100))
+                  : qsTr("Follows the system's text size, now %1 %.").arg(Math.round(Engine.systemTextScale * 100))
+            color: Theme.textDim
+            font.pixelSize: Theme.px(12)
+            wrapMode: Text.Wrap
+        }
+    }
     // Spots on the display (the radio's, from every client) and this app's
     // DX cluster connection, whose spots go to the radio.
     RowLayout {
         Layout.fillWidth: true
         Layout.topMargin: Theme.spacing / 2
-        Label { text: qsTr("Spots"); color: Theme.textDim; font.pixelSize: 16; Layout.fillWidth: true }
+        Label { text: qsTr("Spots"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
         AppButton {
             text: Engine.showSpots ? qsTr("Shown") : qsTr("Hidden")
             checked: Engine.showSpots
@@ -148,7 +181,7 @@ ColumnLayout {
             Layout.fillWidth: true
             text: (Engine.dxCluster.host || "") + ":" + (Engine.dxCluster.port || "")
             color: Theme.textDim
-            font.pixelSize: 13
+            font.pixelSize: Theme.px(13)
             elide: Text.ElideRight
         }
     }
@@ -160,7 +193,7 @@ ColumnLayout {
         text: Engine.dxClusterStatus
         color: Engine.dxClusterStatusKind === "ok" ? "#00cc66"
              : Engine.dxClusterStatusKind === "failed" ? Theme.transmit : Theme.textDim
-        font.pixelSize: 13
+        font.pixelSize: Theme.px(13)
         wrapMode: Text.WordWrap
     }
     RowLayout {
@@ -171,7 +204,7 @@ ColumnLayout {
             Layout.fillWidth: true
             placeholderText: qsTr("Cluster server")
             text: Engine.dxCluster.host || ""
-            font.pixelSize: 14
+            font.pixelSize: Theme.px(14)
             inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhUrlCharactersOnly
             onEditingFinished: if (text !== Engine.dxCluster.host) Engine.setDxCluster("host", text)
         }
@@ -180,7 +213,7 @@ ColumnLayout {
             Layout.preferredWidth: 72
             placeholderText: qsTr("Port")
             text: Engine.dxCluster.port || ""
-            font.pixelSize: 14
+            font.pixelSize: Theme.px(14)
             inputMethodHints: Qt.ImhDigitsOnly
             validator: IntValidator { bottom: 1; top: 65535 }
             onEditingFinished: Engine.setDxCluster("port", Number(text))
@@ -193,7 +226,7 @@ ColumnLayout {
             Layout.fillWidth: true
             placeholderText: qsTr("Callsign (the radio's if empty)")
             text: Engine.dxCluster.callsignFromRadio ? "" : (Engine.dxCluster.callsign || "")
-            font.pixelSize: 14
+            font.pixelSize: Theme.px(14)
             inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
             onEditingFinished: Engine.setDxCluster("callsign", text)
         }
@@ -210,7 +243,7 @@ ColumnLayout {
         text: qsTr("Logs in as %1. Spots go to the radio, so every program on it shows them; tap one on the display to tune to it. Auto connects with the radio.")
               .arg(Engine.dxCluster.callsign || qsTr("(no callsign)"))
         color: Theme.textDim
-        font.pixelSize: 12
+        font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
     // 2D waterfall or the 3D stacked trace.
@@ -239,7 +272,7 @@ ColumnLayout {
         visible: Engine.spectrum3D
         text: qsTr("3D floor  %1 dB under the noise").arg(Engine.spectrum3DFloorDepth)
         color: Theme.textDim
-        font.pixelSize: 15
+        font.pixelSize: Theme.px(15)
     }
     Slider {
         Accessible.name: qsTr("3D floor")
@@ -257,7 +290,7 @@ ColumnLayout {
         visible: Engine.spectrum3D
         text: qsTr("3D smoothing")
         color: Theme.textDim
-        font.pixelSize: 15
+        font.pixelSize: Theme.px(15)
     }
     RowLayout {
         visible: Engine.spectrum3D
@@ -280,7 +313,7 @@ ColumnLayout {
         visible: Engine.spectrum3D
         text: qsTr("3D gain  %1").arg(Engine.spectrum3DGain)
         color: Theme.textDim
-        font.pixelSize: 15
+        font.pixelSize: Theme.px(15)
     }
     Slider {
         Accessible.name: qsTr("3D gain")
@@ -306,7 +339,7 @@ ColumnLayout {
         Label {
             text: ps.title + "  " + Math.round(psSlider.value)
             color: Theme.textDim
-            font.pixelSize: 15
+            font.pixelSize: Theme.px(15)
         }
         Slider {
             id: psSlider
@@ -329,7 +362,7 @@ ColumnLayout {
 
     RowLayout {
         Layout.fillWidth: true
-        Label { text: qsTr("Waterfall"); color: Theme.textDim; font.pixelSize: 16; Layout.fillWidth: true }
+        Label { text: qsTr("Waterfall"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
         AppButton {
             text: qsTr("Auto")
             checked: Engine.wfAutoLevel
@@ -337,7 +370,7 @@ ColumnLayout {
             onClicked: Engine.wfAutoLevel = !Engine.wfAutoLevel
         }
     }
-    Label { text: qsTr("Black level  %1").arg(Engine.wfBlackLevel); color: Theme.textDim; font.pixelSize: 15 }
+    Label { text: qsTr("Black level  %1").arg(Engine.wfBlackLevel); color: Theme.textDim; font.pixelSize: Theme.px(15) }
     Slider {
         Accessible.name: qsTr("Black level")
         Accessible.onIncreaseAction: { increase(); moved() }
@@ -347,7 +380,7 @@ ColumnLayout {
         value: Engine.wfBlackLevel
         onMoved: Engine.wfBlackLevel = Math.round(value)
     }
-    Label { text: qsTr("Colour gain  %1").arg(Engine.wfColorGain); color: Theme.textDim; font.pixelSize: 15 }
+    Label { text: qsTr("Colour gain  %1").arg(Engine.wfColorGain); color: Theme.textDim; font.pixelSize: Theme.px(15) }
     Slider {
         Accessible.name: qsTr("Colour gain")
         Accessible.onIncreaseAction: { increase(); moved() }
@@ -361,7 +394,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         Layout.topMargin: Theme.spacing / 2
-        Label { text: qsTr("Spectrum"); color: Theme.textDim; font.pixelSize: 16; Layout.fillWidth: true }
+        Label { text: qsTr("Spectrum"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
         AppButton {
             text: qsTr("Auto")
             checked: Engine.traceAutoRange
@@ -373,7 +406,7 @@ ColumnLayout {
         text: qsTr("Reference  %1 dBm").arg(Engine.traceRefDbm)
         color: Theme.textDim
         opacity: Engine.traceAutoRange ? 0.5 : 1
-        font.pixelSize: 15
+        font.pixelSize: Theme.px(15)
     }
     Slider {
         Accessible.name: qsTr("Reference level")
@@ -390,7 +423,7 @@ ColumnLayout {
     Label {
         text: qsTr("Range  %1 dB").arg(Engine.traceRangeDb)
         color: Theme.textDim
-        font.pixelSize: 15
+        font.pixelSize: Theme.px(15)
     }
     Slider {
         Accessible.name: qsTr("Range")
