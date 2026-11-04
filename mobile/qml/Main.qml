@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import AetherMobile
 
 ApplicationWindow {
@@ -86,6 +87,84 @@ ApplicationWindow {
             certDialog.expected = expected
             certDialog.presented = presented
             certDialog.open()
+        }
+    }
+
+    // The radio takes one station at a time (multiFLEX off, or a one-client
+    // licence over SmartLink) and another is on it: the connect waits, as
+    // the desktop's Connected stations dialog asks before going on.
+    Popup {
+        id: conflictDialog
+        objectName: "stationConflict"
+        readonly property var c: Engine.stationConflict
+        visible: !!c.open
+        modal: true
+        closePolicy: Popup.CloseOnEscape
+        anchors.centerIn: Overlay.overlay
+        width: Math.min(480, window.width - 2 * Theme.spacing)
+        margins: Theme.spacing
+        padding: Theme.spacing
+        background: Rectangle { color: Theme.surface; border.color: Theme.surfaceRaised; radius: Theme.radius }
+        // Esc, or the popup going away any other way while asked: cancel.
+        onClosed: if (Engine.stationConflict.open) Engine.resolveStationConflict(0)
+        contentItem: ColumnLayout {
+            spacing: Theme.spacing
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Another station is on the radio")
+                color: Theme.text
+                font.bold: true
+                font.pixelSize: Math.round(Theme.buttonFont * 1.6)
+                wrapMode: Text.Wrap
+            }
+            Label {
+                Layout.fillWidth: true
+                text: (conflictDialog.c.wan
+                       ? qsTr("%1 takes one station at a time over SmartLink, and this one is on it:")
+                       : qsTr("%1 takes one station at a time (multiFLEX is off), and this one is on it:"))
+                      .arg(conflictDialog.c.radio || qsTr("The radio"))
+                color: Theme.text
+                wrapMode: Text.Wrap
+            }
+            Repeater {
+                model: conflictDialog.c.clients || []
+                delegate: ColumnLayout {
+                    required property var modelData
+                    required property int index
+                    Layout.fillWidth: true
+                    spacing: Theme.spacing / 2
+                    Label {
+                        Layout.fillWidth: true
+                        text: [modelData.program, modelData.station].filter(t => !!t).join(" — ") || qsTr("A station")
+                        color: Theme.text
+                        font.bold: true
+                        wrapMode: Text.Wrap
+                    }
+                    AppButton {
+                        objectName: "stationConflictDisconnect" + index
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Theme.touchTarget
+                        text: qsTr("Disconnect it and connect")
+                        focusPolicy: Qt.NoFocus
+                        onClicked: Engine.resolveStationConflict(modelData.handle)
+                    }
+                }
+            }
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Disconnecting ends that station's session on the radio. To share the radio instead, turn multiFLEX on in SmartSDR's Radio Setup.")
+                color: Theme.textDim
+                font.pixelSize: Math.round(Theme.buttonFont * 0.8)
+                wrapMode: Text.Wrap
+            }
+            AppButton {
+                objectName: "stationConflictCancel"
+                Layout.fillWidth: true
+                Layout.preferredHeight: Theme.touchTarget
+                text: qsTr("Cancel")
+                focusPolicy: Qt.NoFocus
+                onClicked: Engine.resolveStationConflict(0)
+            }
         }
     }
 

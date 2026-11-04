@@ -114,6 +114,10 @@ Q_LOGGING_CATEGORY(lcMobile, "aether.mobile")
 namespace AetherSDR::mobile {
 
 namespace {
+QVariantList wanClients(const WanRadioInfo& radio);
+} // namespace
+
+namespace {
 // Transmit lock: armed for five minutes after the last transmission, by a
 // press held for a second.
 constexpr qint64 kTxArmMs = 5 * 60 * 1000;
@@ -800,6 +804,50 @@ MobileEngine::MobileEngine(QObject* parent)
     startStreamThread(m_audioThread);
 
     connect(&rm, &RadioModel::connectionStateChanged, this, &MobileEngine::onConnectionStateChanged);
+    // The radio refused this app as a station (multiFLEX off with another on
+    // it, or no station slot left): no retry, which only met the same refusal
+    // again, and an answer saying what to do.
+    connect(&rm, &RadioModel::guiClientRegistrationFailed, this, [this](const QString&) {
+        m_wanUserDisconnect = true;
+        m_wanReconnectTimer.stop();
+        m_registrationRefused = true;
+        // Over SmartLink the radio's licence can allow two stations while
+        // multiFLEX is off, so the question before connecting is not asked;
+        // with SmartLink's list of the stations on the radio it is asked now,
+        // once the refused connection is closed.
+        if (m_wanActive) {
+            const QString serial = m_pendingWan.serial;
+            QTimer::singleShot(0, this, [this, serial] {
+                for (int i = 0; i < m_wanRadios.size(); ++i) {
+                    const WanRadioInfo& radio = m_wanRadios.at(i);
+                    const QVariantList clients = wanClients(radio);
+                    if (radio.serial == serial && !clients.isEmpty() && m_connectionState == QLatin1String("idle")) {
+                        m_conflictWanIndex = i;
+                        openStationConflict(true, radio.nickname.isEmpty() ? radio.model : radio.nickname, clients);
+                        return;
+                    }
+                }
+            });
+        }
+    });
+    // On the radio's network, multiFLEX off with another station on the
+    // radio: the engine waits before registering (the desktop asks with its
+    // Connected stations dialog); left unanswered, the app sat connected with
+    // nothing.
+    connect(&rm, &RadioModel::multiFlexConflictDetected, this, [this] {
+        RadioModel& r = m_session.radioModel();
+        QVariantList clients;
+        const quint32 ours = r.ourClientHandle();
+        for (auto it = r.clientInfoMap().cbegin(); it != r.clientInfoMap().cend(); ++it) {
+            if (it.key() != ours) {
+                clients << QVariantMap{{QStringLiteral("handle"), double(it.key())},
+                                       {QStringLiteral("program"), it->program},
+                                       {QStringLiteral("station"), it->station}};
+            }
+        }
+        qCInfo(lcMobile) << "multiFLEX off and" << clients.size() << "other station(s) on the radio: asking";
+        openStationConflict(false, r.nickname().isEmpty() ? r.model() : r.nickname(), clients);
+    });
     connect(&rm, &RadioModel::connectionError, this, [this](const QString& msg) {
         // iOS refuses connections into the home network while the app has no
         // Local Network permission, and the socket only says the host is
@@ -823,6 +871,12 @@ MobileEngine::MobileEngine(QObject* parent)
             text += QLatin1Char(' ')
                     + tr("If the radio is on this network, check that OksaSDR may use it: Settings › Privacy & "
                          "Security › Local Network › OksaSDR.");
+        }
+        if (m_registrationRefused) {
+            m_registrationRefused = false;
+            text = tr("The radio refused this app: it takes one station at a time (multiFLEX off) and another "
+                      "is on it, or all its station slots are in use. Disconnect the other station, or turn "
+                      "multiFLEX on in SmartSDR's Radio Setup, then Connect again.");
         }
         setLastError(text);
         if (m_connectionState == QLatin1String("connecting")) {
@@ -1377,6 +1431,17 @@ void MobileEngine::wireSmartLink()
     connect(&m_smartLink, &SmartLinkClient::radioListReceived, this,
             [this](const QList<WanRadioInfo>& radios) {
         m_smartLinkRetried = false;   // the server took the session
+        // What decides the one-station question, logged when it changes.
+        for (const WanRadioInfo& radio : radios) {
+            const auto old = std::find_if(m_wanRadios.cbegin(), m_wanRadios.cend(),
+                                          [&radio](const WanRadioInfo& r) { return r.serial == radio.serial; });
+            if (old == m_wanRadios.cend() || old->licensedClients != radio.licensedClients
+                || old->guiClientPrograms != radio.guiClientPrograms) {
+                qCInfo(lcMobile).noquote() << "SmartLink radio" << radio.model << "licensed clients"
+                                           << radio.licensedClients << "stations on it:"
+                                           << QString(radio.guiClientPrograms).replace(QChar(0x7f), QLatin1Char(' '));
+            }
+        }
         m_wanRadios = radios;
         emit smartLinkRadiosChanged();
     });
@@ -1532,13 +1597,110 @@ void MobileEngine::signOutSmartLink()
     setSmartLinkState(QStringLiteral("signedOut"));
 }
 
+namespace {
+// SmartLink's comma lists of the radio's GUI clients (DEL for spaces), as
+// the desktop's splitClientField / buildDisconnectClients read them.
+QStringList wanClientField(QString raw)
+{
+    raw.replace(QChar(0x7f), QLatin1Char(' '));
+    QStringList values;
+    for (const QString& value : raw.split(QLatin1Char(','), Qt::SkipEmptyParts)) {
+        values << value.trimmed();
+    }
+    return values;
+}
+
+QVariantList wanClients(const WanRadioInfo& radio)
+{
+    const QStringList handles = wanClientField(radio.guiClientHandles);
+    const QStringList programs = wanClientField(radio.guiClientPrograms);
+    const QStringList stations = wanClientField(radio.guiClientStations);
+    QVariantList clients;
+    QList<quint32> seen;
+    for (int i = 0; i < handles.size(); ++i) {
+        QString text = handles.at(i);
+        if (text.startsWith(QLatin1String("0x"), Qt::CaseInsensitive)) {
+            text = text.mid(2);
+        }
+        bool ok = false;
+        const quint32 handle = text.toUInt(&ok, 16);
+        if (!ok || handle == 0 || seen.contains(handle)) {
+            continue;
+        }
+        seen << handle;
+        clients << QVariantMap{{QStringLiteral("handle"), double(handle)},
+                               {QStringLiteral("program"), programs.value(i)},
+                               {QStringLiteral("station"), stations.value(i)}};
+    }
+    return clients;
+}
+} // namespace
+
 void MobileEngine::connectSmartLinkRadio(int index)
 {
     if (index < 0 || index >= m_wanRadios.size() || m_connectionState != QLatin1String("idle")) {
         return;
     }
+    const WanRadioInfo& radio = m_wanRadios.at(index);
+    // A radio that takes one station at a time, with another on it: ask
+    // first, as the desktop does before a SmartLink connect (its
+    // confirmClientSlotAvailability). Connecting anyway, the radio refused
+    // this app's registration (Juho Kontio: multiFLEX off, AetherSDR at his
+    // remote station).
+    const QVariantList clients = wanClients(radio);
+    if (radio.licensedClients <= 1 && !clients.isEmpty()) {
+        qCInfo(lcMobile) << "SmartLink radio takes one station (licensed clients" << radio.licensedClients
+                         << ") and" << clients.size() << "is on it: asking";
+        m_conflictWanIndex = index;
+        openStationConflict(true, radio.nickname.isEmpty() ? radio.model : radio.nickname, clients);
+        return;
+    }
+    connectSmartLinkRadioNow(index, {});
+}
+
+void MobileEngine::openStationConflict(bool wan, const QString& radio, const QVariantList& clients)
+{
+    m_stationConflict = {{QStringLiteral("open"), true},
+                         {QStringLiteral("wan"), wan},
+                         {QStringLiteral("radio"), radio},
+                         {QStringLiteral("clients"), clients}};
+    emit stationConflictChanged();
+}
+
+void MobileEngine::resolveStationConflict(int handle)
+{
+    if (!m_stationConflict.value(QStringLiteral("open")).toBool()) {
+        return;
+    }
+    const bool wan = m_stationConflict.value(QStringLiteral("wan")).toBool();
+    const quint32 h = quint32(handle);
+    m_stationConflict.clear();
+    emit stationConflictChanged();
+    qCInfo(lcMobile) << "station conflict:" << (h ? QStringLiteral("disconnect 0x%1").arg(h, 8, 16, QLatin1Char('0'))
+                                                  : QStringLiteral("cancel"));
+    RadioModel& rm = m_session.radioModel();
+    if (wan) {
+        const int index = m_conflictWanIndex;
+        m_conflictWanIndex = -1;
+        if (h && index >= 0 && index < m_wanRadios.size() && m_connectionState == QLatin1String("idle")) {
+            connectSmartLinkRadioNow(index, {h});
+        }
+        return;
+    }
+    // On the radio's own network the connect is paused inside the engine.
+    if (h) {
+        rm.resolveMultiFlexConflict(h);
+    } else {
+        rm.cancelMultiFlexConflict();
+    }
+}
+
+void MobileEngine::connectSmartLinkRadioNow(int index, const QList<quint32>& disconnectHandles)
+{
     m_savedRadioAddress.clear();
     const WanRadioInfo& radio = m_wanRadios.at(index);
+    // The chosen station goes before this app registers (disconnectPendingClientsThen).
+    m_session.radioModel().setPendingClientDisconnects(disconnectHandles);
     if (radio.publicTlsPort <= 0 || radio.publicIp.isEmpty()) {
         setLastError(tr("%1 is not reachable through SmartLink right now.").arg(radio.nickname));
         return;
@@ -7577,6 +7739,12 @@ void MobileEngine::onConnectionStateChanged(bool connected)
     stopAudio();
     bindSlice(nullptr);
     bindPan(nullptr);
+    // A question about the radio's other station goes with the connection.
+    if (m_stationConflict.value(QStringLiteral("open")).toBool()
+        && !m_stationConflict.value(QStringLiteral("wan")).toBool()) {
+        m_stationConflict.clear();
+        emit stationConflictChanged();
+    }
     setConnectionState(QStringLiteral("idle"));
 }
 

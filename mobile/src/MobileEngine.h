@@ -361,6 +361,11 @@ class MobileEngine : public QObject {
     // Every GUI client on the radio (multiFLEX), this app's marked: handle,
     // station, program, ours.
     Q_PROPERTY(QVariantList stations READ stations NOTIFY stationsChanged)
+    // A radio that takes one station at a time (multiFLEX off, or a
+    // one-client licence over SmartLink) with another station on it: the
+    // connect waits for an answer. Empty when none; else open, radio, wan and
+    // clients [{handle, program, station}].
+    Q_PROPERTY(QVariantMap stationConflict READ stationConflict NOTIFY stationConflictChanged)
     Q_PROPERTY(int activeSliceId READ activeSliceId NOTIFY slicesChanged)
     Q_PROPERTY(bool canAddSlice READ canAddSlice NOTIFY slicesChanged)
     // Split, as SmartSDR/AetherSDR: a TX slice beside the RX slice.
@@ -1354,6 +1359,7 @@ public:
     // The operator's step for the active slice (the desktop's STEP control).
     Q_INVOKABLE void setStepHz(int hz);
     QVariantList stations() const;
+    QVariantMap stationConflict() const { return m_stationConflict; }
     // Ends another station's session on the radio (multiFLEX), freeing its
     // slices and panadapters. Never this app's own.
     Q_INVOKABLE void disconnectStation(int handle);
@@ -1470,6 +1476,9 @@ public:
     Q_INVOKABLE void signOutSmartLink();
     // Connect to the radio at `index` in smartLinkRadios.
     Q_INVOKABLE void connectSmartLinkRadio(int index);
+    // Answer to stationConflict: disconnect that station and connect, or 0
+    // to cancel the connect.
+    Q_INVOKABLE void resolveStationConflict(int handle);
     // Answer to certificateChanged: trust the radio's new certificate or not.
     Q_INVOKABLE void answerCertificate(bool accept);
     // Development aid (--demo): connect once the simulator entry appears.
@@ -1596,6 +1605,7 @@ signals:
     void antennaChanged();
     void slicesChanged();
     void stationsChanged();
+    void stationConflictChanged();
     void phoneChanged();
     void panDisplayChanged();
     void dvkChanged();
@@ -1707,6 +1717,8 @@ private:
     // of a way of receiving RTTY ("RTTY", "DIGL", "DIGU").
     double rttyDialFor(const QString& via, double markMhz) const;
     void startWanConnect();
+    void connectSmartLinkRadioNow(int index, const QList<quint32>& disconnectHandles);
+    void openStationConflict(bool wan, const QString& radio, const QVariantList& clients);
     void setSmartLinkState(const QString& state);
 
     RadioSession m_session;
@@ -2214,6 +2226,10 @@ private:
     WanConnection m_wan;
     QList<WanRadioInfo> m_wanRadios;
     WanRadioInfo m_pendingWan;
+    QVariantMap m_stationConflict;
+    // The SmartLink radio a conflict question is about (-1: a LAN one).
+    int m_conflictWanIndex{-1};
+    bool m_registrationRefused{false};
     bool m_wanActive{false};
     bool m_wanUserDisconnect{false};
     // A host name being looked up before connecting (connectToAddress).
