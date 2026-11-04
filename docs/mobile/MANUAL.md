@@ -1726,8 +1726,12 @@ radio.
   device has accepted it). Away from home the device is reached over a VPN
   that routes your station's network, e.g. WireGuard or a Tailscale subnet
   router (a PC, Raspberry Pi or Apple TV at the station sharing its
-  network); SmartLink carries only what the radio relays (state, power,
-  SWR, Operate / Standby).
+  network), or, as FlexRadio's guide to remote Genius devices, without a
+  VPN: TCP port 9008 (PGXL) or 9010 (TGXL) forwarded to the device in the
+  station's router, the station's public address or DDNS name entered as
+  the Address, and the Remote code set (the device then asks for it).
+  SmartLink carries only what the radio relays (state, power, SWR,
+  Operate / Standby).
 
   ![Radio Setup › Amp](manual/setup-amp.jpg)
 - **USB** — USB-serial (FTDI) cables in the radio's USB ports, as
