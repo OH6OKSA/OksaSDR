@@ -25,7 +25,9 @@ The radio then reports them to every client, SmartLink ones included, as
 it would the real devices, and they go when this exits (the connection
 closes). No interlock and no meters are created, so the radio's transmit
 is not gated on the stand-ins. Every line the radio sends about them is
-printed ("RADIO ->").
+printed ("RADIO ->"). --radio-tune makes the TGXL's autotune key the
+radio's tune carrier for its 3 s, as the real tuner does: that TRANSMITS,
+at the radio's tune power, on its TX slice.
 """
 
 import argparse
@@ -37,6 +39,8 @@ LOCK = threading.Lock()
 PGXL = {"state": "STANDBY", "fanmode": "STANDARD", "meffa": "STANDBY"}
 TGXL = {"operate": 1, "tuning": 0, "relayC1": 44, "relayL": 12, "relayC2": 8, "antA": 0, "bypass": 0}
 TGXL_CLIENTS = []
+TGXL_TUNE_END = [0.0]   # when the running autotune ends
+RADIO_SEND = {}   # device name -> send(cmd) on its radio connection (--radio)
 
 
 def log(*a):
@@ -48,7 +52,9 @@ def pgxl_status(transmit):
     if transmit:
         s.update(state="TRANSMIT_A", fwd="60.0", swr="-26.0", id="38.5", vdd="51.9")
     else:
-        s.update(fwd="30.0", swr="-60.0", id="0.0", vdd="0.0" if s["state"] == "STANDBY" else "51.8")
+        # Idle: no forward power (0 dBm is 1 mW, shown as 0 W; 30 dBm read
+        # as a steady 1 W).
+        s.update(fwd="0.0", swr="-60.0", id="0.0", vdd="0.0" if s["state"] == "STANDBY" else "51.8")
     return ("state={state} bandA=20 bandB=0 bsrcA=FLEX bsrcB=FLEX flexA=FLEX-8600 flexB=FLEX-8600 vac=245 "
             "vdd={vdd} id={id} peakid={id} fwd={fwd} peakfwd={fwd} swr={swr} temp=31.4 cntfreq=0 cat1freq=0 "
             "cat2freq=0 hltemp=29.8 biasA=RADIO_AAB biasB=RADIO_AB fanmode={fanmode} meffa={meffa}").format(**s)
@@ -60,10 +66,19 @@ def tgxl_state():
 
 
 def tgxl_status(seq):
-    return ("S{seq}|status fwd=21.42 peak=21.42 max=62.43 swr=-60.0000 pttA=0 bandA=6 modeA=1 flexA=FLEX-8600 "
+    # While it tunes the tuner reads the radio's carrier: fwd in dBm (41.76 is
+    # 15 W, the test radio's tune power), swr as return loss falling from
+    # -9.5 dB (SWR 2.0) toward the match as the search goes on.
+    t = dict(TGXL)
+    if TGXL["tuning"]:
+        left = max(0.0, TGXL_TUNE_END[0] - time.time())
+        t.update(fwd="41.76", swr="%.4f" % -(9.5 + (3.0 - left) * 5.0), ptt=1)
+    else:
+        t.update(fwd="21.42", swr="-60.0000", ptt=0)
+    return ("S{seq}|status fwd={fwd} peak={fwd} max=62.43 swr={swr} pttA={ptt} bandA=6 modeA=1 flexA=FLEX-8600 "
             "freqA=14161.500 bypassA={bypass} bypassRxA=0 antA={antA} pttB=0 bandB=0 modeB=0 flexB=FLEX-8600 "
             "freqB=0.000 bypassB=0 bypassRxB=0 antB=0 state={operate} active=1 tuning={tuning} bypass={bypass} ag=0 "
-            "relayC1={relayC1} relayL={relayL} relayC2={relayC2}").format(seq=seq, **TGXL)
+            "relayC1={relayC1} relayL={relayL} relayC2={relayC2}").format(seq=seq, **t)
 
 
 def push_tgxl(line):
@@ -97,12 +112,12 @@ def lines(conn):
             yield line.decode(errors="replace").strip()
 
 
-def handshake(conn, version, auth, ok_reply, auth_prefix, peer=None, radio=""):
+def handshake(conn, version, auth, ok_reply, auth_prefix, peer=None, radio="", ask_lan=False):
     # The real devices ask a client from outside their network, never the
     # paired radio: with --radio, the radio's connection is not asked, nor
     # one from the mock's own /24 (its LAN; a VPN client is asked).
     lan = conn.getsockname()[0].rsplit(".", 1)[0] + "."
-    if not auth or (radio and peer == radio) or (peer or "").startswith(lan):
+    if not auth or (radio and peer == radio) or (not ask_lan and (peer or "").startswith(lan)):
         conn.sendall(f"V{version}\n".encode())
         return lines(conn)
     conn.sendall(f"V{version} AUTH\n".encode())
@@ -120,7 +135,7 @@ def handshake(conn, version, auth, ok_reply, auth_prefix, peer=None, radio=""):
 
 def pgxl_handler(conn, peer, args):
     log("PGXL client", peer[0])
-    for line in handshake(conn, "3.8.9", args.auth, "Authorized", "auth code=", peer[0], args.radio):
+    for line in handshake(conn, "3.8.9", args.auth, "Authorized", "auth code=", peer[0], args.radio, args.ask_lan):
         if not line.startswith("C"):
             continue
         seq, _, cmd = line[1:].partition("|")
@@ -129,7 +144,9 @@ def pgxl_handler(conn, peer, args):
         if cmd == "info":
             reply = "0|serial=10-200/24-0203  version=3.8.9 protocol=1.0 mains=240"
         elif cmd == "setup read":
-            reply = "0|ledintens=141 txdelay=16 inactivity-timeout=0 nickname=PowerGeniusXL authcode="
+            # A device with a remote code reports it here (the app then leaves
+            # authcode= out of its setup writes, as 4O3A firmware 3.9.8 wants).
+            reply = "0|ledintens=141 txdelay=16 inactivity-timeout=0 nickname=PowerGeniusXL authcode=" + args.auth
         elif cmd == "status":
             with LOCK:
                 reply = "0|" + pgxl_status(args.transmit)
@@ -164,7 +181,7 @@ def tgxl_handler(conn, peer, args):
     log("TGXL client", peer[0])
     TGXL_CLIENTS.append(conn)
     try:
-        for line in handshake(conn, "1.2.17", args.auth, "auth OK", "auth ", peer[0], args.radio):
+        for line in handshake(conn, "1.2.17", args.auth, "auth OK", "auth ", peer[0], args.radio, args.ask_lan):
             if not line.startswith("C"):
                 continue
             seq, _, cmd = line[1:].partition("|")
@@ -206,23 +223,35 @@ def tgxl_handler(conn, peer, args):
                     conn.sendall(f"R{seq}|50000013|\n".encode())
             elif cmd == "autotune":
                 conn.sendall(f"R{seq}|0|\n".encode())
+                key = RADIO_SEND.get("TGXL") if args.radio_tune else None
                 with LOCK:
                     if TGXL["tuning"]:
                         TGXL["tuning"] = 0
                         push_tgxl("S0|" + tgxl_state())
                         push_tgxl("M|Tune aborted")
+                        if key:
+                            key("transmit tune 0")
                         continue
                     TGXL["tuning"] = 1
+                    TGXL_TUNE_END[0] = time.time() + 3
                     push_tgxl("S0|" + tgxl_state())
+                # The real tuner keys the radio's tune carrier (at the radio's
+                # tune power) while it searches: --radio-tune does the same.
+                if key:
+                    key("transmit tune 1")
 
                 def finish():
-                    time.sleep(3)
-                    with LOCK:
-                        if not TGXL["tuning"]:
-                            return
-                        TGXL.update(tuning=0, relayC1=52, relayL=17, relayC2=6)
-                        push_tgxl("S0|" + tgxl_state())
-                    push_tgxl("M|Tuned SWR: 1.13:1")
+                    try:
+                        time.sleep(3)
+                        with LOCK:
+                            if not TGXL["tuning"]:
+                                return
+                            TGXL.update(tuning=0, relayC1=52, relayL=17, relayC2=6)
+                            push_tgxl("S0|" + tgxl_state())
+                        push_tgxl("M|Tuned SWR: 1.13:1")
+                    finally:
+                        if key:
+                            key("transmit tune 0")
                 threading.Thread(target=finish, daemon=True).start()
             else:
                 conn.sendall(f"R{seq}|50000015|\n".encode())
@@ -251,6 +280,8 @@ def radio_link(args, name, create):
             pending[n] = cmd
         log("RADIO <-", cmd)
         sock.sendall(f"C{n}|{cmd}\n".encode())
+
+    RADIO_SEND[name] = send
 
     def pinger():
         while True:
@@ -298,10 +329,13 @@ def main():
     ap.add_argument("--pgxl-port", type=int, default=9008)
     ap.add_argument("--tgxl-port", type=int, default=9010)
     ap.add_argument("--auth", default="", help="ask for this remote code (AUTH greeting)")
+    ap.add_argument("--ask-lan", action="store_true", help="with --auth, ask the mock's own LAN too (a test from this PC)")
     ap.add_argument("--transmit", action="store_true", help="report the amplifier keyed at 1 kW")
     ap.add_argument("--radio", default="", help="register the stand-ins with this FLEX radio (TCP 4992)")
     ap.add_argument("--radio-tgxl", action="store_true", help="with --radio, register the TGXL too")
     ap.add_argument("--radio-raw", default="", help="with --radio, append every line the radio sends to this file")
+    ap.add_argument("--radio-tune", action="store_true",
+                    help="with --radio-tgxl, key the radio's tune carrier for the 3 s autotune, as the real tuner (transmits!)")
     ap.add_argument("--advertise", default="", help="with --radio, the address the radio is told (default: ours toward it)")
     args = ap.parse_args()
     if args.radio:
@@ -309,7 +343,7 @@ def main():
             "amplifier create ip={ip} port=%d model=PowerGeniusXL serial_num=MOCK-PGXL ant=ANT1:PORTA" % args.pgxl_port)).start()
         if args.radio_tgxl:
             threading.Thread(target=radio_link, daemon=True, args=(args, "TGXL",
-                "amplifier create ip={ip} port=%d model=TunerGeniusXL serial_num=MOCK-TGXL ant=ANT1:PORTA" % args.tgxl_port)).start()
+                "amplifier create ip={ip} port=%d model=TunerGeniusXL serial_num=MOCK-TGXL ant=ANT1" % args.tgxl_port)).start()
     threading.Thread(target=serve, args=(args.pgxl_port, args.bind, lambda c, p: pgxl_handler(c, p, args)), daemon=True).start()
     serve(args.tgxl_port, args.bind, lambda c, p: tgxl_handler(c, p, args))
 
