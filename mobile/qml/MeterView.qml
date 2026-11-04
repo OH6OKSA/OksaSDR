@@ -306,10 +306,22 @@ Item {
                      : meter.style === "analog2" ? [{ title: qsTr("First meter: receive"), tx: false }, { title: qsTr("First meter: transmit"), tx: true }]
                      : meter.style === "two" ? [{ title: qsTr("Upper bar: receive"), tx: false }, { title: qsTr("Upper bar: transmit"), tx: true }]
                      : [{ title: qsTr("Receive"), tx: false }, { title: qsTr("Transmit"), tx: true }]
-                delegate: ColumnLayout {
+                // Each in a framed box of its own with an RX / TX tag in the
+                // slice / transmit colour, so where receive ends and transmit
+                // begins shows at a glance (a dim title alone did not).
+                delegate: Rectangle {
                     id: section
                     required property var modelData
-                    spacing: Theme.spacing / 2
+                    readonly property color tagColor: modelData.tx ? Theme.transmitTag : Theme.sliceTag
+                    color: Theme.background
+                    border.color: Qt.darker(tagColor, 1.4)
+                    radius: Theme.radius
+                    // Full width also when a section has fewer choices.
+                    implicitWidth: Math.max(sectionColumn.implicitWidth, chooser.cellWidth * 4 + 12) + 12
+                    implicitHeight: sectionColumn.implicitHeight + 12
+                    Layout.preferredWidth: implicitWidth
+                    Layout.preferredHeight: implicitHeight
+                    Layout.topMargin: Theme.spacing / 2
                     // The radio's readings, then the amplifier's under their
                     // own label (re-read only when an amplifier comes or goes).
                     readonly property var kinds: {
@@ -320,74 +332,102 @@ Item {
                     readonly property var radioKinds: kinds.filter(k => k.indexOf("Amp ") !== 0 && k.indexOf("Tuner ") !== 0)
                     readonly property var ampKinds: kinds.filter(k => k.indexOf("Amp ") === 0)
                     readonly property var tunerKinds: kinds.filter(k => k.indexOf("Tuner ") === 0)
-                    Label { text: section.modelData.title; color: Theme.textDim; font.pixelSize: Math.round(Theme.buttonFont * 0.85) }
-                    GridLayout {
-                        columns: 4
-                        columnSpacing: 4
-                        rowSpacing: 4
-                        Repeater {
-                            model: section.radioKinds
-                            delegate: AppButton {
-                                required property string modelData
-                                objectName: "meterKind" + modelData.replace(/ /g, "") + (section.modelData.tx ? "Tx" : "Rx")
-                                text: modelData
-                                checked: (section.modelData.tx ? meter.txKind : meter.rxKind) === modelData
-                                focusPolicy: Qt.NoFocus
-                                Layout.preferredWidth: chooser.cellWidth
-                                Layout.preferredHeight: Theme.touchTarget
-                                onClicked: Engine.setMeter(meter.side, section.modelData.tx, modelData)
+                    ColumnLayout {
+                        id: sectionColumn
+                        x: 6
+                        y: 6
+                        spacing: Theme.spacing / 2
+                        RowLayout {
+                            spacing: 6
+                            Rectangle {
+                                color: section.tagColor
+                                radius: 3
+                                implicitWidth: tagText.implicitWidth + 10
+                                implicitHeight: tagText.implicitHeight + 2
+                                Label {
+                                    id: tagText
+                                    anchors.centerIn: parent
+                                    text: section.modelData.tx ? qsTr("TX") : qsTr("RX")
+                                    color: "#ffffff"
+                                    font.bold: true
+                                    font.pixelSize: Math.round(Theme.buttonFont * 0.8)
+                                }
+                            }
+                            Label {
+                                text: section.modelData.title
+                                color: Theme.text
+                                font.bold: true
+                                font.pixelSize: Math.round(Theme.buttonFont * 0.85)
                             }
                         }
-                    }
-                    Label {
-                        visible: section.ampKinds.length > 0
-                        text: qsTr("Amplifier")
-                        color: Theme.textDim
-                        font.pixelSize: Math.round(Theme.buttonFont * 0.8)
-                    }
-                    GridLayout {
-                        visible: section.ampKinds.length > 0
-                        columns: 4
-                        columnSpacing: 4
-                        rowSpacing: 4
-                        Repeater {
-                            model: section.ampKinds
-                            delegate: AppButton {
-                                required property string modelData
-                                objectName: "meterKind" + modelData.replace(/ /g, "") + (section.modelData.tx ? "Tx" : "Rx")
-                                text: MeterMarks.ampLabel(modelData)
-                                Accessible.name: qsTr("Amplifier %1").arg(text)
-                                checked: (section.modelData.tx ? meter.txKind : meter.rxKind) === modelData
-                                focusPolicy: Qt.NoFocus
-                                Layout.preferredWidth: chooser.cellWidth
-                                Layout.preferredHeight: Theme.touchTarget
-                                onClicked: Engine.setMeter(meter.side, section.modelData.tx, modelData)
+                        GridLayout {
+                            columns: 4
+                            columnSpacing: 4
+                            rowSpacing: 4
+                            Repeater {
+                                model: section.radioKinds
+                                delegate: AppButton {
+                                    required property string modelData
+                                    objectName: "meterKind" + modelData.replace(/ /g, "") + (section.modelData.tx ? "Tx" : "Rx")
+                                    text: modelData
+                                    checked: (section.modelData.tx ? meter.txKind : meter.rxKind) === modelData
+                                    focusPolicy: Qt.NoFocus
+                                    Layout.preferredWidth: chooser.cellWidth
+                                    Layout.preferredHeight: Theme.touchTarget
+                                    onClicked: Engine.setMeter(meter.side, section.modelData.tx, modelData)
+                                }
                             }
                         }
-                    }
-                    Label {
-                        visible: section.tunerKinds.length > 0
-                        text: qsTr("Tuner")
-                        color: Theme.textDim
-                        font.pixelSize: Math.round(Theme.buttonFont * 0.8)
-                    }
-                    GridLayout {
-                        visible: section.tunerKinds.length > 0
-                        columns: 4
-                        columnSpacing: 4
-                        rowSpacing: 4
-                        Repeater {
-                            model: section.tunerKinds
-                            delegate: AppButton {
-                                required property string modelData
-                                objectName: "meterKind" + modelData.replace(/ /g, "") + (section.modelData.tx ? "Tx" : "Rx")
-                                text: modelData === "Tuner power" ? qsTr("Power") : qsTr("SWR")
-                                Accessible.name: qsTr("Tuner %1").arg(text)
-                                checked: (section.modelData.tx ? meter.txKind : meter.rxKind) === modelData
-                                focusPolicy: Qt.NoFocus
-                                Layout.preferredWidth: chooser.cellWidth
-                                Layout.preferredHeight: Theme.touchTarget
-                                onClicked: Engine.setMeter(meter.side, section.modelData.tx, modelData)
+                        Label {
+                            visible: section.ampKinds.length > 0
+                            text: qsTr("Amplifier")
+                            color: Theme.textDim
+                            font.pixelSize: Math.round(Theme.buttonFont * 0.8)
+                        }
+                        GridLayout {
+                            visible: section.ampKinds.length > 0
+                            columns: 4
+                            columnSpacing: 4
+                            rowSpacing: 4
+                            Repeater {
+                                model: section.ampKinds
+                                delegate: AppButton {
+                                    required property string modelData
+                                    objectName: "meterKind" + modelData.replace(/ /g, "") + (section.modelData.tx ? "Tx" : "Rx")
+                                    text: MeterMarks.ampLabel(modelData)
+                                    Accessible.name: qsTr("Amplifier %1").arg(text)
+                                    checked: (section.modelData.tx ? meter.txKind : meter.rxKind) === modelData
+                                    focusPolicy: Qt.NoFocus
+                                    Layout.preferredWidth: chooser.cellWidth
+                                    Layout.preferredHeight: Theme.touchTarget
+                                    onClicked: Engine.setMeter(meter.side, section.modelData.tx, modelData)
+                                }
+                            }
+                        }
+                        Label {
+                            visible: section.tunerKinds.length > 0
+                            text: qsTr("Tuner")
+                            color: Theme.textDim
+                            font.pixelSize: Math.round(Theme.buttonFont * 0.8)
+                        }
+                        GridLayout {
+                            visible: section.tunerKinds.length > 0
+                            columns: 4
+                            columnSpacing: 4
+                            rowSpacing: 4
+                            Repeater {
+                                model: section.tunerKinds
+                                delegate: AppButton {
+                                    required property string modelData
+                                    objectName: "meterKind" + modelData.replace(/ /g, "") + (section.modelData.tx ? "Tx" : "Rx")
+                                    text: modelData === "Tuner power" ? qsTr("Power") : qsTr("SWR")
+                                    Accessible.name: qsTr("Tuner %1").arg(text)
+                                    checked: (section.modelData.tx ? meter.txKind : meter.rxKind) === modelData
+                                    focusPolicy: Qt.NoFocus
+                                    Layout.preferredWidth: chooser.cellWidth
+                                    Layout.preferredHeight: Theme.touchTarget
+                                    onClicked: Engine.setMeter(meter.side, section.modelData.tx, modelData)
+                                }
                             }
                         }
                     }

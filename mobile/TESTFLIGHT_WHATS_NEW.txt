@@ -14,7 +14,8 @@ NEW IN THIS BUILD
 - The Power meter follows your radio: 0-600 W on an Aurora (thanks Sloan Davis), 2 kW with a PGXL in Operate.
 - The radio list shows each address on a line of its own (thanks Mike VA3MW).
 - A SmartLink crash fixed (thanks Juho Kontio).
-- From build 151: several radios by IP or name (thanks Mike VA3MW); the rest of Radio Setup; Larry Averbeck's transmit lock, zoom buttons and scroll bars.
+- The meter chooser: receive and transmit in boxes tagged RX / TX.
+- From build 151: several radios by IP or name (thanks Mike VA3MW); the rest of Radio Setup; Larry Averbeck's transmit lock, zoom and scroll bars.
 
 RECENT (builds 94–150)
 - RF2K-S control and Tune, the amp on every meter (thanks Sebastian DG5CST, Jeff Stinger); Macros by PTT (thanks Tyler K0OTC).
@@ -28,14 +29,14 @@ RECENT (builds 94–150)
 PLEASE TRY
 - Receive on a few bands with zoom, Band and the 3D view.
 - Your connection type: home network, SmartLink or VPN. Disconnect and reconnect; the spectrum and audio should come back.
-- Both portrait and landscape; on iPad also Split View.
+- Portrait and landscape; on iPad also Split View.
 - Voice transmit with the device mic or a Bluetooth headset, and tell me how it sounds at the other end. [TX]
 - CW keying, CWX memories (F1–F12 on a keyboard) and the decoder. [TX]
 - The Log tab: log a few contacts, save your QRZ.com account and share the ADIF file to your logbook.
 - FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - The FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: the radio list on the Connect page, Radio Setup's RX tab, Hold to arm.
+- New: the radio list, Radio Setup's RX tab, Hold to arm.
 - Worked before from Wavelog, the QRZ.com Logbook or a shared ADIF file in iCloud Drive.
 - The eSSB tab at low power with a second receiver. [TX]
 

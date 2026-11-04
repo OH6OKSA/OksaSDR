@@ -653,7 +653,9 @@ The AGC, volume, filter and meter panels stay open while you set them
 
 **Meters.** Two meters, at the ends of the slice row. Tap a meter to choose
 its style and what it shows — separately for receive and for transmit (e.g.
-S, then SWR on the air). Choices are remembered. Each meter has one of
+S, then SWR on the air). In the chooser, receive's choices are in a box
+of their own with a blue **RX** tag and transmit's in one with a red
+**TX** tag. Choices are remembered. Each meter has one of
 these styles:
 
 - **Analog** — an arc and a needle; it stays analog while transmitting too.
