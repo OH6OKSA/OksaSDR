@@ -105,6 +105,7 @@ RowLayout {
                 delegate: AppButton {
                     id: chip
                     required property var modelData
+                    objectName: "sliceChip" + modelData.letter
                     Layout.preferredWidth: chips.cell
                     Layout.preferredHeight: bar.chipHeight
                     checked: modelData.active
@@ -163,6 +164,7 @@ RowLayout {
                             onTriggered: Engine.makeTxSlice(chip.modelData.id)
                         }
                         MenuItem {
+                            objectName: "sliceClose" + chip.modelData.letter
                             text: qsTr("Close slice")
                             enabled: Engine.slices.length > 1
                             onTriggered: Engine.removeSlice(chip.modelData.id)
