@@ -687,6 +687,10 @@ An analog meter keeps its size, as a wider face would also grow taller.
 Receive offers S, Mic, PA temperature and supply voltage; transmit adds
 Power, SWR, ALC and Compression, which the radio reads only while
 transmitting, and leaves S out (it has nothing to read on the air).
+**Power** has the radio's scale: 0-120 W red from 100 W, 0-600 W red from
+500 W on an Aurora or a radio over 100 W, a QRP radio's own power times
+1.2. With a Power Genius XL in OPERATE it shows the amplifier's output on
+0-2000 W, red from 1500 W (in STANDBY the radio's own again).
 With an amplifier set up ([Radio Setup › Amp](#9-radio-setup)), every
 meter, in receive and in transmit, also offers its readings under
 **Amplifier**: *Power* (0-1600 W), *Refl* (0-200 W, red from 2:1 at the
@@ -695,7 +699,9 @@ from 70: the RF2K-S goes to standby at 72 °C), *Volts* (40-60 V) and
 *Current* (0-60 A). The meter names them *Amp Power*, *Amp Temp*… where
 there is room and *Amp* where not (the value's unit and the scale tell
 which). Forget the amplifier, and a meter showing one of them goes back
-to its usual reading. **Mic** is on the left meter and its lower bar
+to its usual reading. A Power Genius XL the radio reports gives these
+readings too when no RF2K-S is set up: Power on 0-2000 W red from 1500,
+Current on 0-70 A. **Mic** is on the left meter and its lower bar
 (on a tablet the side panel covers the right one). With this device's microphone it shows the
 level of the audio as it is sent (after the processing in Controls → eSSB):
 while you transmit, and in receive too while Controls → TX or eSSB is open,
@@ -966,8 +972,9 @@ them back into the drawer. The buttons are all one size, in rows of six:
 processing), **CW**, **View**, **Prof** (profiles), **Mem** (memory),
 **Log**, **FTx** (FT8 / FT4), **FreeDV** (RADE digital voice and FreeDV
 Reporter) and **Digi** (RTTY, PSK31, PSK63). With an amplifier set up
-([Radio Setup › Amp](#9-radio-setup)) an **Amp** tab joins them, in rows
-of seven.
+([Radio Setup › Amp](#9-radio-setup)), or a 4O3A Power Genius XL or Tuner
+Genius XL connected to the radio, an **Amp** tab joins them, in rows of
+seven.
 
 ![iPad in portrait with the controls pinned under the display](manual/ipad-portrait.jpg)
 
@@ -1022,7 +1029,11 @@ of seven.
   instead of the microphone; left on after FT8, the microphone goes
   nowhere), **PTT**
   (*Hold to talk* or *Tap on / off*) and the transmit filter (low and high
-  cut). **Mic level** with this device's
+  cut). On a FLEX-8000 or Aurora, **APD** *Off* / *On*: adaptive
+  pre-distortion, where the radio measures its own transmission and
+  pre-distorts it so the amplifier's IMD falls; the line under it says
+  whether it is correcting (*active*) or learns from the next transmission
+  (*ready*). Its sampler ports are in Radio Setup › Transmit. **Mic level** with this device's
   microphone is the app's own gain, −20 to +30 dB: the radio has no gain
   stage for its PC input, so its mic level does nothing to this
   microphone. Choose Mic for the left meter and set it so speech peaks
@@ -1539,6 +1550,35 @@ of seven.
 
   ![Tune asks first](manual/amp-tune.jpg)
 
+  **4O3A Power Genius XL and Tuner Genius XL.** A PGXL or TGXL connected to
+  the radio shows on the Amp tab by itself: the radio reports it and relays
+  its state, power, SWR and Operate / Standby (over SmartLink too), and
+  this device also reads it directly at its address (the PGXL's port 9008,
+  the TGXL's 9010; on the same network or your VPN) for more. A line under
+  each name says how it is read.
+  - **Power Genius XL**: its state (*OPERATE*, *STANDBY*, *TRANSMIT A* /
+    *B*, a fault), **Forward** (0-2000 W, red from 1500), **SWR** (red from
+    2.5, – below 5 W) and **Drive** (the radio's power into it, 0-100 W),
+    current, supply (the PA's volts and the mains), PA and harmonic-load
+    temperatures, the bands and bias of its ports A and B, an alert when it
+    shows one; **Mode** *Standby* / *Operate* and **Fan** *Standard* /
+    *Contest* / *Broadcast* (until the amplifier restarts).
+  - **Tuner Genius XL**: its state (*OPERATE*, *BYPASS*, *STANDBY*,
+    *TUNING*), forward power and SWR, **Mode** *Standby* / *Bypass* /
+    *Operate*, **Tune** (it keys the radio for its tune carrier itself, and
+    keys or holds its amplifier as its own utility says; *Stop tuning*
+    ends it), the relays **C1**, **L** and **C2** a step at a time with − /
+    +, and on a 1x3 model **Antenna** 1-3; an alert such as *Tuned SWR
+    1.13:1*.
+
+  The buttons change a device only with **Control** on in Radio Setup ›
+  Amp, and each change asks first (stopping a tune does not). The devices
+  guard their own SWR, power and temperature, and the radio waits for the
+  amplifier before it transmits; the tuner's relays and antenna switch wait
+  while the radio transmits.
+
+  ![The Amp tab with a Power Genius XL and a Tuner Genius XL](manual/tab-genius.jpg)
+
 ## 9. Radio Setup
 
 **Setup** in the top row (on an iPhone: **⋯** → *Radio Setup*) holds the
@@ -1564,7 +1604,10 @@ radio.
   after asking: every station loses the radio for about a minute; over
   SmartLink, connect again by hand.
 - **Transmit** — maximum power, TX delay, transmit timeout (0 = off) and the
-  TUNE signal (single or two tone). Then what an amplifier, a sequencer or
+  TUNE signal (single or two tone). On a FLEX-8000 or Aurora, **APD**: the
+  sampler port for each TX antenna that has a choice (*INTERNAL*, sampled
+  inside the radio, or *RX_A*, *RX_B*, *XVTA*, *XVTB* for a coupled sample
+  of an external amplifier's output) and the **Equalizer** *Reset*. Then what an amplifier, a sequencer or
   a preamp needs, as in SmartSDR's Radio Setup (so no other program is
   needed), kept in the radio's TX profile (its name is shown):
   - **Keying outputs: delay after PTT** — *RCA TX1*, *RCA TX2*, *RCA TX3*
@@ -1655,6 +1698,13 @@ radio.
   and Control (a new address starts read only). This device reaches the
   amplifier directly: on the same network, or over your VPN when away —
   not through the radio, and not over SmartLink.
+  **4O3A Power Genius XL** and **Tuner Genius XL**: each one's state (found
+  by the radio, read directly at its address, or through the radio only),
+  **Control the amplifier / tuner** (off until you turn it on), the
+  **Address** (empty: the one the radio reports; *Use the radio's address*
+  goes back to it), and **Remote code** when the device asks for one (as
+  set in its utility; kept in this device's secure store once the device
+  has accepted it).
 
   ![Radio Setup › Amp](manual/setup-amp.jpg)
 - **USB** — USB-serial (FTDI) cables in the radio's USB ports, as

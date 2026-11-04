@@ -282,6 +282,10 @@ radio interface, with no computer running alongside.
   it.
 - Network quality in the top row (as the desktop's indicator), with
   link timing, packet loss per stream and traffic on tap.
+- **4O3A Power Genius XL and Tuner Genius XL** on the Amp tab: readings
+  through the radio and directly, Operate / Standby, the fan, Tune, the
+  tuner's relays and antenna switch (control off until turned on, each
+  change confirmed). **APD** on a FLEX-8000 or Aurora.
 - **Several radios by IP address or host name** on the Connect page, each
   with your name for it or the radio's own: a dynamic DNS or Tailscale
   MagicDNS name is looked up at each connect.
@@ -354,6 +358,8 @@ landscape and Android pictures are taken from the devices.</sub>
 | Transmit lock (SB / OA) | ✅ Checked on the FLEX without transmitting (build 141); the countdown back to SB and Hold to arm at start checked in build 151 |
 | RTTY decoding and sending | ✅ Contest stations decoded live (build 141); DIGL / DIGU decoded live (IT9EJW, SV1EKI); sent at 10 W and decoded by RBN skimmers across Europe (OE9GHV 33 dB, GM0UDL 27 dB) |
 | RF-KIT RF2K-S amplifier | ✅ Readings checked on a real RF2K-S (Sebastian Schu DG5CST, build 148). 🧪 Control (Operate / Standby, antenna, error reset) tested against a stand-in of its REST API: confirmations, a refusal (409), no answer, a lost link, never while transmitting (checked keyed on the FLEX); to verify on a real RF2K-S. 🧪 Tune's carrier (build 150) keyed on the FLEX at 5 W against the stand-in: STANDBY first, kept with the app in the background, off once tuned, after 20 s, on Stop, with the amplifier in OPERATE, on a lost link, and the radio unkeying by itself when the app was killed |
+| 4O3A Power Genius XL / Tuner Genius XL (readings and control) | 🧪 Built in (build 152); tested against a stand-in that replays real devices' frames; reports from owners welcome |
+| APD (FLEX-8000, Aurora) | 🧪 Built in (build 152); tested with the radio's status stood in; reports welcome |
 | Macros panel by PTT (CW memories, Digi macros, voice keyer) | ✅ In use by a tester since build 150 (Tyler K0OTC: "It looks good"); checked on phones and tablets in USB, CW and RTTY without sending |
 | Radio Setup › RX, Network and the rest of SmartSDR's Radio Setup (build 151) | 🧪 Each setting written from the page and set back on the FLEX-6600M (4.3.16); calibration, the reference, a static address and the restart only to their question so far; multiFLEX, binaural and the low-latency digital filters shown only (that firmware refuses their commands) |
 | PSK31 / PSK63 | ✅ PSK31 decoded live (LZ1AEY's CQ on 14.071) and a PSK31 QSO at 25 W with F6FPU near Lyon, answering our first CQ (2026-11-02); the decoder tested to -12 dB SNR, AFC and a neighbour 100 Hz away |

@@ -51,7 +51,7 @@ for t in "${tabs[@]}"; do phone_shots+=("tab-$t"); done
 modes_shots=(mode-usb mode-cw mode-am mode-fm fm-tx tx-lock mode-rtty rtty-panel tab-rtty digi-operating mode-psk)
 amp_shots=(tab-amp amp-controls amp-confirm amp-tune setup-amp setup-txband setup-rx setup-usb meter-amp)
 all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${phone_shots[@]}" phone-landscape bandchooser
-           "${modes_shots[@]}" "${amp_shots[@]}" cw-paddles macros rade-on ft8-running)
+           "${modes_shots[@]}" "${amp_shots[@]}" tab-genius cw-paddles macros rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
     printf '%s\n' "${all_shots[@]}" | sort -u
     exit 0
@@ -289,6 +289,40 @@ if want "${amp_shots[@]}"; then
     fi
 fi
 
+# The Amp tab with a 4O3A Power Genius XL and Tuner Genius XL: the radio's
+# device status stood in for by the render tool (radiostatus), the devices'
+# direct links by genius-mock.py on this machine. Nothing reaches a device
+# and nothing is keyed; control stays off, so no button can send.
+if want tab-genius; then
+    glan="$(ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p')"
+    glan="${glan:-127.0.0.1}"
+    if [ "$DRY" = 0 ]; then
+        python3 "$ROOT/mobile/tools/genius-mock.py" --bind "$glan" >"$TMP/genius-mock.log" 2>&1 &
+        gmock=$!
+        sleep 1
+    fi
+    printf 'ready
+wait 2000
+%s
+%s
+wait 4000
+drawer 12
+wait 2500
+scroll 0
+wait 800
+shot tab-genius
+close
+wait 600
+' \
+        "radiostatus amplifier 0x00000001 model=PowerGeniusXL ip=$glan serial_num=MOCK ant=ANT1:PORTA,ANT2:NONE state=IDLE" \
+        "radiostatus amplifier 0x00000002 model=TunerGeniusXL ip=$glan serial_num=MOCKT operate=1 bypass=0 tuning=0 relayC1=44 relayL=12 relayC2=8 antA=0 one_by_three=1 ant=ANT1,ANT2" \
+        | plan genius 440x956 "${src[@]}"
+    if [ "$DRY" = 0 ]; then
+        kill "$gmock" 2>/dev/null || true
+        wait "$gmock" 2>/dev/null || true
+    fi
+fi
+
 # Situations (they change this app's slice and put it back: CW, then
 # DIGU again; RADE and FT8 restore what they found, 14.074 DIGU).
 if want cw-paddles; then
@@ -357,6 +391,7 @@ for m in usb cw am fm rtty psk; do
     jpg "mode-$m" "" 330x
 done
 jpg tab-amp 440x520+0+436
+jpg tab-genius 440x520+0+436
 jpg setup-amp 418x700+11+40 330x
 jpg setup-txband 418x700+11+40 330x
 jpg setup-rx 418x825+11+40 330x

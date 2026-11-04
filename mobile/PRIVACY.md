@@ -85,6 +85,13 @@ these services:
   during a Tune you started. With Control the amplifier on, it also sends
   the changes you confirm there (Operate / Standby, the antenna, an error
   reset, and Standby before a Tune); nothing else is sent to it.
+- **A 4O3A Power Genius XL or Tuner Genius XL** connected to your radio:
+  while the app is connected to the radio it reads the device's status
+  directly at the address the radio reports (or one you set in Radio Setup
+  › Amp), on your own network or through your VPN. With Control on, it
+  sends the changes you confirm on the Amp tab. A remote code the device
+  asks for is kept only in this device's secure store (iOS Keychain,
+  Android Keystore) once the device has accepted it.
 - **Developer link** (Log tab), off unless turned on: for the developer's
   own devices; it sends the app's log, and screenshots when asked, to the
   address set there.
@@ -145,4 +152,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-11-03 (the station name and the radio's GPS in Radio Setup)
+Last updated: 2026-11-04 (4O3A Power Genius XL and Tuner Genius XL)

@@ -9,15 +9,14 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Several radios on the Connect page, by IP address or name (Tailscale MagicDNS too); the pencil names or removes one (thanks Mike VA3MW).
-- Radio Setup gets the rest of SmartSDR's: an RX tab (calibration, 10 MHz reference, filters), station name, license, GPS, Restart, DHCP / static IP, CW sideband and more. Risky changes ask first.
-- The transmit lock counts down to SB again; TX › At start: Hold to arm (thanks Larry Averbeck).
-- View › Zoom buttons Left / Right (thanks Larry).
-- Wider scroll bars; lists clear of a phone's bars (thanks Larry).
-- From build 150: Macros by PTT (thanks Tyler K0OTC); RF2K-S Tune (thanks Jeff Stinger); the keyboard always reaches the page.
+- 4O3A Power Genius XL and Tuner Genius XL on the Amp tab: readings, Operate / Standby, the fan, Tune, the tuner's relays and antenna switch. Control is off until you turn it on in Radio Setup › Amp; each change asks first.
+- APD on a FLEX-8000 or Aurora: TX tab On / Off, sampler ports in Radio Setup › Transmit.
+- The Power meter follows your radio: 0-600 W on an Aurora (thanks Sloan Davis), 2 kW with a PGXL in Operate.
+- The radio list shows each address on a line of its own (thanks Mike VA3MW).
+- From build 151: several radios by IP or name (thanks Mike VA3MW); the rest of Radio Setup; Larry Averbeck's transmit lock, zoom buttons and scroll bars.
 
-RECENT (builds 94–149)
-- RF2K-S control and the amp on every meter (thanks Sebastian DG5CST); amp keying and USB cables in Radio Setup.
+RECENT (builds 94–150)
+- RF2K-S control and Tune, the amp on every meter (thanks Sebastian DG5CST, Jeff Stinger); Macros by PTT (thanks Tyler K0OTC).
 - PSK31 / PSK63 and RTTY on the Digi tab; ⌘1–⌘0 as F1–F10; worked before from Wavelog, QRZ.com or a shared ADIF file.
 - The transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger).
 - Mac typing (thanks Pentti OH6PP); QSOs to Logger32 (thanks Juho Kontio).
