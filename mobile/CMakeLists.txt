@@ -48,6 +48,7 @@ qt_add_executable(aether-mobile
     src/MobileEngineSharedAdif.cpp
     src/MobileEngineLogger32.cpp
     src/MobileEngineAmp.cpp
+    src/MobileEngine4o3a.cpp
     src/MobileEngineFreeDv.cpp
     src/PskReporterUpload.cpp
     src/TrackpadScrollPhases.h
@@ -134,6 +135,7 @@ qt_add_qml_module(aether-mobile
         qml/FreeDvControls.qml
         qml/RttyControls.qml
         qml/AmpControls.qml
+        qml/GeniusControls.qml
         qml/MacrosPanel.qml
         qml/AppScrollBar.qml
         qml/AppComboBox.qml

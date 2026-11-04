@@ -720,6 +720,7 @@ MobileEngine::MobileEngine(QObject* parent)
     setupSharedAdif();
     setupLogger32();
     setupAmp();
+    setup4o3a();
     m_cty = std::make_unique<CtyDatParser>();
     m_cty->loadFromResource(QStringLiteral(":/cty.dat"));
     {

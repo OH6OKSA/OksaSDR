@@ -1250,6 +1250,68 @@ Popup {
                         font.pixelSize: 12
                         wrapMode: Text.WordWrap
                     }
+                    // 4O3A's amplifier and tuner: found by the radio, read
+                    // through it and directly (MobileEngine4o3a.cpp).
+                    Repeater {
+                        model: [{ id: "pgxl", name: qsTr("4O3A Power Genius XL"), d: Engine.pgxl, port: 9008 },
+                                { id: "tgxl", name: qsTr("4O3A Tuner Genius XL"), d: Engine.tgxl, port: 9010 }]
+                        delegate: ColumnLayout {
+                            required property var modelData
+                            readonly property var d: modelData.d
+                            Layout.fillWidth: true
+                            spacing: Theme.spacing / 2
+                            Heading { text: modelData.name }
+                            Label {
+                                objectName: modelData.id + "SetupState"
+                                Layout.fillWidth: true
+                                text: !d.present ? qsTr("Not found: the radio reports none, and no address is set.")
+                                    : d.direct ? qsTr("Found by the radio, and read directly at %1.").arg(d.ip)
+                                    : d.authBlocked ? qsTr("At %1 it asks for its remote code: enter it below.").arg(d.ip)
+                                    : d.connecting ? qsTr("Connecting to %1…").arg(d.ip)
+                                    : d.linkError ? qsTr("Through the radio only; %1 not reached directly (%2).").arg(d.ip || "–").arg(d.linkError)
+                                    : qsTr("Through the radio.")
+                                color: d.direct ? "#00cc66" : d.authBlocked ? Theme.transmit : Theme.textDim
+                                font.pixelSize: 13
+                                wrapMode: Text.Wrap
+                            }
+                            OnOff {
+                                objectName: modelData.id + "Control"
+                                label: modelData.id === "pgxl" ? qsTr("Control the amplifier") : qsTr("Control the tuner")
+                                on: !!d.control
+                                onToggled: (v) => Engine.setGeniusSetting(modelData.id, "control", v)
+                            }
+                            TextSetting {
+                                objectName: modelData.id + "Address"
+                                label: qsTr("Address  (%1)").arg(d.manualIp ? d.manualIp : qsTr("the radio's: %1").arg(d.ip || "–"))
+                                current: d.manualIp || ""
+                                hint: qsTr("Empty: the address the radio reports")
+                                upper: false
+                                onSaved: (t) => Engine.setGeniusSetting(modelData.id, "address", t)
+                            }
+                            AppButton {
+                                visible: (d.manualIp || "").length > 0
+                                text: qsTr("Use the radio's address")
+                                focusPolicy: Qt.NoFocus
+                                onClicked: Engine.setGeniusSetting(modelData.id, "address", "")
+                            }
+                            TextSetting {
+                                objectName: modelData.id + "AuthCode"
+                                visible: !!d.authBlocked
+                                label: qsTr("Remote code")
+                                current: ""
+                                hint: qsTr("As set in the device's utility")
+                                upper: false
+                                onSaved: (t) => Engine.setGeniusSetting(modelData.id, "authCode", t)
+                            }
+                        }
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("A Power Genius XL or Tuner Genius XL connected to the radio shows on the Amp tab by itself: the radio relays its state, power and SWR and its Operate / Standby (over SmartLink too); this device also reads it directly at its address (ports 9008 and 9010; on the same network or your VPN) for its supply, temperatures, the tuner's relays and antenna switch. A remote code, when the device asks for one, is kept in this device's secure store once the device has accepted it. Control on: the Amp tab's buttons change the device, each asked first; the devices guard their own SWR, power and temperature, and the tuner's relays and antenna wait while the radio transmits.")
+                        color: Theme.textDim
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
+                    }
                 }
 
                 // ---- USB: serial cables in the radio's USB ports, as

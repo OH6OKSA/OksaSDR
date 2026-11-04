@@ -40,8 +40,15 @@ Item {
     readonly property real analogFitWidth: gauge.fitWidth
 
     // The amplifier's readings are offered while one is set up.
-    readonly property bool ampSet: !!Engine.amp.set
-    function ampLive(v) { return Engine.amp.state === "connected" && v !== undefined }
+    // An RF2K-S set up in Radio Setup, or else a PGXL the radio reports.
+    readonly property bool pgxlAmp: !Engine.amp.set && !!Engine.pgxl.present
+    readonly property bool ampSet: !!Engine.amp.set || pgxlAmp
+    function ampLive(v) {
+        return (pgxlAmp ? !!Engine.pgxl.metersLive : Engine.amp.state === "connected") && v !== undefined
+    }
+    // A PGXL in OPERATE: the radio's power meter shows its output on the
+    // desktop's 2 kW scale (in STANDBY the exciter's own, as before).
+    readonly property bool pgxlOperating: !!Engine.pgxl.present && !!Engine.pgxl.operate && !!Engine.pgxl.metersLive
 
     // value, min, max, text, alarm level and whether the reading is live
     readonly property var reading: {
@@ -51,11 +58,13 @@ Item {
         // 2:1 at the present power, SWR red from 2:1. Temperature red from
         // 70 °C (it trips to standby at 72 °C: ARRL's review, QST Nov 2022);
         // voltage and current around its 50 V PA, no alarm level known.
-        const amp = kind.indexOf("Amp ") === 0 ? Engine.amp : null
+        // A PGXL's own scales are the desktop applet's: 0-2000 W red from
+        // 1500, current 0-70 A red from 60, its 50 V supply.
+        const amp = kind.indexOf("Amp ") === 0 ? (pgxlAmp ? Engine.pgxl : Engine.amp) : null
         const fwd = amp && amp.fwd !== undefined ? amp.fwd : 0
         switch (kind) {
         case "Amp power":
-            return { v: fwd, min: 0, max: 1600, live: ampLive(amp.fwd),
+            return { v: fwd, min: 0, max: pgxlAmp ? 2000 : 1600, live: ampLive(amp.fwd),
                      text: "Amp " + fwd.toFixed(0) + " W", red: 1500 }
         case "Amp refl":
             return { v: amp.refl || 0, min: 0, max: 200, live: ampLive(amp.refl),
@@ -71,7 +80,7 @@ Item {
             return { v: amp.volts || 0, min: 40, max: 60, live: ampLive(amp.volts),
                      text: "Amp " + (amp.volts || 0).toFixed(1) + " V", red: 1e9 }
         case "Amp current":
-            return { v: amp.amps || 0, min: 0, max: 60, live: ampLive(amp.amps),
+            return { v: amp.amps || 0, min: 0, max: pgxlAmp ? 70 : 60, live: ampLive(amp.amps),
                      text: "Amp " + (amp.amps || 0).toFixed(1) + " A", red: 1e9 }
         case "S":
             return { v: Engine.sMeterDbm, min: -127, max: -13, live: true, text: Engine.sMeterText, red: 1e9 }
@@ -80,9 +89,10 @@ Item {
             // radio over 100 W 0-600 red from 500, QRP (20 W or less) to
             // 1.2 times its power, red from it.
             const rated = Engine.ratedPowerW
-            const scale = rated > 100 ? 600 : rated > 0 && rated <= 20 ? rated * 1.2 : 120
-            return { v: Engine.forwardPowerW, min: 0, max: scale, live: tx,
-                     text: Engine.forwardPowerW.toFixed(0) + " W", red: scale * 5 / 6 }
+            const scale = pgxlOperating ? 2000 : rated > 100 ? 600 : rated > 0 && rated <= 20 ? rated * 1.2 : 120
+            const watts = pgxlOperating ? Engine.pgxl.fwd : Engine.forwardPowerW
+            return { v: watts, min: 0, max: scale, live: tx,
+                     text: watts.toFixed(0) + " W", red: pgxlOperating ? 1500 : scale * 5 / 6 }
         }
         case "SWR":
             return { v: Engine.swrValid ? Engine.swr : 1, min: 1, max: 3, live: tx && Engine.swrValid,

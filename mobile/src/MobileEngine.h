@@ -305,6 +305,10 @@ class MobileEngine : public QObject {
     // tunerSetup, iface, ifaceError, antenna, antennas, antennaList ({label,
     // type, number, state} each). A reading not in yet is absent.
     Q_PROPERTY(QVariantMap amp READ amp NOTIFY ampChanged)
+    // 4O3A's Power Genius XL and Tuner Genius XL, as the radio reports and
+    // relays them and as the app reads them directly (MobileEngine4o3a.cpp).
+    Q_PROPERTY(QVariantMap pgxl READ pgxl NOTIFY pgxlChanged)
+    Q_PROPERTY(QVariantMap tgxl READ tgxl NOTIFY tgxlChanged)
     Q_PROPERTY(bool memoriesWritable READ memoriesWritable NOTIFY memoriesChanged)
     // The radio's tracking notch filters (Flex TNF): {id, freq (MHz),
     // width (Hz), depth 1-3, permanent}; tnfEnabled is the global switch.
@@ -669,6 +673,24 @@ public:
     Q_INVOKABLE void setUsbCableBit(const QString& sn, int bit, const QString& key, const QString& value);
     // Forgets an unplugged cable's settings on the radio.
     Q_INVOKABLE void removeUsbCable(const QString& sn);
+    QVariantMap pgxl() const;
+    QVariantMap tgxl() const;
+    // Each confirmed on the page; refused unless control is on (Radio Setup
+    // › Amp), the tuner's relays and antenna also while the radio transmits.
+    Q_INVOKABLE void pgxlSetOperate(bool on);
+    Q_INVOKABLE void pgxlSetFanMode(const QString& mode);
+    Q_INVOKABLE void tgxlSetOperate(bool on);
+    Q_INVOKABLE void tgxlSetBypass(bool on);
+    Q_INVOKABLE void tgxlTune();
+    Q_INVOKABLE void tgxlAdjustRelay(int relay, int direction);
+    Q_INVOKABLE void tgxlSetAntenna(int antenna);
+    // device "pgxl" / "tgxl"; key "control" (bool), "address" (empty: the
+    // radio's), "authCode" (the device's remote code, kept once accepted).
+    Q_INVOKABLE void setGeniusSetting(const QString& device, const QString& key, const QVariant& value);
+    // The render tool's stand-in for a radio status line ("amplifier 0x1
+    // model=PowerGeniusXL ip=... state=IDLE"): fed to the radio model as if
+    // the radio had sent it, for devices the test radio does not have.
+    void injectRadioStatus(const QString& line);
     Q_INVOKABLE void setRadioSetup(const QString& key, const QVariant& value);
     // Receive › Calibration's Start, as the desktop's: the cal frequency
     // set, freq_error_ppb cleared, radio pll_start, done when the radio's
@@ -1607,6 +1629,8 @@ signals:
     void sharedAdifChanged();
     void logger32Changed();
     void ampChanged();
+    void pgxlChanged();
+    void tgxlChanged();
     void tnfsChanged();
     void tnfCreateRequested(double freqMhz);
     void txChainChanged();
@@ -1843,6 +1867,22 @@ private:
     QTimer m_logger32Retry;
     QString m_logger32Status;
     QString m_logger32StatusKind;
+    // ---- 4O3A PGXL / TGXL (MobileEngine4o3a.cpp) ----
+    void setup4o3a();
+    void connect4o3a();
+    void disconnect4o3a();
+    bool geniusCommandAllowed(bool tuner, bool notWhileTransmitting, const char* what);
+    double pgxlForwardW() const;
+    double pgxlSwr() const;
+    bool pgxlOperating() const;
+    class PgxlConnection* m_pgxlConn{nullptr};
+    class TgxlConnection* m_tgxlConn{nullptr};
+    QString m_pgxlLinkError, m_tgxlLinkError, m_pgxlNotice, m_tgxlNotice;
+    bool m_pgxlPending{false};
+    double m_pgxlDirectFwd{0}, m_pgxlDirectSwr{1}, m_pgxlRelayFwd{0}, m_pgxlRelaySwr{1};
+    qint64 m_pgxlRelayAt{0};
+    double m_pgxlDrive{-1}, m_pgxlId{0}, m_pgxlTemp{0}, m_pgxlHlTemp{0}, m_pgxlVdd{0};
+    int m_pgxlVac{0};
     // ---- The amplifier (MobileEngineAmp.cpp) ----
     void setupAmp();
     void updateAmpLink();
