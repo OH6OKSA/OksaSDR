@@ -99,8 +99,10 @@ def lines(conn):
 
 def handshake(conn, version, auth, ok_reply, auth_prefix, peer=None, radio=""):
     # The real devices ask a client from outside their network, never the
-    # paired radio: with --radio, the radio's connection is not asked.
-    if not auth or (radio and peer == radio):
+    # paired radio: with --radio, the radio's connection is not asked, nor
+    # one from the mock's own /24 (its LAN; a VPN client is asked).
+    lan = conn.getsockname()[0].rsplit(".", 1)[0] + "."
+    if not auth or (radio and peer == radio) or (peer or "").startswith(lan):
         conn.sendall(f"V{version}\n".encode())
         return lines(conn)
     conn.sendall(f"V{version} AUTH\n".encode())
