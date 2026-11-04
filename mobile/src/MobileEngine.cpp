@@ -4059,12 +4059,39 @@ void MobileEngine::addSlice()
 
 bool MobileEngine::splitActive() const
 {
+    if (splitMethod() == QLatin1String("xit")) {
+        return m_slice && m_slice->xitOn() && m_slice->xitFreq() != 0;
+    }
     return m_splitPending || (m_splitTxId >= 0 && m_session.radioModel().slice(m_splitTxId));
 }
 
 bool MobileEngine::splitAvailable() const
 {
+    if (splitMethod() == QLatin1String("xit")) {
+        return m_slice && m_caps.canTransmit;
+    }
     return splitActive() || (m_slice && canAddSlice() && m_caps.canTransmit);
+}
+
+QString MobileEngine::splitMethod() const
+{
+    return AppSettings::instance().value(QStringLiteral("MobileSplitMethod"), QStringLiteral("slice")).toString()
+               == QLatin1String("xit") ? QStringLiteral("xit") : QStringLiteral("slice");
+}
+
+void MobileEngine::setSplitMethod(const QString& method)
+{
+    const QString m = method == QLatin1String("xit") ? QStringLiteral("xit") : QStringLiteral("slice");
+    if (m == splitMethod()) {
+        return;
+    }
+    // A split running the other way ends first, so none is left behind.
+    if (splitActive()) {
+        toggleSplit();
+    }
+    AppSettings::instance().setValue(QStringLiteral("MobileSplitMethod"), m);
+    qCInfo(lcMobile) << "split method" << m;
+    emit slicesChanged();
 }
 
 void MobileEngine::toggleSplitUp(int khz)
@@ -4144,6 +4171,31 @@ void MobileEngine::setPanDisplay(const QString& key, int value)
 void MobileEngine::toggleSplit()
 {
     RadioModel& rm = m_session.radioModel();
+    if (splitMethod() == QLatin1String("xit")) {
+        // Split by XIT: this slice transmits the offset away (1 kHz up in
+        // CW, 5 kHz in voice, or the chosen Split up), receives where it is.
+        if (!m_slice) {
+            return;
+        }
+        if (splitActive()) {
+            stopTransmit(QStringLiteral("split off"));
+            m_slice->setXit(false, 0);
+            qCInfo(lcMobile) << "split (XIT) off";
+        } else {
+            const QString mode = m_slice->mode();
+            const bool cw = mode == QLatin1String("CW") || mode == QLatin1String("CWL") || mode == QLatin1String("CWU");
+            const int hz = std::clamp(m_splitUpKhz > 0 ? m_splitUpKhz * 1000 : (cw ? 1000 : 5000), -kRitXitLimitHz, kRitXitLimitHz);
+            if (!m_slice->isTxSlice()) {
+                stopTransmit(QStringLiteral("TX slice changed"));
+                m_slice->setTxSlice(true);
+            }
+            m_slice->setXit(true, hz);
+            setLastError(QString());
+            qCInfo(lcMobile) << "split (XIT) on" << hz << "Hz";
+        }
+        emit slicesChanged();
+        return;
+    }
     if (splitActive()) {
         SliceModel* rx = rm.slice(m_splitRxId);
         SliceModel* tx = rm.slice(m_splitTxId);
@@ -7902,6 +7954,10 @@ void MobileEngine::bindSlice(SliceModel* slice)
         m_sliceConnections.append(connect(slice, &SliceModel::stepChanged, this, &MobileEngine::stepChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::ritChanged, this, &MobileEngine::ritXitChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::xitChanged, this, &MobileEngine::ritXitChanged));
+        // Split by XIT reads this slice's XIT: SPLIT follows it.
+        m_sliceConnections.append(connect(slice, &SliceModel::xitChanged, this, [this] {
+            if (splitMethod() == QLatin1String("xit")) emit slicesChanged();
+        }));
         m_sliceConnections.append(connect(slice, &SliceModel::squelchChanged, this, &MobileEngine::squelchChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::rxAntennaChanged, this, &MobileEngine::antennaChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::txAntennaChanged, this, &MobileEngine::antennaChanged));

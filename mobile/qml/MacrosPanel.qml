@@ -111,6 +111,45 @@ Popup {
             }
         }
 
+        // The decoder's latest text, two lines, in the panel itself: the
+        // panel covers the strip at the top of the waterfall (on a phone
+        // always), and sending memories is when it is read (Tyler, build 152).
+        Rectangle {
+            id: decodedBox
+            readonly property bool text: macros.kind === "text"
+            readonly property string stream: text ? Engine.rttyStrip : Engine.cwStrip
+            visible: (macros.kind === "cw" && Engine.cwDecoderEnabled && Engine.cwMode)
+                     || (text && Engine.textModeActive && Engine.rttyDecoderEnabled)
+            Layout.fillWidth: true
+            implicitHeight: 2 * decodedFont.height + 8
+            color: "#cc000000"
+            radius: 4
+            clip: true
+            objectName: "macrosDecoded"
+            TextMetrics { id: decodedChar; font: decodedLine.font; text: "M" }
+            FontMetrics { id: decodedFont; font: decodedLine.font }
+            Label {
+                id: decodedLine
+                anchors.fill: parent
+                anchors.margins: 4
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                readonly property int columns: Math.max(8, Math.floor(width / Math.max(1, decodedChar.advanceWidth)))
+                // The last two lines' worth, newest at the bottom right.
+                text: {
+                    const flat = decodedBox.stream.replace(/\s+/g, " ")
+                    return flat.length > 0 ? flat.slice(-2 * columns)
+                        : (decodedBox.text ? qsTr("%1: nothing decoded yet").arg(Engine.textMode) : qsTr("CW: nothing decoded yet"))
+                }
+                color: decodedBox.stream.length > 0 ? "#ffffff" : Theme.textDim
+                font.family: "monospace"
+                font.pixelSize: 15
+                wrapMode: Text.WrapAnywhere
+                maximumLineCount: 2
+                verticalAlignment: Text.AlignBottom
+            }
+        }
+
         // CW: the call being worked, as on the CW tab ({HIS} in the
         // memories): the pick, then the calls the decoder heard.
         RowLayout {

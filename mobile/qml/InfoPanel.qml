@@ -512,7 +512,9 @@ Item {
         id: splitChooser
         objectName: "splitChooser"
         title: Engine.splitActive ? qsTr("Split") : qsTr("Split up")
-        options: Engine.splitActive ? [qsTr("Off")] : ["+1 kHz", "+5 kHz", "+10 kHz"]
+        // XIT reaches ±9.999 kHz: +2 there instead of +10.
+        options: Engine.splitActive ? [qsTr("Off")]
+               : Engine.splitMethod === "xit" ? ["+1 kHz", "+2 kHz", "+5 kHz"] : ["+1 kHz", "+5 kHz", "+10 kHz"]
         y: info.height + 4
         onPicked: (name) => {
             if (Engine.splitActive) Engine.toggleSplit()

@@ -313,6 +313,10 @@ ColumnLayout {
             // Stopping a tune is never asked.
             onClicked: genius.t.tuning ? Engine.tgxlTune() : confirm.ask("tgxlTune")
         }
+        // One label column for the relays and the antenna row, so the bars
+        // and the antenna buttons start at the same x and end under + (the
+        // antenna buttons sat at their own widths, out of line, build 152).
+        TextMetrics { id: tunerLabelMetrics; font.pixelSize: 15; text: qsTr("Antenna") }
         // The relays, a step at a time (the direct link only).
         Repeater {
             model: genius.t.direct ? [{ r: 0, l: "C1", v: genius.t.relayC1 }, { r: 1, l: "L", v: genius.t.relayL }, { r: 2, l: "C2", v: genius.t.relayC2 }] : []
@@ -320,7 +324,7 @@ ColumnLayout {
                 required property var modelData
                 Layout.fillWidth: true
                 spacing: 4
-                Label { text: modelData.l; color: Theme.text; font.pixelSize: 15; Layout.preferredWidth: 32 }
+                Label { text: modelData.l; color: Theme.text; font.pixelSize: 15; Layout.preferredWidth: Math.ceil(tunerLabelMetrics.advanceWidth) + 4 }
                 ProgressBar { from: 0; to: 255; value: modelData.v; Layout.fillWidth: true }
                 Label { text: modelData.v; color: Theme.text; font.pixelSize: 15; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 36 }
                 AppButton {
@@ -343,7 +347,7 @@ ColumnLayout {
             visible: !!genius.t.antennaSwitch && !!genius.t.direct
             Layout.fillWidth: true
             spacing: 4
-            Label { text: qsTr("Antenna"); color: Theme.textDim; font.pixelSize: 15; Layout.fillWidth: true }
+            Label { text: qsTr("Antenna"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: Math.ceil(tunerLabelMetrics.advanceWidth) + 4 }
             Repeater {
                 model: 3
                 delegate: AppButton {
@@ -352,7 +356,8 @@ ColumnLayout {
                     text: index + 1
                     checked: genius.t.antenna === index + 1
                     enabled: tuner.canMove
-                    Layout.preferredWidth: Theme.touchTarget
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
                     onClicked: if (!checked) confirm.ask("tgxlAntenna", index + 1)
                 }
             }

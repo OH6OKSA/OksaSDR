@@ -371,6 +371,10 @@ class MobileEngine : public QObject {
     // Split, as SmartSDR/AetherSDR: a TX slice beside the RX slice.
     Q_PROPERTY(bool splitActive READ splitActive NOTIFY slicesChanged)
     Q_PROPERTY(bool splitAvailable READ splitAvailable NOTIFY slicesChanged)
+    // How split transmits: "slice" (a second slice, as SmartSDR) or "xit"
+    // (this slice's XIT, as a Maestro user does it: no second slice, for a
+    // radio whose slices other programs hold).
+    Q_PROPERTY(QString splitMethod READ splitMethod WRITE setSplitMethod NOTIFY slicesChanged)
     Q_PROPERTY(bool canAddPanadapter READ canAddPanadapter NOTIFY slicesChanged)
     // This client's panadapters. The app shows one; the others still stream.
     Q_PROPERTY(int panCount READ panCount NOTIFY slicesChanged)
@@ -1525,6 +1529,8 @@ public:
     QVariantMap panDisplay() const;
     Q_INVOKABLE void setPanDisplay(const QString& key, int value);
     bool splitActive() const;
+    QString splitMethod() const;
+    void setSplitMethod(const QString& method);
     bool splitAvailable() const;
     Q_INVOKABLE void removeSlice(int sliceId);
     Q_INVOKABLE void makeTxSlice(int sliceId);
