@@ -17,8 +17,11 @@ Page {
         id: row
         property string title
         property string subtitle
+        // A third line when there is one (a saved radio's address, which the
+        // radio's own name otherwise pushed out of sight: Mike VA3MW).
+        property string detail
         Layout.fillWidth: true
-        implicitHeight: 2 * Theme.touchTarget
+        implicitHeight: 2 * Theme.touchTarget + (detail.length > 0 ? 18 : 0)
         enabled: Engine.connectionState === "idle"
         background: Rectangle {
             color: row.down ? Qt.lighter(Theme.surfaceRaised, 1.3) : Theme.surfaceRaised
@@ -33,7 +36,8 @@ Page {
                 Layout.fillWidth: true
                 spacing: 2
                 Label { text: row.title; color: Theme.text; font.pixelSize: 20; elide: Text.ElideRight; Layout.fillWidth: true }
-                Label { text: row.subtitle; color: Theme.textDim; font.pixelSize: 15; elide: Text.ElideRight; Layout.fillWidth: true }
+                Label { text: row.subtitle; visible: text.length > 0; color: Theme.textDim; font.pixelSize: 15; elide: Text.ElideRight; Layout.fillWidth: true }
+                Label { text: row.detail; visible: text.length > 0; color: Theme.textDim; font.pixelSize: 15; elide: Text.ElideRight; Layout.fillWidth: true }
             }
             Rectangle {
                 visible: row.enabled
@@ -271,9 +275,13 @@ Page {
                     RadioRow {
                         objectName: "savedRadio" + savedRow.index
                         title: savedRow.userName || savedRow.radioName || savedRow.address
-                        subtitle: [savedRow.userName.length > 0 ? savedRow.radioName : "",
-                                   savedRow.userName.length > 0 || savedRow.radioName.length > 0 ? savedRow.address : "",
+                        // The user's name over the radio's own, then the
+                        // address on a line of its own.
+                        readonly property bool named: savedRow.userName.length > 0 && savedRow.radioName.length > 0
+                        readonly property string addressLine: [title === savedRow.address ? "" : savedRow.address,
                                    savedRow.modelData.last ? qsTr("last used") : ""].filter(t => t.length > 0).join("  ·  ")
+                        subtitle: named ? savedRow.radioName : addressLine
+                        detail: named ? addressLine : ""
                         onClicked: Engine.connectToAddress(savedRow.address)
                     }
                     AppButton {
@@ -282,7 +290,7 @@ Page {
                         font.pixelSize: 22
                         Accessible.name: qsTr("Edit %1").arg(savedRow.address)
                         Layout.preferredWidth: Theme.touchTarget
-                        Layout.preferredHeight: 2 * Theme.touchTarget
+                        Layout.fillHeight: true
                         enabled: Engine.connectionState === "idle"
                         onClicked: radioEditor.edit(savedRow.index, savedRow.modelData)
                     }
