@@ -1251,6 +1251,7 @@ void MobileEngine::connectToRadio(int row)
         return;
     }
     m_savedRadioAddress.clear();
+    m_lastTarget = radio->address;
     RadioInfo info;
     info.family = radio->family;
     info.serial = radio->serial;
@@ -1272,6 +1273,7 @@ void MobileEngine::connectToAddress(const QString& host)
     if (m_connectionState != QLatin1String("idle")) {
         return;
     }
+    m_lastTarget = entered;
     const QHostAddress address(entered);
     if (!address.isNull()) {
         connectToHostAddress(address.toString(), address);
@@ -1642,6 +1644,7 @@ void MobileEngine::connectSmartLinkRadio(int index)
         return;
     }
     const WanRadioInfo& radio = m_wanRadios.at(index);
+    m_lastTarget = QStringLiteral("smartlink:") + radio.serial;
     // A radio that takes one station at a time, with another on it: ask
     // first, as the desktop does before a SmartLink connect (its
     // confirmClientSlotAvailability). Connecting anyway, the radio refused

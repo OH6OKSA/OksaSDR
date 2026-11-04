@@ -174,6 +174,12 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QString smartLinkAccount READ smartLinkAccount NOTIFY smartLinkChanged)
     Q_PROPERTY(QString smartLinkEmail READ smartLinkEmail NOTIFY smartLinkChanged)
     Q_PROPERTY(QVariantList smartLinkRadios READ smartLinkRadios NOTIFY smartLinkRadiosChanged)
+    // The connection doctor (MobileEngineDoctor.cpp): what blocks a connection
+    // to the last radio tried, step by step in plain words. Each step is
+    // {title, state: "running" | "ok" | "warn" | "fail" | "info", detail}.
+    Q_PROPERTY(QVariantList connectionCheck READ connectionCheck NOTIFY connectionCheckChanged)
+    Q_PROPERTY(bool connectionCheckRunning READ connectionCheckRunning NOTIFY connectionCheckChanged)
+    Q_PROPERTY(QString connectionCheckTarget READ connectionCheckTarget NOTIFY connectionCheckChanged)
     Q_PROPERTY(bool remoteSession READ remoteSession NOTIFY connectionStateChanged)
     Q_PROPERTY(bool controlsVisible READ controlsVisible WRITE setControlsVisible NOTIFY controlsVisibleChanged)
     Q_PROPERTY(bool tuneRowsShown READ tuneRowsShown WRITE setTuneRowsShown NOTIFY tuneRowsChanged)
@@ -761,6 +767,11 @@ public:
     bool bandsAvailable() const;
     QString lastAddress() const;
     QVariantList savedRadios() const;
+    QVariantList connectionCheck() const { return m_check; }
+    bool connectionCheckRunning() const { return m_checkRunning; }
+    QString connectionCheckTarget() const { return m_checkTarget; }
+    // Runs the doctor for the last radio tried (or an address given).
+    Q_INVOKABLE void checkConnection(const QString& target = QString());
     // Entry `index` gets a new address (an IP address or host name, else
     // false) and the user's name for it (empty: the radio's own).
     Q_INVOKABLE bool editSavedRadio(int index, const QString& address, const QString& name);
@@ -1589,6 +1600,7 @@ signals:
     void filterChanged();
     void lastAddressChanged();
     void savedRadiosChanged();
+    void connectionCheckChanged();
     void controlsVisibleChanged();
     void tuneRowsChanged();
     void smartLinkChanged();
@@ -2243,6 +2255,17 @@ private:
     bool m_smartLinkRetried{false};   // one re-sign-in after a refused session
     QTimer m_wanReconnectTimer;
     QString m_smartLinkState{QStringLiteral("signedOut")};
+    // The connection doctor's state (MobileEngineDoctor.cpp). m_lastTarget is
+    // the radio last tried: an address or host name, or "smartlink:<serial>".
+    QString m_lastTarget;
+    QString m_checkTarget;
+    QVariantList m_check;
+    bool m_checkRunning{false};
+    int m_checkRun{0};
+    void checkStep(const QString& title, const QString& state, const QString& detail);
+    void checkFinish();
+    void checkSmartLink(const QString& serial);
+    void checkAddress(const QString& host, const QHostAddress& address);
     double m_micLevelDbfs{-100.0};
     double m_micPeakDbfs{-100.0};
     double m_forwardPowerW{0.0};

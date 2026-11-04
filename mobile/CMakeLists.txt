@@ -49,6 +49,7 @@ qt_add_executable(aether-mobile
     src/MobileEngineLogger32.cpp
     src/MobileEngineAmp.cpp
     src/MobileEngine4o3a.cpp
+    src/MobileEngineDoctor.cpp
     src/MobileEngineFreeDv.cpp
     src/PskReporterUpload.cpp
     src/TrackpadScrollPhases.h

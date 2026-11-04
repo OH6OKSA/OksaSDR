@@ -298,6 +298,16 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
     } else if (command == QLatin1String("controls")) {
         m_engine.setControlsVisible(arg == QLatin1String("visible"));
         *delayMs = 1200;
+    } else if (command == QLatin1String("connectioncheck")) {
+        // The connection doctor for an address, a host name or
+        // smartlink:<serial>, its dialog opened, as the Connect page's button.
+        m_engine.checkConnection(arg);
+        for (QObject* root : m_qml.rootObjects()) {
+            if (QObject* dialog = root->findChild<QObject*>(QStringLiteral("connectionCheck"))) {
+                QMetaObject::invokeMethod(dialog, "open");
+            }
+        }
+        *delayMs = 1000;
     } else if (command == QLatin1String("frequency-dialog")) {
         for (QObject* root : m_qml.rootObjects()) {
             if (QObject* dialog = root->findChild<QObject*>(QStringLiteral("frequencyDialog"))) {

@@ -96,6 +96,20 @@ Page {
                 font.pixelSize: 17
                 wrapMode: Text.Wrap
             }
+            // The connection doctor: what blocks the connection, step by step
+            // (MobileEngineDoctor.cpp). Offered after a failed connect, and
+            // always for the last radio tried.
+            AppButton {
+                objectName: "checkConnection"
+                visible: Engine.connectionState === "idle"
+                text: Engine.lastError.length > 0 ? qsTr("Why? Check the connection") : qsTr("Check the connection")
+                focusPolicy: Qt.NoFocus
+                Layout.preferredHeight: Theme.touchTarget
+                onClicked: {
+                    Engine.checkConnection()
+                    connectionCheck.open()
+                }
+            }
 
             // ---- This network ----
             Label {
@@ -412,6 +426,113 @@ Page {
                     rightPadding: 12
                     Layout.preferredHeight: Theme.touchTarget
                     onClicked: if (Engine.editSavedRadio(radioEditor.index, radioEditor.address, nameField.text)) radioEditor.close()
+                }
+            }
+        }
+    }
+
+    // The connection doctor's steps: each a mark, its title and what it found.
+    Dialog {
+        id: connectionCheck
+        objectName: "connectionCheck"
+        modal: true
+        anchors.centerIn: parent
+        width: Math.min(560, parent.width - 24)
+        height: Math.min(implicitHeight, parent.height - 24)
+        padding: Theme.spacing
+        background: Rectangle { color: Theme.surface; radius: Theme.radius; border.color: Theme.surfaceRaised }
+        contentItem: ColumnLayout {
+            spacing: Theme.spacing
+            RowLayout {
+                Layout.fillWidth: true
+                Label {
+                    text: qsTr("Connection check")
+                    color: Theme.text
+                    font.pixelSize: 20
+                    font.bold: true
+                    Layout.fillWidth: true
+                }
+                AppButton {
+                    objectName: "connectionCheckClose"
+                    text: qsTr("Close")
+                    focusPolicy: Qt.NoFocus
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: connectionCheck.close()
+                }
+            }
+            Label {
+                Layout.fillWidth: true
+                visible: Engine.connectionCheckTarget.length > 0
+                text: Engine.connectionCheckTarget.indexOf("smartlink:") === 0
+                      ? qsTr("SmartLink radio %1").arg(Engine.connectionCheckTarget.substring(10))
+                      : qsTr("To %1").arg(Engine.connectionCheckTarget)
+                color: Theme.textDim
+                font.pixelSize: 14
+                elide: Text.ElideRight
+            }
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.preferredHeight: Math.min(stepsColumn.implicitHeight, page.height * 0.6)
+                contentWidth: availableWidth
+                clip: true
+                ColumnLayout {
+                    id: stepsColumn
+                    width: parent.width
+                    spacing: Theme.spacing
+                    Repeater {
+                        model: Engine.connectionCheck
+                        delegate: RowLayout {
+                            required property var modelData
+                            Layout.fillWidth: true
+                            spacing: Theme.spacing
+                            // The state as a coloured word, readable without colour too.
+                            Label {
+                                Layout.alignment: Qt.AlignTop
+                                Layout.preferredWidth: 52
+                                text: modelData.state === "ok" ? qsTr("OK")
+                                    : modelData.state === "fail" ? qsTr("Fails")
+                                    : modelData.state === "warn" ? qsTr("Note")
+                                    : modelData.state === "running" ? "…" : qsTr("Info")
+                                color: modelData.state === "ok" ? "#00cc66"
+                                     : modelData.state === "fail" ? Theme.transmit
+                                     : modelData.state === "warn" ? Theme.warning : Theme.textDim
+                                font.pixelSize: 15
+                                font.bold: true
+                            }
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+                                Label { text: modelData.title; color: Theme.text; font.pixelSize: 16; font.bold: true; Layout.fillWidth: true; wrapMode: Text.Wrap }
+                                Label {
+                                    visible: text.length > 0
+                                    text: modelData.detail
+                                    color: Theme.textDim
+                                    font.pixelSize: 14
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.Wrap
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Label {
+                    Layout.fillWidth: true
+                    text: Engine.connectionCheckRunning ? qsTr("Checking…") : qsTr("Nothing on the radio is changed by the check.")
+                    color: Theme.textDim
+                    font.pixelSize: 13
+                    wrapMode: Text.Wrap
+                }
+                AppButton {
+                    objectName: "connectionCheckAgain"
+                    text: qsTr("Check again")
+                    enabled: !Engine.connectionCheckRunning
+                    focusPolicy: Qt.NoFocus
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: Engine.checkConnection()
                 }
             }
         }
