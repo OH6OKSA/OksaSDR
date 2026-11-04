@@ -29,6 +29,7 @@
 #include "models/AmpModel.h"
 #include "models/MeterModel.h"
 #include "models/RadioModel.h"
+#include "models/TransmitModel.h"
 #include "models/TunerModel.h"
 
 #include <QDateTime>
@@ -158,6 +159,8 @@ void MobileEngine::setup4o3a()
     });
     connect(&rm.tunerModel(), &TunerModel::metersChanged, this, [this](float, float, float) { emit tgxlChanged(); });
     connect(&rm.tunerModel(), &TunerModel::alertChanged, this, [this](const QString&) { emit tgxlChanged(); });
+    connect(&rm.transmitModel(), &TransmitModel::apdStateChanged, this, &MobileEngine::apdChanged);
+    connect(&rm.transmitModel(), &TransmitModel::apdSamplerChanged, this, [this](const QString&) { emit apdChanged(); });
     // The links follow the radio's connection.
     connect(this, &MobileEngine::connectionStateChanged, this, [this] {
         if (m_connectionState == QLatin1String("connected")) connect4o3a();
@@ -417,6 +420,50 @@ void MobileEngine::setGeniusSetting(const QString& device, const QString& key, c
     s.save();
     connect4o3a();
     tuner ? emit tgxlChanged() : emit pgxlChanged();
+}
+
+// ---- APD, on the transmit model as the desktop uses it: "apd enable=",
+// "apd sampler tx_ant= sample_port=", "apd reset". Offered only when the
+// radio says it is configurable. ----
+QVariantMap MobileEngine::apd() const
+{
+    const TransmitModel& tx = const_cast<MobileEngine*>(this)->m_session.radioModel().transmitModel();
+    QVariantMap d;
+    d[QStringLiteral("configurable")] = tx.apdConfigurable();
+    d[QStringLiteral("enabled")] = tx.apdEnabled();
+    d[QStringLiteral("equalizerActive")] = tx.apdEqualizerActive();
+    QVariantList samplers;
+    for (const QString& ant : {QStringLiteral("ANT1"), QStringLiteral("ANT2"), QStringLiteral("XVTA"), QStringLiteral("XVTB")}) {
+        const TransmitModel::ApdSampler s = tx.apdSampler(ant);
+        samplers.append(QVariantMap{{QStringLiteral("ant"), ant}, {QStringLiteral("selected"), s.selected},
+                                    {QStringLiteral("available"), s.available}});
+    }
+    d[QStringLiteral("samplers")] = samplers;
+    return d;
+}
+
+void MobileEngine::setApdEnabled(bool on)
+{
+    TransmitModel& tx = m_session.radioModel().transmitModel();
+    if (!m_connected || !tx.apdConfigurable()) return;
+    qCInfo(lcMobile) << "APD" << (on ? "on" : "off");
+    tx.setApdEnabled(on);
+}
+
+void MobileEngine::setApdSampler(const QString& txAntenna, const QString& port)
+{
+    TransmitModel& tx = m_session.radioModel().transmitModel();
+    if (!m_connected || !tx.apdConfigurable() || !tx.apdSampler(txAntenna).available.contains(port.toUpper())) return;
+    qCInfo(lcMobile) << "APD sampler" << txAntenna << port;
+    tx.setApdSamplerPort(txAntenna, port);
+}
+
+void MobileEngine::resetApdEqualizer()
+{
+    TransmitModel& tx = m_session.radioModel().transmitModel();
+    if (!m_connected || !tx.apdConfigurable()) return;
+    qCInfo(lcMobile) << "APD equalizer reset";
+    tx.resetApdEqualizer();
 }
 
 void MobileEngine::injectRadioStatus(const QString& line)

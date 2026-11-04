@@ -451,6 +451,42 @@ ColumnLayout {
         }
     }
 
+    // APD, adaptive pre-distortion (FLEX-8000, Aurora): the radio measures
+    // its own transmission and pre-distorts it so the PA's IMD falls. As the
+    // desktop's TX applet: on / off and what it is doing; the sampler ports
+    // and the equalizer reset are in Radio Setup › Transmit.
+    RowLayout {
+        Layout.fillWidth: true
+        visible: !!Engine.apd.configurable
+        Label { text: qsTr("APD"); color: Theme.textDim; font.pixelSize: 15; Layout.preferredWidth: 64 }
+        AppButton {
+            objectName: "apdOff"
+            text: qsTr("Off")
+            checked: !Engine.apd.enabled
+            Layout.fillWidth: true
+            onClicked: Engine.setApdEnabled(false)
+        }
+        AppButton {
+            objectName: "apdOn"
+            text: qsTr("On")
+            checked: !!Engine.apd.enabled
+            Layout.fillWidth: true
+            onClicked: Engine.setApdEnabled(true)
+        }
+    }
+    Label {
+        objectName: "apdState"
+        visible: !!Engine.apd.configurable && !!Engine.apd.enabled
+        Layout.fillWidth: true
+        // Active: correcting; Avail: ready, waiting for a transmission to
+        // learn from (the desktop's Active / Avail indicators).
+        text: Engine.apd.equalizerActive ? qsTr("APD active: correcting the transmission on this band and power.")
+                                         : qsTr("APD ready: it learns from the next transmission.")
+        color: Engine.apd.equalizerActive ? "#00cc66" : Theme.textDim
+        font.pixelSize: 12
+        wrapMode: Text.WordWrap
+    }
+
     // TX audio passband (low and high cut of the transmitted audio).
     Label {
         text: qsTr("TX filter  %1 – %2 Hz").arg(Engine.txFilterLow).arg(Engine.txFilterHigh)

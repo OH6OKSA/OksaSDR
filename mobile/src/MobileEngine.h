@@ -309,6 +309,11 @@ class MobileEngine : public QObject {
     // relays them and as the app reads them directly (MobileEngine4o3a.cpp).
     Q_PROPERTY(QVariantMap pgxl READ pgxl NOTIFY pgxlChanged)
     Q_PROPERTY(QVariantMap tgxl READ tgxl NOTIFY tgxlChanged)
+    // APD (adaptive pre-distortion) on a radio that offers it (FLEX-8000,
+    // Aurora; the radio's "apd configurable=1"): configurable, enabled,
+    // equalizerActive, samplers [{ant, selected, available}] for ANT1, ANT2,
+    // XVTA, XVTB, as the desktop's TX applet and Radio Setup › APD.
+    Q_PROPERTY(QVariantMap apd READ apd NOTIFY apdChanged)
     Q_PROPERTY(bool memoriesWritable READ memoriesWritable NOTIFY memoriesChanged)
     // The radio's tracking notch filters (Flex TNF): {id, freq (MHz),
     // width (Hz), depth 1-3, permanent}; tnfEnabled is the global switch.
@@ -687,6 +692,10 @@ public:
     // device "pgxl" / "tgxl"; key "control" (bool), "address" (empty: the
     // radio's), "authCode" (the device's remote code, kept once accepted).
     Q_INVOKABLE void setGeniusSetting(const QString& device, const QString& key, const QVariant& value);
+    QVariantMap apd() const;
+    Q_INVOKABLE void setApdEnabled(bool on);
+    Q_INVOKABLE void setApdSampler(const QString& txAntenna, const QString& port);
+    Q_INVOKABLE void resetApdEqualizer();
     // The render tool's stand-in for a radio status line ("amplifier 0x1
     // model=PowerGeniusXL ip=... state=IDLE"): fed to the radio model as if
     // the radio had sent it, for devices the test radio does not have.
@@ -1631,6 +1640,7 @@ signals:
     void ampChanged();
     void pgxlChanged();
     void tgxlChanged();
+    void apdChanged();
     void tnfsChanged();
     void tnfCreateRequested(double freqMhz);
     void txChainChanged();

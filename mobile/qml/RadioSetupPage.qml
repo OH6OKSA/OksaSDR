@@ -486,6 +486,38 @@ Popup {
                     }
                     // The radio's own setting, as SmartSDR's Show TX in
                     // waterfall: off, the waterfall waits while transmitting.
+                    // APD's sampler port per TX antenna and its equalizer
+                    // reset (FLEX-8000, Aurora; SmartSDR 4.2.18+), as the
+                    // desktop's Radio Setup › APD: INTERNAL samples inside
+                    // the radio; RX_A, RX_B, XVTA, XVTB take a coupled sample
+                    // of an external amplifier's output.
+                    Heading { visible: !!Engine.apd.configurable; text: qsTr("APD (adaptive pre-distortion)") }
+                    Repeater {
+                        // An antenna with only INTERNAL to choose has nothing to set.
+                        model: Engine.apd.configurable ? Engine.apd.samplers.filter(x => x.available.length > 1) : []
+                        delegate: Choice {
+                            required property var modelData
+                            objectName: "apdSampler" + modelData.ant
+                            label: qsTr("Sampler for %1").arg(modelData.ant)
+                            options: modelData.available.map(p => ({ label: p, value: p }))
+                            columns: Math.min(5, modelData.available.length)
+                            current: modelData.selected
+                            onChosen: (v) => Engine.setApdSampler(modelData.ant, v)
+                        }
+                    }
+                    RowLayout {
+                        visible: !!Engine.apd.configurable
+                        Layout.fillWidth: true
+                        Label { text: qsTr("Equalizer"); color: Theme.text; font.pixelSize: 15; Layout.fillWidth: true }
+                        AppButton {
+                            objectName: "apdReset"
+                            text: qsTr("Reset")
+                            leftPadding: 16
+                            rightPadding: 16
+                            focusPolicy: Qt.NoFocus
+                            onClicked: Engine.resetApdEqualizer()
+                        }
+                    }
                     OnOff {
                         label: qsTr("Show my transmission in the waterfall")
                         on: !!setup.d.showTxInWaterfall
