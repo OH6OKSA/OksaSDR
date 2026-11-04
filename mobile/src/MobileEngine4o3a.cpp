@@ -22,6 +22,7 @@
 
 #include "MobileEngine.h"
 
+#include <algorithm>
 #include <memory>
 #include "SecureStore.h"
 
@@ -138,6 +139,62 @@ void MobileEngine::setup4o3a()
         connect(m_pgxlConn, &PgxlConnection::setupRead, this, [logFirst](const QMap<QString, QString>& kvs) {
             bool once = false;
             logFirst("PGXL setup", kvs, &once);
+        });
+    }
+
+    // The meters a 4O3A device makes on the radio, into the log too: each
+    // AMP meter's definition as the radio lists it (name, unit, range, whose
+    // handle), the first values after a connect, and each transmission's
+    // highest readings, so a tester's log shows whether a real PGXL's or
+    // TGXL's meters flow over the radio and on what scale.
+    {
+        MeterModel& mm = rm.meterModel();
+        connect(&mm, &MeterModel::meterDefinitionChanged, this, [&mm](int index) {
+            const MeterDef* d = mm.meterDef(index);
+            if (!d || d->source != QLatin1String("AMP")) return;
+            qCInfo(lcMobile).noquote() << QStringLiteral("radio meter %1: AMP %2 (%3, %4..%5) of 0x%6")
+                .arg(d->index).arg(d->name, d->unit).arg(d->low).arg(d->high)
+                .arg(static_cast<quint32>(d->sourceIndex), 8, 16, QLatin1Char('0'));
+        });
+        struct Peak { bool firstAmp = false, firstTgxl = false; float fwd = 0, drv = 0, id = 0, temp = 0, tfwd = 0, tswr = 0; };
+        auto peak = std::make_shared<Peak>();
+        connect(&mm, &MeterModel::ampMetersChanged, this,
+                [peak](float fwd, float swr, float temp, float drv, bool drvValid) {
+            if (!peak->firstAmp) {
+                peak->firstAmp = true;
+                qCInfo(lcMobile).noquote() << QStringLiteral("radio meters, amplifier: forward %1 W, SWR %2, temp %3, drive %4")
+                    .arg(fwd, 0, 'f', 1).arg(swr, 0, 'f', 2).arg(temp, 0, 'f', 1)
+                    .arg(drvValid ? QString::number(drv, 'f', 1) + QStringLiteral(" W") : QStringLiteral("none"));
+            }
+            peak->fwd = std::max(peak->fwd, fwd);
+            if (drvValid) peak->drv = std::max(peak->drv, drv);
+            peak->temp = std::max(peak->temp, temp);
+        });
+        connect(&mm, &MeterModel::ampVitalsChanged, this,
+                [peak](float id, bool idValid, bool, float, bool, bool) {
+            if (idValid) peak->id = std::max(peak->id, id);
+        });
+        connect(&mm, &MeterModel::tgxlMetersChanged, this, [peak](float fwd, float swr) {
+            if (!peak->firstTgxl) {
+                peak->firstTgxl = true;
+                qCInfo(lcMobile).noquote() << QStringLiteral("radio meters, tuner: forward %1 W, SWR %2")
+                    .arg(fwd, 0, 'f', 1).arg(swr, 0, 'f', 2);
+            }
+            peak->tfwd = std::max(peak->tfwd, fwd);
+            peak->tswr = std::max(peak->tswr, swr);
+        });
+        connect(&rm.transmitModel(), &TransmitModel::transmittingChanged, this, [peak](bool on) {
+            if (on) {
+                *peak = Peak{true, true};
+                return;
+            }
+            if (peak->fwd > 0 || peak->drv > 0 || peak->tfwd > 0)
+                qCInfo(lcMobile).noquote() << QStringLiteral("radio meters over the transmission: amplifier forward %1 W, drive %2 W, current %3 A, temp %4; tuner forward %5 W, SWR %6")
+                    .arg(peak->fwd, 0, 'f', 1).arg(peak->drv, 0, 'f', 1).arg(peak->id, 0, 'f', 1)
+                    .arg(peak->temp, 0, 'f', 1).arg(peak->tfwd, 0, 'f', 1).arg(peak->tswr, 0, 'f', 2);
+        });
+        connect(this, &MobileEngine::connectionStateChanged, this, [this, peak] {
+            if (m_connectionState == QLatin1String("connected")) *peak = Peak{};
         });
     }
 
