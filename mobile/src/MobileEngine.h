@@ -1233,6 +1233,11 @@ public:
     // Felt taps on or off in this app (View), on by default; the system's own
     // setting still applies when on.
     Q_PROPERTY(bool hapticsOn READ hapticsOn WRITE setHapticsOn NOTIFY hapticsChanged)
+    // Radio Setup › Amp: the manufacturers chosen to show ("4o3a", "rfkit");
+    // a maker with a device set up shows anyway (RadioSetupPage).
+    Q_PROPERTY(QStringList ampMakersShown READ ampMakersShown NOTIFY ampMakersChanged)
+    QStringList ampMakersShown() const;
+    Q_INVOKABLE void toggleAmpMaker(const QString& maker);
     bool hapticsOn() const;
     void setHapticsOn(bool on);
     // Adds the contacts of an ADIF file (a file or content URL from the file
@@ -1656,6 +1661,7 @@ signals:
     void callsignChanged();
     void bandPlanChanged();
     void hapticsChanged();
+    void ampMakersChanged();
     void hintsChanged();
     void hintsRequested();
     void bandPlanRegionChanged();

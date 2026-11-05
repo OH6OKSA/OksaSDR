@@ -5778,6 +5778,26 @@ void MobileEngine::importAdif(const QUrl& url)
     worker->start();
 }
 
+const QString kAmpMakersKey = QStringLiteral("MobileAmpMakers");
+
+QStringList MobileEngine::ampMakersShown() const
+{
+    return AppSettings::instance().value(kAmpMakersKey, QString()).toString().split(QLatin1Char(','), Qt::SkipEmptyParts);
+}
+
+void MobileEngine::toggleAmpMaker(const QString& maker)
+{
+    QStringList makers = ampMakersShown();
+    if (makers.contains(maker)) {
+        makers.removeAll(maker);
+    } else {
+        makers << maker;
+    }
+    AppSettings::instance().setValue(kAmpMakersKey, makers.join(QLatin1Char(',')));
+    AppSettings::instance().save();
+    emit ampMakersChanged();
+}
+
 const QString kHapticsKey = QStringLiteral("MobileHaptics");
 
 bool MobileEngine::hapticsOn() const

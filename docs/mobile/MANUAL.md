@@ -1810,6 +1810,10 @@ radio.
   a transverter is valid.
 - **Amp** — not a setting of the radio: the amplifier this device reads
   for the [Amp tab](#8-controls) and the meters, kept on this device.
+  First **Manufacturer**: tap **4O3A** (Power Genius XL, Tuner Genius XL,
+  Antenna Genius) or **RF-KIT** (RF2K-S) to show its devices; tap again to
+  hide them. A maker whose device is set up reads *· in use*, always shows
+  and comes first. More makers are planned (Elecraft, SPE).
   **RF-KIT RF2K-S**: its **Address** (the IP address or host name of the
   amplifier's network port, `:port` after it when not 8080) with *Save*;
   **Read the amplifier** on or off; **Control the amplifier** on or off

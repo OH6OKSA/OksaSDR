@@ -56,7 +56,7 @@ build. The sections below hold the details.
 8. **Digi:** Contest macros with serial numbers (Planned: the Digi tab)
 9. **Digi:** More keyboard modes: Olivia, MFSK … (Planned: the Digi tab)
 10. **FTx:** Fox / Hound and SuperFox (Later)
-11. **Devices:** Radio Setup › Amp by manufacturer (Later: amplifiers)
+11. ~~**Devices:** Radio Setup › Amp by manufacturer~~ *in build 157*: Manufacturer row (4O3A, RF-KIT), each showing only its devices, a maker in use always shown and first
 12. **Devices:** Elecraft KPA500 and KAT500, Sergio LU7YS (Later: amplifiers)
 13. **Devices:** TGXL SO2R and the Antenna Genius, further steps, Ben Morris (Later)
 14. **Radio:** Memory groups (Later)

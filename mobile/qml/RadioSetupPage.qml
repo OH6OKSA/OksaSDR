@@ -1252,216 +1252,278 @@ Popup {
                     }
                 }
 
-                // ---- Amp: an RF-KIT RF2K-S over its REST API, read only
-                // unless Control is on (MobileEngineAmp.cpp); kept on this
-                // device ----
+                // ---- Amp: by manufacturer (the user, 2026-11-05): choose the
+                // maker, which shows only its devices; a maker in use always
+                // shows, and first. RF-KIT's RF2K-S over its REST API, read only
+                // unless Control is on (MobileEngineAmp.cpp); 4O3A's PGXL, TGXL
+                // (found by the radio, read through it and directly) and
+                // Antenna Genius (MobileEngine4o3a.cpp); kept on this device ----
                 ColumnLayout {
+                    id: ampTab
                     spacing: Theme.spacing / 2
-                    DeviceHeading { text: qsTr("RF-KIT RF2K-S") }
-                    TextSetting {
-                        objectName: "ampAddress"
-                        label: qsTr("Address  (%1)").arg(Engine.amp.address || qsTr("not set"))
-                        current: Engine.amp.address || ""
-                        hint: qsTr("e.g. 192.168.1.60:8080")
-                        upper: false
-                        onSaved: (t) => Engine.setAmpAddress(t)
+                    readonly property var inUse: ({
+                        "4o3a": !!(Engine.pgxl.present || Engine.tgxl.present || Engine.ag.ip),
+                        "rfkit": !!Engine.amp.set
+                    })
+                    function shown(maker) { return ampTab.inUse[maker] || Engine.ampMakersShown.indexOf(maker) >= 0 }
+                    // In use first, then the order of the row.
+                    function rank(maker) {
+                        const order = ["4o3a", "rfkit"]
+                        const sorted = order.filter(m => ampTab.inUse[m]).concat(order.filter(m => !ampTab.inUse[m]))
+                        return sorted.indexOf(maker)
                     }
-                    OnOff {
-                        visible: !!Engine.amp.set
-                        label: qsTr("Read the amplifier")
-                        on: !!Engine.amp.on
-                        onToggled: (v) => Engine.setAmpOn(v)
-                    }
-                    OnOff {
-                        objectName: "ampControl"
-                        visible: !!Engine.amp.set
-                        label: qsTr("Control the amplifier")
-                        on: !!Engine.amp.control
-                        onToggled: (v) => Engine.setAmpControl(v)
-                    }
-                    Label {
-                        objectName: "ampSetupState"
-                        visible: !!Engine.amp.set
+                    Heading { text: qsTr("Manufacturer") }
+                    Flow {
                         Layout.fillWidth: true
-                        text: {
-                            const a = Engine.amp
-                            if (!a.on) return qsTr("Off.")
-                            if (a.state === "connected")
-                                return qsTr("Connected: %1%2.").arg(a.device || "RF-KIT").arg(a.name ? " " + a.name : "")
-                            if (a.state === "failed") return qsTr("Not reached: %1.").arg(a.error)
-                            if (a.state === "connecting") return qsTr("Connecting…")
-                            return qsTr("Read while connected to a radio.")
+                        spacing: 4
+                        Repeater {
+                            model: [{ id: "4o3a", name: "4O3A" }, { id: "rfkit", name: "RF-KIT" }]
+                            delegate: AppButton {
+                                required property var modelData
+                                objectName: "ampMaker_" + modelData.id
+                                text: ampTab.inUse[modelData.id] ? qsTr("%1 · in use").arg(modelData.name) : modelData.name
+                                checked: ampTab.shown(modelData.id)
+                                leftPadding: 12
+                                rightPadding: 12
+                                focusPolicy: Qt.NoFocus
+                                // A maker in use stays shown (its devices are set up).
+                                onClicked: if (!ampTab.inUse[modelData.id]) Engine.toggleAmpMaker(modelData.id)
+                            }
                         }
-                        color: Engine.amp.state === "connected" ? "#00cc66"
-                             : Engine.amp.state === "failed" ? Theme.transmit : Theme.textDim
-                        font.pixelSize: Theme.px(13)
-                        wrapMode: Text.Wrap
-                    }
-                    AppButton {
-                        visible: !!Engine.amp.set
-                        text: qsTr("Forget the amplifier")
-                        focusPolicy: Qt.NoFocus
-                        onClicked: Engine.setAmpAddress("")
                     }
                     Label {
                         Layout.fillWidth: true
-                        text: qsTr("The address of the amplifier's network port (8080 unless you set another after a colon). This device reaches it directly, on the same network or over your VPN when away: not through the radio, and not over SmartLink. Once set, Controls gets an Amp tab with what the amplifier reports: forward and reflected power, SWR, temperature, voltage, current, band, tuner and antenna. Every meter can show the amplifier's readings too.")
+                        text: ampTab.shown("4o3a") || ampTab.shown("rfkit")
+                              ? qsTr("4O3A: Power Genius XL, Tuner Genius XL, Antenna Genius. RF-KIT: RF2K-S. More makers to come (Elecraft, SPE).")
+                              : qsTr("Choose your amplifier's, tuner's or antenna switch's maker to set it up. 4O3A: Power Genius XL, Tuner Genius XL, Antenna Genius. RF-KIT: RF2K-S. More makers to come (Elecraft, SPE).")
                         color: Theme.textDim
                         font.pixelSize: Theme.px(12)
                         wrapMode: Text.WordWrap
                     }
-                    Label {
+                    GridLayout {
+                        columns: 1
+                        rowSpacing: Theme.spacing / 2
                         Layout.fillWidth: true
-                        text: qsTr("Control off: read only, nothing is sent that changes the amplifier. Control on: the Amp tab also gets Operate / Standby, the internal antennas and the error reset. Each asks you first, none works while the radio transmits, and the tab shows only what the amplifier reads back.")
-                        color: Theme.textDim
-                        font.pixelSize: Theme.px(12)
-                        wrapMode: Text.WordWrap
-                    }
-                    // 4O3A's amplifier and tuner: found by the radio, read
-                    // through it and directly (MobileEngine4o3a.cpp).
-                    // A fixed model, the live state read in the delegate: with the
-                    // state maps in the model every telemetry frame (4 Hz, 60 Hz
-                    // keyed) rebuilt both rows, so a tap on On landed on a button
-                    // already replaced and the address field lost its typing (Ben
-                    // Morris, build 152: On took continuous tapping).
-                    Repeater {
-                        model: [{ id: "pgxl", name: qsTr("4O3A Power Genius XL"), port: 9008 },
-                                { id: "tgxl", name: qsTr("4O3A Tuner Genius XL"), port: 9010 }]
-                        delegate: ColumnLayout {
-                            required property var modelData
-                            readonly property var d: modelData.id === "pgxl" ? Engine.pgxl : Engine.tgxl
+                        ColumnLayout {
+                            objectName: "ampMakerRfkit"
+                            visible: ampTab.shown("rfkit")
+                            Layout.row: ampTab.rank("rfkit")
                             Layout.fillWidth: true
                             spacing: Theme.spacing / 2
-                            DeviceHeading { text: modelData.name }
-                            Label {
-                                objectName: modelData.id + "SetupState"
-                                Layout.fillWidth: true
-                                text: !d.present ? qsTr("Not found: the radio reports none, and no address is set.")
-                                    : d.direct ? (d.radio ? qsTr("Found by the radio, and read directly at %1.").arg(d.ip)
-                                                          : qsTr("Read directly at %1 (the radio does not report it).").arg(d.ip))
-                                    // Which code, where it is set and why it is asked: "its
-                                    // remote code" alone left testers guessing (build 152).
-                                    : d.authBlocked && /rejected|Invalid/.test(d.linkError || "")
-                                        ? qsTr("%1 did not accept that remote code. Enter the Authorization code set in the device's own utility (its Network settings) under Remote code below, then Save.").arg(d.ip)
-                                    : d.authBlocked ? qsTr("%1 asks for a remote code: this device reaches it from outside its own network (a VPN or the internet). Enter the Authorization code set in the device's own utility (its Network settings) under Remote code below, then Save. Until then it works through the radio only.").arg(d.ip)
-                                    : !d.ip ? qsTr("Through the radio only: it reports no address for it. Enter the device's own address below to read it directly too.")
-                                    : d.connecting ? qsTr("Connecting to %1…").arg(d.ip)
-                                    : d.linkError ? qsTr("Through the radio only: %1 not reached directly (%2). Standby / Operate, power and SWR work through the radio (over SmartLink too); the supply, temperatures, fan and relays need the station's network or a VPN.").arg(d.ip || "–").arg(d.linkError)
-                                    : qsTr("Through the radio.")
-                                color: d.direct ? "#00cc66" : d.authBlocked ? Theme.transmit : Theme.textDim
-                                font.pixelSize: Theme.px(13)
-                                wrapMode: Text.Wrap
+                            DeviceHeading { text: qsTr("RF-KIT RF2K-S") }
+                            TextSetting {
+                                objectName: "ampAddress"
+                                label: qsTr("Address  (%1)").arg(Engine.amp.address || qsTr("not set"))
+                                current: Engine.amp.address || ""
+                                hint: qsTr("e.g. 192.168.1.60:8080")
+                                upper: false
+                                onSaved: (t) => Engine.setAmpAddress(t)
                             }
                             OnOff {
-                                objectName: modelData.id + "Control"
-                                label: modelData.id === "pgxl" ? qsTr("Control the amplifier") : qsTr("Control the tuner")
-                                on: !!d.control
-                                onToggled: (v) => Engine.setGeniusSetting(modelData.id, "control", v)
+                                visible: !!Engine.amp.set
+                                label: qsTr("Read the amplifier")
+                                on: !!Engine.amp.on
+                                onToggled: (v) => Engine.setAmpOn(v)
                             }
-                            // Where the buttons are (Ben Morris, build 152: Control on, but
-                            // where does it go from Standby to Operate?).
+                            OnOff {
+                                objectName: "ampControl"
+                                visible: !!Engine.amp.set
+                                label: qsTr("Control the amplifier")
+                                on: !!Engine.amp.control
+                                onToggled: (v) => Engine.setAmpControl(v)
+                            }
                             Label {
-                                visible: !!d.control && !!d.present
+                                objectName: "ampSetupState"
+                                visible: !!Engine.amp.set
                                 Layout.fillWidth: true
-                                text: modelData.id === "pgxl"
-                                      ? qsTr("Standby / Operate and the fan: Controls › Amp.")
-                                      : qsTr("Standby / Bypass / Operate, Tune, the relays and the antenna: Controls › Amp.")
-                                color: Theme.textDim
+                                text: {
+                                    const a = Engine.amp
+                                    if (!a.on) return qsTr("Off.")
+                                    if (a.state === "connected")
+                                        return qsTr("Connected: %1%2.").arg(a.device || "RF-KIT").arg(a.name ? " " + a.name : "")
+                                    if (a.state === "failed") return qsTr("Not reached: %1.").arg(a.error)
+                                    if (a.state === "connecting") return qsTr("Connecting…")
+                                    return qsTr("Read while connected to a radio.")
+                                }
+                                color: Engine.amp.state === "connected" ? "#00cc66"
+                                     : Engine.amp.state === "failed" ? Theme.transmit : Theme.textDim
                                 font.pixelSize: Theme.px(13)
                                 wrapMode: Text.Wrap
                             }
-                            TextSetting {
-                                objectName: modelData.id + "Address"
-                                // The device's own address: the radio only reports it.
-                                label: d.manualIp ? qsTr("Address  (your own: %1)").arg(d.manualIp)
-                                     : d.radioIp ? qsTr("Address  (as the radio reports it)")
-                                     : qsTr("Address  (the radio reports none)")
-                                current: d.manualIp || ""
-                                // The reported address shows in the empty field; with none
-                                // reported the device can only be reached at one entered here.
-                                hint: d.radioIp ? qsTr("%1, from the radio").arg(d.radioIp)
-                                                : qsTr("The device's own address, e.g. 192.168.1.50")
-                                upper: false
-                                onSaved: (t) => Engine.setGeniusSetting(modelData.id, "address", t)
-                            }
                             AppButton {
-                                visible: (d.manualIp || "").length > 0
-                                // Back to the reported address, or with none reported just
-                                // the entry cleared (build 152 said "Use the radio's
-                                // address", which read as the radio's own IP).
-                                text: d.radioIp ? qsTr("Use the address the radio reports (%1)").arg(d.radioIp)
-                                                : qsTr("Clear the address")
+                                visible: !!Engine.amp.set
+                                text: qsTr("Forget the amplifier")
                                 focusPolicy: Qt.NoFocus
-                                onClicked: Engine.setGeniusSetting(modelData.id, "address", "")
+                                onClicked: Engine.setAmpAddress("")
                             }
-                            TextSetting {
-                                objectName: modelData.id + "AuthCode"
-                                visible: !!d.authBlocked
-                                label: qsTr("Remote code (the device's Authorization code)")
-                                current: ""
-                                hint: qsTr("The code set in the device's utility")
-                                upper: false
-                                onSaved: (t) => Engine.setGeniusSetting(modelData.id, "authCode", t)
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("The address of the amplifier's network port (8080 unless you set another after a colon). This device reaches it directly, on the same network or over your VPN when away: not through the radio, and not over SmartLink. Once set, Controls gets an Amp tab with what the amplifier reports: forward and reflected power, SWR, temperature, voltage, current, band, tuner and antenna. Every meter can show the amplifier's readings too.")
+                                color: Theme.textDim
+                                font.pixelSize: Theme.px(12)
+                                wrapMode: Text.WordWrap
+                            }
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("Control off: read only, nothing is sent that changes the amplifier. Control on: the Amp tab also gets Operate / Standby, the internal antennas and the error reset. Each asks you first, none works while the radio transmits, and the tab shows only what the amplifier reads back.")
+                                color: Theme.textDim
+                                font.pixelSize: Theme.px(12)
+                                wrapMode: Text.WordWrap
                             }
                         }
-                    }
-                    // 4O3A's Antenna Genius: the radio does not report it, so it
-                    // is read only at an address set here (TCP 9007).
-                    ColumnLayout {
-                        readonly property var a: Engine.ag
-                        Layout.fillWidth: true
-                        spacing: Theme.spacing / 2
-                        DeviceHeading { text: qsTr("4O3A Antenna Genius") }
-                        Label {
-                            objectName: "agSetupState"
+                        ColumnLayout {
+                            objectName: "ampMaker4o3a"
+                            visible: ampTab.shown("4o3a")
+                            Layout.row: ampTab.rank("4o3a")
                             Layout.fillWidth: true
-                            text: !parent.a.ip ? qsTr("Not set: enter its address to read it (the radio does not report an Antenna Genius).")
-                                : parent.a.direct ? qsTr("Read directly at %1%2.").arg(parent.a.ip).arg(parent.a.name ? " (" + parent.a.name + (parent.a.version ? ", v" + parent.a.version : "") + ")" : "")
-                                : parent.a.authBlocked ? qsTr("%1 asks for a remote code: this device reaches it from outside its own network (a VPN or the internet). Enter the Authorization code set in its utility under Remote code below, then Save.").arg(parent.a.ip)
-                                : parent.a.connecting ? qsTr("Connecting to %1…").arg(parent.a.ip)
-                                : parent.a.linkError ? qsTr("%1 not reached (%2): it needs the station's network or a VPN.").arg(parent.a.ip).arg(parent.a.linkError)
-                                : qsTr("At %1 while connected to a radio.").arg(parent.a.ip)
-                            color: parent.a.direct ? "#00cc66" : parent.a.authBlocked ? Theme.transmit : Theme.textDim
-                            font.pixelSize: Theme.px(13)
-                            wrapMode: Text.Wrap
+                            spacing: Theme.spacing / 2
+                            // 4O3A's amplifier and tuner: found by the radio, read
+                            // through it and directly (MobileEngine4o3a.cpp).
+                            // A fixed model, the live state read in the delegate: with the
+                            // state maps in the model every telemetry frame (4 Hz, 60 Hz
+                            // keyed) rebuilt both rows, so a tap on On landed on a button
+                            // already replaced and the address field lost its typing (Ben
+                            // Morris, build 152: On took continuous tapping).
+                            Repeater {
+                                model: [{ id: "pgxl", name: qsTr("4O3A Power Genius XL"), port: 9008 },
+                                        { id: "tgxl", name: qsTr("4O3A Tuner Genius XL"), port: 9010 }]
+                                delegate: ColumnLayout {
+                                    required property var modelData
+                                    readonly property var d: modelData.id === "pgxl" ? Engine.pgxl : Engine.tgxl
+                                    Layout.fillWidth: true
+                                    spacing: Theme.spacing / 2
+                                    DeviceHeading { text: modelData.name }
+                                    Label {
+                                        objectName: modelData.id + "SetupState"
+                                        Layout.fillWidth: true
+                                        text: !d.present ? qsTr("Not found: the radio reports none, and no address is set.")
+                                            : d.direct ? (d.radio ? qsTr("Found by the radio, and read directly at %1.").arg(d.ip)
+                                                                  : qsTr("Read directly at %1 (the radio does not report it).").arg(d.ip))
+                                            // Which code, where it is set and why it is asked: "its
+                                            // remote code" alone left testers guessing (build 152).
+                                            : d.authBlocked && /rejected|Invalid/.test(d.linkError || "")
+                                                ? qsTr("%1 did not accept that remote code. Enter the Authorization code set in the device's own utility (its Network settings) under Remote code below, then Save.").arg(d.ip)
+                                            : d.authBlocked ? qsTr("%1 asks for a remote code: this device reaches it from outside its own network (a VPN or the internet). Enter the Authorization code set in the device's own utility (its Network settings) under Remote code below, then Save. Until then it works through the radio only.").arg(d.ip)
+                                            : !d.ip ? qsTr("Through the radio only: it reports no address for it. Enter the device's own address below to read it directly too.")
+                                            : d.connecting ? qsTr("Connecting to %1…").arg(d.ip)
+                                            : d.linkError ? qsTr("Through the radio only: %1 not reached directly (%2). Standby / Operate, power and SWR work through the radio (over SmartLink too); the supply, temperatures, fan and relays need the station's network or a VPN.").arg(d.ip || "–").arg(d.linkError)
+                                            : qsTr("Through the radio.")
+                                        color: d.direct ? "#00cc66" : d.authBlocked ? Theme.transmit : Theme.textDim
+                                        font.pixelSize: Theme.px(13)
+                                        wrapMode: Text.Wrap
+                                    }
+                                    OnOff {
+                                        objectName: modelData.id + "Control"
+                                        label: modelData.id === "pgxl" ? qsTr("Control the amplifier") : qsTr("Control the tuner")
+                                        on: !!d.control
+                                        onToggled: (v) => Engine.setGeniusSetting(modelData.id, "control", v)
+                                    }
+                                    // Where the buttons are (Ben Morris, build 152: Control on, but
+                                    // where does it go from Standby to Operate?).
+                                    Label {
+                                        visible: !!d.control && !!d.present
+                                        Layout.fillWidth: true
+                                        text: modelData.id === "pgxl"
+                                              ? qsTr("Standby / Operate and the fan: Controls › Amp.")
+                                              : qsTr("Standby / Bypass / Operate, Tune, the relays and the antenna: Controls › Amp.")
+                                        color: Theme.textDim
+                                        font.pixelSize: Theme.px(13)
+                                        wrapMode: Text.Wrap
+                                    }
+                                    TextSetting {
+                                        objectName: modelData.id + "Address"
+                                        // The device's own address: the radio only reports it.
+                                        label: d.manualIp ? qsTr("Address  (your own: %1)").arg(d.manualIp)
+                                             : d.radioIp ? qsTr("Address  (as the radio reports it)")
+                                             : qsTr("Address  (the radio reports none)")
+                                        current: d.manualIp || ""
+                                        // The reported address shows in the empty field; with none
+                                        // reported the device can only be reached at one entered here.
+                                        hint: d.radioIp ? qsTr("%1, from the radio").arg(d.radioIp)
+                                                        : qsTr("The device's own address, e.g. 192.168.1.50")
+                                        upper: false
+                                        onSaved: (t) => Engine.setGeniusSetting(modelData.id, "address", t)
+                                    }
+                                    AppButton {
+                                        visible: (d.manualIp || "").length > 0
+                                        // Back to the reported address, or with none reported just
+                                        // the entry cleared (build 152 said "Use the radio's
+                                        // address", which read as the radio's own IP).
+                                        text: d.radioIp ? qsTr("Use the address the radio reports (%1)").arg(d.radioIp)
+                                                        : qsTr("Clear the address")
+                                        focusPolicy: Qt.NoFocus
+                                        onClicked: Engine.setGeniusSetting(modelData.id, "address", "")
+                                    }
+                                    TextSetting {
+                                        objectName: modelData.id + "AuthCode"
+                                        visible: !!d.authBlocked
+                                        label: qsTr("Remote code (the device's Authorization code)")
+                                        current: ""
+                                        hint: qsTr("The code set in the device's utility")
+                                        upper: false
+                                        onSaved: (t) => Engine.setGeniusSetting(modelData.id, "authCode", t)
+                                    }
+                                }
+                            }
+                            // 4O3A's Antenna Genius: the radio does not report it, so it
+                            // is read only at an address set here (TCP 9007).
+                            ColumnLayout {
+                                readonly property var a: Engine.ag
+                                Layout.fillWidth: true
+                                spacing: Theme.spacing / 2
+                                DeviceHeading { text: qsTr("4O3A Antenna Genius") }
+                                Label {
+                                    objectName: "agSetupState"
+                                    Layout.fillWidth: true
+                                    text: !parent.a.ip ? qsTr("Not set: enter its address to read it (the radio does not report an Antenna Genius).")
+                                        : parent.a.direct ? qsTr("Read directly at %1%2.").arg(parent.a.ip).arg(parent.a.name ? " (" + parent.a.name + (parent.a.version ? ", v" + parent.a.version : "") + ")" : "")
+                                        : parent.a.authBlocked ? qsTr("%1 asks for a remote code: this device reaches it from outside its own network (a VPN or the internet). Enter the Authorization code set in its utility under Remote code below, then Save.").arg(parent.a.ip)
+                                        : parent.a.connecting ? qsTr("Connecting to %1…").arg(parent.a.ip)
+                                        : parent.a.linkError ? qsTr("%1 not reached (%2): it needs the station's network or a VPN.").arg(parent.a.ip).arg(parent.a.linkError)
+                                        : qsTr("At %1 while connected to a radio.").arg(parent.a.ip)
+                                    color: parent.a.direct ? "#00cc66" : parent.a.authBlocked ? Theme.transmit : Theme.textDim
+                                    font.pixelSize: Theme.px(13)
+                                    wrapMode: Text.Wrap
+                                }
+                                OnOff {
+                                    objectName: "agControl"
+                                    label: qsTr("Control the antenna switch")
+                                    on: !!parent.a.control
+                                    onToggled: (v) => Engine.setGeniusSetting("ag", "control", v)
+                                }
+                                TextSetting {
+                                    objectName: "agAddress"
+                                    label: qsTr("Address  (the device's own)")
+                                    current: parent.a.manualIp || ""
+                                    hint: qsTr("The Antenna Genius's own address, e.g. 192.168.1.60")
+                                    upper: false
+                                    onSaved: (t) => Engine.setGeniusSetting("ag", "address", t)
+                                }
+                                TextSetting {
+                                    objectName: "agAuthCode"
+                                    visible: !!parent.a.authBlocked
+                                    label: qsTr("Remote code (the device's Authorization code)")
+                                    current: ""
+                                    hint: qsTr("The code set in the device's utility")
+                                    upper: false
+                                    onSaved: (t) => Engine.setGeniusSetting("ag", "authCode", t)
+                                }
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: qsTr("Its two radio ports' band and RX / TX antennas show on Controls › Amp. Control on: an antenna is chosen there, asked first, never while that port or the radio transmits. OksaSDR sends nothing else to it: the Antenna Genius and a Tuner Genius keep their own antenna for each band.")
+                                    color: Theme.textDim
+                                    font.pixelSize: Theme.px(12)
+                                    wrapMode: Text.WordWrap
+                                }
+                            }
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("A Power Genius XL or Tuner Genius XL connected to the radio shows on the Amp tab by itself: the radio relays its state, power and SWR and its Operate / Standby (over SmartLink too); this device also reads it directly at its address (ports 9008 and 9010; on the same network or your VPN) for its supply, temperatures, the tuner's relays and antenna switch. A remote code, when the device asks for one, is kept in this device's secure store once the device has accepted it. Control on: the Amp tab's buttons change the device, each asked first; the devices guard their own SWR, power and temperature, and the tuner's relays and antenna wait while the radio transmits.")
+                                color: Theme.textDim
+                                font.pixelSize: Theme.px(12)
+                                wrapMode: Text.WordWrap
+                            }
                         }
-                        OnOff {
-                            objectName: "agControl"
-                            label: qsTr("Control the antenna switch")
-                            on: !!parent.a.control
-                            onToggled: (v) => Engine.setGeniusSetting("ag", "control", v)
-                        }
-                        TextSetting {
-                            objectName: "agAddress"
-                            label: qsTr("Address  (the device's own)")
-                            current: parent.a.manualIp || ""
-                            hint: qsTr("The Antenna Genius's own address, e.g. 192.168.1.60")
-                            upper: false
-                            onSaved: (t) => Engine.setGeniusSetting("ag", "address", t)
-                        }
-                        TextSetting {
-                            objectName: "agAuthCode"
-                            visible: !!parent.a.authBlocked
-                            label: qsTr("Remote code (the device's Authorization code)")
-                            current: ""
-                            hint: qsTr("The code set in the device's utility")
-                            upper: false
-                            onSaved: (t) => Engine.setGeniusSetting("ag", "authCode", t)
-                        }
-                        Label {
-                            Layout.fillWidth: true
-                            text: qsTr("Its two radio ports' band and RX / TX antennas show on Controls › Amp. Control on: an antenna is chosen there, asked first, never while that port or the radio transmits. OksaSDR sends nothing else to it: the Antenna Genius and a Tuner Genius keep their own antenna for each band.")
-                            color: Theme.textDim
-                            font.pixelSize: Theme.px(12)
-                            wrapMode: Text.WordWrap
-                        }
-                    }
-                    Label {
-                        Layout.fillWidth: true
-                        text: qsTr("A Power Genius XL or Tuner Genius XL connected to the radio shows on the Amp tab by itself: the radio relays its state, power and SWR and its Operate / Standby (over SmartLink too); this device also reads it directly at its address (ports 9008 and 9010; on the same network or your VPN) for its supply, temperatures, the tuner's relays and antenna switch. A remote code, when the device asks for one, is kept in this device's secure store once the device has accepted it. Control on: the Amp tab's buttons change the device, each asked first; the devices guard their own SWR, power and temperature, and the tuner's relays and antenna wait while the radio transmits.")
-                        color: Theme.textDim
-                        font.pixelSize: Theme.px(12)
-                        wrapMode: Text.WordWrap
                     }
                 }
 
