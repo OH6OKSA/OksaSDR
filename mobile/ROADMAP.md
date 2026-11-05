@@ -70,12 +70,14 @@ build. The sections below hold the details.
 22. **Display:** Upstream FFT Smooth and De-comb (Later)
 23. **Display:** 3D with 768 columns (Later)
 24. **Radio:** PTT latency measured over SmartLink and VPN, key to RF (Later)
-25. **Engine:** Upstream 26.10.3's engine fixes as one build: TUNE RCA suppression per band, interlock sources, Auto squelch, Auto AGC-T, the NR range … (Later: ideas)
+25. **Engine:** Upstream 26.10.3's engine fixes that fit: #6526 (TUNE restores only the outputs it inhibited), #6493 (interlock source lists such as MIC,VOX), #6498 (NRS level 0-50 on 4.3.16+, with the mobile DSP slider taking its maximum from the engine), and DFM added to the modes without squelch. Reviewed 2026-11-05 against our branch: none applies cleanly (RadioModel / SliceModel conflicts), each to be ported by hand and checked on the radio at low power. #6464 (display Auto squelch per slice) left out: desktop display only, it changes SliceModel under the mobile squelch (Later: ideas)
 26. **Fixes:** Symbols missing on Android: the edit pencil and others (Later)
 27. **Fixes:** Screen readers done properly: dialogs that keep the reader inside, named icon buttons, the spectrum not tuned by a double tap (Later)
 28. **Fixes:** The Connect page freeze on the OnePlus outer screen (seen once, not reproduced)
 29. **Verify:** LAN discovery on Android at the radio's own network (Waiting)
 30. **Verify:** Build 155: Display Zoom on an iPhone, two Android phones at once, big text on a Mac
+31. **Devices:** TUNE RCA suppression per band on SmartSDR 4.3+ (upstream #6524), only with the mobile side: on 4.3+ the radio owns RCA TX1-3 suppression per band and the engine stops the client-side inhibit, so Radio Setup › Transmit › Inhibit during TUNE: RCA TX1/2/3 would silently stop working (upstream has no migration or notice; the radio's default is no suppression, so an amplifier could key on the tune carrier). Needs an RCA off / TUNE column in TX Band Settings, Inhibit during TUNE reduced to ACC on 4.3+, the old choices carried over or a clear notice. With item 11.
+32. **Radio:** The radio's Auto AGC-T (upstream #6508), only with the mobile side: an Auto choice by the AGC-T slider, the slider and the per-mode AGC (voice slow, data / CW fast) not overriding the radio's Auto unnoticed.
 
 ## Planned: the Digi tab, keyboard modes as one (asked 2026-11-02)
 
