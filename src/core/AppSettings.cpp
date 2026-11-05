@@ -23,6 +23,11 @@
 #include <QUuid>
 #include <QXmlStreamReader>
 
+#ifdef Q_OS_ANDROID
+#include <QJniObject>
+#include <QtCore/qcoreapplication_platform.h>
+#endif
+
 #ifdef HAVE_KEYCHAIN
 #include <qt6keychain/keychain.h>
 #endif
@@ -48,6 +53,27 @@ QString validUuidOrEmpty(const QString& value)
 QString machineBinding()
 {
     QByteArray unique = QSysInfo::machineUniqueId();
+#ifdef Q_OS_ANDROID
+    // Qt has no machine id on Android, and the fallback below
+    // ("localhost|linux|arm64") is every phone's: a phone set up from
+    // another's backup kept its GUI client ID, and the two took each other's
+    // sessions on the radio (OksaSDR, two phones of one owner). ANDROID_ID is
+    // per device, signing key and user, and not in backups.
+    if (unique.isEmpty()) {
+        const QJniObject context = QNativeInterface::QAndroidApplication::context();
+        if (context.isValid()) {
+            const QJniObject resolver = context.callObjectMethod(
+                "getContentResolver", "()Landroid/content/ContentResolver;");
+            const QJniObject id = QJniObject::callStaticObjectMethod(
+                "android/provider/Settings$Secure", "getString",
+                "(Landroid/content/ContentResolver;Ljava/lang/String;)Ljava/lang/String;",
+                resolver.object(), QJniObject::fromString(QStringLiteral("android_id")).object());
+            if (id.isValid() && !id.toString().isEmpty()) {
+                unique = "android:" + id.toString().toUtf8();
+            }
+        }
+    }
+#endif
     if (unique.isEmpty()) {
         unique = QSysInfo::machineHostName().toUtf8() + '|'
                  + QSysInfo::kernelType().toUtf8() + '|'

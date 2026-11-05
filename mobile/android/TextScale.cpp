@@ -16,8 +16,8 @@ double systemTextScale()
     return scale > 0.0f ? double(scale) : 1.0;
 }
 
-// Not yet on Android: Display size at its largest could narrow a phone below
-// 375 dp too, to be checked on a device first.
+// Not needed on Android: at its largest Display size the OnePlus Open's outer
+// screen (the narrowest checked) still fits the phone layout.
 double narrowScreenScale()
 {
     return 1.0;
