@@ -5778,8 +5778,30 @@ void MobileEngine::importAdif(const QUrl& url)
     worker->start();
 }
 
+const QString kHapticsKey = QStringLiteral("MobileHaptics");
+
+bool MobileEngine::hapticsOn() const
+{
+    return AppSettings::instance().value(kHapticsKey, QStringLiteral("True")).toString() == QLatin1String("True");
+}
+
+void MobileEngine::setHapticsOn(bool on)
+{
+    if (on == hapticsOn()) {
+        return;
+    }
+    AppSettings::instance().setValue(kHapticsKey, on ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    qCInfo(lcMobile) << "felt taps:" << (on ? "on" : "off");
+    emit hapticsChanged();
+}
+
 void MobileEngine::haptic(const QString& kind)
 {
+    // The app's own switch (View › Felt taps) over the system's setting.
+    if (!hapticsOn()) {
+        return;
+    }
     mobile::haptic(kind == QLatin1String("press")     ? mobile::Haptic::Press
                    : kind == QLatin1String("release") ? mobile::Haptic::Release
                                                       : mobile::Haptic::Step);

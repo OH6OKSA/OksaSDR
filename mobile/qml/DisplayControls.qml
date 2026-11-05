@@ -142,6 +142,26 @@ ColumnLayout {
             wrapMode: Text.Wrap
         }
     }
+    // Felt taps (iPhone, Android phones): PTT, the step buttons, − / + and a
+    // slider's drag; the system's own setting still applies.
+    RowLayout {
+        Layout.fillWidth: true
+        Label {
+            text: qsTr("Felt taps (phones)")
+            color: Theme.textDim
+            font.pixelSize: Theme.px(15)
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+        }
+        AppButton {
+            objectName: "hapticsOn"
+            text: Engine.hapticsOn ? qsTr("On") : qsTr("Off")
+            checked: Engine.hapticsOn
+            Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.hapticsOn = !Engine.hapticsOn
+        }
+    }
     // Spots on the display (the radio's, from every client) and this app's
     // DX cluster connection, whose spots go to the radio.
     RowLayout {

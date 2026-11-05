@@ -1224,6 +1224,11 @@ public:
     // A tap felt in the hand (Haptics.h): "step" for a step button or − / +,
     // "press" and "release" for PTT.
     Q_INVOKABLE void haptic(const QString& kind);
+    // Felt taps on or off in this app (View), on by default; the system's own
+    // setting still applies when on.
+    Q_PROPERTY(bool hapticsOn READ hapticsOn WRITE setHapticsOn NOTIFY hapticsChanged)
+    bool hapticsOn() const;
+    void setHapticsOn(bool on);
     // Adds the contacts of an ADIF file (a file or content URL from the file
     // picker) to the log, skipping those already in it (call, date, time,
     // band, mode). Returns imported, duplicates and error.
@@ -1644,6 +1649,7 @@ signals:
     void lastErrorChanged();
     void callsignChanged();
     void bandPlanChanged();
+    void hapticsChanged();
     void bandPlanRegionChanged();
     void buttonStyleChanged();
     void textScaleChanged();

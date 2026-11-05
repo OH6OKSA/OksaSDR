@@ -556,9 +556,11 @@ whenever they scroll.
 
 **Felt taps.** On an iPhone or an Android phone, PTT's press and release,
 the step buttons and − / + are felt as a light tap, as the phone's own
-controls give. It follows the phone's own setting (iPhone: *Settings ›
-Sounds & Haptics › System Haptics*; Android: touch feedback under the
-vibration settings). iPads and Macs have none.
+controls give, and a slider's drag as ticks (each step on a short scale,
+else each tenth and the ends). **Controls → View → Felt taps** turns them
+off in this app; when on, they follow the phone's own setting (iPhone:
+*Settings › Sounds & Haptics › System Haptics*; Android: touch feedback
+under the vibration settings). iPads and Macs have none.
 
 **Screen reader.** With VoiceOver (iPhone, iPad, Mac) or TalkBack
 (Android) every control says what it is and its value: the frequency in
@@ -1181,7 +1183,8 @@ seven.
 - **View** — **Band plan** (the strip at the foot of the spectrum: *Off*,
   *ARRL (US)*, *IARU Region 1 / 2 / 3*, *RAC (Canada)* or *SSA
   (Sweden)*), **Band plan lock (mode)** (see
-  [Band plan lock](#band-plan-lock)), **Text size** (*System* follows the system's text size —
+  [Band plan lock](#band-plan-lock)), **Felt taps (phones)** (on / off, see
+  *Felt taps* above), **Text size** (*System* follows the system's text size —
   iOS Settings › Display & Brightness › Text Size, Android's font size —
   or a fixed *100 % / 115 % / 130 %*; the panels', dialogs' and setup
   pages' text grows, the operating screen's dense controls and the

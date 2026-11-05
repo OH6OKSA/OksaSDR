@@ -46,7 +46,7 @@ nuo kaikki aina roadmapille"). A number stays with its item; a new item
 takes the next free number; a done item is struck through here with its
 build. The sections below hold the details.
 
-1. **Usability:** Haptics: a light tap on PTT, the step buttons and slider steps, with a setting to turn it off (Planned: usability)
+1. ~~**Usability:** Haptics: a light tap on PTT, the step buttons and slider steps, with a setting to turn it off~~ *in build 157*: PTT, the step buttons and − / + had them since build 137; now a slider's drag ticks too, and View › Felt taps turns them off
 2. **Usability:** First-run hints: three or four hints for the hidden gestures (Planned: usability)
 3. **Usability:** Views side by side on a tablet / Mac: FTx and the log, two panadapters (Planned: usability)
 4. **Logging:** Wavelog, QRZ.com Logbook and the shared ADIF file tested on devices (a real QRZ key; iCloud Drive, Google Drive, OneDrive) (Planned: two-way sync)
@@ -233,8 +233,8 @@ Touch and feel:
   Network still have it at the bottom) and scrolling where the window is
   low.
 - **Haptics:** a light tap felt on PTT press and release, the step buttons
-  and the slider steps. None anywhere yet. *To discuss:* which controls,
-  and a setting to turn it off.
+  and − / + *in build 137*; a slider's drag and the View › Felt taps
+  switch *in build 157*.
 
 Text and large screens:
 - **A text scale that follows the system text size** (iOS Dynamic Type,

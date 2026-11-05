@@ -27,6 +27,23 @@ RowLayout {
     signal moved(real value)
     spacing: 2
 
+    // A drag is felt as ticks (Engine.haptic): each step on a short scale,
+    // else each tenth of it and its ends, at most one tick in 40 ms.
+    property int lastTick: -1
+    property double lastTickMs: 0
+    function feelDrag(v) {
+        const steps = Math.round((slider.to - slider.from) / Math.max(slider.stepSize, 1e-9))
+        const per = steps <= 20 ? 1 : steps / 10
+        const tick = (v <= slider.from || v >= slider.to) ? (v <= slider.from ? -2 : -3)
+                                                          : Math.floor((v - slider.from) / slider.stepSize / per)
+        const now = Date.now()
+        if (tick !== fine.lastTick && now - fine.lastTickMs >= 40) {
+            fine.lastTick = tick
+            fine.lastTickMs = now
+            Engine.haptic("step")
+        }
+    }
+
     function nudge(dir) {
         const before = slider.value
         if (dir < 0) {
@@ -57,7 +74,10 @@ RowLayout {
         Accessible.name: fine.accessibleName
         Accessible.onIncreaseAction: fine.nudge(1)
         Accessible.onDecreaseAction: fine.nudge(-1)
-        onMoved: if (fine.liveDrag) fine.moved(value)
+        onMoved: {
+            fine.feelDrag(value)
+            if (fine.liveDrag) fine.moved(value)
+        }
         onPressedChanged: if (!pressed && !fine.liveDrag) fine.moved(value)
         Binding on value {
             when: !fine.busy
