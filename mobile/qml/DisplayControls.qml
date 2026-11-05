@@ -31,25 +31,25 @@ ColumnLayout {
             }
         }
     }
-    // The mode from the band plan while tuning (Tyler K0OTC): CW in a CW
-    // segment, LSB / USB in a phone one, HF only.
+    // Band plan lock (Tyler K0OTC): the band plan sets and limits the mode
+    // (HF); also in the mode chooser, and PLAN by the mode while it is on.
     RowLayout {
         Layout.fillWidth: true
         Label {
-            text: qsTr("Mode from band plan")
+            text: qsTr("Band plan lock (mode)")
             color: Theme.textDim
             font.pixelSize: Theme.px(16)
             Layout.fillWidth: true
             wrapMode: Text.Wrap
         }
         AppButton {
-            objectName: "modeFollowsBandPlan"
-            text: Engine.modeFollowsBandPlan ? qsTr("On") : qsTr("Off")
-            checked: Engine.modeFollowsBandPlan
+            objectName: "bandPlanLock"
+            text: Engine.bandPlanLock ? qsTr("On") : qsTr("Off")
+            checked: Engine.bandPlanLock
             leftPadding: 10
             rightPadding: 10
             focusPolicy: Qt.NoFocus
-            onClicked: Engine.modeFollowsBandPlan = !Engine.modeFollowsBandPlan
+            onClicked: Engine.bandPlanLock = !Engine.bandPlanLock
         }
     }
     // The band row and the step buttons (also B/S on the display), and what

@@ -127,10 +127,9 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
 **Receive**
 1. Pick the band (band buttons) and the mode: USB on 20 m and up, LSB on
    40 m and down, by custom. The yellow edges on the display show the
-   passband, on the right side of the carrier for the mode. With
-   **Mode from band plan** on (Controls → View) the app sets USB / LSB as
-   you tune into a phone segment, and CW in a CW segment, as defaults: a
-   mode you choose holds on that band until you change band.
+   passband, on the right side of the carrier for the mode. With the
+   [band plan lock](#band-plan-lock) on (PLAN by the mode) the app sets
+   USB / LSB as you tune into a phone part, and CW in a CW part.
 2. Tune: tap a station on the display (snapped to the step), drag inside
    the passband, use the step buttons under the display, or type the
    frequency (tap the frequency).
@@ -365,6 +364,30 @@ passband, so the slice stays put and the decoder is moved to the signal.
    grid).
 
 ### In every mode
+
+#### Band plan lock
+
+For everyday operating the band plan can choose the mode: turn on **Band
+plan lock** in the mode chooser (tap the mode by the frequency) or in
+Controls → View. While it is on, **PLAN** shows by the mode (under it on
+a phone); a tap on PLAN turns the lock off. It uses the band plan chosen
+in Controls → View (*ARRL (US)*, *IARU Region 1* …; with the strip *Off*,
+the one last chosen), on HF (below 30 MHz).
+
+- Tuning into another part of the plan sets its mode: **CW** in a CW
+  part, **LSB** below 10 MHz and **USB** above (and on 60 m) in a phone or
+  all-mode part. E.g. 14.250 USB, then 7.210 LSB, then 7.030 CW. Also
+  from a digital mode: DIGU tuned into the phone part becomes USB.
+- A **CW part** allows only CW, a **phone part** (ARRL's PHONE, SSB) the
+  voice modes (LSB, USB, AM, SAM, FM; DIGU / DIGL with RADE on). Another
+  mode is dimmed in the mode chooser; choosing it, or a spot or memory
+  bringing it, gives a notice and the part's mode.
+- An **all-mode part** (IARU's ALL) sets the sideband but allows any mode
+  (FT8 on 7.074 in Region 1 stays DIGU); data, beacon and mixed parts
+  allow any mode and set none.
+- Inside a part the mode you chose stays while you tune.
+- For a contest that uses the whole band, turn the lock off (tap PLAN):
+  any mode on any frequency.
 
 | PTT and the transmit lock (TX tab) |
 |---|
@@ -1156,17 +1179,8 @@ seven.
     offered above the memories (*Call*) and on the Log tab (*Heard in CW*).
 - **View** — **Band plan** (the strip at the foot of the spectrum: *Off*,
   *ARRL (US)*, *IARU Region 1 / 2 / 3*, *RAC (Canada)* or *SSA
-  (Sweden)*), **Mode from band plan** (off by default: on, tuning into
-  another part of the band plan below 30 MHz sets the mode, CW in a CW
-  part, in a phone or all-mode part LSB below 10 MHz and USB above and
-  on 60 m; e.g. 14.250 USB, then 7.210 LSB. The plan's modes are only
-  defaults: choose another mode where the plan gives one (CW or RTTY over
-  the phone part in a contest) and it holds on the whole band; on another
-  band the plan applies again, and choosing the plan's own mode ends the
-  hold. A spot or memory that brings its own mode is no choice for the
-  band. It never changes away from a digital mode (DIGU, DIGL, RTTY), AM
-  or FM, so FT8 anywhere stays DIGU, and it leaves data, beacon and mixed
-  segments alone. With the strip *Off* it uses the plan last chosen), **Text size** (*System* follows the system's text size —
+  (Sweden)*), **Band plan lock (mode)** (see
+  [Band plan lock](#band-plan-lock)), **Text size** (*System* follows the system's text size —
   iOS Settings › Display & Brightness › Text Size, Android's font size —
   or a fixed *100 % / 115 % / 130 %*; the panels', dialogs' and setup
   pages' text grows, the operating screen's dense controls and the

@@ -103,9 +103,13 @@ class MobileEngine : public QObject {
     Q_PROPERTY(bool txArmAtStart READ txArmAtStart WRITE setTxArmAtStart NOTIFY txLockChanged)
     Q_PROPERTY(int txArmedSeconds READ txArmedSeconds NOTIFY txLockChanged)
     Q_PROPERTY(QStringList bandPlans READ bandPlans CONSTANT)
-    // The mode follows the band plan (Tyler K0OTC): tuning into a CW or phone
-    // segment below 30 MHz sets CW, or LSB / USB by the band. Off by default.
-    Q_PROPERTY(bool modeFollowsBandPlan READ modeFollowsBandPlan WRITE setModeFollowsBandPlan NOTIFY bandPlanChanged)
+    // Band plan lock (Tyler K0OTC, the user): tuning into a CW or phone part
+    // of the band plan below 30 MHz sets CW, or LSB / USB by the band (in an
+    // all-mode part too), and a mode the part does not use is refused with
+    // a notice. Off by default; PLAN by the mode shows it. bandPlanModes:
+    // the modes the part at the slice allows (empty: any, or the lock off).
+    Q_PROPERTY(bool bandPlanLock READ bandPlanLock WRITE setBandPlanLock NOTIFY bandPlanChanged)
+    Q_PROPERTY(QStringList bandPlanModes READ bandPlanModes NOTIFY bandPlanRegionChanged)
     // Receive audio coding: "Auto" (Opus when remote: SmartLink, a tailnet,
     // or the radio reached through a VPN), "Opus" or "None"; applies from
     // the next connection. audioCodingInUse says what this one uses and why.
@@ -673,11 +677,17 @@ public:
     QStringList bandPlans() const;
     // The active plan's segments (empty when off), for the spectrum.
     QVector<BandPlanManager::Segment> bandPlanSegments() const;
-    bool modeFollowsBandPlan() const;
-    void setModeFollowsBandPlan(bool on);
+    bool bandPlanLock() const;
+    void setBandPlanLock(bool on);
     // The mode the band plan gives a frequency ("CW", "LSB", "USB"), or empty
-    // where it gives none (data, beacons, mixed segments, VHF and up).
+    // where it gives none (data, beacons, mixed segments, VHF and up), and
+    // the modes it allows there (empty: any).
     QString bandPlanMode(double mhz, QString* region = nullptr) const;
+    QStringList bandPlanModesAt(double mhz) const;
+    QStringList bandPlanModes() const;
+    // The mode chooser's choice: refused with a notice where the band plan
+    // lock does not allow it.
+    Q_INVOKABLE bool chooseMode(const QString& mode);
     QString audioCompression() const;
     void setAudioCompression(const QString& mode);
     QString audioCodingInUse() const { return m_audioCodingInUse; }
@@ -1634,6 +1644,7 @@ signals:
     void lastErrorChanged();
     void callsignChanged();
     void bandPlanChanged();
+    void bandPlanRegionChanged();
     void buttonStyleChanged();
     void textScaleChanged();
     void pttToggleChanged();
@@ -1800,20 +1811,17 @@ private:
     QThread* m_audioThread{nullptr};
     AudioEngine* m_audio{nullptr};
     BandPlanManager m_bandPlan;
-    // Mode from the band plan: the plan region the active slice was in and
-    // its mode (only a move into another region sets the mode), the band on
-    // which a mode of one's own holds (the plan rests there until another
-    // band), and when the mode last changed (a spot or memory that sets its
-    // own mode wins).
+    // Band plan lock: the plan part the active slice was in (only a move
+    // into another part sets the mode), and when the mode last changed (a
+    // spot or memory that sets a mode the part allows wins).
     QString m_planRegionAt;
-    QString m_planRegionMode;
-    QString m_planHoldBand;
-    QString m_planAutoMode;  // the mode the plan just set (its echo is no choice)
     QElapsedTimer m_modeSetClock;
     void followBandPlanMode();
     void planRegionNow();
     void notePlanModeChoice();
     void judgePlanModeChoice();
+    void refusePlanMode(const QString& mode);
+    const BandPlanManager::Segment* bandPlanSegmentAt(double mhz) const;
     // Split: the listening and transmitting slices (-1: none); pending while
     // the TX slice is being created.
     // Traffic rate: bytes and time at the last networkDetails() call.

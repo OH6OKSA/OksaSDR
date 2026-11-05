@@ -415,8 +415,9 @@ int main(int argc, char* argv[])
         QStringLiteral("assignments"));
     parser.addOption(engineSetOption);
     const QCommandLineOption modePlanTestOption(QStringLiteral("mode-plan-test"),
-        QStringLiteral("Development: turn Mode from band plan on, tune between phone, CW and data "
-                       "segments, log the mode at each, then restore the frequency, mode and setting."));
+        QStringLiteral("Development: turn the band plan lock on, tune between phone, CW and data "
+                       "parts and choose modes, log the mode at each, then restore the frequency, mode, "
+                       "plan and setting."));
     parser.addOption(modePlanTestOption);
     const QCommandLineOption echoAuditOnlyOption(QStringLiteral("echo-audit-only"),
         QStringLiteral("Development: with --echo-audit, only the settings whose name contains <text>."),
@@ -796,47 +797,33 @@ int main(int argc, char* argv[])
             {{}, 14.250, {}, -1, QStringLiteral("USB")},   // Tyler's example
             {{}, 7.210, {}, -1, QStringLiteral("LSB")},
             {{}, 7.030, {}, -1, QStringLiteral("CW")},
-            {{}, 7.074, {}, -1, QStringLiteral("CW")},     // data: left alone
-            {{}, 14.250, {}, -1, QStringLiteral("USB")},
-            {{}, 14.150, QStringLiteral("CW"), -1, QStringLiteral("CW")},  // a mode set with the tune wins
-            {{}, 14.250, QStringLiteral("USB"), -1, QStringLiteral("USB")},
-            {{}, 14.030, QStringLiteral("CW"), -1, QStringLiteral("CW")},  // a CW spot: no hold
-            {{}, 14.250, {}, -1, QStringLiteral("USB")},
-            {{}, 14.150, QStringLiteral("CW"), -1, QStringLiteral("CW")},
-            {{}, 14.300, {}, -1, QStringLiteral("CW")},    // another phone segment, same region: kept
-            {{}, 14.030, {}, -1, QStringLiteral("CW")},
-            {{}, 14.200, {}, -1, QStringLiteral("CW")},    // CW held on 20 m
-            {{}, 7.210, {}, -1, QStringLiteral("LSB")},    // another band: the plan again
-            {{}, 14.250, {}, -1, QStringLiteral("USB")},   // back on 20 m: the hold is gone
-            {{}, 14.250, QStringLiteral("RTTY"), -1, QStringLiteral("RTTY")},
-            {{}, 14.030, {}, -1, QStringLiteral("RTTY")},  // RTTY: left alone
-            {{}, 14.200, {}, -1, QStringLiteral("RTTY")},
-            {{}, 14.200, QStringLiteral("USB"), -1, QStringLiteral("USB")},
-            {{}, 14.030, {}, -1, QStringLiteral("CW")},    // the plan's own mode chosen: the hold ends
-            {{}, 14.030, QStringLiteral("USB"), -1, QStringLiteral("USB")},
-            {{}, 14.040, {}, -1, QStringLiteral("USB")},   // CW DX -> CW, same region: kept
-            {{}, 14.120, {}, -1, QStringLiteral("USB")},   // the other CW part: USB held on 20 m
-            {{}, 21.030, {}, -1, QStringLiteral("CW")},    // 15 m: the plan again
-            {{}, 14.074, QStringLiteral("DIGU"), -1, QStringLiteral("DIGU")},  // FT8 over the band
-            {{}, 14.250, {}, -1, QStringLiteral("DIGU")},
-            {{}, 14.030, {}, -1, QStringLiteral("DIGU")},
-            {{}, 7.074, QStringLiteral("DIGU"), -1, QStringLiteral("DIGU")},   // another band, still FT8
-            {{}, 7.150, {}, -1, QStringLiteral("DIGU")},
-            {{}, 7.150, QStringLiteral("CW"), -1, QStringLiteral("CW")},       // FT8 over: CW by hand
+            {{}, 7.074, {}, -1, QStringLiteral("CW")},     // data: any mode, left alone
+            {{}, 7.074, QStringLiteral("DIGU"), -1, QStringLiteral("DIGU")},
+            {{}, 7.150, {}, -1, QStringLiteral("LSB")},    // DIGU into a phone part: the part's mode
+            {{}, 7.150, QStringLiteral("!CW"), -1, QStringLiteral("LSB")},   // the chooser: refused
+            {{}, 7.150, QStringLiteral("!AM"), -1, QStringLiteral("AM")},    // phone: AM allowed
+            {{}, 7.160, {}, -1, QStringLiteral("AM")},     // same part: kept
             {{}, 7.030, {}, -1, QStringLiteral("CW")},
-            {{}, 7.180, {}, -1, QStringLiteral("CW")},     // CW chosen in the phone part: held
-            {{}, 14.250, {}, -1, QStringLiteral("USB")},   // 20 m: the hold on 40 m ends, the plan again
-            {r1, 3.700, QStringLiteral("LSB"), -1, QStringLiteral("LSB")},
+            {{}, 7.030, QStringLiteral("!USB"), -1, QStringLiteral("CW")},   // CW part: refused
+            {{}, 14.250, QStringLiteral("CW"), -1, QStringLiteral("USB")},   // a spot's CW in the phone part: corrected
+            {{}, 14.030, QStringLiteral("CW"), -1, QStringLiteral("CW")},    // a CW spot from the phone part
+            {{}, 14.300, {}, -1, QStringLiteral("USB")},
+            {{}, 14.150, {}, -1, QStringLiteral("USB")},   // the next phone segment, same part
+            {r1, 14.200, {}, -1, QStringLiteral("USB")},
+            {{}, 14.200, QStringLiteral("!RTTY"), -1, QStringLiteral("RTTY")}, // all modes: allowed
+            {{}, 14.020, {}, -1, QStringLiteral("CW")},
+            {{}, 3.700, {}, -1, QStringLiteral("LSB")},
             {{}, 5.360, {}, -1, QStringLiteral("USB")},    // 60 m: USB
-            {{}, 14.074, QStringLiteral("DIGU"), -1, QStringLiteral("DIGU")},
-            {{}, 14.020, {}, -1, QStringLiteral("DIGU")},  // digital mode: left alone
-            {{}, 14.200, QStringLiteral("USB"), -1, QStringLiteral("USB")},
-            {{}, 7.150, {}, 0, QStringLiteral("USB")},     // off: left alone
+            {{}, 7.074, QStringLiteral("DIGU"), -1, QStringLiteral("DIGU")},  // FTx's band: all-mode part, kept
+            {{}, 14.074, QStringLiteral("DIGU"), -1, QStringLiteral("DIGU")}, // data part
+            {{}, 14.074, {}, 0, QStringLiteral("DIGU")},   // off
+            {{}, 14.020, {}, -1, QStringLiteral("DIGU")},  // off: left alone
+            {{}, 14.020, QStringLiteral("!USB"), -1, QStringLiteral("USB")},  // off: any mode
         };
         QTimer::singleShot(9000, &app, [&engine, saved] {
             saved->mhz = engine.frequencyMhz();
             saved->mode = engine.mode();
-            saved->follows = engine.modeFollowsBandPlan();
+            saved->follows = engine.bandPlanLock();
             saved->plan = engine.bandPlan();
             qInfo() << "mode-plan-test: start" << saved->mhz << saved->mode << "follows" << saved->follows;
         });
@@ -847,9 +834,13 @@ int main(int argc, char* argv[])
                     engine.setBandPlan(st.plan);
                 }
                 if (st.follows >= 0) {
-                    engine.setModeFollowsBandPlan(st.follows == 1);
+                    engine.setBandPlanLock(st.follows == 1);
                 }
-                if (!st.setMode.isEmpty()) {
+                // "!" is the mode chooser (refused where the lock does not
+                // allow it), else a spot's or memory's own mode.
+                if (st.setMode.startsWith(QLatin1Char('!'))) {
+                    engine.chooseMode(st.setMode.mid(1));
+                } else if (!st.setMode.isEmpty()) {
                     engine.setMode(st.setMode);
                 }
                 engine.setFrequencyMhz(st.mhz);
@@ -863,14 +854,14 @@ int main(int argc, char* argv[])
         }
         const int end = 10000 + int(steps.size()) * 3000;
         QTimer::singleShot(end, &app, [&engine, saved] {
-            engine.setModeFollowsBandPlan(saved->follows);
+            engine.setBandPlanLock(saved->follows);
             engine.setBandPlan(saved->plan);
             engine.setMode(saved->mode);
             engine.setFrequencyMhz(saved->mhz);
         });
         QTimer::singleShot(end + 3000, &app, [&engine, saved] {
             qInfo() << "mode-plan-test: restored" << engine.frequencyMhz() << engine.mode() << "follows"
-                    << engine.modeFollowsBandPlan() << "plan" << engine.bandPlan();
+                    << engine.bandPlanLock() << "plan" << engine.bandPlan();
             QCoreApplication::quit();
         });
     }
