@@ -9,13 +9,15 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Check the connection: when a radio does not connect, the Connect page says which step fails (network, VPN or route, the radio's port, station slots, SmartLink) and what to do.
-- Text size follows the system's (or View > Text size): panels, dialogs and setup grow; the operating screen keeps its size.
-- Antenna Genius (thanks Ben Morris): its ports' band and antennas on the Amp tab, chosen there with Control on. An SO2R Tuner Genius XL's channel A / B.
-- PGXL safer writes per 4O3A's documents; the devices' reports and meters go into the log you send.
-- From build 153: the SmartLink crash fixed (thanks Juho Kontio), split by XIT (thanks Sebastian DG5CST), the decoder in Macros (thanks Tyler K0OTC), PGXL / TGXL fixes.
+- FTx: CQ to DX, NA, EU or your own (thanks Kurt DL5EAG); the CQ button reads CQ DX.
+- iPhone with Display Zoom (Larger Text) no longer cut off at the right (thanks Evgeny R0ACS); Radio Setup fits at large text sizes (thanks Ben Morris).
+- Bigger text on a 13" iPad, a Mac window and an external display.
+- B/S shows when the band row and steps are hidden (thanks Michael Walker).
+- All station slots taken: the app asks which station to disconnect. Two devices set up from one backup no longer take each other's session.
+- An idle PGXL shows 0 W; a DX cluster login taken elsewhere backs off and says so.
+- From build 154: Check the connection, the system text size, Antenna Genius (thanks Ben Morris).
 
-RECENT (builds 94–150)
+RECENT (builds 94–153)
 - RF2K-S control and Tune, the amp on every meter (thanks Sebastian DG5CST, Jeff Stinger); Macros by PTT (thanks Tyler K0OTC).
 - PSK31 / PSK63 and RTTY on the Digi tab; ⌘1–⌘0 as F1–F10; worked before from Wavelog, QRZ.com or a shared ADIF file.
 - The transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger).

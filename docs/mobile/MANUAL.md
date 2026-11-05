@@ -435,6 +435,14 @@ the page then says why, and the same question follows. To share the radio
 between stations, turn multiFLEX on in SmartSDR's Radio Setup. (Reported
 by Juho Kontio, whose app crashed when the radio refused it.)
 
+**All station slots in use.** With multiFLEX on, the radio still takes
+only as many stations as its licence allows (two on most). When all are
+taken, the page says *All the radio's station slots are in use* and asks
+which station to disconnect, the same way: **Disconnect it and connect**,
+or **Cancel**. Two devices of yours both show as *OksaSDR*: give each its
+own name under **Radio Setup › Radio › This station's name**. Each device
+is its own station to the radio, also one set up from another's backup.
+
 **Check the connection.** When a radio does not connect, **Why? Check the
 connection** (or *Check the connection* any time) goes through the way to
 the radio last tried, step by step, and says which step fails and what to
@@ -1145,7 +1153,10 @@ seven.
   iOS Settings › Display & Brightness › Text Size, Android's font size —
   or a fixed *100 % / 115 % / 130 %*; the panels', dialogs' and setup
   pages' text grows, the operating screen's dense controls and the
-  buttons keep their size so they still fit; the app stops at 135 %),
+  buttons keep their size so they still fit; the app stops at 135 %;
+  a 13" iPad, a Mac window or an external display shows larger type
+  throughout; an iPhone with Display Zoom set to *Larger Text* gets the
+  whole app, scaled to its screen),
   **Spots** (shown or hidden) and the **DX cluster**,
   2D waterfall or 3D, waterfall levels, spectrum range, 3D floor, smoothing
   and gain.
@@ -1160,7 +1171,10 @@ seven.
     on it show them too; they expire after 30 minutes. The line under the
     button tells whether it is on: green *Connected to … as …* with the
     spots so far and the latest one's time (UTC), *Connecting…*, or red
-    with the reason when it could not connect.
+    with the reason when it could not connect. The same callsign from two
+    devices: a cluster lets one on at a time, and each knocks the other
+    off; the app then waits longer between tries and says so. Give each
+    device its own SSID in the callsign, e.g. *OH6OKSA-2*.
 - **Prof** (profiles) — the radio's global, TX and mic profiles: load, save,
   delete, as in SmartSDR.
 - **Mem** (memory) — the radio's memory channels: tap to tune, *Save* stores the
