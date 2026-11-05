@@ -57,8 +57,15 @@ QtObject {
     readonly property bool phoneLayout: compactWidth || compactHeight
 
     // ---- Continuous metrics from the short side ----
-    // 1.0 on an 11" iPad (834 pt); about 0.9 on an iPhone, 1.1 on a 13" iPad.
-    readonly property real scale: Math.max(0.85, Math.min(1.15, 0.7 + shortSide / 2800))
+    // 1.0 on an 11" iPad (834 pt), about 0.9 on an iPhone. Above it grows
+    // faster: a 13" iPad 1.14, a MacBook's full window about 1.15, an
+    // external display up to 1.3 (it stopped at 1.07 on a 13" iPad and 1.15
+    // anywhere: phone-sized text on a big screen, the usability review).
+    readonly property real scale: shortSide <= 840 ? Math.max(0.85, 0.7 + shortSide / 2800)
+                                                   : Math.min(1.3, 1.0 + (shortSide - 840) / 1300)
+    // The big screen's share of it, for text read in the panels: phones and
+    // the 11" iPad 1.0, so their panels stay as they are.
+    readonly property real bigScale: Math.max(1.0, scale)
     // Never under Apple's 44 pt minimum touch target.
     readonly property int touchTarget: Math.max(44, Math.round(48 * scale))
     // Standard button (the band buttons' size); PTT and KEY are larger.
@@ -68,9 +75,10 @@ QtObject {
     // and dialogs' labels, explanations and lists, through px(). The
     // operating screen's dense controls (frequency, info row, meters, the
     // step and band rows, PTT) and the buttons' own text keep their size: at
-    // 115 % a phone's step row and PTT row no longer fit its width.
+    // 115 % a phone's step row and PTT row no longer fit its width. A big
+    // screen (bigScale) grows them all through scale, the panels' text too.
     readonly property real textScale: Engine.textScale
-    function px(n) { return Math.round(n * textScale) }
+    function px(n) { return Math.round(n * textScale * bigScale) }
     readonly property int buttonFont: Math.max(12, Math.round(14 * scale))
     readonly property int labelFont: Math.max(12, Math.round(15 * scale))
     readonly property int smallFont: Math.max(10, Math.round(12 * scale))

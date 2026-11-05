@@ -124,8 +124,11 @@ Page {
     // Landscape side column: the pinned control panel (none when hidden).
     // Fixed, so content can never widen it off screen. At least 320 as the
     // drawer: 287 on a 1024 pt window cut "TX 2170 Hz", "New DXCC" and the
-    // voice keyer's F10 short.
-    readonly property int sideWidth: Math.max(320, Math.min(360, width * 0.28))
+    // voice keyer's F10 short. A big screen's larger type (Theme.bigScale)
+    // widens it up to 26 % of the window, or its rows cut their labels
+    // ("Text size"); beyond that the info panel beside the frequency shrank
+    // (a 13" iPad keeps its 360).
+    readonly property int sideWidth: Math.max(320, Math.min(360, width * 0.28), Math.min(360 * Theme.bigScale, width * 0.26))
     // The room inside the safe area, and the left column's share of it.
     readonly property real innerWidth: width - SafeArea.margins.left - SafeArea.margins.right - 2 * Theme.spacing
     readonly property real leftWidth: twoColumns ? innerWidth - sideWidth - Theme.spacing : innerWidth
@@ -479,7 +482,7 @@ Page {
         edge: page.portrait ? Qt.BottomEdge : Qt.RightEdge
         // At least 320 pt beside the display: a narrow window's 40 % cut the
         // panel's buttons short.
-        width: page.portrait ? page.width : Math.min(Math.max(page.width * 0.4, 320), 460)
+        width: page.portrait ? page.width : Math.min(Math.max(page.width * 0.4, 320 * Theme.bigScale), 460 * Theme.bigScale)
         // Landscape: ends above the page's PTT row, which stays usable, so
         // the drawer needs no PTT of its own. Portrait (from the bottom)
         // covers it and carries a copy.
