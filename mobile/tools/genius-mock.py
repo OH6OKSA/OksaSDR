@@ -55,9 +55,9 @@ def pgxl_status(transmit):
     if transmit:
         s.update(state="TRANSMIT_A", fwd="60.0", swr="-26.0", id="38.5", vdd="51.9")
     else:
-        # Idle: no forward power (0 dBm is 1 mW, shown as 0 W; 30 dBm read
-        # as a steady 1 W).
-        s.update(fwd="0.0", swr="-60.0", id="0.0", vdd="0.0" if s["state"] == "STANDBY" else "51.8")
+        # Idle: the real amplifier floors at 30.0 dBm, the bottom of its FWD
+        # scale (KT4O's log); the app shows that as 0 W.
+        s.update(fwd="30.0", swr="-60.0", id="0.0", vdd="0.0" if s["state"] == "STANDBY" else "51.8")
     return ("state={state} bandA=20 bandB=0 bsrcA=FLEX bsrcB=FLEX flexA=FLEX-8600 flexB=FLEX-8600 vac=245 "
             "vdd={vdd} id={id} peakid={id} fwd={fwd} peakfwd={fwd} swr={swr} temp=31.4 cntfreq=0 cat1freq=0 "
             "cat2freq=0 hltemp=29.8 biasA=RADIO_AAB biasB=RADIO_AB fanmode={fanmode} meffa={meffa}").format(**s)

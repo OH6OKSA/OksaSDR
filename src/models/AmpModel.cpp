@@ -129,7 +129,8 @@ void AmpModel::applyDirectStatus(const QMap<QString, QString>& kvs)
     bool meters = false;
     if (kvs.contains(QStringLiteral("fwd"))) {
         const float dBm = kvs.value(QStringLiteral("fwd")).toFloat();
-        m_directFwdWatts = std::pow(10.0f, dBm / 10.0f) / 1000.0f;
+        // The floor is "nothing transmitted", not 1 W.
+        m_directFwdWatts = dBm <= 30.05f ? 0.0f : std::pow(10.0f, dBm / 10.0f) / 1000.0f;
         meters = true;
     }
     if (kvs.contains(QStringLiteral("swr"))) {

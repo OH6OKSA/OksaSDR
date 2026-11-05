@@ -254,12 +254,13 @@ int main(int argc, char** argv)
         peer->flush();
         CHECK(spin([&] { return meters.count() > settled; }));
 
-        // Idle floors the reading at 30.0 dBm — 1 W, not 16.6.
+        // Idle floors the reading at 30.0 dBm, the bottom of the FWD scale:
+        // nothing transmitted, shown as 0 W (not 1 W, and not 16.6).
         peer->write(statusReply("19", "IDLE"));
         peer->flush();
         CHECK(spin([&] {
             return !meters.isEmpty()
-                && std::fabs(meters.last().at(0).toFloat() - 1.0f) < 0.01f;
+                && std::fabs(meters.last().at(0).toFloat()) < 0.01f;
         }));
     }
 

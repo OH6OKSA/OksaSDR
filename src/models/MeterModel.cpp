@@ -23,6 +23,16 @@ namespace {
 // exactly, while any genuine reading (0 dBm is already 30 dB below a 1 W
 // carrier) stays on the smoothed path.
 constexpr float kNoCarrierWatts = 0.0011f;
+
+// The 4O3A devices' FWD meters (PGXL and TGXL) declare 30..63 dBm and sit at
+// exactly 30 dBm when nothing is being transmitted. 30 dBm is 1 W, so taken
+// at face value an idle amplifier showed a steady 1 W (KT4O's log of build
+// 154: "amplifier forward 1.0 W" at rest). The bottom of the scale is "no
+// reading": shown as 0 W.
+float fourO3aFwdWatts(float dBm)
+{
+    return dBm <= 30.05f ? 0.0f : std::pow(10.0f, dBm / 10.0f) / 1000.0f;
+}
 // MeterModel::kMinForwardWattsForSwr — the SWR power floor — now lives in the
 // header, because `radiocert`'s keyed-RF precondition has to reason about the
 // same number: the finding it suppresses is "TX:SWR never fed", and SWR is fed
@@ -1160,7 +1170,7 @@ void MeterModel::applyValues(const QVector<quint16>& ids, const QVector<Value>& 
             m_hasSupplyVoltsValue = true;   // a SAMPLE, not just a definition
             hwChanged = true;
         } else if (idx == m_tgxlFwdIdx) {
-            m_tgxlFwdPwr = std::pow(10.0f, v / 10.0f) / 1000.0f;
+            m_tgxlFwdPwr = fourO3aFwdWatts(v);
             m_lastTgxlFwdPowerUpdateMs = packetUpdatedMs;
             tgxlChanged = true;
         } else if (idx == m_tgxlSwrIdx) {
@@ -1169,7 +1179,7 @@ void MeterModel::applyValues(const QVector<quint16>& ids, const QVector<Value>& 
             m_lastTgxlSwrUpdateMs = packetUpdatedMs;
             tgxlChanged = true;
         } else if (idx == m_ampFwdPwrIdx) {
-            m_ampFwdPwr = std::pow(10.0f, v / 10.0f) / 1000.0f;  // dBm → watts
+            m_ampFwdPwr = fourO3aFwdWatts(v);  // dBm → watts, the idle floor as 0
             m_hasAmpPwrValue = true;
             ampChanged = true;
         } else if (idx == m_ampSwrIdx) {
