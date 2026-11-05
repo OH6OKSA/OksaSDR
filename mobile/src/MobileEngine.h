@@ -2168,6 +2168,8 @@ private:
     bool m_dxWanted{false};
     QString m_dxState{QStringLiteral("off")};
     QString m_dxError;
+    QElapsedTimer m_dxConnectedAt;
+    int m_dxShortSessions{0};
     int m_dxSpotCount{0};
     QDateTime m_dxLastSpotUtc;
     QHash<QString, QPair<double, qint64>> m_dxSeen;

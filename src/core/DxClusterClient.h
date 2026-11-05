@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QTcpSocket>
+#include <QElapsedTimer>
 #include <QTimer>
 #include <QFile>
 #include <QString>
@@ -107,10 +108,13 @@ private:
     bool    m_goCluster{false};  // pre-login banner named GoCluster; reset per connection
     bool    m_intentionalDisconnect{false};
     int     m_reconnectAttempts{0};
+    QElapsedTimer m_connectedSince;
     int     m_connectEpoch{0};  // incremented each connectToCluster(); guards stale timeouts
 
     static constexpr int MaxReconnectDelayMs    = 60000;
     static constexpr int InitialReconnectDelayMs = 5000;
+    // A session this long resets the backoff.
+    static constexpr int LastingSessionMs = 120000;
     static constexpr int ConnectTimeoutMs        = 10000;
 };
 

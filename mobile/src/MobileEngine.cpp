@@ -6264,11 +6264,29 @@ void MobileEngine::setupDxCluster()
     connect(this, &MobileEngine::dxClusterChanged, this, &MobileEngine::dxClusterStatusChanged);
     connect(m_dx, &DxClusterClient::connected, this, [this] {
         m_dxState = QStringLiteral("connected");
-        m_dxError.clear();
+        m_dxConnectedAt.start();
+        // Kept while the cluster keeps closing each login at once.
+        if (m_dxShortSessions < 2) {
+            m_dxError.clear();
+        }
         qCInfo(lcMobile) << "DX cluster connected to" << m_dx->host() << m_dx->port();
         emit dxClusterChanged();
     });
     connect(m_dx, &DxClusterClient::disconnected, this, [this] {
+        // Closed within a minute of each login, twice: the same call is
+        // most likely logged in from another device, which the cluster
+        // lets on only once (the user's two phones, each knocking the other
+        // off every minute, the app stalling at each new login's spots).
+        if (m_dxConnectedAt.isValid() && m_dxConnectedAt.elapsed() < 60000) {
+            if (++m_dxShortSessions >= 2) {
+                const QString call = dxCluster().value(QStringLiteral("callsign")).toString();
+                m_dxError = tr("The cluster closes each login at once: is %1 logged in from another device? "
+                               "Give each its own SSID in the Callsign field, e.g. %1-2.").arg(call);
+                qCInfo(lcMobile) << "DX cluster: closed" << m_dxShortSessions << "times right after login";
+            }
+        } else {
+            m_dxShortSessions = 0;
+        }
         // It reconnects by itself until disconnect() is called.
         if (m_dxState != QLatin1String("off")) {
             m_dxState = QStringLiteral("connecting");
@@ -6276,7 +6294,10 @@ void MobileEngine::setupDxCluster()
         }
     });
     connect(m_dx, &DxClusterClient::connectionError, this, [this](const QString& error) {
-        m_dxError = error;
+        // The "logged in elsewhere" answer outlasts each closed socket's own.
+        if (m_dxShortSessions < 2) {
+            m_dxError = error;
+        }
         qCInfo(lcMobile) << "DX cluster:" << error;
         emit dxClusterChanged();
     });
@@ -6521,7 +6542,8 @@ QString MobileEngine::dxClusterStatus() const
         const QString spots = m_dxSpotCount > 0
             ? tr("%1 spots so far, the latest at %2 UTC").arg(m_dxSpotCount).arg(m_dxLastSpotUtc.toString(QStringLiteral("HH:mm")))
             : tr("no spots yet");
-        return tr("Connected to %1 as %2; %3.").arg(server, cfg.value(QStringLiteral("callsign")).toString(), spots);
+        const QString connected = tr("Connected to %1 as %2; %3.").arg(server, cfg.value(QStringLiteral("callsign")).toString(), spots);
+        return m_dxShortSessions >= 2 ? connected + QLatin1Char(' ') + m_dxError : connected;
     }
     if (m_dxState == QLatin1String("connecting")) {
         return m_dxError.isEmpty() ? tr("Connecting to %1…").arg(server)
@@ -6569,6 +6591,7 @@ void MobileEngine::connectDxCluster()
     m_dxWanted = true;
     m_dxState = QStringLiteral("connecting");
     m_dxError.clear();
+    m_dxShortSessions = 0;
     m_dxSpotCount = 0;
     qCInfo(lcMobile) << "DX cluster connect" << cfg.value(QStringLiteral("host")).toString()
                      << cfg.value(QStringLiteral("port")).toInt();

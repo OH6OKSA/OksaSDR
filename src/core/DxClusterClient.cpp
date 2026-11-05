@@ -114,7 +114,10 @@ void DxClusterClient::onConnected()
 {
     qCDebug(lcDxCluster) << "DxClusterClient: TCP connected to" << m_host;
     m_connected = true;
-    m_reconnectAttempts = 0;
+    // The backoff starts over only after a session that lasted (see
+    // onDisconnected): a cluster that closes each login at once (the same
+    // call logged in from another device) was retried every 5 s for ever.
+    m_connectedSince.start();
 
     // Open log file (truncate on each new connection)
     m_logFile.close();
@@ -135,6 +138,9 @@ void DxClusterClient::onDisconnected()
     bool wasConnected = m_connected;
     m_connected = false;
     m_loggedIn = false;
+    if (wasConnected && m_connectedSince.isValid() && m_connectedSince.elapsed() >= LastingSessionMs) {
+        m_reconnectAttempts = 0;
+    }
 
     if (wasConnected)
         emit disconnected();
