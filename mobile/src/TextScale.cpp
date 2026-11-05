@@ -14,4 +14,9 @@ double systemTextScale()
     return ok && v > 0.0 ? v : 1.0;
 }
 
+double narrowScreenScale()
+{
+    return 1.0;
+}
+
 } // namespace AetherSDR::mobile

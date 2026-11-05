@@ -6,6 +6,7 @@
 #include "LogBuffer.h"
 #include "MobileEngine.h"
 #include "Ft8Engine.h"
+#include "TextScale.h"
 #include "TrackpadScrollPhases.h"
 #ifdef Q_OS_ANDROID
 #include "../android/AndroidJni.h"
@@ -154,8 +155,17 @@ int main(int argc, char* argv[])
         QSurfaceFormat::setDefaultFormat(format);
     }
 #endif
+    // A screen narrower than the phone layout (iOS Display Zoom): laid out at
+    // 375 points and drawn scaled to the screen, popups and Radio Setup too.
+    const double narrowScale = AetherSDR::mobile::narrowScreenScale();
+    if (narrowScale < 1.0 && qEnvironmentVariableIsEmpty("QT_SCALE_FACTOR")) {
+        qputenv("QT_SCALE_FACTOR", QByteArray::number(narrowScale, 'f', 4));
+    }
     QGuiApplication app(argc, argv);
     AetherSDR::mobile::LogBuffer::install();
+    if (narrowScale < 1.0) {
+        qInfo() << "narrow screen: drawn at scale" << narrowScale;
+    }
 #ifdef Q_OS_ANDROID
     addAndroidSymbolFallbacks();
     AetherSDR::mobile::androidStartup();

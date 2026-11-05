@@ -2,6 +2,8 @@
 
 #import <UIKit/UIKit.h>
 
+#include <algorithm>
+
 namespace AetherSDR::mobile {
 
 // UIKit's content size categories against the default (Large), as Apple's
@@ -37,6 +39,17 @@ double systemTextScale()
         if ([category isEqualToString:s.name]) return s.factor;
     }
     return 1.0;
+}
+
+// The screen's short side in points: 320 on an iPhone 12-17 (mini too) in
+// Display Zoom, 375 and more otherwise. Qt has called main() from a running
+// UIApplication, so the screen is known here.
+double narrowScreenScale()
+{
+    constexpr double layoutWidth = 375.0;
+    const CGSize size = UIScreen.mainScreen.bounds.size;
+    const double side = std::min(size.width, size.height);
+    return side > 100.0 && side < layoutWidth ? side / layoutWidth : 1.0;
 }
 
 } // namespace AetherSDR::mobile
