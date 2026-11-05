@@ -9,13 +9,15 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Band plan lock (thanks Tyler K0OTC): tap the mode, Band plan lock On. The band plan picks CW, LSB or USB as you tune and PLAN shows by the mode; a mode the plan does not use there is refused. Tap PLAN to turn it off, e.g. for a contest. Pick your plan in Controls > View.
-- CW sidetone level of its own on the CW tab (thanks Tyler K0OTC).
-- VoiceOver: swipe up or down on the frequency to tune one step; mode and transmit changes are spoken.
-- From build 155: FTx CQ DX / NA / EU (thanks Kurt DL5EAG); Display Zoom fixed (thanks Evgeny R0ACS); the station slots question.
+- eSSB: the desktop's de-esser, tube, EVO exciter and reverb, and the order of the chain (Order > Change).
+- Radio Setup > Amp: choose the maker first (4O3A, RF-KIT); a maker in use shows first.
+- First-run hints for the hidden gestures (View > Hints > Show again); a slider's drag is felt, View > Felt taps turns them off.
+- Android: the edit pencil and other symbols no longer show as boxes.
+- Build 156's VoiceOver tuning is taken out again: not ready yet.
+- From build 156: Band plan lock (tap the mode, thanks Tyler K0OTC), the CW sidetone level.
 
-RECENT (builds 94–155)
-- Check the connection, the system text size, Antenna Genius (thanks Ben Morris); B/S shows hidden rows (thanks Michael Walker).
+RECENT (builds 94–156)
+- FTx CQ DX (thanks Kurt DL5EAG); Display Zoom (thanks Evgeny R0ACS); Check the connection, Antenna Genius (thanks Ben Morris).
 - RF2K-S control and Tune, the amp on every meter (thanks Sebastian DG5CST, Jeff Stinger); Macros by PTT (thanks Tyler K0OTC).
 - PSK31 / PSK63 and RTTY on the Digi tab; ⌘1–⌘0 as F1–F10; worked before from Wavelog, QRZ.com or a shared ADIF file.
 - The transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger).
@@ -34,7 +36,7 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
 - The FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: Band plan lock (tap the mode) on a few bands; the Sidetone level on the CW tab while keying. [TX]
+- New: eSSB's tube, EVO and reverb with MON or a second receiver at low power [TX]; Radio Setup > Amp; the hints.
 - Worked before from Wavelog, the QRZ.com Logbook or a shared ADIF file in iCloud Drive.
 - The eSSB tab at low power with a second receiver. [TX]
 
