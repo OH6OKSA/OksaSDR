@@ -111,7 +111,7 @@ ApplicationWindow {
             spacing: Theme.spacing
             Label {
                 Layout.fillWidth: true
-                text: qsTr("Another station is on the radio")
+                text: conflictDialog.c.full ? qsTr("All station slots are in use") : qsTr("Another station is on the radio")
                 color: Theme.text
                 font.bold: true
                 font.pixelSize: Math.round(Theme.buttonFont * 1.6)
@@ -119,7 +119,9 @@ ApplicationWindow {
             }
             Label {
                 Layout.fillWidth: true
-                text: (conflictDialog.c.wan
+                text: (conflictDialog.c.full
+                       ? qsTr("%1 has no station slot left. These stations are on it:")
+                       : conflictDialog.c.wan
                        ? qsTr("%1 takes one station at a time over SmartLink, and this one is on it:")
                        : qsTr("%1 takes one station at a time (multiFLEX is off), and this one is on it:"))
                       .arg(conflictDialog.c.radio || qsTr("The radio"))
@@ -135,7 +137,8 @@ ApplicationWindow {
                     spacing: Theme.spacing / 2
                     Label {
                         Layout.fillWidth: true
-                        text: [modelData.program, modelData.station].filter(t => !!t).join(" — ") || qsTr("A station")
+                        text: ([modelData.program, modelData.station].filter(t => !!t).join(" — ") || qsTr("A station"))
+                              + (modelData.txMhz > 0 ? qsTr(", TX %1 MHz").arg(Number(modelData.txMhz).toFixed(3)) : "")
                         color: Theme.text
                         font.bold: true
                         wrapMode: Text.Wrap
@@ -152,7 +155,9 @@ ApplicationWindow {
             }
             Label {
                 Layout.fillWidth: true
-                text: qsTr("Disconnecting ends that station's session on the radio. To share the radio instead, turn multiFLEX on in SmartSDR's Radio Setup.")
+                text: conflictDialog.c.full
+                      ? qsTr("Disconnecting ends that station's session on the radio. Several devices of yours tell apart by their names: Radio Setup › Radio › This station's name.")
+                      : qsTr("Disconnecting ends that station's session on the radio. To share the radio instead, turn multiFLEX on in SmartSDR's Radio Setup.")
                 color: Theme.textDim
                 font.pixelSize: Math.round(Theme.buttonFont * 0.8)
                 wrapMode: Text.Wrap

@@ -808,10 +808,38 @@ MobileEngine::MobileEngine(QObject* parent)
     // The radio refused this app as a station (multiFLEX off with another on
     // it, or no station slot left): no retry, which only met the same refusal
     // again, and an answer saying what to do.
-    connect(&rm, &RadioModel::guiClientRegistrationFailed, this, [this](const QString&) {
+    connect(&rm, &RadioModel::guiClientRegistrationFailed, this, [this](const QString& detail) {
         m_wanUserDisconnect = true;
         m_wanReconnectTimer.stop();
         m_registrationRefused = true;
+        // Every station slot taken (multiFLEX on, the user's two phones on a
+        // two-station radio): the iPad said multiFLEX was off and asked
+        // nothing. The stations on the radio, from its client status, to
+        // pick one to disconnect, then connect again.
+        m_registrationFull = detail.contains(QLatin1String("maximum number"), Qt::CaseInsensitive);
+        if (!m_wanActive && m_registrationFull) {
+            RadioModel& r = m_session.radioModel();
+            QVariantList clients;
+            const quint32 ours = r.ourClientHandle();
+            for (auto it = r.clientInfoMap().cbegin(); it != r.clientInfoMap().cend(); ++it) {
+                if (it.key() != ours) {
+                    // Its TX frequency too: two phones both named OksaSDR
+                    // looked the same in the question.
+                    clients << QVariantMap{{QStringLiteral("handle"), double(it.key())},
+                                           {QStringLiteral("program"), it->program},
+                                           {QStringLiteral("station"), it->station},
+                                           {QStringLiteral("txMhz"), it->txFreqMhz}};
+                }
+            }
+            qCInfo(lcMobile) << "station slots full:" << clients.size() << "station(s) on the radio: asking";
+            // Asked once the refused connection has closed (connectionError).
+            m_fullConflict = clients.isEmpty()
+                                 ? QVariantMap{}
+                                 : QVariantMap{{QStringLiteral("radio"), r.nickname().isEmpty() ? r.model() : r.nickname()},
+                                               {QStringLiteral("clients"), clients},
+                                               {QStringLiteral("target"), m_lastTarget}};
+            return;
+        }
         // Over SmartLink the radio's licence can allow two stations while
         // multiFLEX is off, so the question before connecting is not asked;
         // with SmartLink's list of the stations on the radio it is asked now,
@@ -824,7 +852,8 @@ MobileEngine::MobileEngine(QObject* parent)
                     const QVariantList clients = wanClients(radio);
                     if (radio.serial == serial && !clients.isEmpty() && m_connectionState == QLatin1String("idle")) {
                         m_conflictWanIndex = i;
-                        openStationConflict(true, radio.nickname.isEmpty() ? radio.model : radio.nickname, clients);
+                        openStationConflict(true, radio.nickname.isEmpty() ? radio.model : radio.nickname, clients,
+                                            m_registrationFull);
                         return;
                     }
                 }
@@ -875,13 +904,23 @@ MobileEngine::MobileEngine(QObject* parent)
         }
         if (m_registrationRefused) {
             m_registrationRefused = false;
-            text = tr("The radio refused this app: it takes one station at a time (multiFLEX off) and another "
-                      "is on it, or all its station slots are in use. Disconnect the other station, or turn "
-                      "multiFLEX on in SmartSDR's Radio Setup, then Connect again.");
+            text = m_registrationFull
+                       ? tr("All the radio's station slots are in use. Disconnect one of its stations, then "
+                            "Connect again.")
+                       : tr("The radio refused this app: it takes one station at a time (multiFLEX off) and "
+                            "another is on it. Disconnect the other station, or turn multiFLEX on in SmartSDR's "
+                            "Radio Setup, then Connect again.");
         }
         setLastError(text);
         if (m_connectionState == QLatin1String("connecting")) {
             setConnectionState(QStringLiteral("idle"));
+        }
+        if (!m_fullConflict.isEmpty()) {
+            const QVariantMap c = m_fullConflict;
+            m_fullConflict.clear();
+            m_conflictLanTarget = c.value(QStringLiteral("target")).toString();
+            openStationConflict(false, c.value(QStringLiteral("radio")).toString(),
+                                c.value(QStringLiteral("clients")).toList(), true);
         }
     });
     connect(&rm, &RadioModel::backendRebuilt, this, [this] {
@@ -1675,10 +1714,11 @@ void MobileEngine::connectSmartLinkRadio(int index)
     connectSmartLinkRadioNow(index, {});
 }
 
-void MobileEngine::openStationConflict(bool wan, const QString& radio, const QVariantList& clients)
+void MobileEngine::openStationConflict(bool wan, const QString& radio, const QVariantList& clients, bool full)
 {
     m_stationConflict = {{QStringLiteral("open"), true},
                          {QStringLiteral("wan"), wan},
+                         {QStringLiteral("full"), full},
                          {QStringLiteral("radio"), radio},
                          {QStringLiteral("clients"), clients}};
     emit stationConflictChanged();
@@ -1690,6 +1730,7 @@ void MobileEngine::resolveStationConflict(int handle)
         return;
     }
     const bool wan = m_stationConflict.value(QStringLiteral("wan")).toBool();
+    const bool full = m_stationConflict.value(QStringLiteral("full")).toBool();
     const quint32 h = quint32(handle);
     m_stationConflict.clear();
     emit stationConflictChanged();
@@ -1701,6 +1742,17 @@ void MobileEngine::resolveStationConflict(int handle)
         m_conflictWanIndex = -1;
         if (h && index >= 0 && index < m_wanRadios.size() && m_connectionState == QLatin1String("idle")) {
             connectSmartLinkRadioNow(index, {h});
+        }
+        return;
+    }
+    // Slots full on the radio's own network: the refused connection is
+    // closed; the chosen station goes before this app registers again.
+    if (full) {
+        const QString target = m_conflictLanTarget;
+        m_conflictLanTarget.clear();
+        if (h && !target.isEmpty() && m_connectionState == QLatin1String("idle")) {
+            rm.setPendingClientDisconnects({h});
+            connectToAddress(target);
         }
         return;
     }
@@ -7830,9 +7882,11 @@ void MobileEngine::onConnectionStateChanged(bool connected)
     stopAudio();
     bindSlice(nullptr);
     bindPan(nullptr);
-    // A question about the radio's other station goes with the connection.
+    // A question about the radio's other station goes with the connection
+    // (not the slots-full one, asked after the refused connection closed).
     if (m_stationConflict.value(QStringLiteral("open")).toBool()
-        && !m_stationConflict.value(QStringLiteral("wan")).toBool()) {
+        && !m_stationConflict.value(QStringLiteral("wan")).toBool()
+        && !m_stationConflict.value(QStringLiteral("full")).toBool()) {
         m_stationConflict.clear();
         emit stationConflictChanged();
     }
