@@ -80,6 +80,8 @@ void EchoAudit::build()
     prop("cwSpeed", nudge(2, 60));
     prop("cwPitch", nudge(50, 1000));
     prop("cwBreakIn", nudge(1));
+    prop("cwSidetone", nudge(1));
+    prop("cwSidetoneGain", nudge(5, 100));
     // Transmit settings (no keying)
     prop("txFilterLow", nudge(50, 500));
     prop("txFilterHigh", nudge(-100));

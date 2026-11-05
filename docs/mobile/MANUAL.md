@@ -127,7 +127,9 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
 **Receive**
 1. Pick the band (band buttons) and the mode: USB on 20 m and up, LSB on
    40 m and down, by custom. The yellow edges on the display show the
-   passband, on the right side of the carrier for the mode.
+   passband, on the right side of the carrier for the mode. With
+   **Mode from band plan** on (Controls → View) the app sets USB / LSB as
+   you tune into a phone segment, and CW in a CW segment.
 2. Tune: tap a station on the display (snapped to the step), drag inside
    the passband, use the step buttons under the display, or type the
    frequency (tap the frequency).
@@ -168,7 +170,9 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
 
 **Transmit**
 1. **Break-in** (QSK) on, on the CW tab: without it the key does not put
-   the radio on the air. Set the **speed** and **pitch** there too.
+   the radio on the air. Set the **speed** and **pitch** there too, and
+   the **Sidetone** (*On* and its level, apart from the receive volume:
+   lower it when the key is too loud with the volume up for weak stations).
 2. Key with the big button (a straight key) or choose **Paddles**: dit and
    dah take PTT's place (on a phone at the two edges, one per thumb);
    **Iambic** A or B, **Swap** for dah on the left. A hardware keyboard or
@@ -971,9 +975,9 @@ tab shows the offset and moves it; SPLIT again (or XIT off there) ends it.
   ![CW paddles in PTT's place](manual/cw-paddles.jpg)
 
   For a straight key, the sidetone
-  plays on this device as you key (at the radio's CW pitch and monitor
-  level, when the radio's sidetone is on), without the round trip to the
-  radio.
+  plays on this device as you key (at the radio's CW pitch and the CW
+  tab's Sidetone level, when its Sidetone is on), without the round trip
+  to the radio.
 - **TUNE** (Controls → TX) sends a carrier at the tune power; while it is on,
   the big button reads TUNE and pressing it stops the carrier.
 - **Macros** — the button beside Controls in a phone's PTT row (beside
@@ -1134,7 +1138,9 @@ seven.
   - **Key** — *Straight key* or *Paddles*; with paddles, **Iambic** A / B and
     **Swap ⇄**, and **Paddles on a keyboard** (see
     [KEY](#7-transmitting-ptt-key-and-tune)).
-  - Speed, pitch, **Break-in** (QSK), the **Decoder** and **Autotune**:
+  - Speed, pitch, **Sidetone** (*On* and its level 0–100: the radio's CW
+    sidetone, on this device too, apart from the receive volume),
+    **Break-in** (QSK), the **Decoder** and **Autotune**:
     pressed, it puts the strongest CW signal in the passband on your pitch
     (tune close to one first); with none there it says so. With Break-in off
     the key does not put the radio on air; the app says so when you key.
@@ -1149,7 +1155,14 @@ seven.
     offered above the memories (*Call*) and on the Log tab (*Heard in CW*).
 - **View** — **Band plan** (the strip at the foot of the spectrum: *Off*,
   *ARRL (US)*, *IARU Region 1 / 2 / 3*, *RAC (Canada)* or *SSA
-  (Sweden)*), **Text size** (*System* follows the system's text size —
+  (Sweden)*), **Mode from band plan** (off by default: on, tuning into
+  another segment of the band plan below 30 MHz sets the mode, CW in a CW
+  segment, in a phone or all-mode segment LSB below 10 MHz and USB above
+  and on 60 m; e.g. 14.250 USB, then 7.210 LSB. It changes only between
+  CW, LSB and USB, and leaves data, beacon and mixed segments, the digital
+  modes, AM and FM alone; a mode you choose stays while you tune inside
+  the segment, and a spot, memory or band that sets its own mode wins.
+  With the strip *Off* it uses the plan last chosen), **Text size** (*System* follows the system's text size —
   iOS Settings › Display & Brightness › Text Size, Android's font size —
   or a fixed *100 % / 115 % / 130 %*; the panels', dialogs' and setup
   pages' text grows, the operating screen's dense controls and the

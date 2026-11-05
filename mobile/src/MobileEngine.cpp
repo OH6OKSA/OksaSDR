@@ -5227,6 +5227,23 @@ void MobileEngine::setCwPitch(int hz)
     }
 }
 
+bool MobileEngine::cwSidetone() const { return m_session.radioModel().transmitModel().cwSidetone(); }
+int MobileEngine::cwSidetoneGain() const { return m_session.radioModel().transmitModel().monGainCw(); }
+
+void MobileEngine::setCwSidetone(bool on)
+{
+    if (m_connected) {
+        m_session.radioModel().transmitModel().setCwSidetone(on);
+    }
+}
+
+void MobileEngine::setCwSidetoneGain(int gain)
+{
+    if (m_connected) {
+        m_session.radioModel().transmitModel().setMonGainCw(std::clamp(gain, 0, 100));
+    }
+}
+
 void MobileEngine::setCwBreakIn(bool on)
 {
     if (m_connected) {
@@ -8025,11 +8042,14 @@ void MobileEngine::bindSlice(SliceModel* slice)
     }
     m_sliceConnections.clear();
     m_slice = slice;
+    planSegmentNow();
     applyBeatCancel();
     emit fmChanged();
     if (slice) {
         m_sliceConnections.append(connect(slice, &SliceModel::frequencyChanged, this, &MobileEngine::frequencyChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::modeChanged));
+        m_sliceConnections.append(connect(slice, &SliceModel::frequencyChanged, this, &MobileEngine::followBandPlanMode));
+        m_sliceConnections.append(connect(slice, &SliceModel::modeChanged, this, [this] { m_modeSetClock.restart(); }));
         m_sliceConnections.append(connect(slice, &SliceModel::fmToneModeChanged, this, &MobileEngine::fmChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::fmToneValueChanged, this, &MobileEngine::fmChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::repeaterOffsetDirChanged, this, &MobileEngine::fmChanged));
@@ -9116,6 +9136,7 @@ void MobileEngine::setBandPlan(const QString& name)
     if (!name.isEmpty()) {
         m_bandPlan.setActivePlan(name);
     }
+    planSegmentNow();
     emit bandPlanChanged();
 }
 
@@ -9130,6 +9151,110 @@ QVector<BandPlanManager::Segment> MobileEngine::bandPlanSegments() const
         return {};
     }
     return m_bandPlan.segments();
+}
+
+const QString kModeFollowsBandPlanKey = QStringLiteral("MobileModeFollowsBandPlan");
+
+bool MobileEngine::modeFollowsBandPlan() const
+{
+    return AppSettings::instance().value(kModeFollowsBandPlanKey, QStringLiteral("False")).toString()
+           == QLatin1String("True");
+}
+
+void MobileEngine::setModeFollowsBandPlan(bool on)
+{
+    if (on == modeFollowsBandPlan()) {
+        return;
+    }
+    AppSettings::instance().setValue(kModeFollowsBandPlanKey, on ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    // From here on: the segment the slice is in now is where it starts.
+    planSegmentNow();
+    qCInfo(lcMobile) << "mode follows the band plan:" << (on ? "on" : "off");
+    emit bandPlanChanged();
+}
+
+QString MobileEngine::bandPlanMode(double mhz, QString* segment) const
+{
+    // HF only: above 30 MHz the plans' "all modes" segments are FM and
+    // repeaters too.
+    if (mhz <= 0.0 || mhz >= 30.0) {
+        return {};
+    }
+    // The plan on the spectrum, or with the strip off the one last chosen.
+    const BandPlanManager::Segment* seg = nullptr;
+    for (const BandPlanManager::Segment& s : m_bandPlan.segments()) {
+        if (mhz >= s.lowMhz && mhz < s.highMhz) {
+            seg = &s;
+            break;
+        }
+    }
+    if (!seg) {
+        return {};
+    }
+    if (segment) {
+        *segment = QStringLiteral("%1-%2").arg(seg->lowMhz, 0, 'f', 4).arg(seg->highMhz, 0, 'f', 4);
+    }
+    // Labels across the bundled plans: CW, CW DX, CW QRP, CW 15W, CW/BCN are
+    // CW; PHONE, SSB, SSB DX, ALL, ALLA (all modes: phone in practice) are
+    // the sideband. Mixed ones (CW/USB/DATA, CW/SSB, SSB/DIGI, CW/NB) and
+    // data, beacons, AM and FM leave the mode alone.
+    static const QRegularExpression power(QStringLiteral("\\s+\\d+W$"));
+    QString label = seg->label.trimmed().toUpper();
+    label.remove(power);
+    static const QStringList cw{QStringLiteral("CW"), QStringLiteral("CW DX"), QStringLiteral("CW QRP"),
+                                QStringLiteral("CW/BCN")};
+    static const QStringList phone{QStringLiteral("PHONE"), QStringLiteral("SSB"), QStringLiteral("SSB DX"),
+                                   QStringLiteral("ALL"), QStringLiteral("ALLA")};
+    if (cw.contains(label)) {
+        return QStringLiteral("CW");
+    }
+    if (phone.contains(label)) {
+        // LSB under 10 MHz, but USB on 60 m (channel and band use alike).
+        const bool sixty = mhz >= 5.25 && mhz < 5.45;
+        return (mhz < 10.0 && !sixty) ? QStringLiteral("LSB") : QStringLiteral("USB");
+    }
+    return {};
+}
+
+void MobileEngine::planSegmentNow()
+{
+    m_planSegmentAt.clear();
+    if (m_slice) {
+        bandPlanMode(m_slice->frequency(), &m_planSegmentAt);
+    }
+}
+
+void MobileEngine::followBandPlanMode()
+{
+    if (!m_slice) {
+        return;
+    }
+    QString segment;
+    const QString planMode = bandPlanMode(m_slice->frequency(), &segment);
+    // Only a move into another segment sets the mode: one chosen by hand
+    // stays while tuning inside the segment.
+    if (segment == m_planSegmentAt) {
+        return;
+    }
+    m_planSegmentAt = segment;
+    if (planMode.isEmpty() || !modeFollowsBandPlan() || !m_connected || radioTransmitting()) {
+        return;
+    }
+    // A spot, memory or band button that set its own mode just now wins.
+    if (m_modeSetClock.isValid() && m_modeSetClock.elapsed() < 1500) {
+        return;
+    }
+    // Between CW and the sidebands only: digital modes, AM, FM and the
+    // rest are the operator's choice.
+    static const QStringList voiceAndCw{QStringLiteral("CW"), QStringLiteral("LSB"), QStringLiteral("USB")};
+    const QString current = m_slice->mode();
+    if (current == planMode || !voiceAndCw.contains(current)) {
+        return;
+    }
+    qCInfo(lcMobile) << "mode follows the band plan:" << current << "->" << planMode << "at"
+                     << m_slice->frequency() << "MHz";
+    setMode(planMode);
 }
 
 QString MobileEngine::callsign() const

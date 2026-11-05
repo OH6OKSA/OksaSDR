@@ -103,6 +103,9 @@ class MobileEngine : public QObject {
     Q_PROPERTY(bool txArmAtStart READ txArmAtStart WRITE setTxArmAtStart NOTIFY txLockChanged)
     Q_PROPERTY(int txArmedSeconds READ txArmedSeconds NOTIFY txLockChanged)
     Q_PROPERTY(QStringList bandPlans READ bandPlans CONSTANT)
+    // The mode follows the band plan (Tyler K0OTC): tuning into a CW or phone
+    // segment below 30 MHz sets CW, or LSB / USB by the band. Off by default.
+    Q_PROPERTY(bool modeFollowsBandPlan READ modeFollowsBandPlan WRITE setModeFollowsBandPlan NOTIFY bandPlanChanged)
     // Receive audio coding: "Auto" (Opus when remote: SmartLink, a tailnet,
     // or the radio reached through a VPN), "Opus" or "None"; applies from
     // the next connection. audioCodingInUse says what this one uses and why.
@@ -460,6 +463,10 @@ class MobileEngine : public QObject {
     Q_PROPERTY(int cwSpeed READ cwSpeed WRITE setCwSpeed NOTIFY cwChanged)
     Q_PROPERTY(int cwPitch READ cwPitch WRITE setCwPitch NOTIFY cwChanged)
     Q_PROPERTY(bool cwBreakIn READ cwBreakIn WRITE setCwBreakIn NOTIFY cwChanged)
+    // The radio's CW sidetone and its level (mon_gain_cw), apart from the
+    // receive volume; the local sidetone plays at the same level.
+    Q_PROPERTY(bool cwSidetone READ cwSidetone WRITE setCwSidetone NOTIFY cwChanged)
+    Q_PROPERTY(int cwSidetoneGain READ cwSidetoneGain WRITE setCwSidetoneGain NOTIFY cwChanged)
     Q_PROPERTY(bool cwDecoderEnabled READ cwDecoderEnabled WRITE setCwDecoderEnabled NOTIFY cwDecoderChanged)
     // Decoder sensitivity 0-100 (the desktop's Sens): letters whose cost is at
     // or above 1 - 0.9 x sens/100 are not shown (band noise decodes as such).
@@ -666,6 +673,11 @@ public:
     QStringList bandPlans() const;
     // The active plan's segments (empty when off), for the spectrum.
     QVector<BandPlanManager::Segment> bandPlanSegments() const;
+    bool modeFollowsBandPlan() const;
+    void setModeFollowsBandPlan(bool on);
+    // The mode the band plan gives a frequency ("CW", "LSB", "USB"), or empty
+    // where it gives none (data, beacons, mixed segments, VHF and up).
+    QString bandPlanMode(double mhz, QString* segment = nullptr) const;
     QString audioCompression() const;
     void setAudioCompression(const QString& mode);
     QString audioCodingInUse() const { return m_audioCodingInUse; }
@@ -955,6 +967,10 @@ public:
     void setCwPitch(int hz);
     bool cwBreakIn() const;
     void setCwBreakIn(bool on);
+    bool cwSidetone() const;
+    void setCwSidetone(bool on);
+    int cwSidetoneGain() const;
+    void setCwSidetoneGain(int gain);
     bool cwDecoderEnabled() const;
     bool rttyMode() const;
     bool rttyActive() const;
@@ -1784,6 +1800,13 @@ private:
     QThread* m_audioThread{nullptr};
     AudioEngine* m_audio{nullptr};
     BandPlanManager m_bandPlan;
+    // Mode from the band plan: the plan segment the active slice was in (only
+    // a move into another segment sets the mode), and when the mode last
+    // changed (a spot or memory that sets its own mode wins).
+    QString m_planSegmentAt;
+    QElapsedTimer m_modeSetClock;
+    void followBandPlanMode();
+    void planSegmentNow();
     // Split: the listening and transmitting slices (-1: none); pending while
     // the TX slice is being created.
     // Traffic rate: bytes and time at the last networkDetails() call.

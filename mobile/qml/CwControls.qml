@@ -312,6 +312,29 @@ ColumnLayout {
         value: Engine.cwPitch
         onMoved: (v) => Engine.cwPitch = Math.round(v)
     }
+    // Sidetone: its own level, so a high receive volume does not make the
+    // key deafening (Tyler K0OTC).
+    Label { text: qsTr("Sidetone  %1").arg(Engine.cwSidetoneGain); color: Theme.textDim; font.pixelSize: Theme.px(15) }
+    RowLayout {
+        Layout.fillWidth: true
+        AppButton {
+            objectName: "cwSidetone"
+            text: qsTr("On")
+            checked: Engine.cwSidetone
+            Layout.preferredWidth: 64
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.cwSidetone = !Engine.cwSidetone
+        }
+        FineSlider {
+            accessibleName: qsTr("Sidetone level")
+            Layout.fillWidth: true
+            from: 0
+            to: 100
+            stepSize: 1
+            value: Engine.cwSidetoneGain
+            onMoved: (v) => Engine.cwSidetoneGain = Math.round(v)
+        }
+    }
     RowLayout {
         Layout.fillWidth: true
         AppButton {

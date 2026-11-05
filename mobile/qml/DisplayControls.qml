@@ -31,6 +31,27 @@ ColumnLayout {
             }
         }
     }
+    // The mode from the band plan while tuning (Tyler K0OTC): CW in a CW
+    // segment, LSB / USB in a phone one, HF only.
+    RowLayout {
+        Layout.fillWidth: true
+        Label {
+            text: qsTr("Mode from band plan")
+            color: Theme.textDim
+            font.pixelSize: Theme.px(16)
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+        }
+        AppButton {
+            objectName: "modeFollowsBandPlan"
+            text: Engine.modeFollowsBandPlan ? qsTr("On") : qsTr("Off")
+            checked: Engine.modeFollowsBandPlan
+            leftPadding: 10
+            rightPadding: 10
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.modeFollowsBandPlan = !Engine.modeFollowsBandPlan
+        }
+    }
     // The band row and the step buttons (also B/S on the display), and what
     // the step buttons step by (Larry Averbeck).
     RowLayout {

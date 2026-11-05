@@ -409,6 +409,15 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: change each radio setting a little, check the radio's status brings it "
                        "back, restore it, then quit (no keying; VOX, antennas, MTU, callsign left out)."));
     parser.addOption(echoAuditOption);
+    const QCommandLineOption engineSetOption(QStringLiteral("engine-set"),
+        QStringLiteral("Development: 12 s after start set engine properties <name>=<value>[,...] "
+                       "(e.g. to put back what a test left), log them, then quit 3 s later."),
+        QStringLiteral("assignments"));
+    parser.addOption(engineSetOption);
+    const QCommandLineOption modePlanTestOption(QStringLiteral("mode-plan-test"),
+        QStringLiteral("Development: turn Mode from band plan on, tune between phone, CW and data "
+                       "segments, log the mode at each, then restore the frequency, mode and setting."));
+    parser.addOption(modePlanTestOption);
     const QCommandLineOption echoAuditOnlyOption(QStringLiteral("echo-audit-only"),
         QStringLiteral("Development: with --echo-audit, only the settings whose name contains <text>."),
         QStringLiteral("text"));
@@ -754,6 +763,90 @@ int main(int argc, char* argv[])
             QTimer::singleShot(11000, &engine, [&engine, slot] {
                 qInfo() << "dvk-record-test: slot after clear" << engine.dvkSlots().at(slot - 1);
             });
+        });
+    }
+    if (parser.isSet(engineSetOption)) {
+        const QStringList pairs = parser.value(engineSetOption).split(QLatin1Char(','), Qt::SkipEmptyParts);
+        QTimer::singleShot(12000, &app, [&engine, pairs] {
+            for (const QString& kv : pairs) {
+                const QString name = kv.section(QLatin1Char('='), 0, 0).trimmed();
+                const QString value = kv.section(QLatin1Char('='), 1).trimmed();
+                const QVariant before = engine.property(name.toLatin1().constData());
+                engine.setProperty(name.toLatin1().constData(), value);
+                qInfo() << "engine-set:" << name << before << "->" << value;
+            }
+        });
+        QTimer::singleShot(15000, &app, [&engine, pairs] {
+            for (const QString& kv : pairs) {
+                const QString name = kv.section(QLatin1Char('='), 0, 0).trimmed();
+                qInfo() << "engine-set:" << name << "reads" << engine.property(name.toLatin1().constData());
+            }
+            QCoreApplication::quit();
+        });
+    }
+    if (parser.isSet(modePlanTestOption)) {
+        struct Saved { double mhz{0}; QString mode; bool follows{false}; QString plan; };
+        auto saved = std::make_shared<Saved>();
+        // Each step 3 s apart: past the 1.5 s in which a mode just set wins.
+        struct Step { QString plan; double mhz; QString setMode; int follows; QString expect; };
+        const QString us = QStringLiteral("ARRL (US)");
+        const QString r1 = QStringLiteral("IARU Region 1");
+        const QList<Step> steps{
+            {us, 14.020, QStringLiteral("CW"), 1, QStringLiteral("CW")},
+            {{}, 14.250, {}, -1, QStringLiteral("USB")},   // Tyler's example
+            {{}, 7.210, {}, -1, QStringLiteral("LSB")},
+            {{}, 7.030, {}, -1, QStringLiteral("CW")},
+            {{}, 7.074, {}, -1, QStringLiteral("CW")},     // data: left alone
+            {{}, 14.250, {}, -1, QStringLiteral("USB")},
+            {{}, 14.150, QStringLiteral("CW"), -1, QStringLiteral("CW")},  // a mode set with the tune wins
+            {{}, 14.250, QStringLiteral("LSB"), -1, QStringLiteral("LSB")},
+            {{}, 14.260, {}, -1, QStringLiteral("LSB")},   // same segment: kept
+            {r1, 3.700, {}, -1, QStringLiteral("LSB")},
+            {{}, 5.360, {}, -1, QStringLiteral("USB")},    // 60 m: USB
+            {{}, 14.074, QStringLiteral("DIGU"), -1, QStringLiteral("DIGU")},
+            {{}, 14.020, {}, -1, QStringLiteral("DIGU")},  // digital mode: left alone
+            {{}, 14.200, QStringLiteral("USB"), -1, QStringLiteral("USB")},
+            {{}, 7.150, {}, 0, QStringLiteral("USB")},     // off: left alone
+        };
+        QTimer::singleShot(9000, &app, [&engine, saved] {
+            saved->mhz = engine.frequencyMhz();
+            saved->mode = engine.mode();
+            saved->follows = engine.modeFollowsBandPlan();
+            saved->plan = engine.bandPlan();
+            qInfo() << "mode-plan-test: start" << saved->mhz << saved->mode << "follows" << saved->follows;
+        });
+        for (int i = 0; i < steps.size(); ++i) {
+            const Step st = steps.at(i);
+            QTimer::singleShot(10000 + i * 3000, &app, [&engine, st] {
+                if (!st.plan.isEmpty()) {
+                    engine.setBandPlan(st.plan);
+                }
+                if (st.follows >= 0) {
+                    engine.setModeFollowsBandPlan(st.follows == 1);
+                }
+                if (!st.setMode.isEmpty()) {
+                    engine.setMode(st.setMode);
+                }
+                engine.setFrequencyMhz(st.mhz);
+            });
+            QTimer::singleShot(10000 + i * 3000 + 2500, &app, [&engine, st] {
+                const QString got = engine.mode();
+                qInfo().noquote() << QStringLiteral("mode-plan-test: %1 MHz plan %2 mode %3 expect %4 %5")
+                                         .arg(st.mhz, 0, 'f', 3).arg(engine.bandPlanMode(st.mhz), got, st.expect,
+                                              got == st.expect ? QStringLiteral("OK") : QStringLiteral("FAIL"));
+            });
+        }
+        const int end = 10000 + int(steps.size()) * 3000;
+        QTimer::singleShot(end, &app, [&engine, saved] {
+            engine.setModeFollowsBandPlan(saved->follows);
+            engine.setBandPlan(saved->plan);
+            engine.setMode(saved->mode);
+            engine.setFrequencyMhz(saved->mhz);
+        });
+        QTimer::singleShot(end + 3000, &app, [&engine, saved] {
+            qInfo() << "mode-plan-test: restored" << engine.frequencyMhz() << engine.mode() << "follows"
+                    << engine.modeFollowsBandPlan() << "plan" << engine.bandPlan();
+            QCoreApplication::quit();
         });
     }
     if (parser.isSet(echoAuditOption)) {
