@@ -565,8 +565,13 @@ vibration settings). iPads and Macs have none.
 kHz, the mode, the step, the antennas, filter width, AGC, volume, the
 lock, the meters with their reading, each slice, PTT, the sliders and
 fields. A double tap acts as a tap (hold PTT with a double tap and hold);
-a swipe up or down on a slider moves it one step, sent at once. Tuning
-from the display with the screen reader is still to come.
+a swipe up or down on a slider moves it one step, sent at once.
+**Tuning:** the frequency is an adjustable control: a swipe up or down on
+it (TalkBack: the volume keys, or its adjust gesture) tunes one step (the
+STEP setting, e.g. 1 kHz) and the new frequency in kHz is read; a double
+tap opens frequency entry. The screen reader also says, unasked, when
+the mode changes (the band plan lock's changes too) and when transmit
+starts and ends (*Transmitting*, *Receiving*).
 
 ### Network quality
 

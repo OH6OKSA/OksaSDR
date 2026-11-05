@@ -289,9 +289,16 @@ Page {
                     font.pixelSize: Math.round((page.compact ? 40 : 56) * page.infoScale)
                     font.family: "monospace"
                     // Tap for direct entry.
-                    Accessible.role: Accessible.Button
-                    Accessible.name: qsTr("Frequency %1 kHz").arg((Engine.frequencyMhz * 1000).toFixed(3))
-                    Accessible.description: qsTr("Opens frequency entry")
+                    // For VoiceOver / TalkBack an adjustable control: a swipe up or
+                    // down tunes one step and the new frequency (value, kHz) is read;
+                    // a double tap opens frequency entry.
+                    readonly property real value: Math.round(Engine.frequencyMhz * 1e6) / 1000
+                    Accessible.role: Accessible.Slider
+                    Accessible.name: qsTr("Frequency, kHz")
+                    Accessible.description: qsTr("Swipe up or down to tune by %1; double tap to type a frequency")
+                        .arg(Engine.stepHz >= 1000 ? qsTr("%1 kHz").arg(Engine.stepHz / 1000) : qsTr("%1 Hz").arg(Engine.stepHz))
+                    Accessible.onIncreaseAction: Engine.tuneBySteps(1)
+                    Accessible.onDecreaseAction: Engine.tuneBySteps(-1)
                     Accessible.onPressAction: freqDialog.open()
                     TapHandler { onTapped: freqDialog.open() }
                 }

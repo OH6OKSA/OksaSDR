@@ -38,6 +38,37 @@ ApplicationWindow {
         target: Theme; property: "windowHeight"
         value: pages.height - pages.SafeArea.margins.top - pages.SafeArea.margins.bottom
     }
+
+    // VoiceOver / TalkBack: what changed is said without being asked: the
+    // mode (the band plan lock's too) and transmit on / off. Quiet for the
+    // first seconds of a connection, while the radio's state arrives.
+    Item {
+        id: announcer
+        property bool ready: false
+        function say(text) {
+            if (ready) {
+                Accessible.announce(text)
+            }
+        }
+        Timer { id: announceSettle; interval: 3000; onTriggered: announcer.ready = true }
+        Connections {
+            target: Engine
+            function onConnectionStateChanged() {
+                announcer.ready = false
+                if (Engine.connectionState === "connected") {
+                    announceSettle.restart()
+                }
+            }
+            function onModeChanged() {
+                if (Engine.mode.length > 0) {
+                    announcer.say(qsTr("Mode %1").arg(Engine.mode))
+                }
+            }
+            function onTransmittingChanged() {
+                announcer.say(Engine.transmitting ? qsTr("Transmitting") : qsTr("Receiving"))
+            }
+        }
+    }
     readonly property bool phoneSized: Theme.phoneLayout
     // The page's layout, settled: the two bindings above update one after
     // the other, so a phone turning passed through a square window that

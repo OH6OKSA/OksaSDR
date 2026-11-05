@@ -35,6 +35,7 @@
 #include <QKeyEvent>
 #include <QQuickWindow>
 #include <QQuickItem>
+#include <QAccessible>
 #include <QTimer>
 #include <QRawFont>
 #include <QGlyphRun>
@@ -409,6 +410,11 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: change each radio setting a little, check the radio's status brings it "
                        "back, restore it, then quit (no keying; VOX, antennas, MTU, callsign left out)."));
     parser.addOption(echoAuditOption);
+    const QCommandLineOption a11yTuneOption(QStringLiteral("a11y-tune-test"),
+        QStringLiteral("Development: as VoiceOver / TalkBack would, swipe the frequency up twice and down once "
+                       "(its accessible increase / decrease), log its role, value and the frequency, change "
+                       "the mode and back (spoken notices), then put the frequency back and quit."));
+    parser.addOption(a11yTuneOption);
     const QCommandLineOption engineSetOption(QStringLiteral("engine-set"),
         QStringLiteral("Development: 12 s after start set engine properties <name>=<value>[,...] "
                        "(e.g. to put back what a test left), log them, then quit 3 s later."),
@@ -764,6 +770,69 @@ int main(int argc, char* argv[])
             QTimer::singleShot(11000, &engine, [&engine, slot] {
                 qInfo() << "dvk-record-test: slot after clear" << engine.dvkSlots().at(slot - 1);
             });
+        });
+    }
+    if (parser.isSet(a11yTuneOption)) {
+        auto findFrequency = [&qml]() -> QAccessibleInterface* {
+            if (qml.rootObjects().isEmpty()) {
+                return nullptr;
+            }
+            auto* window = qobject_cast<QQuickWindow*>(qml.rootObjects().constFirst());
+            QList<QQuickItem*> todo{window ? window->contentItem() : nullptr};
+            while (!todo.isEmpty()) {
+                QQuickItem* it = todo.takeFirst();
+                if (!it) {
+                    continue;
+                }
+                if (it->isVisible() && it->property("value").isValid()) {
+                    QAccessibleInterface* iface = QAccessible::queryAccessibleInterface(it);
+                    if (iface && iface->text(QAccessible::Name) == QLatin1String("Frequency, kHz")) {
+                        return iface;
+                    }
+                }
+                todo.append(it->childItems());
+            }
+            return nullptr;
+        };
+        auto saved = std::make_shared<std::pair<double, QString>>();
+        QTimer::singleShot(10000, &app, [&engine, saved, findFrequency] {
+            saved->first = engine.frequencyMhz();
+            saved->second = engine.mode();
+            QAccessibleInterface* iface = findFrequency();
+            if (!iface) {
+                qWarning() << "a11y-tune-test: no frequency control found";
+                return;
+            }
+            qInfo() << "a11y-tune-test: role" << iface->role() << "slider" << (iface->role() == QAccessible::Slider)
+                    << "value" << (iface->valueInterface() ? iface->valueInterface()->currentValue() : QVariant())
+                    << "actions" << (iface->actionInterface() ? iface->actionInterface()->actionNames() : QStringList())
+                    << "description" << iface->text(QAccessible::Description) << "step" << engine.stepHz();
+        });
+        const QStringList actions{QAccessibleActionInterface::increaseAction(),
+                                  QAccessibleActionInterface::increaseAction(),
+                                  QAccessibleActionInterface::decreaseAction()};
+        for (int i = 0; i < actions.size(); ++i) {
+            const QString action = actions.at(i);
+            QTimer::singleShot(11000 + i * 1500, &app, [&engine, action, findFrequency] {
+                if (QAccessibleInterface* iface = findFrequency(); iface && iface->actionInterface()) {
+                    const double before = engine.frequencyMhz();
+                    iface->actionInterface()->doAction(action);
+                    QTimer::singleShot(800, &engine, [&engine, action, before, findFrequency] {
+                        QAccessibleInterface* now = findFrequency();
+                        qInfo() << "a11y-tune-test:" << action << before << "->" << engine.frequencyMhz() << "value"
+                                << (now && now->valueInterface() ? now->valueInterface()->currentValue() : QVariant());
+                    });
+                }
+            });
+        }
+        QTimer::singleShot(16000, &app, [&engine] { engine.setMode(QStringLiteral("USB")); });
+        QTimer::singleShot(18000, &app, [&engine, saved] {
+            engine.setMode(saved->second);
+            engine.setFrequencyMhz(saved->first);
+        });
+        QTimer::singleShot(20000, &app, [&engine] {
+            qInfo() << "a11y-tune-test: restored" << engine.frequencyMhz() << engine.mode();
+            QCoreApplication::quit();
         });
     }
     if (parser.isSet(engineSetOption)) {
