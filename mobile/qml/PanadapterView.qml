@@ -925,11 +925,14 @@ Rectangle {
         // B/S (bands / steps, Larry Averbeck's name; F/R before): the band row
         // and the step buttons, or hidden so the waterfall has their height;
         // Band then opens the bands. On a page that has those rows.
+        // Hidden, it says so: an amber frame and ▲, as a tap hid them
+        // unnoticed and they seemed gone (Michael Walker, in his car).
         AppButton {
             objectName: "tuneRowsButton"
             visible: panArea.tuneRowsToggle
-            text: qsTr("B/S")
+            text: Engine.tuneRowsShown ? qsTr("B/S") : qsTr("B/S ▲")
             Accessible.name: qsTr("Band row and step buttons")
+            Accessible.description: Engine.tuneRowsShown ? qsTr("Shown; tap to hide them") : qsTr("Hidden; tap to show them")
             checked: Engine.tuneRowsShown
             font.pixelSize: Math.round(Theme.buttonFont * 0.85)
             height: Theme.touchTarget
@@ -938,6 +941,14 @@ Rectangle {
             opacity: 0.85
             focusPolicy: Qt.NoFocus
             onClicked: Engine.tuneRowsShown = !Engine.tuneRowsShown
+            Rectangle {
+                anchors.fill: parent
+                visible: !Engine.tuneRowsShown
+                radius: Theme.radius
+                color: "transparent"
+                border.color: Theme.warning
+                border.width: 2
+            }
         }
     }
 

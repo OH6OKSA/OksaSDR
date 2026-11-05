@@ -504,7 +504,8 @@ there the **Band** button on the waterfall opens the bands, with *Whole
 band* (the band zoom) and *Close* at the top. **B/S** (bands / steps) beside it hides the
 band buttons and the step buttons on any device, so the waterfall gets
 their height; Band then opens the bands the same way, and B/S brings the
-rows back (also *View › Bands and steps*; remembered).
+rows back (also *View › Bands and steps*; remembered). While they are
+hidden, B/S has an amber frame and reads **B/S ▲**.
 
 ![The bands from the Band button in a low landscape window](manual/bandchooser.jpg)
 
@@ -777,7 +778,7 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
   outside one), it goes back to the slice's band, or else the nearest one.
   With the band buttons hidden (B/S, or a very low landscape screen) it opens
   the bands instead.
-- **B/S** (bands / steps) hides the band buttons and the step buttons, or brings them back.
+- **B/S** (bands / steps) hides the band buttons and the step buttons, or brings them back; while they are hidden it has an amber frame and reads *B/S ▲*.
 - The **frequency scale** runs along the top of the waterfall.
 - The **dBm scale** at the left: drag it up or down to move the trace (the
   reference level; this turns the spectrum's *Auto* off, View gives it
