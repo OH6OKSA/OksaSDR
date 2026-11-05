@@ -647,6 +647,15 @@ From the comparison with upstream main and tester requests:
 - Memory groups (repeater offsets and tones are in build 86)
 - ATU tools and per-band TX settings
 - Profile import and export
+- **Named app setups, exported and imported** (asked 2026-11-05 by Larry
+  Averbeck W9FLA on Facebook): save the app's own settings (the panels,
+  display, meters, DSP and audio choices that come back after a restart)
+  under a name, switch between setups quickly, export one as a file and
+  import it later or on another device; later an editable file for an
+  experienced operator. He suggested a Cnfg button by B/S; with the screen
+  room in mind the Prof tab (which now switches only the radio's own
+  profiles) may be the better place. Replied on Facebook that it is
+  planned.
 - QSO recording
 - 3D with 768 columns
 - Upstream FFT Smooth and De-comb
@@ -765,6 +774,26 @@ Dennis Daniel for the FlexRadio amplifier and tuner):
      choice on 2026-11-03 after Sebastian's read-only check.)
   4. Every state change (Operate, antenna, error reset, tune) behind a
      confirmation, never one stray tap.
+
+- **Radio Setup › Amp by manufacturer** (planned 2026-11-05, the user):
+  choose the manufacturer first, which opens only its own devices as
+  sub-sections: 4O3A (PGXL, TGXL, Antenna Genius), RFKit / RF Power
+  (RF2K-S), later SPE, Elecraft and others. Several manufacturers can be
+  on at once (an RF2K-S and an Antenna Genius); the ones in use list
+  first. Controls › Amp and the meter choices stay as they are, showing
+  the devices in use. Devices already set up land under their maker after
+  the update. Each new manufacturer the same way: the address or a
+  serial-to-TCP bridge, read only first, control off by default and every
+  command confirmed.
+- **Elecraft KPA500 and KAT500** (asked 2026-11-05 by Sergio Landoni
+  LU7YS, a tester with both on a FLEX-6600, who offers to test): status,
+  operate / standby, power, tuner status, antenna and bypass, through a
+  serial-to-TCP bridge at the station (ser2net on a Raspberry Pi or a
+  serial-to-Ethernet adapter); both have Elecraft's documented serial
+  command sets. As the RF2K-S: a stand-in from the documents first, read
+  only, then control; the readings on the meters. Asked him how they are
+  connected and whether he has a bridge (no answer yet). Fits as the first
+  new maker of the manufacturer layout above.
 
 ## Waiting
 
