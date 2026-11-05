@@ -127,7 +127,7 @@ Popup {
         property string label
         property string value
         Layout.fillWidth: true
-        Label { text: parent.label; color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+        Label { text: parent.label; color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true; wrapMode: Text.Wrap }
         Label { text: parent.value.length > 0 ? parent.value : "–"; color: Theme.text; font.pixelSize: Theme.px(15); font.bold: true }
     }
     // On/off as two of the app's buttons, the current one dark.
@@ -273,10 +273,15 @@ Popup {
         signal committed(real value)
         Layout.fillWidth: true
         spacing: 0
+        // Wrapped: unwrapped, a long one ("The radio's default RTTY mark")
+        // set the whole tab's least width, past the scroll bar at a large
+        // text size (Evgeny R0ACS, Ben Morris KT4O).
         Label {
             text: level.label + "  " + Math.round(slider.busy ? slider.shown : level.current) + level.unit
             color: Theme.text
             font.pixelSize: Theme.px(15)
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
         }
         // Sent on release, each − / + step on its own; follows the radio
         // except while a finger is on it.
@@ -303,7 +308,7 @@ Popup {
         signal saved(string text)
         Layout.fillWidth: true
         spacing: 2
-        Label { text: textSetting.label; color: Theme.text; font.pixelSize: Theme.px(15) }
+        Label { text: textSetting.label; color: Theme.text; font.pixelSize: Theme.px(15); Layout.fillWidth: true; wrapMode: Text.Wrap }
         RowLayout {
             Layout.fillWidth: true
             TextField {
@@ -337,15 +342,6 @@ Popup {
             Label { text: qsTr("Radio Setup"); color: Theme.text; font.pixelSize: Theme.px(22); font.bold: true; Layout.fillWidth: true }
             AppButton { text: qsTr("Close"); focusPolicy: Qt.NoFocus; onClicked: setup.close() }
         }
-        Label {
-            Layout.fillWidth: true
-            text: setup.section === 6
-                  ? qsTr("The amplifier is not a setting of the radio: this device reaches it directly, and the address stays on this device.")
-                  : qsTr("These are the radio's own settings, as in SmartSDR's Radio Setup: changes are written to the radio.")
-            color: Theme.textDim
-            font.pixelSize: Theme.px(13)
-            wrapMode: Text.Wrap
-        }
         // Nine in a row where each gets 84 px ("Phone/CW" whole), else 5 + 4,
         // 3 + 3 + 3 on the narrowest.
         GridLayout {
@@ -372,7 +368,28 @@ Popup {
             id: scroll
             Layout.fillWidth: true
             Layout.fillHeight: true
+            // The description scrolls with the settings: above the tabs it
+            // took a phone's screen with a large text size (Ben Morris KT4O).
+            // In a layout as the sections are, so its height follows the
+            // scroll bar's margin on the layout pass (a bare Label's width
+            // and height bound in a loop through it).
+            contentHeight: setupNote.implicitHeight + Theme.spacing / 2 + sections.implicitHeight
+            ColumnLayout {
+                id: setupNote
+                width: scroll.availableWidth
+                Label {
+                    Layout.fillWidth: true
+                    text: setup.section === 7
+                          ? qsTr("The amplifier is not a setting of the radio: this device reaches it directly, and the address stays on this device.")
+                          : qsTr("These are the radio's own settings, as in SmartSDR's Radio Setup: changes are written to the radio.")
+                    color: Theme.textDim
+                    font.pixelSize: Theme.px(13)
+                    wrapMode: Text.Wrap
+                }
+            }
             StackLayout {
+                id: sections
+                y: setupNote.implicitHeight + Theme.spacing / 2
                 width: scroll.availableWidth
                 currentIndex: setup.section
 
