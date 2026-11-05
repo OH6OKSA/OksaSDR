@@ -1801,15 +1801,19 @@ private:
     AudioEngine* m_audio{nullptr};
     BandPlanManager m_bandPlan;
     // Mode from the band plan: the plan region the active slice was in and
-    // its mode (only a move into another region sets the mode), the modes
-    // chosen by hand in regions this session (region -> mode), and when the
-    // mode last changed (a spot or memory that sets its own mode wins).
+    // its mode (only a move into another region sets the mode), the band on
+    // which a mode of one's own holds (the plan rests there until another
+    // band), and when the mode last changed (a spot or memory that sets its
+    // own mode wins).
     QString m_planRegionAt;
     QString m_planRegionMode;
-    QHash<QString, QString> m_planModeChoices;
+    QString m_planHoldBand;
+    QString m_planAutoMode;  // the mode the plan just set (its echo is no choice)
     QElapsedTimer m_modeSetClock;
     void followBandPlanMode();
     void planRegionNow();
+    void notePlanModeChoice();
+    void judgePlanModeChoice();
     // Split: the listening and transmitting slices (-1: none); pending while
     // the TX slice is being created.
     // Traffic rate: bytes and time at the last networkDetails() call.

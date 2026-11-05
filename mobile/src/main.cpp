@@ -799,20 +799,33 @@ int main(int argc, char* argv[])
             {{}, 7.074, {}, -1, QStringLiteral("CW")},     // data: left alone
             {{}, 14.250, {}, -1, QStringLiteral("USB")},
             {{}, 14.150, QStringLiteral("CW"), -1, QStringLiteral("CW")},  // a mode set with the tune wins
+            {{}, 14.250, QStringLiteral("USB"), -1, QStringLiteral("USB")},
+            {{}, 14.030, QStringLiteral("CW"), -1, QStringLiteral("CW")},  // a CW spot: no hold
+            {{}, 14.250, {}, -1, QStringLiteral("USB")},
+            {{}, 14.150, QStringLiteral("CW"), -1, QStringLiteral("CW")},
             {{}, 14.300, {}, -1, QStringLiteral("CW")},    // another phone segment, same region: kept
             {{}, 14.030, {}, -1, QStringLiteral("CW")},
-            {{}, 14.200, {}, -1, QStringLiteral("CW")},    // the phone region's own choice: CW
-            {{}, 14.200, QStringLiteral("USB"), -1, QStringLiteral("USB")},
-            {{}, 14.010, {}, -1, QStringLiteral("CW")},
-            {{}, 14.010, QStringLiteral("USB"), -1, QStringLiteral("USB")},
-            {{}, 14.040, {}, -1, QStringLiteral("USB")},   // CW DX -> CW, same region: kept
-            {{}, 14.250, {}, -1, QStringLiteral("USB")},   // choice dropped: the plan's USB
-            {{}, 14.030, {}, -1, QStringLiteral("USB")},   // the CW region's choice: USB
-            {{}, 14.030, QStringLiteral("CW"), -1, QStringLiteral("CW")},
+            {{}, 14.200, {}, -1, QStringLiteral("CW")},    // CW held on 20 m
+            {{}, 7.210, {}, -1, QStringLiteral("LSB")},    // another band: the plan again
+            {{}, 14.250, {}, -1, QStringLiteral("USB")},   // back on 20 m: the hold is gone
             {{}, 14.250, QStringLiteral("RTTY"), -1, QStringLiteral("RTTY")},
             {{}, 14.030, {}, -1, QStringLiteral("RTTY")},  // RTTY: left alone
-            {{}, 14.030, QStringLiteral("CW"), -1, QStringLiteral("CW")},
-            {{}, 14.250, {}, -1, QStringLiteral("RTTY")},  // the phone region's choice: RTTY
+            {{}, 14.200, {}, -1, QStringLiteral("RTTY")},
+            {{}, 14.200, QStringLiteral("USB"), -1, QStringLiteral("USB")},
+            {{}, 14.030, {}, -1, QStringLiteral("CW")},    // the plan's own mode chosen: the hold ends
+            {{}, 14.030, QStringLiteral("USB"), -1, QStringLiteral("USB")},
+            {{}, 14.040, {}, -1, QStringLiteral("USB")},   // CW DX -> CW, same region: kept
+            {{}, 14.120, {}, -1, QStringLiteral("USB")},   // the other CW part: USB held on 20 m
+            {{}, 21.030, {}, -1, QStringLiteral("CW")},    // 15 m: the plan again
+            {{}, 14.074, QStringLiteral("DIGU"), -1, QStringLiteral("DIGU")},  // FT8 over the band
+            {{}, 14.250, {}, -1, QStringLiteral("DIGU")},
+            {{}, 14.030, {}, -1, QStringLiteral("DIGU")},
+            {{}, 7.074, QStringLiteral("DIGU"), -1, QStringLiteral("DIGU")},   // another band, still FT8
+            {{}, 7.150, {}, -1, QStringLiteral("DIGU")},
+            {{}, 7.150, QStringLiteral("CW"), -1, QStringLiteral("CW")},       // FT8 over: CW by hand
+            {{}, 7.030, {}, -1, QStringLiteral("CW")},
+            {{}, 7.180, {}, -1, QStringLiteral("CW")},     // CW chosen in the phone part: held
+            {{}, 14.250, {}, -1, QStringLiteral("USB")},   // 20 m: the hold on 40 m ends, the plan again
             {r1, 3.700, QStringLiteral("LSB"), -1, QStringLiteral("LSB")},
             {{}, 5.360, {}, -1, QStringLiteral("USB")},    // 60 m: USB
             {{}, 14.074, QStringLiteral("DIGU"), -1, QStringLiteral("DIGU")},

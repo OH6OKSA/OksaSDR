@@ -8049,7 +8049,7 @@ void MobileEngine::bindSlice(SliceModel* slice)
         m_sliceConnections.append(connect(slice, &SliceModel::frequencyChanged, this, &MobileEngine::frequencyChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::modeChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::frequencyChanged, this, &MobileEngine::followBandPlanMode));
-        m_sliceConnections.append(connect(slice, &SliceModel::modeChanged, this, [this] { m_modeSetClock.restart(); }));
+        m_sliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::notePlanModeChoice));
         m_sliceConnections.append(connect(slice, &SliceModel::fmToneModeChanged, this, &MobileEngine::fmChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::fmToneValueChanged, this, &MobileEngine::fmChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::repeaterOffsetDirChanged, this, &MobileEngine::fmChanged));
@@ -9136,7 +9136,7 @@ void MobileEngine::setBandPlan(const QString& name)
     if (!name.isEmpty()) {
         m_bandPlan.setActivePlan(name);
     }
-    m_planModeChoices.clear();
+    m_planHoldBand.clear();
     planRegionNow();
     emit bandPlanChanged();
 }
@@ -9204,6 +9204,17 @@ QString segmentMode(const BandPlanManager::Segment& seg)
 
 const QStringList kVoiceAndCw{QStringLiteral("CW"), QStringLiteral("LSB"), QStringLiteral("USB")};
 
+// The amateur band a frequency is in ("20m"), or empty.
+QString bandOf(double mhz)
+{
+    for (const BandDef& b : kBands) {
+        if (mhz >= b.lowMhz && mhz <= b.highMhz) {
+            return QString::fromLatin1(b.name);
+        }
+    }
+    return {};
+}
+
 } // namespace
 
 QString MobileEngine::bandPlanMode(double mhz, QString* region) const
@@ -9269,40 +9280,80 @@ void MobileEngine::followBandPlanMode()
     if (region == m_planRegionAt) {
         return;
     }
-    const QString left = m_planRegionAt;
-    const QString leftMode = m_planRegionMode;
     m_planRegionAt = region;
     m_planRegionMode = planMode;
     if (!modeFollowsBandPlan() || !m_connected) {
         return;
     }
     const QString current = m_slice->mode();
+    // On another band a mode of one's own no longer holds: the plan again.
+    const QString band = bandOf(m_slice->frequency());
+    if (!m_planHoldBand.isEmpty() && m_planHoldBand != band) {
+        qCInfo(lcMobile) << "mode follows the band plan: the hold on" << m_planHoldBand << "ends on" << band;
+        m_planHoldBand.clear();
+    }
     // A spot, memory or band button that set its own mode just now wins.
     const bool justSet = m_modeSetClock.isValid() && m_modeSetClock.elapsed() < 1500;
-    // The plan's modes are defaults: the mode used in the region being left,
-    // when not the plan's (CW, RTTY or DIGU in a phone segment in a
-    // contest), is that region's mode until the plan changes or the app
-    // restarts.
-    if (!leftMode.isEmpty() && !justSet && !current.isEmpty()) {
-        if (current == leftMode) {
-            m_planModeChoices.remove(left);
-        } else if (m_planModeChoices.value(left) != current) {
-            m_planModeChoices.insert(left, current);
-            qCInfo(lcMobile) << "mode follows the band plan:" << current << "kept for" << left << "MHz";
-        }
-    }
-    if (planMode.isEmpty() || justSet || radioTransmitting()) {
+    if (planMode.isEmpty() || justSet || radioTransmitting() || !m_planHoldBand.isEmpty()) {
         return;
     }
     // Only from CW and the sidebands: in a digital mode, AM or FM the
     // operator chose it, and it stays.
-    const QString wanted = m_planModeChoices.value(region, planMode);
-    if (current == wanted || !kVoiceAndCw.contains(current)) {
+    if (current == planMode || !kVoiceAndCw.contains(current)) {
         return;
     }
-    qCInfo(lcMobile) << "mode follows the band plan:" << current << "->" << wanted << "at"
-                     << m_slice->frequency() << "MHz" << (wanted != planMode ? "(chosen there before)" : "");
-    setMode(wanted);
+    qCInfo(lcMobile) << "mode follows the band plan:" << current << "->" << planMode << "at"
+                     << m_slice->frequency() << "MHz";
+    m_planAutoMode = planMode;
+    setMode(planMode);
+}
+
+void MobileEngine::notePlanModeChoice()
+{
+    m_modeSetClock.restart();
+    if (!m_slice) {
+        return;
+    }
+    const QString mode = m_slice->mode();
+    if (!m_planAutoMode.isEmpty() && mode == m_planAutoMode) {
+        m_planAutoMode.clear();  // the plan's own change, not a choice
+        return;
+    }
+    m_planAutoMode.clear();
+    if (!modeFollowsBandPlan()) {
+        return;
+    }
+    // Judged where the slice lands: a spot or memory sets the mode, then
+    // the frequency.
+    QTimer::singleShot(400, this, &MobileEngine::judgePlanModeChoice);
+}
+
+void MobileEngine::judgePlanModeChoice()
+{
+    if (!m_slice || !modeFollowsBandPlan()) {
+        return;
+    }
+    const QString mode = m_slice->mode();
+    // The plan's modes are defaults: a mode of one's own where the plan
+    // gives another (CW or RTTY over the phone part in a contest) holds on
+    // the whole band, until the plan's own mode is chosen again or another
+    // band is tuned; that band starts from the plan.
+    const double mhz = m_slice->frequency();
+    const QString planMode = bandPlanMode(mhz);
+    const QString band = bandOf(mhz);
+    if (planMode.isEmpty() || band.isEmpty()) {
+        return;
+    }
+    if (mode == planMode) {
+        if (m_planHoldBand == band) {
+            qCInfo(lcMobile) << "mode follows the band plan: the plan's" << mode << "chosen, the hold on" << band
+                             << "ends";
+            m_planHoldBand.clear();
+        }
+    } else if (m_planHoldBand != band) {
+        m_planHoldBand = band;
+        qCInfo(lcMobile) << "mode follows the band plan:" << mode << "chosen, held on" << band;
+    }
 }
 
 QString MobileEngine::callsign() const

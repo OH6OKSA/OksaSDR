@@ -130,7 +130,7 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
    passband, on the right side of the carrier for the mode. With
    **Mode from band plan** on (Controls → View) the app sets USB / LSB as
    you tune into a phone segment, and CW in a CW segment, as defaults: a
-   mode you choose there stays.
+   mode you choose holds on that band until you change band.
 2. Tune: tap a station on the display (snapped to the step), drag inside
    the passband, use the step buttons under the display, or type the
    frequency (tap the frequency).
@@ -1160,14 +1160,13 @@ seven.
   another part of the band plan below 30 MHz sets the mode, CW in a CW
   part, in a phone or all-mode part LSB below 10 MHz and USB above and
   on 60 m; e.g. 14.250 USB, then 7.210 LSB. The plan's modes are only
-  defaults: a mode you choose in a part stays while you tune there, and
-  the part keeps it when you come back (CW, RTTY or DIGU in the phone
-  part in a contest), until you choose the plan's own mode there again,
-  change the plan or restart the app. Touching segments with the same
-  mode (CW DX and CW) are one part. It never changes away from a digital
-  mode (DIGU, DIGL, RTTY), AM or FM, and leaves data, beacon and mixed
-  segments alone; a spot, memory or band that sets its own mode wins.
-  With the strip *Off* it uses the plan last chosen), **Text size** (*System* follows the system's text size —
+  defaults: choose another mode where the plan gives one (CW or RTTY over
+  the phone part in a contest) and it holds on the whole band; on another
+  band the plan applies again, and choosing the plan's own mode ends the
+  hold. A spot or memory that brings its own mode is no choice for the
+  band. It never changes away from a digital mode (DIGU, DIGL, RTTY), AM
+  or FM, so FT8 anywhere stays DIGU, and it leaves data, beacon and mixed
+  segments alone. With the strip *Off* it uses the plan last chosen), **Text size** (*System* follows the system's text size —
   iOS Settings › Display & Brightness › Text Size, Android's font size —
   or a fixed *100 % / 115 % / 130 %*; the panels', dialogs' and setup
   pages' text grows, the operating screen's dense controls and the
