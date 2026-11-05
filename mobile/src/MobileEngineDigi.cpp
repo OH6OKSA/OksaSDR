@@ -114,6 +114,12 @@ void MobileEngine::setupDigi()
     m_digiPresenceMin = std::clamp(AppSettings::instance().value(QStringLiteral("MobileDigiPresenceMin"), 10).toInt(), 1, 60);
     m_operatorMs = QDateTime::currentMSecsSinceEpoch();
     m_digiCqParity = AppSettings::instance().value(QStringLiteral("MobileDigiCqParity"), QStringLiteral("auto")).toString();
+    m_digiCqTargets = AppSettings::instance().value(QStringLiteral("MobileDigiCqTargets"), QStringLiteral("DX,NA,EU"))
+                          .toString().split(QLatin1Char(','), Qt::SkipEmptyParts);
+    m_digiCqTarget = AppSettings::instance().value(QStringLiteral("MobileDigiCqTarget"), QString()).toString();
+    if (!m_digiCqTargets.contains(m_digiCqTarget)) {
+        m_digiCqTarget.clear();
+    }
     m_digiTxLevelDb = std::clamp(AppSettings::instance().value(QStringLiteral("MobileDigiTxLevelDb"), 0).toInt(), -20, 0);
     m_digiFilter = AppSettings::instance().value(QStringLiteral("MobileDigiFilter"), QStringLiteral("all")).toString();
     connect(m_ft8.get(), &Ft8Engine::slotStarted, this, &MobileEngine::onDigiSlot);
@@ -894,6 +900,69 @@ void MobileEngine::setDigiCqParity(const QString& parity)
     emit digiChanged();
 }
 
+namespace {
+
+// What FT8 / FT4 carry after CQ: 1-4 letters or 3 digits (ft8_lib's
+// CQ_a[bcd] and CQ_nnn, as WSJT-X's "CQ DX").
+QString cqTargetFrom(const QString& text)
+{
+    static const QRegularExpression re(QStringLiteral("^([A-Z]{1,4}|[0-9]{3})$"));
+    const QString t = text.trimmed().toUpper();
+    return re.match(t).hasMatch() ? t : QString();
+}
+
+} // namespace
+
+void MobileEngine::setDigiCqTarget(const QString& target)
+{
+    const QString t = target.isEmpty() ? QString() : cqTargetFrom(target);
+    if (t == m_digiCqTarget || (!t.isEmpty() && !m_digiCqTargets.contains(t))) {
+        return;
+    }
+    m_digiCqTarget = t;
+    AppSettings::instance().setValue(QStringLiteral("MobileDigiCqTarget"), t);
+    AppSettings::instance().save();
+    // A CQ under way sends the new one from its next transmission.
+    if (m_digiState == QLatin1String("cq") && m_digiDx.isEmpty()) {
+        m_digiTxMsg = digiMessage(QStringLiteral("cq"));
+    }
+    emit digiChanged();
+}
+
+bool MobileEngine::digiCqDirectable() const
+{
+    return Ft8Engine::isStandardCall(digiMyCall());
+}
+
+bool MobileEngine::addDigiCqTarget(const QString& target)
+{
+    const QString t = cqTargetFrom(target);
+    if (t.isEmpty()) {
+        return false;
+    }
+    if (!m_digiCqTargets.contains(t)) {
+        m_digiCqTargets.append(t);
+        AppSettings::instance().setValue(QStringLiteral("MobileDigiCqTargets"), m_digiCqTargets.join(QLatin1Char(',')));
+        AppSettings::instance().save();
+    }
+    setDigiCqTarget(t);
+    emit digiChanged();
+    return true;
+}
+
+void MobileEngine::removeDigiCqTarget(const QString& target)
+{
+    if (!m_digiCqTargets.removeOne(target)) {
+        return;
+    }
+    AppSettings::instance().setValue(QStringLiteral("MobileDigiCqTargets"), m_digiCqTargets.join(QLatin1Char(',')));
+    AppSettings::instance().save();
+    if (m_digiCqTarget == target) {
+        setDigiCqTarget(QString());
+    }
+    emit digiChanged();
+}
+
 void MobileEngine::digiInjectDecodes(QVariantList rows)
 {
     const int txId = digiSlice() ? digiSlice()->sliceId() : -1;
@@ -1022,6 +1091,11 @@ QString MobileEngine::digiMessage(const QString& kind) const
     const QString grid = myGrid().left(4).toUpper();
     const QString myGrid4 = grid.size() == 4 ? QStringLiteral(" ") + grid : QString();
     if (kind == QLatin1String("cq")) {
+        // A direction only with a standard call: a nonstandard one's CQ is
+        // a type 4 message, which has no room for it (as in WSJT-X).
+        if (standard && !m_digiCqTarget.isEmpty()) {
+            return QStringLiteral("CQ %1 %2%3").arg(m_digiCqTarget, my, myGrid4);
+        }
         return standard ? QStringLiteral("CQ %1%2").arg(my, myGrid4) : QStringLiteral("CQ %1").arg(my);
     }
     if (kind == QLatin1String("call")) {

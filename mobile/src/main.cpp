@@ -1505,7 +1505,9 @@ int main(int argc, char* argv[])
                                        QStringLiteral("K1ABC <OH6OKSA> -12"), QStringLiteral("K1ABC <OH6OKSA> R-09"),
                                        QStringLiteral("<K1ABC> OH6OKSA RR73"), QStringLiteral("<K1ABC> OH6OKSA 73"),
                                        QStringLiteral("CQ OH2XO KP20"), QStringLiteral("K1ABC OH2XO KP20"),
-                                       QStringLiteral("<SN9Q/QRP> OH6OKSA RR73"), QStringLiteral("<SN9Q/QRP> OH6OKSA")};
+                                       QStringLiteral("<SN9Q/QRP> OH6OKSA RR73"), QStringLiteral("<SN9Q/QRP> OH6OKSA"),
+                                       QStringLiteral("CQ DX K1ABC FN42"), QStringLiteral("CQ NA OH2XO KP20"),
+                                       QStringLiteral("CQ POTA K1ABC FN42"), QStringLiteral("CQ 123 OH2XO KP20")};
             for (const QString& m : messages) {
                 const QByteArray audio = ft8.encode(m, 1500.0);
                 const auto* f = reinterpret_cast<const float*>(audio.constData());
@@ -1541,7 +1543,31 @@ int main(int argc, char* argv[])
         }
         return 0;
     }
-    if (parser.isSet(ft8TestOption) && parser.value(ft8TestOption).contains(QStringLiteral("keepcq"))) {
+    if (parser.isSet(ft8TestOption) && parser.value(ft8TestOption).contains(QStringLiteral("cqtarget"))) {
+        // A directed CQ without RF: the choices FT8 takes and refuses, and
+        // the CQ sent with the radio's callsign (a nonstandard one: plain).
+        engine.setDigiDryRun(true);
+        QTimer::singleShot(9000, &app, [&engine] {
+            for (const QString& t : {QStringLiteral("dx"), QStringLiteral("POTA"), QStringLiteral("123"),
+                                     QStringLiteral("ABCDE"), QStringLiteral("12"), QStringLiteral("D1"), QStringLiteral("")}) {
+                qInfo().noquote() << "cqtarget-test: add" << t << "->" << engine.addDigiCqTarget(t)
+                                  << "target" << engine.digiCqTarget();
+            }
+            engine.setDigiCqTarget(QStringLiteral("DX"));
+            engine.setDigiRunning(true);
+            engine.digiCallCq();
+            qInfo().noquote() << "cqtarget-test: call" << engine.digi().value(QStringLiteral("myCall")).toString()
+                              << "directable" << engine.digiCqDirectable() << "target" << engine.digiCqTarget()
+                              << "sends" << engine.digi().value(QStringLiteral("txMsg")).toString();
+            engine.digiHalt();
+            engine.removeDigiCqTarget(QStringLiteral("POTA"));
+            engine.removeDigiCqTarget(QStringLiteral("123"));
+            engine.setDigiCqTarget(QString());
+            qInfo().noquote() << "cqtarget-test: left" << engine.digiCqTargets().join(QLatin1Char(','))
+                              << "target" << engine.digiCqTarget();
+            QCoreApplication::quit();
+        });
+    } else if (parser.isSet(ft8TestOption) && parser.value(ft8TestOption).contains(QStringLiteral("keepcq"))) {
         // Keep CQ and the CQ slot without RF: dry transmissions, a station
         // answering our CQ fed in by hand, then CQ must start again.
         engine.setDigiDryRun(true);

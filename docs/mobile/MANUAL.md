@@ -226,7 +226,8 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
 3. **Answer**: tap a decode. The app calls, runs the QSO (report, R-report,
    RR73, 73) and logs it.
 4. **Call CQ**: **CQ** (in the **CQ slot** you choose); **Keep CQ** goes
-   back to CQ after each QSO.
+   back to CQ after each QSO. **CQ to** (FTx settings) directs it: *CQ DX*,
+   *CQ NA*, *CQ EU* or your own.
 5. **Answer CQ** answers CQs by itself: the rarest first, five calls a
    station, then the next. **Auto stops after … min untouched** (FTx
    settings) is how long Answer CQ and Keep CQ go on without a touch on
@@ -1349,6 +1350,13 @@ seven.
   **CQ** calls CQ on the **TX slice** (the one with the red TX badge), in
   the slot set by **CQ slot**: *Auto* (the next one), *Even* (FT8: 0 and
   30 s, FT4: 0, 15, 30, 45 s) or *Odd* (15 and 45 s; FT4: 7.5, 22.5 …).
+  **CQ to** directs the CQ: *All* is a plain CQ, *DX*, *NA* or *EU* send
+  *CQ DX K1ABC FN42* and so on, and the CQ button then reads *CQ DX*.
+  **+** adds your own: 1 to 4 letters (a continent, a country, POTA) or 3
+  digits, what FT8 and FT4 carry after CQ; a press and hold on one removes
+  it. Only a standard callsign can send a direction: with a nonstandard
+  one (OH6OKSA, a call with a prefix) the CQ goes out plain, as WSJT-X
+  sends it, and the row says so.
   **Keep CQ** (between CQ and Halt TX) goes back to CQ after every QSO your CQ brought (and after a
   station that answered goes quiet), until **Halt TX**; a CQ nobody
   answers still stops after its tries.

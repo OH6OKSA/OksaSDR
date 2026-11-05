@@ -247,6 +247,12 @@ class MobileEngine : public QObject {
     Q_PROPERTY(bool pskReporter READ pskReporter WRITE setPskReporter NOTIFY digiChanged)
     Q_PROPERTY(QString pskReporterStatus READ pskReporterStatus NOTIFY digiChanged)
     Q_PROPERTY(QString digiCqParity READ digiCqParity WRITE setDigiCqParity NOTIFY digiChanged)
+    // A directed CQ (Kurt DL5EAG): "CQ DX CALL GRID"; "" a plain CQ. The
+    // choices are the user's own (1-4 letters or 3 digits, as FT8 carries).
+    // Only a standard call can send one (digiCqDirectable).
+    Q_PROPERTY(QString digiCqTarget READ digiCqTarget WRITE setDigiCqTarget NOTIFY digiChanged)
+    Q_PROPERTY(QStringList digiCqTargets READ digiCqTargets NOTIFY digiChanged)
+    Q_PROPERTY(bool digiCqDirectable READ digiCqDirectable NOTIFY digiChanged)
     // Beat cancel can run (every audible slice in a voice mode); the BC
     // button shows dimmed when not.
     Q_PROPERTY(bool beatCancelAvailable READ beatCancelMode NOTIFY dspChanged)
@@ -1076,6 +1082,13 @@ public:
     void noteOperator();
     QString digiCqParity() const { return m_digiCqParity; }
     void setDigiCqParity(const QString& parity);
+    QString digiCqTarget() const { return m_digiCqTarget; }
+    void setDigiCqTarget(const QString& target);
+    QStringList digiCqTargets() const { return m_digiCqTargets; }
+    bool digiCqDirectable() const;
+    // Adds a choice (false if FT8 cannot carry it), or removes one.
+    Q_INVOKABLE bool addDigiCqTarget(const QString& target);
+    Q_INVOKABLE void removeDigiCqTarget(const QString& target);
     QVariantMap digi() const;
     QVariantList digiDecodes() const { return m_digiDecodes; }
     QString digiFilter() const { return m_digiFilter; }
@@ -2322,6 +2335,8 @@ private:
     bool m_pskReporterOn{false};
     class PskReporterUpload* m_psk{nullptr};
     QString m_digiCqParity{QStringLiteral("auto")};
+    QString m_digiCqTarget;
+    QStringList m_digiCqTargets;
     bool m_digiFromCq{false};  // the QSO under way answered our CQ
     bool m_digiDryRun{false};
     // The radio's speech processor, switched off for FT8 / FT4 transmit

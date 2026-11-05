@@ -126,7 +126,10 @@ ColumnLayout {
         spacing: 4
         AppButton {
             objectName: "digiCq"
-            text: Engine.txLocked ? qsTr("CQ · SB") : qsTr("CQ")
+            // The direction in the button itself: CQ DX (Kurt DL5EAG).
+            readonly property string cqText: Engine.digiCqDirectable && Engine.digiCqTarget.length > 0
+                                             ? qsTr("CQ %1").arg(Engine.digiCqTarget) : qsTr("CQ")
+            text: Engine.txLocked ? qsTr("%1 · SB").arg(cqText) : cqText
             checked: digi.qso.state === "cq"
             enabled: Engine.transmitAvailable
             Layout.fillWidth: true
@@ -231,6 +234,103 @@ ColumnLayout {
                 onClicked: Engine.digiCqParity = modelData.key
             }
         }
+    }
+    // CQ to (Kurt DL5EAG): All, or a direction from the user's own list
+    // (CQ DX, CQ NA, ...); + adds one, a press and hold removes one. FT8
+    // carries 1-4 letters or 3 digits, and only with a standard call.
+    Flow {
+        objectName: "digiCqTargetRow"
+        visible: digi.settingsShown
+        Layout.fillWidth: true
+        spacing: 4
+        Label {
+            text: qsTr("CQ to")
+            color: Theme.textDim
+            height: Theme.touchTarget
+            verticalAlignment: Text.AlignVCenter
+            rightPadding: 4
+        }
+        AppButton {
+            objectName: "digiCqTarget_all"
+            text: qsTr("All")
+            checked: Engine.digiCqTarget.length === 0
+            enabled: Engine.digiCqDirectable
+            width: Math.max(56, implicitWidth)
+            height: Theme.touchTarget
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.digiCqTarget = ""
+        }
+        Repeater {
+            model: Engine.digiCqTargets
+            delegate: AppButton {
+                required property string modelData
+                objectName: "digiCqTarget_" + modelData
+                text: modelData
+                checked: Engine.digiCqTarget === modelData
+                enabled: Engine.digiCqDirectable
+                Accessible.name: qsTr("CQ %1").arg(modelData)
+                Accessible.description: qsTr("Press and hold to remove it")
+                width: Math.max(56, implicitWidth)
+                height: Theme.touchTarget
+                focusPolicy: Qt.NoFocus
+                onClicked: Engine.digiCqTarget = modelData
+                onPressAndHold: Engine.removeDigiCqTarget(modelData)
+            }
+        }
+        AppButton {
+            objectName: "digiCqTargetAdd"
+            text: "+"
+            checked: cqTargetEntry.visible
+            enabled: Engine.digiCqDirectable
+            Accessible.name: qsTr("Add a CQ direction")
+            width: Theme.touchTarget
+            height: Theme.touchTarget
+            focusPolicy: Qt.NoFocus
+            onClicked: {
+                cqTargetEntry.visible = !cqTargetEntry.visible
+                cqTargetField.text = ""
+            }
+        }
+    }
+    RowLayout {
+        id: cqTargetEntry
+        visible: false
+        Layout.fillWidth: true
+        spacing: 4
+        TextField {
+            id: cqTargetField
+            objectName: "digiCqTargetField"
+            Layout.fillWidth: true
+            placeholderText: qsTr("e.g. SA, JA, POTA or 001")
+            maximumLength: 4
+            inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
+            Accessible.name: qsTr("CQ direction")
+            onAccepted: cqTargetSave.clicked()
+        }
+        AppButton {
+            id: cqTargetSave
+            objectName: "digiCqTargetSave"
+            text: qsTr("Add")
+            enabled: /^([A-Za-z]{1,4}|[0-9]{3})$/.test(cqTargetField.text.trim())
+            focusPolicy: Qt.NoFocus
+            onClicked: {
+                if (Engine.addDigiCqTarget(cqTargetField.text)) {
+                    cqTargetField.text = ""
+                    cqTargetEntry.visible = false
+                }
+            }
+        }
+    }
+    Label {
+        visible: digi.settingsShown && (cqTargetEntry.visible || !Engine.digiCqDirectable)
+        Layout.fillWidth: true
+        text: Engine.digiCqDirectable
+              ? qsTr("1 to 4 letters (a continent, a country, POTA) or 3 digits: what FT8 carries after CQ.")
+              : qsTr("%1 is not a standard callsign: FT8 sends its CQ without a direction (as WSJT-X does).")
+                .arg(digi.qso.myCall || qsTr("The radio's callsign"))
+        color: Theme.textDim
+        font.pixelSize: Theme.px(13)
+        wrapMode: Text.Wrap
     }
     // The presence limit: Answer CQ and Keep CQ start no new QSO after
     // this long without a touch on the app.
