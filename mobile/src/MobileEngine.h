@@ -677,7 +677,7 @@ public:
     void setModeFollowsBandPlan(bool on);
     // The mode the band plan gives a frequency ("CW", "LSB", "USB"), or empty
     // where it gives none (data, beacons, mixed segments, VHF and up).
-    QString bandPlanMode(double mhz, QString* segment = nullptr) const;
+    QString bandPlanMode(double mhz, QString* region = nullptr) const;
     QString audioCompression() const;
     void setAudioCompression(const QString& mode);
     QString audioCodingInUse() const { return m_audioCodingInUse; }
@@ -1800,13 +1800,16 @@ private:
     QThread* m_audioThread{nullptr};
     AudioEngine* m_audio{nullptr};
     BandPlanManager m_bandPlan;
-    // Mode from the band plan: the plan segment the active slice was in (only
-    // a move into another segment sets the mode), and when the mode last
-    // changed (a spot or memory that sets its own mode wins).
-    QString m_planSegmentAt;
+    // Mode from the band plan: the plan region the active slice was in and
+    // its mode (only a move into another region sets the mode), the modes
+    // chosen by hand in regions this session (region -> mode), and when the
+    // mode last changed (a spot or memory that sets its own mode wins).
+    QString m_planRegionAt;
+    QString m_planRegionMode;
+    QHash<QString, QString> m_planModeChoices;
     QElapsedTimer m_modeSetClock;
     void followBandPlanMode();
-    void planSegmentNow();
+    void planRegionNow();
     // Split: the listening and transmitting slices (-1: none); pending while
     // the TX slice is being created.
     // Traffic rate: bytes and time at the last networkDetails() call.

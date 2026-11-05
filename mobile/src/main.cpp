@@ -799,9 +799,21 @@ int main(int argc, char* argv[])
             {{}, 7.074, {}, -1, QStringLiteral("CW")},     // data: left alone
             {{}, 14.250, {}, -1, QStringLiteral("USB")},
             {{}, 14.150, QStringLiteral("CW"), -1, QStringLiteral("CW")},  // a mode set with the tune wins
-            {{}, 14.250, QStringLiteral("LSB"), -1, QStringLiteral("LSB")},
-            {{}, 14.260, {}, -1, QStringLiteral("LSB")},   // same segment: kept
-            {r1, 3.700, {}, -1, QStringLiteral("LSB")},
+            {{}, 14.300, {}, -1, QStringLiteral("CW")},    // another phone segment, same region: kept
+            {{}, 14.030, {}, -1, QStringLiteral("CW")},
+            {{}, 14.200, {}, -1, QStringLiteral("CW")},    // the phone region's own choice: CW
+            {{}, 14.200, QStringLiteral("USB"), -1, QStringLiteral("USB")},
+            {{}, 14.010, {}, -1, QStringLiteral("CW")},
+            {{}, 14.010, QStringLiteral("USB"), -1, QStringLiteral("USB")},
+            {{}, 14.040, {}, -1, QStringLiteral("USB")},   // CW DX -> CW, same region: kept
+            {{}, 14.250, {}, -1, QStringLiteral("USB")},   // choice dropped: the plan's USB
+            {{}, 14.030, {}, -1, QStringLiteral("USB")},   // the CW region's choice: USB
+            {{}, 14.030, QStringLiteral("CW"), -1, QStringLiteral("CW")},
+            {{}, 14.250, QStringLiteral("RTTY"), -1, QStringLiteral("RTTY")},
+            {{}, 14.030, {}, -1, QStringLiteral("RTTY")},  // RTTY: left alone
+            {{}, 14.030, QStringLiteral("CW"), -1, QStringLiteral("CW")},
+            {{}, 14.250, {}, -1, QStringLiteral("RTTY")},  // the phone region's choice: RTTY
+            {r1, 3.700, QStringLiteral("LSB"), -1, QStringLiteral("LSB")},
             {{}, 5.360, {}, -1, QStringLiteral("USB")},    // 60 m: USB
             {{}, 14.074, QStringLiteral("DIGU"), -1, QStringLiteral("DIGU")},
             {{}, 14.020, {}, -1, QStringLiteral("DIGU")},  // digital mode: left alone

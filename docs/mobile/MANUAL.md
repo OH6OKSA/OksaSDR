@@ -129,7 +129,8 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
    40 m and down, by custom. The yellow edges on the display show the
    passband, on the right side of the carrier for the mode. With
    **Mode from band plan** on (Controls → View) the app sets USB / LSB as
-   you tune into a phone segment, and CW in a CW segment.
+   you tune into a phone segment, and CW in a CW segment, as defaults: a
+   mode you choose there stays.
 2. Tune: tap a station on the display (snapped to the step), drag inside
    the passband, use the step buttons under the display, or type the
    frequency (tap the frequency).
@@ -1156,12 +1157,16 @@ seven.
 - **View** — **Band plan** (the strip at the foot of the spectrum: *Off*,
   *ARRL (US)*, *IARU Region 1 / 2 / 3*, *RAC (Canada)* or *SSA
   (Sweden)*), **Mode from band plan** (off by default: on, tuning into
-  another segment of the band plan below 30 MHz sets the mode, CW in a CW
-  segment, in a phone or all-mode segment LSB below 10 MHz and USB above
-  and on 60 m; e.g. 14.250 USB, then 7.210 LSB. It changes only between
-  CW, LSB and USB, and leaves data, beacon and mixed segments, the digital
-  modes, AM and FM alone; a mode you choose stays while you tune inside
-  the segment, and a spot, memory or band that sets its own mode wins.
+  another part of the band plan below 30 MHz sets the mode, CW in a CW
+  part, in a phone or all-mode part LSB below 10 MHz and USB above and
+  on 60 m; e.g. 14.250 USB, then 7.210 LSB. The plan's modes are only
+  defaults: a mode you choose in a part stays while you tune there, and
+  the part keeps it when you come back (CW, RTTY or DIGU in the phone
+  part in a contest), until you choose the plan's own mode there again,
+  change the plan or restart the app. Touching segments with the same
+  mode (CW DX and CW) are one part. It never changes away from a digital
+  mode (DIGU, DIGL, RTTY), AM or FM, and leaves data, beacon and mixed
+  segments alone; a spot, memory or band that sets its own mode wins.
   With the strip *Off* it uses the plan last chosen), **Text size** (*System* follows the system's text size —
   iOS Settings › Display & Brightness › Text Size, Android's font size —
   or a fixed *100 % / 115 % / 130 %*; the panels', dialogs' and setup
