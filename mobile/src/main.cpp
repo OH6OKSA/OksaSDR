@@ -6,6 +6,7 @@
 #include "LogBuffer.h"
 #include "MobileEngine.h"
 #include "Ft8Engine.h"
+#include "DeviceId.h"
 #include "TextScale.h"
 #include "TrackpadScrollPhases.h"
 #ifdef Q_OS_ANDROID
@@ -162,6 +163,10 @@ int main(int argc, char* argv[])
         qputenv("QT_SCALE_FACTOR", QByteArray::number(narrowScale, 'f', 4));
     }
     QGuiApplication app(argc, argv);
+    // Before the GUI client ID is first read: settings restored from another
+    // device's backup then get an ID of their own (two devices of one owner
+    // took each other's session on the radio).
+    AetherSDR::AppSettings::setDeviceBinding(AetherSDR::mobile::deviceId());
     AetherSDR::mobile::LogBuffer::install();
     if (narrowScale < 1.0) {
         qInfo() << "narrow screen: drawn at scale" << narrowScale;

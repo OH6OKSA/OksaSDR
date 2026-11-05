@@ -27,6 +27,10 @@ class SettingsDatabase;
 class AppSettings {
 public:
     static AppSettings& instance();
+    // A device identifier from the platform where Qt has no machine id
+    // (iOS: identifierForVendor), so settings restored onto another device
+    // rotate the GUI client ID there. Set before the ID is first read.
+    static void setDeviceBinding(const QString& id);
 
     // Load settings from disk. Called once at startup. Performs the one-time
     // XML -> SQLite import, integrity checks, and corruption recovery.

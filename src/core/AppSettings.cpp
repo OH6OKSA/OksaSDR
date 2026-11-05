@@ -50,9 +50,18 @@ QString validUuidOrEmpty(const QString& value)
     return uuid.isNull() ? QString() : uuid.toString(QUuid::WithoutBraces).toUpper();
 }
 
+QString& deviceBinding()
+{
+    static QString id;
+    return id;
+}
+
 QString machineBinding()
 {
     QByteArray unique = QSysInfo::machineUniqueId();
+    if (unique.isEmpty() && !deviceBinding().isEmpty()) {
+        unique = "device:" + deviceBinding().toUtf8();
+    }
 #ifdef Q_OS_ANDROID
     // Qt has no machine id on Android, and the fallback below
     // ("localhost|linux|arm64") is every phone's: a phone set up from
@@ -1342,6 +1351,11 @@ void AppSettings::setStationName(const QString& name)
     m_stationName = name;
     m_settings.insert("StationName", name);
     m_dirtyKeys.insert("StationName");
+}
+
+void AppSettings::setDeviceBinding(const QString& id)
+{
+    deviceBinding() = id.trimmed();
 }
 
 void AppSettings::initializeGuiClientIdentity()
