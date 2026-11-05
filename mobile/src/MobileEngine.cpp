@@ -40,9 +40,13 @@
 #include "core/DxSpot.h"
 #include "core/SpotModeResolver.h"
 #include "core/ClientComp.h"
+#include "core/ClientDeEss.h"
 #include "core/ClientEq.h"
 #include "core/ClientFinalLimiter.h"
 #include "core/ClientGate.h"
+#include "core/ClientPudu.h"
+#include "core/ClientReverb.h"
+#include "core/ClientTube.h"
 #include "core/RadioDiscovery.h"
 #include "core/backends/IRadioBackend.h"
 #include "core/backends/flex/PanadapterStream.h"
@@ -549,6 +553,10 @@ MobileEngine::MobileEngine(QObject* parent)
         m_audio->saveClientGateSettings();
         m_audio->saveClientCompSettings();
         m_audio->saveClientEqSettings();
+        m_audio->saveClientDeEssSettings();
+        m_audio->saveClientTubeSettings();
+        m_audio->saveClientPuduSettings();
+        m_audio->saveClientReverbSettings();
         AppSettings::instance().save();
     });
     // This device's microphone: the radio's MIC meter only sees its own
@@ -2439,6 +2447,37 @@ void ensureAppEqLayout(ClientEq& eq)
 }
 } // namespace
 
+namespace {
+// The TX chain's stages as eSSB names them (the order list in txChain).
+QString txStageKey(AudioEngine::TxChainStage stage)
+{
+    switch (stage) {
+    case AudioEngine::TxChainStage::Gate: return QStringLiteral("gate");
+    case AudioEngine::TxChainStage::Eq: return QStringLiteral("eq");
+    case AudioEngine::TxChainStage::DeEss: return QStringLiteral("deess");
+    case AudioEngine::TxChainStage::Comp: return QStringLiteral("comp");
+    case AudioEngine::TxChainStage::Tube: return QStringLiteral("tube");
+    case AudioEngine::TxChainStage::Enh: return QStringLiteral("exc");
+    case AudioEngine::TxChainStage::Reverb: return QStringLiteral("reverb");
+    case AudioEngine::TxChainStage::None: break;
+    }
+    return {};
+}
+
+AudioEngine::TxChainStage txStageFromKey(const QString& key)
+{
+    for (AudioEngine::TxChainStage stage :
+         {AudioEngine::TxChainStage::Gate, AudioEngine::TxChainStage::Eq, AudioEngine::TxChainStage::DeEss,
+          AudioEngine::TxChainStage::Comp, AudioEngine::TxChainStage::Tube, AudioEngine::TxChainStage::Enh,
+          AudioEngine::TxChainStage::Reverb}) {
+        if (txStageKey(stage) == key) {
+            return stage;
+        }
+    }
+    return AudioEngine::TxChainStage::None;
+}
+} // namespace
+
 QVariantMap MobileEngine::txChain() const
 {
     ClientGate* gate = m_audio->clientGateTx();
@@ -2448,7 +2487,7 @@ QVariantMap MobileEngine::txChain() const
         return {};
     }
     const bool ours = isAppEqLayout(*eq);
-    return {
+    QVariantMap map{
         {QStringLiteral("gateOn"), gate->isEnabled()},
         {QStringLiteral("gateThreshold"), gate->thresholdDb()},
         {QStringLiteral("eqOn"), eq->isEnabled()},
@@ -2460,6 +2499,36 @@ QVariantMap MobileEngine::txChain() const
         {QStringLiteral("compRatio"), comp->ratio()},
         {QStringLiteral("compMakeup"), comp->makeupDb()},
     };
+    // The desktop's other TX stages, and the chain's order.
+    if (ClientDeEss* deess = m_audio->clientDeEssTx()) {
+        map.insert(QStringLiteral("deessOn"), deess->isEnabled());
+        map.insert(QStringLiteral("deessThreshold"), deess->thresholdDb());
+        map.insert(QStringLiteral("deessFreq"), qRound(deess->frequencyHz()));
+    }
+    if (ClientTube* tube = m_audio->clientTubeTx()) {
+        map.insert(QStringLiteral("tubeOn"), tube->isEnabled());
+        map.insert(QStringLiteral("tubeModel"), static_cast<int>(tube->model()));
+        map.insert(QStringLiteral("tubeDrive"), tube->driveDb());
+        map.insert(QStringLiteral("tubeMix"), qRound(tube->dryWet() * 100.0f));
+    }
+    if (ClientPudu* exc = m_audio->clientPuduTx()) {
+        map.insert(QStringLiteral("excOn"), exc->isEnabled());
+        map.insert(QStringLiteral("excMode"), static_cast<int>(exc->mode()));
+        map.insert(QStringLiteral("excAir"), exc->dooHarmonicsDb());
+        map.insert(QStringLiteral("excBass"), exc->pooDriveDb());
+    }
+    if (ClientReverb* reverb = m_audio->clientReverbTx()) {
+        map.insert(QStringLiteral("reverbOn"), reverb->isEnabled());
+        map.insert(QStringLiteral("reverbMix"), qRound(reverb->mix() * 100.0f));
+        map.insert(QStringLiteral("reverbDecay"), reverb->decayS());
+    }
+    QStringList order;
+    for (AudioEngine::TxChainStage stage : m_audio->txChainStages()) {
+        order << txStageKey(stage);
+    }
+    order.removeAll(QString());
+    map.insert(QStringLiteral("order"), order);
+    return map;
 }
 
 void MobileEngine::setTxChain(const QString& key, const QVariant& value)
@@ -2486,6 +2555,49 @@ void MobileEngine::setTxChain(const QString& key, const QVariant& value)
     } else if (key == QLatin1String("eqOn")) {
         ensureAppEqLayout(*eq);
         eq->setEnabled(value.toBool());
+    } else if (key.startsWith(QLatin1String("deess")) && m_audio->clientDeEssTx()) {
+        ClientDeEss* deess = m_audio->clientDeEssTx();
+        if (key == QLatin1String("deessOn")) deess->setEnabled(value.toBool());
+        else if (key == QLatin1String("deessThreshold")) deess->setThresholdDb(std::clamp(v, -60.0f, 0.0f));
+        else if (key == QLatin1String("deessFreq")) deess->setFrequencyHz(std::clamp(v, 1000.0f, 12000.0f));
+        else return;
+    } else if (key.startsWith(QLatin1String("tube")) && m_audio->clientTubeTx()) {
+        ClientTube* tube = m_audio->clientTubeTx();
+        if (key == QLatin1String("tubeOn")) tube->setEnabled(value.toBool());
+        else if (key == QLatin1String("tubeModel")) tube->setModel(static_cast<ClientTube::Model>(std::clamp(value.toInt(), 0, 2)));
+        else if (key == QLatin1String("tubeDrive")) tube->setDriveDb(std::clamp(v, 0.0f, 24.0f));
+        else if (key == QLatin1String("tubeMix")) tube->setDryWet(std::clamp(v, 0.0f, 100.0f) / 100.0f);
+        else return;
+    } else if (key.startsWith(QLatin1String("exc")) && m_audio->clientPuduTx()) {
+        ClientPudu* exc = m_audio->clientPuduTx();
+        if (key == QLatin1String("excOn")) exc->setEnabled(value.toBool());
+        else if (key == QLatin1String("excMode")) exc->setMode(static_cast<ClientPudu::Mode>(std::clamp(value.toInt(), 0, 1)));
+        else if (key == QLatin1String("excAir")) exc->setDooHarmonicsDb(std::clamp(v, 0.0f, 24.0f));
+        else if (key == QLatin1String("excBass")) exc->setPooDriveDb(std::clamp(v, 0.0f, 24.0f));
+        else return;
+    } else if (key.startsWith(QLatin1String("reverb")) && m_audio->clientReverbTx()) {
+        ClientReverb* reverb = m_audio->clientReverbTx();
+        if (key == QLatin1String("reverbOn")) reverb->setEnabled(value.toBool());
+        else if (key == QLatin1String("reverbMix")) reverb->setMix(std::clamp(v, 0.0f, 100.0f) / 100.0f);
+        else if (key == QLatin1String("reverbDecay")) reverb->setDecayS(std::clamp(v, 0.3f, 5.0f));
+        else return;
+    } else if (key == QLatin1String("order")) {
+        // The stages in the order given; any left out keep their place at
+        // the end, so a stage is never dropped from the chain.
+        QVector<AudioEngine::TxChainStage> stages;
+        for (const QString& name : value.toStringList()) {
+            const AudioEngine::TxChainStage stage = txStageFromKey(name);
+            if (stage != AudioEngine::TxChainStage::None && !stages.contains(stage)) {
+                stages << stage;
+            }
+        }
+        for (AudioEngine::TxChainStage stage : m_audio->txChainStages()) {
+            if (!stages.contains(stage)) {
+                stages << stage;
+            }
+        }
+        m_audio->setTxChainStages(stages);
+        qCInfo(lcMobile) << "eSSB: chain order" << value.toStringList();
     } else if (key == QLatin1String("lowCut") || key == QLatin1String("bass") || key == QLatin1String("presence")) {
         ensureAppEqLayout(*eq);
         const int index = key == QLatin1String("lowCut") ? 0 : key == QLatin1String("bass") ? 1 : 2;

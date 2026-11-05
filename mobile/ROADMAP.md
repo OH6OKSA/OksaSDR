@@ -65,7 +65,7 @@ build. The sections below hold the details.
 17. **Radio:** Named app setups exported and imported, Larry W9FLA (Later)
 18. **Radio:** QSO recording (Later)
 19. **Radio:** Optional VOX mode, the microphone always open (Later)
-20. **Radio:** More of the desktop's TX chain (de-esser, tube, exciter, reverb) and a chain order (Later)
+20. ~~**Radio:** More of the desktop's TX chain (de-esser, tube, exciter, reverb) and a chain order~~ *in build 157*: eSSB tab: De-ess, Tube, EVO, Reverb and Order › Change
 21. **Radio:** CW profiles, new in SmartSDR 4.3 (Later)
 22. **Display:** Upstream FFT Smooth and De-comb (Later)
 23. **Display:** 3D with 768 columns (Later)

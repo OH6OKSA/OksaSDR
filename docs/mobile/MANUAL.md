@@ -147,7 +147,8 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
    the air; it comes back when you let go.
 3. Optional: **PROC** (NOR / DX / DX+) for punch, **MON** to hear yourself,
    the **TX filter** (100-3100 Hz), the radio's TX equalizer (Audio) and
-   this device's own processing on the **eSSB** tab (gate, EQ, compressor).
+   this device's own processing on the **eSSB** tab (gate, EQ, compressor,
+   de-esser, tube, exciter, reverb, in an order of your own).
 4. **Voice keyer**: F1-F12 on the TX tab record and send voice macros
    (*Listen* plays one without transmitting). The **Macros** button by
    PTT opens them over the display, without scrolling the TX tab.
@@ -1142,7 +1143,14 @@ seven.
   microphone: **Gate** (mutes the background between words below the
   threshold), **EQ** (low cut 100–300 Hz, bass and presence ±12 dB) and
   **Comp** (threshold, ratio 2:1–8:1 and makeup; while you transmit, how
-  much it is taking off shows beside the ratio). The radio's own audio
+  much it is taking off shows beside the ratio), and the desktop's other
+  stages, each off until turned on: **De-ess** (tames the S sounds:
+  threshold and the band, 4–7 kHz), **Tube** (warm saturation: drive,
+  model A / B / C and the mix), **EVO** (the exciter: *Air* adds high
+  harmonics, *Bass* the low end; *Even* / *Odd* harmonics) and **Reverb**
+  (mix and decay). **Order** shows the order the microphone goes through
+  them; **Change** moves each stage up or down (a stage that is off is
+  passed by). The radio's own audio
   settings stay where they are: its 8-band transmit EQ in Audio, PROC and
   the TX filter in TX. While the tab is open the microphone is open, so the
   Mic meter moves as you set the gate and compressor (nothing is sent
