@@ -162,6 +162,18 @@ ColumnLayout {
             onClicked: Engine.hapticsOn = !Engine.hapticsOn
         }
     }
+    // The first-run hints again (the gestures nothing on screen shows).
+    RowLayout {
+        Layout.fillWidth: true
+        Label { text: qsTr("Hints"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+        AppButton {
+            objectName: "showHints"
+            text: qsTr("Show again")
+            Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.showHints()
+        }
+    }
     // Spots on the display (the radio's, from every client) and this app's
     // DX cluster connection, whose spots go to the radio.
     RowLayout {

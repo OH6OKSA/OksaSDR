@@ -572,6 +572,7 @@ Page {
     NetworkDialog { id: networkDialog }
     RadioSetupPage { id: radioSetup }
     SetupSuggestion { onSetupRequested: radioSetup.open() }
+    HintsDialog { onClosed: page.forceActiveFocus() }
 
     FrequencyDialog {
         id: freqDialog

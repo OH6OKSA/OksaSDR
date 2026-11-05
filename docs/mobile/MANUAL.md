@@ -554,6 +554,13 @@ the right shows there is more; the title and Close stay in place. The
 controls tabs, Radio Setup, the connect page and the log show the same bar
 whenever they scroll.
 
+**Hints.** A few seconds after the first connect (after the setup offer,
+if that shows), four short cards show the gestures nothing on screen
+shows: the hold for a notch, the dBm scale and divider drags, the slice
+and SPLIT holds, the frequency tap and the memory holds. **Next** steps
+through them, **Skip** closes them; they show once. **Controls → View →
+Hints → Show again** brings them back.
+
 **Felt taps.** On an iPhone or an Android phone, PTT's press and release,
 the step buttons and − / + are felt as a light tap, as the phone's own
 controls give, and a slider's drag as ticks (each step on a short scale,
@@ -1184,7 +1191,7 @@ seven.
   *ARRL (US)*, *IARU Region 1 / 2 / 3*, *RAC (Canada)* or *SSA
   (Sweden)*), **Band plan lock (mode)** (see
   [Band plan lock](#band-plan-lock)), **Felt taps (phones)** (on / off, see
-  *Felt taps* above), **Text size** (*System* follows the system's text size —
+  *Felt taps* above), **Hints** (*Show again*, see *Hints* above), **Text size** (*System* follows the system's text size —
   iOS Settings › Display & Brightness › Text Size, Android's font size —
   or a fixed *100 % / 115 % / 130 %*; the panels', dialogs' and setup
   pages' text grows, the operating screen's dense controls and the

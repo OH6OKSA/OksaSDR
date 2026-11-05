@@ -8924,6 +8924,28 @@ void MobileEngine::removeUsbCable(const QString& sn)
     });
 }
 
+const QString kHintsShownKey = QStringLiteral("MobileHintsShown");
+
+bool MobileEngine::hintsShown() const
+{
+    return AppSettings::instance().value(kHintsShownKey, QStringLiteral("False")).toString() == QLatin1String("True");
+}
+
+void MobileEngine::setHintsShown(bool shown)
+{
+    if (shown == hintsShown()) {
+        return;
+    }
+    AppSettings::instance().setValue(kHintsShownKey, shown ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    emit hintsChanged();
+}
+
+void MobileEngine::showHints()
+{
+    emit hintsRequested();
+}
+
 bool MobileEngine::setupSuggested() const
 {
     const RadioModel& rm = m_session.radioModel();

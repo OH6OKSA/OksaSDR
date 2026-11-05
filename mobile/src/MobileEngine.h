@@ -787,6 +787,12 @@ public:
     Q_INVOKABLE void removeTransverter(int index);
     // A radio with no callsign looks new: offer setup once per radio.
     Q_INVOKABLE bool setupSuggested() const;
+    // First-run hints (HintsDialog): shown once; View › Hints shows them
+    // again (hintsRequested).
+    Q_PROPERTY(bool hintsShown READ hintsShown WRITE setHintsShown NOTIFY hintsChanged)
+    bool hintsShown() const;
+    void setHintsShown(bool shown);
+    Q_INVOKABLE void showHints();
     Q_INVOKABLE void dismissSetupSuggestion();
     QString appVersion() const;
     QString manualUrl() const;
@@ -1650,6 +1656,8 @@ signals:
     void callsignChanged();
     void bandPlanChanged();
     void hapticsChanged();
+    void hintsChanged();
+    void hintsRequested();
     void bandPlanRegionChanged();
     void buttonStyleChanged();
     void textScaleChanged();

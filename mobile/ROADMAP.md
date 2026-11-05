@@ -47,7 +47,7 @@ takes the next free number; a done item is struck through here with its
 build. The sections below hold the details.
 
 1. ~~**Usability:** Haptics: a light tap on PTT, the step buttons and slider steps, with a setting to turn it off~~ *in build 157*: PTT, the step buttons and − / + had them since build 137; now a slider's drag ticks too, and View › Felt taps turns them off
-2. **Usability:** First-run hints: three or four hints for the hidden gestures (Planned: usability)
+2. ~~**Usability:** First-run hints: three or four hints for the hidden gestures~~ *in build 157*: four cards once after the first connect (the notch hold, the dBm scale and divider, the slice and SPLIT holds, the frequency tap and memory holds), View › Hints › Show again
 3. **Usability:** Views side by side on a tablet / Mac: FTx and the log, two panadapters (Planned: usability)
 4. **Logging:** Wavelog, QRZ.com Logbook and the shared ADIF file tested on devices (a real QRZ key; iCloud Drive, Google Drive, OneDrive) (Planned: two-way sync)
 5. **Logging:** LoTW confirmations (Planned: two-way sync)
@@ -263,8 +263,8 @@ Finding things:
   The hidden gestures (the hold for a notch, the dBm scale drag, the
   divider's double tap, the SPLIT and memory holds, a tap that resets a
   value) go into the first-run hints.
-- **First-run hints:** three or four short hints on the first start.
-  *To discuss:* whether to have them, and which.
+- **First-run hints:** four short cards after the first connect *in
+  build 157* (View › Hints shows them again).
 
 Screen reader:
 - **VoiceOver and TalkBack:** names for every control *in build 139*

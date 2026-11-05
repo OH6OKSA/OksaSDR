@@ -119,6 +119,7 @@ qt_add_qml_module(aether-mobile
         qml/AgcChooser.qml
         qml/RepeatButton.qml
         qml/FineSlider.qml
+        qml/HintsDialog.qml
         qml/PopupScroll.qml
         qml/PanelHeader.qml
         qml/PanelContent.qml
