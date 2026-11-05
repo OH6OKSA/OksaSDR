@@ -90,24 +90,34 @@ static QList<QObject*> findNamedObjects(QObject* root, const QString& name)
     return found;
 }
 
-#ifdef Q_OS_ANDROID
+#if !defined(Q_OS_IOS) && !defined(Q_OS_MACOS)
 Q_LOGGING_CATEGORY(lcFonts, "aether.mobile.android")
 // Qt falls back from Roboto only to a few Android fonts, so symbols the UI
-// uses (☰ ⋯ ▾ ⌫ ● ✓) drew as boxes. The system's Noto symbol fonts carry
-// them: register those files as fallbacks for common-script text.
+// uses drew as boxes (☰ ▾ ⌫ before, then ✎ on the saved radios: Android's
+// own Noto Sans Symbols is a subset). The app's own symbol fonts (subsets
+// of Noto Sans Symbols 2 and Noto Sans Math, mobile/fonts) and the
+// system's Noto symbol fonts are registered as fallbacks for common-script
+// text. The desktop build does it with AETHER_SYMBOL_FONTS=1, for testing.
 static void addAndroidSymbolFallbacks()
 {
-    const QString symbols = QStringLiteral("\u2630\u22EF\u25BE\u232B\u25CF\u2713");
+    // Every symbol the UI draws as text.
+    const QString symbols = QStringLiteral("\u2630\u22EF\u25BE\u232B\u25CF\u2713\u2715\u270E\u2325\u21C4"
+                                           "\u2192\u25B2\u25A0\u2022");
     QStringList families;
-    const QDir dir(QStringLiteral("/system/fonts"));
-    for (const QString& file : dir.entryList({QStringLiteral("*Symbols*.ttf"), QStringLiteral("*Symbols*.otf")})) {
-        const int id = QFontDatabase::addApplicationFont(dir.filePath(file));
+    auto add = [&families](const QString& path) {
+        const int id = QFontDatabase::addApplicationFont(path);
         for (const QString& family : QFontDatabase::applicationFontFamilies(id)) {
             if (!families.contains(family)) {
                 families << family;
                 QFontDatabase::addApplicationFallbackFontFamily(QChar::Script_Common, family);
             }
         }
+    };
+    add(QStringLiteral(":/fonts/NotoSansSymbols2-Subset.ttf"));
+    add(QStringLiteral(":/fonts/NotoSansMath-Subset.ttf"));
+    const QDir dir(QStringLiteral("/system/fonts"));
+    for (const QString& file : dir.entryList({QStringLiteral("*Symbols*.ttf"), QStringLiteral("*Symbols*.otf")})) {
+        add(dir.filePath(file));
     }
     // Checked as the text is laid out, with every fallback the system
     // gives: a symbol is missing only when no font draws it (the registered
@@ -174,6 +184,10 @@ int main(int argc, char* argv[])
 #ifdef Q_OS_ANDROID
     addAndroidSymbolFallbacks();
     AetherSDR::mobile::androidStartup();
+#elif !defined(Q_OS_IOS) && !defined(Q_OS_MACOS)
+    if (qEnvironmentVariableIsSet("AETHER_SYMBOL_FONTS")) {
+        addAndroidSymbolFallbacks();
+    }
 #endif
     // Before any audio device opens: play-and-record session (iOS).
     AetherSDR::mobile::configureAudioSession();

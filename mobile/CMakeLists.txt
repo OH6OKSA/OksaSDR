@@ -205,6 +205,21 @@ qt_add_resources(aether-mobile "spectrum3d_shaders"
         shaders/dss_mesh.frag.qsb
 )
 
+# Symbol fonts for Android, whose own Noto Sans Symbols is a subset without
+# ✎ ✕ ⌥ ⇄ and others (they drew as boxes): subsets of Noto Sans Symbols 2
+# (Miscellaneous Technical, Geometric Shapes, Miscellaneous Symbols,
+# Dingbats, Symbols and Arrows) and Noto Sans Math (Arrows, Mathematical
+# Operators), SIL OFL 1.1 (fonts/OFL.txt). Also in the desktop build, for
+# testing with AETHER_SYMBOL_FONTS=1.
+if(NOT IOS AND NOT APPLE)
+    qt_add_resources(aether-mobile "symbol_fonts"
+        PREFIX "/"
+        FILES
+            fonts/NotoSansSymbols2-Subset.ttf
+            fonts/NotoSansMath-Subset.ttf
+    )
+endif()
+
 if(MSVC)
     target_compile_options(aether-mobile PRIVATE /W3 /Zc:__cplusplus /permissive- /utf-8)
 else()

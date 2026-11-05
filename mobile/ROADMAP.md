@@ -71,7 +71,7 @@ build. The sections below hold the details.
 23. **Display:** 3D with 768 columns (Later)
 24. **Radio:** PTT latency measured over SmartLink and VPN, key to RF (Later)
 25. **Engine:** Upstream 26.10.3's engine fixes that fit: #6526 (TUNE restores only the outputs it inhibited), #6493 (interlock source lists such as MIC,VOX), #6498 (NRS level 0-50 on 4.3.16+, with the mobile DSP slider taking its maximum from the engine), and DFM added to the modes without squelch. Reviewed 2026-11-05 against our branch: none applies cleanly (RadioModel / SliceModel conflicts), each to be ported by hand and checked on the radio at low power. #6464 (display Auto squelch per slice) left out: desktop display only, it changes SliceModel under the mobile squelch (Later: ideas)
-26. **Fixes:** Symbols missing on Android: the edit pencil and others (Later)
+26. ~~**Fixes:** Symbols missing on Android: the edit pencil and others~~ *in build 157*: subsets of Noto Sans Symbols 2 and Noto Sans Math bundled and registered as fallbacks on Android
 27. **Fixes:** Screen readers done properly: dialogs that keep the reader inside, named icon buttons, the spectrum not tuned by a double tap (Later)
 28. **Fixes:** The Connect page freeze on the OnePlus outer screen (seen once, not reproduced)
 29. **Verify:** LAN discovery on Android at the radio's own network (Waiting)
