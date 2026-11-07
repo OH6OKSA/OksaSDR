@@ -2389,7 +2389,7 @@ RadioModel::RadioModel(QObject* parent)
 
     // Tune PA inhibit: restore TX outputs when tune completes
     connect(&m_transmitModel, &TransmitModel::tuneChanged, this, [this](bool tuning) {
-        if (!tuning && m_tuneInhibitActive && m_tuneInhibitBandId >= 0)
+        if (!tuning)
             restoreTuneInhibit();
     });
 
@@ -7856,59 +7856,84 @@ void RadioModel::applyTuneInhibit()
         if (sl->isTxSlice()) { txFreq = sl->frequency(); break; }
     }
     int bandId = bandIdForFrequency(txFreq);
+    // A start while a cycle still holds outputs (a refused TUNE whose end
+    // never came, ATU after TUNE): on another band give the old ones back
+    // first; on the same band keep what is held and send its disables again,
+    // since the radio now shows those outputs off and a fresh capture would
+    // miss them. The inhibit must never be skipped.
+    QStringList held;
+    if (m_tuneInhibitActive) {
+        if (bandId != m_tuneInhibitBandId) {
+            restoreTuneInhibit();
+        } else {
+            held = m_tuneInhibitFields;
+        }
+    }
     if (bandId < 0) return;
     auto it = m_txBandSettings.find(bandId);
     if (it == m_txBandSettings.end()) return;
 
-    QStringList inhibited;
-    if (s.value("TuneInhibitAccTx", "False").toString() == "True" && it->accTx) {
-        sendCmd(QString("interlock bandset %1 acc_tx_enabled=0").arg(bandId));
-        inhibited << "ACC TX";
+    struct Output { const char* preference; const char* field; bool enabled; };
+    const Output outputs[] = {
+        {"TuneInhibitAccTx", "acc_tx_enabled", it->accTx},
+        {"TuneInhibitTx1", "tx1_enabled", it->tx1},
+        {"TuneInhibitTx2", "tx2_enabled", it->tx2},
+        {"TuneInhibitTx3", "tx3_enabled", it->tx3},
+    };
+    QStringList inhibited = held;
+    for (const Output& o : outputs) {
+        // Only an output that is on now is turned off, and only that one is
+        // remembered for the restore.
+        const QString field = QLatin1String(o.field);
+        if (o.enabled && !inhibited.contains(field)
+            && s.value(QLatin1String(o.preference), "False").toString() == QLatin1String("True")) {
+            inhibited << field;
+        }
     }
-    if (s.value("TuneInhibitTx1", "False").toString() == "True" && it->tx1) {
-        sendCmd(QString("interlock bandset %1 tx1_enabled=0").arg(bandId));
-        inhibited << "TX1";
+    if (inhibited.isEmpty()) {
+        return;
     }
-    if (s.value("TuneInhibitTx2", "False").toString() == "True" && it->tx2) {
-        sendCmd(QString("interlock bandset %1 tx2_enabled=0").arg(bandId));
-        inhibited << "TX2";
+    m_tuneInhibitBandId = bandId;
+    m_tuneInhibitActive = true;
+    m_tuneInhibitFields = inhibited;
+    for (const QString& field : inhibited) {
+        sendCmd(QStringLiteral("interlock bandset %1 %2=0").arg(bandId).arg(field));
     }
-    if (s.value("TuneInhibitTx3", "False").toString() == "True" && it->tx3) {
-        sendCmd(QString("interlock bandset %1 tx3_enabled=0").arg(bandId));
-        inhibited << "TX3";
-    }
-    if (!inhibited.isEmpty()) {
-        m_tuneInhibitBandId = bandId;
-        m_tuneInhibitActive = true;
-        qDebug() << "Tune PA inhibit: disabled" << inhibited.join(", ")
-                 << "on band" << bandId << "before tune";
-    }
+    qDebug() << "Tune PA inhibit: disabled" << inhibited.join(", ")
+             << "on band" << bandId << "before tune";
 }
 
 void RadioModel::restoreTuneInhibit()
 {
-    auto& s = AppSettings::instance();
-    int id = m_tuneInhibitBandId;
-    QStringList restored;
-    if (s.value("TuneInhibitAccTx", "False").toString() == "True") {
-        sendCmd(QString("interlock bandset %1 acc_tx_enabled=1").arg(id));
-        restored << "ACC TX";
+    if (!m_tuneInhibitActive || m_tuneInhibitBandId < 0) {
+        return;
     }
-    if (s.value("TuneInhibitTx1", "False").toString() == "True") {
-        sendCmd(QString("interlock bandset %1 tx1_enabled=1").arg(id));
-        restored << "TX1";
-    }
-    if (s.value("TuneInhibitTx2", "False").toString() == "True") {
-        sendCmd(QString("interlock bandset %1 tx2_enabled=1").arg(id));
-        restored << "TX2";
-    }
-    if (s.value("TuneInhibitTx3", "False").toString() == "True") {
-        sendCmd(QString("interlock bandset %1 tx3_enabled=1").arg(id));
-        restored << "TX3";
-    }
-    qDebug() << "Tune PA inhibit: restored" << restored.join(", ") << "on band" << id;
+    const int id = m_tuneInhibitBandId;
+    const QStringList fields = m_tuneInhibitFields;
     m_tuneInhibitActive = false;
     m_tuneInhibitBandId = -1;
+    m_tuneInhibitFields.clear();
+    for (const QString& field : fields) {
+        sendCmd(QStringLiteral("interlock bandset %1 %2=1").arg(id).arg(field));
+    }
+    qDebug() << "Tune PA inhibit: restored" << fields.join(", ") << "on band" << id;
+}
+
+void RadioModel::relinquishTuneInhibit(const QString& command)
+{
+    if (!m_tuneInhibitActive) {
+        return;
+    }
+    const QStringList words = command.simplified().split(QLatin1Char(' '));
+    bool ok = false;
+    if (words.size() < 4 || words[0] != QLatin1String("interlock")
+        || words[1] != QLatin1String("bandset")
+        || words[2].toInt(&ok) != m_tuneInhibitBandId || !ok) {
+        return;
+    }
+    for (qsizetype i = 3; i < words.size(); ++i) {
+        m_tuneInhibitFields.removeAll(words[i].section(QLatin1Char('='), 0, 0));
+    }
 }
 
 void RadioModel::onDisconnected()
@@ -7948,8 +7973,7 @@ void RadioModel::onDisconnected()
     m_sleepInhibitor.release();
 
     // Safety: restore TX outputs if we were inhibiting during tune
-    if (m_tuneInhibitActive && m_tuneInhibitBandId >= 0)
-        restoreTuneInhibit();
+    restoreTuneInhibit();
 
     m_txRequested = false;
     m_cwKeyActive = false;
@@ -9422,6 +9446,7 @@ bool RadioModel::sendCommand(const QString& cmd)
     }
     qCDebug(lcProtocol) << "RadioModel::sendCommand:" << cmd
              << "connected:" << isConnected() << "wan:" << (m_wanConn != nullptr);
+    relinquishTuneInhibit(cmd);
     // sendCmd() reports a drop as sequence 0, before any wire write: the
     // profile-load hold backstop returns 0 directly, and a disconnected WAN
     // session returns 0 from WanConnection::sendCommand(). Both live seq
@@ -9434,6 +9459,7 @@ bool RadioModel::sendCmdPublic(const QString& cmd, ResponseCallback cb)
     if (rejectsForeignPanWrite(*this, cmd)) {
         return false;
     }
+    relinquishTuneInhibit(cmd);
     return sendCmd(cmd, std::move(cb)) != 0;
 }
 
@@ -11562,6 +11588,10 @@ void RadioModel::onStatusReceived(const QString& object,
             if (kvs.contains("tx1_enabled"))     b.tx1      = kvs["tx1_enabled"] == "1";
             if (kvs.contains("tx2_enabled"))     b.tx2      = kvs["tx2_enabled"] == "1";
             if (kvs.contains("tx3_enabled"))     b.tx3      = kvs["tx3_enabled"] == "1";
+            if (kvs.contains("tune_tx_suppress")) {
+                b.tuneTxSuppress = kvs["tune_tx_suppress"] == "1";
+                b.haveTuneTxSuppress = true;
+            }
         }
         return;
     }

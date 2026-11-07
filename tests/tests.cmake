@@ -9620,3 +9620,9 @@ if(HAVE_PIPEWIRE)
     target_link_libraries(pipewire_rx_bridge_test PRIVATE aethercore Qt6::Core)
     add_test(NAME pipewire_rx_bridge_test COMMAND pipewire_rx_bridge_test)
 endif()
+
+# TUNE's PA inhibit restores only the outputs TUNE turned off (upstream #6525).
+add_executable(tune_inhibit_restore_test tests/tune_inhibit_restore_test.cpp)
+target_include_directories(tune_inhibit_restore_test PRIVATE src tests)
+target_link_libraries(tune_inhibit_restore_test PRIVATE aethercore Qt6::Core)
+add_test(NAME tune_inhibit_restore_test COMMAND tune_inhibit_restore_test)

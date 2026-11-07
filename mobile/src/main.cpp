@@ -327,6 +327,16 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: key TUNE (the radio's tune power) 10 s after start for <ms>, then unkey. "
                        "Transmits: only with the operator's consent."), QStringLiteral("ms"));
     parser.addOption(tuneTestOption);
+    const QCommandLineOption tuneInhibitTestOption(QStringLiteral("tune-inhibit-test"),
+        QStringLiteral("Development: with every Inhibit during TUNE output on, key TUNE at 5 W on 14.250 MHz for "
+                       "<ms> and log the 20 m band's outputs before, during and after (they must come back as "
+                       "they were); frequency, tune power and the inhibit settings restored. Transmits: only "
+                       "with the operator's consent."), QStringLiteral("ms"));
+    parser.addOption(tuneInhibitTestOption);
+    const QCommandLineOption audioRouteTestOption(QStringLiteral("audio-route-test"),
+        QStringLiteral("Development, receive only: Sound from The radio 10 s after start, back to This device "
+                       "8 s later, logging the remote audio stream and the mic input at each step."));
+    parser.addOption(audioRouteTestOption);
     const QCommandLineOption txChainOption(QStringLiteral("tx-chain"),
         QStringLiteral("Development: set this device's TX processing, e.g. compOn=1,compThreshold=-30 "
                        "(remembered)."), QStringLiteral("settings"));
@@ -984,6 +994,122 @@ int main(int argc, char* argv[])
                 }
                 qInfo() << "tune-test: TUNE off";
             });
+        });
+    }
+    if (parser.isSet(audioRouteTestOption)) {
+        const auto state = [&engine](const char* step) {
+            qInfo().noquote() << "audio-route-test:" << step << "| audio on radio" << engine.audioOnRadio()
+                              << "| mic is this device's" << engine.transmitAvailable()
+                              << "| the radio's mic choosable" << engine.canUseRadioMicrophone()
+                              << "| reason" << engine.transmitUnavailableReason();
+        };
+        QTimer::singleShot(10000, &app, [&engine, state] {
+            state("before");
+            engine.setAudioOnRadio(true);
+        });
+        QTimer::singleShot(14000, &app, [state] { state("on the radio"); });
+        QTimer::singleShot(18000, &app, [&engine] { engine.setAudioOnRadio(false); });
+        QTimer::singleShot(22000, &app, [&app, state] {
+            state("back");
+            QCoreApplication::quit();
+        });
+    }
+    if (parser.isSet(tuneInhibitTestOption)) {
+        const int ms = std::clamp(parser.value(tuneInhibitTestOption).toInt(), 500, 3000);
+        struct Saved { double mhz{0}; int tunePower{0}; QVariantMap prefs; QVariantMap before; bool keyed{false}; int txSlice{-1}; };
+        auto saved = std::make_shared<Saved>();
+        static const QStringList kPrefs{QStringLiteral("TuneInhibitTx1"), QStringLiteral("TuneInhibitTx2"),
+                                        QStringLiteral("TuneInhibitTx3"), QStringLiteral("TuneInhibitAccTx")};
+        const auto band20 = [&engine]() {
+            for (const QVariant& v : engine.radioSetup().value(QStringLiteral("txBands")).toList()) {
+                const QVariantMap b = v.toMap();
+                if (b.value(QStringLiteral("name")).toString() == QLatin1String("20")) {
+                    return b;
+                }
+            }
+            return QVariantMap{};
+        };
+        const auto outputs = [](const QVariantMap& b) {
+            return QStringLiteral("TX1=%1 TX2=%2 TX3=%3 ACC=%4 tune_tx_suppress=%5")
+                .arg(b.value(QStringLiteral("tx1")).toBool()).arg(b.value(QStringLiteral("tx2")).toBool())
+                .arg(b.value(QStringLiteral("tx3")).toBool()).arg(b.value(QStringLiteral("accTx")).toBool())
+                .arg(b.value(QStringLiteral("tuneSuppressKnown")).toBool()
+                         ? QString::number(b.value(QStringLiteral("tuneSuppress")).toBool()) : QStringLiteral("not reported"));
+        };
+        QTimer::singleShot(8000, &app, [&engine, saved, band20, outputs] {
+            const QVariantMap setup = engine.radioSetup();
+            saved->mhz = engine.frequencyMhz();
+            saved->tunePower = engine.tunePower();
+            for (const QString& k : kPrefs) {
+                saved->prefs.insert(k, setup.value(k));
+            }
+            saved->before = band20();
+            qInfo().noquote() << "tune-inhibit-test: 20 m before:" << outputs(saved->before)
+                              << "| tune power" << saved->tunePower << "| frequency" << saved->mhz;
+            // TX to this app's active slice only when the TX slice is one of
+            // this app's own (never taken from another station); put back after.
+            for (const QVariant& v : engine.slices()) {
+                if (v.toMap().value(QStringLiteral("tx")).toBool()) {
+                    saved->txSlice = v.toMap().value(QStringLiteral("id")).toInt();
+                }
+            }
+            if (saved->txSlice >= 0 && saved->txSlice != engine.activeSliceId()) {
+                qInfo() << "tune-inhibit-test: TX slice" << saved->txSlice << "-> active" << engine.activeSliceId();
+                engine.makeTxSlice(engine.activeSliceId());
+            }
+        });
+        // After the TX slice change has settled (its status would undo these).
+        QTimer::singleShot(10000, &app, [&engine] {
+            engine.setFrequencyMhz(14.250);
+            engine.setTunePower(5);
+            for (const QString& k : kPrefs) {
+                engine.setRadioSetup(k, true);
+            }
+        });
+        QTimer::singleShot(12500, &app, [&engine, saved, ms, band20, outputs] {
+            bool ownTx = false;
+            for (const QVariant& v : engine.slices()) {
+                const QVariantMap m = v.toMap();
+                if (m.value(QStringLiteral("id")).toInt() == engine.activeSliceId()) {
+                    ownTx = m.value(QStringLiteral("tx")).toBool();
+                }
+            }
+            if (!ownTx || std::abs(engine.frequencyMhz() - 14.250) > 0.0005 || engine.tunePower() > 5
+                || saved->before.isEmpty()) {
+                qWarning() << "tune-inhibit-test: not keying (own slice transmits:" << ownTx << "frequency:"
+                           << engine.frequencyMhz() << "tune power:" << engine.tunePower() << ")";
+                return;
+            }
+            saved->keyed = true;
+            qInfo() << "tune-inhibit-test: TUNE on for" << ms << "ms";
+            engine.toggleTune();
+            QTimer::singleShot(ms / 2, &engine, [band20, outputs] {
+                qInfo().noquote() << "tune-inhibit-test: 20 m during TUNE:" << outputs(band20());
+            });
+            QTimer::singleShot(ms, &engine, [&engine] {
+                if (engine.tuning()) {
+                    engine.toggleTune();
+                }
+                qInfo() << "tune-inhibit-test: TUNE off";
+            });
+        });
+        QTimer::singleShot(12500 + ms + 2500, &app, [&engine, saved, band20, outputs] {
+            const QVariantMap after = band20();
+            if (saved->keyed) {
+                const bool same = outputs(after) == outputs(saved->before);
+                qInfo().noquote() << "tune-inhibit-test: 20 m after:" << outputs(after)
+                                  << (same ? "| SAME as before" : "| DIFFERENT from before");
+            }
+            for (auto it = saved->prefs.cbegin(); it != saved->prefs.cend(); ++it) {
+                engine.setRadioSetup(it.key(), it.value().toBool());
+            }
+            engine.setTunePower(saved->tunePower);
+            engine.setFrequencyMhz(saved->mhz);
+            if (saved->txSlice >= 0) {
+                engine.makeTxSlice(saved->txSlice);
+            }
+            qInfo() << "tune-inhibit-test: restored TX slice" << saved->txSlice << "tune power" << saved->tunePower << "frequency" << saved->mhz
+                    << "and the inhibit settings" << saved->prefs;
         });
     }
     if (parser.isSet(txChainOption)) {

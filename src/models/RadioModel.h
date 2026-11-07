@@ -2139,12 +2139,22 @@ private:
         bool    tx1{false};
         bool    tx2{false};
         bool    tx3{false};
+        // SmartSDR 4.3+: the radio holds RCA TX1-3 open during TUNE on this
+        // band by itself ("tune_tx_suppress", per band; upstream #6524). Known
+        // only once the radio reports it for the band.
+        bool    tuneTxSuppress{false};
+        bool    haveTuneTxSuppress{false};
     };
     QMap<int, TxBandInfo> m_txBandSettings;
     QHash<QString, QString> m_panTransmitInhibitReasons;
     QHash<QString, int> m_panTransmitInhibitedTxSlices;
     int  m_tuneInhibitBandId{-1};  // band ID whose TX outputs were inhibited during tune
     bool m_tuneInhibitActive{false};
+    // The exact interlock fields (tx1_enabled …) this TUNE cycle turned off:
+    // only these are turned back on, so an output that was already off on the
+    // band stays off, and a preference changed during TUNE cannot strand or
+    // invent a write (upstream #6526 / #6525).
+    QStringList m_tuneInhibitFields;
     // #5572 firmware-upload retry barrier. Set when an upload is dispatched to
     // the radio; cleared only when a NEW connection is established, so it
     // survives the Radio Setup dialog (and its uploader) being closed.
@@ -2153,6 +2163,9 @@ private:
     int bandIdForFrequency(double freqMhz) const;  // map TX freq → band ID
     void applyTuneInhibit();    // suppress selected TX outputs before tune
     void restoreTuneInhibit();  // re-enable TX outputs after tune
+    // A deliberate TX Band Settings edit of a field TUNE turned off takes it
+    // over: restore then leaves that field as the operator set it.
+    void relinquishTuneInhibit(const QString& command);
     QString transmitInhibitMessageForSlice(const SliceModel* slice) const;
     QString transmitInhibitMessageForTxSlice() const;
     void enforceTransmitInhibitForPan(const QString& panId);
