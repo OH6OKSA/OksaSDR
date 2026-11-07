@@ -800,12 +800,14 @@ MobileEngine::MobileEngine(QObject* parent)
         if (!m_connected || !m_audio) {
             return;
         }
-        qCInfo(lcMobile) << "audio session back: restarting receive audio";
         AudioEngine* audio = m_audio;
-        QMetaObject::invokeMethod(audio, [audio] {
-            audio->stopRxStream();
-            audio->startRxStream();
-        }, Qt::QueuedConnection);
+        if (!audioOnRadio()) {   // with the audio on the radio nothing plays here
+            qCInfo(lcMobile) << "audio session back: restarting receive audio";
+            QMetaObject::invokeMethod(audio, [audio] {
+                audio->stopRxStream();
+                audio->startRxStream();
+            }, Qt::QueuedConnection);
+        }
         if (m_micCheckOpen || m_pttHeld) {
             stopDeviceMicrophoneCapture(true);
             startDeviceMicrophoneCapture();
@@ -2051,11 +2053,27 @@ void MobileEngine::wireTransmit()
         }, Qt::QueuedConnection);
     });
     connect(&rm.transmitModel(), &TransmitModel::micStateChanged, this, [this] {
+        const QString mic = m_session.radioModel().transmitModel().micSelection();
+        if (!mic.isEmpty() && mic != kDeviceMicSelection) {
+            m_lastRadioMic = mic;
+        }
         defaultMicToDevice();
         if (m_session.radioModel().transmitModel().micSelection() != kDeviceMicSelection) {
             releasePtt(QStringLiteral("mic input left this device"));
         }
         emit transmitStateChanged();
+    });
+    // The station being worked in FT8 / FT4 is in the Log tab as soon as the
+    // QSO starts (Sloan Davis), as the CW tab's pick is: lookup, worked
+    // before, and the reports below.
+    connect(this, &MobileEngine::digiChanged, this, [this] {
+        if (!m_digiDx.isEmpty() && m_digiDx != m_digiDxLogged) {
+            m_digiDxLogged = m_digiDx;
+            qCInfo(lcMobile).noquote() << "log tab: the FTx QSO's call" << m_digiDx;
+            setWorkedCall(m_digiDx);
+        } else if (m_digiDx.isEmpty()) {
+            m_digiDxLogged.clear();
+        }
     });
     connect(&rm.transmitModel(), &TransmitModel::micInputListChanged, this, [this] {
         defaultMicToDevice();
@@ -2152,6 +2170,23 @@ void MobileEngine::wireTransmit()
             [this](float fwdPower, float swr, bool swrValid) {
         m_forwardPowerW = fwdPower;
         m_pttPeakW = std::max(m_pttPeakW, double(fwdPower));
+        // The log's TX power: peaks over each transmission, kept at its end.
+        if (radioTransmitting()) {
+            m_txPeakOn = true;
+            m_txPeakRadioW = std::max(m_txPeakRadioW, double(fwdPower));
+            if (linkedAmpOperating()) {
+                m_txPeakAmpW = std::max(m_txPeakAmpW, linkedAmpForwardW());
+            }
+        } else if (m_txPeakOn) {
+            m_txPeakOn = false;
+            if (m_txPeakRadioW > 0.5 || m_txPeakAmpW > 0.5) {
+                m_lastTxRadioW = m_txPeakRadioW;
+                m_lastTxAmpW = m_txPeakAmpW;
+                m_lastTxEndMs = QDateTime::currentMSecsSinceEpoch();
+            }
+            m_txPeakRadioW = 0.0;
+            m_txPeakAmpW = 0.0;
+        }
         if (m_digiTransmitting) {
             m_digiTxPeakW = std::max(m_digiTxPeakW, double(fwdPower));
             if (swrValid) {
@@ -2675,6 +2710,50 @@ void MobileEngine::setRfPower(int power)
     if (m_connected && m_caps.canTransmit) {
         m_session.radioModel().transmitModel().setRfPower(std::clamp(power, 0, 100));
     }
+}
+
+bool MobileEngine::rfPowerIsPercent() const
+{
+    // The desktop's power scale reads the same: max_power_level reports the
+    // exciter's 100 on an Aurora, so the model name tells (#484).
+    return m_connected && m_session.radioModel().model().startsWith(QLatin1String("AU-"));
+}
+
+bool MobileEngine::linkedAmpOperating() const
+{
+    if (pgxlOperating()) {
+        return true;
+    }
+    return m_ampStatus.operate && *m_ampStatus.operate == Rfkit::OperateMode::Operate;
+}
+
+double MobileEngine::linkedAmpForwardW() const
+{
+    if (pgxlOperating()) {
+        return pgxlForwardW();
+    }
+    return m_ampStatus.power ? m_ampStatus.power->forward.value : 0.0;
+}
+
+int MobileEngine::loggedTxPowerW() const
+{
+    if (!m_connected) {
+        return 0;
+    }
+    // A transmission in the last 15 minutes measured the power out.
+    const bool recent = m_lastTxEndMs > 0
+        && QDateTime::currentMSecsSinceEpoch() - m_lastTxEndMs < 15 * 60 * 1000;
+    if (linkedAmpOperating()) {
+        // The amplifier's output, or unknown: the radio's setting and meter
+        // are only its drive.
+        return recent && m_lastTxAmpW > 0.5 ? qRound(m_lastTxAmpW) : 0;
+    }
+    if (recent && m_lastTxRadioW > 0.5) {
+        return qRound(m_lastTxRadioW);
+    }
+    // No measurement: the setting is watts on a 100 W radio, a percentage of
+    // 500 W on an Aurora.
+    return rfPowerIsPercent() ? qRound(rfPower() * 5.0) : rfPower();
 }
 
 bool MobileEngine::radioTransmitting() const
@@ -3493,6 +3572,11 @@ void MobileEngine::defaultMicToDevice()
     if (!m_micDefaultEnabled || m_micDefaulted || !canUseDeviceMicrophone()) {
         return;
     }
+    // With the audio on the radio its own microphone is the one in use.
+    if (audioOnRadio()) {
+        m_micDefaulted = true;
+        return;
+    }
     m_micDefaulted = true;
     qCInfo(lcMobile) << "mic input" << m_session.radioModel().transmitModel().micSelection()
                      << "-> PC (this device)";
@@ -3504,6 +3588,77 @@ void MobileEngine::useDeviceMicrophone()
     if (canUseDeviceMicrophone()) {
         m_session.radioModel().transmitModel().setMicSelection(kDeviceMicSelection);
     }
+}
+
+bool MobileEngine::canUseRadioMicrophone() const
+{
+    const TransmitModel& tm = m_session.radioModel().transmitModel();
+    if (!m_connected || !m_caps.canTransmit || tm.micSelection() != kDeviceMicSelection) {
+        return false;
+    }
+    const QStringList inputs = tm.micInputList();
+    return std::any_of(inputs.cbegin(), inputs.cend(),
+                       [](const QString& in) { return in != kDeviceMicSelection; });
+}
+
+void MobileEngine::useRadioMicrophone()
+{
+    if (!canUseRadioMicrophone()) {
+        return;
+    }
+    TransmitModel& tm = m_session.radioModel().transmitModel();
+    const QStringList inputs = tm.micInputList();
+    QString mic = inputs.contains(m_lastRadioMic) ? m_lastRadioMic : QString();
+    if (mic.isEmpty()) {
+        mic = inputs.contains(QStringLiteral("MIC")) ? QStringLiteral("MIC") : QString();
+    }
+    for (const QString& in : inputs) {
+        if (mic.isEmpty() && in != kDeviceMicSelection) {
+            mic = in;
+        }
+    }
+    tm.setMicSelection(mic);
+}
+
+bool MobileEngine::audioRouteSelectable() const
+{
+    // A backend that modulates on the host has no audio but this device's.
+    return !(m_caps.takesTxAudioOverSeam && m_caps.canTransmit && m_caps.hostModulates);
+}
+
+bool MobileEngine::audioOnRadio() const
+{
+    return audioRouteSelectable()
+        && AppSettings::instance().value(QStringLiteral("PcAudioEnabled"), QStringLiteral("True")).toString()
+               != QLatin1String("True");
+}
+
+void MobileEngine::setAudioOnRadio(bool radio)
+{
+    if (radio == audioOnRadio() || (radio && !audioRouteSelectable())) {
+        return;
+    }
+    AppSettings::instance().setValue(QStringLiteral("PcAudioEnabled"),
+                                     radio ? QStringLiteral("False") : QStringLiteral("True"));
+    RadioModel& rm = m_session.radioModel();
+    qCInfo(lcMobile).noquote() << "audio: receive audio to" << (radio ? "the radio's outputs" : "this device");
+    if (m_connected) {
+        // As the desktop's PC audio button: the remote_audio_rx stream
+        // decides where the radio plays (stream: here; none: its own outputs).
+        // The microphone is not switched with it: the radio's mic input is
+        // shared by every station on it (multiFLEX; seen on the FLEX, another
+        // station's input changed with ours), so it changes only on the
+        // user's word (TX tab › Use the radio's microphone).
+        if (radio) {
+            stopAudio();
+            rm.removeRxAudioStream();
+        } else {
+            startAudio();
+            rm.createRxAudioStream();
+        }
+        applyTxAudioCapabilities(true, m_caps);
+    }
+    emit audioRouteChanged();
 }
 
 void MobileEngine::setPtt(bool down, const QString& reason)
@@ -5976,12 +6131,22 @@ QVariantMap MobileEngine::qsoDefaults() const
         mhz = k.value(QStringLiteral("carrierMhz")).toDouble();
         mode = k.value(QStringLiteral("mode")).toString();
     }
+    // An FT8 / FT4 QSO under way with the call in the Log tab: its mode and
+    // the reports exchanged so far, not DIGU and 599.
+    QString rstSent;
+    QString rstRcvd;
+    if (!m_digiDx.isEmpty() && m_digiDx.compare(m_workedCall, Qt::CaseInsensitive) == 0) {
+        mode = digiProtocol();
+        rstSent = m_digiRptSent;
+        rstRcvd = m_digiRptRcvd;
+    }
     const QString group = QsoLog::modeGroup(QsoLog::adifMode(mode).first);
     return {{QStringLiteral("freq"), mhz}, {QStringLiteral("band"), QsoLog::bandOf(mhz)},
+            {QStringLiteral("rstSent"), rstSent}, {QStringLiteral("rstRcvd"), rstRcvd},
             // No report until the slice's mode is known (59 voice, 599 CW and data).
             {QStringLiteral("mode"), mode},
             {QStringLiteral("rst"), mode.isEmpty() ? QString() : group == QLatin1String("PHONE") ? QStringLiteral("59") : QStringLiteral("599")},
-            {QStringLiteral("power"), m_connected ? rfPower() : 0},
+            {QStringLiteral("power"), loggedTxPowerW()},
             {QStringLiteral("utc"), QDateTime::currentDateTimeUtc().toString(QStringLiteral("HH:mm"))},
             {QStringLiteral("myCall"), m_session.radioModel().callsign()}, {QStringLiteral("myGrid"), myGrid()}};
 }
@@ -8031,7 +8196,9 @@ void MobileEngine::onConnectionStateChanged(bool connected)
         });
         wireRxAudio();
         wireTxPacketSink();
-        startAudio();
+        if (!audioOnRadio()) {
+            startAudio();   // with the audio on the radio there is nothing to play here
+        }
         setKeepScreenAwake(true);
         watchHeadsetLink();
         setConnectionState(QStringLiteral("connected"));
@@ -8623,7 +8790,9 @@ QVariantMap MobileEngine::radioSetup() const
                              {QStringLiteral("inhibit"), b.inhibit}, {QStringLiteral("hwAlc"), b.hwAlc},
                              {QStringLiteral("accTxReq"), b.accTxReq}, {QStringLiteral("rcaTxReq"), b.rcaTxReq},
                              {QStringLiteral("accTx"), b.accTx}, {QStringLiteral("tx1"), b.tx1},
-                             {QStringLiteral("tx2"), b.tx2}, {QStringLiteral("tx3"), b.tx3}};
+                             {QStringLiteral("tx2"), b.tx2}, {QStringLiteral("tx3"), b.tx3},
+                             {QStringLiteral("tuneSuppress"), b.tuneTxSuppress},
+                             {QStringLiteral("tuneSuppressKnown"), b.haveTuneTxSuppress}};
     }
     d[QStringLiteral("txBands")] = bands;
     // Hardware PTT (the RCA PTT, ACC or mic jack) sends the analog mic
@@ -8912,7 +9081,14 @@ void MobileEngine::setRadioSetup(const QString& key, const QVariant& value)
         static const QHash<QString, QString> interlockFields{
             {QStringLiteral("accTx"), QStringLiteral("acc_tx_enabled")}, {QStringLiteral("rcaTxReq"), QStringLiteral("rca_txreq_enable")},
             {QStringLiteral("accTxReq"), QStringLiteral("acc_txreq_enable")}, {QStringLiteral("tx1"), QStringLiteral("tx1_enabled")},
-            {QStringLiteral("tx2"), QStringLiteral("tx2_enabled")}, {QStringLiteral("tx3"), QStringLiteral("tx3_enabled")}};
+            {QStringLiteral("tx2"), QStringLiteral("tx2_enabled")}, {QStringLiteral("tx3"), QStringLiteral("tx3_enabled")},
+            {QStringLiteral("tuneSuppress"), QStringLiteral("tune_tx_suppress")}};
+        // The radio's own TUNE suppression only where the band reports it
+        // (SmartSDR 4.3+): older firmware answers an unknown key with success
+        // and changes nothing, so the write would look applied.
+        if (field == QLatin1String("tuneSuppress") && !rm.txBandSettings().value(id).haveTuneTxSuppress) {
+            return;
+        }
         if (field == QLatin1String("rfPower") || field == QLatin1String("tunePower")) {
             rm.sendCommand(QStringLiteral("transmit bandset %1 %2=%3").arg(id).arg(transmitFields.value(field))
                                .arg(std::clamp(m.value(QStringLiteral("value")).toInt(), 0, 100)));

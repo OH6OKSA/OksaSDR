@@ -203,6 +203,13 @@ class MobileEngine : public QObject {
     Q_PROPERTY(bool transmitAvailable READ transmitAvailable NOTIFY transmitStateChanged)
     Q_PROPERTY(QString transmitUnavailableReason READ transmitUnavailableReason NOTIFY transmitStateChanged)
     Q_PROPERTY(bool canUseDeviceMicrophone READ canUseDeviceMicrophone NOTIFY transmitStateChanged)
+    // Receive audio on the radio's own outputs (speaker, headphones, line out)
+    // instead of this device: the desktop's PC audio off (Dennis KM6DF: a
+    // headset on the radio). Remembered; applied without reconnecting.
+    Q_PROPERTY(bool audioOnRadio READ audioOnRadio WRITE setAudioOnRadio NOTIFY audioRouteChanged)
+    Q_PROPERTY(bool audioRouteSelectable READ audioRouteSelectable NOTIFY transmitStateChanged)
+    // The radio's own microphone input can be chosen (one besides PC).
+    Q_PROPERTY(bool canUseRadioMicrophone READ canUseRadioMicrophone NOTIFY transmitStateChanged)
     Q_PROPERTY(bool transmitting READ transmitting NOTIFY transmittingChanged)
     Q_PROPERTY(bool nr READ nr WRITE setNr NOTIFY dspChanged)
     Q_PROPERTY(bool nb READ nb WRITE setNb NOTIFY dspChanged)
@@ -582,6 +589,9 @@ class MobileEngine : public QObject {
     Q_PROPERTY(double swr READ swr NOTIFY txMetersChanged)
     Q_PROPERTY(bool swrValid READ swrValid NOTIFY txMetersChanged)
     Q_PROPERTY(bool radioTransmitting READ radioTransmitting NOTIFY txMetersChanged)
+    // The radio's RF power setting is a percentage, not watts: an Aurora
+    // (AU-510 / AU-520, a 500 W PA) where 29 gives about 145 W.
+    Q_PROPERTY(bool rfPowerIsPercent READ rfPowerIsPercent NOTIFY connectionStateChanged)
     Q_PROPERTY(double compressionDb READ compressionDb NOTIFY txMetersChanged)
     Q_PROPERTY(double alcDbfs READ alcDbfs NOTIFY txMetersChanged)
     Q_PROPERTY(bool alcAvailable READ alcAvailable NOTIFY txMetersChanged)
@@ -1502,6 +1512,11 @@ public:
     // Radio actually on the air (MOX, tune, ATU, VOX); TX-only meters show
     // a value only then.
     bool radioTransmitting() const;
+    bool rfPowerIsPercent() const;
+    // TX power for the log (ADIF TX_PWR), in watts, 0 when unknown: the last
+    // transmission's measured peak (the amplifier's when a linked one is in
+    // Operate), else the setting where it is watts.
+    int loggedTxPowerW() const;
     // The radio's "Show TX in waterfall" (transmit show_tx_in_waterfall, as
     // SmartSDR's): this app draws its own transmission there only when on.
     bool showTxInWaterfall() const;
@@ -1591,6 +1606,12 @@ public:
     Q_INVOKABLE void stopTransmit(const QString& reason, bool keepAmpTune = false);
     // Switch the radio's transmit audio input to this device's microphone.
     Q_INVOKABLE void useDeviceMicrophone();
+    // The radio's own microphone input: the last one used before PC, else MIC.
+    Q_INVOKABLE void useRadioMicrophone();
+    bool audioOnRadio() const;
+    void setAudioOnRadio(bool radio);
+    bool audioRouteSelectable() const;
+    bool canUseRadioMicrophone() const;
     // Dev/screenshot runs: leave the radio's mic input alone.
     void setMicDefaultEnabled(bool enabled) { m_micDefaultEnabled = enabled; }
     // Screenshots for public pages: the radio's serial number reads "(hidden)".
@@ -1682,6 +1703,7 @@ signals:
     void transmittingChanged();
     void workedCallChanged();
     void transmitStateChanged();
+    void audioRouteChanged();
     void filterChanged();
     void lastAddressChanged();
     void savedRadiosChanged();
@@ -1873,6 +1895,11 @@ private:
     // the last sample, by thread id.
     QHash<int, quint64> m_threadTicks;
     QStringList m_busyThreads;
+    // The radio's microphone input seen last before PC (for The radio's mic).
+    QString m_lastRadioMic;
+    // The FTx partner last handed to the Log tab (only a new one is, so a
+    // call typed there meanwhile is not overwritten every decode).
+    QString m_digiDxLogged;
     void sampleThreads(quint64 elapsedUs);
     std::atomic<int> m_framesThisPeriod{0};
     int m_uiFps{0};
@@ -2427,6 +2454,16 @@ private:
     double m_digiTxPeakW{0.0};
     // The forward power's peak since PTT was keyed (the release logs it).
     double m_pttPeakW{0.0};
+    // Peaks of the transmission under way and the last one (radio and a
+    // linked amplifier), for the log's TX power.
+    bool m_txPeakOn{false};
+    double m_txPeakRadioW{0.0};
+    double m_txPeakAmpW{0.0};
+    double m_lastTxRadioW{0.0};
+    double m_lastTxAmpW{0.0};
+    qint64 m_lastTxEndMs{0};
+    bool linkedAmpOperating() const;
+    double linkedAmpForwardW() const;
     double m_digiTxPeakSwr{0.0};
     // The last transmission's peak power and SWR, for the Digi tab.
     double m_digiLastTxW{0.0};

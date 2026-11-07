@@ -672,7 +672,7 @@ Popup {
                     Heading { text: qsTr("Inhibit during TUNE (this device)") }
                     Label {
                         Layout.fillWidth: true
-                        text: qsTr("The outputs held open while TUNE or the ATU transmits, so tuning at low power does not key the amplifier; they close again after. This device's setting, as the desktop's.")
+                        text: qsTr("The outputs held open while TUNE or the ATU transmits, so tuning at low power does not key the amplifier; only the outputs this turned off close again after, so one off on the band stays off. This device's setting, as the desktop's. SmartSDR 4.3 radios can also do it themselves per band: TX band settings below.")
                         color: Theme.textDim
                         font.pixelSize: Theme.px(12)
                         wrapMode: Text.WordWrap
@@ -730,6 +730,15 @@ Popup {
                         OnOff { objectName: "txBandTx2"; label: qsTr("RCA TX2 output"); on: !!parent.b.tx2; onToggled: (v) => setup.setBand("tx2", v) }
                         OnOff { objectName: "txBandTx3"; label: qsTr("RCA TX3 output"); on: !!parent.b.tx3; onToggled: (v) => setup.setBand("tx3", v) }
                         OnOff { objectName: "txBandAccTx"; label: qsTr("ACC TX output"); on: !!parent.b.accTx; onToggled: (v) => setup.setBand("accTx", v) }
+                        // SmartSDR 4.3+: the radio itself holds RCA TX1-3 open
+                        // during TUNE on this band (only a radio that reports it).
+                        OnOff {
+                            objectName: "txBandTuneSuppress"
+                            visible: !!parent.b.tuneSuppressKnown
+                            label: qsTr("RCA TX1-3 held off during TUNE (the radio's own)")
+                            on: !!parent.b.tuneSuppress
+                            onToggled: (v) => setup.setBand("tuneSuppress", v)
+                        }
                         OnOff {
                             objectName: "txBandRcaTxReq"
                             label: qsTr("RCA TX REQ input")

@@ -193,12 +193,23 @@ void EchoAudit::build()
     }
     const int polarityHigh = e->radioSetup().value(QStringLiteral("rcaTxReqPolarity")).toInt()
                              | e->radioSetup().value(QStringLiteral("accTxReqPolarity")).toInt();
+    bool tuneSuppressKnown = false;
+    for (const QVariant& b : bands) {
+        if (b.toMap().value(QStringLiteral("id")).toInt() == bandId) {
+            tuneSuppressKnown = b.toMap().value(QStringLiteral("tuneSuppressKnown")).toBool();
+        }
+    }
     for (const char* key : {"rfPower", "tunePower", "inhibit", "hwAlc", "accTx", "tx1", "tx2", "tx3",
-                            "rcaTxReq", "accTxReq"}) {
+                            "rcaTxReq", "accTxReq", "tuneSuppress"}) {
         if (bandId < 0) {
             break;
         }
         const QString f = QString::fromLatin1(key);
+        // The radio's own TUNE suppression only where it reports it (4.3+).
+        if (f == QLatin1String("tuneSuppress") && !tuneSuppressKnown) {
+            qInfo().noquote() << "echo-audit: txband" << bandName << f << "left out: not reported by this radio";
+            continue;
+        }
         // A TX REQ input turned on with an active-high polarity reads an
         // open input as a request to transmit.
         if ((f == QLatin1String("rcaTxReq") || f == QLatin1String("accTxReq")) && polarityHigh) {

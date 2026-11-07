@@ -517,7 +517,7 @@ ColumnLayout {
         objectName: "digiLastTx"
         Layout.fillWidth: true
         visible: digi.settingsShown && (digi.qso.lastTxW || 0) > 0
-        text: qsTr("Last TX: %1 W%2 (RF power %3 W)")
+        text: (Engine.rfPowerIsPercent ? qsTr("Last TX: %1 W%2 (RF power %3 %)") : qsTr("Last TX: %1 W%2 (RF power %3 W)"))
               .arg(Number(digi.qso.lastTxW || 0).toFixed(1))
               .arg((digi.qso.lastTxSwr || 0) > 0 ? qsTr(", SWR %1").arg(Number(digi.qso.lastTxSwr).toFixed(1)) : "")
               .arg(Engine.rfPower)

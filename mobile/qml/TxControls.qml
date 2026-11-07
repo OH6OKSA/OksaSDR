@@ -174,7 +174,8 @@ ColumnLayout {
     }
 
     // ---- Power ----
-    Label { text: qsTr("RF power  %1").arg(Engine.rfPower); color: Theme.textDim; font.pixelSize: Theme.px(15) }
+    // Watts on a 100 W radio, a percentage on an Aurora (500 W PA).
+    Label { text: Engine.rfPowerIsPercent ? qsTr("RF power  %1 %").arg(Engine.rfPower) : qsTr("RF power  %1 W").arg(Engine.rfPower); color: Theme.textDim; font.pixelSize: Theme.px(15) }
     FineSlider {
         accessibleName: qsTr("RF power")
         Layout.fillWidth: true
@@ -337,6 +338,14 @@ ColumnLayout {
         visible: Engine.canUseDeviceMicrophone
         text: qsTr("Use this device's microphone")
         onClicked: Engine.useDeviceMicrophone()
+    }
+    // The way back: the radio's own microphone input (a headset on the radio).
+    AppButton {
+        objectName: "useRadioMic"
+        Layout.fillWidth: true
+        visible: Engine.canUseRadioMicrophone && Engine.audioOnRadio
+        text: qsTr("Use the radio's microphone")
+        onClicked: Engine.useRadioMicrophone()
     }
 
     // DAX: the radio transmits the audio a program on a computer sends

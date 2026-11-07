@@ -20,8 +20,8 @@ ColumnLayout {
     function refreshDefaults() {
         defaults = Engine.qsoDefaults()
         // Follows the mode until the operator types a report.
-        if (!rstSent.activeFocus && !rstSent.edited) rstSent.text = defaults.rst || ""
-        if (!rstRcvd.activeFocus && !rstRcvd.edited) rstRcvd.text = defaults.rst || ""
+        if (!rstSent.activeFocus && !rstSent.edited) rstSent.text = defaults.rstSent || defaults.rst || ""
+        if (!rstRcvd.activeFocus && !rstRcvd.edited) rstRcvd.text = defaults.rstRcvd || defaults.rst || ""
     }
     function reset() {
         callField.text = ""

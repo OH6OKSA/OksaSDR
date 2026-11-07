@@ -1526,7 +1526,7 @@ void MobileEngine::onDigiTxFinished()
     m_digiTransmitting = false;
     // The power and SWR say why the power out is short (the band's RF
     // power, SWR foldback) when the TX level is not the reason.
-    qCInfo(lcMobile).noquote() << QStringLiteral("digi: TX ended, peak %1 W, SWR %2, TX level %3 dB, RF power %4 W")
+    qCInfo(lcMobile).noquote() << QStringLiteral("digi: TX ended, peak %1 W, SWR %2, TX level %3 dB, RF power %4 (W, or % on an Aurora)")
                                       .arg(m_digiTxPeakW, 0, 'f', 1)
                                       .arg(m_digiTxPeakSwr > 0 ? QString::number(m_digiTxPeakSwr, 'f', 1) : QStringLiteral("-"))
                                       .arg(m_digiTxLevelDb)

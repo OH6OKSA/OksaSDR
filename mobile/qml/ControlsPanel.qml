@@ -270,9 +270,48 @@ ColumnLayout {
                 font.pixelSize: 12
                 wrapMode: Text.Wrap
             }
-            // Where receive audio plays.
-            Label { text: qsTr("Audio output"); color: Theme.textDim; Layout.topMargin: Theme.spacing / 2 }
+            // This device or the radio's own outputs (Dennis KM6DF: a headset
+            // on the radio): the desktop's PC audio on / off.
+            Label {
+                visible: Engine.audioRouteSelectable
+                text: qsTr("Sound from")
+                color: Theme.textDim
+                Layout.topMargin: Theme.spacing / 2
+            }
             RowLayout {
+                visible: Engine.audioRouteSelectable
+                Layout.fillWidth: true
+                AppButton {
+                    objectName: "audioRouteDevice"
+                    text: qsTr("This device")
+                    checked: !Engine.audioOnRadio
+                    focusPolicy: Qt.NoFocus
+                    Layout.fillWidth: true
+                    onClicked: Engine.audioOnRadio = false
+                }
+                AppButton {
+                    objectName: "audioRouteRadio"
+                    text: qsTr("The radio")
+                    checked: Engine.audioOnRadio
+                    focusPolicy: Qt.NoFocus
+                    Layout.fillWidth: true
+                    onClicked: Engine.audioOnRadio = true
+                }
+            }
+            Label {
+                visible: Engine.audioRouteSelectable
+                Layout.fillWidth: true
+                text: Engine.audioOnRadio
+                      ? qsTr("The radio plays on its own speaker, headphones and line out; nothing plays here. For its microphone too: TX tab › Use the radio's microphone (shared with any other station on the radio), then key with the radio's PTT or VOX.")
+                      : qsTr("The radio's own speaker and headphones stay quiet while this device plays. The radio: for a headset or speaker on the radio.")
+                color: Theme.textDim
+                font.pixelSize: 12
+                wrapMode: Text.Wrap
+            }
+            // Where receive audio plays.
+            Label { visible: !Engine.audioOnRadio; text: qsTr("Audio output"); color: Theme.textDim; Layout.topMargin: Theme.spacing / 2 }
+            RowLayout {
+                visible: !Engine.audioOnRadio
                 Layout.fillWidth: true
                 Repeater {
                     model: [{ key: "Auto", label: qsTr("Auto") }, { key: "Speaker", label: qsTr("Speaker") },
@@ -289,6 +328,7 @@ ColumnLayout {
                 }
             }
             Label {
+                visible: !Engine.audioOnRadio
                 Layout.fillWidth: true
                 text: qsTr("Auto: a Bluetooth headset and its microphone when one is connected, else the device's speaker and microphone. Speaker: the device's speaker and microphone, even with Bluetooth on. Bluetooth media: a Bluetooth device's music link (better sound) and the device's microphone; without one, the speaker.")
                 color: Theme.textDim
