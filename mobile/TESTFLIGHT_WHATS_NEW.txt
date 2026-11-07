@@ -9,15 +9,15 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- eSSB: the desktop's de-esser, tube, EVO exciter and reverb, and the order of the chain (Order > Change).
-- Radio Setup > Amp: choose the maker first (4O3A, RF-KIT); a maker in use shows first.
-- First-run hints for the hidden gestures (View > Hints > Show again); a slider's drag is felt, View > Felt taps turns them off.
-- Android: the edit pencil and other symbols no longer show as boxes.
-- Build 156's VoiceOver tuning is taken out again: not ready yet.
-- From build 156: Band plan lock (tap the mode, thanks Tyler K0OTC), the CW sidetone level.
+- TUNE with Inhibit during TUNE: only the outputs TUNE turned off come back on; one off on the band stays off (it came on before).
+- SmartSDR 4.3: Radio Setup > Transmit > TX band settings has the radio's own "RCA TX1-3 held off during TUNE".
+- Controls > Audio > Sound from: This device or The radio, e.g. a headset on the radio (thanks Dennis KM6DF).
+- FT8 / FT4: the QSO's call, mode and reports are in the Log tab as soon as it starts (thanks Sloan Davis).
+- The log's TX power is the measured power out (an amplifier's when linked); an Aurora shows RF power in % (thanks Sloan Davis).
+- From build 157: eSSB tube, EVO, reverb; Amp by maker; first-run hints; felt slider taps.
 
-RECENT (builds 94–156)
-- FTx CQ DX (thanks Kurt DL5EAG); Display Zoom (thanks Evgeny R0ACS); Check the connection, Antenna Genius (thanks Ben Morris).
+RECENT (builds 94–157)
+- Band plan lock (thanks Tyler K0OTC); FTx CQ DX (thanks Kurt DL5EAG); Display Zoom (thanks Evgeny R0ACS); Check the connection, Antenna Genius (thanks Ben Morris).
 - RF2K-S control and Tune, the amp on every meter (thanks Sebastian DG5CST, Jeff Stinger); Macros by PTT (thanks Tyler K0OTC).
 - PSK31 / PSK63 and RTTY on the Digi tab; ⌘1–⌘0 as F1–F10; worked before from Wavelog, QRZ.com or a shared ADIF file.
 - The transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger).
@@ -32,13 +32,13 @@ PLEASE TRY
 - Portrait and landscape; on iPad also Split View.
 - Voice transmit with the device mic or a Bluetooth headset, and tell me how it sounds at the other end. [TX]
 - CW keying, CWX memories (F1–F12 on a keyboard) and the decoder. [TX]
-- The Log tab: log a few contacts, save your QRZ.com account and share the ADIF file to your logbook.
-- FT8 / FT4 on the FTx tab with two slices in DIGU (e.g. 40 m and 20 m): decode on both, drag the red TX band to a free frequency, answer a CQ at low power and check the contact lands in the log. [TX]
-- The FreeDV tab: pick a RADE station from the list (14.236 MHz is busy), listen, and turn on Report to FreeDV Reporter to see yourself on qso.freedv.org. [TX]
+- The Log tab: log a few contacts, save your QRZ.com account, share the ADIF file.
+- FT8 / FT4 on the FTx tab: decode, drag the red TX band to a free frequency, answer a CQ at low power and check the log. [TX]
+- The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: eSSB's tube, EVO and reverb with MON or a second receiver at low power [TX]; Radio Setup > Amp; the hints.
+- New: Sound from The radio and back; TUNE with Inhibit during TUNE on [TX]; an FT8 QSO and its Log tab.
 - Worked before from Wavelog, the QRZ.com Logbook or a shared ADIF file in iCloud Drive.
-- The eSSB tab at low power with a second receiver. [TX]
+- The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM
 Right after it happens, open Log in the top row, tap Copy, and paste the text into an email to oh6oksa@gmail.com. Add your device model, radio model and what you were doing. Screenshots or a screen recording help a lot.

@@ -1079,7 +1079,15 @@ seven.
   it. It shows what the current connection uses; a change applies from the
   next connection. **Audio buffer**: *Low latency* (100 ms), *Normal*
   (200 ms, the default) or *Smooth* (400 ms) — a longer buffer evens out a
-  jittery Wi-Fi or mobile link for a little more delay. **Audio output**:
+  jittery Wi-Fi or mobile link for a little more delay. **Sound from**:
+  *This device* (the default) or *The radio*, which plays receive audio on
+  the radio's own speaker, headphones and line out instead, e.g. with a
+  headset on the radio; switched at once, without reconnecting, and
+  remembered. The microphone does not switch with it, as the radio's mic
+  input is shared by every station on it: for the radio's microphone too,
+  TX tab › **Use the radio's microphone**, then key with the radio's PTT
+  or VOX (the app's PTT sends this device's microphone). **Audio output**
+  (with the sound on this device):
   *Auto* (the default) plays through a Bluetooth headset, with its
   microphone, when one is connected, else through the device's speaker
   and microphone; *Speaker* keeps receive audio and the microphone on the
@@ -1491,7 +1499,12 @@ seven.
   The app then runs the QSO as WSJT-X does (report, R-report, RR73 or RRR,
   73), stops after six tries without the reply it waits for, and writes the
   contact to the Log tab's log (MODE FT8, or MFSK / FT4) with the
-  frequency of the slice it was made on. **Halt TX** stops at once. PTT is
+  frequency of the slice it was made on. As soon as a QSO starts, the Log
+  tab shows its call (lookup and worked before), FT8 / FT4 as the mode and
+  the reports as they are exchanged; the app logs the QSO itself at the
+  end, so the Log button there is not needed. **TX power** in the log is
+  the last transmission's measured peak (an amplifier's output when a
+  linked PGXL or RF2K-S is in Operate), not the RF power setting. **Halt TX** stops at once. PTT is
   hidden while FT8 / FT4 decodes (the app keys the radio itself), and the
   display gets the room. Switching the FT8 slice to a voice or CW mode
   (by hand, or with a band button on a band the radio remembers in LSB /
@@ -1514,7 +1527,9 @@ seven.
   driven and the power out follows the TX tab's RF power; lower it to back
   off. Under it, **Last TX** shows the last transmission's peak power and
   SWR beside the band's RF power: well below it means the drive (TX level)
-  or the SWR; equal means the band's RF power is the limit. **Free** moves
+  or the SWR; equal means the band's RF power is the limit. On an Aurora
+  (AU-510 / AU-520) the RF power is a percentage of its 500 W, so it shows
+  as % (29 % is about 145 W out). **Free** moves
   the TX tone to the clearest spot between 200 and 2800 Hz among the
   stations heard in the last minute on the TX slice (in the CQ slot's
   period when Even or Odd is chosen); the status line says where. Decoding copes with audio
@@ -1752,15 +1767,22 @@ radio.
     ACC or the mic jack) sends the analog mic whatever the TX source.
   - **Inhibit during TUNE (this device)** — *RCA TX1*, *TX2*, *TX3*, *ACC
     TX*: the outputs held open while TUNE or the ATU transmits, so tuning
-    at low power does not key the amplifier; they close again after. This
-    device's setting (as the desktop's), not the radio's.
+    at low power does not key the amplifier. Only the outputs TUNE itself
+    turned off close again after: one that was off on the band stays off,
+    and an output you change in the TX band settings during TUNE is left as
+    you set it. This device's setting (as the desktop's), not the radio's.
   - **TX band settings** — pick a band (the one the radio is on is
     picked first), then for that band: **RF power** and **Tune power** (%),
     which outputs close there (**RCA TX1 / TX2 / TX3**, **ACC TX**: e.g.
     the amplifier's PTT only on the bands it covers), the **TX REQ inputs**
     that work there, **PTT inhibit** (no transmitting on that band) and
     **Hardware ALC** (the amplifier's ALC at the ALC jack). Turning a TX
-    REQ input on while it is set active high asks first.
+    REQ input on while it is set active high asks first. On a radio with
+    SmartSDR 4.3 or later, **RCA TX1-3 held off during TUNE (the radio's
+    own)**: the radio itself keeps the RCA outputs open while it tunes on
+    that band, kept in the radio for every program. It works alongside
+    *Inhibit during TUNE* above; either alone is enough. It is shown only
+    when the radio reports it.
 
   ![Radio Setup › Transmit: the TX band settings](manual/setup-txband.jpg)
 - **Phone/CW** — microphone bias and boost (the radio's own microphone
