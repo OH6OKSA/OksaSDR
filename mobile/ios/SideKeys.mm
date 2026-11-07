@@ -302,13 +302,28 @@ void startSideKeys(std::function<void(SideKey key, bool pressed)> callback)
         return;
     }
     s_callback = std::move(callback);
+    // While a hardware keyboard is connected (a Bluetooth keyboard, or a
+    // keyer, foot switch or remote that presents itself as one) iOS shows no
+    // on-screen keyboard for a text field, so the log says when one comes and
+    // goes (Sebastian DG5CST: a field took the focus and no keyboard came).
+    qCInfo(lcKeyboard) << "keyboard: hardware keyboard at start:"
+                       << (GCKeyboard.coalescedKeyboard ? "connected (no on-screen keyboard while it is)" : "none");
     attach(GCKeyboard.coalescedKeyboard);
     // A keyboard attached later (or reattached) is a new GCKeyboard.
     [[NSNotificationCenter defaultCenter] addObserverForName:GCKeyboardDidConnectNotification
                                                       object:nil
                                                        queue:[NSOperationQueue mainQueue]
                                                   usingBlock:^(NSNotification* note) {
-        attach((GCKeyboard*)note.object);
+        GCKeyboard* keyboard = (GCKeyboard*)note.object;
+        qCInfo(lcKeyboard).noquote() << QStringLiteral("keyboard: a hardware keyboard connected (%1): iOS shows no on-screen keyboard while it is")
+                                            .arg(keyboard.vendorName ? QString::fromNSString(keyboard.vendorName) : QStringLiteral("unnamed"));
+        attach(keyboard);
+    }];
+    [[NSNotificationCenter defaultCenter] addObserverForName:GCKeyboardDidDisconnectNotification
+                                                      object:nil
+                                                       queue:[NSOperationQueue mainQueue]
+                                                  usingBlock:^(NSNotification*) {
+        qCInfo(lcKeyboard) << "keyboard: the hardware keyboard disconnected";
     }];
 }
 

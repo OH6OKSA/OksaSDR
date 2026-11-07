@@ -89,6 +89,7 @@ build. The sections below hold the details.
 39. ~~**Fixes:** TX power in the log and on screen wrong on an Aurora and with an amplifier (Sloan Davis's screenshot)~~ *in build 158*: measured peak in the log; Aurora RF power in %
 37. **Radio:** Power per mode, Sloan Davis (TestFlight, build 156, FLEX Aurora AU-520: low drive gave 140 W on FT8, SSB wants 65-70 %): RF power remembered per mode group (voice, CW, digital), with an optional upper limit for digital modes, set as the mode changes and shown when it does.
 38. ~~**FTx:** The station being worked in the Log tab during the QSO, Sloan Davis~~ *in build 158*: call, mode and reports in the Log tab as the QSO starts
+40. **Fixes:** The on-screen keyboard did not come for a focused text field, Sebastian DG5CST (e-mail, 2026-11-07, iPhone 15 Pro, iOS 27.0.1, build 157: the CW memory editor and the Log tab on 160 m CW, the field focused with its cursor; after an app restart it came). Likeliest: a hardware keyboard connected (a Bluetooth keyboard, keyer, foot switch or remote presenting itself as one), with which iOS shows no on-screen keyboard; build 158 logs hardware keyboards connecting and going. Waiting for his Log › Previous run and the answer.
 
 ## Planned: the Digi tab, keyboard modes as one (asked 2026-11-02)
 
