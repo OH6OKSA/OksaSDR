@@ -2016,7 +2016,9 @@ Android.
 it, and allow installing from your browser or file manager when Android
 asks. A newer beta installs over the old one and keeps your settings.
 Android 9 or newer, 64-bit ARM (practically every phone and tablet from the
-last years).
+last years). The Android itself must be 64-bit: some tablets with a 64-bit
+processor run a 32-bit Android (e.g. the Galaxy Tab A 10.1 of 2019, SM-T510),
+and there Android answers *App not installed*.
 
 **Permissions, asked once.**
 - *Notifications*, *microphone* and *battery optimization* — the first
