@@ -43,6 +43,8 @@ class MobileEngine;
 //   ptt on|off              key / unkey the radio as PTT held (the TX slice: make it a
 //                           DIGU slice with no audio for a carrier-free test)
 //   txslice LETTER          that slice active and TX (to put TX back after a test)
+//   addslice                a slice of this app's own (+ Slice)
+//   closeslice LETTER       close that slice (after addslice)
 //   slices                  log every slice (frequency, mode, TX, active) and the power
 //   amp HOST[:PORT]|off     the amplifier's address (Radio Setup › Amp); off forgets it,
 //                           pause / resume its Read the amplifier switch

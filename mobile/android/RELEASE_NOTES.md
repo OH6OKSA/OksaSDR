@@ -2,6 +2,7 @@
 
 ### New in beta 74
 - **Log › Send to the developer opens the mail app** (the developer's Android 16 phone: the tap did nothing in betas 72 and 73): the mail goes straight to the mail app (or Android asks which one) with the address, the subject and the log attached; without a mail app the share sheet opens and the address is copied. What happens is now written in the log too.
+- **The set power in the TX slice's tag** (thanks Evgeny R0ACS): the slice chip's red tag reads *TX 100 W* (*TX 29 %* on an Aurora, *AMP* after it with an amplifier in Operate; *100 W* alone where two slices make the chips narrow); a tap on it opens the RF power slider.
 - **Panels stay above the taskbar** (the developer's OnePlus: the meter chooser's last row went under the taskbar once SNR added a row): the meter, mode, filter, AGC, band and other choosers end above Android's navigation bar or taskbar and scroll when taller.
 
 ### Still new from beta 73

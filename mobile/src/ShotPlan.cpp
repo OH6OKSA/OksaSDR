@@ -478,6 +478,21 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             }
         }
         *delayMs = 1500;
+    } else if (command == QLatin1String("addslice")) {
+        // A slice of this app's own (+ Slice), to see two slices' chips;
+        // closeslice LETTER closes it again.
+        m_engine.addSlice();
+        qInfo().noquote() << "shot-plan: addslice";
+        *delayMs = 2500;
+    } else if (command == QLatin1String("closeslice")) {
+        for (const QVariant& v : m_engine.slices()) {
+            const QVariantMap m = v.toMap();
+            if (m.value(QStringLiteral("letter")).toString() == arg) {
+                m_engine.removeSlice(m.value(QStringLiteral("id")).toInt());
+                qInfo().noquote() << "shot-plan: closeslice" << arg;
+            }
+        }
+        *delayMs = 2000;
     } else if (command == QLatin1String("txslice")) {
         // That slice (by letter) active and the TX slice, as the operator
         // had it before a test moved TX.

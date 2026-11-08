@@ -13,6 +13,7 @@ NEW IN THIS BUILD
 - Macros > Repeat: a voice keyer slot or CW memory sent again every few seconds until PTT, Stop or any key (thanks Robin Bishop).
 - SNR on the meters while RADE decodes (thanks Scott L Stanford).
 - SmartSDR 4.3's PTT source list (MIC,VOX): a mic or footswitch PTT keeps the TX meters.
+- The set power in the TX slice's tag; a tap opens its slider (thanks Evgeny R0ACS).
 - Choosers stay above the home indicator.
 - From build 159: the filter centred on a chosen frequency; Log > Send to the developer; NRS up to 50.
 
@@ -23,8 +24,7 @@ RECENT (builds 94–158)
 - RF2K-S control and Tune, the amp on every meter (thanks Sebastian DG5CST, Jeff Stinger); Macros by PTT (thanks Tyler K0OTC).
 - PSK31 / PSK63 and RTTY on the Digi tab; ⌘1–⌘0 as F1–F10; worked before from Wavelog, QRZ.com or a shared ADIF file.
 - The transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger).
-- Mac typing (thanks Pentti OH6PP); QSOs to Logger32 (thanks Juho Kontio).
-- Less battery: the spectrum drawn by the graphics chip (thanks Mike VA3MW); held step buttons repeat (thanks Larry).
+- Mac typing (thanks Pentti OH6PP); QSOs to Logger32 (thanks Juho Kontio); less battery (thanks Mike VA3MW).
 - CW paddles at the phone's edges; slice volume by the speaker icon (thanks Wayne WA2N).
 - FreeDV tab with FreeDV Reporter; FTx (FT8 / FT4) with PSK Reporter; Wavelog / Cloudlog; transverters.
 

@@ -816,8 +816,13 @@ for their span.
 
 **Slices.** Each slice is a button between the meters ("A 14.100 USB"; on a
 phone without the mode, which is beside the frequency); the
-transmit slice carries a red **TX** tag. Two fit side by side, four make
-2 × 2.
+transmit slice carries a red **TX** tag with the set power in it (thanks
+Evgeny R0ACS): *TX 100 W* on a 100 W radio, *TX 29 %* on an Aurora (a
+share of its 500 W PA), and *AMP* after it while an amplifier is in
+Operate, as the radio's power is then its drive. Where the chip is narrow
+(two slices on a phone) the tag shows *100 W* alone. A tap on the tag
+opens the RF power slider under it, the TX tab's; the power out is on the
+Power meter. Two fit side by side, four make 2 × 2.
 
 - Tap a slice to make it the active one (tuning, info panel and controls
   follow it).

@@ -121,11 +121,24 @@ RowLayout {
                     Accessible.description: qsTr("Hold for Make TX slice and Close slice")
                     // Under the pressed chip, not at the last pointer position.
                     onPressAndHold: sliceMenu.popup(chip, 0, chip.height)
+                    // The set power in the TX tag (Evgeny R0ACS, roadmap 36): watts on
+                    // a 100 W radio, a percentage on an Aurora (its 500 W PA), AMP
+                    // while an amplifier is in Operate (then it is the drive). Where
+                    // the chip is narrow (two slices on a phone) "100 W" alone, then
+                    // only "TX". A tap on the tag opens the power slider.
+                    readonly property bool ampOperating: (!!Engine.amp.set && Engine.amp.operate === "OPERATE")
+                                                         || (!!Engine.pgxl.present && !!Engine.pgxl.operate)
+                    readonly property string powerText: Engine.rfPower + (Engine.rfPowerIsPercent ? " %" : " W")
+                                                        + (ampOperating ? " AMP" : "")
+                    readonly property real tagRoom: chip.availableWidth - chipLabel.implicitWidth - 5 - 8
+                    TextMetrics { id: tagFull; font.pixelSize: chip.font.pixelSize; font.bold: true; text: "TX " + chip.powerText }
+                    TextMetrics { id: tagPower; font.pixelSize: chip.font.pixelSize; font.bold: true; text: chip.powerText }
                     contentItem: Item {
                         Row {
                             anchors.centerIn: parent
                             spacing: 5
                             Text {
+                                id: chipLabel
                                 Accessible.ignored: true
                                 anchors.verticalCenter: parent.verticalCenter
                                 // Compact (phone): the mode is beside the frequency already.
@@ -136,21 +149,77 @@ RowLayout {
                             }
                             // The transmit slice: a red tag, not just two letters.
                             Rectangle {
+                                objectName: "sliceTxPower" + chip.modelData.letter
                                 visible: chip.modelData.tx
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: txText.implicitWidth + 8
                                 height: txText.implicitHeight + 4
                                 radius: 4
                                 color: Theme.transmitTag
+                                Accessible.role: Accessible.Button
+                                Accessible.name: qsTr("Transmit power %1").arg(chip.powerText)
+                                Accessible.description: qsTr("Opens the power slider")
+                                Accessible.onPressAction: powerPopup.open()
                                 Text {
                                     id: txText
                                     Accessible.ignored: true
                                     anchors.centerIn: parent
-                                    text: "TX"
+                                    text: tagFull.advanceWidth <= chip.tagRoom ? "TX " + chip.powerText
+                                        : tagPower.advanceWidth <= chip.tagRoom ? chip.powerText : "TX"
                                     font.pixelSize: chip.font.pixelSize
                                     font.bold: true
                                     color: "#ffffff"
                                 }
+                                // Its own tap, a little larger than the tag; the
+                                // rest of the chip still selects the slice.
+                                MouseArea {
+                                    anchors.fill: parent
+                                    anchors.margins: -6
+                                    onClicked: powerPopup.open()
+                                }
+                            }
+                        }
+                    }
+                    // The power slider under the chip, as on the TX tab.
+                    Popup {
+                        id: powerPopup
+                        objectName: "slicePowerPopup" + chip.modelData.letter
+                        modal: true
+                        dim: false
+                        y: chip.height + 4
+                        width: Math.min(380, Theme.windowWidth - 2 * Theme.spacing)
+                        margins: Theme.spacing
+                        bottomMargin: Theme.spacing + (parent && parent.Window.contentItem ? parent.Window.contentItem.SafeArea.margins.bottom : 0)
+                        padding: Theme.spacing
+                        background: Rectangle { color: Theme.surface; border.color: Theme.surfaceRaised; radius: Theme.radius }
+                        contentItem: PanelContent {
+                            title: qsTr("TX power")
+                            panel: powerPopup
+                            rowSpacing: Theme.spacing / 2
+                            Label {
+                                text: Engine.rfPowerIsPercent ? qsTr("RF power  %1 %").arg(Engine.rfPower) : qsTr("RF power  %1 W").arg(Engine.rfPower)
+                                color: Theme.textDim
+                                font.pixelSize: Theme.px(15)
+                            }
+                            FineSlider {
+                                objectName: "slicePowerSlider"
+                                accessibleName: qsTr("RF power")
+                                Layout.fillWidth: true
+                                from: 0
+                                to: 100
+                                stepSize: 1
+                                value: Engine.rfPower
+                                enabled: Engine.transmitAvailable || Engine.canUseDeviceMicrophone || Engine.tuneAvailable
+                                onMoved: (v) => Engine.rfPower = Math.round(v)
+                            }
+                            Label {
+                                Layout.fillWidth: true
+                                visible: chip.ampOperating || Engine.rfPowerIsPercent
+                                text: chip.ampOperating ? qsTr("An amplifier is in Operate: this is its drive; its output is on the meters.")
+                                                        : qsTr("A share of the radio's 500 W; the power out is on the Power meter.")
+                                color: Theme.textDim
+                                font.pixelSize: Theme.px(12)
+                                wrapMode: Text.Wrap
                             }
                         }
                     }
