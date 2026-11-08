@@ -521,6 +521,16 @@ MobileEngine::MobileEngine(QObject* parent)
     m_audio->moveToThread(m_audioThread);
     connect(m_audio, &AudioEngine::txClipRecorded, this, &MobileEngine::onVoiceClipRecorded);
     connect(m_audio, &AudioEngine::txClipFinished, this, &MobileEngine::onVoiceClipFinished);
+    // The meter choices offer SNR while RADE runs: a choice of it comes
+    // back with RADE (only the start and end, not every SNR report).
+    connect(this, &MobileEngine::radeChanged, this, [this] {
+        if (radeActive() != m_radeMetersShown) {
+            m_radeMetersShown = radeActive();
+            emit meterSelectionChanged();
+        }
+    });
+    m_repeatTimer.setSingleShot(true);
+    connect(&m_repeatTimer, &QTimer::timeout, this, &MobileEngine::fireMacroRepeat);
     setupDxCluster();
     setupFreeDv();
     // Network changes in the log (Wi-Fi <-> mobile data, offline): a remote
@@ -2173,6 +2183,9 @@ void MobileEngine::wireTransmit()
                                               .arg(static_cast<int>(st.fenced));
         }
         qCInfo(lcMobile) << "DVK" << dvkStateName(status) << "slot" << id;
+        if (m_repeatSending && m_repeatKind == QLatin1String("voice") && status != DvkModel::Playback) {
+            scheduleMacroRepeat();
+        }
         emit dvkChanged();
     });
     connect(&rm.meterModel(), &MeterModel::txMetersChanged, this,
@@ -2808,6 +2821,11 @@ QStringList MobileEngine::meterKindsFor(const QString& side, bool tx) const
     if (side.startsWith(QLatin1String("right"))) {
         kinds.removeAll(QStringLiteral("Mic"));
     }
+    // RADE's own SNR while it decodes (Scott L Stanford, roadmap 45),
+    // beside the S meter; receive only.
+    if (!tx && radeActive()) {
+        kinds.insert(1, QStringLiteral("SNR"));
+    }
     // The amplifier's readings on every meter, receive and transmit, while
     // one is set up (Radio Setup › Amp; Sebastian Schu DG5CST), or a Power
     // Genius XL is there (the radio reports it, or the app reads it).
@@ -3091,6 +3109,7 @@ void MobileEngine::dvkPlay(int id)
 {
     if (!dvkOnRadio()) {
         if (m_voiceState == QLatin1String("playback")) {
+            cancelMacroRepeat(QStringLiteral("voice macro stopped"));
             QMetaObject::invokeMethod(m_audio, &AudioEngine::stopTxClip, Qt::QueuedConnection);
             return;
         }
@@ -3111,12 +3130,15 @@ void MobileEngine::dvkPlay(int id)
             return;
         }
         // The clip plays in the microphone's place for one PTT press.
+        m_macroKeying = true;
         setPtt(true);
+        m_macroKeying = false;
         if (!m_pttHeld) {
             return;
         }
         m_voiceState = QStringLiteral("playback");
         m_voiceActiveId = id;
+        armMacroRepeat(QStringLiteral("voice"), id);
         AudioEngine* audio = m_audio;
         QMetaObject::invokeMethod(audio, [audio, clip, rate] { audio->playTxClip(clip, rate); }, Qt::QueuedConnection);
         qCInfo(lcMobile) << "voice macro play F" << id << clip.size() / sizeof(float) / double(rate) << "s";
@@ -3125,6 +3147,7 @@ void MobileEngine::dvkPlay(int id)
     }
     DvkModel& dvk = m_session.radioModel().dvkModel();
     if (dvk.status() == DvkModel::Playback) {
+        cancelMacroRepeat(QStringLiteral("voice keyer stopped"));
         dvk.playbackStop();
         return;
     }
@@ -3139,6 +3162,7 @@ void MobileEngine::dvkPlay(int id)
         return;
     }
     qCInfo(lcMobile) << "DVK play slot" << id;
+    armMacroRepeat(QStringLiteral("voice"), id);
     dvk.playbackStart(id);
 }
 
@@ -3217,6 +3241,9 @@ void MobileEngine::onVoiceClipFinished()
     if (m_voiceState == QLatin1String("playback")) {
         m_voiceState = QStringLiteral("idle");
         releasePtt(QStringLiteral("voice macro done"));
+        if (m_repeatSending && m_repeatKind == QLatin1String("voice")) {
+            scheduleMacroRepeat();
+        }
         emit dvkChanged();
     }
 }
@@ -3298,6 +3325,126 @@ void MobileEngine::feedVoicePreview()
     }
 }
 
+namespace {
+constexpr int kMacroRepeatGapMin = 2;
+constexpr int kMacroRepeatGapMax = 60;
+}
+
+void MobileEngine::setMacroRepeat(bool on)
+{
+    if (on == m_macroRepeat) {
+        return;
+    }
+    if (!on) {
+        cancelMacroRepeat(QStringLiteral("Repeat off"));
+    }
+    m_macroRepeat = on;
+    qCInfo(lcMobile) << "macro repeat" << (on ? "on, every" : "off") << (on ? macroRepeatGap() : 0) << (on ? "s" : "");
+    emit macroRepeatChanged();
+}
+
+int MobileEngine::macroRepeatGap() const
+{
+    return std::clamp(AppSettings::instance().value(QStringLiteral("MobileMacroRepeatGap"), 5).toInt(),
+                      kMacroRepeatGapMin, kMacroRepeatGapMax);
+}
+
+void MobileEngine::setMacroRepeatGap(int seconds)
+{
+    seconds = std::clamp(seconds, kMacroRepeatGapMin, kMacroRepeatGapMax);
+    if (seconds == macroRepeatGap()) {
+        return;
+    }
+    AppSettings::instance().setValue(QStringLiteral("MobileMacroRepeatGap"), seconds);
+    AppSettings::instance().save();
+    // A gap already counting takes the new length from now.
+    if (m_repeatTimer.isActive()) {
+        scheduleMacroRepeat();
+    }
+    emit macroRepeatChanged();
+}
+
+QString MobileEngine::macroRepeatSlot() const
+{
+    if (m_repeatKind == QLatin1String("voice")) {
+        return QStringLiteral("F%1").arg(m_repeatIndex);
+    }
+    if (m_repeatKind == QLatin1String("cw")) {
+        return QStringLiteral("M%1").arg(m_repeatIndex + 1);
+    }
+    return {};
+}
+
+// A slot started on the air: with Repeat on it becomes the repeating one
+// (another slot replaces it); the engine's own resend keeps it as it is.
+void MobileEngine::armMacroRepeat(const QString& kind, int index)
+{
+    if (!m_macroRepeat) {
+        return;
+    }
+    m_repeatTimer.stop();
+    m_repeatDueAt = 0;
+    m_repeatSending = true;
+    if (!m_repeatFiring && (kind != m_repeatKind || index != m_repeatIndex)) {
+        m_repeatKind = kind;
+        m_repeatIndex = index;
+        qCInfo(lcMobile).noquote() << QStringLiteral("macro repeat: %1 every %2 s").arg(macroRepeatSlot()).arg(macroRepeatGap());
+    }
+    emit macroRepeatChanged();
+}
+
+// The slot ended: the gap starts.
+void MobileEngine::scheduleMacroRepeat()
+{
+    if (!m_macroRepeat || m_repeatKind.isEmpty()) {
+        return;
+    }
+    m_repeatSending = false;
+    const int gapMs = macroRepeatGap() * 1000;
+    m_repeatDueAt = static_cast<double>(QDateTime::currentMSecsSinceEpoch() + gapMs);
+    m_repeatTimer.start(gapMs);
+    emit macroRepeatChanged();
+}
+
+void MobileEngine::fireMacroRepeat()
+{
+    const QString kind = m_repeatKind;
+    const int index = m_repeatIndex;
+    // The mode changed under the repeat (voice to CW or a text mode).
+    const bool fits = kind == QLatin1String("cw") ? cwMode() : (!cwMode() && !textModeActive());
+    if (!m_macroRepeat || kind.isEmpty() || !m_connected || !fits) {
+        cancelMacroRepeat(fits ? QStringLiteral("not connected") : QStringLiteral("mode changed"));
+        return;
+    }
+    m_repeatFiring = true;
+    m_repeatSending = false;
+    if (kind == QLatin1String("voice")) {
+        dvkPlay(index);
+    } else {
+        sendCwMemory(index);
+    }
+    m_repeatFiring = false;
+    // Refused (the transmit lock, another station transmitting, an empty
+    // slot): nothing went out, so nothing would end it.
+    if (!m_repeatSending) {
+        cancelMacroRepeat(QStringLiteral("the slot could not be sent"));
+    }
+}
+
+void MobileEngine::cancelMacroRepeat(const QString& reason)
+{
+    if (m_repeatKind.isEmpty() || m_repeatFiring) {
+        return;
+    }
+    qCInfo(lcMobile).noquote() << QStringLiteral("macro repeat of %1 ended: %2").arg(macroRepeatSlot(), reason);
+    m_repeatTimer.stop();
+    m_repeatKind.clear();
+    m_repeatIndex = -1;
+    m_repeatDueAt = 0;
+    m_repeatSending = false;
+    emit macroRepeatChanged();
+}
+
 void MobileEngine::stopVoicePreview()
 {
     m_voicePreviewTimer.stop();
@@ -3311,6 +3458,7 @@ void MobileEngine::stopVoicePreview()
 
 void MobileEngine::dvkStop()
 {
+    cancelMacroRepeat(QStringLiteral("Stop"));
     if (!dvkOnRadio()) {
         if (m_voiceState == QLatin1String("preview")) {
             stopVoicePreview();
@@ -3676,6 +3824,9 @@ void MobileEngine::setPtt(bool down, const QString& reason)
         armHold(false);
         releasePtt(reason.isEmpty() ? QStringLiteral("operator release") : reason);
         return;
+    }
+    if (!m_macroKeying) {
+        cancelMacroRepeat(QStringLiteral("PTT"));
     }
     if (m_pttHeld) {
         return;
@@ -4785,6 +4936,16 @@ void MobileEngine::wireCw()
         if (m_cwxLocalKeyer) {
             m_cwxLocalKeyer->stop();
         }
+        if (m_repeatKind == QLatin1String("cw")) {
+            cancelMacroRepeat(QStringLiteral("CW text cleared"));
+        }
+    });
+    // A repeating CW memory's text drained from the radio's keyer: the gap
+    // starts (queue=0 can also come by itself, so only after our send).
+    connect(&rm.cwxModel(), &CwxModel::queueEmpty, this, [this] {
+        if (m_repeatSending && m_repeatKind == QLatin1String("cw")) {
+            scheduleMacroRepeat();
+        }
     });
 
     // The radio refusing CW (e.g. another client sending CW/CWX) must not
@@ -5649,7 +5810,12 @@ void MobileEngine::sendCwMemory(int index)
         return;
     }
     text.replace(QLatin1String("{HIS}"), m_workedCall);
-    sendCwx(text);
+    m_macroKeying = true;
+    const bool sent = sendCwx(text);
+    m_macroKeying = false;
+    if (sent) {
+        armMacroRepeat(QStringLiteral("cw"), index);
+    }
 }
 
 int MobileEngine::txFilterLow() const
@@ -7516,6 +7682,7 @@ void MobileEngine::setCwKey(bool down, const QString& reason)
         }
         return;
     }
+    cancelMacroRepeat(QStringLiteral("KEY"));
     if (m_cwKeyHeld || !cwKeyAvailable()) {
         return;
     }
@@ -7736,6 +7903,9 @@ void MobileEngine::setCwPaddleState(bool dit, bool dah)
     }
     RadioModel& rm = m_session.radioModel();
     const bool held = dit || dah;
+    if (held) {
+        cancelMacroRepeat(QStringLiteral("paddles"));
+    }
     // A new press needs a radio that can key and no TUNE carrier; a release
     // always goes through, so nothing is left keyed.
     if (held && !m_cwPaddleHeld
@@ -7764,21 +7934,24 @@ void MobileEngine::releasePaddles()
     }
 }
 
-void MobileEngine::sendCwx(const QString& text)
+bool MobileEngine::sendCwx(const QString& text)
 {
+    if (!m_macroKeying) {
+        cancelMacroRepeat(QStringLiteral("CW text"));
+    }
     const QString trimmed = text.trimmed();
     if (trimmed.isEmpty() || !cwxAvailable() || txLockRefuses("CW text")) {
-        return;
+        return false;
     }
     RadioModel& rm = m_session.radioModel();
     if (!rm.cwxModel().canSend()) {
         setLastError(tr("CW text cannot be sent right now."));
-        return;
+        return false;
     }
     m_cwxInput = rm.localTxController()->capture(TxController::Activity::Cwx);
     if (!m_cwxInput.send(trimmed)) {
         setLastError(tr("The radio did not accept the CW text."));
-        return;
+        return false;
     }
     qCInfo(lcMobile) << "CWX sent" << trimmed.size() << "characters";
     m_cwxLiveInDecoder = false;
@@ -7786,12 +7959,14 @@ void MobileEngine::sendCwx(const QString& text)
     // reads both ways (the receiver hears nothing of it while transmitting).
     appendCwDecoded(QStringLiteral("\n[TX] %1\n").arg(trimmed.toUpper()));
     emit cwDecoderChanged();
+    return true;
 }
 
 void MobileEngine::sendCwxChar(const QString& ch)
 {
     // Live mode (the desktop's CWX live typing): each character to the
     // radio's keyer as it is typed.
+    cancelMacroRepeat(QStringLiteral("CW typing"));
     if (ch.isEmpty() || !cwxAvailable() || txLockRefuses("CW typing")) {
         return;
     }
@@ -7817,6 +7992,7 @@ void MobileEngine::sendCwxChar(const QString& ch)
 
 void MobileEngine::stopCwx()
 {
+    cancelMacroRepeat(QStringLiteral("Stop"));
     m_cwxLiveInDecoder = false;
     if (m_cwxInput.valid()) {
         m_cwxInput.stop();
@@ -8234,6 +8410,9 @@ void MobileEngine::onConnectionStateChanged(bool connected)
         emit radeChanged();
     }
     m_connected = connected;
+    if (!connected) {
+        setMacroRepeat(false);
+    }
     m_micDefaulted = false;
     m_cwPitchRepaired = false;
     // The transmit status can come before the connection is marked up.

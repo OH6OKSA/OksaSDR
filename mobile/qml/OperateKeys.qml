@@ -34,6 +34,8 @@ Item {
     }
 
     function press(event) {
+        // Any key ends a repeating macro (an F-key then starts its own).
+        if (!event.isAutoRepeat) Engine.cancelMacroRepeat("a key")
         if (paddles.handlePress(event)) {
             return true
         }

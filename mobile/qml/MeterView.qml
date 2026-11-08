@@ -94,6 +94,15 @@ Item {
         }
         case "S":
             return { v: Engine.sMeterDbm, min: -127, max: -13, live: true, text: Engine.sMeterText, red: 1e9 }
+        // RADE's SNR while it decodes (Scott L Stanford) on 0-20 dB; – until
+        // it is synced.
+        case "SNR": {
+            const rade = Engine.radeStatus
+            const synced = Engine.rade && !!rade.synced
+            const snr = rade.snr || 0
+            return { v: Math.max(0, Math.min(20, snr)), min: 0, max: 20, live: synced,
+                     text: "SNR " + (synced ? snr + " dB" : "–"), red: 1e9 }
+        }
         case "Power": {
             // As the desktop's gauge: 0-120 W red from 100, an Aurora or a
             // radio over 100 W 0-600 red from 500, QRP (20 W or less) to
@@ -327,6 +336,7 @@ Item {
                     readonly property var kinds: {
                         meter.ampSet
                         Engine.tgxl.present
+                        Engine.rade
                         return Engine.meterKindsFor(meter.side, section.modelData.tx)
                     }
                     readonly property var radioKinds: kinds.filter(k => k.indexOf("Amp ") !== 0 && k.indexOf("Tuner ") !== 0)

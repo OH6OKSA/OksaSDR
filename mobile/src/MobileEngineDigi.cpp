@@ -84,15 +84,34 @@ struct MobileEngine::DigiDecoder {
     ~DigiDecoder() { QObject::disconnect(bandWatch); }
 };
 
-void MobileEngine::setupDigi()
+// The FT8 / FT4 choices kept in the settings: at start, and again when an
+// app setup is applied (roadmap 17).
+void MobileEngine::loadDigiSettings()
 {
-    m_ft8 = std::make_unique<Ft8Engine>();
-    m_ft8->setProtocol(AppSettings::instance().value(QStringLiteral("MobileDigiProtocol"), QStringLiteral("FT8")).toString()
+    const AppSettings& settings = AppSettings::instance();
+    m_ft8->setProtocol(settings.value(QStringLiteral("MobileDigiProtocol"), QStringLiteral("FT8")).toString()
                                == QLatin1String("FT4")
                            ? Ft8Engine::Protocol::Ft4
                            : Ft8Engine::Protocol::Ft8);
-    m_digiTxHz = std::clamp(AppSettings::instance().value(QStringLiteral("MobileDigiTxHz"), 1200).toInt(), 200, 3000);
-    m_pskReporterOn = AppSettings::instance().value(QStringLiteral("MobilePskReporter"), QStringLiteral("0")).toString() == QLatin1String("1");
+    m_digiTxHz = std::clamp(settings.value(QStringLiteral("MobileDigiTxHz"), 1200).toInt(), 200, 3000);
+    m_pskReporterOn = settings.value(QStringLiteral("MobilePskReporter"), QStringLiteral("0")).toString() == QLatin1String("1");
+    m_digiAutoCq = settings.value(QStringLiteral("MobileDigiAutoCq"), QStringLiteral("0")).toString() == QLatin1String("1");
+    m_digiPresenceMin = std::clamp(settings.value(QStringLiteral("MobileDigiPresenceMin"), 10).toInt(), 1, 60);
+    m_digiCqParity = settings.value(QStringLiteral("MobileDigiCqParity"), QStringLiteral("auto")).toString();
+    m_digiCqTargets = settings.value(QStringLiteral("MobileDigiCqTargets"), QStringLiteral("DX,NA,EU"))
+                          .toString().split(QLatin1Char(','), Qt::SkipEmptyParts);
+    m_digiCqTarget = settings.value(QStringLiteral("MobileDigiCqTarget"), QString()).toString();
+    if (!m_digiCqTargets.contains(m_digiCqTarget)) {
+        m_digiCqTarget.clear();
+    }
+    m_digiTxLevelDb = std::clamp(settings.value(QStringLiteral("MobileDigiTxLevelDb"), 0).toInt(), -20, 0);
+    m_digiFilter = settings.value(QStringLiteral("MobileDigiFilter"), QStringLiteral("all")).toString();
+}
+
+void MobileEngine::setupDigi()
+{
+    m_ft8 = std::make_unique<Ft8Engine>();
+    loadDigiSettings();
     m_psk = new PskReporterUpload(this);
     // Closing in the middle of a transmission: PROC back on, and what PSK
     // Reporter has queued goes.
@@ -110,18 +129,7 @@ void MobileEngine::setupDigi()
     // follows them.
     connect(&m_session.radioModel(), &RadioModel::infoChanged, this, &MobileEngine::digiChanged);
     connect(this, &MobileEngine::qrzChanged, this, &MobileEngine::digiChanged);
-    m_digiAutoCq = AppSettings::instance().value(QStringLiteral("MobileDigiAutoCq"), QStringLiteral("0")).toString() == QLatin1String("1");
-    m_digiPresenceMin = std::clamp(AppSettings::instance().value(QStringLiteral("MobileDigiPresenceMin"), 10).toInt(), 1, 60);
     m_operatorMs = QDateTime::currentMSecsSinceEpoch();
-    m_digiCqParity = AppSettings::instance().value(QStringLiteral("MobileDigiCqParity"), QStringLiteral("auto")).toString();
-    m_digiCqTargets = AppSettings::instance().value(QStringLiteral("MobileDigiCqTargets"), QStringLiteral("DX,NA,EU"))
-                          .toString().split(QLatin1Char(','), Qt::SkipEmptyParts);
-    m_digiCqTarget = AppSettings::instance().value(QStringLiteral("MobileDigiCqTarget"), QString()).toString();
-    if (!m_digiCqTargets.contains(m_digiCqTarget)) {
-        m_digiCqTarget.clear();
-    }
-    m_digiTxLevelDb = std::clamp(AppSettings::instance().value(QStringLiteral("MobileDigiTxLevelDb"), 0).toInt(), -20, 0);
-    m_digiFilter = AppSettings::instance().value(QStringLiteral("MobileDigiFilter"), QStringLiteral("all")).toString();
     connect(m_ft8.get(), &Ft8Engine::slotStarted, this, &MobileEngine::onDigiSlot);
     connect(this, &MobileEngine::qsoLogChanged, this, [this] { m_wkDirty = true; });
     // FT8 / FT4 on a time server's time: asked when decoding starts and every

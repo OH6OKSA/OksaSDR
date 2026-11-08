@@ -129,6 +129,8 @@ radio interface, with no computer running alongside.
   spectrum and waterfall as on the desktop.
 - The radio's global, TX and mic profiles: load, save and delete, as in
   SmartSDR and AetherSDR.
+- **App setups** (Prof tab): the app's own settings saved under a name,
+  switched in a tap, exported as a file and imported on another device.
 - Filter passband drawn on the display, on the correct side for USB/LSB and
   centred for CW/AM.
 - Mode: tap the mode next to the frequency for the mode buttons.
@@ -193,7 +195,8 @@ radio interface, with no computer running alongside.
   you are in over the display, buttons only, so no scrolling past the
   tabs' sliders: the CW memories with the call being worked, the RTTY /
   PSK macros or the voice keyer; a tap sends, Stop stops, and PTT stays
-  in use while it is open.
+  in use while it is open. **Repeat** sends a voice keyer slot or CW
+  memory again every few seconds until PTT, Stop or any key.
 - **eSSB**: the processing of the device's microphone, AetherSDR's
   client-side TX chain, on a tab of its own as on the desktop: gate, EQ
   (low cut, bass, presence) and compressor, with the Mic meter reading the
@@ -361,6 +364,8 @@ landscape and Android pictures are taken from the devices.</sub>
 | 4O3A Power Genius XL / Tuner Genius XL (readings and control) | 🧪 Built in (build 152); tested against a stand-in that replays real devices' frames; reports from owners welcome |
 | APD (FLEX-8000, Aurora) | 🧪 Built in (build 152); tested with the radio's status stood in; reports welcome |
 | Macros panel by PTT (CW memories, Digi macros, voice keyer) | ✅ In use by a tester since build 150 (Tyler K0OTC: "It looks good"); checked on phones and tablets in USB, CW and RTTY without sending |
+| Macros › Repeat (build 160) | 🧪 A CW memory repeated on the FLEX at 10 W, ended by a key and by Stop; the voice keyer's repeat to verify on a device |
+| App setups (build 160) | 🧪 Save, switch, export, import and delete checked in the app here; across devices to verify |
 | Radio Setup › RX, Network and the rest of SmartSDR's Radio Setup (build 151) | 🧪 Each setting written from the page and set back on the FLEX-6600M (4.3.16); calibration, the reference, a static address and the restart only to their question so far; multiFLEX, binaural and the low-latency digital filters shown only (that firmware refuses their commands) |
 | PSK31 / PSK63 | ✅ PSK31 decoded live (LZ1AEY's CQ on 14.071) and a PSK31 QSO at 25 W with F6FPU near Lyon, answering our first CQ (2026-11-02); the decoder tested to -12 dB SNR, AFC and a neighbour 100 Hz away |
 | CW decoder | ✅ Decodes a strong signal cleanly and weak stations' calls (8–45 WPM, Sens filter against noise) |

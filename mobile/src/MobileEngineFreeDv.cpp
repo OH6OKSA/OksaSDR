@@ -26,7 +26,8 @@ Q_DECLARE_LOGGING_CATEGORY(lcMobile)
 
 namespace AetherSDR::mobile {
 
-void MobileEngine::setupFreeDv()
+// At start, and again when an app setup is applied (roadmap 17).
+void MobileEngine::loadFreeDvSettings()
 {
     const AppSettings& settings = AppSettings::instance();
     m_freedvReporterOn = settings.value(QStringLiteral("MobileFreeDvReporter"), QStringLiteral("False")).toString()
@@ -34,6 +35,11 @@ void MobileEngine::setupFreeDv()
     m_freedvAllBands = settings.value(QStringLiteral("MobileFreeDvAllBands"), QStringLiteral("False")).toString()
                        == QLatin1String("True");
     m_freedvMessage = settings.value(QStringLiteral("MobileFreeDvMessage")).toString();
+}
+
+void MobileEngine::setupFreeDv()
+{
+    loadFreeDvSettings();
     m_freedvRebuildTimer.setSingleShot(true);
     m_freedvRebuildTimer.setInterval(500);
     connect(&m_freedvRebuildTimer, &QTimer::timeout, this, &MobileEngine::rebuildFreedvStations);

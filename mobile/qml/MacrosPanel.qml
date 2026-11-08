@@ -29,6 +29,21 @@ Popup {
         : Engine.dvkState !== "unavailable" ? "voice" : ""
     readonly property bool available: kind !== ""
     onAvailableChanged: if (!available) close()
+    // Repeat (Robin Bishop, roadmap 33): voice keyer slots and CW memories.
+    readonly property bool repeatable: kind === "cw" || kind === "voice"
+    onKindChanged: Engine.cancelMacroRepeat("the macros' mode changed")
+    readonly property bool repeating: Engine.macroRepeatSlot.length > 0
+    // Seconds to the next send while a gap counts down.
+    property real now: Date.now()
+    Timer {
+        interval: 250
+        repeat: true
+        running: Engine.macroRepeatDueAt > 0
+        triggeredOnStart: true
+        onTriggered: macros.now = Date.now()
+    }
+    readonly property int repeatIn: Engine.macroRepeatDueAt > 0
+        ? Math.max(0, Math.ceil((Engine.macroRepeatDueAt - now) / 1000)) : 0
 
     modal: false
     dim: false
@@ -81,12 +96,16 @@ Popup {
             spacing: 4
             Label {
                 Layout.fillWidth: true
-                text: macros.kind === "cw" ? qsTr("CW memories")
+                text: macros.repeating && Engine.macroRepeatDueAt > 0
+                        ? qsTr("%1 again in %2 s").arg(Engine.macroRepeatSlot).arg(macros.repeatIn)
+                    : macros.repeating ? qsTr("Sending %1, repeats").arg(Engine.macroRepeatSlot)
+                    : macros.kind === "cw" ? qsTr("CW memories")
                     : macros.kind === "text" ? qsTr("Digi macros")
                     : Engine.dvkState === "playback" ? qsTr("Voice keyer: sending F%1").arg(Engine.dvkActiveId)
                     : Engine.dvkState === "recording" ? qsTr("Voice keyer: recording F%1").arg(Engine.dvkActiveId)
                     : qsTr("Voice keyer")
-                color: Engine.dvkState === "playback" || Engine.dvkState === "recording" ? Theme.warning : Theme.text
+                color: macros.repeating || Engine.dvkState === "playback" || Engine.dvkState === "recording"
+                       ? Theme.warning : Theme.text
                 font.pixelSize: 15
                 font.bold: true
                 elide: Text.ElideRight
@@ -108,6 +127,62 @@ Popup {
                 Layout.preferredWidth: Theme.touchTarget
                 Layout.preferredHeight: Theme.touchTarget
                 onClicked: macros.close()
+            }
+        }
+
+        // Repeat: the slot tapped next is sent again after each send, the
+        // gap between, until PTT, KEY, Stop, any key or another slot.
+        RowLayout {
+            objectName: "macrosRepeatRow"
+            visible: macros.repeatable
+            Layout.fillWidth: true
+            spacing: 4
+            Switch {
+                objectName: "macrosRepeat"
+                text: qsTr("Repeat")
+                focusPolicy: Qt.NoFocus
+                checked: Engine.macroRepeat
+                onToggled: Engine.macroRepeat = checked
+                font.pixelSize: 15
+                Accessible.name: qsTr("Repeat the macro")
+            }
+            Item { Layout.fillWidth: true }
+            Label {
+                text: qsTr("every")
+                color: Theme.textDim
+                font.pixelSize: 13
+            }
+            AppButton {
+                objectName: "macrosRepeatLess"
+                text: "−"
+                focusPolicy: Qt.NoFocus
+                enabled: Engine.macroRepeatGap > 2
+                Accessible.name: qsTr("Shorter gap")
+                Layout.preferredWidth: Theme.touchTarget
+                Layout.preferredHeight: Theme.touchTarget
+                autoRepeat: true
+                onClicked: Engine.macroRepeatGap = Engine.macroRepeatGap - 1
+            }
+            Label {
+                objectName: "macrosRepeatGap"
+                text: qsTr("%1 s").arg(Engine.macroRepeatGap)
+                color: Theme.text
+                font.pixelSize: 15
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+                Layout.preferredWidth: gapMetrics.advanceWidth + 4
+                TextMetrics { id: gapMetrics; font.pixelSize: 15; font.bold: true; text: qsTr("%1 s").arg(60) }
+            }
+            AppButton {
+                objectName: "macrosRepeatMore"
+                text: "+"
+                focusPolicy: Qt.NoFocus
+                enabled: Engine.macroRepeatGap < 60
+                Accessible.name: qsTr("Longer gap")
+                Layout.preferredWidth: Theme.touchTarget
+                Layout.preferredHeight: Theme.touchTarget
+                autoRepeat: true
+                onClicked: Engine.macroRepeatGap = Engine.macroRepeatGap + 1
             }
         }
 
@@ -206,6 +281,8 @@ Popup {
                         : "F" + modelData.id + "  " + modelData.name
                           + (modelData.seconds > 0 ? "  " + modelData.seconds.toFixed(1) + " s" : "")
                     checked: voiceActive
+                    warn: macros.repeating && Engine.macroRepeatSlot
+                          === (macros.kind === "cw" ? "M" + (index + 1) : macros.kind === "voice" ? "F" + modelData.id : "")
                     opacity: macros.kind !== "voice" || modelData.seconds > 0 || voiceActive ? 1.0 : 0.6
                     focusPolicy: Qt.NoFocus
                     leftPadding: 2

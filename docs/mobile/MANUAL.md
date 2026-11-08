@@ -151,7 +151,9 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
    de-esser, tube, exciter, reverb, in an order of your own).
 4. **Voice keyer**: F1-F12 on the TX tab record and send voice macros
    (*Listen* plays one without transmitting). The **Macros** button by
-   PTT opens them over the display, without scrolling the TX tab.
+   PTT opens them over the display, without scrolling the TX tab;
+   **Repeat** there sends a slot again every few seconds (a CQ for a
+   contest or POTA) until PTT, Stop or any key.
 5. A headset: Controls → Audio → Audio output (Bluetooth, USB-C on
    Android, or the speaker).
 
@@ -182,7 +184,8 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
    (`{CALL}` is your callsign, `{HIS}` the call in the Log tab); on a
    keyboard F1-F12 (⌘1-⌘0 without F-keys), Esc stops. **Live** sends
    letters as you type. The **Macros** button by PTT opens the memories
-   over the display, with the call being worked.
+   over the display, with the call being worked; **Repeat** there sends a
+   memory again every few seconds until KEY, Stop or any key.
 
 ### AM and SAM
 
@@ -792,7 +795,11 @@ to its usual reading. A Power Genius XL the radio reports gives these
 readings too when no RF2K-S is set up: Power on 0-2000 W red from 1500,
 Current on 0-70 A. A Tuner Genius XL adds **Tuner**: *Power* (the power
 through it, 0-2000 W) and *SWR* (red from 2.5, – below 5 W), so the four
-meters can follow the amplifier and the tuner without the Amp tab open. **Mic** is on the left meter and its lower bar
+meters can follow the amplifier and the tuner without the Amp tab open.
+While [RADE](#8-controls) runs, receive also offers **SNR** (thanks Scott
+L Stanford), the RADE decoder's own on 0-20 dB, *–* until it is synced;
+a meter showing it goes back to its usual reading when RADE is off and
+to SNR the next time RADE is on. **Mic** is on the left meter and its lower bar
 (on a tablet the side panel covers the right one). With this device's microphone it shows the
 level of the audio as it is sent (after the processing in Controls → eSSB):
 while you transmit, and in receive too while Controls → TX or eSSB is open,
@@ -1046,6 +1053,16 @@ tab shows the offset and moves it; SPLIT again (or XIT off there) ends it.
   received) its latest two lines show at the top of the panel, since the
   panel covers the strip at the top of the waterfall.
 
+  **Repeat** (voice keyer and CW memories; thanks Robin Bishop): with the
+  switch on, the slot you tap next is sent again after each send, the gap
+  set with − / + (2-60 s, 5 s at first, remembered), until PTT, KEY or the
+  paddles, **Stop**, any key on a keyboard, typed CW text or another slot
+  (which then repeats instead). While it repeats the panel's title says
+  which and when (*F2 again in 4 s*), the slot has an amber frame, and the
+  **Macros** button reads *⟳ F2* in amber, also with the panel closed, so
+  a repeat never runs unseen. The switch is off at every start and goes
+  off when the radio disconnects; a mode change ends the repeat.
+
   ![The Macros panel in CW](manual/macros.jpg)
 
 The button is always on top. On a phone an open controls drawer carries its
@@ -1250,7 +1267,24 @@ seven.
     off; the app then waits longer between tries and says so. Give each
     device its own SSID in the callsign, e.g. *OH6OKSA-2*.
 - **Prof** (profiles) — the radio's global, TX and mic profiles: load, save,
-  delete, as in SmartSDR.
+  delete, as in SmartSDR. Under them, **App setups** (thanks Larry
+  Averbeck W9FLA) do the same for this app's own settings: type a name in
+  *Save as…* and tap **Save** (an existing name asks before replacing it);
+  pick a setup in the list to switch to it at once. A setup holds the
+  display, meters, panels, DSP, audio and the TX chain, macros and CW
+  memories, the logbooks, the devices and the radio list, with their
+  passwords and keys; the voice keyer's recordings stay on the device.
+  Settings a setup did not have go back to their defaults. What reads its
+  setting only at start (the amplifier, the 4O3A devices, the DX cluster,
+  the developer link) follows at the next start, and the line under the
+  buttons says so. Not while transmitting or with FT8 / FT4 running.
+  **Export** shares a setup as a file (Mail, Files, AirDrop, Drive): it
+  asks first, as the file holds its passwords and keys as plain text, so
+  keep it to your own devices. **Import** adds a setup from such a file,
+  e.g. on your other iPhone, iPad or Android device; one with a name
+  already used gets *(2)*. **Delete** removes the selected setup.
+
+  ![App setups on the Prof tab](manual/app-setups.jpg)
 - **Mem** (memory) — the radio's memory channels: tap to tune (the view centres on the memory's filter once the radio has set it), *Save* stores the
   current frequency under the name typed. **Press and hold** one to edit
   its name, frequency (MHz) and mode — *Current* takes the slice's
@@ -1559,7 +1593,8 @@ seven.
   FreeDV waveform needed): *RADE* puts the slice in DIGU (DIGL where the
   band's voice mode is LSB) with a 750–2250 Hz filter, mutes its ordinary
   audio and plays the decoded speech instead; the line beside it shows
-  *Synced* and the SNR when a RADE signal is heard, and the callsign each
+  *Synced* and the SNR when a RADE signal is heard (a meter can show it
+  too: SNR in the meter chooser), and the callsign each
   station sends at the end of its over. Talk with PTT as usual: this
   device's microphone goes through the RADE encoder to the radio's DAX
   transmit (turned on for RADE, off again after), and the end-of-over frame

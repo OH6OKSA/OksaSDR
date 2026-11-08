@@ -11705,11 +11705,11 @@ void RadioModel::onStatusReceived(const QString& object,
         // Parse interlock timing fields into TransmitModel (#498)
         if (m_flexBackend) m_flexBackend->decodeInterlockStatus(kvs);
 
-        // Track PTT source (#2373). The radio reports source=SW for software
-        // MOX/CAT/xmit, and source=MIC|ACC|RCA for hardware-keyed PTT (mic
-        // PTT line, footswitch via ACC, RCA TXREQ). Field is not always
-        // present on every interlock status update, so persist the last
-        // seen value. Matches FlexLib v4.2.18 ParsePTTSource (Radio.cs:7932).
+        // Track PTT source (#2373). FlexLib 4.3.16 reports all latched PTT
+        // sources as a comma-separated list, hardware first (MIC, ACC, RCA);
+        // VOX has its own token; older firmware uses SW for software keying
+        // (upstream #6493). Interlock fields are deltas: retain the list when
+        // source is absent. Tokens are matched in interlockKeepsLocalTxOn.
         if (kvs.contains("source")) {
             m_lastInterlockSource = kvs["source"].toUpper();
         }

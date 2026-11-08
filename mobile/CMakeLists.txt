@@ -47,6 +47,7 @@ qt_add_executable(aether-mobile
     src/MobileEngineQrzLog.cpp
     src/MobileEngineSharedAdif.cpp
     src/MobileEngineLogger32.cpp
+    src/MobileEngineSetups.cpp
     src/MobileEngineAmp.cpp
     src/MobileEngine4o3a.cpp
     src/MobileEngineDoctor.cpp

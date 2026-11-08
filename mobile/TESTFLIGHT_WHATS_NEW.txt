@@ -9,13 +9,14 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- A frequency you choose puts the filter in the middle of the waterfall: typed, a band, a memory, a spot or a FreeDV station.
-- Log > Send to the developer: a mail with the address filled in and the log attached (thanks Dennis KM6DF). Copy is now in Share's sheet.
-- NRS goes up to 50 on SmartSDR 4.3.16 and later, the radio's own limit; no squelch in DFM.
-- An amplifier that is switched off no longer fills the log (thanks Sebastian DG5CST).
-- From build 158: TUNE restores only what it inhibited; Sound from The radio; the FTx QSO in the Log tab; measured TX power.
+- Prof tab > App setups: the app's own settings saved under a name, switched in a tap, exported as a file and imported on another device (thanks Larry W9FLA).
+- Macros > Repeat: a voice keyer slot or CW memory sent again every few seconds until PTT, Stop or any key (thanks Robin Bishop).
+- SNR on the meters while RADE decodes (thanks Scott L Stanford).
+- SmartSDR 4.3's list of PTT sources (MIC,VOX): the mic's or a footswitch's PTT keeps the TX meters with VOX off.
+- From build 159: the filter centred on a chosen frequency; Log > Send to the developer; NRS up to 50.
 
-RECENT (builds 94–157)
+RECENT (builds 94–158)
+- TUNE restores only what it inhibited; Sound from The radio; the FTx QSO in the Log tab; measured TX power.
 - eSSB tube, EVO, reverb; Amp by maker; first-run hints; felt slider taps.
 - Band plan lock (thanks Tyler K0OTC); FTx CQ DX (thanks Kurt DL5EAG); Display Zoom (thanks Evgeny R0ACS); Antenna Genius (thanks Ben Morris).
 - RF2K-S control and Tune, the amp on every meter (thanks Sebastian DG5CST, Jeff Stinger); Macros by PTT (thanks Tyler K0OTC).
@@ -36,7 +37,7 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab: decode, drag the red TX band to a free frequency, answer a CQ at low power and check the log. [TX]
 - The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: type a frequency, press a band or tap a memory: the filter lands in the middle. Log > Send to the developer.
+- New: Prof > App setups (save two, switch, export one to another device). Macros > Repeat at low power. [TX]
 - Worked before from Wavelog, the QRZ.com Logbook or a shared ADIF file in iCloud Drive.
 - The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]
 

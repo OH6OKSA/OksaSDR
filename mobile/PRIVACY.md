@@ -141,6 +141,15 @@ your device, except as part of the normal connection to your radio.
   attached as a text file, and nothing
   is sent until you send that mail. The attached file stays in the app's
   own storage until the next Send to the developer replaces it.
+- **App setups** (Prof tab): a setup you save is a copy of the app's
+  settings in the app's own storage; the passwords and keys it holds
+  (QRZ.com, the logbooks' API keys, the 4O3A devices' codes) stay in the
+  device's secure store under the setup's name. Not the SmartLink sign-in
+  and not the voice keyer's recordings. **Export** writes the setup to a
+  file and opens the share sheet: that file holds those passwords and keys
+  as plain text, the app says so before it is made, and it goes only where
+  you send it. **Import** reads a setup file you choose. Delete removes a
+  setup and its keys.
 
 Deleting the app deletes all of this data (on Android the copy of the log
 in Documents › OksaSDR stays until you delete it).
@@ -161,4 +170,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-11-08 (Log › Send to the developer)
+Last updated: 2026-11-08 (App setups; Log › Send to the developer)

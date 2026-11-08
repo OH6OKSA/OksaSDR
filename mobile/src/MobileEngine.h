@@ -497,6 +497,11 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QStringList txProfiles READ txProfiles NOTIFY profilesChanged)
     Q_PROPERTY(QString activeTxProfile READ activeTxProfile NOTIFY profilesChanged)
     Q_PROPERTY(QStringList micProfiles READ micProfiles NOTIFY profilesChanged)
+    // Named app setups (Larry Averbeck W9FLA, roadmap 17): the app's own
+    // settings under a name, switched on the Prof tab, exported as a file
+    // and imported on another device. The last one used, "" when none.
+    Q_PROPERTY(QStringList appSetups READ appSetups NOTIFY appSetupsChanged)
+    Q_PROPERTY(QString activeAppSetup READ activeAppSetup NOTIFY appSetupsChanged)
     Q_PROPERTY(QString activeMicProfile READ activeMicProfile NOTIFY profilesChanged)
     // TX audio passband (radio: transmit filter_low/filter_high).
     Q_PROPERTY(int txFilterLow READ txFilterLow WRITE setTxFilterLow NOTIFY txFilterChanged)
@@ -637,6 +642,17 @@ class MobileEngine : public QObject {
     // True: the radio's DVK (licensed); false: the app's own voice macros,
     // recorded and kept on this device and played into the TX audio.
     Q_PROPERTY(bool dvkOnRadio READ dvkOnRadio NOTIFY dvkChanged)
+    // Macros panel › Repeat (Robin Bishop, roadmap 33): a voice keyer slot or
+    // a CW memory sent again every macroRepeatGap seconds after it ends,
+    // until PTT, KEY, Stop, any key, another slot or the switch. The switch
+    // starts off at every launch and goes off on disconnect; the gap is kept.
+    Q_PROPERTY(bool macroRepeat READ macroRepeat WRITE setMacroRepeat NOTIFY macroRepeatChanged)
+    Q_PROPERTY(int macroRepeatGap READ macroRepeatGap WRITE setMacroRepeatGap NOTIFY macroRepeatChanged)
+    // The slot repeating ("F2" voice, "M3" CW), "" when none.
+    Q_PROPERTY(QString macroRepeatSlot READ macroRepeatSlot NOTIFY macroRepeatChanged)
+    // When the next send is due (ms since the epoch, Date.now()), 0 while
+    // the slot is being sent or nothing repeats.
+    Q_PROPERTY(double macroRepeatDueAt READ macroRepeatDueAt NOTIFY macroRepeatChanged)
     Q_PROPERTY(int procLevel READ procLevel WRITE setProcLevel NOTIFY txAudioChanged)
     Q_PROPERTY(int procLevelMax READ procLevelMax NOTIFY txAudioChanged)
     Q_PROPERTY(bool monitor READ monitor WRITE setMonitor NOTIFY txAudioChanged)
@@ -1341,6 +1357,15 @@ public:
     // profile from the current settings (the radio cannot overwrite those).
     Q_INVOKABLE void saveProfile(const QString& type, const QString& name);
     Q_INVOKABLE void deleteProfile(const QString& type, const QString& name);
+    QStringList appSetups() const;
+    QString activeAppSetup() const;
+    // Each returns {ok: bool, error: text}; apply also {later: the parts that
+    // change at the next start}, import {name}.
+    Q_INVOKABLE QVariantMap saveAppSetup(const QString& name);
+    Q_INVOKABLE QVariantMap applyAppSetup(const QString& name);
+    Q_INVOKABLE QVariantMap deleteAppSetup(const QString& name);
+    Q_INVOKABLE QVariantMap exportAppSetup(const QString& name);
+    Q_INVOKABLE QVariantMap importAppSetup(const QUrl& url);
     int txFilterLow() const;
     int txFilterHigh() const;
     void setTxFilterLow(int hz);
@@ -1490,6 +1515,14 @@ public:
     Q_INVOKABLE void dvkStop();
     Q_INVOKABLE void dvkClear(int id);
     Q_INVOKABLE void dvkRename(int id, const QString& name);
+    bool macroRepeat() const { return m_macroRepeat; }
+    void setMacroRepeat(bool on);
+    int macroRepeatGap() const;
+    void setMacroRepeatGap(int seconds);
+    QString macroRepeatSlot() const;
+    double macroRepeatDueAt() const { return m_repeatDueAt; }
+    // Ends a running repeat (the switch stays as it is).
+    Q_INVOKABLE void cancelMacroRepeat(const QString& reason);
     // Radio RF power setting (Flex rfpower, 0..100).
     int rfPower() const;
     void setRfPower(int power);
@@ -1659,7 +1692,8 @@ public:
     Q_INVOKABLE void closeOtherPanadapters();
     // Straight key: down while held. Every release path also keys up.
     Q_INVOKABLE void setCwKey(bool down, const QString& reason = QString());
-    Q_INVOKABLE void sendCwx(const QString& text);
+    // True when the radio's keyer took the text.
+    Q_INVOKABLE bool sendCwx(const QString& text);
     // Live mode: one character to the keyer as it is typed.
     Q_INVOKABLE void sendCwxChar(const QString& ch);
     Q_INVOKABLE void stopCwx();
@@ -1741,6 +1775,7 @@ signals:
     void phoneChanged();
     void panDisplayChanged();
     void dvkChanged();
+    void macroRepeatChanged();
     // The connected-stations list was asked for (Radio Setup); the operate
     // page opens it.
     void stationsRequested();
@@ -1791,6 +1826,7 @@ signals:
     void dxClusterChanged();
     void dxClusterStatusChanged();
     void profilesChanged();
+    void appSetupsChanged();
     void txFilterChanged();
     void eqChanged();
     void cwMemoriesChanged();
@@ -1963,6 +1999,7 @@ private:
 
     // ---- FT8 / FT4 (MobileEngineDigi.cpp) ----
     void setupDigi();
+    void loadDigiSettings();
     void setupOnlineLog();
     // Queue an ADIF record for the logbook and send the queue.
     void onlineLogQueue(const QString& adif);
@@ -2209,6 +2246,10 @@ private:
     QString m_radeRxCallsign;
     // FreeDV Reporter (MobileEngineFreeDv.cpp).
     void setupFreeDv();
+    void loadFreeDvSettings();
+    // App setups (MobileEngineSetups.cpp): every property's change signal,
+    // so the pages read the applied settings.
+    void announceAllProperties();
     void updateFreeDv();
     void rebuildFreedvStations();
     FreeDvClient* m_freedv{nullptr};
@@ -2247,6 +2288,20 @@ private:
     void onVoiceClipFinished();
     QString m_voiceState{QStringLiteral("idle")};
     int m_voiceActiveId{-1};
+    // Macro repeat (roadmap 33): what repeats ("voice" slot id or "cw"
+    // memory index), the gap timer, and guards for the engine's own keying.
+    void armMacroRepeat(const QString& kind, int index);
+    void scheduleMacroRepeat();
+    void fireMacroRepeat();
+    bool m_macroRepeat{false};
+    QString m_repeatKind;
+    int m_repeatIndex{-1};
+    double m_repeatDueAt{0};
+    bool m_repeatFiring{false};
+    bool m_repeatSending{false};  // armed slot on the air; its end schedules the next
+    bool m_macroKeying{false};
+    QTimer m_repeatTimer;
+    bool m_radeMetersShown{false};  // the meter choices last offered SNR
     // Listening to one of the app's own clips on this device: the clip as
     // 24 kHz stereo float, fed into the receive output in real time.
     // TX chain settings are written a moment after the last change (a

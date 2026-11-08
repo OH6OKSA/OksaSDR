@@ -51,7 +51,7 @@ for t in "${tabs[@]}"; do phone_shots+=("tab-$t"); done
 modes_shots=(mode-usb mode-cw mode-am mode-fm fm-tx tx-lock mode-rtty rtty-panel tab-rtty digi-operating mode-psk)
 amp_shots=(tab-amp amp-controls amp-confirm amp-tune setup-amp setup-txband setup-rx setup-usb meter-amp)
 all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${phone_shots[@]}" phone-landscape bandchooser
-           "${modes_shots[@]}" "${amp_shots[@]}" tab-genius cw-paddles macros rade-on ft8-running)
+           "${modes_shots[@]}" "${amp_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
     printf '%s\n' "${all_shots[@]}" | sort -u
     exit 0
@@ -336,6 +336,11 @@ if want macros; then
     printf 'ready\nmode CW\nwait 6000\ntapname macrosButton\nwait 1500\nshot macros\ntapname macrosButton\nwait 600\nmode DIGU\nwait 2000\n' \
         | plan macros 440x956 "${src[@]}"
 fi
+# The Prof tab's App setups (roadmap 17), scrolled to them; nothing saved.
+if want app-setups; then
+    printf 'ready\ndrawer 6\nwait 1500\nscroll 2000\nwait 1000\nshot app-setups\nclose\nwait 600\n' \
+        | plan app-setups 440x956 "${src[@]}"
+fi
 # The tests end their runs: RADE on 10 s after the start, the picture at
 # 40 s, RADE off with the slice and the TX slice back at 42 s; FT8 put back
 # at 53 s (not 40 s: the test reads a "40" as 40 m). Each run's log says
@@ -375,7 +380,8 @@ jpg ipad-portrait "" 600x
 jpg phone-menu 440x230+0+0
 jpg bandchooser "" 700x
 jpg cw-paddles 440x200+0+756
-jpg macros 440x430+0+526
+jpg macros 440x456+0+500
+jpg app-setups 440x236+0+636
 jpg rade-on 440x620+0+0
 jpg ft8-running "" 330x
 jpg tx-meters 985x140+0+200

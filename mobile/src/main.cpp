@@ -41,6 +41,11 @@
 #include <QGlyphRun>
 #include <QTextLayout>
 #include <QElapsedTimer>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QStandardPaths>
+#include <QUrl>
 #include <QEventLoop>
 #include <QWheelEvent>
 
@@ -353,6 +358,17 @@ int main(int argc, char* argv[])
                        "transmits), logging the local sidetone; power, mode and frequency restored after."),
         QStringLiteral("text"));
     parser.addOption(cwxTestOption);
+    const QCommandLineOption repeatTestOption(QStringLiteral("repeat-test"),
+        QStringLiteral("Development: Macros › Repeat with CW memory M12 (\"VVV DE <the radio's callsign>\") at "
+                       "10 W on 14.045 MHz CW every 3 s (only if this app's slice transmits): two sends, a key "
+                       "ends it during the gap, then a send stopped by Stop; memory, gap, power, mode and "
+                       "frequency restored after."));
+    parser.addOption(repeatTestOption);
+    const QCommandLineOption setupTestOption(QStringLiteral("setup-test"),
+        QStringLiteral("Development, no radio needed: saves the app's settings as a test setup, changes some, "
+                       "applies the setup and checks they came back, exports and imports it, then deletes "
+                       "the test setups (the settings end as they began)."));
+    parser.addOption(setupTestOption);
     const QCommandLineOption buttonStyleOption(QStringLiteral("button-style"),
         QStringLiteral("Button colours: classic, light or lit (remembered)."), QStringLiteral("style"));
     parser.addOption(buttonStyleOption);
@@ -1364,6 +1380,196 @@ int main(int argc, char* argv[])
                 engine.setFrequencyMhz(saved->value(QStringLiteral("freq")).toDouble());
                 qInfo() << "cwx-test: restored" << *saved << "sidetone" << engine.cwxSidetoneStats();
             });
+        });
+    }
+    if (parser.isSet(repeatTestOption)) {
+        auto* saved = new QVariantMap;
+        QTimer::singleShot(8000, &app, [&engine, saved] {
+            (*saved)[QStringLiteral("freq")] = engine.frequencyMhz();
+            (*saved)[QStringLiteral("mode")] = engine.mode();
+            (*saved)[QStringLiteral("memory")] = engine.cwMemories().value(11);
+            (*saved)[QStringLiteral("gap")] = engine.macroRepeatGap();
+            engine.setMode(QStringLiteral("CW"));
+            engine.setFrequencyMhz(14.045);
+        });
+        QTimer::singleShot(11000, &app, [&engine, saved] {
+            bool ownTx = false;
+            for (const QVariant& v : engine.slices()) {
+                const QVariantMap m = v.toMap();
+                if (m.value(QStringLiteral("id")).toInt() == engine.activeSliceId()) {
+                    ownTx = m.value(QStringLiteral("tx")).toBool();
+                }
+            }
+            const QString call = engine.callsign();
+            if (!ownTx || engine.mode() != QLatin1String("CW") || std::abs(engine.frequencyMhz() - 14.045) > 0.0005
+                || call.isEmpty()) {
+                qWarning() << "repeat-test: not sending (own TX:" << ownTx << engine.mode() << engine.frequencyMhz()
+                           << "callsign" << call << ")";
+                engine.setMode(saved->value(QStringLiteral("mode")).toString());
+                engine.setFrequencyMhz(saved->value(QStringLiteral("freq")).toDouble());
+                return;
+            }
+            (*saved)[QStringLiteral("power")] = engine.rfPower();
+            engine.setRfPower(10);
+            engine.setCwMemory(11, QStringLiteral("VVV DE {CALL}"));
+            engine.setMacroRepeatGap(3);
+            engine.setMacroRepeat(true);
+            // Each change of the repeat's state, with the time and the radio.
+            auto* t0 = new QElapsedTimer;
+            t0->start();
+            auto* sends = new int(0);
+            QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::macroRepeatChanged, &engine, [&engine, t0, sends] {
+                const bool counting = engine.macroRepeatDueAt() > 0;
+                if (!counting && !engine.macroRepeatSlot().isEmpty()) {
+                    ++*sends;
+                }
+                qInfo().noquote() << QStringLiteral("repeat-test: %1 s slot=%2 %3 tx=%4")
+                                         .arg(t0->elapsed() / 1000.0, 0, 'f', 1)
+                                         .arg(engine.macroRepeatSlot().isEmpty() ? QStringLiteral("-") : engine.macroRepeatSlot())
+                                         .arg(counting ? QStringLiteral("gap") : QStringLiteral("sending/none"))
+                                         .arg(engine.radioTransmitting());
+            });
+            QTimer::singleShot(700, &engine, [&engine] {
+                qInfo() << "repeat-test: M12 with Repeat on, every" << engine.macroRepeatGap() << "s";
+                engine.sendCwMemory(11);
+            });
+            // Watch for the second gap, end it there as a key would.
+            auto* watch = new QTimer(&engine);
+            QObject::connect(watch, &QTimer::timeout, &engine, [&engine, watch, sends, t0, saved] {
+                if (*sends >= 2 && engine.macroRepeatDueAt() > 0) {
+                    watch->stop();
+                    qInfo() << "repeat-test:" << (*sends >= 2 ? "[ OK ]" : "[FAIL]") << *sends << "sends before the key";
+                    engine.cancelMacroRepeat(QStringLiteral("repeat-test key"));
+                    qInfo() << "repeat-test:" << (engine.macroRepeatSlot().isEmpty() ? "[ OK ]" : "[FAIL]")
+                            << "a key ended the repeat; Repeat still" << engine.macroRepeat();
+                    // Again, and Stop while it sends.
+                    QTimer::singleShot(4000, &engine, [&engine, saved, t0] {
+                        engine.sendCwMemory(11);
+                        QTimer::singleShot(1500, &engine, [&engine, saved] {
+                            engine.stopCwx();
+                            qInfo() << "repeat-test:" << (engine.macroRepeatSlot().isEmpty() ? "[ OK ]" : "[FAIL]")
+                                    << "Stop during the send ended the repeat";
+                            QTimer::singleShot(5000, &engine, [&engine, saved] {
+                                qInfo() << "repeat-test:" << (engine.macroRepeatSlot().isEmpty() && !engine.radioTransmitting() ? "[ OK ]" : "[FAIL]")
+                                        << "nothing sent again after Stop";
+                                engine.setMacroRepeat(false);
+                                engine.setMacroRepeatGap(saved->value(QStringLiteral("gap")).toInt());
+                                engine.setCwMemory(11, saved->value(QStringLiteral("memory")).toString());
+                                engine.setRfPower(saved->value(QStringLiteral("power")).toInt());
+                                engine.setMode(saved->value(QStringLiteral("mode")).toString());
+                                engine.setFrequencyMhz(saved->value(QStringLiteral("freq")).toDouble());
+                                qInfo() << "repeat-test: restored" << *saved;
+                            });
+                        });
+                    });
+                } else if (t0->elapsed() > 60000) {
+                    watch->stop();
+                    qWarning() << "repeat-test: [FAIL] no second gap within 60 s," << *sends << "sends";
+                    engine.stopCwx();
+                    engine.setMacroRepeat(false);
+                    engine.setMacroRepeatGap(saved->value(QStringLiteral("gap")).toInt());
+                    engine.setCwMemory(11, saved->value(QStringLiteral("memory")).toString());
+                    engine.setRfPower(saved->value(QStringLiteral("power")).toInt());
+                    engine.setMode(saved->value(QStringLiteral("mode")).toString());
+                    engine.setFrequencyMhz(saved->value(QStringLiteral("freq")).toDouble());
+                    qInfo() << "repeat-test: restored" << *saved;
+                }
+            });
+            watch->start(200);
+        });
+    }
+    if (parser.isSet(setupTestOption)) {
+        QTimer::singleShot(4000, &app, [&engine] {
+            const auto ok = [](bool pass, const QString& what) {
+                qInfo().noquote() << "setup-test:" << (pass ? "[ OK ]" : "[FAIL]") << what;
+            };
+            const QString name = QStringLiteral("zz setup-test");
+            const QStringList props{QStringLiteral("wfBlackLevel"), QStringLiteral("buttonStyle"),
+                                    QStringLiteral("pttToggle"), QStringLiteral("digiFilter"),
+                                    QStringLiteral("spotModes"), QStringLiteral("macroRepeatGap"),
+                                    QStringLiteral("pinnedSections"), QStringLiteral("cwMemories")};
+            QVariantMap before;
+            for (const QString& p : props) {
+                before[p] = engine.property(p.toUtf8().constData());
+            }
+            const QString activeBefore = engine.activeAppSetup();
+            QVariantMap r = engine.saveAppSetup(name);
+            ok(r.value(QStringLiteral("ok")).toBool() && engine.appSetups().contains(name)
+                   && engine.activeAppSetup() == name, QStringLiteral("saved, listed and in use"));
+            // Changes as a user makes them.
+            engine.setWfBlackLevel(before.value(QStringLiteral("wfBlackLevel")).toInt() == 77 ? 33 : 77);
+            engine.setButtonStyle(before.value(QStringLiteral("buttonStyle")).toString() == QLatin1String("classic")
+                                      ? QStringLiteral("light") : QStringLiteral("classic"));
+            engine.setPttToggle(!before.value(QStringLiteral("pttToggle")).toBool());
+            engine.setDigiFilter(before.value(QStringLiteral("digiFilter")).toString() == QLatin1String("cq")
+                                     ? QStringLiteral("all") : QStringLiteral("cq"));
+            engine.setSpotModes(before.value(QStringLiteral("spotModes")).toString() == QLatin1String("cw")
+                                    ? QStringLiteral("phone") : QStringLiteral("cw"));
+            engine.setMacroRepeatGap(before.value(QStringLiteral("macroRepeatGap")).toInt() == 17 ? 23 : 17);
+            engine.setPinnedSections({QStringLiteral("TX")});
+            const QString memory = engine.cwMemories().value(5);
+            engine.setCwMemory(5, QStringLiteral("SETUP TEST"));
+            int moved = 0;
+            for (const QString& p : props) {
+                moved += engine.property(p.toUtf8().constData()) != before.value(p) ? 1 : 0;
+            }
+            ok(moved == props.size(), QStringLiteral("%1 of %2 settings changed for the test").arg(moved).arg(props.size()));
+            int notified = 0;
+            const QMetaObject::Connection counter = QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::displayLevelsChanged,
+                                                                     &engine, [&notified] { ++notified; });
+            r = engine.applyAppSetup(name);
+            QObject::disconnect(counter);
+            ok(r.value(QStringLiteral("ok")).toBool(), QStringLiteral("applied (later: \"%1\")").arg(r.value(QStringLiteral("later")).toString()));
+            ok(notified > 0, QStringLiteral("the pages were told (displayLevelsChanged x%1)").arg(notified));
+            for (const QString& p : props) {
+                const QVariant now = engine.property(p.toUtf8().constData());
+                ok(now == before.value(p), QStringLiteral("%1 back: %2").arg(p, now.toString().left(60)));
+            }
+            // Export (on a PC the path is copied), import as a second setup.
+            // On a PC there is no share sheet (the path is copied): the file counts.
+            r = engine.exportAppSetup(name);
+            QString base = name;
+            for (QChar& c : base) {
+                if (!c.isLetterOrNumber() && c != QLatin1Char('-')) {
+                    c = QLatin1Char('-');
+                }
+            }
+            const QString exported = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+                                         .filePath(QStringLiteral("share/OksaSDR-setup-%1.json").arg(base));
+            ok(QFile::exists(exported), QStringLiteral("exported (%1)").arg(r.value(QStringLiteral("ok")).toBool()
+                                                                          ? QStringLiteral("share sheet")
+                                                                          : r.value(QStringLiteral("error")).toString()));
+            QFile file(exported);
+            bool hasSecrets = false;
+            int settingsCount = 0;
+            if (file.open(QIODevice::ReadOnly)) {
+                const QJsonObject root = QJsonDocument::fromJson(file.readAll()).object();
+                hasSecrets = root.contains(QStringLiteral("secrets"));
+                settingsCount = root.value(QStringLiteral("settings")).toObject().size();
+                ok(!root.value(QStringLiteral("settings")).toObject().contains(QStringLiteral("GUIClientID")),
+                   QStringLiteral("the file has no GUI client ID"));
+            }
+            ok(hasSecrets && settingsCount > 20, QStringLiteral("the file holds %1 settings and a secrets part").arg(settingsCount));
+            r = engine.importAppSetup(QUrl::fromLocalFile(exported));
+            const QString imported = r.value(QStringLiteral("name")).toString();
+            ok(r.value(QStringLiteral("ok")).toBool() && imported == name + QStringLiteral(" (2)")
+                   && engine.appSetups().contains(imported), QStringLiteral("imported as \"%1\"").arg(imported));
+            QFile junk(exported + QStringLiteral(".bad"));
+            if (junk.open(QIODevice::WriteOnly)) {
+                junk.write("{\"format\": \"something else\"}");
+                junk.close();
+            }
+            r = engine.importAppSetup(QUrl::fromLocalFile(junk.fileName()));
+            ok(!r.value(QStringLiteral("ok")).toBool(), QStringLiteral("another file refused: %1").arg(r.value(QStringLiteral("error")).toString()));
+            junk.remove();
+            QFile::remove(exported);
+            engine.setCwMemory(5, memory);
+            ok(engine.deleteAppSetup(imported).value(QStringLiteral("ok")).toBool()
+                   && engine.deleteAppSetup(name).value(QStringLiteral("ok")).toBool()
+                   && !engine.appSetups().contains(name) && engine.activeAppSetup().isEmpty(),
+               QStringLiteral("test setups deleted"));
+            ok(engine.cwMemories() == before.value(QStringLiteral("cwMemories")).toStringList(), QStringLiteral("CW memories as they began"));
+            qInfo() << "setup-test: done; in use before:" << activeBefore;
         });
     }
     if (parser.isSet(buttonStyleOption)) {

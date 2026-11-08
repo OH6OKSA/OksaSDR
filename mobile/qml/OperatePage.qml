@@ -447,7 +447,8 @@ Page {
             AppButton {
                 objectName: "macrosButton"
                 visible: macrosPanel.available
-                text: qsTr("Macros")
+                text: Engine.macroRepeatSlot.length > 0 ? "⟳ " + Engine.macroRepeatSlot : qsTr("Macros")
+                warn: Engine.macroRepeatSlot.length > 0
                 font.pixelSize: 17
                 checked: macrosPanel.opened
                 focusPolicy: Qt.NoFocus

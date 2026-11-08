@@ -11,6 +11,9 @@ Button {
     font.pixelSize: Theme.buttonFont
     leftPadding: 4
     rightPadding: 4
+    // An amber frame: something keeps running from this button (a macro
+    // that repeats), so it is never left on unseen.
+    property bool warn: false
 
     contentItem: Text {
         text: control.text
@@ -29,5 +32,7 @@ Button {
         color: control.checked ? (control.down ? Theme.buttonFaceOnDown : Theme.buttonFaceOn)
              : control.down ? Theme.buttonFaceDown : Theme.buttonFace
         opacity: control.enabled ? 1.0 : 0.5
+        border.width: control.warn ? 2 : 0
+        border.color: Theme.warning
     }
 }
