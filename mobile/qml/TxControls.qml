@@ -617,6 +617,10 @@ ColumnLayout {
         anchors.centerIn: Overlay.overlay
         modal: true
         margins: Theme.spacing
+        // Above the window's unsafe bottom (Android's navigation bar or a
+        // OnePlus taskbar; the home indicator), as the pages keep: a tall
+        // panel scrolls instead of going under it.
+        bottomMargin: Theme.spacing + (parent && parent.Window.contentItem ? parent.Window.contentItem.SafeArea.margins.bottom : 0)
         padding: Theme.spacing
         background: Rectangle { color: Theme.surface; border.color: Theme.surfaceRaised; radius: Theme.radius }
         contentItem: PanelContent {

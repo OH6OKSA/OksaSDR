@@ -2,6 +2,7 @@
 
 ### New in beta 74
 - **Log › Send to the developer opens the mail app** (the developer's Android 16 phone: the tap did nothing in betas 72 and 73): the mail goes straight to the mail app (or Android asks which one) with the address, the subject and the log attached; without a mail app the share sheet opens and the address is copied. What happens is now written in the log too.
+- **Panels stay above the taskbar** (the developer's OnePlus: the meter chooser's last row went under the taskbar once SNR added a row): the meter, mode, filter, AGC, band and other choosers end above Android's navigation bar or taskbar and scroll when taller.
 
 ### Still new from beta 73
 - **App setups** (thanks Larry Averbeck W9FLA: a setup for each way of operating, shared between devices): **Controls › Prof › App setups** saves the app's own settings under a name (**Save as…**, **Save**); picking a setup in the list switches to it at once. It holds the display, meters, panels, DSP, audio and the TX chain, macros and CW memories, the logbooks, the devices and the radio list, with their passwords and keys; voice recordings stay on the device. **Export** shares a setup as a file (it says first that the file holds the passwords and keys as plain text), **Import** adds one from a file, e.g. from your other phone or tablet; an imported setup never replaces one of the same name. What reads its setting only at start (the amplifier, the 4O3A devices, the DX cluster) follows at the next start, and the list says so. The radio's own settings stay in its profiles above.

@@ -9,10 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Prof tab > App setups: the app's own settings saved under a name, switched in a tap, exported as a file and imported on another device (thanks Larry W9FLA).
+- Prof > App setups: the app's settings under a name, switched in a tap, exported and imported on another device (thanks Larry W9FLA).
 - Macros > Repeat: a voice keyer slot or CW memory sent again every few seconds until PTT, Stop or any key (thanks Robin Bishop).
 - SNR on the meters while RADE decodes (thanks Scott L Stanford).
-- SmartSDR 4.3's list of PTT sources (MIC,VOX): the mic's or a footswitch's PTT keeps the TX meters with VOX off.
+- SmartSDR 4.3's PTT source list (MIC,VOX): a mic or footswitch PTT keeps the TX meters.
+- Choosers stay above the home indicator.
 - From build 159: the filter centred on a chosen frequency; Log > Send to the developer; NRS up to 50.
 
 RECENT (builds 94–158)

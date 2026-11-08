@@ -12,6 +12,10 @@ Popup {
     modal: true
     dim: false
     margins: Theme.spacing
+    // Above the window's unsafe bottom (Android's navigation bar or a
+    // OnePlus taskbar; the home indicator), as the pages keep: a tall
+    // panel scrolls instead of going under it.
+    bottomMargin: Theme.spacing + (parent && parent.Window.contentItem ? parent.Window.contentItem.SafeArea.margins.bottom : 0)
     padding: Theme.spacing
     // From the window, not the parent: in the wrapped phone header the info
     // panel is in pieces a few labels wide (beta 45 squeezed the AGC modes
