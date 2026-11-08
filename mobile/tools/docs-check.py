@@ -180,6 +180,25 @@ def check_notes(errors):
         errors.append(f"{NOTES}: '{ch}' (U+{ord(ch):04X}), a Dingbats symbol App Store Connect refuses")
 
 
+# The symbol ranges Android can draw: its own fonts lack most of them, and
+# the app bundles subsets of Noto Sans Symbols 2 and Noto Sans Math
+# (mobile/fonts/README.md). A symbol outside them is an empty box on
+# Android (build 160's repeat mark, U+27F3, on the user's OnePlus).
+ANDROID_SYMBOLS = [(0x2190, 0x22FF), (0x2300, 0x23FF), (0x25A0, 0x25FF), (0x2600, 0x27BF), (0x2B00, 0x2BFF)]
+
+
+def check_symbols(errors):
+    for qml in sorted((ROOT / "mobile/qml").glob("*.qml")):
+        for number, line in enumerate(qml.read_text(encoding="utf-8").splitlines(), 1):
+            if line.lstrip().startswith("//"):
+                continue
+            for ch in line:
+                c = ord(ch)
+                if 0x2190 <= c <= 0x2BFF and not any(a <= c <= b for a, b in ANDROID_SYMBOLS):
+                    errors.append(f"{qml.relative_to(ROOT)}:{number}: '{ch}' (U+{c:04X}) is not in the fonts "
+                                  "Android draws (an empty box there): use a symbol in mobile/fonts' ranges")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--base", help="first commit not to check (default: the upstream branch)")
@@ -236,6 +255,7 @@ def main():
         print("docs-check: no base to compare with; checking the docs only")
 
     check_notes(errors)
+    check_symbols(errors)
     check_links(errors)
     check_forbidden(errors)
 

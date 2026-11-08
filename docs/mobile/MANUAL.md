@@ -1065,7 +1065,7 @@ tab shows the offset and moves it; SPLIT again (or XIT off there) ends it.
   paddles, **Stop**, any key on a keyboard, typed CW text or another slot
   (which then repeats instead). While it repeats the panel's title says
   which and when (*F2 again in 4 s*), the slot has an amber frame, and the
-  **Macros** button reads *⟳ F2* in amber, also with the panel closed, so
+  **Macros** button reads *↻ F2* in amber, also with the panel closed, so
   a repeat never runs unseen. The switch is off at every start and goes
   off when the radio disconnects; a mode change ends the repeat.
 
