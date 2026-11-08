@@ -67,6 +67,7 @@ public:
     // Announces a capability that follows the firmware (the NRS level
     // maximum) when the radio's software version becomes known or changes.
     void refreshFirmwareCapabilities();
+    void setAutoAgcThresholdLicenseProvider(std::function<bool()> provider);
     void setIndependentTxSequenceProvider(std::function<quint32()> sequence);
     IndependentTxControl independentTxControl() const override;
     bool independentTxReady() const override;
@@ -93,6 +94,7 @@ public:
     void requestSliceTune(int sliceId, const SliceTuneRequest& request) override;
     void requestSliceFilter(int sliceId, const SliceFilterRequest& request) override;
     void requestSliceAgc(int sliceId, const SliceAgcRequest& request) override;
+    ReceiveDispatch requestSliceAgcThresholdMode(int sliceId, AgcThresholdMode mode) override;
     ReceiveDispatch requestSliceDsp(int sliceId, const SliceDspRequest& request) override;
     ReceiveDispatch requestSliceAudio(int sliceId, const SliceAudioRequest& request) override;
     ReceiveDispatch requestSliceSquelch(int sliceId, const SliceSquelchRequest& request) override;
@@ -240,6 +242,7 @@ private:
     int nrsLevelMaximum() const;
     int m_announcedNrsLevelMaximum = 100;
     std::function<QString()> m_firmwareVersionProvider;
+    std::function<bool()> m_autoAgcThresholdLicenseProvider;
     std::function<quint32()> m_sequenceProvider;
 
     // Decode-side handle state (#4198). Captured from the amplifier/tgxl status
