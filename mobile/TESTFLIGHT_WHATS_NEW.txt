@@ -9,15 +9,15 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- TUNE with Inhibit during TUNE: only the outputs TUNE turned off come back on; one off on the band stays off (it came on before).
-- SmartSDR 4.3: Radio Setup > Transmit > TX band settings has the radio's own "RCA TX1-3 held off during TUNE".
-- Controls > Audio > Sound from: This device or The radio, e.g. a headset on the radio (thanks Dennis KM6DF).
-- FT8 / FT4: the QSO's call, mode and reports are in the Log tab as soon as it starts (thanks Sloan Davis).
-- The log's TX power is the measured power out (an amplifier's when linked); an Aurora shows RF power in % (thanks Sloan Davis).
-- From build 157: eSSB tube, EVO, reverb; Amp by maker; first-run hints; felt slider taps.
+- A frequency you choose puts the filter in the middle of the waterfall: typed, a band, a memory, a spot or a FreeDV station.
+- Log > Send to the developer: a mail with the address filled in and the log attached (thanks Dennis KM6DF). Copy is now in Share's sheet.
+- NRS goes up to 50 on SmartSDR 4.3.16 and later, the radio's own limit; no squelch in DFM.
+- An amplifier that is switched off no longer fills the log (thanks Sebastian DG5CST).
+- From build 158: TUNE restores only what it inhibited; Sound from The radio; the FTx QSO in the Log tab; measured TX power.
 
 RECENT (builds 94–157)
-- Band plan lock (thanks Tyler K0OTC); FTx CQ DX (thanks Kurt DL5EAG); Display Zoom (thanks Evgeny R0ACS); Check the connection, Antenna Genius (thanks Ben Morris).
+- eSSB tube, EVO, reverb; Amp by maker; first-run hints; felt slider taps.
+- Band plan lock (thanks Tyler K0OTC); FTx CQ DX (thanks Kurt DL5EAG); Display Zoom (thanks Evgeny R0ACS); Antenna Genius (thanks Ben Morris).
 - RF2K-S control and Tune, the amp on every meter (thanks Sebastian DG5CST, Jeff Stinger); Macros by PTT (thanks Tyler K0OTC).
 - PSK31 / PSK63 and RTTY on the Digi tab; ⌘1–⌘0 as F1–F10; worked before from Wavelog, QRZ.com or a shared ADIF file.
 - The transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger).
@@ -36,7 +36,7 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab: decode, drag the red TX band to a free frequency, answer a CQ at low power and check the log. [TX]
 - The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: Sound from The radio and back; TUNE with Inhibit during TUNE on [TX]; an FT8 QSO and its Log tab.
+- New: type a frequency, press a band or tap a memory: the filter lands in the middle. Log > Send to the developer.
 - Worked before from Wavelog, the QRZ.com Logbook or a shared ADIF file in iCloud Drive.
 - The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]
 

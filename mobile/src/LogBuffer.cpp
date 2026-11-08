@@ -1,6 +1,7 @@
 #include "LogBuffer.h"
 
 #include "ShareText.h"
+#include "SideKeys.h"
 
 #include <QSysInfo>
 
@@ -307,11 +308,6 @@ QString LogBuffer::report() const
              QSysInfo::prettyProductName(), text());
 }
 
-void LogBuffer::copyToClipboard() const
-{
-    copyText(report());
-}
-
 bool LogBuffer::share() const
 {
     return shareText(QStringLiteral("OksaSDR log"), report());
@@ -327,14 +323,50 @@ bool LogBuffer::previousRunCrashed() const
     return s_previousRunCrashed;
 }
 
-void LogBuffer::copyPreviousRun() const
+QString LogBuffer::developerAddress() const
 {
-    copyText(s_previousRun);
+    return QStringLiteral("oh6oksa@gmail.com");
 }
 
-bool LogBuffer::sharePreviousRun() const
+int LogBuffer::sendToDeveloper() const
 {
-    return shareText(QStringLiteral("OksaSDR log, previous run"), s_previousRun);
+    const QString device = runningAsIosAppOnMac() ? QStringLiteral("Mac") : deviceModel();
+    const QString app = QStringLiteral("OksaSDR %1 (%2)")
+                            .arg(QGuiApplication::applicationVersion(), QStringLiteral(AETHER_MOBILE_BUILD_NUMBER));
+    const QString subject = QStringLiteral("%1 log: %2, %3").arg(app, device, QSysInfo::prettyProductName());
+    QString file = report();
+    if (!s_previousRun.isEmpty()) {
+        file += QStringLiteral("\n\n===== The previous run%1 =====\n\n")
+                    .arg(s_previousRunCrashed ? QStringLiteral(", ended in a crash") : QString())
+              + s_previousRun;
+    }
+    // In the app's files folder: Android shares only from there.
+    const QString dir = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath(QStringLiteral("share"));
+    QDir().mkpath(dir);
+    // Only the newest is kept: the mail app may still read it after we return.
+    for (const QString& old : QDir(dir).entryList({QStringLiteral("OksaSDR-log-*.txt")}, QDir::Files)) {
+        QFile::remove(QDir(dir).filePath(old));
+    }
+    const QString path = QDir(dir).filePath(QStringLiteral("OksaSDR-log-%1.txt")
+                                                .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmm"))));
+    QFile out(path);
+    if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate) || out.write(file.toUtf8()) < 0) {
+        copyText(developerAddress());
+        return 0;
+    }
+    out.close();
+    const QString body = tr("What happened, and roughly when?\n\n\n\n%1, %2, %3. The app's log is attached.")
+                             .arg(app, device, QSysInfo::prettyProductName());
+    switch (AetherSDR::mobile::sendToDeveloper(developerAddress(), subject, body, path)) {
+    case DeveloperMail::Mail:
+        return 1;
+    case DeveloperMail::ShareSheet:
+        return 2;
+    case DeveloperMail::NotShown:
+        break;
+    }
+    copyText(developerAddress());  // the page says so
+    return 0;
 }
 
 void LogBuffer::clear()

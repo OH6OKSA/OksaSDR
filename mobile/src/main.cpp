@@ -6,6 +6,7 @@
 #include "LogBuffer.h"
 #include "MobileEngine.h"
 #include "Ft8Engine.h"
+#include "models/BandSettings.h"
 #include "DeviceId.h"
 #include "TextScale.h"
 #include "TrackpadScrollPhases.h"
@@ -46,6 +47,7 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <memory>
 
 // Objects named `name` under `root`, including inside Loader-made items
 // (those have no QObject parent, so findChildren() alone misses them):
@@ -337,6 +339,11 @@ int main(int argc, char* argv[])
         QStringLiteral("Development, receive only: Sound from The radio 10 s after start, back to This device "
                        "8 s later, logging the remote audio stream and the mic input at each step."));
     parser.addOption(audioRouteTestOption);
+    const QCommandLineOption centreTestOption(QStringLiteral("centre-test"),
+        QStringLiteral("Development, receive only: a typed frequency, a step, another band and back, and a memory "
+                       "(the first SSB / CW / digital one), each logging whether the view is centred on the "
+                       "passband; frequency, mode, filter and the view restored after."));
+    parser.addOption(centreTestOption);
     const QCommandLineOption txChainOption(QStringLiteral("tx-chain"),
         QStringLiteral("Development: set this device's TX processing, e.g. compOn=1,compThreshold=-30 "
                        "(remembered)."), QStringLiteral("settings"));
@@ -994,6 +1001,159 @@ int main(int argc, char* argv[])
                 }
                 qInfo() << "tune-test: TUNE off";
             });
+        });
+    }
+    if (parser.isSet(centreTestOption)) {
+        struct Saved {
+            double freq{0.0};
+            QString mode;
+            int low{0};
+            int high{0};
+            double panCentre{0.0};
+            double panWidth{0.0};
+            double stepView{0.0};
+            bool squelch{false};
+            int squelchLevel{0};
+            int step{0};
+            int txSlice{-1};
+            int failed{0};
+        };
+        auto saved = std::make_shared<Saved>();
+        // Off the passband's middle, as a share of the span (the radio's
+        // pan centre lands on its own grid).
+        const auto offCentre = [&engine]() {
+            const double middle = engine.frequencyMhz() + (engine.filterLow() + engine.filterHigh()) / 2.0e6;
+            const double width = engine.panBandwidthMhz();
+            return width > 0.0 ? (engine.panCenterMhz() - middle) / width : 1.0;
+        };
+        const auto report = [&engine, saved, offCentre](const QString& step, bool wantCentred) {
+            const double off = offCentre();
+            const bool centred = std::abs(off) < 0.02;
+            const bool ok = centred == wantCentred;
+            if (!ok) {
+                ++saved->failed;
+            }
+            qInfo().noquote() << QStringLiteral("centre-test: %1 %2 | slice %3 MHz %4 %5..%6 Hz | view %7 MHz, %8 kHz wide | "
+                                                "off the passband's middle %9 % of the span")
+                                     .arg(ok ? QStringLiteral("[ OK ]") : QStringLiteral("[FAIL]"), step)
+                                     .arg(engine.frequencyMhz(), 0, 'f', 6)
+                                     .arg(engine.mode())
+                                     .arg(engine.filterLow())
+                                     .arg(engine.filterHigh())
+                                     .arg(engine.panCenterMhz(), 0, 'f', 6)
+                                     .arg(engine.panBandwidthMhz() * 1000.0, 0, 'f', 1)
+                                     .arg(off * 100.0, 0, 'f', 2);
+        };
+        QTimer::singleShot(10000, &app, [&engine, saved] {
+            saved->freq = engine.frequencyMhz();
+            saved->mode = engine.mode();
+            saved->low = engine.filterLow();
+            saved->high = engine.filterHigh();
+            saved->panCentre = engine.panCenterMhz();
+            saved->panWidth = engine.panBandwidthMhz();
+            saved->squelch = engine.squelchOn();
+            saved->squelchLevel = engine.squelchLevel();
+            saved->step = engine.stepHz();
+            // A memory apply makes its slice the TX slice: put it back after.
+            for (const QVariant& v : engine.slices()) {
+                if (v.toMap().value(QStringLiteral("tx")).toBool()) {
+                    saved->txSlice = v.toMap().value(QStringLiteral("id")).toInt();
+                }
+            }
+            qInfo().noquote() << "centre-test: before" << saved->freq << saved->mode << saved->low << saved->high
+                              << "view" << saved->panCentre << saved->panWidth << "squelch" << saved->squelch
+                              << saved->squelchLevel << "step" << saved->step << "TX slice" << saved->txSlice;
+            // A typed frequency 20 kHz up (down at a band's top).
+            const double target = saved->freq + (AetherSDR::BandSettings::bandForFrequency(saved->freq + 0.02)
+                                                         == AetherSDR::BandSettings::bandForFrequency(saved->freq) ? 0.02 : -0.02);
+            engine.tuneToCentred(target);
+        });
+        QTimer::singleShot(13000, &app, [report] { report(QStringLiteral("typed frequency"), true); });
+        // A step moves the slice, not the view.
+        QTimer::singleShot(13500, &app, [&engine, saved] {
+            saved->stepView = engine.panCenterMhz();
+            engine.tuneBySteps(3);
+        });
+        QTimer::singleShot(15500, &app, [&engine, saved] {
+            const bool still = std::abs(engine.panCenterMhz() - saved->stepView) < 1e-6;
+            if (!still) {
+                ++saved->failed;
+            }
+            qInfo().noquote() << "centre-test:" << (still ? "[ OK ]" : "[FAIL]") << "three steps left the view where it was"
+                              << engine.panCenterMhz();
+        });
+        // Another band and back through the band stack.
+        const auto homeBand = std::make_shared<QString>();
+        QTimer::singleShot(16000, &app, [&engine, homeBand] {
+            *homeBand = AetherSDR::BandSettings::bandForFrequency(engine.frequencyMhz());
+            const QString other = *homeBand == QLatin1String("20m") ? QStringLiteral("40m") : QStringLiteral("20m");
+            qInfo().noquote() << "centre-test: band" << other << "from" << *homeBand;
+            engine.selectBand(other);
+        });
+        QTimer::singleShot(22000, &app, [report] { report(QStringLiteral("another band"), true); });
+        QTimer::singleShot(23000, &app, [&engine, homeBand] {
+            qInfo().noquote() << "centre-test: back to" << *homeBand;
+            engine.selectBand(*homeBand);
+        });
+        QTimer::singleShot(29000, &app, [report] { report(QStringLiteral("back on the band"), true); });
+        // A memory: the first in SSB, CW or a digital mode.
+        const auto recalled = std::make_shared<bool>(false);
+        QTimer::singleShot(30000, &app, [&engine, recalled] {
+            const QStringList modes{QStringLiteral("USB"), QStringLiteral("LSB"), QStringLiteral("CW"),
+                                    QStringLiteral("DIGU"), QStringLiteral("DIGL")};
+            for (const QVariant& v : engine.memories()) {
+                const QVariantMap m = v.toMap();
+                if (modes.contains(m.value(QStringLiteral("mode")).toString().toUpper())) {
+                    qInfo().noquote() << "centre-test: memory" << m.value(QStringLiteral("index")).toInt()
+                                      << m.value(QStringLiteral("freq")).toDouble() << m.value(QStringLiteral("mode")).toString();
+                    engine.recallMemory(m.value(QStringLiteral("index")).toInt());
+                    *recalled = true;
+                    return;
+                }
+            }
+            qInfo() << "centre-test: no SSB / CW / digital memory on the radio:" << engine.memories().size() << "memories";
+        });
+        QTimer::singleShot(36000, &app, [report, recalled] {
+            if (*recalled) {
+                report(QStringLiteral("memory"), true);
+            }
+        });
+        // Put everything back.
+        QTimer::singleShot(37000, &app, [&engine, saved] {
+            if (engine.mode() != saved->mode) {
+                engine.setMode(saved->mode);
+            }
+        });
+        QTimer::singleShot(38500, &app, [&engine, saved] {
+            engine.setFilterEdges(saved->low, saved->high);
+            engine.tuneTo(saved->freq);
+            engine.setStepHz(saved->step);
+            engine.setSquelchLevel(saved->squelchLevel);
+            engine.setSquelchOn(saved->squelch);
+            if (saved->txSlice >= 0) {
+                engine.makeTxSlice(saved->txSlice);
+            }
+        });
+        QTimer::singleShot(40000, &app, [&engine, saved] {
+            engine.panTo(saved->panCentre);
+        });
+        QTimer::singleShot(43000, &app, [&app, &engine, saved] {
+            int txSlice = -1;
+            for (const QVariant& v : engine.slices()) {
+                if (v.toMap().value(QStringLiteral("tx")).toBool()) {
+                    txSlice = v.toMap().value(QStringLiteral("id")).toInt();
+                }
+            }
+            const bool restored = std::abs(engine.frequencyMhz() - saved->freq) < 1e-6 && engine.mode() == saved->mode
+                && engine.filterLow() == saved->low && engine.filterHigh() == saved->high
+                && std::abs(engine.panCenterMhz() - saved->panCentre) < 1e-6 && engine.squelchOn() == saved->squelch
+                && engine.squelchLevel() == saved->squelchLevel && engine.stepHz() == saved->step && txSlice == saved->txSlice;
+            qInfo().noquote() << "centre-test: after" << engine.frequencyMhz() << engine.mode() << engine.filterLow()
+                              << engine.filterHigh() << "view" << engine.panCenterMhz() << engine.panBandwidthMhz()
+                              << "squelch" << engine.squelchOn() << engine.squelchLevel() << "step" << engine.stepHz()
+                              << "TX slice" << txSlice << (restored ? "(restored)" : "(NOT restored)");
+            qInfo() << "centre-test:" << saved->failed << "failed";
+            QCoreApplication::quit();
         });
     }
     if (parser.isSet(audioRouteTestOption)) {

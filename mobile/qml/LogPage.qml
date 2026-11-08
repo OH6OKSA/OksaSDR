@@ -3,7 +3,8 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import AetherMobile
 
-// Recent app log for testers: copy it and send it to the developer.
+// Recent app log for testers: Send to the developer mails it, Share gives it
+// to any other app.
 Popup {
     id: popup
     objectName: "logPage"
@@ -12,6 +13,22 @@ Popup {
     width: parent.width * 0.95
     height: parent.height * 0.85
     background: Rectangle { color: Theme.surface; radius: Theme.radius }
+    // Send to the developer's outcome: -1 not tried, 0 nothing shown, 1 a
+    // mail app, 2 the share sheet (no mail account, the address copied).
+    property int sent: -1
+    // Clear and the developer link, for the developer's own testing: a press
+    // and hold on the title shows them (the link's row stays while it is on).
+    property bool devTools: false
+    onOpened: sent = -1
+    // One top row where it fits; on a phone upright the actions go under it.
+    readonly property bool wide: width >= 560
+    // A phone on its side: the description only for a notice, so the log
+    // keeps its lines.
+    readonly property bool low: height < 500
+    readonly property string sendNote: sent === 2 ? qsTr("No Mail account: the address %1 is copied, paste it as the recipient.").arg(LogBuffer.developerAddress)
+        : sent === 0 ? qsTr("No mail could be opened. The address %1 is copied.").arg(LogBuffer.developerAddress)
+        : LogBuffer.previousRun.length > 0 ? qsTr("A mail to %1 with this log and the previous run's attached.").arg(LogBuffer.developerAddress)
+        : qsTr("A mail to %1 with this log attached.").arg(LogBuffer.developerAddress)
 
     ColumnLayout {
         anchors.fill: parent
@@ -23,51 +40,58 @@ Popup {
                 text: qsTr("Log (%1 lines)").arg(popup.opened ? LogBuffer.lines.length : 0)
                 color: Theme.text
                 font.pixelSize: Theme.px(22)
+                elide: Text.ElideRight
                 Layout.fillWidth: true
+                TapHandler { onLongPressed: popup.devTools = !popup.devTools }
             }
-            AppButton { text: qsTr("Share"); onClicked: LogBuffer.share() }
             AppButton {
-                id: copyButton
-                text: copiedTimer.running ? qsTr("Copied ✓") : qsTr("Copy")
-                onClicked: {
-                    LogBuffer.copyToClipboard()
-                    copiedTimer.restart()
-                }
-                Timer { id: copiedTimer; interval: 2000 }
+                objectName: "sendToDeveloperTop"
+                visible: popup.wide
+                text: qsTr("Send to the developer")
+                onClicked: popup.sent = LogBuffer.sendToDeveloper()
             }
-            AppButton { text: qsTr("Clear"); onClicked: LogBuffer.clear() }
+            AppButton { visible: popup.wide; text: qsTr("Share"); onClicked: LogBuffer.share() }
             AppButton { text: qsTr("Close"); onClicked: popup.close() }
         }
 
-        // The previous run's log, kept in a file as it ran: after a crash it
-        // ends with the crash and the call stack.
+        // A mail to the developer with the address filled in and this run's
+        // and the previous run's log attached (Dennis Daniel KM6DF); Share
+        // for anything else (Copy, AirDrop, Messages are in its sheet).
         RowLayout {
             Layout.fillWidth: true
-            visible: LogBuffer.previousRun.length > 0
-            Label {
-                Layout.fillWidth: true
-                text: LogBuffer.previousRunCrashed ? qsTr("The previous run ended in a crash: send its log.")
-                                                   : qsTr("The previous run's log")
-                color: LogBuffer.previousRunCrashed ? Theme.transmit : Theme.textDim
-                font.pixelSize: Theme.px(15)
-                wrapMode: Text.Wrap
-            }
-            AppButton { objectName: "previousRunShare"; text: qsTr("Share"); onClicked: LogBuffer.sharePreviousRun() }
+            visible: !popup.wide
             AppButton {
-                objectName: "previousRunCopy"
-                text: previousCopied.running ? qsTr("Copied ✓") : qsTr("Copy")
-                onClicked: {
-                    LogBuffer.copyPreviousRun()
-                    previousCopied.restart()
-                }
-                Timer { id: previousCopied; interval: 2000 }
+                objectName: "sendToDeveloper"
+                text: qsTr("Send to the developer")
+                onClicked: popup.sent = LogBuffer.sendToDeveloper()
             }
+            AppButton { text: qsTr("Share"); onClicked: LogBuffer.share() }
+        }
+        Label {
+            Layout.fillWidth: true
+            visible: !popup.wide || !popup.low || popup.sent === 0 || popup.sent === 2
+            text: popup.sendNote
+            color: popup.sent === 0 ? Theme.warning : Theme.textDim
+            font.pixelSize: Theme.px(15)
+            wrapMode: Text.Wrap
+        }
+
+        // After a crash: the previous run's log (kept in a file as it ran,
+        // ending with the crash and the call stack) goes along with the mail.
+        Label {
+            Layout.fillWidth: true
+            visible: LogBuffer.previousRunCrashed
+            text: qsTr("The previous run ended in a crash: Send to the developer sends its log too.")
+            color: Theme.transmit
+            font.pixelSize: Theme.px(15)
+            wrapMode: Text.Wrap
         }
 
         // Developer link (off by default): streams this log to a developer's
         // PC and lets it take screenshots. It cannot transmit.
         RowLayout {
             Layout.fillWidth: true
+            visible: popup.devTools || DevLink.enabled
             Switch {
                 id: devSwitch
                 checked: DevLink.enabled
@@ -90,6 +114,8 @@ Popup {
                 elide: Text.ElideRight
                 Layout.maximumWidth: 160
             }
+            // Empties the log, so the next report starts from a known point.
+            AppButton { text: qsTr("Clear"); onClicked: LogBuffer.clear() }
         }
 
         ListView {

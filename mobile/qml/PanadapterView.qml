@@ -1624,6 +1624,8 @@ Rectangle {
         }
         onActiveChanged: {
             if (!active) return
+            // The finger moves the view now, not a chosen frequency's centring.
+            Engine.cancelCentring()
             // The passband, widened to a finger's width.
             const x = centroid.pressPosition.x
             const half = Math.max(passband.width, 48) / 2

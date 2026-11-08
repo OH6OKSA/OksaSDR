@@ -356,7 +356,8 @@ passband, so the slice stays put and the decoder is moved to the signal.
 | ![RADE](manual/rade-on.jpg) | ![FreeDV](manual/tab-freedv.jpg) |
 
 1. Controls → **FreeDV**: the list shows who is on RADE (from FreeDV
-   Reporter); tap one to tune there, or tune 14.236 MHz yourself.
+   Reporter); tap one to tune there (the view centres on the filter once
+   RADE or the station's sideband is set), or tune 14.236 MHz yourself.
 2. **RADE** on: the slice goes to DIGU and the app decodes; the callsign
    each station sends shows when they finish.
 3. Talk with PTT as in SSB (mic level as for voice); your callsign goes out
@@ -611,6 +612,18 @@ show. Tap it for the details:
 a hardware keyboard), then *Tune*. *14.074* and *14074* both tune
 14.074 MHz; on a transverter band, *439.000* (or *439*) tunes 439 MHz.
 
+**The filter in the middle.** A frequency you choose puts the filter in the
+middle of the waterfall: a typed one, a band button, a memory (Mem tab), a
+spot's call on the display and a station in the FreeDV list. The view
+centres on the passband, not on the carrier: in USB about 1.4 kHz above
+it, in LSB below, in CW, AM and FM about it, in DIGU / DIGL on the audio
+band's middle. For a band, a memory and a spot the app waits until the
+radio has set the slice's frequency, mode and filter, so the view moves
+once, a moment after the tap. Tuning by hand moves the view only near an
+edge, as before: a drag, a tap on the waterfall, the steps, the keys and
+the knob. A drag on the display right after a choice keeps the view where
+you put it.
+
 ![Frequency entry](manual/frequency.jpg)
 
 **Mode.** Tap the mode (e.g. *USB ▼*) and choose another.
@@ -626,7 +639,7 @@ Pencil drags tune exactly, off the step's grid.
 **Band buttons.** Each band returns to the frequency and mode you last used
 there. The radio keeps these in its *band stack*, which is part of the
 radio's global profile, so a different profile can bring a band back
-elsewhere. **WWV** holds the time-signal frequencies and **GEN** general
+elsewhere. The view then centres on the filter there. **WWV** holds the time-signal frequencies and **GEN** general
 coverage, each with its own band-stack memory. Transverters set up in the
 radio (in SmartSDR or the AetherSDR desktop: Radio Setup → XVTR) get a
 button of their own after 6 m, named as in the radio (for example 2m): the
@@ -684,6 +697,8 @@ panadapter's wideband noise blanker. **BC** is the app's own beat cancel
 *Close* at the top right (or a tap outside) closes it.
 Each DSP that is on and has a level (NR, NB, ANF, APF, NRL, ANFL, NRS, NRF,
 WNB) gets a slider under the toggles, sent to the radio when released.
+NRS goes up to 50 on firmware 4.3.16 and later (the radio's own limit),
+up to 100 on older firmware.
 
 ![Filters and DSP](manual/filter.jpg)
 
@@ -860,7 +875,8 @@ transmit slice carries a red **TX** tag. Two fit side by side, four make
 - **Spots** — callsigns along the top of the spectrum at their frequency:
   the spots the radio holds, from this app's DX cluster connection and
   from any other program on the radio. Tap one to tune to it (the mode
-  follows the spot, as on the desktop). Close ones stack in up to four
+  follows the spot, as on the desktop, and the view centres on the
+  filter). Close ones stack in up to four
   rows; zoom in to see more. In View, *Spots* shows or hides them, and
   *DX cluster* connects the app to a cluster of your choice.
 - **Notches (TNF)** — **press and hold** on the display where a notch
@@ -1070,7 +1086,7 @@ seven.
 
 - **DSP** — RIT and XIT (on/off; − and + step 10 Hz and run while held,
   faster the longer: 10, then 50, then 100 Hz; tap the value to reset;
-  not in FM), squelch (where the radio has it; − / + and the level beside the slider), and **TNF** (the radio's notch filters on/off, kept when off; *+ TNF*
+  not in FM), squelch (where the radio has it: not in CW, the digital modes, RTTY or DFM, whose data an audio squelch would cut; − / + and the level beside the slider), and **TNF** (the radio's notch filters on/off, kept when off; *+ TNF*
   opens a new notch in the middle of the passband to set and *Add*; see
   [Panadapter and waterfall](#5-panadapter-and-waterfall)).
 - **Audio** — **Receive audio**: *Auto* uses Opus (compressed, made for
@@ -1235,7 +1251,7 @@ seven.
     device its own SSID in the callsign, e.g. *OH6OKSA-2*.
 - **Prof** (profiles) — the radio's global, TX and mic profiles: load, save,
   delete, as in SmartSDR.
-- **Mem** (memory) — the radio's memory channels: tap to tune, *Save* stores the
+- **Mem** (memory) — the radio's memory channels: tap to tune (the view centres on the memory's filter once the radio has set it), *Save* stores the
   current frequency under the name typed. **Press and hold** one to edit
   its name, frequency (MHz) and mode — *Current* takes the slice's
   frequency and mode — or to *Delete* it. In FM modes it also holds the
@@ -1985,20 +2001,31 @@ the page again at once. A text field keeps it until you tap outside it.
 
 ## 12. Reporting a problem
 
-Open **Log** right after the problem (on an iPhone behind **⋯**), tap
-**Copy** (or **Share**) and send the text to oh6oksa@gmail.com together with
-your device model and what you were doing. After a crash, open the app
+Open **Log** right after the problem (on an iPhone behind **⋯**) and tap
+**Send to the developer**: a mail to oh6oksa@gmail.com opens with the
+subject (app, build, device and system) filled in and the log attached,
+this run's and the previous run's in one file. Write what you were doing
+and send it. On an iPhone or iPad without an account in Apple's Mail (Gmail
+or Outlook instead) the share sheet opens with the file and the address is
+copied: paste it as the recipient. Nothing is sent until you send the mail.
+**Share** gives this run's log as text to any other app (Messages, Notes,
+AirDrop to a Mac; *Copy* is in its sheet).
+
+![Log page](manual/log-page.jpg)
+
+After a crash, open the app
 again: the log is also kept in a file as the app runs, and Log shows *The
-previous run ended in a crash* in red with its own **Share** and **Copy**:
-that log ends with the crash and where in the app it happened. (Juho
+previous run ended in a crash* in red: Send to the developer sends that
+log too, ending with the crash and where in the app it happened. (Juho
 Kontio's crash left no log to send.) With a Power Genius XL, Tuner Genius
 XL or Antenna Genius the log also holds what the radio and the devices
 report of themselves (a remote code hidden), the meters they make on the
 radio and each transmission's highest readings: send it after a moment on
 Controls › Amp. The log header shows the app
-version and build. **Clear** empties the log, so the next copy starts from
-a known point. **Developer link** (with a PC address) is only for the
-developer's own devices: leave it off.
+version and build. A press and hold on the title *Log* shows **Clear**
+(empties the log, so the next report starts from a known point) and the
+**Developer link** (with a PC address), which is only for the developer's
+own devices: leave it off.
 
 
 ## 13. Android

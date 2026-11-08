@@ -106,7 +106,9 @@ Popup {
                     accessibleName: qsTr("%1 level").arg(levelRow.modelData)
                     Layout.fillWidth: true
                     Layout.minimumWidth: chooser.cellWidth * 3
-                    from: 0; to: 100; stepSize: 1
+                    // NRS stops at 50 on firmware 4.3.16 and later.
+                    from: 0; to: Engine.dspKeys.length >= 0 ? Engine.dspLevelMaximum(levelRow.modelData) : 100
+                    stepSize: 1
                     liveDrag: false
                     value: Engine.dspKeys.length >= 0 ? Engine.dspLevel(levelRow.modelData) : 0
                     onMoved: (v) => Engine.setDspLevel(levelRow.modelData, Math.round(v))

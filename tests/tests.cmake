@@ -9622,6 +9622,12 @@ if(HAVE_PIPEWIRE)
 endif()
 
 # TUNE's PA inhibit restores only the outputs TUNE turned off (upstream #6525).
+# The NRS level range by firmware (upstream #6498): 50 on 4.3.16+, else 100.
+add_executable(nrs_level_range_test tests/nrs_level_range_test.cpp)
+target_include_directories(nrs_level_range_test PRIVATE src tests)
+target_link_libraries(nrs_level_range_test PRIVATE aethercore Qt6::Core Qt6::Test)
+add_test(NAME nrs_level_range_test COMMAND nrs_level_range_test)
+
 add_executable(tune_inhibit_restore_test tests/tune_inhibit_restore_test.cpp)
 target_include_directories(tune_inhibit_restore_test PRIVATE src tests)
 target_link_libraries(tune_inhibit_restore_test PRIVATE aethercore Qt6::Core)

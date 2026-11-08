@@ -173,6 +173,12 @@ constexpr int kWanReconnectMs = 5000;
 constexpr double kPanFollowEdge = 0.1;
 // Coalescing interval for pan moves during a drag.
 constexpr int kPanMoveMs = 40;
+// A chosen frequency's centring waits this long after the radio's last
+// report of the slice (a memory brings frequency, mode and filter one by
+// one; RADE switches the mode 400 ms after a FreeDV station), and gives up
+// after kCentreWithinMs.
+constexpr int kCentreSettleMs = 600;
+constexpr int kCentreWithinMs = 4000;
 // How long a dragged pan centre is shown before the radio's echo rules again.
 constexpr int kPanPreviewHoldMs = 700;
 constexpr double kDbPerSUnit = 6.0;
@@ -1134,6 +1140,9 @@ MobileEngine::MobileEngine(QObject* parent)
     m_panPreviewEndTimer.setInterval(kPanPreviewHoldMs + 20);
     // Back to the radio's centre (normally the same by now).
     connect(&m_panPreviewEndTimer, &QTimer::timeout, this, &MobileEngine::panGeometryChanged);
+    m_centreSettleTimer.setSingleShot(true);
+    m_centreSettleTimer.setInterval(kCentreSettleMs);
+    connect(&m_centreSettleTimer, &QTimer::timeout, this, &MobileEngine::centreOnPassband);
     m_panMoveTimer.setSingleShot(true);
     m_panMoveTimer.setInterval(kPanMoveMs);
     connect(&m_panMoveTimer, &QTimer::timeout, this, [this] {
@@ -3832,6 +3841,73 @@ void MobileEngine::tuneTo(double mhz)
     }
 }
 
+void MobileEngine::tuneToCentred(double mhz)
+{
+    if (!m_slice || mhz <= 0.0) {
+        return;
+    }
+    if (radeActive() && BandSettings::bandForFrequency(mhz) != BandSettings::bandForFrequency(m_slice->frequency())) {
+        stopRadeBeforeLeaving("move to another band");
+    }
+    if (!m_pan || m_pan->bandwidthMhz() <= 0.0) {
+        m_slice->tuneAndRecenter(mhz);
+        return;
+    }
+    m_slice->setFrequency(mhz);
+    // At once on the passband as it is now; again if the band plan changes
+    // the mode (and so the filter) as the slice lands.
+    m_centredMhz = passbandCentreMhz(mhz);
+    panTo(m_centredMhz);
+    centreWhenSettled();
+}
+
+double MobileEngine::passbandCentreMhz(double carrierMhz) const
+{
+    // USB's 100..2800 Hz is 1.45 kHz above the carrier, LSB's below, CW, AM
+    // and FM straddle it, DIGU / DIGL the audio band's middle.
+    return m_slice ? carrierMhz + (m_slice->filterLow() + m_slice->filterHigh()) / 2.0e6 : carrierMhz;
+}
+
+void MobileEngine::centreWhenSettled()
+{
+    m_centreUntilMs = QDateTime::currentMSecsSinceEpoch() + kCentreWithinMs;
+    m_centreSettleTimer.start();
+}
+
+void MobileEngine::cancelCentring()
+{
+    m_centreUntilMs = 0;
+    m_centreSettleTimer.stop();
+}
+
+void MobileEngine::noteCentreChange()
+{
+    if (m_centreUntilMs > QDateTime::currentMSecsSinceEpoch()) {
+        m_centreSettleTimer.start();  // wait for the radio's last word
+    }
+}
+
+void MobileEngine::centreOnPassband()
+{
+    const bool within = m_centreUntilMs > 0;
+    m_centreUntilMs = 0;
+    if (!within || !m_slice || !m_pan || m_pan->bandwidthMhz() <= 0.0) {
+        return;
+    }
+    const double centre = passbandCentreMhz(m_slice->frequency());
+    // Already there (a typed frequency centred at once): no second move.
+    if (std::abs(centre - m_centredMhz) < 1e-6 && std::abs(centre - panCenterMhz()) < m_pan->bandwidthMhz() * 0.01) {
+        return;
+    }
+    qCInfo(lcMobile).noquote() << QStringLiteral("view centred on the passband: %1 MHz (%2 %3..%4 Hz)")
+                                      .arg(centre, 0, 'f', 6)
+                                      .arg(m_slice->mode())
+                                      .arg(m_slice->filterLow())
+                                      .arg(m_slice->filterHigh());
+    m_centredMhz = centre;
+    panTo(centre);
+}
+
 void MobileEngine::panTo(double centerMhz)
 {
     if (!m_pan || centerMhz <= 0.0) {
@@ -4115,6 +4191,7 @@ void MobileEngine::selectBand(const QString& band)
     stopRadeBeforeLeaving("band change");
     armModeAgc();
     rm.requestPanBand(m_pan->panId(), result.key);
+    centreWhenSettled();
     // A band the radio remembers muted (RADE's mute kept by earlier builds
     // when the band changed under it: a tester heard nothing on 40 m until
     // the app was reinstalled): say where the sound went.
@@ -4244,8 +4321,11 @@ void MobileEngine::setXitHz(int hz)
 
 bool MobileEngine::squelchAvailable() const
 {
+    // DFM too (upstream #6464): digital FM synchronises on its own, an audio
+    // squelch would only gate the data.
     static const QStringList kNoSquelch{QStringLiteral("DIGU"), QStringLiteral("DIGL"), QStringLiteral("NT"),
-                                        QStringLiteral("RTTY"), QStringLiteral("CW"), QStringLiteral("CWL")};
+                                        QStringLiteral("RTTY"), QStringLiteral("CW"),   QStringLiteral("CWL"),
+                                        QStringLiteral("DFM")};
     return m_slice && !kNoSquelch.contains(m_slice->mode());
 }
 
@@ -6359,6 +6439,8 @@ void MobileEngine::recallMemory(int index)
     }
     RadioModel& rm = m_session.radioModel();
     qCInfo(lcMobile) << "recall memory" << index;
+    // The view centred on the memory's passband once the radio has set it.
+    centreWhenSettled();
     if (rm.usesLocalMemoryBank()) {
         rm.recallCachedMemory(index);
         return;
@@ -6976,6 +7058,7 @@ void MobileEngine::tuneToSpot(int index)
             emit lastSpotCallChanged();
         }
         tuneTo(spot.rxFreqMhz - carrier / 1e6);
+        centreWhenSettled();
         const double spotMhz = spot.rxFreqMhz;
         QTimer::singleShot(2500, this, [this, spotMhz] {
             if (pskActive()) {
@@ -7012,6 +7095,7 @@ void MobileEngine::tuneToSpot(int index)
     } else {
         tuneTo(spot.rxFreqMhz);
     }
+    centreWhenSettled();
     // In RTTY (or on the way to it), a spot gives the signal's mark or its
     // centre: onto the mark the display shows near it.
     if (mode == QLatin1String("RTTY") || rttyOnDigital) {
@@ -8023,9 +8107,17 @@ int MobileEngine::dspLevel(const QString& key) const
     return 0;
 }
 
+int MobileEngine::dspLevelMaximum(const QString& key) const
+{
+    if (key == QLatin1String("NRS") && m_slice) {
+        return m_slice->nrsLevelMaximum();
+    }
+    return 100;
+}
+
 void MobileEngine::setDspLevel(const QString& key, int level)
 {
-    level = std::clamp(level, 0, 100);
+    level = std::clamp(level, 0, dspLevelMaximum(key));
     if (key == QLatin1String("WNB")) {
         if (m_pan) {
             m_session.radioModel().setPanWnbLevel(level);
@@ -8371,6 +8463,9 @@ void MobileEngine::bindSlice(SliceModel* slice)
         m_sliceConnections.append(connect(slice, &SliceModel::frequencyChanged, this, &MobileEngine::frequencyChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::modeChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::frequencyChanged, this, &MobileEngine::followBandPlanMode));
+        m_sliceConnections.append(connect(slice, &SliceModel::frequencyChanged, this, &MobileEngine::noteCentreChange));
+        m_sliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::noteCentreChange));
+        m_sliceConnections.append(connect(slice, &SliceModel::filterChanged, this, &MobileEngine::noteCentreChange));
         m_sliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::notePlanModeChoice));
         m_sliceConnections.append(connect(slice, &SliceModel::fmToneModeChanged, this, &MobileEngine::fmChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::fmToneValueChanged, this, &MobileEngine::fmChanged));
@@ -8397,7 +8492,8 @@ void MobileEngine::bindSlice(SliceModel* slice)
         }
         for (auto sig : {&SliceModel::nrLevelChanged, &SliceModel::nbLevelChanged, &SliceModel::anfLevelChanged,
                          &SliceModel::apfLevelChanged, &SliceModel::nrlLevelChanged, &SliceModel::nrsLevelChanged,
-                         &SliceModel::nrfLevelChanged, &SliceModel::anflLevelChanged}) {
+                         &SliceModel::nrfLevelChanged, &SliceModel::anflLevelChanged,
+                         &SliceModel::nrsLevelMaximumChanged}) {
             m_sliceConnections.append(connect(slice, sig, this, &MobileEngine::dspChanged));
         }
         // The DSP set changes with the mode (APF in CW, none of the 8000s in FM).
@@ -8447,6 +8543,8 @@ void MobileEngine::bindPan(PanadapterModel* pan)
     m_pan = pan;
     if (pan) {
         m_panConnections.append(connect(pan, &PanadapterModel::infoChanged, this, &MobileEngine::panGeometryChanged));
+        // The band stack moves the view too: centre after it.
+        m_panConnections.append(connect(pan, &PanadapterModel::infoChanged, this, &MobileEngine::noteCentreChange));
         m_panConnections.append(connect(pan, &PanadapterModel::rfGainChanged, this, &MobileEngine::rfGainChanged));
         m_panConnections.append(connect(pan, &PanadapterModel::wnbChanged, this, &MobileEngine::dspChanged));
         m_panConnections.append(connect(pan, &PanadapterModel::averageChanged, this, &MobileEngine::panDisplayChanged));

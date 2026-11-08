@@ -329,6 +329,8 @@ void MobileEngine::freedvTune(double mhz, const QString& mode)
     }
     qCInfo(lcMobile) << "FreeDV Reporter: tune to" << mhz << mode;
     tuneTo(mhz);
+    // Centred once RADE or the station's sideband has set mode and filter.
+    centreWhenSettled();
     // RADE stations (mode RADEV1): RADE on, once the slice is there (its
     // band decides DIGU or DIGL).
     if (mode.startsWith(QLatin1String("RADE"), Qt::CaseInsensitive)) {

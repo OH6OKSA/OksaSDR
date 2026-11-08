@@ -28,8 +28,9 @@ Dialog {
     }
     function commit() {
         const mhz = Engine.frequencyFromEntry(entry)
+        // A typed frequency puts the filter in the middle of the view.
         if (mhz > 0) {
-            Engine.tuneTo(mhz)
+            Engine.tuneToCentred(mhz)
         }
         dialog.close()
     }

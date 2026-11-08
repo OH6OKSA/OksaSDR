@@ -135,7 +135,11 @@ your device, except as part of the normal connection to your radio.
   storage as it runs, so that after a crash the next start can show the
   run that crashed (Log › Previous run); each start replaces the run
   before the last. It stays on the device and is shared only if you copy
-  or share it yourself.
+  or share it yourself, or tap Log › Send to the developer: that opens a
+  mail in your own mail app, addressed to oh6oksa@gmail.com with the log
+  (this run's and the previous run's) attached as a text file, and nothing
+  is sent until you send that mail. The attached file stays in the app's
+  own storage until the next Send to the developer replaces it.
 
 Deleting the app deletes all of this data (on Android the copy of the log
 in Documents › OksaSDR stays until you delete it).
@@ -156,4 +160,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-11-04 (the diagnostic log file for crash reports)
+Last updated: 2026-11-08 (Log › Send to the developer)

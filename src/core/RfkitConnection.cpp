@@ -86,6 +86,9 @@ void RfkitConnection::connectNetwork(const QString& host, quint16 port)
         disconnect();
     }
     const QString trimmed = host.trimmed();
+    if (trimmed != m_lastHost || port != m_lastPort) {
+        m_loggedProbeError.clear();  // another target: its first failure is news
+    }
     m_lastHost = trimmed;
     m_lastPort = port;
     m_deliberateDisconnect = false;
@@ -238,7 +241,9 @@ void RfkitConnection::onReplyFinished(QNetworkReply* reply, const Request& reque
 
     const int http = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     const bool oversize = reply->property("rfkitOversize").toBool();
-    const QByteArray body = oversize ? QByteArray() : reply->read(Rfkit::kMaxBodyBytes + 1);
+    // A reply that failed before an answer (refused, timed out) is closed, and
+    // reading it only adds Qt's "device not open" warning to the log.
+    const QByteArray body = oversize || !reply->isOpen() ? QByteArray() : reply->read(Rfkit::kMaxBodyBytes + 1);
 
     // No HTTP status at all means the exchange never completed: refused,
     // timed out, unresolvable, reset, or aborted for size or time. A transfer
@@ -382,6 +387,7 @@ bool RfkitConnection::applyReply(const Request& request, const QByteArray& body)
 void RfkitConnection::onProbeSucceeded()
 {
     m_connected = true;
+    m_loggedProbeError.clear();
     m_consecutiveFailures = 0;
     m_slowPollIndex = 0;
     qCInfo(lcTuner) << "RfkitConnection: connected to" << description()
@@ -407,13 +413,21 @@ void RfkitConnection::enqueueFullRefresh()
 
 void RfkitConnection::onTransportFailure(const QString& errorString, const Request& request)
 {
-    qCWarning(lcTuner) << "RfkitConnection: transport error on" << request.path << errorString;
     if (request.probe || !m_connected) {
+        // An amplifier switched off is retried every few seconds: the log
+        // says when it stops answering and when the reason changes, not at
+        // every attempt.
+        if (errorString != m_loggedProbeError) {
+            qCWarning(lcTuner) << "RfkitConnection: transport error on" << request.path << errorString
+                               << (m_autoReconnect ? "(retrying quietly)" : "");
+            m_loggedProbeError = errorString;
+        }
         resetSession();
         emit connectionFailed(errorString);
         if (!m_deliberateDisconnect && m_autoReconnect) { armReconnect(); }
         return;
     }
+    qCWarning(lcTuner) << "RfkitConnection: transport error on" << request.path << errorString;
     if (++m_consecutiveFailures >= kMaxConsecutiveFailures) {
         onTransportDown(errorString);
         return;

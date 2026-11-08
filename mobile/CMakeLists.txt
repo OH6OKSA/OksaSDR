@@ -69,7 +69,8 @@ if(IOS)
     target_sources(aether-mobile PRIVATE ios/ScreenAwake.mm ios/SecureStore.mm ios/AudioSession.mm ios/ShareText.mm
                                          ios/SideKeys.mm ios/Haptics.mm ios/TextScale.mm
                                          ios/DeviceId.mm)
-    target_link_libraries(aether-mobile PRIVATE "-framework Security" "-framework AVFAudio" "-framework GameController")
+    target_link_libraries(aether-mobile PRIVATE "-framework Security" "-framework AVFAudio" "-framework GameController"
+                                                "-framework MessageUI")
 elseif(ANDROID)
     target_sources(aether-mobile PRIVATE android/AndroidJni.h android/ScreenAwake.cpp android/SecureStore.cpp
                                          src/AudioSession.cpp android/ShareText.cpp src/SideKeys.cpp

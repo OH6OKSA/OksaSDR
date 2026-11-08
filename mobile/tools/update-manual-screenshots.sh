@@ -46,7 +46,7 @@ tabs=(dsp audio tx essb cw view profiles memory log digi freedv rtty)
 # overview. The modes run's segments (one per mode) run only when wanted.
 ipad_shots=(overview infopanel slicerow spectrum filter agc antenna mode frequency step volume split
             network setup tnf noslice tx-meters meter)
-phone_shots=(phone-portrait phone-menu memory-edit)
+phone_shots=(phone-portrait phone-menu memory-edit log-page)
 for t in "${tabs[@]}"; do phone_shots+=("tab-$t"); done
 modes_shots=(mode-usb mode-cw mode-am mode-fm fm-tx tx-lock mode-rtty rtty-panel tab-rtty digi-operating mode-psk)
 amp_shots=(tab-amp amp-controls amp-confirm amp-tune setup-amp setup-txband setup-rx setup-usb meter-amp)
@@ -185,6 +185,7 @@ if want "${phone_shots[@]}"; then
         if want phone-portrait; then echo "shot phone-portrait"; fi
         if want phone-menu; then printf 'tap 0.93,0.03\nshot phone-menu\nclose\n'; fi
         if want memory-edit; then printf 'drawer 7\npopup memoryEditDialog\nshot memory-edit\nclose\n'; fi
+        popup_shot log-page logPage
         for i in "${!tabs[@]}"; do
             # The Digi tab's picture comes from the modes run (RTTY on).
             [ "${tabs[$i]}" = rtty ] && continue
@@ -384,6 +385,8 @@ jpg network 460x600+448+212
 jpg setup 640x600+363+50
 jpg tnf 967x492+13+354 800x
 jpg memory-edit 440x380+0+280
+# Its buttons only: the log lines below them are the radio's own.
+jpg log-page 418x156+11+110
 for t in "${tabs[@]}"; do
     jpg "tab-$t" 440x520+0+436
 done

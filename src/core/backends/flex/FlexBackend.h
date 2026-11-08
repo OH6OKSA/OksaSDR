@@ -8,6 +8,7 @@
 #include "core/backends/IRadioBackend.h"
 
 class QThread;
+class QVersionNumber;
 
 namespace AetherSDR {
 
@@ -63,6 +64,9 @@ public:
     // caller exists yet; this documents the assumption).
     void setModelProvider(std::function<QString()> provider);
     void setFirmwareVersionProvider(std::function<QString()> provider);
+    // Announces a capability that follows the firmware (the NRS level
+    // maximum) when the radio's software version becomes known or changes.
+    void refreshFirmwareCapabilities();
     void setIndependentTxSequenceProvider(std::function<quint32()> sequence);
     IndependentTxControl independentTxControl() const override;
     bool independentTxReady() const override;
@@ -232,6 +236,9 @@ private:
     std::function<void(const QString&, const TxCoordinator::Command&)> m_txSink;
     std::function<void(const QString&)> m_sliceSink;
     std::function<QString()> m_modelProvider;
+    bool firmwareAtLeast(const QVersionNumber& minimum) const;
+    int nrsLevelMaximum() const;
+    int m_announcedNrsLevelMaximum = 100;
     std::function<QString()> m_firmwareVersionProvider;
     std::function<quint32()> m_sequenceProvider;
 

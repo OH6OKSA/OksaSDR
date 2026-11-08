@@ -1,6 +1,24 @@
 #include "ShareText.h"
 
+#import <MessageUI/MessageUI.h>
 #import <UIKit/UIKit.h>
+
+#include <sys/utsname.h>
+
+// Dismisses Mail's compose sheet when it is sent, saved or cancelled.
+@interface OksaMailDelegate : NSObject <MFMailComposeViewControllerDelegate>
+@end
+
+@implementation OksaMailDelegate
+- (void)mailComposeController:(MFMailComposeViewController*)controller
+          didFinishWithResult:(MFMailComposeResult)result
+                        error:(NSError*)error
+{
+    (void)result;
+    (void)error;
+    [controller dismissViewControllerAnimated:YES completion:nil];
+}
+@end
 
 namespace AetherSDR::mobile {
 
@@ -57,6 +75,46 @@ bool shareText(const QString& subject, const QString& text)
     }
     [top presentViewController:sheet animated:YES completion:nil];
     return true;
+}
+
+DeveloperMail sendToDeveloper(const QString& address, const QString& subject, const QString& body,
+                              const QString& path)
+{
+    UIViewController* top = topViewController();
+    if (!top) {
+        return DeveloperMail::NotShown;
+    }
+    if (![MFMailComposeViewController canSendMail]) {
+        // No account in Mail (Gmail or Outlook instead): the share sheet,
+        // with the address on the pasteboard for the recipient.
+        copyText(address);
+        return shareFile(subject, path, QStringLiteral("text/plain")) ? DeveloperMail::ShareSheet
+                                                                      : DeveloperMail::NotShown;
+    }
+    NSData* data = [NSData dataWithContentsOfFile:path.toNSString()];
+    if (!data) {
+        return DeveloperMail::NotShown;
+    }
+    // Not ARC: the delegate is kept for the app's life (the sheet holds it
+    // weakly); the sheet is autoreleased, the presenting controller keeps it.
+    static OksaMailDelegate* delegate = [[OksaMailDelegate alloc] init];
+    MFMailComposeViewController* mail = [[[MFMailComposeViewController alloc] init] autorelease];
+    mail.mailComposeDelegate = delegate;
+    [mail setToRecipients:@[address.toNSString()]];
+    [mail setSubject:subject.toNSString()];
+    [mail setMessageBody:body.toNSString() isHTML:NO];
+    [mail addAttachmentData:data mimeType:@"text/plain" fileName:[path.toNSString() lastPathComponent]];
+    [top presentViewController:mail animated:YES completion:nil];
+    return DeveloperMail::Mail;
+}
+
+QString deviceModel()
+{
+    struct utsname name;
+    if (uname(&name) != 0) {
+        return QStringLiteral("unknown");
+    }
+    return QString::fromLatin1(name.machine);  // "iPhone16,1"; "arm64" for an iOS app on a Mac
 }
 
 bool shareFile(const QString& subject, const QString& path, const QString&)

@@ -24,6 +24,8 @@ class LogBuffer : public QObject {
     Q_PROPERTY(QString previousRun READ previousRun CONSTANT)
     // The previous run ended in a crash signal.
     Q_PROPERTY(bool previousRunCrashed READ previousRunCrashed CONSTANT)
+    // Where Send to the developer mails the log (the manual's address).
+    Q_PROPERTY(QString developerAddress READ developerAddress CONSTANT)
 
 public:
     ~LogBuffer() override;
@@ -39,14 +41,17 @@ public:
     Q_INVOKABLE QString text() const { return m_lines.join(QLatin1Char('\n')); }
     // The log with a header (app version, OS) for a report.
     Q_INVOKABLE QString report() const;
-    Q_INVOKABLE void copyToClipboard() const;
     // iOS share sheet (Mail, Messages, …); copies where there is none.
     Q_INVOKABLE bool share() const;
     Q_INVOKABLE void clear();
     QString previousRun() const;
     bool previousRunCrashed() const;
-    Q_INVOKABLE void copyPreviousRun() const;
-    Q_INVOKABLE bool sharePreviousRun() const;
+    QString developerAddress() const;
+    // A mail to the developer with this run's log and the previous run's in
+    // one attached file, the subject naming the app, build and device.
+    // Returns 1 when a mail app took it, 2 for the share sheet (no mail
+    // account: the address is on the clipboard), 0 when nothing was shown.
+    Q_INVOKABLE int sendToDeveloper() const;
     // GUI thread only; the message handler queues calls here.
     void append(const QString& line);
 

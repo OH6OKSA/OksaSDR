@@ -126,6 +126,9 @@ private:
 
     QString m_lastHost;
     quint16 m_lastPort{Rfkit::kDefaultPort};
+    // The connect failure last logged for this target, so retries against an
+    // amplifier that is off log once, not every few seconds.
+    QString m_loggedProbeError;
 
     bool m_connected{false};
     bool m_autoReconnect{false};

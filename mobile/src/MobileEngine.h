@@ -885,6 +885,8 @@ public:
     // ANF, APF and the 8000-series filters per slice, WNB per panadapter.
     Q_INVOKABLE bool dspHasLevel(const QString& key) const;
     Q_INVOKABLE int dspLevel(const QString& key) const;
+    // The slider's top: 100, NRS 50 on firmware 4.3.16+ (the engine's).
+    Q_INVOKABLE int dspLevelMaximum(const QString& key) const;
     Q_INVOKABLE void setDspLevel(const QString& key, int level);
     // Beat cancel (BC, client-side): remembered; runs in voice modes only.
     bool beatCancelSetting() const;
@@ -1618,6 +1620,11 @@ public:
     void setRedactIdentity(bool on) { m_redactIdentity = on; }
     // Tune, recentring the pan when the target lies outside it.
     Q_INVOKABLE void tuneTo(double mhz);
+    // A typed frequency: tuned, and the view centred on the passband (the
+    // user, 2026-11-07: a chosen frequency puts the filter in the middle).
+    Q_INVOKABLE void tuneToCentred(double mhz);
+    // A drag on the display: no centring after it.
+    Q_INVOKABLE void cancelCentring();
     // Band change through the radio's band stack (Flex), which restores the
     // last frequency and mode used on that band.
     Q_INVOKABLE void selectBand(const QString& band);
@@ -2162,6 +2169,15 @@ private:
     void activateRade();
     void deactivateRade();
     void stopRadeBeforeLeaving(const char* why);
+    // The middle of the passband for a carrier, with the slice's filter.
+    double passbandCentreMhz(double carrierMhz) const;
+    // Centres the view on the passband once the radio has reported the
+    // slice's frequency, mode and filter (a memory, a band, a spot, a FreeDV
+    // station change them): after kCentreSettleMs without a change, within
+    // kCentreWithinMs.
+    void centreWhenSettled();
+    void noteCentreChange();
+    void centreOnPassband();
     void restoreAfterRade(SliceModel* s);
     void healRadeMute();
     void requestRadeEoo(quint64 requestId);
@@ -2487,6 +2503,9 @@ private:
     QTimer m_panPixelsTimer;
     QTimer m_panMoveTimer;
     double m_pendingPanCenterMhz{0.0};
+    QTimer m_centreSettleTimer;
+    qint64 m_centreUntilMs{0};
+    double m_centredMhz{0.0};
     // addTnfWith's settings until the radio reports the new notch: the ids
     // there were before it was asked, and until when to wait.
     struct PendingTnf {

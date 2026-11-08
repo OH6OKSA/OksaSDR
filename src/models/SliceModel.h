@@ -131,6 +131,9 @@ public:
     int     anfLevel()    const { return m_anfLevel; }
     int     nrlLevel()    const { return m_nrlLevel; }
     int     nrsLevel()    const { return m_nrsLevel; }
+    // The highest NRS level a request may carry: 50 on firmware 4.3.16+,
+    // else 100 (upstream #6498). Readback is never clamped.
+    int     nrsLevelMaximum() const { return m_nrsLevelMaximum; }
     int     nrfLevel()    const { return m_nrfLevel; }
     int     anflLevel()   const { return m_anflLevel; }
     int     mnLevel()     const { return m_mnLevel; }
@@ -505,6 +508,7 @@ signals:
     void anfLevelChanged(int v);
     void nrlLevelChanged(int v);
     void nrsLevelChanged(int v);
+    void nrsLevelMaximumChanged(int maximum);
     void nrfLevelChanged(int v);
     void anflLevelChanged(int v);
     void mnLevelChanged(int v);
@@ -592,6 +596,7 @@ private:
     }
     friend class RadioModel;
     bool refuseOffThread(const char* setter) const;
+    void setNrsLevelMaximum(int maximum);
     void setControlPolicy(ReceiveControlPolicy policy) { m_controlPolicy = policy; }
     bool confirmsControls() const { return m_controlPolicy == ReceiveControlPolicy::Confirmed; }
     ReceiveControlPolicy m_controlPolicy = ReceiveControlPolicy::Optimistic;
@@ -719,6 +724,7 @@ private:
     int     m_anfLevel{50};
     int     m_nrlLevel{50};
     int     m_nrsLevel{50};
+    int     m_nrsLevelMaximum{100};
     int     m_nrfLevel{50};
     int     m_anflLevel{50};
     // Mid-passband, so a notch enabled before the slider is touched lands

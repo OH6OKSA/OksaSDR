@@ -18,6 +18,7 @@
 #include <QMap>
 #include <QPointer>
 #include <QSignalSpy>
+#include <QStringList>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTimer>
@@ -188,6 +189,17 @@ int main(int argc, char** argv)
     TestSettingsProfile profile(QStringLiteral("rfkit-connection-test"));
 
     QCoreApplication app(argc, argv);
+
+    // Qt's warning for reading a reply that never opened (a timed-out or
+    // refused request), counted over the whole run.
+    static int s_closedReads = 0;
+    static QtMessageHandler s_default = nullptr;
+    s_default = qInstallMessageHandler([](QtMsgType type, const QMessageLogContext& context, const QString& text) {
+        if (text.startsWith(QLatin1String("QIODevice::read (QNetworkReply"))) {
+            ++s_closedReads;
+        }
+        s_default(type, context, text);
+    });
 
     // Fail fast rather than burn the timeout when loopback cannot be bound
     // (SKIP_RETURN_CODE 77 in tests.cmake).
@@ -545,6 +557,35 @@ int main(int argc, char** argv)
         report("a connection refused is reported as a failure",
                spin([&] { return failedSpy.count() > 0; }) && !conn.isConnected());
     }
+    {
+        // An amplifier that is off, retried: one log line when it stops
+        // answering, none per retry, and no Qt warning from reading a reply
+        // that never opened (Sebastian DG5CST's log: two lines every 9 s).
+        quint16 closedPort = 0;
+        {
+            QTcpServer probe;
+            probe.listen(QHostAddress::LocalHost, 0);
+            closedPort = probe.serverPort();
+        }
+        static QStringList s_messages;
+        s_messages.clear();
+        const QtMessageHandler previous = qInstallMessageHandler([](QtMsgType, const QMessageLogContext&, const QString& text) {
+            s_messages << text;
+        });
+        RfkitConnection conn;
+        QSignalSpy failedSpy(&conn, &RfkitConnection::connectionFailed);
+        for (int attempt = 1; attempt <= 3; ++attempt) {
+            conn.connectNetwork(QStringLiteral("127.0.0.1"), closedPort);
+            spin([&] { return failedSpy.count() >= attempt; });
+        }
+        qInstallMessageHandler(previous);
+        const auto count = [](const char* needle) {
+            return std::count_if(s_messages.cbegin(), s_messages.cend(),
+                                 [needle](const QString& m) { return m.contains(QLatin1String(needle)); });
+        };
+        report("three failed attempts on one target log one transport error",
+               failedSpy.count() == 3 && count("transport error") == 1);
+    }
 
     // ── Loss of the link ────────────────────────────────────────────────────
     {
@@ -626,6 +667,8 @@ int main(int argc, char** argv)
         report("the old target is no longer polled", first.requests.size() == firstBefore);
         conn.disconnect();
     }
+
+    report("a reply that never opened (refused, timed out) is never read: no \"device not open\"", s_closedReads == 0);
 
     std::printf("\n%d RF-KIT connection test(s) failed.\n", g_failed);
     return g_failed == 0 ? 0 : 1;

@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ApplicationExitInfo;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -133,6 +134,44 @@ public final class Platform {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    // A mail to the developer with the log attached: the mail apps first (a
+    // mailto: selector keeps the chooser to them), any share target when no
+    // mail app takes it. Returns 1 for a mail app, 2 for the share sheet,
+    // 0 when nothing could be shown.
+    public static int sendToDeveloper(Context context, String address, String subject, String body, String path) {
+        Uri uri;
+        try {
+            uri = FileProvider.getUriForFile(context, context.getPackageName() + ".qtprovider", new File(path));
+        } catch (Exception e) {
+            return 0;
+        }
+        for (int attempt = 0; attempt < 2; attempt++) {
+            try {
+                Intent send = new Intent(Intent.ACTION_SEND);
+                send.setType("text/plain");
+                send.putExtra(Intent.EXTRA_EMAIL, new String[] {address});
+                send.putExtra(Intent.EXTRA_SUBJECT, subject);
+                send.putExtra(Intent.EXTRA_TEXT, body);
+                send.putExtra(Intent.EXTRA_STREAM, uri);
+                send.setClipData(ClipData.newRawUri(subject, uri));
+                send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                if (attempt == 0) {
+                    send.setSelector(new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:")));
+                }
+                Intent chooser = Intent.createChooser(send, subject);
+                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                if (attempt == 0 && send.getSelector().resolveActivity(context.getPackageManager()) == null) {
+                    continue;  // no mail app: the share sheet
+                }
+                context.startActivity(chooser);
+                return attempt == 0 ? 1 : 2;
+            } catch (Exception e) {
+                // the next attempt, without the mail-only selector
+            }
+        }
+        return 0;
     }
 
     // ---- LAN discovery: Wi-Fi drivers may drop broadcast and multicast

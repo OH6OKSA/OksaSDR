@@ -17,4 +17,17 @@ bool shareText(const QString& subject, const QString& text);
 // folder (the FileProvider's path). Elsewhere it copies the path instead.
 bool shareFile(const QString& subject, const QString& path, const QString& mimeType);
 
+// A mail to the developer with a file attached (Dennis Daniel KM6DF: Share
+// left the address to fill in). iOS: Mail's compose sheet with the address,
+// subject, body and the file; with no Mail account the share sheet with the
+// file, the address copied for pasting. Android: the mail apps (ACTION_SEND
+// to the address, the file through the FileProvider), any share target when
+// no mail app takes it. Elsewhere the address is copied.
+enum class DeveloperMail { NotShown, Mail, ShareSheet };
+DeveloperMail sendToDeveloper(const QString& address, const QString& subject, const QString& body,
+                              const QString& path);
+
+// The device's model for a report ("iPhone16,1", "OnePlus CPH2551").
+QString deviceModel();
+
 } // namespace AetherSDR::mobile
