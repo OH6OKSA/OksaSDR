@@ -136,42 +136,44 @@ public final class Platform {
         }
     }
 
-    // A mail to the developer with the log attached: the mail apps first (a
-    // mailto: selector keeps the chooser to them), any share target when no
-    // mail app takes it. Returns 1 for a mail app, 2 for the share sheet,
-    // 0 when nothing could be shown.
-    public static int sendToDeveloper(Context context, String address, String subject, String body, String path) {
+    // A mail to the developer with the log attached: a mail app first (the
+    // send restricted to mailto: handlers, started as it is: a chooser
+    // around a selector showed nothing on the developer's Android 16), any
+    // share target when no mail app takes it. Returns "mail", "share" or
+    // "none", with ": " and the reason of what failed, for the app's log.
+    public static String sendToDeveloper(Context context, String address, String subject, String body, String path) {
         Uri uri;
         try {
             uri = FileProvider.getUriForFile(context, context.getPackageName() + ".qtprovider", new File(path));
         } catch (Exception e) {
-            return 0;
+            return "none: no FileProvider URI for the log file: " + e;
         }
-        for (int attempt = 0; attempt < 2; attempt++) {
-            try {
-                Intent send = new Intent(Intent.ACTION_SEND);
-                send.setType("text/plain");
-                send.putExtra(Intent.EXTRA_EMAIL, new String[] {address});
-                send.putExtra(Intent.EXTRA_SUBJECT, subject);
-                send.putExtra(Intent.EXTRA_TEXT, body);
-                send.putExtra(Intent.EXTRA_STREAM, uri);
-                send.setClipData(ClipData.newRawUri(subject, uri));
-                send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                if (attempt == 0) {
-                    send.setSelector(new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:")));
-                }
-                Intent chooser = Intent.createChooser(send, subject);
-                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                if (attempt == 0 && send.getSelector().resolveActivity(context.getPackageManager()) == null) {
-                    continue;  // no mail app: the share sheet
-                }
-                context.startActivity(chooser);
-                return attempt == 0 ? 1 : 2;
-            } catch (Exception e) {
-                // the next attempt, without the mail-only selector
-            }
+        Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
+        send.putExtra(Intent.EXTRA_EMAIL, new String[] {address});
+        send.putExtra(Intent.EXTRA_SUBJECT, subject);
+        send.putExtra(Intent.EXTRA_TEXT, body);
+        send.putExtra(Intent.EXTRA_STREAM, uri);
+        send.setClipData(ClipData.newRawUri(subject, uri));
+        send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        String mailFailed;
+        try {
+            Intent mail = new Intent(send);
+            mail.setSelector(new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:")));
+            mail.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(mail);
+            return "mail";
+        } catch (Exception e) {
+            mailFailed = e.toString();
         }
-        return 0;
+        try {
+            Intent chooser = Intent.createChooser(send, subject);
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            context.startActivity(chooser);
+            return "share: no mail app (" + mailFailed + ")";
+        } catch (Exception e) {
+            return "none: mail " + mailFailed + "; share sheet " + e;
+        }
     }
 
     // ---- LAN discovery: Wi-Fi drivers may drop broadcast and multicast

@@ -3,6 +3,7 @@
 #include "AndroidJni.h"
 
 #include <QClipboard>
+#include <QDebug>
 #include <QGuiApplication>
 
 namespace AetherSDR::mobile {
@@ -21,19 +22,22 @@ bool shareText(const QString& subject, const QString& text)
         QJniObject::fromString(text).object<jstring>());
 }
 
-// Android: a mail app with the address, subject, body and the file.
+// Android: a mail app with the address, subject, body and the file; what
+// happened goes to the app's log (the Log page's report).
 DeveloperMail sendToDeveloper(const QString& address, const QString& subject, const QString& body,
                               const QString& path)
 {
-    const jint shown = QJniObject::callStaticMethod<jint>(kPlatformClass, "sendToDeveloper",
-        "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I",
+    const QString shown = QJniObject::callStaticObjectMethod(kPlatformClass, "sendToDeveloper",
+        "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
         androidContext().object(), QJniObject::fromString(address).object<jstring>(),
         QJniObject::fromString(subject).object<jstring>(), QJniObject::fromString(body).object<jstring>(),
-        QJniObject::fromString(path).object<jstring>());
-    if (shown == 2) {
+        QJniObject::fromString(path).object<jstring>()).toString();
+    qInfo().noquote() << "Send to the developer:" << (shown.isEmpty() ? QStringLiteral("none: the Java call failed") : shown);
+    if (shown.startsWith(QLatin1String("share"))) {
         copyText(address);  // a share target that is not a mail app: the address to paste
+        return DeveloperMail::ShareSheet;
     }
-    return shown == 1 ? DeveloperMail::Mail : shown == 2 ? DeveloperMail::ShareSheet : DeveloperMail::NotShown;
+    return shown == QLatin1String("mail") ? DeveloperMail::Mail : DeveloperMail::NotShown;
 }
 
 QString deviceModel()
