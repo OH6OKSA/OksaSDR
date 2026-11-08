@@ -369,7 +369,7 @@ jpg infopanel 500x95+485+45
 jpg slicerow 985x140+0+205
 jpg spectrum 985x600+0+340 800x
 jpg filter 620x420+470+40
-jpg agc 560x320+470+40
+jpg agc 560x470+470+40
 jpg antenna 620x270+470+40
 jpg mode 520x230+320+40
 jpg meter 380x600+0+200

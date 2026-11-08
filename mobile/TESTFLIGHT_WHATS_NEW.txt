@@ -9,15 +9,13 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Prof > App setups: the app's settings under a name, switched in a tap, exported and imported on another device (thanks Larry W9FLA).
-- Macros > Repeat: a voice keyer slot or CW memory sent again every few seconds until PTT, Stop or any key (thanks Robin Bishop).
-- SNR on the meters while RADE decodes (thanks Scott L Stanford).
-- SmartSDR 4.3's PTT source list (MIC,VOX): a mic or footswitch PTT keeps the TX meters.
-- The set power in the TX slice's tag; a tap opens its slider (thanks Evgeny R0ACS).
-- Choosers stay above the home indicator.
-- From build 159: the filter centred on a chosen frequency; Log > Send to the developer; NRS up to 50.
+- Auto AGC-T under the AGC-T slider: the radio's own with its Early Access licence; on every other radio the app finds the knee on a clear spot (about 13 s) and keeps it per band and mode.
+- The TX tag's power also on narrow chips (TX over the power); the Macros repeat mark drawn on Android.
+- From build 161: the set power in the TX slice's tag; choosers above the home indicator.
+- From build 160: Prof > App setups (thanks Larry W9FLA); Macros > Repeat (thanks Robin Bishop); SNR on the meters (thanks Scott L Stanford).
 
-RECENT (builds 94–158)
+RECENT (builds 94–159)
+- The filter centred on a chosen frequency; Log > Send to the developer; NRS up to 50.
 - TUNE restores only what it inhibited; Sound from The radio; the FTx QSO in the Log tab; measured TX power.
 - eSSB tube, EVO, reverb; Amp by maker; first-run hints; felt slider taps.
 - Band plan lock (thanks Tyler K0OTC); FTx CQ DX (thanks Kurt DL5EAG); Display Zoom (thanks Evgeny R0ACS); Antenna Genius (thanks Ben Morris).
@@ -38,7 +36,7 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab: decode, drag the red TX band to a free frequency, answer a CQ at low power and check the log. [TX]
 - The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: Prof > App setups (save two, switch, export one to another device). Macros > Repeat at low power. [TX]
+- New: AGC panel > Auto on a clear spot, then change mode and band and come back. Prof > App setups; Macros > Repeat at low power. [TX]
 - Worked before from Wavelog, the QRZ.com Logbook or a shared ADIF file in iCloud Drive.
 - The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]
 

@@ -533,6 +533,7 @@ MobileEngine::MobileEngine(QObject* parent)
     connect(&m_repeatTimer, &QTimer::timeout, this, &MobileEngine::fireMacroRepeat);
     setupDxCluster();
     setupFreeDv();
+    setupAgcAuto();
     // Network changes in the log (Wi-Fi <-> mobile data, offline): a remote
     // session that drops can then be told apart from the network switching
     // under it.
@@ -1172,6 +1173,23 @@ MobileEngine::MobileEngine(QObject* parent)
             [this](quint32 streamId, const QVector<float>& bins, qint64, const SpectrumDecodeScale&) {
         if (m_pan && m_pan->panStreamId() == streamId) {
             ++m_fftFramesSeen;
+            // Auto AGC-T's clear-spot check reads an average of the frames
+            // (a single frame's noise peaks stand 15-20 dB over its median),
+            // restarted when the pan moves or changes width.
+            const double centre = m_pan->centerMhz();
+            const double width = m_pan->bandwidthMhz();
+            if (m_lastFftBins.size() != bins.size() || centre != m_lastFftCentre || width != m_lastFftWidth) {
+                m_lastFftBins = bins;
+                m_lastFftCentre = centre;
+                m_lastFftWidth = width;
+            } else {
+                for (qsizetype i = 0; i < bins.size(); ++i) {
+                    if (std::isfinite(bins.at(i))) {
+                        m_lastFftBins[i] = 0.85f * m_lastFftBins.at(i) + 0.15f * bins.at(i);
+                    }
+                }
+            }
+            m_lastFftMs = QDateTime::currentMSecsSinceEpoch();
             if (m_displayActive) {
                 emit spectrumFrame(bins);
             }
@@ -5984,6 +6002,15 @@ void MobileEngine::setAgcThreshold(int value)
 {
     value = std::clamp(value, 0, 100);
     if (m_slice && m_slice->agcThreshold() != value) {
+        // By hand: Auto's value for this band and mode group is let go, so
+        // it is not set over the operator's choice the next time.
+        const QString key = agcAutoKey();
+        if (!m_agcMeasuring && !key.isEmpty() && AppSettings::instance().contains(key)) {
+            AppSettings::instance().remove(key);
+            AppSettings::instance().save();
+            m_agcNote = tr("Set by hand: Auto's value for this band and mode is let go.");
+            emit agcAutoChanged();
+        }
         m_slice->setAgcThreshold(value);
     }
 }
@@ -8635,6 +8662,7 @@ void MobileEngine::bindSlice(SliceModel* slice)
     }
     m_sliceConnections.clear();
     m_slice = slice;
+    bindAgcAutoSlice();
     planRegionNow();
     applyBeatCancel();
     emit fmChanged();

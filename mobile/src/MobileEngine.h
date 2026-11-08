@@ -51,6 +51,7 @@ class RADEEngine;
 class PanadapterModel;
 class RadioDiscoverySource;
 class SliceModel;
+class AgcTCalibrator;
 class CtyDatParser;
 struct CallsignInfo;
 struct PcmFrame;
@@ -221,6 +222,11 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QString agcMode READ agcMode WRITE setAgcMode NOTIFY dspChanged)
     // AGC threshold (AGC-T, 0…100) of the active slice.
     Q_PROPERTY(int agcThreshold READ agcThreshold WRITE setAgcThreshold NOTIFY dspChanged)
+    // Auto AGC-T (roadmap 32 and 48): the radio's own where its Early Access
+    // licence has it (radioAvailable, radioOn, radioPending), else the app's
+    // measurement (measuring, progress 0-100), with a note for the AGC panel
+    // and the value remembered for this band and mode group (-1 none).
+    Q_PROPERTY(QVariantMap agcAuto READ agcAuto NOTIFY agcAutoChanged)
     // RF gain (preamp/attenuator) of the shown panadapter, in its own steps.
     Q_PROPERTY(int rfGain READ rfGain WRITE setRfGain NOTIFY rfGainChanged)
     Q_PROPERTY(int rfGainLow READ rfGainLow NOTIFY rfGainChanged)
@@ -1357,6 +1363,13 @@ public:
     // profile from the current settings (the radio cannot overwrite those).
     Q_INVOKABLE void saveProfile(const QString& type, const QString& name);
     Q_INVOKABLE void deleteProfile(const QString& type, const QString& name);
+    QVariantMap agcAuto() const;
+    // The AGC panel's Auto: the radio's Auto on / off, or the app's
+    // measurement started (pressed again: stopped, AGC-T put back).
+    Q_INVOKABLE void agcAutoPress();
+    // The display's noise floor (SpectrumItem.noiseFloorDbm): the
+    // measurement's quiet-spot check compares the S meter with it.
+    Q_INVOKABLE void noteSpectrumFloor(double dbm);
     QStringList appSetups() const;
     QString activeAppSetup() const;
     // Each returns {ok: bool, error: text}; apply also {later: the parts that
@@ -1827,6 +1840,7 @@ signals:
     void dxClusterStatusChanged();
     void profilesChanged();
     void appSetupsChanged();
+    void agcAutoChanged();
     void txFilterChanged();
     void eqChanged();
     void cwMemoriesChanged();
@@ -2246,6 +2260,30 @@ private:
     QString m_radeRxCallsign;
     // FreeDV Reporter (MobileEngineFreeDv.cpp).
     void setupFreeDv();
+    // Auto AGC-T (MobileEngineAgcAuto.cpp).
+    void setupAgcAuto();
+    void bindAgcAutoSlice();
+    QString agcAutoKey() const;
+    void scheduleAgcRecall();
+    void recallAgcThreshold();
+    AetherSDR::AgcTCalibrator* m_agcCal{nullptr};
+    bool m_agcMeasuring{false};
+    int m_agcProgress{0};
+    QString m_agcNote;
+    double m_spectrumFloorDbm{-200.0};
+    // The pan's latest FFT frame: the strongest bin in the active slice's
+    // passband over the frame's noise floor, in dB (NaN: no frame lately).
+    double passbandOverFloorDb() const;
+    QVector<float> m_lastFftBins;
+    double m_lastFftCentre{0.0};
+    double m_lastFftWidth{0.0};
+    qint64 m_lastFftMs{0};
+    QString m_agcRecallKey;
+    QTimer m_agcRecallTimer;
+    bool m_agcRecalling{false};
+    bool m_agcStopping{false};
+    bool m_agcKnee{true};
+    bool m_agcFlat{false};
     void loadFreeDvSettings();
     // App setups (MobileEngineSetups.cpp): every property's change signal,
     // so the pages read the applied settings.

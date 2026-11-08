@@ -369,6 +369,12 @@ int main(int argc, char* argv[])
                        "applies the setup and checks they came back, exports and imports it, then deletes "
                        "the test setups (the settings end as they began)."));
     parser.addOption(setupTestOption);
+    const QCommandLineOption agcAutoTestOption(QStringLiteral("agc-auto-test"),
+        QStringLiteral("Development, receive only: the app's Auto AGC-T on <mhz> USB (default 14.150): the "
+                       "measurement, then AGC-T moved away and the band left and come back to, which must set "
+                       "the measured value again; frequency, mode, AGC and AGC-T put back and the remembered "
+                       "value removed."), QStringLiteral("mhz"));
+    parser.addOption(agcAutoTestOption);
     const QCommandLineOption buttonStyleOption(QStringLiteral("button-style"),
         QStringLiteral("Button colours: classic, light or lit (remembered)."), QStringLiteral("style"));
     parser.addOption(buttonStyleOption);
@@ -1570,6 +1576,89 @@ int main(int argc, char* argv[])
                QStringLiteral("test setups deleted"));
             ok(engine.cwMemories() == before.value(QStringLiteral("cwMemories")).toStringList(), QStringLiteral("CW memories as they began"));
             qInfo() << "setup-test: done; in use before:" << activeBefore;
+        });
+    }
+    if (parser.isSet(agcAutoTestOption)) {
+        const double mhz = parser.value(agcAutoTestOption).toDouble() > 0 ? parser.value(agcAutoTestOption).toDouble() : 14.150;
+        struct Saved { double freq{0}; QString mode; QString agc; int threshold{-1}; QString key; int measured{-1}; bool started{false}; };
+        auto saved = std::make_shared<Saved>();
+        auto restore = [&engine, saved] {
+            if (!saved->key.isEmpty()) {
+                AetherSDR::AppSettings::instance().remove(saved->key);
+                AetherSDR::AppSettings::instance().save();
+            }
+            // The radio keeps AGC-T per band: the test band's put back first.
+            engine.setAgcThreshold(saved->threshold);
+            engine.setFrequencyMhz(saved->freq);
+            engine.setMode(saved->mode);
+            QTimer::singleShot(2500, &engine, [&engine, saved] {
+                engine.setAgcMode(saved->agc);
+                engine.setAgcThreshold(saved->threshold);
+                QTimer::singleShot(2000, &engine, [&engine, saved] {
+                    qInfo().noquote() << "agc-auto-test: restored" << engine.frequencyMhz() << engine.mode() << engine.agcMode()
+                                      << "AGC-T" << engine.agcThreshold() << "(was" << saved->freq << saved->mode << saved->agc
+                                      << saved->threshold << ")";
+                });
+            });
+        };
+        QTimer::singleShot(8000, &app, [&engine, saved, mhz] {
+            saved->freq = engine.frequencyMhz();
+            saved->mode = engine.mode();
+            saved->agc = engine.agcMode();
+            saved->threshold = engine.agcThreshold();
+            qInfo().noquote() << "agc-auto-test: before" << saved->freq << saved->mode << saved->agc << "AGC-T" << saved->threshold
+                              << "| radio's Auto available" << engine.agcAuto().value(QStringLiteral("radioAvailable")).toBool();
+            engine.setMode(QStringLiteral("USB"));
+            engine.tuneToCentred(mhz);
+        });
+        QTimer::singleShot(16000, &app, [&engine, saved, restore, mhz] {
+            qInfo().noquote() << "agc-auto-test: on" << engine.frequencyMhz() << engine.mode() << engine.agcMode()
+                              << "AGC-T" << engine.agcThreshold() << "S" << engine.sMeterDbm();
+            QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::agcAutoChanged, &engine, [&engine, saved, restore, mhz] {
+                const QVariantMap a = engine.agcAuto();
+                const bool measuring = a.value(QStringLiteral("measuring")).toBool();
+                if (measuring) {
+                    saved->started = true;
+                    return;
+                }
+                if (!saved->started || saved->measured >= 0) {
+                    return;
+                }
+                saved->measured = a.value(QStringLiteral("remembered")).toInt();
+                saved->key = QStringLiteral("MobileAgcT_%1_voice").arg(AetherSDR::BandSettings::bandForFrequency(engine.frequencyMhz()));
+                qInfo().noquote() << "agc-auto-test:" << (saved->measured >= 0 && engine.agcThreshold() == saved->measured ? "[ OK ]" : "[FAIL]")
+                                  << "measured" << saved->measured << "AGC-T now" << engine.agcThreshold() << "|" << a.value(QStringLiteral("note")).toString();
+                if (saved->measured < 0) {
+                    restore();
+                    return;
+                }
+                // Moved away (as the radio's band recall would; the memory put
+                // back, as the slider lets it go), the band left and come back to.
+                const int away = saved->measured > 50 ? saved->measured - 25 : saved->measured + 25;
+                engine.setAgcThreshold(away);
+                AetherSDR::AppSettings::instance().setValue(saved->key, saved->measured);
+                QTimer::singleShot(2000, &engine, [&engine, saved, restore, away, mhz] {
+                    const double other = mhz > 10.0 ? 7.150 : 14.150;
+                    qInfo() << "agc-auto-test: AGC-T moved to" << engine.agcThreshold() << "(asked" << away << "), to" << other;
+                    engine.setFrequencyMhz(other);
+                    QTimer::singleShot(3500, &engine, [&engine, saved, restore, mhz] {
+                        engine.setFrequencyMhz(mhz);
+                        engine.setMode(QStringLiteral("USB"));
+                        QTimer::singleShot(4000, &engine, [&engine, saved, restore, mhz] {
+                            qInfo().noquote() << "agc-auto-test:" << (engine.agcThreshold() == saved->measured ? "[ OK ]" : "[FAIL]")
+                                              << "back on" << mhz << "USB: AGC-T" << engine.agcThreshold() << "measured" << saved->measured;
+                            restore();
+                        });
+                    });
+                });
+            });
+            engine.agcAutoPress();
+            QTimer::singleShot(400, &engine, [&engine, saved, restore] {
+                if (!saved->started) {
+                    qInfo().noquote() << "agc-auto-test: not measuring:" << engine.agcAuto().value(QStringLiteral("note")).toString();
+                    restore();
+                }
+            });
         });
     }
     if (parser.isSet(buttonStyleOption)) {

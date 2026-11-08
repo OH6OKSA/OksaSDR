@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QElapsedTimer>
 #include <QObject>
 #include <QPointer>
 #include <QTimer>
@@ -110,7 +111,13 @@ private:
     bool   m_haveFloor{false};
     static constexpr float kQuietMarginDb = 6.0f;
 
-    // Auto sweep.
+    // Auto sweep. Each step's level is the mean (in dB) of the audio blocks
+    // in the second half of its settle time: the EMA above follows a few
+    // blocks only, and band noise sampled at one instant swings several dB,
+    // which moved the knee by up to four steps between two sweeps (OksaSDR).
+    QElapsedTimer m_stepClock;
+    double m_stepSumDb{0.0};
+    int    m_stepBlocks{0};
     QTimer m_stepTimer;
     int    m_sweepValue{100};
     bool   m_sweepUp{false};             // AGC off: 0 -> target; AGC on: 100 -> 0

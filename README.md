@@ -129,6 +129,9 @@ radio interface, with no computer running alongside.
   spectrum and waterfall as on the desktop.
 - The radio's global, TX and mic profiles: load, save and delete, as in
   SmartSDR and AetherSDR.
+- **Auto AGC-T**: the radio's own on Early Access radios; on every other
+  radio the app finds the AGC knee on a clear spot and keeps it per band
+  and mode group.
 - **App setups** (Prof tab): the app's own settings saved under a name,
   switched in a tap, exported as a file and imported on another device.
 - Filter passband drawn on the display, on the correct side for USB/LSB and

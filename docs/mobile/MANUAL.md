@@ -721,6 +721,26 @@ RTTY, FreeDV), **slow** for voice. Pick another AGC and the app keeps it
 for that kind of mode from then on. A mode change made by another program
 on the radio leaves the AGC alone.
 
+**Auto AGC-T.** **Auto** under the AGC-T slider sets the threshold for you:
+
+- On a radio with SmartSDR 4.3.16 and FlexRadio's Early Access licence
+  (auto_agc_t), Auto turns the radio's own Auto AGC-T on (lit) and off;
+  the radio then keeps adjusting AGC-T itself, and moving the slider sets
+  it by hand again.
+- On every other radio the app measures it: tune to a clear spot (no
+  signal in the passband; Auto says so if there is one) and tap **Auto**.
+  For about 13 s the app steps AGC-T from 100 down and listens to the
+  receive audio (the noise level changes meanwhile); where the noise
+  starts to drop is the knee, and AGC-T is set there, as FlexRadio's own
+  advice does by ear. **Stop** ends it and puts AGC-T back. The value is
+  kept for the band and the mode group (voice, CW, data: a CW or RTTY
+  filter lets less noise through than a voice one, so the knee moves) and
+  set again whenever the slice comes back to that band and mode group, e.g.
+  20 m CW after 20 m USB. Moving the slider by hand lets that value go.
+  AGC speed stays as it is (fast for CW and data, slow for voice). For FT8,
+  measure in DIGU just beside the FT8 frequencies, where it is quiet: the
+  value is kept for that band's data modes.
+
 **Sliders with − and +.** AGC-T, RF gain, each slice's volume and pan, the
 squelch level, the DSP levels, RF and tune power, the microphone and
 monitor levels, the TX filter, the eSSB levels, CW

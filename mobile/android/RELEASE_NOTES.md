@@ -1,6 +1,11 @@
-**OksaSDR for Android — beta 74.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
+**OksaSDR for Android — beta 75.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
-### New in beta 74
+### New in beta 75
+- **Auto AGC-T** (the developer's wish, as Thetis has it): **Auto** under the AGC-T slider (tap the AGC in the info row). On a radio with SmartSDR 4.3.16 and FlexRadio's paid Early Access licence it turns the radio's own Auto AGC-T on and off. On every other radio the app measures it: on a clear spot (Auto says if a signal is in the passband) it steps AGC-T from 100 down for about 13 s, listens to the receive audio and sets AGC-T at the knee, where the noise starts to drop (FlexRadio's own advice, by ear). The value is kept for the band and the mode group (voice, CW, data) and set again whenever you come back to them; moving the slider by hand lets it go; **Stop** puts AGC-T back. Measured on the FLEX: 52-60 on quiet spots on 20 m and 15 m at night, the same within one step between two sweeps; a broadcast station and a weak carrier in the passband refused.
+- **The TX tag's power on narrow chips** (the developer's OnePlus outer screen, two bars at both meters and two slices: the tag showed only TX): "TX" over the power in small type now comes before that.
+- **The Macros button's repeat mark** was an empty box on Android (⟳ is in none of its fonts): now ↻.
+
+### Still new from beta 74
 - **Log › Send to the developer opens the mail app** (the developer's Android 16 phone: the tap did nothing in betas 72 and 73): the mail goes straight to the mail app (or Android asks which one) with the address, the subject and the log attached; without a mail app the share sheet opens and the address is copied. What happens is now written in the log too.
 - **The set power in the TX slice's tag** (thanks Evgeny R0ACS): the slice chip's red tag reads *TX 100 W* (*TX 29 %* on an Aurora, *AMP* after it with an amplifier in Operate; *100 W* alone where two slices make the chips narrow); a tap on it opens the RF power slider.
 - **Panels stay above the taskbar** (the developer's OnePlus: the meter chooser's last row went under the taskbar once SNR added a row): the meter, mode, filter, AGC, band and other choosers end above Android's navigation bar or taskbar and scroll when taller.

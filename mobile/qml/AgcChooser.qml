@@ -72,6 +72,32 @@ Popup {
                 onMoved: (v) => Engine.agcThreshold = Math.round(v)
             }
         }
+        // Auto AGC-T (roadmap 32 and 48): the radio's own where its Early
+        // Access licence has it, else the app's measurement of the knee,
+        // kept for this band and mode group.
+        RowLayout {
+            Layout.fillWidth: true
+            visible: Engine.connectionState === "connected"
+            AppButton {
+                objectName: "agcAuto"
+                text: Engine.agcAuto.measuring ? qsTr("Stop") : qsTr("Auto")
+                checked: !!Engine.agcAuto.radioOn || !!Engine.agcAuto.measuring
+                warn: !!Engine.agcAuto.radioPending
+                focusPolicy: Qt.NoFocus
+                Accessible.name: Engine.agcAuto.radioAvailable ? qsTr("Auto AGC-T, the radio's") : qsTr("Auto AGC-T, measure")
+                Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                Layout.preferredHeight: Theme.touchTarget
+                onClicked: Engine.agcAutoPress()
+            }
+            Label {
+                objectName: "agcAutoNote"
+                Layout.fillWidth: true
+                text: Engine.agcAuto.note || ""
+                color: Theme.textDim
+                font.pixelSize: 12
+                wrapMode: Text.Wrap
+            }
+        }
         // RF gain (preamp / attenuator) of the panadapter, in the radio's steps.
         RowLayout {
             Layout.fillWidth: true

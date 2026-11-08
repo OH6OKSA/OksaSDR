@@ -41,6 +41,8 @@ Rectangle {
         id: spectrum
         anchors.fill: parent
         engine: Engine
+        // Auto AGC-T's clear-spot check compares the S meter with it.
+        onNoiseFloorDbmChanged: Engine.noteSpectrumFloor(noiseFloorDbm)
         // To a screen reader: what is shown (tuning by it is to come).
         Accessible.role: Accessible.Graphic
         Accessible.name: Engine.panBandwidthMhz > 0

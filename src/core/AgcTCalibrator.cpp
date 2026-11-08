@@ -107,6 +107,10 @@ void AgcTCalibrator::applyValue(int value)
     } else {
         m_slice->setAgcThresholdFromCalibration(value);
     }
+    // A new step: its level is gathered afresh once it has settled.
+    m_stepClock.restart();
+    m_stepSumDb = 0.0;
+    m_stepBlocks = 0;
 }
 
 float AgcTCalibrator::currentRmsDb() const
@@ -128,6 +132,10 @@ void AgcTCalibrator::onAudioLevel(float rms)
         m_haveRms = true;
     } else {
         m_rmsEma = (1.0f - kRmsAlpha) * m_rmsEma + kRmsAlpha * rms;
+    }
+    if (m_running && m_auto && m_stepClock.isValid() && m_stepClock.elapsed() >= m_settleMs / 2) {
+        m_stepSumDb += 20.0 * std::log10(std::max(rms, kRmsFloor));
+        ++m_stepBlocks;
     }
 }
 
@@ -281,7 +289,10 @@ void AgcTCalibrator::finishSweep()
 
 void AgcTCalibrator::recordPoint(int value)
 {
-    const float db = currentRmsDb();
+    // The auto sweep's settled mean; a manual point (and a step with no
+    // audio blocks yet) the smoothed instant level as before.
+    const float db = (m_auto && m_stepBlocks > 0) ? static_cast<float>(m_stepSumDb / m_stepBlocks)
+                                                   : currentRmsDb();
     // Replace an existing sample at the same value (manual re-visits).
     for (Point& p : m_curve) {
         if (p.value == value) {
