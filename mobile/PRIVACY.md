@@ -133,11 +133,12 @@ your device, except as part of the normal connection to your radio.
 - The in-app diagnostic log (what the app did: connections, commands sent
   to the radio, errors) is also written to a file in the app's own
   storage as it runs, so that after a crash the next start can show the
-  run that crashed (Log › Previous run); each start replaces the run
-  before the last. It stays on the device and is shared only if you copy
-  or share it yourself, or tap Log › Send to the developer: that opens a
-  mail in your own mail app, addressed to oh6oksa@gmail.com with the log
-  (this run's and the previous run's) attached as a text file, and nothing
+  run that crashed (Log says the previous run ended in a crash); each
+  start replaces the run before the last. It stays on the device and is
+  shared only if you copy or share it yourself, or tap Log › Send to the
+  developer: that opens a mail in your own mail app, addressed to
+  oh6oksa@gmail.com with the log (this run's and the previous run's)
+  attached as a text file, and nothing
   is sent until you send that mail. The attached file stays in the app's
   own storage until the next Send to the developer replaces it.
 

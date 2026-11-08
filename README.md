@@ -299,7 +299,7 @@ radio interface, with no computer running alongside.
 - App version and build in the top row; **Manual** opens the
   [user manual](docs/mobile/MANUAL.md).
 - Built-in demo radio, so you can try it without a radio.
-- In-app **Log** with Copy and Share, so testers can report exactly what happened.
+- In-app **Log** with Send to the developer and Share, so testers can report exactly what happened.
 
 <p align="center">
   <img src="docs/mobile/iphone-landscape.jpg" width="56%" alt="iPhone landscape layout"/>
