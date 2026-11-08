@@ -820,7 +820,8 @@ transmit slice carries a red **TX** tag with the set power in it (thanks
 Evgeny R0ACS): *TX 100 W* on a 100 W radio, *TX 29 %* on an Aurora (a
 share of its 500 W PA), and *AMP* after it while an amplifier is in
 Operate, as the radio's power is then its drive. Where the chip is narrow
-(two slices on a phone) the tag shows *100 W* alone. A tap on the tag
+(two slices on a phone) the tag shows *100 W* alone, and narrower still
+(two bars at both meters) *TX* over the power in small type. A tap on the tag
 opens the RF power slider under it, the TX tab's; the power out is on the
 Power meter. Two fit side by side, four make 2 × 2.
 

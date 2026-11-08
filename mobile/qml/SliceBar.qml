@@ -125,7 +125,9 @@ RowLayout {
                     // a 100 W radio, a percentage on an Aurora (its 500 W PA), AMP
                     // while an amplifier is in Operate (then it is the drive). Where
                     // the chip is narrow (two slices on a phone) "100 W" alone, then
-                    // only "TX". A tap on the tag opens the power slider.
+                    // "TX" over the power in small type (two bars at both meters
+                    // leave a phone's chips about 90 px: the user's OnePlus), only
+                    // "TX" last. A tap on the tag opens the power slider.
                     readonly property bool ampOperating: (!!Engine.amp.set && Engine.amp.operate === "OPERATE")
                                                          || (!!Engine.pgxl.present && !!Engine.pgxl.operate)
                     readonly property string powerText: Engine.rfPower + (Engine.rfPowerIsPercent ? " %" : " W")
@@ -133,6 +135,13 @@ RowLayout {
                     readonly property real tagRoom: chip.availableWidth - chipLabel.implicitWidth - 5 - 8
                     TextMetrics { id: tagFull; font.pixelSize: chip.font.pixelSize; font.bold: true; text: "TX " + chip.powerText }
                     TextMetrics { id: tagPower; font.pixelSize: chip.font.pixelSize; font.bold: true; text: chip.powerText }
+                    readonly property int smallPx: Math.max(9, Math.round(chip.font.pixelSize * 0.68))
+                    readonly property string shortPower: Engine.rfPower + (Engine.rfPowerIsPercent ? " %" : " W")
+                    TextMetrics { id: tagSmall; font.pixelSize: chip.smallPx; font.bold: true; text: chip.shortPower }
+                    readonly property string tagStyle: !chip.modelData.tx ? ""
+                        : tagFull.advanceWidth <= chip.tagRoom ? "full"
+                        : tagPower.advanceWidth <= chip.tagRoom ? "power"
+                        : tagSmall.advanceWidth <= chip.tagRoom ? "stacked" : "tx"
                     contentItem: Item {
                         Row {
                             anchors.centerIn: parent
@@ -152,8 +161,8 @@ RowLayout {
                                 objectName: "sliceTxPower" + chip.modelData.letter
                                 visible: chip.modelData.tx
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: txText.implicitWidth + 8
-                                height: txText.implicitHeight + 4
+                                width: (chip.tagStyle === "stacked" ? stackedTag.implicitWidth : txText.implicitWidth) + 8
+                                height: (chip.tagStyle === "stacked" ? stackedTag.implicitHeight : txText.implicitHeight) + 4
                                 radius: 4
                                 color: Theme.transmitTag
                                 Accessible.role: Accessible.Button
@@ -163,12 +172,35 @@ RowLayout {
                                 Text {
                                     id: txText
                                     Accessible.ignored: true
+                                    visible: chip.tagStyle !== "stacked"
                                     anchors.centerIn: parent
-                                    text: tagFull.advanceWidth <= chip.tagRoom ? "TX " + chip.powerText
-                                        : tagPower.advanceWidth <= chip.tagRoom ? chip.powerText : "TX"
+                                    text: chip.tagStyle === "full" ? "TX " + chip.powerText
+                                        : chip.tagStyle === "power" ? chip.powerText : "TX"
                                     font.pixelSize: chip.font.pixelSize
                                     font.bold: true
                                     color: "#ffffff"
+                                }
+                                Column {
+                                    id: stackedTag
+                                    visible: chip.tagStyle === "stacked"
+                                    anchors.centerIn: parent
+                                    spacing: -1
+                                    Text {
+                                        Accessible.ignored: true
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: "TX"
+                                        font.pixelSize: chip.smallPx
+                                        font.bold: true
+                                        color: "#ffffff"
+                                    }
+                                    Text {
+                                        Accessible.ignored: true
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: chip.shortPower
+                                        font.pixelSize: chip.smallPx
+                                        font.bold: true
+                                        color: "#ffffff"
+                                    }
                                 }
                                 // Its own tap, a little larger than the tag; the
                                 // rest of the chip still selects the slice.
