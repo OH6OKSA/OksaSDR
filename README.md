@@ -364,7 +364,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | 4O3A Power Genius XL / Tuner Genius XL (readings and control) | 🧪 Built in (build 152); tested against a stand-in that replays real devices' frames; reports from owners welcome |
 | APD (FLEX-8000, Aurora) | 🧪 Built in (build 152); tested with the radio's status stood in; reports welcome |
 | Macros panel by PTT (CW memories, Digi macros, voice keyer) | ✅ In use by a tester since build 150 (Tyler K0OTC: "It looks good"); checked on phones and tablets in USB, CW and RTTY without sending |
-| Macros › Repeat (build 160) | 🧪 A CW memory repeated on the FLEX at 10 W, ended by a key and by Stop; the voice keyer's repeat to verify on a device |
+| Macros › Repeat (build 160) | ✅ A CW memory repeated on the FLEX at 10 W, ended by a key and by Stop; the app's own voice macro repeated on an Android phone and ended by PTT (the developer, beta 74); the radio's DVK to verify |
 | App setups (build 160) | 🧪 Save, switch, export, import and delete checked in the app here; across devices to verify |
 | Radio Setup › RX, Network and the rest of SmartSDR's Radio Setup (build 151) | 🧪 Each setting written from the page and set back on the FLEX-6600M (4.3.16); calibration, the reference, a static address and the restart only to their question so far; multiFLEX, binaural and the low-latency digital filters shown only (that firmware refuses their commands) |
 | PSK31 / PSK63 | ✅ PSK31 decoded live (LZ1AEY's CQ on 14.071) and a PSK31 QSO at 25 W with F6FPU near Lyon, answering our first CQ (2026-11-02); the decoder tested to -12 dB SNR, AFC and a neighbour 100 Hz away |
