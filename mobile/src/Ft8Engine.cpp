@@ -502,6 +502,19 @@ QVector<Ft8Engine::Decode> Ft8Engine::decodeSamples(const std::vector<float>& sa
     return result;
 }
 
+QString Ft8Engine::decodePayload(const QByteArray& payload)
+{
+    ftx_message_t message{};
+    std::memcpy(message.payload, payload.constData(), std::min<size_t>(sizeof(message.payload), size_t(payload.size())));
+    char text[FTX_MAX_MESSAGE_LENGTH];
+    ftx_message_offsets_t offsets;
+    std::lock_guard<std::recursive_mutex> lock(g_hashMutex);
+    if (ftx_message_decode(&message, &g_hashIf, text, &offsets) != FTX_MESSAGE_RC_OK) {
+        return {};
+    }
+    return QString::fromLatin1(text).simplified();
+}
+
 QByteArray Ft8Engine::encode(const QString& text, double audioHz, QString* error) const
 {
     // <CALL> marks a call sent hashed. A hashed "to" call, or CQ by a call
@@ -574,8 +587,24 @@ Ft8Engine::Parsed Ft8Engine::parse(const QString& text)
     QStringList t = text.simplified().toUpper().split(QLatin1Char(' '), Qt::SkipEmptyParts);
     for (QString& s : t) {
         s.remove(QLatin1Char('<')).remove(QLatin1Char('>'));
+        if (s == QLatin1String("...")) {
+            s.clear();  // a hash not known here
+        }
+    }
+    // The RTTY Roundup's "TU;" before the calls.
+    if (!t.isEmpty() && t[0] == QLatin1String("TU;")) {
+        t.removeFirst();
     }
     if (t.isEmpty()) {
+        return p;
+    }
+    // A Fox's DXpedition message: K1ABC RR73; W9XYZ <KH1/KH7Z> -12.
+    if (t.size() == 5 && t[1] == QLatin1String("RR73;")) {
+        p.dxped = true;
+        p.rr73To = t[0];
+        p.to = t[2];
+        p.de = t[3];
+        p.extra = t[4];
         return p;
     }
     if (t[0] == QLatin1String("CQ")) {

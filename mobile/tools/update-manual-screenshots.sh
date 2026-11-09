@@ -46,7 +46,7 @@ tabs=(dsp audio tx essb cw view profiles memory log digi freedv rtty)
 # overview. The modes run's segments (one per mode) run only when wanted.
 ipad_shots=(overview infopanel slicerow spectrum filter agc antenna mode frequency step volume split
             network setup tnf noslice tx-meters meter)
-phone_shots=(phone-portrait phone-menu memory-edit log-page)
+phone_shots=(phone-portrait phone-menu memory-edit log-page ft8-hound)
 for t in "${tabs[@]}"; do phone_shots+=("tab-$t"); done
 modes_shots=(mode-usb mode-cw mode-am mode-fm fm-tx tx-lock mode-rtty rtty-panel tab-rtty digi-operating mode-psk)
 amp_shots=(tab-amp amp-controls amp-confirm amp-tune setup-amp setup-txband setup-rx setup-usb meter-amp)
@@ -191,6 +191,10 @@ if want "${phone_shots[@]}"; then
             [ "${tabs[$i]}" = rtty ] && continue
             if want "tab-${tabs[$i]}"; then printf 'drawer %s\nshot tab-%s\n' "$i" "${tabs[$i]}"; fi
         done
+        # Hound on (it starts decoding), then off and decoding off again.
+        if want ft8-hound; then
+            printf 'drawer 9\ntapname digiHound\nwait 2500\nshot ft8-hound\ntapname digiHoundOff\nwait 800\ntapname digiDecode\nwait 1500\n'
+        fi
     } | plan phone 440x956 "${src[@]}"
 fi
 
@@ -399,6 +403,7 @@ done
 for m in usb cw am fm rtty psk; do
     jpg "mode-$m" "" 330x
 done
+jpg ft8-hound 440x520+0+436
 jpg tab-amp 440x520+0+436
 jpg tab-genius 440x520+0+436
 jpg setup-amp 418x700+11+40 330x

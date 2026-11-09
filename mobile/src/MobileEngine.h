@@ -262,6 +262,14 @@ class MobileEngine : public QObject {
     // The presence limit (minutes, 1-60): Answer CQ and Keep CQ start no
     // new QSO after this long without a touch or key on the app.
     Q_PROPERTY(int digiPresenceMin READ digiPresenceMin WRITE setDigiPresenceMin NOTIFY digiChanged)
+    // Hound (roadmap 10 a): working a DXpedition's Fox in FT8 DXpedition
+    // mode, by WSJT-X's rules: calls in the second (odd) slot at 1000-3000
+    // Hz, R+report sent by itself on the frequency the Fox called on, the
+    // Fox's RR73 ends and logs. FT8 only; on for this session only, off on a
+    // band change. digiHoundAllHz: the list shows the pileup above 1000 Hz
+    // too (WSJT-X's Rx All Freqs).
+    Q_PROPERTY(bool digiHound READ digiHound WRITE setDigiHound NOTIFY digiChanged)
+    Q_PROPERTY(bool digiHoundAllHz READ digiHoundAllHz WRITE setDigiHoundAllHz NOTIFY digiChanged)
     // Report decoded stations to PSK Reporter (off by default); the status
     // line under it: what was sent, or why nothing can be.
     Q_PROPERTY(bool pskReporter READ pskReporter WRITE setPskReporter NOTIFY digiChanged)
@@ -1142,6 +1150,10 @@ public:
     void setDigiAutoAnswer(bool on);
     int digiPresenceMin() const { return m_digiPresenceMin; }
     void setDigiPresenceMin(int minutes);
+    bool digiHound() const { return m_digiHound; }
+    void setDigiHound(bool on);
+    bool digiHoundAllHz() const { return m_digiHoundAllHz; }
+    void setDigiHoundAllHz(bool on);
     // Seconds left before the presence limit stops the automatic QSOs.
     Q_INVOKABLE int digiPresenceLeft() const;
     // A touch, a click or a key on the app: the operator is there.
@@ -2538,6 +2550,21 @@ private:
     QString m_digiCqTarget;
     QStringList m_digiCqTargets;
     bool m_digiFromCq{false};  // the QSO under way answered our CQ
+    // Hound: on, the pileup shown, the Hz we call on (back after a QSO at
+    // the Fox's frequency; not saved), the R+reports sent in this QSO (the second goes
+    // 300 Hz off), the Fox as heard (m_digiDx is its base call, as Hounds
+    // call it) and when we last called it (a late report from its queue is
+    // still answered for three minutes, its QSO timeout).
+    bool m_digiHound{false};
+    bool m_digiHoundAllHz{false};
+    int m_digiHoundCallHz{0};
+    int m_digiHoundPrevHz{0};  // FT8's TX Hz before Hound, back when it goes off
+    int m_digiHoundRrpts{0};
+    QString m_digiHoundFox;
+    qint64 m_digiHoundCallMs{0};
+    // A Fox's message to us, handled by the Hound rules (true: taken).
+    bool digiHoundHandle(const QVariantMap& d);
+    void digiHoundReply(int foxHz, const QString& report, int snr);
     bool m_digiDryRun{false};
     // The radio's speech processor, switched off for FT8 / FT4 transmit
     // (it would distort the tones) and back on when decoding stops.

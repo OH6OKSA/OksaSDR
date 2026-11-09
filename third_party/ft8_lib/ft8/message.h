@@ -10,7 +10,9 @@ extern "C"
 #endif
 
 #define FTX_PAYLOAD_LENGTH_BYTES 10 ///< number of bytes to hold 77 bits of FTx payload data
-#define FTX_MAX_MESSAGE_LENGTH   35 ///< max message length = callsign[13] + space + callsign[13] + space + report[6] + terminator
+// OksaSDR: 56, for the DXpedition message (two calls, "RR73;", a hashed call
+// and a report: 13 + 7 + 13 + 1 + 13 + 1 + 3 + terminator).
+#define FTX_MAX_MESSAGE_LENGTH   56 ///< max message length (OksaSDR: was 35, callsign[13] + space + callsign[13] + space + report[6] + terminator)
 #define FTX_MAX_MESSAGE_FIELDS   3  // may need to get longer for multi-part messages (DXpedition, contest etc.)
 
 /// Structure that holds the decoded message
@@ -51,6 +53,8 @@ typedef enum
     FTX_MESSAGE_TYPE_ARRL_RTTY,   // 3     TU; W9XYZ K1ABC R 579 MA           1 28 28 1 3 13   74   ARRL RTTY Roundup
     FTX_MESSAGE_TYPE_NONSTD_CALL, // 4     <WA9XYZ> PJ4/KA1ABC RR73           12 58 1 2 1      74   Nonstandard calls
     FTX_MESSAGE_TYPE_WWROF,       // 5     TU; W9XYZ K1ABC R-07 FN            1 28 28 1 7 9    74   WWROF contest ?
+                                  //       OksaSDR: WSJT-X 2.7 uses 5 for the EU VHF contest,
+                                  //       <G4ABC/P> <PA9XYZ> R 570007 JO22DB  12 22 1 3 11 25, and 0.2 is undefined
     FTX_MESSAGE_TYPE_UNKNOWN      // Unknown or invalid type
 } ftx_message_type_t;
 
@@ -148,6 +152,15 @@ ftx_message_rc_t ftx_message_decode_nonstd(const ftx_message_t* msg, ftx_callsig
 void ftx_message_decode_free(const ftx_message_t* msg, char* text);
 void ftx_message_decode_telemetry_hex(const ftx_message_t* msg, char* telemetry_hex);
 void ftx_message_decode_telemetry(const ftx_message_t* msg, uint8_t* telemetry);
+
+// OksaSDR: the types ft8_lib left undecoded, after WSJT-X 2.7 (packjt77.f90
+// unpack77): 0.1 DXpedition, 0.3 / 0.4 ARRL Field Day, 3 ARRL RTTY Roundup
+// and 5 EU VHF contest. The whole message goes to message (at least
+// FTX_MAX_MESSAGE_LENGTH bytes).
+ftx_message_rc_t ftx_message_decode_dxpedition(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* message);
+ftx_message_rc_t ftx_message_decode_field_day(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* message);
+ftx_message_rc_t ftx_message_decode_rtty_roundup(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* message);
+ftx_message_rc_t ftx_message_decode_eu_vhf(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* message);
 
 #ifdef FTX_DEBUG_PRINT
 void ftx_message_print(ftx_message_t* msg);

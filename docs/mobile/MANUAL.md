@@ -247,6 +247,15 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
 7. FT4 the same with **FT4**. PTT is hidden while decoding (the app keys
    the radio itself); voice PTT does not key in DIGU / DIGL. Details:
    [FTx](#8-controls).
+8. **A DXpedition (Hound, FT8)**: on the Fox's announced frequency (never
+   the usual FT8 one), FTx settings → **DXpedition** → **Hound**, then tap
+   the Fox's CQ or a message from it (below 1000 Hz). The app calls it in
+   the odd slot at 1000 Hz or higher, four times (tap it again to go on);
+   when the Fox sends your report, the app answers R+report by itself on
+   the Fox's frequency, and the Fox's RR73 logs the QSO. **All Hz** shows
+   the Hounds above 1000 Hz too. Details: [FTx](#8-controls).
+
+   ![Hound on the FTx tab](manual/ft8-hound.jpg)
 
 ### RTTY
 
@@ -1459,8 +1468,8 @@ seven.
   before; *List only* keeps the main buttons at the top (Decode, the
   bands, the slot bar, CQ, Keep CQ, Answer CQ, Halt TX, the QSO's state
   and Show) and scrolls only the decode list under them, with its own
-  scroll bar. The rest (CQ slot, the presence limit, PSK Reporter, the
-  time line, TX Hz and TX level, the
+  scroll bar. The rest (DXpedition, CQ slot, the presence limit, PSK
+  Reporter, the time line, TX Hz and TX level, the
   colours) folds under **More**. Where the drawer is lower than about
   520 px (a phone on its side, the drawer at half height), the whole tab
   scrolls anyway. (Michael Whaley's request.)
@@ -1558,6 +1567,43 @@ seven.
   A QSO between two **nonstandard calls** (yours with a four-letter suffix,
   and theirs with a / suffix such as /QRP) has no FT8 message for a report:
   the app makes it with the calls and RR73 only, and logs it without RST.
+
+  **DXpedition → Hound** (FT8 only; asked by Michael Whaley AF0F and
+  Gianluca IK6QOO) works a DXpedition running WSJT-X's FT8 DXpedition
+  mode, the *Fox*, by the rules WSJT-X keeps for its *Hounds*:
+
+  - The list shows what is heard below 1000 Hz, where the Fox transmits;
+    **All Hz** shows the Hounds' pileup above it too. Your call, your own
+    transmissions and the Fox always show.
+  - **Tap the Fox's CQ or a message from it** (a station above 1000 Hz is
+    another Hound and is refused): the app calls the Fox by its base call
+    (*KH7Z* for KH1/KH7Z) in the second (odd) slot. A TX tone below
+    1000 Hz moves to a random 1000-2650 Hz, as the Fox does not answer
+    calls below 1000 Hz; drag the TX band or use **Free** (which looks at
+    1000 Hz and up in the odd slot) for a clear spot among the Hounds. A CQ
+    to a continent (*CQ EU KH7Z*) is answered only from there. **CQ**,
+    **Keep CQ** and **Answer CQ** are off: a Hound only calls the Fox.
+  - **Four calls** (two minutes), then the app stops: tap the Fox again to
+    go on, as WSJT-X asks for Enable Tx every two minutes.
+  - The Fox sends your report in its own message (*OH6OKSA KH7Z -13*) or a
+    combined one (*K1ABC RR73; OH6OKSA <KH1/KH7Z> -13*: RR73 to one Hound,
+    a report to the next). The app then sends **R+report by itself** on
+    the frequency the Fox called you on (300-900 Hz), each repeat 300 Hz
+    off it; also within three minutes after your calls stopped, as the
+    Fox's queue may reach you late (WSJT-X answers then too).
+  - The Fox's **RR73** (alone or in a combined message) ends the QSO: it is
+    logged under the Fox's full call and transmitting stops at once.
+  - A Fox works on its own announced frequency, never the FT8 calling
+    frequencies; Hound says so when turned on there. It is on for this
+    session only, goes off on another band or with FT4, and your own TX Hz
+    comes back when it does. SuperFox (one wide signal from the largest
+    DXpeditions) is not decoded yet.
+
+  **Contest and DXpedition messages** show as WSJT-X shows them: ARRL Field
+  Day (*WA9XYZ KA1ABC R 16A EMA*), the ARRL RTTY Roundup (*TU; W9XYZ
+  K1ABC R 579 MA*, or a serial number), the EU VHF contest (*<PA3XYZ>
+  <G4ABC/P> R 590003 IO91NP*) and the Fox's combined messages. The app
+  shows them but does not answer in the contest formats.
 
   FT8 needs the time within about a second. When decoding starts, and every
   30 minutes while it runs, the app asks a time server (time.cloudflare.com,

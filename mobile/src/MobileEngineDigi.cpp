@@ -23,6 +23,7 @@
 #include <QDateTime>
 #include <QSet>
 #include <QLoggingCategory>
+#include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QTimeZone>
 #include <QTimer>
@@ -45,6 +46,12 @@ constexpr int kMaxDecodes = 80;
 // the QSO (WSJT-X's Tx watchdog does the same in time).
 constexpr int kMaxTries = 6;
 constexpr int kMaxCqCalls = 10;
+// Hound: calls to the Fox before the operator must tap it again (WSJT-X
+// asks for Enable Tx again every two minutes in Hound mode: four calls),
+// and how long after our last call a report from the Fox's queue is still
+// answered (its QSO timeout, three minutes).
+constexpr int kHoundCalls = 4;
+constexpr qint64 kHoundLateMs = 3 * 60 * 1000;
 // Answer CQ: calls to one station before it moves on to another (Kurt
 // DL5EAG), and how long a station called is left alone after that.
 constexpr int kAutoAnswerTries = 5;
@@ -69,6 +76,19 @@ constexpr BandFreq kBandFreqs[] = {
     {"17m", 18.100, 18.104},  {"15m", 21.074, 21.140},  {"12m", 24.915, 24.919},
     {"10m", 28.074, 28.180},  {"6m", 50.313, 50.318},   {"2m", 144.174, 0.0},
 };
+
+// A compound call's base (KH1/KH7Z -> KH7Z, K1ABC/P -> K1ABC): the longer
+// part, as WSJT-X's Radio::base_callsign. Hounds call the Fox by it.
+QString baseCall(const QString& call)
+{
+    const qsizetype slash = call.indexOf(QLatin1Char('/'));
+    if (slash < 0) {
+        return call;
+    }
+    const QString left = call.left(slash);
+    const QString right = call.mid(slash + 1).section(QLatin1Char('/'), 0, 0);
+    return right.size() >= left.size() ? right : left;
+}
 
 }  // namespace
 
@@ -268,6 +288,11 @@ void MobileEngine::syncDigiAudio()
             }
             dec.band = band;
             dec.ft8->resetAudio();
+            // Hound belongs to the Fox's frequency: another band ends it.
+            if (m_digiHound && dec.slice == digiSlice()) {
+                setDigiHound(false);
+                setDigiStatus(tr("Hound off: the band changed"));
+            }
             const qsizetype before = m_digiDecodes.size();
             m_digiDecodes.erase(std::remove_if(m_digiDecodes.begin(), m_digiDecodes.end(),
                                                [id, &band](const QVariant& v) {
@@ -320,7 +345,9 @@ void MobileEngine::syncDigiAudio()
             QVariantList list;
             for (const Ft8Engine::Decode& dec : decodes) {
                 const Ft8Engine::Parsed p = Ft8Engine::parse(dec.text);
-                const bool toMe = !my.isEmpty() && p.to == my;
+                // A Fox's DXpedition message is to two Hounds: the report's
+                // and the RR73's.
+                const bool toMe = !my.isEmpty() && (p.to == my || p.rr73To == my);
                 list.append(QVariantMap{{QStringLiteral("utc"), utc},
                                         {QStringLiteral("snr"), dec.snr},
                                         {QStringLiteral("dt"), QString::number(dec.dt, 'f', 1)},
@@ -373,7 +400,10 @@ void MobileEngine::syncDigiAudio()
                 const double sign = sl->mode() == QLatin1String("DIGL") ? -1.0 : 1.0;
                 for (const Ft8Engine::Decode& dec : decodes) {
                     const Ft8Engine::Parsed p = Ft8Engine::parse(dec.text);
-                    if (p.de.isEmpty() || p.de.startsWith(QLatin1Char('<')) || p.de == my) {
+                    // A hashed call known here was heard in full before; a
+                    // Fox's DXpedition message names it by a 10-bit hash only,
+                    // which may be another station's.
+                    if (p.de.isEmpty() || p.dxped || p.de == my) {
                         continue;
                     }
                     const qint64 hz = qint64(std::llround(sl->frequency() * 1e6 + sign * dec.freq));
@@ -659,6 +689,9 @@ void MobileEngine::setDigiProtocol(const QString& protocol)
         return;
     }
     digiHalt();
+    if (m_digiHound && protocol == QLatin1String("FT4")) {
+        setDigiHound(false);  // FT8's DXpedition mode only
+    }
     m_ft8->setProtocol(protocol == QLatin1String("FT4") ? Ft8Engine::Protocol::Ft4 : Ft8Engine::Protocol::Ft8);
     for (auto& [id, d] : m_digiDecoders) {
         d->ft8->setProtocol(m_ft8->protocol());
@@ -724,6 +757,10 @@ void MobileEngine::setDigiAutoAnswer(bool on)
         if (txLockRefuses("Answer CQ")) {
             return;
         }
+        if (m_digiHound) {
+            setLastError(tr("Answer CQ is off in Hound mode: tap the Fox to call it."));
+            return;
+        }
         noteOperator();
         m_digiAutoTried.clear();
         if (!digiRunning()) {
@@ -748,6 +785,69 @@ void MobileEngine::setDigiPresenceMin(int minutes)
     m_digiPresenceMin = minutes;
     AppSettings::instance().setValue(QStringLiteral("MobileDigiPresenceMin"), minutes);
     AppSettings::instance().save();
+    emit digiChanged();
+}
+
+void MobileEngine::setDigiHound(bool on)
+{
+    if (on == m_digiHound) {
+        return;
+    }
+    if (on) {
+        if (digiProtocol() != QLatin1String("FT8")) {
+            setLastError(tr("Hound is FT8 only (WSJT-X's FT8 DXpedition mode)."));
+            return;
+        }
+        if (digiMyCall().isEmpty()) {
+            setLastError(tr("Set the radio's callsign first (Radio Setup)."));
+            return;
+        }
+        // Our own CQ or QSO ends, and Answer CQ: a Hound only calls the Fox.
+        digiHalt();
+        if (!digiRunning()) {
+            setDigiRunning(true);
+        }
+        m_digiHoundPrevHz = m_digiTxHz;
+    } else if (m_digiState != QLatin1String("idle")) {
+        digiHalt();
+    }
+    m_digiHound = on;
+    m_digiHoundFox.clear();
+    m_digiHoundCallMs = 0;
+    m_digiHoundRrpts = 0;
+    m_digiHoundCallHz = 0;
+    // Off: the TX Hz FT8 had before Hound (the calling Hz and the Fox's
+    // frequency were Hound's own), saved again in case a drag changed it.
+    if (!on && m_digiHoundPrevHz > 0) {
+        const int prev = m_digiHoundPrevHz;
+        m_digiHoundPrevHz = 0;
+        setDigiTxHz(prev);
+    }
+    SliceModel* slice = digiSlice();
+    qCInfo(lcMobile) << "digi: Hound" << (on ? "on" : "off");
+    if (!on) {
+        setDigiStatus(tr("Hound off"));
+        return;
+    }
+    // DXpedition mode never runs on the FT8 calling frequencies (WSJT-X's
+    // rule): a Fox announces its own.
+    bool calling = false;
+    if (slice) {
+        for (const BandFreq& b : kBandFreqs) {
+            calling = calling || std::abs(slice->frequency() - b.ft8) < 0.0005;
+        }
+    }
+    setDigiStatus(calling ? tr("Hound on, but this is the FT8 calling frequency: a Fox works on its own announced "
+                               "frequency. Tune there, then tap the Fox's CQ or a message from it.")
+                          : tr("Hound on: tap the Fox's CQ or a message from it to call it."));
+}
+
+void MobileEngine::setDigiHoundAllHz(bool on)
+{
+    if (on == m_digiHoundAllHz) {
+        return;
+    }
+    m_digiHoundAllHz = on;
     emit digiChanged();
 }
 
@@ -984,6 +1084,77 @@ void MobileEngine::digiInjectDecodes(QVariantList rows)
     handleDigiDecodes(rows, Ft8Engine::nowMs());
 }
 
+bool MobileEngine::digiHoundHandle(const QVariantMap& d)
+{
+    const QString my = digiMyCall();
+    if (my.isEmpty() || m_digiHoundFox.isEmpty()) {
+        return false;
+    }
+    // While calling or in the QSO; after the calls stopped, a report from
+    // the Fox's queue for three minutes (WSJT-X answers it even with Enable
+    // Tx off).
+    const bool active = m_digiState != QLatin1String("idle");
+    if (!active && (m_digiHoundCallMs == 0 || QDateTime::currentMSecsSinceEpoch() - m_digiHoundCallMs > kHoundLateMs)) {
+        return false;
+    }
+    const Ft8Engine::Parsed p = Ft8Engine::parse(d.value(QStringLiteral("text")).toString());
+    // Only a Fox sends a DXpedition message; else its own call.
+    const bool fromFox = p.dxped || (!p.de.isEmpty() && baseCall(p.de) == baseCall(m_digiHoundFox));
+    if (!fromFox) {
+        return false;
+    }
+    const bool rr73 = (p.dxped && p.rr73To == my)
+                      || (!p.dxped && p.to == my && (p.extra == QLatin1String("RR73") || p.extra == QLatin1String("RRR")));
+    if (rr73) {
+        // The QSO is complete (the Fox logged it): logged here too, and
+        // the transmission stops at once, one under way included.
+        if (m_digiDx.isEmpty()) {
+            m_digiDx = baseCall(m_digiHoundFox);
+        }
+        digiLogQso();
+        const QString fox = m_digiHoundFox;
+        const bool logged = m_digiLogged;
+        digiHalt();
+        if (m_digiHoundCallHz > 0) {
+            m_digiTxHz = m_digiHoundCallHz;
+        }
+        m_digiHoundCallMs = 0;  // done: a later message is not answered
+        qCInfo(lcMobile).noquote() << "digi: Hound RR73 from" << fox << (logged ? "logged" : "not logged");
+        setDigiStatus(logged ? tr("Hound: RR73 from %1, QSO logged").arg(fox) : tr("Hound: RR73 from %1").arg(fox));
+        return true;
+    }
+    if (p.to == my && Ft8Engine::isReport(p.extra) && !p.extra.startsWith(QLatin1Char('R'))) {
+        digiHoundReply(d.value(QStringLiteral("freq")).toInt(), p.extra, d.value(QStringLiteral("snr")).toInt());
+        return true;
+    }
+    return false;
+}
+
+void MobileEngine::digiHoundReply(int foxHz, const QString& report, int snr)
+{
+    if (m_digiState == QLatin1String("idle")) {
+        // The Fox's queue reached us after our calls had stopped.
+        if (txLockRefuses("answering the Fox")) {
+            return;
+        }
+        m_digiState = QStringLiteral("answer");
+        m_digiDx = baseCall(m_digiHoundFox);
+        m_digiLogged = false;
+        m_digiEndAfterTx = false;
+        m_digiTxParity = 1;
+    }
+    // R+report (Tx3) with the Fox's strength as we hear it, on the
+    // frequency it called us on (WSJT-X's hound_reply).
+    m_digiRptRcvd = report;
+    m_digiRptSent = digiReport(snr);
+    m_digiRxHz = foxHz;
+    m_digiHoundRrpts = 0;
+    m_digiTries = 0;
+    m_digiTxMsg = digiMessage(QStringLiteral("rreport"));
+    qCInfo(lcMobile).noquote() << "digi: Hound report" << report << "from" << m_digiHoundFox << "at" << foxHz << "Hz";
+    setDigiStatus(tr("Hound: report %1 from %2; R%3 goes at %4 Hz").arg(report, m_digiHoundFox, m_digiRptSent).arg(foxHz));
+}
+
 bool MobileEngine::digiNoReports() const
 {
     return !m_digiDx.isEmpty() && !m_digiDx.startsWith(QLatin1Char('<')) && !Ft8Engine::isStandardCall(digiMyCall())
@@ -1194,7 +1365,13 @@ void MobileEngine::digiFindFreeTx()
     const qint64 since = Ft8Engine::nowMs() - 4 * slotLen;
     // The slot CQ goes out in, when chosen: stations there are the ones a
     // transmission would sit on top of.
-    const int parity = m_digiCqParity == QLatin1String("even") ? 0 : m_digiCqParity == QLatin1String("odd") ? 1 : -1;
+    // A Hound calls in the odd slot, at 1000 Hz and up, among the other
+    // Hounds there.
+    const int parity = m_digiHound                              ? 1
+                       : m_digiCqParity == QLatin1String("even") ? 0
+                       : m_digiCqParity == QLatin1String("odd")  ? 1
+                                                                 : -1;
+    const int lowest = m_digiHound ? 1000 : 200;
     const int width = digiProtocol() == QLatin1String("FT4") ? 90 : 50;
     QVector<int> heard;
     for (const QVariant& v : std::as_const(m_digiDecodes)) {
@@ -1217,14 +1394,14 @@ void MobileEngine::digiFindFreeTx()
     // current TX on a tie.
     int best = m_digiTxHz;
     int bestGap = -1;
-    for (int c = 200; c + width <= 2800; c += 5) {
+    for (int c = lowest; c + width <= 2800; c += 5) {
         int gap = 3000;
         for (int f : std::as_const(heard)) {
             const int d = c + width <= f ? f - (c + width) : (f + width <= c ? c - (f + width) : 0);
             gap = std::min(gap, d);
         }
         // Also clear of the band's ends.
-        gap = std::min({gap, c - 200 + 50, 2800 - (c + width) + 50});
+        gap = std::min({gap, c - lowest + 50, 2800 - (c + width) + 50});
         if (gap > bestGap || (gap == bestGap && std::abs(c - m_digiTxHz) < std::abs(best - m_digiTxHz))) {
             bestGap = gap;
             best = c;
@@ -1261,6 +1438,10 @@ void MobileEngine::digiCallCq()
         return;
     }
     if (txLockRefuses("CQ")) {
+        return;
+    }
+    if (m_digiHound) {
+        setLastError(tr("A Hound does not call CQ: tap the Fox to call it, or turn Hound off."));
         return;
     }
     if (!digiRunning()) {
@@ -1314,6 +1495,62 @@ void MobileEngine::digiAnswer(int index)
         selectSlice(sliceId);
         QTimer::singleShot(300, this, [this] { digiZoom(); });
         qCInfo(lcMobile) << "digi: answering on slice" << there->letter();
+    }
+    if (m_digiHound) {
+        // Calling the Fox (WSJT-X's Hound): its base call and ours with the
+        // grid (Tx1), in the second (odd) slot, at 1000 Hz or higher (the Fox
+        // does not answer calls below). Only a station heard below 1000 Hz
+        // (where a Fox transmits), or a CQ.
+        if (!p.cq && d.value(QStringLiteral("freq")).toInt() >= 1000) {
+            setLastError(tr("Hound: tap the Fox (it transmits below 1000 Hz), not another Hound."));
+            return;
+        }
+        // A directed CQ (CQ EU KH7Z) is for that continent only.
+        const QStringList words = d.value(QStringLiteral("text")).toString().simplified().toUpper().split(QLatin1Char(' '));
+        static const QStringList kContinents{QStringLiteral("AF"), QStringLiteral("AN"), QStringLiteral("AS"), QStringLiteral("EU"),
+                                             QStringLiteral("NA"), QStringLiteral("OC"), QStringLiteral("SA")};
+        if (p.cq && words.size() >= 3 && kContinents.contains(words.at(1))) {
+            const DxccEntity* me = m_cty ? m_cty->entityForCallsign(my) : nullptr;
+            if (me && me->continent != words.at(1)) {
+                setLastError(tr("The Fox calls CQ %1 only; you are in %2.").arg(words.at(1), me->continent));
+                return;
+            }
+        }
+        if (txLockRefuses("calling the Fox")) {
+            return;
+        }
+        noteOperator();
+        m_digiState = QStringLiteral("answer");
+        m_digiFromCq = false;
+        m_digiAutoQso = false;
+        m_digiHoundFox = p.de;
+        m_digiDx = baseCall(p.de);
+        m_digiRxHz = d.value(QStringLiteral("freq")).toInt();
+        m_digiDxGrid = Ft8Engine::isGrid(p.extra) ? p.extra : QString();
+        m_digiDxSig.clear();
+        m_digiRptSent.clear();
+        m_digiRptRcvd.clear();
+        m_digiLogged = false;
+        m_digiEndAfterTx = false;
+        m_digiTimeOn = QDateTime::fromMSecsSinceEpoch(Ft8Engine::nowMs()).toUTC().toString(QStringLiteral("HHmm"));
+        m_digiTxParity = 1;
+        // Below 1000 Hz: a random Hz up to 2650, so the 50 Hz signal stays
+        // inside a radio's TX filter (WSJT-X draws to 3000; its guide notes
+        // the 2700 Hz filters).
+        if (m_digiTxHz < 1000) {
+            m_digiTxHz = QRandomGenerator::global()->bounded(1000, 2651);
+        }
+        m_digiHoundCallHz = m_digiTxHz;
+        m_digiHoundRrpts = 0;
+        m_digiHoundCallMs = QDateTime::currentMSecsSinceEpoch();
+        m_digiTxMsg = digiMessage(QStringLiteral("call"));
+        m_digiTries = 0;
+        qCInfo(lcMobile).noquote() << "digi: Hound calling" << m_digiHoundFox << "at" << m_digiTxHz << "Hz";
+        setDigiStatus(tr("Hound: calling %1 at %2 Hz, %3 calls (tap it again to keep calling)")
+                          .arg(m_digiHoundFox)
+                          .arg(m_digiTxHz)
+                          .arg(kHoundCalls));
+        return;
     }
     m_digiState = QStringLiteral("answer");
     m_digiFromCq = false;
@@ -1394,16 +1631,32 @@ void MobileEngine::onDigiSlot(qint64 slotMs)
     if (int((slotMs / slotLen) % 2) != m_digiTxParity) {
         return;
     }
+    // A Hound still calling (no report from the Fox yet) stops after two
+    // minutes of calls until the operator taps the Fox again.
+    const bool houndCalling = m_digiHound && m_digiRptRcvd.isEmpty();
     const int limit = m_digiState == QLatin1String("cq") && m_digiDx.isEmpty() ? kMaxCqCalls
+                      : houndCalling                                            ? kHoundCalls
                       : m_digiAutoQso                                           ? kAutoAnswerTries
                                                                                 : kMaxTries;
     if (m_digiTries >= limit) {
         if (m_digiDx.isEmpty()) {
             digiEnd(tr("No answer to CQ"));  // the CQ watchdog, Keep CQ or not
+        } else if (houndCalling) {
+            digiEnd(tr("Hound: %1 did not answer in two minutes; tap it again to keep calling").arg(m_digiHoundFox));
         } else {
+            if (m_digiHound && m_digiHoundCallHz > 0) {
+                m_digiTxHz = m_digiHoundCallHz;
+            }
             digiFinishQso(tr("No answer from %1").arg(m_digiDx));
         }
         return;
+    }
+    // The Hound's R+report: on the frequency the Fox called us on, each
+    // repeat 300 Hz off it (below 900 Hz), as WSJT-X.
+    if (m_digiHound && !m_digiRptRcvd.isEmpty() && m_digiRxHz > 0) {
+        const int fox = m_digiRxHz;
+        m_digiTxHz = m_digiHoundRrpts == 0 ? fox : (fox > 600 ? fox - 300 : fox + 300);
+        ++m_digiHoundRrpts;
     }
     startDigiTx(slotMs);
 }
@@ -1453,10 +1706,11 @@ void MobileEngine::startDigiTx(qint64 slotMs)
         m_digiSentMsg = m_digiTxMsg;
         ++m_digiTries;
         const int ms = int(qint64(audio.size() / int(sizeof(float))) * 1000 / Ft8Engine::kTxSampleRate);
-        qCInfo(lcMobile).noquote() << QStringLiteral("digi: dry TX \"%1\", try %2, %3 slot")
+        qCInfo(lcMobile).noquote() << QStringLiteral("digi: dry TX \"%1\" at %4 Hz, try %2, %3 slot")
                                           .arg(m_digiTxMsg)
                                           .arg(m_digiTries)
-                                          .arg((slotMs / qint64(m_ft8->slotSeconds() * 1000)) % 2 ? QStringLiteral("odd") : QStringLiteral("even"));
+                                          .arg((slotMs / qint64(m_ft8->slotSeconds() * 1000)) % 2 ? QStringLiteral("odd") : QStringLiteral("even"))
+                                          .arg(m_digiTxHz);
         QTimer::singleShot(ms, this, [this] {
             m_digiTransmitting = false;
             if (m_digiEndAfterTx && m_digiSentMsg == m_digiTxMsg) {
@@ -1590,7 +1844,9 @@ void MobileEngine::digiLogQso()
         return;
     }
     const bool ft4 = digiProtocol() == QLatin1String("FT4");
-    QVariantMap fields{{QStringLiteral("call"), m_digiDx},
+    // A Hound calls the Fox by its base call; the log gets its full call.
+    const QString call = m_digiHound && !m_digiHoundFox.isEmpty() ? m_digiHoundFox : m_digiDx;
+    QVariantMap fields{{QStringLiteral("call"), call},
                        {QStringLiteral("freqMhz"), digiSlice() ? digiSlice()->frequency() : 0.0},
                        {QStringLiteral("rstSent"), m_digiRptSent},
                        {QStringLiteral("rstRcvd"), m_digiRptRcvd},
@@ -1618,6 +1874,17 @@ void MobileEngine::handleDigiDecodes(const QVariantList& decodes, qint64 slotMs)
     m_digiDecodes = merged;
     emit digiDecodesChanged();
 
+    // Hound: only the Fox's messages to us count, by the Hound rules.
+    if (m_digiHound) {
+        const int txId = digiSlice() ? digiSlice()->sliceId() : -1;
+        for (const QVariant& v : decodes) {
+            const QVariantMap d = v.toMap();
+            if (d.value(QStringLiteral("sliceId"), txId).toInt() == txId && digiHoundHandle(d)) {
+                return;
+            }
+        }
+        return;
+    }
     if (m_digiState == QLatin1String("idle")) {
         if (m_digiAutoAnswer) {
             digiAutoAnswerPick(decodes);

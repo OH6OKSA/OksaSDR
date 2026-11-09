@@ -131,7 +131,8 @@ ColumnLayout {
                                              ? qsTr("CQ %1").arg(Engine.digiCqTarget) : qsTr("CQ")
             text: Engine.txLocked ? qsTr("%1 · SB").arg(cqText) : cqText
             checked: digi.qso.state === "cq"
-            enabled: Engine.transmitAvailable
+            // A Hound never calls CQ: it calls the Fox.
+            enabled: Engine.transmitAvailable && !Engine.digiHound
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiCallCq()
@@ -145,6 +146,7 @@ ColumnLayout {
             objectName: "digiAutoCq"
             text: qsTr("Keep CQ")
             checked: Engine.digiAutoCq
+            enabled: !Engine.digiHound
             Accessible.name: qsTr("Call CQ again after each QSO")
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
@@ -156,7 +158,7 @@ ColumnLayout {
             objectName: "digiAutoAnswer"
             text: qsTr("Answer CQ")
             checked: Engine.digiAutoAnswer
-            enabled: Engine.transmitAvailable || Engine.digiAutoAnswer
+            enabled: (Engine.transmitAvailable || Engine.digiAutoAnswer) && !Engine.digiHound
             Accessible.name: Engine.digiAutoAnswer ? qsTr("Stop answering CQs by itself") : qsTr("Answer CQs by itself")
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
@@ -210,6 +212,47 @@ ColumnLayout {
                 Engine.digiListScroll = true
                 digi.settingsOpen = false
             }
+        }
+    }
+    // Hound (roadmap 10 a): working a DXpedition's Fox in FT8 DXpedition
+    // mode by WSJT-X's rules (Michael Whaley, Gianluca IK6QOO). The list
+    // shows the Fox's part below 1000 Hz; All Hz the Hounds' pileup too.
+    RowLayout {
+        visible: digi.settingsShown && Engine.digiProtocol === "FT8"
+        Layout.fillWidth: true
+        spacing: 4
+        Label {
+            text: qsTr("DXpedition")
+            color: Theme.textDim
+        }
+        AppButton {
+            objectName: "digiHoundOff"
+            text: qsTr("Off")
+            checked: !Engine.digiHound
+            Layout.fillWidth: true
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.digiHound = false
+        }
+        AppButton {
+            objectName: "digiHound"
+            text: qsTr("Hound")
+            checked: Engine.digiHound
+            enabled: Engine.transmitAvailable || Engine.digiHound
+            Accessible.name: qsTr("Hound: call a DXpedition's Fox")
+            Layout.fillWidth: true
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.digiHound = true
+        }
+        AppButton {
+            objectName: "digiHoundAllHz"
+            visible: Engine.digiHound
+            text: qsTr("All Hz")
+            checked: Engine.digiHoundAllHz
+            Accessible.name: Engine.digiHoundAllHz ? qsTr("Show only the Fox's part below 1000 Hz")
+                                                   : qsTr("Show the stations above 1000 Hz too")
+            Layout.fillWidth: true
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.digiHoundAllHz = !Engine.digiHoundAllHz
         }
     }
     // CQ's slot (even = 0 / 30 s, odd = 15 / 45 s in FT8; Auto = the next).
@@ -564,7 +607,9 @@ ColumnLayout {
     Label {
         Layout.fillWidth: true
         visible: Engine.digiRunning && Engine.digiDecodes.length === 0
-        text: qsTr("Decodes appear at the end of each %1 s slot. Tap a CQ to answer it; tap the waterfall inside the passband to set the TX audio frequency.").arg(digi.slotSeconds)
+        text: Engine.digiHound
+              ? qsTr("Hound: decodes appear at the end of each %1 s slot. Tap the Fox's CQ or a message from it (below 1000 Hz) to call it.").arg(digi.slotSeconds)
+              : qsTr("Decodes appear at the end of each %1 s slot. Tap a CQ to answer it; tap the waterfall inside the passband to set the TX audio frequency.").arg(digi.slotSeconds)
         color: Theme.textDim
         font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
@@ -593,6 +638,11 @@ ColumnLayout {
     function passes(row) {
         if (row.hl === "mycall" || row.hl === "tx" || (qso.dx && row.call === qso.dx)) {
             return true
+        }
+        // Hound: the Fox transmits below 1000 Hz, the Hounds above (WSJT-X
+        // decodes only below 1000 Hz unless Rx All Freqs).
+        if (Engine.digiHound && !Engine.digiHoundAllHz && row.freq >= 1000) {
+            return false
         }
         switch (Engine.digiFilter) {
         case "cq": return row.cq === true

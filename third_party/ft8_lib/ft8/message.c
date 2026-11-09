@@ -1,5 +1,6 @@
 #include "message.h"
 #include "text.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -423,6 +424,23 @@ ftx_message_rc_t ftx_message_decode(const ftx_message_t* msg, ftx_callsign_hash_
         field3 = NULL;
         rc = FTX_MESSAGE_RC_OK;
         break;
+    // OksaSDR: these write the whole message themselves.
+    case FTX_MESSAGE_TYPE_DXPEDITION:
+        field1 = NULL;
+        rc = ftx_message_decode_dxpedition(msg, hash_if, message);
+        break;
+    case FTX_MESSAGE_TYPE_ARRL_FD:
+        field1 = NULL;
+        rc = ftx_message_decode_field_day(msg, hash_if, message);
+        break;
+    case FTX_MESSAGE_TYPE_ARRL_RTTY:
+        field1 = NULL;
+        rc = ftx_message_decode_rtty_roundup(msg, hash_if, message);
+        break;
+    case FTX_MESSAGE_TYPE_WWROF:
+        field1 = NULL;
+        rc = ftx_message_decode_eu_vhf(msg, hash_if, message);
+        break;
     default:
         // not handled yet
         field1 = NULL;
@@ -573,6 +591,175 @@ ftx_message_rc_t ftx_message_decode_nonstd(const ftx_message_t* msg, ftx_callsig
     strcpy(call_de, call_2);
     field_types[1] = FTX_FIELD_CALL;
     LOG(LOG_INFO, "Decoded non-standard (type %d) message [%s] [%s] [%s]\n", i3, call_to, call_de, extra);
+    return FTX_MESSAGE_RC_OK;
+}
+
+// OksaSDR: the DXpedition and contest types, after WSJT-X 2.7's unpack77
+// (lib/77bit/packjt77.f90, GPLv3 as OksaSDR) and its bit table
+// (lib/77bit/77bit.txt). Bits are counted from the payload's first (most
+// significant) bit, as the table does.
+
+static uint32_t payload_bits(const ftx_message_t* msg, int start, int count)
+{
+    uint32_t value = 0;
+    for (int i = start; i < start + count; ++i)
+    {
+        value = (value << 1) | ((msg->payload[i / 8] >> (7 - i % 8)) & 1u);
+    }
+    return value;
+}
+
+// ARRL sections (Field Day), 1-based in the message.
+static const char* const kArrlSections[] = {
+    "AB", "AK", "AL", "AR", "AZ", "BC", "CO", "CT", "DE", "EB",
+    "EMA", "ENY", "EPA", "EWA", "GA", "GH", "IA", "ID", "IL", "IN",
+    "KS", "KY", "LA", "LAX", "NS", "MB", "MDC", "ME", "MI", "MN",
+    "MO", "MS", "MT", "NC", "ND", "NE", "NFL", "NH", "NL", "NLI",
+    "NM", "NNJ", "NNY", "TER", "NTX", "NV", "OH", "OK", "ONE", "ONN",
+    "ONS", "OR", "ORG", "PAC", "PR", "QC", "RI", "SB", "SC", "SCV",
+    "SD", "SDG", "SF", "SFL", "SJV", "SK", "SNJ", "STX", "SV", "TN",
+    "UT", "VA", "VI", "VT", "WCF", "WI", "WMA", "WNY", "WPA", "WTX",
+    "WV", "WWA", "WY", "DX", "PE", "NB"
+};
+#define NUM_ARRL_SECTIONS ((int)(sizeof(kArrlSections) / sizeof(kArrlSections[0])))
+
+// US states, Canadian provinces and the DX numbers (RTTY Roundup), 1-based.
+static const char* const kRoundupMults[] = {
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+    "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+    "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+    "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+    "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+    "NB", "NS", "QC", "ON", "MB", "SK", "AB", "BC", "NWT", "NF",
+    "LB", "NU", "YT", "PEI", "DC", "DR", "FR", "GD", "GR", "OV",
+    "ZH", "ZL"
+    // then X01 ... X99
+};
+#define NUM_ROUNDUP_NAMED ((int)(sizeof(kRoundupMults) / sizeof(kRoundupMults[0])))
+#define NUM_ROUNDUP_MULTS (NUM_ROUNDUP_NAMED + 99)
+
+// A 28-bit call that must be a call or a hash (not DE, QRZ or CQ).
+static int unpack28_call(uint32_t n28, uint8_t i3, const ftx_callsign_hash_interface_t* hash_if, char* result)
+{
+    ftx_field_t field_type;
+    if (n28 <= 2u)
+        return -1;
+    return unpack28(n28, 0, i3, hash_if, result, &field_type);
+}
+
+ftx_message_rc_t ftx_message_decode_dxpedition(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* message)
+{
+    // 0.1  K1ABC RR73; W9XYZ <KH1/KH7Z> -12   c28 c28 h10 r5
+    char call_1[14], call_2[14], call_3[14];
+    uint32_t n28a = payload_bits(msg, 0, 28);
+    uint32_t n28b = payload_bits(msg, 28, 28);
+    uint32_t n10 = payload_bits(msg, 56, 10);
+    int irpt = 2 * (int)payload_bits(msg, 66, 5) - 30;
+
+    message[0] = '\0';
+    if (unpack28_call(n28a, 0, hash_if, call_1) < 0)
+        return FTX_MESSAGE_RC_ERROR_CALLSIGN1;
+    if (unpack28_call(n28b, 0, hash_if, call_2) < 0)
+        return FTX_MESSAGE_RC_ERROR_CALLSIGN2;
+    lookup_callsign(hash_if, FTX_CALLSIGN_HASH_10_BITS, n10, call_3);
+    snprintf(message, FTX_MAX_MESSAGE_LENGTH, "%s RR73; %s %s %c%02d", call_1, call_2, call_3, irpt < 0 ? '-' : '+', abs(irpt) % 100);
+    return FTX_MESSAGE_RC_OK;
+}
+
+ftx_message_rc_t ftx_message_decode_field_day(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* message)
+{
+    // 0.3 / 0.4  WA9XYZ KA1ABC R 16A EMA   c28 c28 R1 n4 k3 S7 (0.4: 17-32 transmitters)
+    char call_1[14], call_2[14];
+    uint32_t n28a = payload_bits(msg, 0, 28);
+    uint32_t n28b = payload_bits(msg, 28, 28);
+    uint32_t ir = payload_bits(msg, 56, 1);
+    int ntx = (int)payload_bits(msg, 57, 4) + 1;
+    uint32_t nclass = payload_bits(msg, 61, 3);
+    int isec = (int)payload_bits(msg, 64, 7);
+
+    message[0] = '\0';
+    if (ftx_message_get_n3(msg) == 4)
+        ntx += 16;
+    if (isec < 1 || isec > NUM_ARRL_SECTIONS)
+        return FTX_MESSAGE_RC_ERROR_TYPE;
+    if (unpack28_call(n28a, 0, hash_if, call_1) < 0)
+        return FTX_MESSAGE_RC_ERROR_CALLSIGN1;
+    if (unpack28_call(n28b, 0, hash_if, call_2) < 0)
+        return FTX_MESSAGE_RC_ERROR_CALLSIGN2;
+    snprintf(message, FTX_MAX_MESSAGE_LENGTH, "%s %s %s%d%c %s", call_1, call_2, ir ? "R " : "", ntx, (char)('A' + nclass),
+        kArrlSections[isec - 1]);
+    return FTX_MESSAGE_RC_OK;
+}
+
+ftx_message_rc_t ftx_message_decode_rtty_roundup(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* message)
+{
+    // 3  TU; W9XYZ K1ABC R 579 MA   t1 c28 c28 R1 r3 s13 (a serial, or 8000 + a state / province / DX number)
+    char call_1[14], call_2[14], exch[5];
+    uint32_t itu = payload_bits(msg, 0, 1);
+    uint32_t n28a = payload_bits(msg, 1, 28);
+    uint32_t n28b = payload_bits(msg, 29, 28);
+    uint32_t ir = payload_bits(msg, 57, 1);
+    uint32_t irpt = payload_bits(msg, 58, 3);
+    int nexch = (int)payload_bits(msg, 61, 13);
+
+    message[0] = '\0';
+    if (nexch > 8000)
+    {
+        int imult = nexch - 8000;
+        if (imult < 1 || imult > NUM_ROUNDUP_MULTS)
+            return FTX_MESSAGE_RC_ERROR_TYPE;
+        if (imult <= NUM_ROUNDUP_NAMED)
+            snprintf(exch, sizeof(exch), "%s", kRoundupMults[imult - 1]);
+        else
+            snprintf(exch, sizeof(exch), "X%02d", imult - NUM_ROUNDUP_NAMED);
+    }
+    else if (nexch >= 1 && nexch <= 7999)
+    {
+        snprintf(exch, sizeof(exch), "%04d", nexch);
+    }
+    else
+    {
+        return FTX_MESSAGE_RC_ERROR_TYPE;
+    }
+    ftx_field_t field_type;
+    if (unpack28(n28a, 0, 3, hash_if, call_1, &field_type) < 0)
+        return FTX_MESSAGE_RC_ERROR_CALLSIGN1;
+    if (unpack28(n28b, 0, 3, hash_if, call_2, &field_type) < 0)
+        return FTX_MESSAGE_RC_ERROR_CALLSIGN2;
+    snprintf(message, FTX_MAX_MESSAGE_LENGTH, "%s%s %s %s5%u9 %s", itu ? "TU; " : "", call_1, call_2, ir ? "R " : "", irpt + 2, exch);
+    return FTX_MESSAGE_RC_OK;
+}
+
+ftx_message_rc_t ftx_message_decode_eu_vhf(const ftx_message_t* msg, ftx_callsign_hash_interface_t* hash_if, char* message)
+{
+    // 5  <PA3XYZ> <G4ABC/P> R 590003 IO91NP   h12 h22 R1 r3 s11 g25
+    char call_1[14], call_2[14], grid6[7];
+    uint32_t n12 = payload_bits(msg, 0, 12);
+    uint32_t n22 = payload_bits(msg, 12, 22);
+    uint32_t ir = payload_bits(msg, 34, 1);
+    uint32_t irpt = payload_bits(msg, 35, 3);
+    uint32_t iserial = payload_bits(msg, 38, 11);
+    uint32_t n = payload_bits(msg, 49, 25);
+
+    message[0] = '\0';
+    if (n > 18662399u)
+        return FTX_MESSAGE_RC_ERROR_GRID;
+    grid6[0] = (char)('A' + n / (18 * 10 * 10 * 24 * 24));
+    n %= 18 * 10 * 10 * 24 * 24;
+    grid6[1] = (char)('A' + n / (10 * 10 * 24 * 24));
+    n %= 10 * 10 * 24 * 24;
+    grid6[2] = (char)('0' + n / (10 * 24 * 24));
+    n %= 10 * 24 * 24;
+    grid6[3] = (char)('0' + n / (24 * 24));
+    n %= 24 * 24;
+    grid6[4] = (char)('A' + n / 24);
+    grid6[5] = (char)('A' + n % 24);
+    grid6[6] = '\0';
+    if (grid6[1] > 'R')
+        return FTX_MESSAGE_RC_ERROR_GRID;
+    lookup_callsign(hash_if, FTX_CALLSIGN_HASH_12_BITS, n12, call_1);
+    lookup_callsign(hash_if, FTX_CALLSIGN_HASH_22_BITS, n22, call_2);
+    snprintf(message, FTX_MAX_MESSAGE_LENGTH, "%s %s %s%u%04u %s", call_1, call_2, ir ? "R " : "", 52 + irpt, iserial, grid6);
     return FTX_MESSAGE_RC_OK;
 }
 

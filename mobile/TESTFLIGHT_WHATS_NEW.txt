@@ -9,12 +9,12 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Auto AGC-T under the AGC-T slider: the radio's own with its Early Access licence; on every other radio the app finds the knee on a clear spot (about 13 s) and keeps it per band and mode.
-- The TX tag's power also on narrow chips (TX over the power); the Macros repeat mark drawn on Android.
-- From build 161: the set power in the TX slice's tag; choosers above the home indicator.
-- From build 160: Prof > App setups (thanks Larry W9FLA); Macros > Repeat (thanks Robin Bishop); SNR on the meters (thanks Scott L Stanford).
+- Controls > FTx > DXpedition > Hound: work a DXpedition's Fox in FT8 by WSJT-X's rules. Tap the Fox; the app calls it, answers its report and logs its RR73 (thanks Michael AF0F, Gianluca IK6QOO).
+- FT8 / FT4 show the Fox's combined messages and contest exchanges (Field Day, RTTY Roundup, EU VHF).
+- From build 162: Auto AGC-T under the AGC-T slider, on every radio.
 
-RECENT (builds 94–159)
+RECENT (builds 94–160)
+- App setups (thanks Larry W9FLA); Macros > Repeat (thanks Robin Bishop); SNR on the meters (thanks Scott L Stanford); the power in the TX tag.
 - The filter centred on a chosen frequency; Log > Send to the developer; NRS up to 50.
 - TUNE restores only what it inhibited; Sound from The radio; the FTx QSO in the Log tab; measured TX power.
 - eSSB tube, EVO, reverb; Amp by maker; first-run hints; felt slider taps.
@@ -36,7 +36,8 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab: decode, drag the red TX band to a free frequency, answer a CQ at low power and check the log. [TX]
 - The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: AGC panel > Auto on a clear spot, then change mode and band and come back. Prof > App setups; Macros > Repeat at low power. [TX]
+- New: on a DXpedition's announced frequency, FTx > DXpedition > Hound, tap the Fox and work it at low power. [TX]
+- AGC panel > Auto on a clear spot.
 - Worked before from Wavelog, the QRZ.com Logbook or a shared ADIF file in iCloud Drive.
 - The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]
 

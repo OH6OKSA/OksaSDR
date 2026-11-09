@@ -240,7 +240,10 @@ radio interface, with no computer running alongside.
   next); both stop after a time without a touch on the app, which you
   set. Drag the red TX band to a free
   frequency on the display. *List only* keeps the main buttons fixed and
-  scrolls just the decodes.
+  scrolls just the decodes. **Hound** (FTx › DXpedition) works a
+  DXpedition's Fox by WSJT-X's FT8 DXpedition mode rules; the Fox's
+  combined messages and contest exchanges (Field Day, RTTY Roundup, EU
+  VHF) show as in WSJT-X.
 - **RADE digital voice** (FreeDV's Radio Autoencoder) in the app, on any
   Flex (Controls › FreeDV): receive with the callsign each station sends,
   transmit with PTT as usual, report to FreeDV Reporter (qso.freedv.org)
@@ -427,7 +430,8 @@ The radio, DSP and protocol engine is AetherSDR's: this fork adds a mobile
 build option, iOS platform guards and a new touch client on top, plus a few
 engine additions that were offered upstream: beat cancel (BC) and
 per-stream VITA packet-loss tracking. FT8 / FT4 use the MIT-licensed
-[ft8_lib](https://github.com/kgoba/ft8_lib) (in `third_party/ft8_lib`). For the
+[ft8_lib](https://github.com/kgoba/ft8_lib) (in `third_party/ft8_lib`; its
+contest and DXpedition message decoding added after WSJT-X 2.7). For the
 desktop application (Linux, macOS, Windows), downloads, supported radios and
 the full feature list, see the upstream project:
 **https://github.com/aethersdr/AetherSDR**

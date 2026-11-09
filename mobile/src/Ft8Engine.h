@@ -31,12 +31,18 @@ public:
         QString text;
     };
 
-    // A message split into its parts (calls without < >).
+    // A message split into its parts (calls without < >; a hashed call not
+    // known here, <...>, is empty).
     struct Parsed {
         bool cq = false;
         QString to;     // empty for CQ
         QString de;     // the sender
         QString extra;  // grid, report, R-report, RR73, RRR or 73
+        // A Fox's DXpedition message, "K1ABC RR73; W9XYZ <KH1/KH7Z> -12":
+        // to W9XYZ with the report, de the Fox, and rr73To the Hound whose
+        // QSO it ends.
+        bool dxped = false;
+        QString rr73To;
     };
 
     explicit Ft8Engine(QObject* parent = nullptr);
@@ -65,6 +71,10 @@ public:
 
     // Decodes one slot of 12 kHz audio (also used by the tests).
     QVector<Decode> decodeSamples(const std::vector<float>& samples12k, qint64 slotMs) const;
+    // The text of one 77-bit payload (10 bytes, the first bit the most
+    // significant), through the decoder's own hash table; empty when it does
+    // not decode. For the tests of the message types.
+    static QString decodePayload(const QByteArray& payload);
 
     // The time FT8 / FT4 run on: the device clock plus the correction a time
     // server gave (NtpClock), as an app cannot set the device's own clock.

@@ -10,6 +10,10 @@
 #include "DeviceId.h"
 #include "TextScale.h"
 #include "TrackpadScrollPhases.h"
+
+extern "C" {
+#include <ft8/message.h>
+}
 #ifdef Q_OS_ANDROID
 #include "../android/AndroidJni.h"
 #endif
@@ -51,6 +55,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <functional>
 #include <memory>
 
@@ -254,11 +259,17 @@ int main(int argc, char* argv[])
         QStringLiteral("n"));
     parser.addOption(zoomTestOption);
     const QCommandLineOption ft8TestOption(QStringLiteral("ft8-test"),
-        QStringLiteral("Development: 8 s after start tune to 20 m FT8 (or FT4 with ft4), decode for <s> seconds "
-                       "and log the decodes; with cq also call CQ twice at 10 W. Frequency, mode, power and the TX "
+        QStringLiteral("Development: 8 s after start tune to 20 m FT8 (or FT4 with ft4; 40 for 40 m, mhz=N for any), "
+                       "decode for <s> seconds and log the decodes; with cq also call CQ twice at 10 W; with "
+                       "hound,live,fox=CALL work that Fox as a Hound at 10 W. Frequency, mode, power and the TX "
                        "slice are restored, then the app quits. E.g. 120 or 120,cq or 60,ft4."),
         QStringLiteral("spec"));
     parser.addOption(ft8TestOption);
+    const QCommandLineOption ft8WavOption(QStringLiteral("ft8-wav"),
+        QStringLiteral("Development: decode one 15 s (FT8) or 7.5 s (FT4, ft4: before the path) recording, 12 kHz "
+                       "16-bit mono as WSJT-X saves them, log the decodes and quit. No radio."),
+        QStringLiteral("file"));
+    parser.addOption(ft8WavOption);
     const QCommandLineOption tuneToOption(QStringLiteral("tune-to"),
         QStringLiteral("Development: 7 s after start tune the slice to <mhz,mode> (the pan follows), e.g. 1.9,USB."),
         QStringLiteral("mhz,mode"));
@@ -2205,6 +2216,37 @@ int main(int argc, char* argv[])
             });
         }
     }
+    if (parser.isSet(ft8WavOption)) {
+        QString path = parser.value(ft8WavOption);
+        const bool ft4 = path.startsWith(QLatin1String("ft4:"));
+        if (ft4) {
+            path = path.mid(4);
+        }
+        QFile file(path);
+        if (!file.open(QIODevice::ReadOnly)) {
+            qCritical().noquote() << "ft8-wav: cannot open" << path;
+            return 1;
+        }
+        const QByteArray wav = file.readAll();
+        // The samples after the "data" chunk's header.
+        const qsizetype data = wav.indexOf("data");
+        if (data < 0 || wav.size() < data + 8) {
+            qCritical().noquote() << "ft8-wav: no data chunk in" << path;
+            return 1;
+        }
+        std::vector<float> s12;
+        for (qsizetype i = data + 8; i + 1 < wav.size(); i += 2) {
+            s12.push_back(float(qint16(quint8(wav[i]) | (quint8(wav[i + 1]) << 8))) / 32768.0f);
+        }
+        Ft8Engine ft8;
+        ft8.setProtocol(ft4 ? Ft8Engine::Protocol::Ft4 : Ft8Engine::Protocol::Ft8);
+        const auto decodes = ft8.decodeSamples(s12, 0);
+        for (const Ft8Engine::Decode& d : decodes) {
+            qInfo().noquote() << QStringLiteral("ft8-wav %1 %2 %3 %4").arg(d.snr, 3).arg(d.dt, 4, 'f', 1).arg(int(d.freq), 4).arg(d.text);
+        }
+        qInfo().noquote() << "ft8-wav:" << decodes.size() << "decodes in" << path;
+        return 0;
+    }
     if (parser.isSet(ft8TestOption) && parser.value(ft8TestOption).contains(QStringLiteral("selftest"))) {
         // Our own transmit audio through our own decoder, no radio.
         for (const bool ft4 : {false, true}) {
@@ -2229,6 +2271,148 @@ int main(int argc, char* argv[])
                 qInfo().noquote() << "ft8-selftest" << (ft4 ? "FT4" : "FT8") << m << "->"
                                   << (decodes.isEmpty() ? QStringLiteral("(nothing)") : decodes.first().text);
             }
+        }
+        {
+            // The DXpedition and contest types (roadmap 51), packed here bit by
+            // bit after WSJT-X's table (lib/77bit/77bit.txt) and read back by
+            // the decoder: each line must show its expected text.
+            const auto put = [](QByteArray& p, int start, int count, quint64 value) {
+                for (int i = 0; i < count; ++i) {
+                    const int bit = start + i;
+                    if ((value >> (count - 1 - i)) & 1u) {
+                        p[bit / 8] = char(quint8(p[bit / 8]) | quint8(0x80u >> (bit % 8)));
+                    }
+                }
+            };
+            const auto c28 = [](const char* call) {
+                return quint64(2063592u + 4194304u + quint32(pack_basecall(call, int(std::strlen(call)))));
+            };
+            const auto hash22 = [](const QString& call) {
+                static const QString chars = QStringLiteral(" 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ/");
+                quint64 n58 = 0;
+                for (int i = 0; i < 11; ++i) {
+                    n58 = 38 * n58 + quint64(i < call.size() ? chars.indexOf(call.at(i)) : 0);
+                }
+                return quint32((quint64(47055833459ull) * n58) >> 42) & 0x3FFFFFu;
+            };
+            const auto grid6 = [](const char* g) {
+                return quint64(g[0] - 'A') * 18 * 10 * 10 * 24 * 24 + quint64(g[1] - 'A') * 10 * 10 * 24 * 24
+                       + quint64(g[2] - '0') * 10 * 24 * 24 + quint64(g[3] - '0') * 24 * 24 + quint64(g[4] - 'A') * 24
+                       + quint64(g[5] - 'A');
+            };
+            // The Fox and the EU VHF calls go into the hash table as a
+            // station's own messages would put them there.
+            Ft8Engine ft8;
+            ft8.encode(QStringLiteral("CQ KH1/KH7Z"), 1500.0);
+            ft8.encode(QStringLiteral("<PA3XYZ> G4ABC/P"), 1500.0);
+            struct Case {
+                QString expected;
+                QByteArray payload;
+            };
+            QVector<Case> cases;
+            const auto add = [&cases](const QString& expected, const std::function<void(QByteArray&)>& fill) {
+                QByteArray p(10, '\0');
+                fill(p);
+                cases.append({expected, p});
+            };
+            // 0.1 DXpedition: c28 c28 h10 r5, the report 2 * r5 - 30.
+            add(QStringLiteral("K1ABC RR73; W9XYZ <KH1/KH7Z> -12"), [&](QByteArray& p) {
+                put(p, 0, 28, c28("K1ABC"));
+                put(p, 28, 28, c28("W9XYZ"));
+                put(p, 56, 10, hash22(QStringLiteral("KH1/KH7Z")) >> 12);
+                put(p, 66, 5, 9);
+                put(p, 71, 3, 1);
+            });
+            add(QStringLiteral("OH2XO RR73; G4AAA <...> +04"), [&](QByteArray& p) {
+                put(p, 0, 28, c28("OH2XO"));
+                put(p, 28, 28, c28("G4AAA"));
+                put(p, 56, 10, hash22(QStringLiteral("ZZ9ZZZ")) >> 12);
+                put(p, 66, 5, 17);
+                put(p, 71, 3, 1);
+            });
+            // 0.3 / 0.4 ARRL Field Day: c28 c28 R1 n4 k3 S7 (section 11 EMA).
+            add(QStringLiteral("WA9XYZ KA1ABC R 16A EMA"), [&](QByteArray& p) {
+                put(p, 0, 28, c28("WA9XYZ"));
+                put(p, 28, 28, c28("KA1ABC"));
+                put(p, 56, 1, 1);
+                put(p, 57, 4, 15);
+                put(p, 61, 3, 0);
+                put(p, 64, 7, 11);
+                put(p, 71, 3, 3);
+            });
+            add(QStringLiteral("WA9XYZ KA1ABC 6C NB"), [&](QByteArray& p) {
+                put(p, 0, 28, c28("WA9XYZ"));
+                put(p, 28, 28, c28("KA1ABC"));
+                put(p, 57, 4, 5);
+                put(p, 61, 3, 2);
+                put(p, 64, 7, 86);
+                put(p, 71, 3, 3);
+            });
+            add(QStringLiteral("K1ABC W9XYZ 32F DX"), [&](QByteArray& p) {
+                put(p, 0, 28, c28("K1ABC"));
+                put(p, 28, 28, c28("W9XYZ"));
+                put(p, 57, 4, 15);
+                put(p, 61, 3, 5);
+                put(p, 64, 7, 84);
+                put(p, 71, 3, 4);
+            });
+            // 3 ARRL RTTY Roundup: t1 c28 c28 R1 r3 s13, i3 = 3.
+            add(QStringLiteral("TU; W9XYZ K1ABC R 579 MA"), [&](QByteArray& p) {
+                put(p, 0, 1, 1);
+                put(p, 1, 28, c28("W9XYZ"));
+                put(p, 29, 28, c28("K1ABC"));
+                put(p, 57, 1, 1);
+                put(p, 58, 3, 5);
+                put(p, 61, 13, 8000 + 21);
+                put(p, 74, 3, 3);
+            });
+            add(QStringLiteral("W9XYZ OH2XO 599 0123"), [&](QByteArray& p) {
+                put(p, 1, 28, c28("W9XYZ"));
+                put(p, 29, 28, c28("OH2XO"));
+                put(p, 58, 3, 7);
+                put(p, 61, 13, 123);
+                put(p, 74, 3, 3);
+            });
+            add(QStringLiteral("K1ABC OH2XO 559 X05"), [&](QByteArray& p) {
+                put(p, 1, 28, c28("K1ABC"));
+                put(p, 29, 28, c28("OH2XO"));
+                put(p, 58, 3, 3);
+                put(p, 61, 13, 8000 + 72 + 5);
+                put(p, 74, 3, 3);
+            });
+            // 5 EU VHF contest: h12 h22 R1 r3 s11 g25.
+            add(QStringLiteral("<PA3XYZ> <G4ABC/P> R 590003 IO91NP"), [&](QByteArray& p) {
+                put(p, 0, 12, hash22(QStringLiteral("PA3XYZ")) >> 10);
+                put(p, 12, 22, hash22(QStringLiteral("G4ABC/P")));
+                put(p, 34, 1, 1);
+                put(p, 35, 3, 7);
+                put(p, 38, 11, 3);
+                put(p, 49, 25, grid6("IO91NP"));
+                put(p, 74, 3, 5);
+            });
+            // Undefined: 0.2, a Field Day section out of range, a Roundup
+            // exchange of 0.
+            add(QString(), [&](QByteArray& p) { put(p, 71, 3, 2); });
+            add(QString(), [&](QByteArray& p) {
+                put(p, 0, 28, c28("WA9XYZ"));
+                put(p, 28, 28, c28("KA1ABC"));
+                put(p, 64, 7, 87);
+                put(p, 71, 3, 3);
+            });
+            add(QString(), [&](QByteArray& p) {
+                put(p, 1, 28, c28("W9XYZ"));
+                put(p, 29, 28, c28("OH2XO"));
+                put(p, 74, 3, 3);
+            });
+            int failed = 0;
+            for (const Case& c : std::as_const(cases)) {
+                const QString got = Ft8Engine::decodePayload(c.payload);
+                const bool ok = got == c.expected;
+                failed += ok ? 0 : 1;
+                qInfo().noquote() << "ft8-selftest type" << (ok ? "ok  " : "FAIL") << (c.expected.isEmpty() ? QStringLiteral("(none)") : c.expected)
+                                  << "->" << (got.isEmpty() ? QStringLiteral("(none)") : got);
+            }
+            qInfo() << "ft8-selftest types:" << cases.size() - failed << "of" << cases.size() << "ok";
         }
         {
             // More hashed calls than the table holds (it once hung when full),
@@ -2275,6 +2459,67 @@ int main(int argc, char* argv[])
             qInfo().noquote() << "cqtarget-test: left" << engine.digiCqTargets().join(QLatin1Char(','))
                               << "target" << engine.digiCqTarget();
             QCoreApplication::quit();
+        });
+    } else if (parser.isSet(ft8TestOption) && parser.value(ft8TestOption).contains(QStringLiteral("hound"))
+               && !parser.value(ft8TestOption).contains(QStringLiteral("live"))) {
+        // Hound (roadmap 10 a) without RF: dry transmissions, a Fox's CQ,
+        // report and RR73 fed in by hand. hound: the Fox's DXpedition
+        // messages; hound,std: its standard ones; hound,late: the report
+        // after our calls have stopped (from its queue, within 3 min).
+        const QString spec = parser.value(ft8TestOption);
+        const bool std = spec.contains(QStringLiteral("std"));
+        const bool late = spec.contains(QStringLiteral("late"));
+        const QString protocolBefore = engine.digiProtocol();
+        engine.setDigiDryRun(true);
+        const auto feed = [&engine](const QString& text, int hz, int snr) {
+            engine.digiInjectDecodes({QVariantMap{{QStringLiteral("utc"), QStringLiteral("000000")},
+                                                  {QStringLiteral("snr"), snr}, {QStringLiteral("dt"), QStringLiteral("0.1")},
+                                                  {QStringLiteral("freq"), hz}, {QStringLiteral("text"), text},
+                                                  {QStringLiteral("hl"), QString()}}});
+        };
+        const auto show = [&engine](const QString& what) {
+            const QVariantMap d = engine.digi();
+            qInfo().noquote() << "hound-test:" << what << "->" << d.value(QStringLiteral("state")).toString() << "|"
+                              << d.value(QStringLiteral("status")).toString() << "| next" << d.value(QStringLiteral("txMsg")).toString()
+                              << "|" << d.value(QStringLiteral("parity")).toString() << engine.digiTxHz() << "Hz";
+        };
+        QTimer::singleShot(9000, &app, [&engine, feed, show] {
+            engine.setDigiProtocol(QStringLiteral("FT8"));
+            engine.setDigiRunning(true);
+            // CQ refused while Hound is on; a Hound's row refused.
+            engine.setDigiHound(true);
+            show(QStringLiteral("Hound on"));
+            engine.digiCallCq();
+            qInfo().noquote() << "hound-test: CQ ->" << engine.lastError();
+            feed(QStringLiteral("KH7Z K1ABC FN42"), 1500, -3);
+            engine.digiAnswer(0);
+            qInfo().noquote() << "hound-test: a Hound tapped ->" << engine.lastError();
+            feed(QStringLiteral("CQ KH1/KH7Z"), 300, -7);
+            engine.digiAnswer(0);
+            show(QStringLiteral("Fox CQ tapped"));
+        });
+        const int reportAt = late ? 160000 : 45000;
+        QTimer::singleShot(reportAt, &app, [feed, show, std] {
+            feed(std ? QStringLiteral("OH6OKSA KH7Z -13") : QStringLiteral("K1ABC RR73; OH6OKSA <KH1/KH7Z> -13"), 360, -7);
+            show(QStringLiteral("report fed"));
+        });
+        QTimer::singleShot(reportAt + 65000, &app, [feed, show, std] {
+            feed(std ? QStringLiteral("OH6OKSA KH7Z RR73") : QStringLiteral("OH6OKSA RR73; W9XYZ <KH1/KH7Z> -11"), 360, -6);
+            show(QStringLiteral("RR73 fed"));
+        });
+        // The Fox's RR73 again: no second QSO, nothing sent.
+        QTimer::singleShot(reportAt + 80000, &app, [feed, show, std] {
+            feed(std ? QStringLiteral("OH6OKSA KH7Z RR73") : QStringLiteral("OH6OKSA RR73; W9XYZ <KH1/KH7Z> -11"), 360, -6);
+            show(QStringLiteral("RR73 again"));
+        });
+        QTimer::singleShot(reportAt + 90000, &app, [&app, &engine, show, protocolBefore] {
+            show(QStringLiteral("end"));
+            engine.setDigiHound(false);
+            show(QStringLiteral("Hound off"));
+            engine.digiHalt();
+            engine.setDigiRunning(false);
+            engine.setDigiProtocol(protocolBefore);
+            QTimer::singleShot(500, &app, &QCoreApplication::quit);
         });
     } else if (parser.isSet(ft8TestOption) && parser.value(ft8TestOption).contains(QStringLiteral("keepcq"))) {
         // Keep CQ and the CQ slot without RF: dry transmissions, a station
@@ -2368,7 +2613,14 @@ int main(int argc, char* argv[])
             }
             qInfo() << "ft8-test: saved" << std::get<0>(*saved) << std::get<1>(*saved) << std::get<2>(*saved) << "W";
             engine.setDigiProtocol(ft4 ? QStringLiteral("FT4") : QStringLiteral("FT8"));
-            engine.digiTune(spec.contains(QStringLiteral("40")) ? (ft4 ? 7.0475 : 7.074) : (ft4 ? 14.080 : 14.074));
+            // mhz=18.100: a frequency of its own (a Fox's), else 40 or 20 m.
+            double mhz = spec.contains(QStringLiteral("40")) ? (ft4 ? 7.0475 : 7.074) : (ft4 ? 14.080 : 14.074);
+            for (const QString& s : spec) {
+                if (s.startsWith(QLatin1String("mhz="))) {
+                    mhz = s.mid(4).toDouble();
+                }
+            }
+            engine.digiTune(mhz);
             engine.setDigiRunning(true);
             if (cq) {
                 engine.setRfPower(10);
@@ -2390,6 +2642,43 @@ int main(int argc, char* argv[])
                 qInfo() << "autoanswer-test: on, presence limit" << engine.digiPresenceMin() << "min, filter" << engine.digiFilter();
             }
         });
+        // hound,live,fox=D44PX: Hound on the air at 10 W. A decode from the
+        // Fox below 1000 Hz (its CQ or a message) is answered as a tap on its
+        // row does, again after each four calls, while the run lasts.
+        QString fox;
+        for (const QString& s : spec) {
+            if (s.startsWith(QLatin1String("fox="))) {
+                fox = s.mid(4).toUpper();
+            }
+        }
+        if (spec.contains(QStringLiteral("hound")) && spec.contains(QStringLiteral("live")) && !fox.isEmpty()) {
+            QTimer::singleShot(10000, &app, [&engine] {
+                engine.setRfPower(10);
+                engine.setDigiHound(true);
+                qInfo().noquote() << "hound-live: Hound" << engine.digiHound() << "|" << engine.digi().value(QStringLiteral("status")).toString();
+            });
+            QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::digiDecodesChanged, &app, [&engine, fox] {
+                const QVariantMap d = engine.digi();
+                if (!engine.digiHound() || d.value(QStringLiteral("state")).toString() != QLatin1String("idle")
+                    || d.value(QStringLiteral("status")).toString().contains(QLatin1String("RR73"))) {
+                    return;
+                }
+                const QVariantList rows = engine.digiDecodes();
+                for (int i = 0; i < rows.size() && i < 20; ++i) {
+                    const QVariantMap r = rows.at(i).toMap();
+                    const QString text = r.value(QStringLiteral("text")).toString();
+                    if (r.value(QStringLiteral("hl")).toString() == QLatin1String("tx") || r.value(QStringLiteral("freq")).toInt() >= 1000
+                        || !text.contains(fox)) {
+                        continue;
+                    }
+                    qInfo().noquote() << "hound-live: tapping" << text << "at" << r.value(QStringLiteral("freq")).toInt() << "Hz";
+                    engine.digiAnswer(i);
+                    qInfo().noquote() << "hound-live: ->" << engine.digi().value(QStringLiteral("status")).toString() << "|"
+                                      << engine.lastError();
+                    break;
+                }
+            });
+        }
         if (spec.contains(QStringLiteral("hl"))) {
             // Each CQ caller once: its highlight and how the log and the
             // logbook read back stand with it (MobileEngine::workedAudit).
@@ -2605,6 +2894,7 @@ int main(int argc, char* argv[])
         const int presenceWas = engine.digiPresenceMin();
         QTimer::singleShot(8000 + seconds * 1000, &app, [&app, &engine, saved, savedTx, presenceWas] {
             qInfo() << "ft8-test: Answer CQ" << engine.digiAutoAnswer() << "|" << engine.digi().value(QStringLiteral("status")).toString();
+            engine.setDigiHound(false);
             engine.digiHalt();
             engine.setDigiPresenceMin(presenceWas);
             engine.setDigiRunning(false);
