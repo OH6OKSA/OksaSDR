@@ -79,6 +79,10 @@ public:
     QString lastName()     const { return m_userLastName; }
     QString idToken()      const { return m_idToken; }
     QString refreshToken() const { return m_refreshToken; }
+    // The last authFailed was the network or the server being away (no
+    // reply, a timeout, 408, 429 or a 5xx), not a refusal: a kept sign-in
+    // is still good.
+    bool lastAuthFailureTransient() const { return m_lastAuthTransient; }
 
 signals:
     // Auth0 login result
@@ -121,6 +125,10 @@ private:
     QString m_refreshToken;
     bool    m_authenticated{false};
     bool    m_authRequestInProgress{false};
+    bool    m_lastAuthTransient{false};
+    // Bumped by logout(): a login or refresh answer from before it is
+    // dropped, so a sign-out during a refresh stays signed out.
+    quint64 m_authGeneration{0};
 
     // SmartLink server TLS connection
     // NOTE: m_pingTimer and m_serverConnected must be declared before m_socket

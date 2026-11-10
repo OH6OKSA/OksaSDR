@@ -70,8 +70,9 @@ public final class Platform {
             byte[] blob = new byte[iv.length + data.length];
             System.arraycopy(iv, 0, blob, 0, iv.length);
             System.arraycopy(data, 0, blob, iv.length, data.length);
-            prefs(context).edit().putString(name, Base64.encodeToString(blob, Base64.NO_WRAP)).apply();
-            return true;
+            // commit(), not apply(): written before this returns, so a sign-in
+            // or a sign-out stays even if the app is closed at once.
+            return prefs(context).edit().putString(name, Base64.encodeToString(blob, Base64.NO_WRAP)).commit();
         } catch (Exception e) {
             return false;
         }
@@ -93,7 +94,7 @@ public final class Platform {
     }
 
     public static void removeSecret(Context context, String name) {
-        prefs(context).edit().remove(name).apply();
+        prefs(context).edit().remove(name).commit();
     }
 
     private static SharedPreferences prefs(Context context) {

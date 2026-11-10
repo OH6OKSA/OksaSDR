@@ -1498,6 +1498,8 @@ void MobileEngine::wireSmartLink()
         if (!m_smartLink.refreshToken().isEmpty()) {
             saveSecret(kSmartLinkTokenKey, m_smartLink.refreshToken());
         }
+        m_smartLinkRetryTimer.stop();
+        m_smartLinkRetryMs = 0;
         setSmartLinkState(QStringLiteral("signedIn"));
     });
     connect(&m_smartLink, &SmartLinkClient::authFailed, this, [this](const QString& error) {
@@ -1513,7 +1515,31 @@ void MobileEngine::wireSmartLink()
             return;
         }
         m_smartLinkRetried = false;
+        // No network, a timeout, rate limiting or the server's own trouble is
+        // not a refusal: the kept sign-in stays and is tried again (a phone
+        // losing the network lost its SmartLink sign-in: Ian Gilchrist
+        // VK1HF). Only a refusal forgets it.
+        if (m_smartLink.lastAuthFailureTransient() && !kept.isEmpty()) {
+            // A dropped remote session already retries every few seconds.
+            const bool sessionRetries = m_wanActive && m_wanReconnectTimer.isActive();
+            if (!sessionRetries) {
+                m_smartLinkRetryMs = m_smartLinkRetryMs <= 0 ? 5000 : std::min(2 * m_smartLinkRetryMs, 60000);
+                m_smartLinkRetryTimer.start(m_smartLinkRetryMs);
+            }
+            qCInfo(lcMobile).noquote() << "SmartLink not reachable, sign-in kept:" << error
+                                       << (sessionRetries ? QStringLiteral("(the remote session retries)")
+                                                          : QStringLiteral("(again in %1 s)").arg(m_smartLinkRetryMs / 1000));
+            if (m_connectionState == QLatin1String("connecting") && m_wanActive && !sessionRetries) {
+                m_wanActive = false;
+                setConnectionState(QStringLiteral("idle"));
+                setLastError(tr("SmartLink not reachable: %1. Your sign-in is kept; try again when the network is back.").arg(error));
+            }
+            setSmartLinkState(QStringLiteral("offline"));
+            return;
+        }
         qCInfo(lcMobile).noquote() << "SmartLink sign-in failed:" << error;
+        m_smartLinkRetryTimer.stop();
+        m_smartLinkRetryMs = 0;
         removeSecret(kSmartLinkTokenKey);
         m_wanReconnectTimer.stop();
         if (m_connectionState == QLatin1String("connecting") && m_wanActive) {
@@ -1529,6 +1555,28 @@ void MobileEngine::wireSmartLink()
     connect(&m_smartLink, &SmartLinkClient::serverDisconnected, this, [this] {
         if (m_smartLink.isAuthenticated()) {
             setSmartLinkState(QStringLiteral("offline"));
+            // The server gone under a kept sign-in: back by itself, unless a
+            // dropped remote session already retries.
+            if (!(m_wanActive && m_wanReconnectTimer.isActive()) && !m_smartLinkRetryTimer.isActive()) {
+                m_smartLinkRetryMs = m_smartLinkRetryMs <= 0 ? 5000 : std::min(2 * m_smartLinkRetryMs, 60000);
+                m_smartLinkRetryTimer.start(m_smartLinkRetryMs);
+            }
+        }
+    });
+    m_smartLinkRetryTimer.setSingleShot(true);
+    connect(&m_smartLinkRetryTimer, &QTimer::timeout, this, [this] { retrySmartLinkSignIn(QStringLiteral("timer")); });
+    // The network or the app back: the kept sign-in at once, not after the
+    // rest of the wait.
+    if (QNetworkInformation* net = QNetworkInformation::instance()) {
+        connect(net, &QNetworkInformation::reachabilityChanged, this, [this](QNetworkInformation::Reachability r) {
+            if (r == QNetworkInformation::Reachability::Online && m_smartLinkRetryTimer.isActive()) {
+                retrySmartLinkSignIn(QStringLiteral("the network is back"));
+            }
+        });
+    }
+    connect(qApp, &QGuiApplication::applicationStateChanged, this, [this](Qt::ApplicationState state) {
+        if (state == Qt::ApplicationActive && m_smartLinkRetryTimer.isActive()) {
+            retrySmartLinkSignIn(QStringLiteral("the app is back"));
         }
     });
     connect(&m_smartLink, &SmartLinkClient::radioListReceived, this,
@@ -1601,6 +1649,20 @@ void MobileEngine::wireSmartLink()
         setSmartLinkState(QStringLiteral("signingIn"));
         m_smartLink.loginWithRefreshToken(token);
     }
+}
+
+void MobileEngine::retrySmartLinkSignIn(const QString& why)
+{
+    m_smartLinkRetryTimer.stop();
+    if (m_smartLinkState == QLatin1String("signedOut") || m_smartLink.isConnected()) {
+        return;
+    }
+    const QString kept = !m_smartLink.refreshToken().isEmpty() ? m_smartLink.refreshToken() : loadSecret(kSmartLinkTokenKey);
+    if (kept.isEmpty()) {
+        return;
+    }
+    qCInfo(lcMobile).noquote() << "SmartLink: trying the kept sign-in again (" + why + ")";
+    m_smartLink.loginWithRefreshToken(kept);
 }
 
 void MobileEngine::setSmartLinkState(const QString& state)
@@ -1693,6 +1755,8 @@ void MobileEngine::signInSmartLink(const QString& email, const QString& password
 void MobileEngine::signOutSmartLink()
 {
     m_wanReconnectTimer.stop();
+    m_smartLinkRetryTimer.stop();
+    m_smartLinkRetryMs = 0;
     m_smartLink.logout();
     removeSecret(kSmartLinkTokenKey);
     m_wanRadios.clear();

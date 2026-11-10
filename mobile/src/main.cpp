@@ -401,6 +401,10 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: send these radio commands (separated by ';') 7 s after start and log the "
                        "replies."), QStringLiteral("commands"));
     parser.addOption(radioCommandsOption);
+    const QCommandLineOption smartLinkSignOutTestOption(QStringLiteral("smartlink-signout-test"),
+        QStringLiteral("Development: sign out of SmartLink at once, while the kept sign-in is being refreshed, and log "
+                       "10 s later whether it stayed signed out (roadmap 52). Removes the kept sign-in."));
+    parser.addOption(smartLinkSignOutTestOption);
     const QCommandLineOption setStepOption(QStringLiteral("set-step"),
         QStringLiteral("Development: set the tuning step to <hz> 8 s after start, as the STEP chooser does."),
         QStringLiteral("hz"));
@@ -1696,6 +1700,18 @@ int main(int argc, char* argv[])
         const QStringList f = parser.value(spotFilterOption).split(QLatin1Char(','));
         engine.setSpotModes(f.value(0, QStringLiteral("all")));
         engine.setSpotMaxAgeMin(f.value(1, QStringLiteral("0")).toInt());
+    }
+    if (parser.isSet(smartLinkSignOutTestOption)) {
+        // The refresh from the kept sign-in starts with the engine; Sign out
+        // lands before its answer, which must not sign in again.
+        QTimer::singleShot(0, &app, [&engine] {
+            qInfo().noquote() << "signout-test: state" << engine.smartLinkState() << "-> Sign out";
+            engine.signOutSmartLink();
+        });
+        QTimer::singleShot(10000, &app, [&engine] {
+            qInfo().noquote() << "signout-test: 10 s later" << engine.smartLinkState();
+            QCoreApplication::quit();
+        });
     }
     if (parser.isSet(radioCommandsOption)) {
         const QStringList commands = parser.value(radioCommandsOption).split(QLatin1Char(';'), Qt::SkipEmptyParts);

@@ -18,6 +18,15 @@ namespace AetherSDR {
 namespace {
 // Stall timeout for SmartLink auth/API requests (#4688 §6).
 constexpr int kTransferTimeoutMs = 15000;
+
+// No answer, a timeout, rate limiting or the server's own trouble: the
+// sign-in may still be good. Auth0 refuses a wrong password or a revoked
+// refresh token with another 4xx.
+bool transientAuthFailure(QNetworkReply* reply)
+{
+    const int http = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    return http == 0 || http == 408 || http == 429 || http >= 500;
+}
 } // namespace
 
 // Cap the line-assembly buffer.  A buggy or hostile SmartLink discovery/auth
@@ -89,15 +98,21 @@ void SmartLinkClient::login(const QString& email, const QString& password)
     s.setValue("SmartLinkEmail", QString::fromUtf8(email.toUtf8().toBase64()));
     s.save();
 
+    const quint64 generation = m_authGeneration;
     auto* reply = m_nam.post(req, QJsonDocument(body).toJson());
-    connect(reply, &QNetworkReply::finished, this, [this, reply] {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, generation] {
         reply->deleteLater();
+        if (generation != m_authGeneration) {
+            qCDebug(lcSmartLink) << "SmartLinkClient: Auth0 login answer after logout dropped";
+            return;
+        }
 
         if (reply->error() != QNetworkReply::NoError) {
             const auto data = reply->readAll();
             QJsonObject err = QJsonDocument::fromJson(data).object();
             QString desc = err.value("error_description").toString(reply->errorString());
             qCWarning(lcSmartLink) << "SmartLinkClient: Auth0 login failed:" << desc;
+            m_lastAuthTransient = transientAuthFailure(reply);
             emit authFailed(desc);
             return;
         }
@@ -109,6 +124,7 @@ void SmartLinkClient::login(const QString& email, const QString& password)
 
         if (m_idToken.isEmpty()) {
             qCWarning(lcSmartLink) << "SmartLinkClient: Auth0 response missing id_token";
+            m_lastAuthTransient = false;
             emit authFailed("No id_token in response");
             return;
         }
@@ -146,9 +162,14 @@ void SmartLinkClient::loginWithRefreshToken(const QString& refreshToken)
     qCDebug(lcSmartLink) << "SmartLinkClient: Auth0 refresh token login";
 
     m_authRequestInProgress = true;
+    const quint64 generation = m_authGeneration;
     auto* reply = m_nam.post(req, QJsonDocument(body).toJson());
-    connect(reply, &QNetworkReply::finished, this, [this, reply] {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, generation] {
         reply->deleteLater();
+        if (generation != m_authGeneration) {
+            qCDebug(lcSmartLink) << "SmartLinkClient: Auth0 refresh answer after logout dropped";
+            return;
+        }
         m_authRequestInProgress = false;
 
         if (reply->error() != QNetworkReply::NoError) {
@@ -156,6 +177,7 @@ void SmartLinkClient::loginWithRefreshToken(const QString& refreshToken)
             QJsonObject err = QJsonDocument::fromJson(data).object();
             QString desc = err.value("error_description").toString(reply->errorString());
             qCWarning(lcSmartLink) << "SmartLinkClient: Auth0 refresh failed:" << desc;
+            m_lastAuthTransient = transientAuthFailure(reply);
             emit authFailed(desc);
             return;
         }
@@ -169,6 +191,7 @@ void SmartLinkClient::loginWithRefreshToken(const QString& refreshToken)
             m_refreshToken = newRefresh;
 
         if (m_idToken.isEmpty()) {
+            m_lastAuthTransient = false;
             emit authFailed("No id_token in refresh response");
             return;
         }
@@ -183,6 +206,9 @@ void SmartLinkClient::loginWithRefreshToken(const QString& refreshToken)
 
 void SmartLinkClient::logout()
 {
+    // A login or refresh still under way is answered into nothing.
+    ++m_authGeneration;
+    m_authRequestInProgress = false;
     m_authenticated = false;
     m_idToken.clear();
     m_refreshToken.clear();
@@ -443,6 +469,7 @@ void SmartLinkClient::parseMessage(const QString& msg)
         if (m_socket.state() != QAbstractSocket::UnconnectedState) {
             m_socket.disconnectFromHost();
         }
+        m_lastAuthTransient = false;
         emit authFailed("SmartLink registration invalid — please re-login");
     } else if (msg.startsWith("radio test_connection")) {
         parseTestResults(msg);
