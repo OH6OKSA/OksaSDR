@@ -2586,6 +2586,9 @@ int main(int argc, char* argv[])
         // FT8's tuning makes the active slice the TX slice: the one that was
         // TX gets it back at the end.
         auto savedTx = std::make_shared<int>(-1);
+        // The radio keeps the power per band: the test band's 10 W stays
+        // there unless each band's own is put back at the end.
+        auto savedBandPower = std::make_shared<QHash<int, int>>();
         // Slices a cut-short run left behind: with clean, all but the first
         // go (only then: they can be another client's or the user's own).
         QTimer::singleShot(6000, &app, [&engine, spec] {
@@ -2605,8 +2608,12 @@ int main(int argc, char* argv[])
             }
             engine.selectSlice(first);
         });
-        QTimer::singleShot(8000, &app, [&engine, saved, savedTx, cq, ft4, spec] {
+        QTimer::singleShot(8000, &app, [&engine, saved, savedTx, savedBandPower, cq, ft4, spec] {
             *saved = {engine.frequencyMhz(), engine.mode(), engine.rfPower(), engine.digiProtocol()};
+            for (const QVariant& v : engine.radioSetup().value(QStringLiteral("txBands")).toList()) {
+                const QVariantMap b = v.toMap();
+                savedBandPower->insert(b.value(QStringLiteral("id")).toInt(), b.value(QStringLiteral("rfPower")).toInt());
+            }
             for (const QVariant& v : engine.slices()) {
                 if (v.toMap().value(QStringLiteral("tx")).toBool()) {
                     *savedTx = v.toMap().value(QStringLiteral("id")).toInt();
@@ -2644,8 +2651,9 @@ int main(int argc, char* argv[])
             }
         });
         // hound,live,fox=D44PX: Hound on the air at 10 W. A decode from the
-        // Fox below 1000 Hz (its CQ or a message) is answered as a tap on its
-        // row does, again after each four calls, while the run lasts.
+        // Fox below 1000 Hz (its CQ or a message it sent, not a Hound's call
+        // to it) is answered as a tap on its row does, again after each four
+        // calls, while the run lasts.
         QString fox;
         for (const QString& s : spec) {
             if (s.startsWith(QLatin1String("fox="))) {
@@ -2669,7 +2677,7 @@ int main(int argc, char* argv[])
                     const QVariantMap r = rows.at(i).toMap();
                     const QString text = r.value(QStringLiteral("text")).toString();
                     if (r.value(QStringLiteral("hl")).toString() == QLatin1String("tx") || r.value(QStringLiteral("freq")).toInt() >= 1000
-                        || !text.contains(fox)) {
+                        || r.value(QStringLiteral("call")).toString() != fox) {
                         continue;
                     }
                     qInfo().noquote() << "hound-live: tapping" << text << "at" << r.value(QStringLiteral("freq")).toInt() << "Hz";
@@ -2928,7 +2936,7 @@ int main(int argc, char* argv[])
             QTimer::singleShot(8000 + (ft4 ? 33000 : 63000), &app, [&engine] { engine.digiHalt(); });
         }
         const int presenceWas = engine.digiPresenceMin();
-        QTimer::singleShot(8000 + seconds * 1000, &app, [&app, &engine, saved, savedTx, presenceWas] {
+        QTimer::singleShot(8000 + seconds * 1000, &app, [&app, &engine, saved, savedTx, savedBandPower, presenceWas] {
             qInfo() << "ft8-test: Answer CQ" << engine.digiAutoAnswer() << "|" << engine.digi().value(QStringLiteral("status")).toString();
             engine.setDigiHound(false);
             engine.digiHalt();
@@ -2941,6 +2949,17 @@ int main(int argc, char* argv[])
             engine.setRfPower(std::get<2>(*saved));
             if (*savedTx >= 0) {
                 engine.makeTxSlice(*savedTx);
+            }
+            for (const QVariant& v : engine.radioSetup().value(QStringLiteral("txBands")).toList()) {
+                const QVariantMap b = v.toMap();
+                const int id = b.value(QStringLiteral("id")).toInt();
+                if (savedBandPower->contains(id) && savedBandPower->value(id) != b.value(QStringLiteral("rfPower")).toInt()) {
+                    engine.setRadioSetup(QStringLiteral("txBand"), QVariantMap{{QStringLiteral("id"), id},
+                                                                               {QStringLiteral("field"), QStringLiteral("rfPower")},
+                                                                               {QStringLiteral("value"), savedBandPower->value(id)}});
+                    qInfo().noquote() << "ft8-test: band" << b.value(QStringLiteral("name")).toString() << "power"
+                                      << b.value(QStringLiteral("rfPower")).toInt() << "->" << savedBandPower->value(id) << "W";
+                }
             }
             qInfo() << "ft8-test: restored" << std::get<0>(*saved) << std::get<1>(*saved) << std::get<2>(*saved) << "W"
                     << "TX slice" << *savedTx;
