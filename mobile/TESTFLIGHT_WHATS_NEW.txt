@@ -9,12 +9,13 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Radio Setup > MIDI: a MIDI controller such as Lynovation's CTR2-MIDI as a VFO knob and buttons, over Bluetooth or USB. Learn each function or import its SmartSDR map; transmitting from it is off until turned on (thanks Hanno DK3HV, Michael Walker). Android later.
-- SmartLink keeps you signed in through a network dropout and signs in again by itself (thanks Ian VK1HF).
-- From build 163: FTx > DXpedition > Hound (thanks Michael AF0F, Gianluca IK6QOO); the Fox's and contest messages in FT8 / FT4.
+- Radio Setup > MIDI: a MIDI controller such as Lynovation's CTR2-MIDI as a VFO knob and buttons, over Bluetooth or USB. Learn each function or import its SmartSDR map; TX from it is off until allowed (thanks Hanno DK3HV, Michael Walker). Android later.
+- View > Big buttons: large − / +, the step and PTT on one screen, for the car (mounted), gloves or a glance (thanks Michael Walker).
+- SmartLink keeps you signed in through a network dropout (thanks Ian VK1HF).
+- From build 163: FTx > DXpedition > Hound; the Fox's and contest messages in FT8 / FT4.
 
 RECENT (builds 94–162)
-- Auto AGC-T on every radio; app setups (thanks Larry W9FLA); Macros > Repeat (thanks Robin Bishop); SNR on the meters (thanks Scott L Stanford); the power in the TX tag.
+- Auto AGC-T on every radio; app setups (thanks Larry W9FLA); Macros > Repeat (thanks Robin Bishop); SNR on the meters (thanks Scott L Stanford).
 - The filter centred on a chosen frequency; Log > Send to the developer; NRS up to 50.
 - TUNE restores only what it inhibited; Sound from The radio; the FTx QSO in the Log tab; measured TX power.
 - eSSB tube, EVO, reverb; Amp by maker; first-run hints; felt slider taps.
@@ -36,7 +37,7 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab: decode, drag the red TX band to a free frequency, answer a CQ at low power and check the log. [TX]
 - The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: Radio Setup > MIDI with a MIDI controller (Bluetooth or USB).
+- New: Radio Setup > MIDI with a MIDI controller, and View > Big buttons.
 - AGC panel > Auto on a clear spot.
 - The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]
 

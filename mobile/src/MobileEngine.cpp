@@ -9040,6 +9040,16 @@ bool MobileEngine::muted() const
     return m_slice && m_slice->audioMute();
 }
 
+void MobileEngine::setBigButtons(bool on)
+{
+    if (on == m_bigButtons) {
+        return;
+    }
+    m_bigButtons = on;
+    qCInfo(lcMobile) << "Big buttons" << (on ? "on" : "off");
+    emit bigButtonsChanged();
+}
+
 void MobileEngine::setMuted(bool muted)
 {
     if (m_slice) {

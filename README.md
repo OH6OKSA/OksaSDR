@@ -102,6 +102,12 @@ radio interface, with no computer running alongside.
   there (a green band marks it), AFC follows it, and the same macros, text
   field and Log (ADIF PSK31 / PSK63 on the signal's frequency) work; text
   goes out on the frequency received. A PSK spot tunes to the signal.
+- **Big buttons** (View › Big buttons, or ⋯ on a phone): a few large
+  controls over the main screen for the car (mounted, used as the law
+  allows), gloves or a glance: the frequency and S meter large, − and +
+  by the tuning step (held, they repeat), the step, and PTT across the
+  bottom; Space or a Bluetooth PTT button keys there too. Hold Exit to
+  leave.
 - **MIDI controllers** (iPhone, iPad, Mac): Radio Setup › MIDI takes a
   controller such as Lynovation's CTR2-MIDI over Bluetooth (paired there
   on an iPhone or iPad) or USB, as a VFO knob and buttons: Learn each
@@ -373,6 +379,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | CW straight key and paddles on air | ✅ Checked on the FLEX at 10 W: straight key, paddles (elements on time at 30 WPM), iambic A and B squeeze |
 | Transmit lock (SB / OA) | ✅ Checked on the FLEX without transmitting (build 141); the countdown back to SB and Hold to arm at start checked in build 151 |
 | RTTY decoding and sending | ✅ Contest stations decoded live (build 141); DIGL / DIGU decoded live (IT9EJW, SV1EKI); sent at 10 W and decoded by RBN skimmers across Europe (OE9GHV 33 dB, GM0UDL 27 dB) |
+| Big buttons (build 164) | 🧪 Checked on the FLEX by the user's path (View › Big buttons, − / + and held −, Step, Space reaching PTT, held Exit) and rendered on phones and tablets both ways; in-car use to hear about |
 | MIDI controllers (build 164) | 🧪 Tested against a stand-in CTR2-MIDI (an ALSA virtual port) on the FLEX: Learn, the VFO knob, a SmartSDR map imported, PTT held and ended when the controller went (USB, 1 W, no audio); pairing and the CTR2 itself to verify (Hanno DK3HV) |
 | RF-KIT RF2K-S amplifier | ✅ Readings checked on a real RF2K-S (Sebastian Schu DG5CST, build 148). 🧪 Control (Operate / Standby, antenna, error reset) tested against a stand-in of its REST API: confirmations, a refusal (409), no answer, a lost link, never while transmitting (checked keyed on the FLEX); to verify on a real RF2K-S. 🧪 Tune's carrier (build 150) keyed on the FLEX at 5 W against the stand-in: STANDBY first, kept with the app in the background, off once tuned, after 20 s, on Stop, with the amplifier in OPERATE, on a lost link, and the radio unkeying by itself when the app was killed |
 | 4O3A Power Genius XL / Tuner Genius XL (readings and control) | 🧪 Built in (build 152); tested against a stand-in that replays real devices' frames; reports from owners welcome |

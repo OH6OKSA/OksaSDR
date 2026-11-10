@@ -13,6 +13,23 @@ ColumnLayout {
     spacing: Theme.spacing / 2
     implicitWidth: 200
 
+    // Big buttons (roadmap 55, Michael Walker): the page covered by a few
+    // large controls.
+    AppButton {
+        objectName: "bigButtonsOpen"
+        Layout.fillWidth: true
+        text: qsTr("Big buttons")
+        focusPolicy: Qt.NoFocus
+        onClicked: Engine.bigButtons = true
+    }
+    Label {
+        Layout.fillWidth: true
+        text: qsTr("Large − and + by the tuning step, the step and PTT on one screen: in the car (mounted, used as the law allows), with gloves or at a glance. Hold Exit to leave.")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.WordWrap
+    }
+
     // Band plan strip along the bottom of the spectrum.
     Label { text: qsTr("Band plan"); color: Theme.textDim; font.pixelSize: Theme.px(16) }
     Flow {

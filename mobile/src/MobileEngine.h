@@ -236,6 +236,9 @@ class MobileEngine : public QObject {
     // control), pairing (Bluetooth pairing offered here), onMac, functions
     // [{id, name, category, source, tx}] and import (the last import's result).
     Q_PROPERTY(QVariantMap midi READ midi NOTIFY midiChanged)
+    // Big buttons (roadmap 55): the operating page covered by a few large
+    // controls (tune down / up by the step, the step, PTT); this session only.
+    Q_PROPERTY(bool bigButtons READ bigButtons WRITE setBigButtons NOTIFY bigButtonsChanged)
     // The last MIDI message, e.g. "CC 100 = 65" (its own signal: a knob
     // turning sends tens a second).
     Q_PROPERTY(QString midiActivity READ midiActivity NOTIFY midiActivityChanged)
@@ -1393,6 +1396,8 @@ public:
     Q_INVOKABLE void agcAutoPress();
     QVariantMap midi() const;
     QString midiActivity() const { return m_midiActivity; }
+    bool bigButtons() const { return m_bigButtons; }
+    void setBigButtons(bool on);
     // Radio Setup › MIDI lists the ports again while it is shown.
     Q_INVOKABLE void midiRefresh();
     Q_INVOKABLE void midiOpen(const QString& port);
@@ -1885,6 +1890,7 @@ signals:
     void appSetupsChanged();
     void agcAutoChanged();
     void midiChanged();
+    void bigButtonsChanged();
     void midiActivityChanged();
     void txFilterChanged();
     void eqChanged();
@@ -2333,6 +2339,7 @@ private:
     bool m_midiDah{false};
     // A transmission MIDI keyed is under way: ended when the controller goes.
     bool m_midiKeyed{false};
+    bool m_bigButtons{false};
     // Auto AGC-T (MobileEngineAgcAuto.cpp).
     void setupAgcAuto();
     void bindAgcAutoSlice();

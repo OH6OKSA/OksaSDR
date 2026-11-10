@@ -598,6 +598,22 @@ a swipe up or down on a slider moves it one step, sent at once.
 Tuning with the screen reader, and dialogs and panels that keep the
 screen reader inside them, are still to come.
 
+### Big buttons
+
+**View › Big buttons** (or **⋯** → *Big buttons* on a phone) covers the
+main screen with a few large controls, for the car (the device mounted,
+used as the law allows), gloves or a glance (asked by Michael Walker):
+the frequency and mode large, the S meter as a bar, **−** and **+** that
+tune one step a tap (held, they repeat), **Step** (a tap takes the next
+step, after the largest the smallest) and **PTT** across the bottom,
+which works as the main screen's (hold to talk in the voice modes, KEY in
+CW, the transmit lock). A keyboard's Space and a Bluetooth PTT button key
+there too, and the arrows tune. Hold **Exit** to leave; a tap only says
+so. With a MIDI controller's knob ([Radio Setup › MIDI](#9-radio-setup))
+the tuning needs no look at the screen.
+
+![Big buttons](manual/big-buttons.jpg)
+
 ### Network quality
 
 The dot in the top row (with the app's CPU and memory next to it) rates the connection as the desktop AetherSDR does —
@@ -1277,7 +1293,7 @@ seven.
     decoder keeps listening with the app in the background: `[away 20:55]`
     and `[back 21:12]` mark what came while you were away. A callsign the decoder hears after *DE*, or twice, is
     offered above the memories (*Call*) and on the Log tab (*Heard in CW*).
-- **View** — **Band plan** (the strip at the foot of the spectrum: *Off*,
+- **View** — **Big buttons** (see [Big buttons](#big-buttons)), **Band plan** (the strip at the foot of the spectrum: *Off*,
   *ARRL (US)*, *IARU Region 1 / 2 / 3*, *RAC (Canada)* or *SSA
   (Sweden)*), **Band plan lock (mode)** (see
   [Band plan lock](#band-plan-lock)), **Felt taps (phones)** (on / off, see

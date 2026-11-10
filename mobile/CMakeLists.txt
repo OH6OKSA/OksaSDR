@@ -134,6 +134,7 @@ qt_add_qml_module(aether-mobile
         qml/NetworkBadge.qml
         qml/NetworkDialog.qml
         qml/RadioSetupPage.qml
+        qml/BigButtonsView.qml
         qml/SetupSuggestion.qml
         qml/AddressDialog.qml
         qml/Caret.qml

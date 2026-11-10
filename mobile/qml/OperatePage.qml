@@ -238,6 +238,7 @@ Page {
                     MenuItem { text: qsTr("Radio Setup"); onTriggered: radioSetup.open() }
                     MenuItem { text: qsTr("Manual"); onTriggered: Qt.openUrlExternally(Engine.manualUrl) }
                     MenuItem { text: qsTr("Log"); onTriggered: logPage.open() }
+                    MenuItem { text: qsTr("Big buttons"); onTriggered: Engine.bigButtons = true }
                     MenuItem { text: qsTr("Disconnect"); onTriggered: Engine.disconnectRadio() }
                 }
             }
@@ -569,6 +570,28 @@ Page {
         }
     }
 
+    // Big buttons (roadmap 55) over the whole page, which keeps the keyboard
+    // (Space and a Bluetooth PTT button key, the arrows tune).
+    BigButtonsView {
+        anchors.fill: parent
+        z: 100
+        visible: Engine.bigButtons
+        formatMhz: page.formatMhz
+        marginLeft: page.SafeArea.margins.left
+        marginRight: page.SafeArea.margins.right
+        marginTop: page.SafeArea.margins.top
+        marginBottom: page.SafeArea.margins.bottom
+    }
+    Connections {
+        target: Engine
+        function onBigButtonsChanged() {
+            if (Engine.bigButtons) {
+                controlsDrawer.close()
+                macrosPanel.close()
+            }
+            page.forceActiveFocus()
+        }
+    }
     LogPage { id: logPage }
     NetworkDialog { id: networkDialog }
     RadioSetupPage { id: radioSetup }

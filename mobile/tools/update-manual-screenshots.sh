@@ -46,7 +46,7 @@ tabs=(dsp audio tx essb cw view profiles memory log digi freedv rtty)
 # overview. The modes run's segments (one per mode) run only when wanted.
 ipad_shots=(overview infopanel slicerow spectrum filter agc antenna mode frequency step volume split
             network setup tnf noslice tx-meters meter)
-phone_shots=(phone-portrait phone-menu memory-edit log-page ft8-hound)
+phone_shots=(phone-portrait phone-menu memory-edit log-page ft8-hound big-buttons)
 for t in "${tabs[@]}"; do phone_shots+=("tab-$t"); done
 modes_shots=(mode-usb mode-cw mode-am mode-fm fm-tx tx-lock mode-rtty rtty-panel tab-rtty digi-operating mode-psk)
 amp_shots=(tab-amp amp-controls amp-confirm amp-tune setup-amp setup-txband setup-rx setup-usb meter-amp)
@@ -192,6 +192,10 @@ if want "${phone_shots[@]}"; then
             [ "${tabs[$i]}" = rtty ] && continue
             if want "tab-${tabs[$i]}"; then printf 'drawer %s\nshot tab-%s\n' "$i" "${tabs[$i]}"; fi
         done
+        # Big buttons from the View tab, as the user opens it; held Exit leaves.
+        if want big-buttons; then
+            printf 'drawer 5\ntapname bigButtonsOpen\nwait 1500\nshot big-buttons\nholdname bigExit\nwait 1200\n'
+        fi
         # Hound on (it starts decoding), then off and decoding off again.
         if want ft8-hound; then
             printf 'drawer 9\ntapname digiHound\nwait 2500\nshot ft8-hound\ntapname digiHoundOff\nwait 800\ntapname digiDecode\nwait 1500\n'
@@ -386,6 +390,7 @@ fi
 jpg connect "" 900x
 jpg overview "" 1100x
 jpg phone-portrait
+jpg big-buttons "" 330x
 jpg phone-landscape
 if [ -f "$TMP/overview.png" ]; then
     cp "$TMP/overview.png" "$TMP/infopanel.png"
