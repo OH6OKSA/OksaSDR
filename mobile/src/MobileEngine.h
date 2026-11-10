@@ -14,6 +14,8 @@
 #include "models/TxController.h"
 
 #include <QHash>
+
+#include <functional>
 #include <QSet>
 #include <QObject>
 #include <QPointer>
@@ -52,6 +54,7 @@ class PanadapterModel;
 class RadioDiscoverySource;
 class SliceModel;
 class AgcTCalibrator;
+class MidiControlManager;
 class CtyDatParser;
 struct CallsignInfo;
 struct PcmFrame;
@@ -227,6 +230,15 @@ class MobileEngine : public QObject {
     // measurement (measuring, progress 0-100), with a note for the AGC panel
     // and the value remembered for this band and mode group (-1 none).
     Q_PROPERTY(QVariantMap agcAuto READ agcAuto NOTIFY agcAutoChanged)
+    // A MIDI controller (roadmap 54: Lynovation's CTR2-MIDI over Bluetooth or
+    // USB): supported, ports, port (the open one), lastDevice, autoConnect,
+    // transmit (TX from MIDI allowed), learning (the function waiting for a
+    // control), pairing (Bluetooth pairing offered here), onMac, functions
+    // [{id, name, category, source, tx}] and import (the last import's result).
+    Q_PROPERTY(QVariantMap midi READ midi NOTIFY midiChanged)
+    // The last MIDI message, e.g. "CC 100 = 65" (its own signal: a knob
+    // turning sends tens a second).
+    Q_PROPERTY(QString midiActivity READ midiActivity NOTIFY midiActivityChanged)
     // RF gain (preamp/attenuator) of the shown panadapter, in its own steps.
     Q_PROPERTY(int rfGain READ rfGain WRITE setRfGain NOTIFY rfGainChanged)
     Q_PROPERTY(int rfGainLow READ rfGainLow NOTIFY rfGainChanged)
@@ -1379,6 +1391,25 @@ public:
     // The AGC panel's Auto: the radio's Auto on / off, or the app's
     // measurement started (pressed again: stopped, AGC-T put back).
     Q_INVOKABLE void agcAutoPress();
+    QVariantMap midi() const;
+    QString midiActivity() const { return m_midiActivity; }
+    // Radio Setup › MIDI lists the ports again while it is shown.
+    Q_INVOKABLE void midiRefresh();
+    Q_INVOKABLE void midiOpen(const QString& port);
+    Q_INVOKABLE void midiClose();
+    // Learn: the next control moved or pressed on the controller is bound to
+    // this function (a knob on the VFO as a relative one).
+    Q_INVOKABLE void midiLearn(const QString& paramId);
+    Q_INVOKABLE void midiCancelLearn();
+    Q_INVOKABLE void midiUnbind(const QString& paramId);
+    Q_INVOKABLE void midiClearAll();
+    // A SmartSDR ".map" (Lynovation's files for SmartSDR for iOS / macOS) or
+    // the desktop's XML profile; replaces the bindings.
+    Q_INVOKABLE void midiImport(const QUrl& url);
+    // iPhone / iPad: iOS's Bluetooth MIDI pairing sheet.
+    Q_INVOKABLE void midiPair();
+    Q_INVOKABLE void setMidiAutoConnect(bool on);
+    Q_INVOKABLE void setMidiTransmit(bool on);
     // The display's noise floor (SpectrumItem.noiseFloorDbm): the
     // measurement's quiet-spot check compares the S meter with it.
     Q_INVOKABLE void noteSpectrumFloor(double dbm);
@@ -1853,6 +1884,8 @@ signals:
     void profilesChanged();
     void appSetupsChanged();
     void agcAutoChanged();
+    void midiChanged();
+    void midiActivityChanged();
     void txFilterChanged();
     void eqChanged();
     void cwMemoriesChanged();
@@ -2276,6 +2309,30 @@ private:
     QString m_radeRxCallsign;
     // FreeDV Reporter (MobileEngineFreeDv.cpp).
     void setupFreeDv();
+    // MIDI controller (MobileEngineMidi.cpp).
+    void setupMidi();
+    void registerMidiFunctions();
+    void midiAction(const QString& paramId, float value);
+    void midiTune(int steps);
+    void midiWatch();
+    void midiSaveBindings();
+    bool midiTransmitRefused();
+    void midiEndTransmit(const QString& why);
+    AetherSDR::MidiControlManager* m_midi{nullptr};
+    QHash<QString, std::function<void(float)>> m_midiActions;
+    QSet<QString> m_midiTxFunctions;
+    QTimer m_midiWatchTimer;
+    QTimer m_midiTuneIdle;
+    QTimer m_midiActivityTimer;
+    double m_midiTuneTargetMhz{-1.0};
+    QStringList m_midiPorts;
+    QString m_midiActivity;
+    QString m_midiActivityPending;
+    QVariantMap m_midiImport;
+    bool m_midiDit{false};
+    bool m_midiDah{false};
+    // A transmission MIDI keyed is under way: ended when the controller goes.
+    bool m_midiKeyed{false};
     // Auto AGC-T (MobileEngineAgcAuto.cpp).
     void setupAgcAuto();
     void bindAgcAutoSlice();

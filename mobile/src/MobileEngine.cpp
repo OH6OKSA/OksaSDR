@@ -1,4 +1,8 @@
 #include "MobileEngine.h"
+
+#ifdef HAVE_MIDI
+#include "core/MidiControlManager.h"
+#endif
 #include "TextScale.h"
 #include "core/PgxlConnection.h"
 #include <QFile>
@@ -534,6 +538,7 @@ MobileEngine::MobileEngine(QObject* parent)
     setupDxCluster();
     setupFreeDv();
     setupAgcAuto();
+    setupMidi();
     // Network changes in the log (Wi-Fi <-> mobile data, offline): a remote
     // session that drops can then be told apart from the network switching
     // under it.
@@ -1304,6 +1309,13 @@ MobileEngine::MobileEngine(QObject* parent)
 MobileEngine::~MobileEngine()
 {
     s_instance = nullptr;
+    // The MIDI controller first: closing its port ends what it keyed, which
+    // must not reach members already gone.
+    if (m_midi) {
+        m_midi->disconnect(this);
+        delete m_midi;
+        m_midi = nullptr;
+    }
     // Their workers call into the audio engine, which goes below.
     m_cwxLocalKeyer.reset();
     m_iambicKeyer.reset();

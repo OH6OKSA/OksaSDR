@@ -2047,6 +2047,38 @@ radio.
 
   ![Radio Setup › USB](manual/setup-usb.jpg)
 
+- **MIDI** — not a setting of the radio: a MIDI controller as a VFO knob
+  and buttons on this device, such as Lynovation's **CTR2-MIDI** (asked by
+  Hanno Vogels DK3HV and Michael Walker). On an iPhone, iPad or Mac;
+  Android comes later.
+  - **Controller**: the MIDI devices this device sees; tap one to use it
+    (tap it again to let it go). A Bluetooth controller is paired first:
+    on an iPhone or iPad with **Pair a Bluetooth MIDI controller…** (iOS's
+    own sheet: tap the controller, then *Done*), on a Mac in Audio MIDI
+    Setup. A USB controller shows when plugged in. **Connect to it by
+    itself** opens the last one used whenever it is there (the CTR2 once
+    it is switched on). **Last message** shows what the controller sent,
+    e.g. *CC 100 = 65, channel 1*.
+  - **Functions**: tap **Learn** by a function, then turn or press the
+    control on the controller; a knob learned for the **VFO knob** tunes
+    by the tuning step. **×** clears one, **Clear all** every one.
+    **Import a map…** takes the controller's map for SmartSDR for iOS /
+    macOS (*.map*, as Lynovation ships for the CTR2) or an AetherSDR
+    profile (*.xml*) and replaces the functions; the result names what has
+    no function here. The functions: the VFO knob, step larger / smaller,
+    up / down 1 MHz, zoom in / out, split, band up / down and each band,
+    mode next / previous and each mode, filter wider / narrower, slice
+    volume, mute, AGC-T, NB, NR, ANF, RF power, CW speed, MOX, TUNE, ATU,
+    PTT (hold), the CW paddles (dit, dah) and the straight key.
+  - **Transmit from the controller** is **Off** until turned on (it asks
+    first). While off, the controller's PTT, MOX, TUNE, ATU and CW paddles
+    do nothing, so a stray press does not key the radio. A transmission
+    the controller started ends when the controller goes (switched off or
+    out of range). The app's own rules apply: PTT is for voice, as the PTT
+    button.
+
+  ![Radio Setup › MIDI](manual/setup-midi.jpg)
+
 **A new radio.** When the app connects to a radio that has no callsign yet —
 a new or reset radio — it offers *Set up* once, a few seconds after
 connecting. *Later* skips it; Setup stays in the top row either way. A radio

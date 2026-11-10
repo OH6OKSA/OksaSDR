@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import AetherMobile
 
@@ -342,15 +343,16 @@ Popup {
             Label { text: qsTr("Radio Setup"); color: Theme.text; font.pixelSize: Theme.px(22); font.bold: true; Layout.fillWidth: true }
             AppButton { text: qsTr("Close"); focusPolicy: Qt.NoFocus; onClicked: setup.close() }
         }
-        // Nine in a row where each gets 84 px ("Phone/CW" whole), else 5 + 4,
-        // 3 + 3 + 3 on the narrowest.
+        // Ten in a row where each gets 84 px ("Phone/CW" whole), else 5 + 5,
+        // 3 + 3 + 3 and MIDI across on the narrowest.
         GridLayout {
+            id: setupTabs
             Layout.fillWidth: true
-            columns: width >= 9 * 84 ? 9 : width >= 5 * 68 ? 5 : 3
+            columns: width >= 10 * 84 ? 10 : width >= 5 * 68 ? 5 : 3
             columnSpacing: 4
             rowSpacing: 4
             Repeater {
-                model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("RX"), qsTr("Network"), qsTr("XVTR"), qsTr("Amp"), qsTr("USB")]
+                model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("RX"), qsTr("Network"), qsTr("XVTR"), qsTr("Amp"), qsTr("USB"), qsTr("MIDI")]
                 delegate: AppButton {
                     required property int index
                     required property string modelData
@@ -360,12 +362,14 @@ Popup {
                     focusPolicy: Qt.NoFocus
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
+                    Layout.columnSpan: index === 9 && setupTabs.columns === 3 ? 3 : 1
                     onClicked: setup.section = index
                 }
             }
         }
         PageScroll {
             id: scroll
+            objectName: "setupScroll"
             Layout.fillWidth: true
             Layout.fillHeight: true
             // The description scrolls with the settings: above the tabs it
@@ -381,6 +385,8 @@ Popup {
                     Layout.fillWidth: true
                     text: setup.section === 7
                           ? qsTr("The amplifier is not a setting of the radio: this device reaches it directly, and the address stays on this device.")
+                          : setup.section === 9
+                          ? qsTr("The MIDI controller is not a setting of the radio: it connects to this device, and its settings stay on this device.")
                           : qsTr("These are the radio's own settings, as in SmartSDR's Radio Setup: changes are written to the radio.")
                     color: Theme.textDim
                     font.pixelSize: Theme.px(13)
@@ -1743,6 +1749,215 @@ Popup {
                                                       qsTr("The radio drops this cable's settings; plugged in again, it starts unconfigured."),
                                                       () => Engine.removeUsbCable(setup.usbSn), qsTr("Forget"))
                         }
+                    }
+                }
+
+                // ---- MIDI: a MIDI controller as a VFO knob and buttons
+                // (roadmap 54: Lynovation's CTR2-MIDI), on this device ----
+                ColumnLayout {
+                    id: midiTab
+                    readonly property var m: Engine.midi
+                    // A controller switched on or paired shows while the tab is open.
+                    Timer {
+                        interval: 2000
+                        repeat: true
+                        triggeredOnStart: true
+                        running: setup.opened && setup.section === 9 && !!midiTab.m.supported
+                        onTriggered: Engine.midiRefresh()
+                    }
+                    // The functions in the engine's order, by category.
+                    readonly property var groups: {
+                        const out = []
+                        for (const f of (m.functions || [])) {
+                            if (out.length === 0 || out[out.length - 1].name !== f.category)
+                                out.push({ name: f.category, items: [] })
+                            out[out.length - 1].items.push(f)
+                        }
+                        return out
+                    }
+                    spacing: Theme.spacing / 2
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("A MIDI controller as a VFO knob and buttons, such as Lynovation's CTR2-MIDI, over Bluetooth or a USB cable. Choose it below, then give each function a knob or button with Learn, or import the controller's map for SmartSDR (.map) or AetherSDR (.xml).")
+                        color: Theme.textDim
+                        font.pixelSize: Theme.px(12)
+                        wrapMode: Text.WordWrap
+                    }
+                    Label {
+                        objectName: "midiUnsupported"
+                        visible: !midiTab.m.supported
+                        Layout.fillWidth: true
+                        text: qsTr("MIDI controllers come to Android in a later build. On an iPhone, iPad or Mac they work now.")
+                        color: Theme.text
+                        font.pixelSize: Theme.px(15)
+                        wrapMode: Text.Wrap
+                    }
+                    ColumnLayout {
+                        visible: !!midiTab.m.supported
+                        Layout.fillWidth: true
+                        spacing: Theme.spacing / 2
+                        Heading { text: qsTr("Controller") }
+                        Label {
+                            objectName: "midiNone"
+                            visible: (midiTab.m.ports || []).length === 0
+                            Layout.fillWidth: true
+                            text: midiTab.m.onMac ? qsTr("No MIDI controller. Pair a Bluetooth one in the Mac's Audio MIDI Setup, or plug in a USB one.")
+                                  : midiTab.m.pairing ? qsTr("No MIDI controller. Pair a Bluetooth one, or plug in a USB one.")
+                                  : qsTr("No MIDI controller found.")
+                            color: Theme.text
+                            font.pixelSize: Theme.px(15)
+                            wrapMode: Text.Wrap
+                        }
+                        Flow {
+                            Layout.fillWidth: true
+                            spacing: 4
+                            Repeater {
+                                model: midiTab.m.ports || []
+                                delegate: AppButton {
+                                    required property string modelData
+                                    required property int index
+                                    objectName: "midiPort_" + modelData.split(":")[0].replace(/[^A-Za-z0-9]/g, "")
+                                    // ALSA adds ":port client:port" (the desktop build).
+                                    text: modelData.split(":")[0]
+                                    checked: midiTab.m.port === modelData
+                                    leftPadding: 12
+                                    rightPadding: 12
+                                    focusPolicy: Qt.NoFocus
+                                    // The open one again closes it.
+                                    onClicked: checked ? Engine.midiClose() : Engine.midiOpen(modelData)
+                                }
+                            }
+                        }
+                        AppButton {
+                            objectName: "midiPair"
+                            visible: !!midiTab.m.pairing
+                            text: qsTr("Pair a Bluetooth MIDI controller…")
+                            focusPolicy: Qt.NoFocus
+                            onClicked: Engine.midiPair()
+                        }
+                        Info { label: qsTr("Last message"); value: Engine.midiActivity }
+                        OnOff {
+                            objectName: "midiAuto"
+                            label: qsTr("Connect to it by itself")
+                            on: !!midiTab.m.autoConnect
+                            onToggled: (v) => Engine.setMidiAutoConnect(v)
+                        }
+                        OnOff {
+                            objectName: "midiTransmit"
+                            label: qsTr("Transmit from the controller")
+                            on: !!midiTab.m.transmit
+                            onToggled: (v) => v ? setup.setRisky(qsTr("Transmit from the MIDI controller?"),
+                                                                 qsTr("Its PTT, MOX, TUNE, ATU and CW paddle buttons will key the radio, as the app's own buttons do."),
+                                                                 () => Engine.setMidiTransmit(true), qsTr("Allow"))
+                                                : Engine.setMidiTransmit(false)
+                        }
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("Off: the controller's PTT, MOX, TUNE, ATU and CW paddles do nothing, so a stray press does not key the radio. On: they key as the app's own; a transmission the controller started ends when the controller goes.")
+                            color: Theme.textDim
+                            font.pixelSize: Theme.px(12)
+                            wrapMode: Text.WordWrap
+                        }
+                        Heading { text: qsTr("Functions") }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            AppButton {
+                                objectName: "midiImport"
+                                text: qsTr("Import a map…")
+                                focusPolicy: Qt.NoFocus
+                                Layout.fillWidth: true
+                                onClicked: midiImportDialog.open()
+                            }
+                            AppButton {
+                                objectName: "midiClearAll"
+                                enabled: (midiTab.m.bound || 0) > 0
+                                text: qsTr("Clear all")
+                                focusPolicy: Qt.NoFocus
+                                Layout.fillWidth: true
+                                onClicked: setup.setRisky(qsTr("Clear every function?"),
+                                                          qsTr("The controller's knobs and buttons do nothing until learned or imported again."),
+                                                          () => Engine.midiClearAll(), qsTr("Clear"))
+                            }
+                        }
+                        Label {
+                            objectName: "midiImportResult"
+                            readonly property var r: midiTab.m.import || ({})
+                            visible: text.length > 0
+                            Layout.fillWidth: true
+                            text: r.error ? qsTr("Not imported: %1").arg(r.error)
+                                  : r.name ? ((r.skipped || []).length > 0
+                                              ? qsTr("%1: %2 functions; not here: %3").arg(r.name).arg(r.imported).arg(r.skipped.join(", "))
+                                              : qsTr("%1: %2 functions").arg(r.name).arg(r.imported))
+                                  : ""
+                            color: r.error ? Theme.warning : Theme.textDim
+                            font.pixelSize: Theme.px(12)
+                            wrapMode: Text.WordWrap
+                        }
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("Learn, then turn or press the control on the controller. A knob learned for the VFO tunes by the step.")
+                            color: Theme.textDim
+                            font.pixelSize: Theme.px(12)
+                            wrapMode: Text.WordWrap
+                        }
+                        Repeater {
+                            model: midiTab.groups
+                            delegate: ColumnLayout {
+                                id: midiGroup
+                                required property var modelData
+                                Layout.fillWidth: true
+                                spacing: 4
+                                Heading { text: midiGroup.modelData.name }
+                                Repeater {
+                                    model: midiGroup.modelData.items
+                                    delegate: RowLayout {
+                                        id: midiRow
+                                        required property var modelData
+                                        readonly property bool learning: midiTab.m.learning === modelData.id
+                                        Layout.fillWidth: true
+                                        Label {
+                                            text: midiRow.modelData.name
+                                            color: Theme.text
+                                            font.pixelSize: Theme.px(15)
+                                            Layout.fillWidth: true
+                                            wrapMode: Text.Wrap
+                                        }
+                                        Label {
+                                            text: midiRow.learning ? qsTr("move it…") : (midiRow.modelData.source || "–")
+                                            color: midiRow.learning ? Theme.warning : Theme.textDim
+                                            font.pixelSize: Theme.px(13)
+                                        }
+                                        AppButton {
+                                            objectName: "midiLearn_" + midiRow.modelData.id.replace(/[^A-Za-z0-9]/g, "")
+                                            text: midiRow.learning ? qsTr("Cancel") : qsTr("Learn")
+                                            checked: midiRow.learning
+                                            focusPolicy: Qt.NoFocus
+                                            Layout.preferredWidth: 76
+                                            onClicked: midiRow.learning ? Engine.midiCancelLearn() : Engine.midiLearn(midiRow.modelData.id)
+                                        }
+                                        AppButton {
+                                            objectName: "midiUnbind_" + midiRow.modelData.id.replace(/[^A-Za-z0-9]/g, "")
+                                            text: "×"
+                                            enabled: (midiRow.modelData.source || "").length > 0
+                                            focusPolicy: Qt.NoFocus
+                                            Layout.preferredWidth: 44
+                                            onClicked: Engine.midiUnbind(midiRow.modelData.id)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    FileDialog {
+                        id: midiImportDialog
+                        title: qsTr("Import a MIDI map")
+                        fileMode: FileDialog.OpenFile
+                        // iOS and Android: no filter (an unknown type such as
+                        // .map would be greyed out in the system picker); the
+                        // import tells the file by its contents.
+                        nameFilters: Qt.platform.os === "ios" || Qt.platform.os === "android" ? []
+                                     : [qsTr("MIDI maps (*.map *.xml)"), qsTr("All files (*)")]
+                        onAccepted: Engine.midiImport(selectedFile)
                     }
                 }
             }

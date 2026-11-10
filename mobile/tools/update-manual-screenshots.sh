@@ -50,8 +50,9 @@ phone_shots=(phone-portrait phone-menu memory-edit log-page ft8-hound)
 for t in "${tabs[@]}"; do phone_shots+=("tab-$t"); done
 modes_shots=(mode-usb mode-cw mode-am mode-fm fm-tx tx-lock mode-rtty rtty-panel tab-rtty digi-operating mode-psk)
 amp_shots=(tab-amp amp-controls amp-confirm amp-tune setup-amp setup-txband setup-rx setup-usb meter-amp)
+midi_shots=(setup-midi)
 all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${phone_shots[@]}" phone-landscape bandchooser
-           "${modes_shots[@]}" "${amp_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
+           "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
     printf '%s\n' "${all_shots[@]}" | sort -u
     exit 0
@@ -294,6 +295,28 @@ if want "${amp_shots[@]}"; then
     fi
 fi
 
+# Radio Setup › MIDI against a stand-in CTR2-MIDI (ctr2-mock, an ALSA virtual
+# MIDI port on this computer), chosen as the user chooses it; nothing is
+# learned and the stand-in sends nothing. The functions shown are this
+# computer's own MIDI bindings (~/.config/AetherSDR/midi.settings).
+if want "${midi_shots[@]}" && [ "$DRY" = 0 ]; then
+    if [ ! -x "$ROOT/build-mobile/ctr2-mock" ]; then
+        g++ -O2 -D__LINUX_ALSA__ -I"$ROOT/third_party/rtmidi" "$ROOT/mobile/tools/ctr2-mock.cpp" \
+            "$ROOT/third_party/rtmidi/RtMidi.cpp" -lasound -lpthread -o "$ROOT/build-mobile/ctr2-mock" 2>/dev/null
+    fi
+    "$ROOT/build-mobile/ctr2-mock" sleep:240000 >"$TMP/ctr2-mock.log" 2>&1 &
+    ctr2=$!
+    sleep 1
+fi
+if want "${midi_shots[@]}"; then
+    printf 'ready\npopup radioSetup\nwait 800\nclick setupTab9\nwait 1500\ntapname midiPort_CTR2MIDI\nwait 1500\nshot setup-midi\n' \
+        | plan midi 440x956 "${src[@]}"
+    if [ "$DRY" = 0 ]; then
+        kill "$ctr2" 2>/dev/null || true
+        wait "$ctr2" 2>/dev/null || true
+    fi
+fi
+
 # The Amp tab with a 4O3A Power Genius XL and Tuner Genius XL: the radio's
 # device status stood in for by the render tool (radiostatus), the devices'
 # direct links by genius-mock.py on this machine. Nothing reaches a device
@@ -410,6 +433,7 @@ jpg setup-amp 418x700+11+40 330x
 jpg setup-txband 418x700+11+40 330x
 jpg setup-rx 418x825+11+40 330x
 jpg setup-usb 418x700+11+40 330x
+jpg setup-midi 418x825+11+40 330x
 jpg amp-controls 440x520+0+436
 jpg amp-confirm 440x420+0+395
 jpg amp-tune 440x432+0+383

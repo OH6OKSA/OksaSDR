@@ -88,6 +88,8 @@
     <string>AetherSDR does not use the camera. The audio library it includes contains camera functions, so iOS requires this notice.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>AetherSDR sends your voice to the radio when you transmit.</string>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>OksaSDR uses Bluetooth only to pair a Bluetooth MIDI controller you choose, such as a VFO knob.</string>
     <key>UIBackgroundModes</key>
     <array>
         <string>audio</string>

@@ -405,6 +405,10 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: sign out of SmartLink at once, while the kept sign-in is being refreshed, and log "
                        "10 s later whether it stayed signed out (roadmap 52). Removes the kept sign-in."));
     parser.addOption(smartLinkSignOutTestOption);
+    const QCommandLineOption midiImportOption(QStringLiteral("midi-import"),
+        QStringLiteral("Development: import this MIDI map (a SmartSDR .map or AetherSDR .xml) 8 s after start, as "
+                       "Radio Setup › MIDI › Import a map does, and log the result."), QStringLiteral("path"));
+    parser.addOption(midiImportOption);
     const QCommandLineOption setStepOption(QStringLiteral("set-step"),
         QStringLiteral("Development: set the tuning step to <hz> 8 s after start, as the STEP chooser does."),
         QStringLiteral("hz"));
@@ -1700,6 +1704,13 @@ int main(int argc, char* argv[])
         const QStringList f = parser.value(spotFilterOption).split(QLatin1Char(','));
         engine.setSpotModes(f.value(0, QStringLiteral("all")));
         engine.setSpotMaxAgeMin(f.value(1, QStringLiteral("0")).toInt());
+    }
+    if (parser.isSet(midiImportOption)) {
+        const QString path = parser.value(midiImportOption);
+        QTimer::singleShot(8000, &app, [&engine, path] {
+            engine.midiImport(QUrl::fromLocalFile(path));
+            qInfo().noquote() << "midi-import:" << engine.midi().value(QStringLiteral("import")).toMap();
+        });
     }
     if (parser.isSet(smartLinkSignOutTestOption)) {
         // The refresh from the kept sign-in starts with the engine; Sign out

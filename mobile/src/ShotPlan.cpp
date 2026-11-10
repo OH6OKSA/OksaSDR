@@ -273,7 +273,8 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         const qreal px = arg.toDouble();
         for (QObject* root : m_qml.rootObjects()) {
             for (QObject* scroll : findNamed(root, QStringLiteral("controlsTabScroll"))
-                                       + findNamed(root, QStringLiteral("pinnedScroll"))) {
+                                       + findNamed(root, QStringLiteral("pinnedScroll"))
+                                       + findNamed(root, QStringLiteral("setupScroll"))) {
                 auto* item = qobject_cast<QQuickItem*>(scroll);
                 auto* flick = qvariant_cast<QObject*>(scroll->property("contentItem"));
                 if (item && item->isVisible() && flick) {

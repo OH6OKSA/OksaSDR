@@ -9,13 +9,12 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Controls > FTx > DXpedition > Hound: work a DXpedition's Fox in FT8 by WSJT-X's rules. Tap the Fox; the app calls it, answers its report and logs its RR73 (thanks Michael AF0F, Gianluca IK6QOO). A nonstandard call (e.g. OH6OKSA) cannot complete a QSO with a WSJT-X Fox; Hound says so.
-- FT8 / FT4 show the Fox's combined messages and contest exchanges (Field Day, RTTY Roundup, EU VHF).
-- The Connect page fits a large text size (thanks Ian VK1HF).
-- From build 162: Auto AGC-T under the AGC-T slider, on every radio.
+- Radio Setup > MIDI: a MIDI controller such as Lynovation's CTR2-MIDI as a VFO knob and buttons, over Bluetooth or USB. Learn each function or import its SmartSDR map; transmitting from it is off until turned on (thanks Hanno DK3HV, Michael Walker). Android later.
+- SmartLink keeps you signed in through a network dropout and signs in again by itself (thanks Ian VK1HF).
+- From build 163: FTx > DXpedition > Hound (thanks Michael AF0F, Gianluca IK6QOO); the Fox's and contest messages in FT8 / FT4.
 
-RECENT (builds 94–160)
-- App setups (thanks Larry W9FLA); Macros > Repeat (thanks Robin Bishop); SNR on the meters (thanks Scott L Stanford); the power in the TX tag.
+RECENT (builds 94–162)
+- Auto AGC-T on every radio; app setups (thanks Larry W9FLA); Macros > Repeat (thanks Robin Bishop); SNR on the meters (thanks Scott L Stanford); the power in the TX tag.
 - The filter centred on a chosen frequency; Log > Send to the developer; NRS up to 50.
 - TUNE restores only what it inhibited; Sound from The radio; the FTx QSO in the Log tab; measured TX power.
 - eSSB tube, EVO, reverb; Amp by maker; first-run hints; felt slider taps.
@@ -37,7 +36,7 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab: decode, drag the red TX band to a free frequency, answer a CQ at low power and check the log. [TX]
 - The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: on a DXpedition's announced frequency, FTx > DXpedition > Hound, tap the Fox and work it at low power. [TX]
+- New: Radio Setup > MIDI with a MIDI controller (Bluetooth or USB).
 - AGC panel > Auto on a clear spot.
 - The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]
 

@@ -49,6 +49,7 @@ qt_add_executable(aether-mobile
     src/MobileEngineLogger32.cpp
     src/MobileEngineSetups.cpp
     src/MobileEngineAgcAuto.cpp
+    src/MobileEngineMidi.cpp
     src/MobileEngineAmp.cpp
     src/MobileEngine4o3a.cpp
     src/MobileEngineDoctor.cpp
@@ -65,23 +66,25 @@ qt_add_executable(aether-mobile
     src/TextScale.h
     src/DeviceId.h
     src/SideKeys.h
+    src/MidiPairing.h
     ${AETHER_MOBILE_RESOURCES}
 )
 if(IOS)
     target_sources(aether-mobile PRIVATE ios/ScreenAwake.mm ios/SecureStore.mm ios/AudioSession.mm ios/ShareText.mm
                                          ios/SideKeys.mm ios/Haptics.mm ios/TextScale.mm
-                                         ios/DeviceId.mm)
+                                         ios/DeviceId.mm ios/MidiPairing.mm)
     target_link_libraries(aether-mobile PRIVATE "-framework Security" "-framework AVFAudio" "-framework GameController"
-                                                "-framework MessageUI")
+                                                "-framework MessageUI" "-framework CoreAudioKit")
 elseif(ANDROID)
     target_sources(aether-mobile PRIVATE android/AndroidJni.h android/ScreenAwake.cpp android/SecureStore.cpp
                                          src/AudioSession.cpp android/ShareText.cpp src/SideKeys.cpp
-                                         android/Haptics.cpp android/TextScale.cpp src/DeviceId.cpp)
+                                         android/Haptics.cpp android/TextScale.cpp src/DeviceId.cpp
+                                         android/MidiPairing.cpp)
     target_include_directories(aether-mobile PRIVATE src)
 else()
     target_sources(aether-mobile PRIVATE src/ScreenAwake.cpp src/SecureStore.cpp src/AudioSession.cpp src/ShareText.cpp
                                          src/SideKeys.cpp src/Haptics.cpp src/TextScale.cpp
-                                         src/DeviceId.cpp)
+                                         src/DeviceId.cpp src/MidiPairing.cpp)
 endif()
 
 # Must precede qt_add_qml_module, which reads it when writing the qmldir.

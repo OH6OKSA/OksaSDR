@@ -110,6 +110,15 @@ goes only to your radio and is not recorded or stored, except the voice
 keyer messages you record yourself, which stay on the device. iOS and
 Android ask for microphone permission first.
 
+## Bluetooth
+
+On an iPhone or iPad the app uses Bluetooth only when you pair a Bluetooth
+MIDI controller (Radio Setup › MIDI › Pair a Bluetooth MIDI controller…),
+through iOS's own pairing sheet; iOS asks for Bluetooth permission first.
+The controller's knob and button messages are read on the device and never
+leave it. The controller's functions and its name are kept in the app's own
+storage on your device.
+
 ## Camera
 
 The app never uses the camera. iOS requires a camera notice because the audio
@@ -170,4 +179,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-11-08 (App setups; Log › Send to the developer)
+Last updated: 2026-11-10 (Bluetooth MIDI controllers; earlier: App setups, Log › Send to the developer)

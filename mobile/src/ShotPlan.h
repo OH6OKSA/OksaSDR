@@ -21,7 +21,7 @@ class MobileEngine;
 //                           (its preview() when it has one)
 //   close                   close every open popup and the controls drawer
 //   drawer TAB              open the controls drawer on tab TAB
-//   scroll PX               scroll the open controls to PX
+//   scroll PX               scroll the open controls (or Radio Setup) to PX
 //   pin I[,J...]            pin these sections in the tablet's panel (the
 //                           operator's choice is put back at the end)
 //   controls visible|hidden show or hide the tablet's controls
