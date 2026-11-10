@@ -21,7 +21,10 @@ Page {
         // radio's own name otherwise pushed out of sight: Mike VA3MW).
         property string detail
         Layout.fillWidth: true
-        implicitHeight: 2 * Theme.touchTarget + (detail.length > 0 ? 18 : 0)
+        // Taller with a large system text size (Android's font size), so the
+        // lines stay inside the card (Ian Gilchrist VK1HF).
+        implicitHeight: Math.max(2 * Theme.touchTarget + (detail.length > 0 ? 18 : 0),
+                                 implicitContentHeight + topPadding + bottomPadding)
         enabled: Engine.connectionState === "idle"
         background: Rectangle {
             color: row.down ? Qt.lighter(Theme.surfaceRaised, 1.3) : Theme.surfaceRaised
@@ -76,11 +79,15 @@ Page {
 
             RowLayout {
                 Layout.fillWidth: true
+                // Smaller to fit beside the version and the buttons: with a
+                // large system text size it ran over the version (Ian VK1HF).
                 Label {
                     text: qsTr("OksaSDR")
                     color: Theme.text
                     font.pixelSize: Theme.px(34)
                     font.bold: true
+                    fontSizeMode: Text.HorizontalFit
+                    minimumPixelSize: 16
                     Layout.fillWidth: true
                 }
                 Label { text: "v" + Engine.appVersion; color: Theme.textDim; font.pixelSize: Theme.px(13) }

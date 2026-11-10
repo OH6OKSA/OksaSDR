@@ -2183,6 +2183,41 @@ void MobileEngine::wireTransmit()
     connect(&dvk, &DvkModel::recordingsLoaded, this, &MobileEngine::dvkChanged);
     connect(&dvk, &DvkModel::licenseRefusedChanged, this, &MobileEngine::dvkChanged);
     connect(&rm, &RadioModel::licenseFeaturesChanged, this, &MobileEngine::dvkChanged);
+    // Each license feature the radio reports goes to the log when it comes
+    // and when it changes (on / off and why: built_in, license_file, plus,
+    // ea), and the subscription, so a tester's log tells what the radio
+    // allows (roadmap 53: the radio's DVK used without SmartSDR+). Not the
+    // radio_id.
+    connect(&rm, &RadioModel::licenseFeaturesChanged, this, [this] {
+        const RadioModel& r = m_session.radioModel();
+        QStringList names = r.licenseFeatureNames();
+        if (names.isEmpty()) {
+            m_loggedLicenseFeatures.clear();
+            return;
+        }
+        names.sort();
+        for (const QString& name : names) {
+            const LicenseFeatureState f = r.licenseFeature(name);
+            const QString state = QStringLiteral("%1 (%2)").arg(f.enabled ? QStringLiteral("on") : QStringLiteral("off"), f.reason);
+            if (m_loggedLicenseFeatures.value(name) != state) {
+                m_loggedLicenseFeatures.insert(name, state);
+                qCInfo(lcMobile).noquote() << "radio license feature" << name << state;
+            }
+        }
+    });
+    connect(&rm, &RadioModel::infoChanged, this, [this] {
+        const RadioModel& r = m_session.radioModel();
+        if (r.licenseSubscription().isEmpty()) {
+            return;
+        }
+        const QString sub = r.licenseExpirationDate().isEmpty()
+                                ? r.licenseSubscription()
+                                : QStringLiteral("%1 until %2").arg(r.licenseSubscription(), r.licenseExpirationDate());
+        if (sub != m_loggedLicenseSubscription) {
+            m_loggedLicenseSubscription = sub;
+            qCInfo(lcMobile).noquote() << "radio license:" << sub;
+        }
+    });
     connect(&dvk, &DvkModel::commandFailed, this, [this](const QString& verb, int id, uint, const QString& message) {
         qCWarning(lcMobile).noquote() << QStringLiteral("DVK %1 slot %2 refused: %3").arg(verb).arg(id).arg(message);
         setLastError(tr("Voice keyer: %1").arg(message));
@@ -8439,6 +8474,7 @@ void MobileEngine::onConnectionStateChanged(bool connected)
     m_connected = connected;
     if (!connected) {
         setMacroRepeat(false);
+        m_loggedLicenseSubscription.clear();
     }
     m_micDefaulted = false;
     m_cwPitchRepaired = false;

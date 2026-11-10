@@ -2019,6 +2019,10 @@ private:
     TxController::Input m_cwxInput;
     bool m_cwxLiveInDecoder{false};
     bool m_dvkRecordingMic{false};
+    // What the log has said of the radio's license features and
+    // subscription, so each is logged once and again on a change.
+    QHash<QString, QString> m_loggedLicenseFeatures;
+    QString m_loggedLicenseSubscription;
     QList<QObject*> m_micCheckHolders;   // shown TX tabs
     bool m_micCheckOpen{false};          // the microphone is open for them
     std::unique_ptr<QsoLog> m_qsoLog;
