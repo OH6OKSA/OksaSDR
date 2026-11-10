@@ -239,6 +239,10 @@ class MobileEngine : public QObject {
     // Big buttons (roadmap 55): the operating page covered by a few large
     // controls (tune down / up by the step, the step, PTT); this session only.
     Q_PROPERTY(bool bigButtons READ bigButtons WRITE setBigButtons NOTIFY bigButtonsChanged)
+    // The built-in demo radio on the Connect page (Ian Gilchrist VK1HF):
+    // shown unless hidden; and the radios on this network besides it.
+    Q_PROPERTY(bool showDemoRadio READ showDemoRadio WRITE setShowDemoRadio NOTIFY showDemoRadioChanged)
+    Q_PROPERTY(int lanRadioCount READ lanRadioCount NOTIFY lanRadiosChanged)
     // The last MIDI message, e.g. "CC 100 = 65" (its own signal: a knob
     // turning sends tens a second).
     Q_PROPERTY(QString midiActivity READ midiActivity NOTIFY midiActivityChanged)
@@ -1398,6 +1402,9 @@ public:
     QString midiActivity() const { return m_midiActivity; }
     bool bigButtons() const { return m_bigButtons; }
     void setBigButtons(bool on);
+    bool showDemoRadio() const;
+    void setShowDemoRadio(bool on);
+    int lanRadioCount() const;
     // Radio Setup › MIDI lists the ports again while it is shown.
     Q_INVOKABLE void midiRefresh();
     Q_INVOKABLE void midiOpen(const QString& port);
@@ -1891,6 +1898,8 @@ signals:
     void agcAutoChanged();
     void midiChanged();
     void bigButtonsChanged();
+    void showDemoRadioChanged();
+    void lanRadiosChanged();
     void midiActivityChanged();
     void txFilterChanged();
     void eqChanged();

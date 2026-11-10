@@ -11,7 +11,7 @@ GETTING STARTED
 NEW IN THIS BUILD
 - Radio Setup > MIDI: a MIDI controller such as Lynovation's CTR2-MIDI as a VFO knob and buttons, over Bluetooth or USB. Learn each function or import its SmartSDR map; TX from it is off until allowed (thanks Hanno DK3HV, Michael Walker). Android later.
 - View > Big buttons: large − / +, the step and PTT on one screen, for the car (mounted), gloves or a glance (thanks Michael Walker).
-- SmartLink keeps you signed in through a network dropout (thanks Ian VK1HF).
+- SmartLink keeps you signed in through a network dropout; the Connect page's Demo hides the demo radio (thanks Ian VK1HF).
 - From build 163: FTx > DXpedition > Hound; the Fox's and contest messages in FT8 / FT4.
 
 RECENT (builds 94–162)
@@ -30,7 +30,6 @@ RECENT (builds 94–162)
 PLEASE TRY
 - Receive on a few bands with zoom, Band and the 3D view.
 - Your connection type: home network, SmartLink or VPN. Disconnect and reconnect; the spectrum and audio should come back.
-- Portrait and landscape; on iPad also Split View.
 - Voice transmit with the device mic or a Bluetooth headset, and tell me how it sounds at the other end. [TX]
 - CW keying, CWX memories (F1–F12 on a keyboard) and the decoder. [TX]
 - The Log tab: log a few contacts, save your QRZ.com account, share the ADIF file.

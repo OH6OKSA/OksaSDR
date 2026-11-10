@@ -437,7 +437,9 @@ The first page lists the ways to reach a radio:
 - **On this network** — FlexRadios found on the local network (on an
   iPhone or iPad, connect by IP address for now). Tap a radio's card, or its
   **Connect ›**, to connect. *AetherSDR Demo* is a built-in receive-only demo radio for trying
-  the app without a radio.
+  the app without a radio; **Demo** on the heading's line hides it
+  (*Hidden*) or shows it again (*Shown*), remembered (thanks Ian Gilchrist
+  VK1HF).
 - **SmartLink (remote)** — sign in with your FlexRadio SmartLink account
   to use your radio from anywhere. The sign-in is kept on this device only
   (the iOS Keychain; on Android, encrypted under a key in the Android

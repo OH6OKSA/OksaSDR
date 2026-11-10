@@ -1226,6 +1226,7 @@ MobileEngine::MobileEngine(QObject* parent)
         AppSettings::instance().setValue(QStringLiteral("AudioCompression"), QStringLiteral("Auto"));
         AppSettings::instance().save();
     }
+    connect(&m_radios, &RadioListModel::countChanged, this, &MobileEngine::lanRadiosChanged);
     wireSmartLink();
     wireCw();
     if (sideKeysAvailable()) {
@@ -9038,6 +9039,33 @@ void MobileEngine::setAfGain(double gain)
 bool MobileEngine::muted() const
 {
     return m_slice && m_slice->audioMute();
+}
+
+bool MobileEngine::showDemoRadio() const
+{
+    return AppSettings::instance().value(QStringLiteral("MobileShowDemoRadio"), QStringLiteral("True")).toString()
+        == QLatin1String("True");
+}
+
+void MobileEngine::setShowDemoRadio(bool on)
+{
+    if (on != showDemoRadio()) {
+        AppSettings::instance().setValue(QStringLiteral("MobileShowDemoRadio"), on ? QStringLiteral("True") : QStringLiteral("False"));
+        AppSettings::instance().save();
+        qCInfo(lcMobile) << "demo radio" << (on ? "shown" : "hidden");
+        emit showDemoRadioChanged();
+    }
+}
+
+int MobileEngine::lanRadioCount() const
+{
+    int n = 0;
+    for (int row = 0; row < m_radios.rowCount(); ++row) {
+        if (m_radios.radioAt(row)->transport != QLatin1String("sim")) {
+            ++n;
+        }
+    }
+    return n;
 }
 
 void MobileEngine::setBigButtons(bool on)

@@ -119,10 +119,32 @@ Page {
             }
 
             // ---- This network ----
-            Label {
-                text: Engine.radios.count > 0 ? qsTr("On this network") : qsTr("Searching this network…")
-                color: Theme.textDim
-                font.pixelSize: Theme.px(17)
+            // The demo radio's switch on the heading's line (Ian Gilchrist
+            // VK1HF), so hiding it adds no row.
+            RowLayout {
+                Layout.fillWidth: true
+                Label {
+                    text: Engine.lanRadioCount > 0 || (Engine.showDemoRadio && Engine.radios.count > 0)
+                          ? qsTr("On this network") : qsTr("Searching this network…")
+                    color: Theme.textDim
+                    font.pixelSize: Theme.px(17)
+                    wrapMode: Text.Wrap
+                    Layout.fillWidth: true
+                }
+                Label {
+                    text: qsTr("Demo")
+                    color: Theme.textDim
+                    font.pixelSize: Theme.px(14)
+                }
+                AppButton {
+                    objectName: "demoRadioShown"
+                    text: Engine.showDemoRadio ? qsTr("Shown") : qsTr("Hidden")
+                    checked: Engine.showDemoRadio
+                    leftPadding: 10
+                    rightPadding: 10
+                    focusPolicy: Qt.NoFocus
+                    onClicked: Engine.showDemoRadio = !Engine.showDemoRadio
+                }
             }
             Repeater {
                 model: Engine.radios
@@ -135,6 +157,7 @@ Page {
                     required property string version
                     required property string transport
                     required property bool inUse
+                    visible: transport !== "sim" || Engine.showDemoRadio
                     title: (nickname.length > 0 ? nickname + " — " : "") + (model.length > 0 ? model : name)
                     subtitle: transport === "sim"
                               ? qsTr("Built-in demo radio (receive only)")
