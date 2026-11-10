@@ -16,10 +16,13 @@ source, UX, or protocol changes.
 ## The icon
 
 The OksaSDR mark (circular green→blue emblem, circuit-trace / rising-arrow
-motif), symbol only, no wordmark, on a white background. Source is a 1024×1024
-raster — there is **no vector (SVG)** yet. If this app is ever published for
-real, commission an SVG: the fine traces in the mark soften at the smallest
-icon sizes, and a vector scales cleanly.
+motif), symbol only, no wordmark, on a white background. The original source
+is a 1024×1024 raster; a **vector (SVG) version now exists** in `source/`
+(see below) — use it as the master for any new or regenerated sizes.
+
+Note: the vector scales cleanly, but the mark itself is detailed. At the
+smallest launcher sizes (≈32–64 px) the fine traces and node circles still
+merge; a simplified small-size variant would be needed to fix that.
 
 ## iOS — DONE (already in the tree)
 
@@ -60,6 +63,13 @@ the ~62dp safe zone, so round / squircle / square masks don't clip it.
 
 ## Source files (`source/`)
 
+- `oksasdr-symbol.svg` — **vector master**, transparent background. Traced
+  from the 1024 raster; two paths (green, blue) with vertical linear
+  gradients (green `#298641`→`#124323`, blue `#1b6fae`→`#1a2552`). The white
+  traces are knock-outs, so on a dark background they show the background
+  colour, not white.
+- `oksasdr-symbol-white.svg` — the same vector on a solid white square
+  (use for iOS masters / anything that must not have alpha)
 - `oksasdr-symbol-1024-white.png` — the mark, white bg, square (icon master)
 - `oksasdr-symbol-foreground-xxxhdpi.png` — transparent mark (adaptive fg)
 - `oksasdr-logo-full.png` — full logo incl. "Oksa Consulting Oy" wordmark,
@@ -69,7 +79,9 @@ the ~62dp safe zone, so round / squircle / square masks don't clip it.
 
 ## Regenerating
 
-All icons were derived from the 1024 raster: shadow halo flattened to white,
+Prefer rendering from `source/oksasdr-symbol.svg` (e.g. `rsvg-convert -w
+1024 -h 1024`) for any new size. The existing PNGs were derived from the 1024
+raster: shadow halo flattened to white,
 symbol cropped above the wordmark and centered, then resized per platform.
 The iOS master is white-background RGB (no alpha); the Android foreground is
 the transparent symbol inside the safe zone over a white background layer.
