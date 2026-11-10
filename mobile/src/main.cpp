@@ -261,7 +261,8 @@ int main(int argc, char* argv[])
     const QCommandLineOption ft8TestOption(QStringLiteral("ft8-test"),
         QStringLiteral("Development: 8 s after start tune to 20 m FT8 (or FT4 with ft4; 40 for 40 m, mhz=N for any), "
                        "decode for <s> seconds and log the decodes; with cq also call CQ twice at 10 W; with "
-                       "hound,live,fox=CALL work that Fox as a Hound at 10 W. Frequency, mode, power and the TX "
+                       "hound,live,fox=CALL work that Fox as a Hound at 10 W; with answer=CALL,w=N answer that station's CQ "
+                       "in the normal mode at N W. Frequency, mode, power and the TX "
                        "slice are restored, then the app quits. E.g. 120 or 120,cq or 60,ft4."),
         QStringLiteral("spec"));
     parser.addOption(ft8TestOption);
@@ -2723,6 +2724,41 @@ int main(int argc, char* argv[])
                     qInfo().noquote() << "ft8-test: answering" << list.at(best).toMap().value(QStringLiteral("text")).toString();
                     engine.setRfPower(10);
                     engine.digiAnswer(best);
+                }
+            });
+        }
+        // answer=KH8A,w=50: that station's CQ answered in the normal mode as
+        // a tap on its row does (a DXpedition on MSHV's multi-answer), again
+        // once the app is idle, until the QSO is logged; at w watts (10 if
+        // not given). Each slot logs the app's state and next message.
+        QString dx;
+        int watts = 10;
+        for (const QString& s : spec) {
+            if (s.startsWith(QLatin1String("answer="))) {
+                dx = s.mid(7).toUpper();
+            } else if (s.startsWith(QLatin1String("w="))) {
+                watts = std::clamp(s.mid(2).toInt(), 1, 100);
+            }
+        }
+        if (!dx.isEmpty()) {
+            QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::digiDecodesChanged, &app, [&engine, dx, watts] {
+                const QVariantMap d = engine.digi();
+                const QString status = d.value(QStringLiteral("status")).toString();
+                qInfo().noquote() << "dx-test:" << d.value(QStringLiteral("state")).toString() << "|" << status << "| next"
+                                  << d.value(QStringLiteral("txMsg")).toString();
+                if (d.value(QStringLiteral("state")).toString() != QLatin1String("idle") || status.contains(QLatin1String("logged"))) {
+                    return;
+                }
+                const QVariantList rows = engine.digiDecodes();
+                for (int i = 0; i < rows.size() && i < 40; ++i) {
+                    const QVariantMap r = rows.at(i).toMap();
+                    if (r.value(QStringLiteral("cq")).toBool() && r.value(QStringLiteral("call")).toString() == dx
+                        && r.value(QStringLiteral("utc")) == rows.first().toMap().value(QStringLiteral("utc"))) {
+                        qInfo().noquote() << "dx-test: answering" << r.value(QStringLiteral("text")).toString() << "at" << watts << "W";
+                        engine.setRfPower(watts);
+                        engine.digiAnswer(i);
+                        break;
+                    }
                 }
             });
         }
