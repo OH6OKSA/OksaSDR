@@ -837,9 +837,22 @@ void MobileEngine::setDigiHound(bool on)
             calling = calling || std::abs(slice->frequency() - b.ft8) < 0.0005;
         }
     }
-    setDigiStatus(calling ? tr("Hound on, but this is the FT8 calling frequency: a Fox works on its own announced "
-                               "frequency. Tune there, then tap the Fox's CQ or a message from it.")
-                          : tr("Hound on: tap the Fox's CQ or a message from it to call it."));
+    QString status = calling ? tr("Hound on, but this is the FT8 calling frequency: a Fox works on its own announced "
+                                  "frequency. Tune there, then tap the Fox's CQ or a message from it.")
+                             : tr("Hound on: tap the Fox's CQ or a message from it to call it.");
+    // WSJT-X's Fox queues a nonstandard call ("<C8K> OH6OKSA") and sends it
+    // the report, but finds the Hound of an R report by a call pattern
+    // without brackets (DecodedText::deCallAndGrid), so "C8K <OH6OKSA> R-13"
+    // matches no Hound and the Fox repeats the report until it gives up (C8K
+    // on the air 2026-11-10). A compound call (with "/") is matched by the
+    // Fox's compound loop.
+    const QString my = digiMyCall();
+    if (!Ft8Engine::isStandardCall(my) && !my.contains(QLatin1Char('/'))) {
+        status += QLatin1Char(' ')
+                  + tr("Note: a WSJT-X Fox answers a nonstandard call such as %1 but does not read its R report, so the "
+                       "QSO does not complete.").arg(my);
+    }
+    setDigiStatus(status);
 }
 
 void MobileEngine::setDigiHoundAllHz(bool on)

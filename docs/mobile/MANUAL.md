@@ -253,7 +253,9 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
    the odd slot at 1000 Hz or higher, four times (tap it again to go on);
    when the Fox sends your report, the app answers R+report by itself on
    the Fox's frequency, and the Fox's RR73 logs the QSO. **All Hz** shows
-   the Hounds above 1000 Hz too. Details: [FTx](#8-controls).
+   the Hounds above 1000 Hz too. With a nonstandard call (such as
+   OH6OKSA) a WSJT-X Fox does not complete the QSO. Details:
+   [FTx](#8-controls).
 
    ![Hound on the FTx tab](manual/ft8-hound.jpg)
 
@@ -1593,6 +1595,13 @@ seven.
     Fox's queue may reach you late (WSJT-X answers then too).
   - The Fox's **RR73** (alone or in a combined message) ends the QSO: it is
     logged under the Fox's full call and transmitting stops at once.
+  - **A nonstandard call** (one outside FT8's standard form, such as
+    OH6OKSA with four letters after the digit) cannot complete a QSO with
+    a WSJT-X Fox: the Fox takes your call and sends your report, but it
+    does not read your R+report (*C8K <OH6OKSA> R-13*), so it repeats the
+    report and gives up. WSJT-X sends the same message, so this is the
+    Fox's limit, not the app's (tried on the air with C8K in November
+    2026). Hound says so when turned on with such a call.
   - A Fox works on its own announced frequency, never the FT8 calling
     frequencies; Hound says so when turned on there. It is on for this
     session only, goes off on another band or with FT4, and your own TX Hz

@@ -9,7 +9,7 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Controls > FTx > DXpedition > Hound: work a DXpedition's Fox in FT8 by WSJT-X's rules. Tap the Fox; the app calls it, answers its report and logs its RR73 (thanks Michael AF0F, Gianluca IK6QOO).
+- Controls > FTx > DXpedition > Hound: work a DXpedition's Fox in FT8 by WSJT-X's rules. Tap the Fox; the app calls it, answers its report and logs its RR73 (thanks Michael AF0F, Gianluca IK6QOO). With a nonstandard call (e.g. OH6OKSA) a WSJT-X Fox does not complete the QSO; Hound says so.
 - FT8 / FT4 show the Fox's combined messages and contest exchanges (Field Day, RTTY Roundup, EU VHF).
 - From build 162: Auto AGC-T under the AGC-T slider, on every radio.
 
@@ -38,7 +38,6 @@ PLEASE TRY
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
 - New: on a DXpedition's announced frequency, FTx > DXpedition > Hound, tap the Fox and work it at low power. [TX]
 - AGC panel > Auto on a clear spot.
-- Worked before from Wavelog, the QRZ.com Logbook or a shared ADIF file in iCloud Drive.
 - The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM
