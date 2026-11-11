@@ -1270,7 +1270,8 @@ Popup {
                 // ---- Amp: by manufacturer (the user, 2026-11-05): choose the
                 // maker, which shows only its devices; a maker in use always
                 // shows, and first. RF-KIT's RF2K-S over its REST API, read only
-                // unless Control is on (MobileEngineAmp.cpp); 4O3A's PGXL, TGXL
+                // unless Control is on (MobileEngineAmp.cpp); Elecraft's KPA1500
+                // over its UDP server, read only (MobileEngineKpa.cpp); 4O3A's PGXL, TGXL
                 // (found by the radio, read through it and directly) and
                 // Antenna Genius (MobileEngine4o3a.cpp); kept on this device ----
                 ColumnLayout {
@@ -1278,12 +1279,13 @@ Popup {
                     spacing: Theme.spacing / 2
                     readonly property var inUse: ({
                         "4o3a": !!(Engine.pgxl.present || Engine.tgxl.present || Engine.ag.ip),
+                        "elecraft": !!Engine.kpa.set,
                         "rfkit": !!Engine.amp.set
                     })
                     function shown(maker) { return ampTab.inUse[maker] || Engine.ampMakersShown.indexOf(maker) >= 0 }
                     // In use first, then the order of the row.
                     function rank(maker) {
-                        const order = ["4o3a", "rfkit"]
+                        const order = ["4o3a", "elecraft", "rfkit"]
                         const sorted = order.filter(m => ampTab.inUse[m]).concat(order.filter(m => !ampTab.inUse[m]))
                         return sorted.indexOf(maker)
                     }
@@ -1292,7 +1294,7 @@ Popup {
                         Layout.fillWidth: true
                         spacing: 4
                         Repeater {
-                            model: [{ id: "4o3a", name: "4O3A" }, { id: "rfkit", name: "RF-KIT" }]
+                            model: [{ id: "4o3a", name: "4O3A" }, { id: "elecraft", name: "Elecraft" }, { id: "rfkit", name: "RF-KIT" }]
                             delegate: AppButton {
                                 required property var modelData
                                 objectName: "ampMaker_" + modelData.id
@@ -1308,9 +1310,9 @@ Popup {
                     }
                     Label {
                         Layout.fillWidth: true
-                        text: ampTab.shown("4o3a") || ampTab.shown("rfkit")
-                              ? qsTr("4O3A: Power Genius XL, Tuner Genius XL, Antenna Genius. RF-KIT: RF2K-S. More makers to come (Elecraft, SPE).")
-                              : qsTr("Choose your amplifier's, tuner's or antenna switch's maker to set it up. 4O3A: Power Genius XL, Tuner Genius XL, Antenna Genius. RF-KIT: RF2K-S. More makers to come (Elecraft, SPE).")
+                        text: ampTab.shown("4o3a") || ampTab.shown("elecraft") || ampTab.shown("rfkit")
+                              ? qsTr("4O3A: Power Genius XL, Tuner Genius XL, Antenna Genius. Elecraft: KPA1500. RF-KIT: RF2K-S. More makers to come (SPE).")
+                              : qsTr("Choose your amplifier's, tuner's or antenna switch's maker to set it up. 4O3A: Power Genius XL, Tuner Genius XL, Antenna Genius. Elecraft: KPA1500. RF-KIT: RF2K-S. More makers to come (SPE).")
                         color: Theme.textDim
                         font.pixelSize: Theme.px(12)
                         wrapMode: Text.WordWrap
@@ -1319,6 +1321,78 @@ Popup {
                         columns: 1
                         rowSpacing: Theme.spacing / 2
                         Layout.fillWidth: true
+                        ColumnLayout {
+                            objectName: "ampMakerElecraft"
+                            visible: ampTab.shown("elecraft")
+                            Layout.row: ampTab.rank("elecraft")
+                            Layout.fillWidth: true
+                            spacing: Theme.spacing / 2
+                            DeviceHeading { text: qsTr("Elecraft KPA1500") }
+                            TextSetting {
+                                objectName: "kpaAddress"
+                                label: qsTr("Address  (%1)").arg(Engine.kpa.address || qsTr("not set"))
+                                current: Engine.kpa.address || ""
+                                hint: qsTr("e.g. 192.168.1.70:1500")
+                                upper: false
+                                onSaved: (t) => Engine.setKpaAddress(t)
+                            }
+                            OnOff {
+                                visible: !!Engine.kpa.set
+                                label: qsTr("Read the amplifier")
+                                on: !!Engine.kpa.on
+                                onToggled: (v) => Engine.setKpaOn(v)
+                            }
+                            OnOff {
+                                objectName: "kpaControl"
+                                visible: !!Engine.kpa.set
+                                label: qsTr("Control the amplifier")
+                                on: !!Engine.kpa.control
+                                onToggled: (v) => Engine.setKpaControl(v)
+                            }
+                            Label {
+                                objectName: "kpaSetupState"
+                                visible: !!Engine.kpa.set
+                                Layout.fillWidth: true
+                                text: {
+                                    const a = Engine.kpa
+                                    if (!a.on) return qsTr("Off.")
+                                    if (a.state === "connected")
+                                        return qsTr("Connected: KPA1500%1.").arg(a.firmware ? qsTr(", firmware %1").arg(a.firmware) : "")
+                                               + (!a.control ? ""
+                                                  : a.link === "connected" ? " " + qsTr("Control link connected.")
+                                                  : a.link === "failed" ? " " + qsTr("Control link not connected: %1 (the amplifier takes one TCP connection: Elecraft's KPA1500 Utility may hold it).").arg(a.linkError)
+                                                  : " " + qsTr("Control link connecting…"))
+                                    if (a.state === "failed") return qsTr("Not reached: %1.").arg(a.error)
+                                    if (a.state === "connecting") return qsTr("Connecting…")
+                                    return qsTr("Read while connected to a radio.")
+                                }
+                                color: Engine.kpa.state === "connected"
+                                       ? (Engine.kpa.control && Engine.kpa.link === "failed" ? Theme.warning : "#00cc66")
+                                     : Engine.kpa.state === "failed" ? Theme.transmit : Theme.textDim
+                                font.pixelSize: Theme.px(13)
+                                wrapMode: Text.Wrap
+                            }
+                            AppButton {
+                                visible: !!Engine.kpa.set
+                                text: qsTr("Forget the amplifier")
+                                focusPolicy: Qt.NoFocus
+                                onClicked: Engine.setKpaAddress("")
+                            }
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("The amplifier's network address (its port 1500 unless you set another after a colon). This device reaches it directly, on the same network or over your VPN when away: not through the radio, and not over SmartLink. It is read over the amplifier's UDP server, so its one TCP connection stays free for Elecraft's own software. Once set, Controls gets an Amp tab with what the amplifier reports: forward and reflected power, SWR, drive, temperature, voltage, current, band, antenna, ATU, Operate / Standby and faults. Every meter can show the amplifier's readings too.")
+                                color: Theme.textDim
+                                font.pixelSize: Theme.px(12)
+                                wrapMode: Text.WordWrap
+                            }
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("Control off: read only, nothing is sent that changes the amplifier. Control on: the Amp tab also gets Operate / Standby, the antenna (ANT1 / ANT2), the ATU (in line / bypass and Tune) and the fault clear, over the amplifier's one TCP connection (close Elecraft's KPA1500 Utility if it holds it). Each asks you first, none works while the radio transmits, and the tab shows only what the amplifier reads back.")
+                                color: Theme.textDim
+                                font.pixelSize: Theme.px(12)
+                                wrapMode: Text.WordWrap
+                            }
+                        }
                         ColumnLayout {
                             objectName: "ampMakerRfkit"
                             visible: ampTab.shown("rfkit")
@@ -1836,6 +1910,17 @@ Popup {
                             onClicked: Engine.midiPair()
                         }
                         Info { label: qsTr("Last message"); value: Engine.midiActivity }
+                        // Roadmap 60: a VFO knob that sends a position (a CTR2's
+                        // knob modes 1-3) tunes down both ways; named here, not tuned.
+                        Label {
+                            objectName: "midiVfoPosition"
+                            visible: !!midiTab.m.vfoPosition
+                            Layout.fillWidth: true
+                            text: qsTr("The VFO knob sends a position (CC %1, 0–127), not turns, so the app does not tune with it. On a CTR2 the knob is in one of its modes 1–3: long-press it until the yellow LEDs are off (its Home mode), then Learn the VFO knob again: CC 100.").arg(midiTab.m.vfoPositionCc)
+                            color: Theme.warning
+                            font.pixelSize: Theme.px(13)
+                            wrapMode: Text.WordWrap
+                        }
                         OnOff {
                             objectName: "midiAuto"
                             label: qsTr("Connect to it by itself")

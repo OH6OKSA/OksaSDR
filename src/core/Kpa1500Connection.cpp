@@ -156,8 +156,10 @@ void Kpa1500Connection::onTransportUp()
     m_lastFaultCode = 0;
     m_slowPollIndex = 0;
     qCInfo(lcTuner) << "Kpa1500Connection: connected to" << description();
-    m_pollTimer.start();
-    poll();  // don't make the applet wait a full interval for its first reading
+    if (m_polling) {
+        m_pollTimer.start();
+        poll();  // don't make the applet wait a full interval for its first reading
+    }
     emit connected();
 }
 
@@ -284,6 +286,11 @@ void Kpa1500Connection::cancelTune()
 void Kpa1500Connection::setAtuInline(bool inLine)
 {
     sendRaw(Kpa1500::buildSetAtuInline(inLine));
+}
+
+void Kpa1500Connection::setAtuMode(bool inLine)
+{
+    sendRaw(Kpa1500::buildSetAtuMode(inLine));
 }
 
 void Kpa1500Connection::selectAntenna(int port)

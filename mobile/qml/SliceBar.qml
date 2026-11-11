@@ -129,6 +129,7 @@ RowLayout {
                     // leave a phone's chips about 90 px: the user's OnePlus), only
                     // "TX" last. A tap on the tag opens the power slider.
                     readonly property bool ampOperating: (!!Engine.amp.set && Engine.amp.operate === "OPERATE")
+                                                         || (!!Engine.kpa.set && Engine.kpa.operate === "OPERATE")
                                                          || (!!Engine.pgxl.present && !!Engine.pgxl.operate)
                     readonly property string powerText: Engine.rfPower + (Engine.rfPowerIsPercent ? " %" : " W")
                                                         + (ampOperating ? " AMP" : "")

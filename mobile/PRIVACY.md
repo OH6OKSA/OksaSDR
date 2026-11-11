@@ -85,6 +85,13 @@ these services:
   during a Tune you started. With Control the amplifier on, it also sends
   the changes you confirm there (Operate / Standby, the antenna, an error
   reset, and Standby before a Tune); nothing else is sent to it.
+- **An Elecraft KPA1500**, only if you enter its address in Radio Setup ›
+  Amp: while the app is on screen and connected to a radio it asks the
+  amplifier for its readings and state over the amplifier's UDP server at
+  that address (your own device, on your network or through your VPN).
+  With Control the amplifier on, it also sends the changes you confirm
+  there (Operate / Standby, the antenna, the ATU, its tune and the fault
+  clear) over the amplifier's TCP connection; nothing else is sent to it.
 - **A 4O3A Power Genius XL or Tuner Genius XL** connected to your radio:
   while the app is connected to the radio it reads the device's status
   directly at the address the radio reports (or one you set in Radio Setup
@@ -179,4 +186,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-11-10 (Bluetooth MIDI controllers; earlier: App setups, Log › Send to the developer)
+Last updated: 2026-11-11 (the Elecraft KPA1500; earlier: Bluetooth MIDI controllers, App setups)

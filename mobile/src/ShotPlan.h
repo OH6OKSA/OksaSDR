@@ -50,6 +50,8 @@ class MobileEngine;
 //                           pause / resume its Read the amplifier switch
 //   appstate STATE          the app's state as the system sets it: active, inactive,
 //                           hidden, suspended (background and back)
+//   kpa HOST[:PORT]|off     the KPA1500's address (Radio Setup › Amp › Elecraft); off
+//                           forgets it, pause / resume its Read the amplifier
 //   ampstate                log the Amp tab's link state and readings
 //   amptune start|stop      the Amp tab's Tune as confirmed (a tune carrier for the
 //                           amplifier's tuner) / its Stop

@@ -546,6 +546,16 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         }
         qInfo().noquote() << "shot-plan: amp" << arg;
         *delayMs = 500;
+    } else if (command == QLatin1String("kpa")) {
+        // The KPA1500's address (Radio Setup › Amp › Elecraft); "off"
+        // forgets it, "pause" / "resume" are its Read the amplifier switch.
+        if (arg == QLatin1String("pause") || arg == QLatin1String("resume")) {
+            m_engine.setKpaOn(arg == QLatin1String("resume"));
+        } else {
+            m_engine.setKpaAddress(arg == QLatin1String("off") ? QString() : arg);
+        }
+        qInfo().noquote() << "shot-plan: kpa" << arg;
+        *delayMs = 500;
     } else if (command == QLatin1String("appstate")) {
         // The application state as the system reports it (background and
         // back): active, inactive, hidden or suspended.
@@ -564,6 +574,15 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             parts << it.key() + QLatin1Char('=') + it.value().toString();
         }
         qInfo().noquote() << "shot-plan: amp" << parts.join(QLatin1Char(' '));
+        // And the KPA1500's, when one is set up.
+        const QVariantMap k = m_engine.kpa();
+        if (k.value(QStringLiteral("set")).toBool()) {
+            QStringList kparts;
+            for (auto it = k.cbegin(); it != k.cend(); ++it) {
+                kparts << it.key() + QLatin1Char('=') + it.value().toString();
+            }
+            qInfo().noquote() << "shot-plan: kpa" << kparts.join(QLatin1Char(' '));
+        }
     } else if (command == QLatin1String("amptune")) {
         // start: the Amp tab's Tune as confirmed (the tune carrier for the
         // amplifier's tuner); stop: its Stop.
@@ -1041,7 +1060,8 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         const QVariantMap d = m_engine.qsoDefaults();
         qInfo().noquote() << "shot-plan: qso" << QString::number(d.value(QStringLiteral("freq")).toDouble(), 'f', 6)
                           << d.value(QStringLiteral("mode")).toString() << d.value(QStringLiteral("band")).toString()
-                          << "rst" << d.value(QStringLiteral("rst")).toString() << "| slice"
+                          << "rst" << d.value(QStringLiteral("rst")).toString()
+                          << "power" << d.value(QStringLiteral("power")).toInt() << "| slice"
                           << QString::number(m_engine.frequencyMhz(), 'f', 6) << m_engine.mode();
         *delayMs = 100;
     } else if (command == QLatin1String("logqso")) {

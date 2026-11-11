@@ -9,11 +9,9 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- FTx: a DX working several at once (as KH8A) sends your RR73 inside its message to the next; it now logs the QSO (thanks Ben KT4O).
-- Voice keyer: the radio's own DVK only when the radio reports SmartSDR+ for it, otherwise the app's recordings (thanks Ian VK1HF).
-- MIDI: the log shows what the VFO knob sends.
-- The app icon made again from the vector original: clean at every size.
-- From builds 164–166: the freeze on a turn fixed (thanks Kurt DL5EAG); Big buttons with the slices and two meters (thanks Michael Walker); MIDI controllers (thanks Hanno DK3HV); SmartLink sign-in kept in a dropout; Demo hides the demo radio (thanks Ian VK1HF).
+- Amp: the Elecraft KPA1500 on the Amp tab and every meter; Control on: Operate / Standby, antenna, ATU, Tune, fault clear (thanks Rich N2RY). Experimental: tested only against a simulator; no responsibility for your equipment.
+- MIDI: a VFO knob that sends a position (a CTR2 outside its Home mode) is named, not tuning down (thanks Hanno DK3HV).
+- From builds 164–167: FTx logs a multi-answer DX's RR73 (thanks Ben KT4O); the radio's DVK only with SmartSDR+ (thanks Ian VK1HF); the freeze on a turn fixed (thanks Kurt DL5EAG); Big buttons with the slices and two meters (thanks Michael Walker); MIDI controllers (thanks Hanno DK3HV); a new app icon.
 
 RECENT (builds 94–163)
 - FTx > DXpedition > Hound; the Fox's and contest messages in FT8 / FT4.

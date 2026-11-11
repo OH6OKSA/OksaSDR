@@ -856,11 +856,12 @@ meter, in receive and in transmit, also offers its readings under
 **Amplifier**: *Power* (0-1600 W), *Refl* (0-200 W, red from 2:1 at the
 present power), *SWR* (red from 2:1, – below 1 W), *Temp* (0-100 °C, red
 from 70: the RF2K-S goes to standby at 72 °C), *Volts* (40-60 V) and
-*Current* (0-60 A). The meter names them *Amp Power*, *Amp Temp*… where
+*Current* (0-60 A; 0-70 A for a KPA1500; its *Temp* 0-120 °C, red from
+100: it faults at 112 °C). The meter names them *Amp Power*, *Amp Temp*… where
 there is room and *Amp* where not (the value's unit and the scale tell
 which). Forget the amplifier, and a meter showing one of them goes back
 to its usual reading. A Power Genius XL the radio reports gives these
-readings too when no RF2K-S is set up: Power on 0-2000 W red from 1500,
+readings too when no RF2K-S or KPA1500 is set up: Power on 0-2000 W red from 1500,
 Current on 0-70 A. A Tuner Genius XL adds **Tuner**: *Power* (the power
 through it, 0-2000 W) and *SWR* (red from 2.5, – below 5 W), so the four
 meters can follow the amplifier and the tuner without the Amp tab open.
@@ -1678,7 +1679,7 @@ seven.
   the reports as they are exchanged; the app logs the QSO itself at the
   end, so the Log button there is not needed. **TX power** in the log is
   the last transmission's measured peak (an amplifier's output when a
-  linked PGXL or RF2K-S is in Operate), not the RF power setting. **Halt TX** stops at once. PTT is
+  linked PGXL, RF2K-S or KPA1500 is in Operate), not the RF power setting. **Halt TX** stops at once. PTT is
   hidden while FT8 / FT4 decodes (the app keys the radio itself), and the
   display gets the room. Switching the FT8 slice to a voice or CW mode
   (by hand, or with a band button on a band the radio remembers in LSB /
@@ -1775,8 +1776,8 @@ seven.
   receive settings over the display.
 
 - **Amp** — an RF-KIT **RF2K-S** amplifier, over its own network
-  interface (its REST API), once its address is set in
-  [Radio Setup › Amp](#9-radio-setup). The tab shows what the amplifier
+  interface (its REST API), or an Elecraft **KPA1500** (below), once its
+  address is set in [Radio Setup › Amp](#9-radio-setup). The tab shows what the amplifier
   reports; with **Control the amplifier** on (Radio Setup › Amp, off until
   you turn it on) it also switches Operate / Standby and the antenna and
   resets an error, each after asking you.
@@ -1854,6 +1855,74 @@ seven.
   help here: the RF2K-S takes only the frequency over TCI.
 
   ![Tune asks first](manual/amp-tune.jpg)
+
+  **Elecraft KPA1500** (asked by Rich Yost N2RY): the tab shows what the
+  amplifier reports, and with **Control the amplifier** on (Radio Setup ›
+  Amp, off until you turn it on) it also switches it, each change after
+  asking you. *Experimental: tested only against a simulator so far, not
+  on a real KPA1500. No responsibility is taken for any problems using
+  OksaSDR may cause to your equipment; reports from owners are welcome.* At the top *Elecraft KPA1500* and its state, **OPERATE**
+  (red), **STANDBY** or **POWER OFF** (its main supplies off: only that is
+  read until they are on), and the link (*Read from 192.168.1.70:1500
+  every half second*, or *not reached: no answer* while it does not
+  answer; the app keeps asking). A fault the amplifier reports shows in red
+  right under it with its text and code, e.g. *Amplifier fault:
+  Temperature is too high (40)* (the KPA1500 goes to STANDBY on a fault).
+  Then **Forward**, **Reflected** and **SWR** as for the RF2K-S, the
+  heat sink **Temperature**, the PA's **Voltage** and **Current**, the
+  **Drive** (the radio's power into it; 0 in STANDBY or while its ATU
+  tunes), the **Band**, the **Antenna** (ANT1 or ANT2), the **Tuner** (*In
+  line*, *Bypassed*, *(setting bypassed)* when a tune found the antenna
+  good without it, *Tuning…*) and the **Firmware**. The app reads it over
+  the amplifier's UDP server: the KPA1500 takes only one TCP connection,
+  which stays free for Elecraft's own KPA1500 Utility or a logger while
+  Control is off.
+
+  ![Amp tab with a KPA1500](manual/tab-kpa.jpg)
+
+  **Control** (with Control the amplifier on), over the amplifier's one TCP
+  connection (if Elecraft's KPA1500 Utility or another program holds it,
+  the tab says *Control link not connected* and the app tries again every
+  5 s; close that program):
+  - **Mode** — *Standby* and *Operate*, the present one dark. Operate's
+    question names the radio's power: the KPA1500 gives 1500 W from 50-60
+    W and faults above 65 W in (*Lower it to 50-60 W first* when it is
+    more).
+  - **Antenna** — *ANT1* and *ANT2*, the amplifier's two connectors.
+  - **ATU** — *In line* or *Bypass*, the ATU mode for this band and antenna
+    (as holding ATU MODE on the amplifier).
+  - **Tune** — the ATU's full-search tune: the amplifier starts it and the
+    radio sends its TUNE carrier at the TX tab's Tune power, which must be
+    10-50 W (Elecraft's manual; over 20 W tunes more exactly). The button
+    shows *Stop* and the seconds left; the carrier stops by itself once the
+    amplifier shows the tune done (*The amplifier tuned (SWR 1.20).*), on
+    a fault (*The amplifier's ATU found no match: check the band and
+    antenna.*), when the radio sends more than 55 W, the link drops, on
+    *Stop* or after 20 s (the search is then cancelled). Not while the
+    amplifier shows a fault.
+  - *Clear fault* — clears the amplifier's present fault; a temperature
+    fault clears only as it cools (*The fault is still there…*).
+
+  ![The KPA1500's controls](manual/kpa-controls.jpg)
+
+  Each asks first, as for the RF2K-S, and none works while the radio
+  transmits. The amplifier answers no command, so the tab shows the change
+  once the amplifier reads it back (*The amplifier has not shown the
+  change in 3 s* if it does not). The amplifier stays keyed by its KEY IN
+  cable from the radio (TX1 on a FLEX-6400 / 6500, as Elecraft's Flex
+  guide wires it); the app does not key it over the network.
+
+  Wiring it to the radio, as Elecraft's *Interfacing KPA1500 to Flex
+  6000-series* note, with this app instead of SmartSDR: the phono cable
+  from the radio's keying output (TX on a 6300, TX1-TX3 on a 6400 / 6500,
+  Out1-Out3 on a 6700 / 6800; Radio Setup › Transmit sets its delay) to
+  the amplifier's KEY IN, and an Elecraft KXUSB cable from its PC DATA
+  jack into one of the radio's USB ports for the frequency. Set that
+  cable in [Radio Setup › USB](#9-radio-setup): **Type** *CAT*,
+  **Frequency from** *TX slice*, **auto report** on, speed 38400; and on
+  the amplifier its menu's RADIO TYPE *SERIAL* and SERIAL SPEED XCVR
+  38400. The amplifier then follows the band and picks its ATU setting
+  before you transmit.
 
   **4O3A Power Genius XL and Tuner Genius XL.** A PGXL or TGXL connected to
   the radio shows on the Amp tab by itself: the radio reports it and relays
@@ -2016,9 +2085,19 @@ radio.
 - **Amp** — not a setting of the radio: the amplifier this device reads
   for the [Amp tab](#8-controls) and the meters, kept on this device.
   First **Manufacturer**: tap **4O3A** (Power Genius XL, Tuner Genius XL,
-  Antenna Genius) or **RF-KIT** (RF2K-S) to show its devices; tap again to
-  hide them. A maker whose device is set up reads *· in use*, always shows
-  and comes first. More makers are planned (Elecraft, SPE).
+  Antenna Genius), **Elecraft** (KPA1500) or **RF-KIT** (RF2K-S) to show
+  its devices; tap again to hide them. A maker whose device is set up reads
+  *· in use*, always shows and comes first. More makers are planned (SPE).
+  **Elecraft KPA1500**: its **Address** (the amplifier's IP address or
+  host name, `:port` after it when not 1500) with *Save*; **Read the
+  amplifier** on or off; **Control the amplifier** on or off (off until
+  you turn it on: then nothing that changes the amplifier is ever sent;
+  on: the Amp tab's Mode, Antenna, ATU, Tune and Clear fault, each asking
+  first, over the amplifier's one TCP connection); the link's state
+  (*Connected: KPA1500, firmware 03.08. Control link connected.*);
+  *Forget the amplifier* removes it, the Amp tab and Control. As for the
+  RF2K-S, this device reaches it directly (the same network or your VPN),
+  not through the radio and not over SmartLink.
   **RF-KIT RF2K-S**: its **Address** (the IP address or host name of the
   amplifier's network port, `:port` after it when not 8080) with *Save*;
   **Read the amplifier** on or off; **Control the amplifier** on or off
@@ -2099,7 +2178,13 @@ radio.
     it is switched on). **Last message** shows what the controller sent,
     e.g. *CC 100 = 65, channel 1*. The app's log also gets the VFO knob's
     first messages and steps of each turn, so a log sent with **Log ›
-    Send to the developer** tells how a controller's knob is read.
+    Send to the developer** tells how a controller's knob is read. A knob
+    learned for the VFO that sends a position (0-127, a count a click, as
+    a CTR2's knob does in its modes 1-3) instead of turns is named in
+    orange under Last message (*The VFO knob sends a position…*) and does
+    not tune: on a CTR2, long-press the knob until its yellow LEDs are off
+    (its Home mode, CC 100), then Learn the VFO knob again (thanks Hanno
+    Vogels DK3HV).
   - **Functions**: tap **Learn** by a function, then turn or press the
     control on the controller; a knob learned for the **VFO knob** tunes
     by the tuning step. **×** clears one, **Clear all** every one.

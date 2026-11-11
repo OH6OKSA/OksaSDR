@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include <QStringList>
+
 namespace AetherSDR {
 namespace Kpa1500 {
 
@@ -124,6 +126,40 @@ std::optional<bool> decodeKeyState(const QString& arg)
         return std::nullopt;
     }
     return *n != 0;
+}
+
+// ^VIvvv iii: the PA supply in tenths of a volt and its current in whole
+// amperes, separated by a space (^VI513 061; is 51.3 V at 61 A).
+bool decodeVoltsAmps(const QString& arg, float& volts, int& amps)
+{
+    const QStringList parts = arg.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+    if (parts.size() != 2) {
+        return false;
+    }
+    bool okV = false;
+    bool okA = false;
+    const int tenths = parts.at(0).toInt(&okV);
+    const int a = parts.at(1).toInt(&okA);
+    if (!okV || !okA || tenths < 0 || tenths > 999 || a < 0 || a > 999) {
+        return false;
+    }
+    volts = static_cast<float>(tenths) / 10.0f;
+    amps = a;
+    return true;
+}
+
+// ^RVnn.nn: digits and one dot, nothing else.
+std::optional<QString> decodeVersion(const QString& arg)
+{
+    if (arg.isEmpty() || arg.size() > 8 || arg.count(QLatin1Char('.')) != 1) {
+        return std::nullopt;
+    }
+    for (const QChar c : arg) {
+        if (c != QLatin1Char('.') && !c.isDigit()) {
+            return std::nullopt;
+        }
+    }
+    return arg;
 }
 
 // Assigns and reports whether the value actually moved, so applyMessage()
@@ -288,6 +324,31 @@ bool applyMessage(const Message& message, Status& status)
     if (cmd == QLatin1String("AI")) {
         return assignIfChanged(status.atuInline, decodeBool(arg));
     }
+    // The reference prints the bypassed reply to ^AI; as "^AT0;" (p.13),
+    // almost certainly a typo for ^AI0; (design note §7 #1): taken as that,
+    // and only the 0, so nothing else spelled AT can mean in-line.
+    if (cmd == QLatin1String("AT") && arg == QLatin1String("0")) {
+        return assignIfChanged(status.atuInline, std::optional<bool>(false));
+    }
+    if (cmd == QLatin1String("PWI")) {
+        return assignIfChanged(status.inputWatts, decodeScaled(arg, kPowerDivisor));
+    }
+    if (cmd == QLatin1String("VI")) {
+        float volts = 0.0f;
+        int amps = 0;
+        if (!decodeVoltsAmps(arg, volts, amps)) {
+            return false;
+        }
+        const bool v = assignIfChanged(status.paVolts, std::optional<float>(volts));
+        const bool a = assignIfChanged(status.paAmps, std::optional<int>(amps));
+        return v || a;
+    }
+    if (cmd == QLatin1String("ON")) {
+        return assignIfChanged(status.powerOn, decodeBool(arg));
+    }
+    if (cmd == QLatin1String("RV")) {
+        return assignIfChanged(status.firmware, decodeVersion(arg));
+    }
     if (cmd == QLatin1String("TP")) {
         return assignIfChanged(status.tuning, decodeBool(arg));
     }
@@ -322,6 +383,34 @@ QString bandName(int code)
     return {};
 }
 
+QString faultDescription(int code)
+{
+    // The ^FL table of the Programming Reference V3.
+    switch (code) {
+        case 0x10: return QStringLiteral("Watchdog timer reset");
+        case 0x20: return QStringLiteral("PA current is too high");
+        case 0x40: return QStringLiteral("Temperature is too high");
+        case 0x60: return QStringLiteral("Input power is too high");
+        case 0x61: return QStringLiteral("Gain is too low");
+        case 0x70: return QStringLiteral("Invalid frequency");
+        case 0x80: return QStringLiteral("50 V supply voltage out of range");
+        case 0x81: return QStringLiteral("5 V supply voltage out of range");
+        case 0x82: return QStringLiteral("10 V supply voltage out of range");
+        case 0x83: return QStringLiteral("12 V supply voltage out of range");
+        case 0x84: return QStringLiteral("-12 V supply voltage out of range");
+        case 0x85: return QStringLiteral("5 V or 400 V LPF board supply not detected");
+        case 0x90: return QStringLiteral("Reflected power is too high");
+        case 0x91: return QStringLiteral("SWR is very high (antenna not connected?)");
+        case 0x92: return QStringLiteral("ATU found no match");
+        case 0xB0: return QStringLiteral("Dissipated power is too high");
+        case 0xC0: return QStringLiteral("Forward power is too high");
+        case 0xC1: return QStringLiteral("Forward power is too high for the ATU setting");
+        case 0xF0: return QStringLiteral("Gain is too high");
+        default: break;
+    }
+    return {};
+}
+
 QByteArray buildQuery(const QString& cmd)
 {
     return buildMessage(cmd);
@@ -335,6 +424,11 @@ QByteArray buildSetOperate(bool operate)
 QByteArray buildSetAtuInline(bool inLine)
 {
     return buildMessage(QStringLiteral("AI"), inLine ? QStringLiteral("1") : QStringLiteral("0"));
+}
+
+QByteArray buildSetAtuMode(bool inLine)
+{
+    return buildMessage(QStringLiteral("AM"), inLine ? QStringLiteral("I") : QStringLiteral("B"));
 }
 
 QByteArray buildStartTune()

@@ -40,6 +40,7 @@ class Ft8Engine;
 namespace AetherSDR {
 class AudioEngine;
 class RfkitConnection;
+class Kpa1500Connection;
 class AntennaGeniusModel;
 class DxClusterClient;
 class FreeDvClient;
@@ -65,6 +66,7 @@ struct SpectrumDecodeScale;
 namespace AetherSDR::mobile {
 
 class NtpClock;
+class Kpa1500Reader;
 
 class QsoLog;
 
@@ -234,7 +236,8 @@ class MobileEngine : public QObject {
     // USB): supported, ports, port (the open one), lastDevice, autoConnect,
     // transmit (TX from MIDI allowed), learning (the function waiting for a
     // control), pairing (Bluetooth pairing offered here), onMac, functions
-    // [{id, name, category, source, tx}] and import (the last import's result).
+    // [{id, name, category, source, tx}], import (the last import's result),
+    // vfoPosition (the VFO knob sends a position, not turns) and vfoPositionCc.
     Q_PROPERTY(QVariantMap midi READ midi NOTIFY midiChanged)
     // Big buttons (roadmap 55): the operating page covered by a few large
     // controls (tune down / up by the step, the step, PTT); this session only.
@@ -373,6 +376,17 @@ class MobileEngine : public QObject {
     // tunerSetup, iface, ifaceError, antenna, antennas, antennaList ({label,
     // type, number, state} each). A reading not in yet is absent.
     Q_PROPERTY(QVariantMap amp READ amp NOTIFY ampChanged)
+    // An Elecraft KPA1500 read over its UDP server (MobileEngineKpa.cpp):
+    // set, model ("KPA1500"), device, address, on, control, state, error,
+    // target, pending ("operate", "standby", "ANT2", "atu in", "atu
+    // bypass", "clear"), result / resultOk, tune ("" or "carrier"),
+    // tuneLeft, tunePower as amp's; link / linkError (the TCP control link:
+    // "off", "connecting", "connected", "failed"); once read: fwd, refl (W),
+    // swr, drive (W in), temp (°C), volts, amps, band ("20 m"), antenna
+    // ("ANT1"), atu ("INLINE" / "BYPASS"), tuner, tuning, operate
+    // ("OPERATE" / "STANDBY" / "POWER OFF"), fault (its text and code),
+    // firmware. A reading not in yet is absent.
+    Q_PROPERTY(QVariantMap kpa READ kpa NOTIFY kpaChanged)
     // 4O3A's Power Genius XL and Tuner Genius XL, as the radio reports and
     // relays them and as the app reads them directly (MobileEngine4o3a.cpp).
     Q_PROPERTY(QVariantMap pgxl READ pgxl NOTIFY pgxlChanged)
@@ -1294,6 +1308,23 @@ public:
     Q_INVOKABLE void ampTune();
     Q_INVOKABLE void ampTuneStop();
     QVariantMap amp() const;
+    // The KPA1500's "host" or "host:port" (1500 when not given); empty
+    // forgets it. A new address turns reading on.
+    Q_INVOKABLE void setKpaAddress(const QString& hostPort);
+    Q_INVOKABLE void setKpaOn(bool on);
+    // Commands to the KPA1500 (off by default) over its TCP connection, as
+    // the RF2K-S's: each confirmed on the page first, refused while the
+    // radio transmits, shown only as the amplifier reads it back.
+    Q_INVOKABLE void setKpaControl(bool on);
+    Q_INVOKABLE void kpaSetOperate(bool operate);
+    Q_INVOKABLE void kpaSelectAntenna(int number);
+    Q_INVOKABLE void kpaSetAtu(bool inLine);
+    Q_INVOKABLE void kpaClearFault();
+    // The ATU's full-search tune with the radio's TUNE carrier (10-50 W)
+    // until the amplifier shows it done, 20 s at most.
+    Q_INVOKABLE void kpaTune();
+    Q_INVOKABLE void kpaTuneStop();
+    QVariantMap kpa() const;
     // Opens the share sheet with the log as an ADIF file
     // ("OksaSDR-log-<date>.adi"): mail, Files, AirDrop, a logbook app, or
     // TQSL for LoTW. False when there is nothing to share.
@@ -1802,6 +1833,7 @@ signals:
     void bandPlanChanged();
     void hapticsChanged();
     void ampMakersChanged();
+    void kpaChanged();
     void hintsChanged();
     void hintsRequested();
     void bandPlanRegionChanged();
@@ -2213,6 +2245,45 @@ private:
     bool m_ampTuneSawTuning{false};
     bool m_ampTuneKeyed{false};  // the radio has reported the carrier on
     int m_ampTuneLeftShown{-1};
+    // ---- The KPA1500, read only (MobileEngineKpa.cpp) ----
+    void setupKpa();
+    void updateKpaLink();
+    bool kpaOperating() const;
+    double kpaForwardW() const;
+    bool kpaCommandAllowed(const char* what);
+    void kpaSendPending(const QString& pending, const QString& readback);
+    void checkKpaPending();
+    void kpaCommandDone(const QString& result, bool ok);
+    void checkKpaTune();
+    // cancel: ^FE for a search not seen done (by default when not ok).
+    void endKpaTune(const QString& result, bool ok, int cancel = -1);
+    Kpa1500Reader* m_kpa{nullptr};
+    Kpa1500Connection* m_kpaCtl{nullptr};
+    bool m_kpaCtlWanted{false};
+    QString m_kpaLinkState{QStringLiteral("off")};
+    QString m_kpaLinkError;
+    // A link the amplifier closes at once (its one TCP connection held by
+    // another program): failed, logged once, not as up and lost each retry.
+    QElapsedTimer m_kpaLinkUpClock;
+    bool m_kpaLinkClosedAtOnce{false};
+    QTimer* m_kpaLinkCheck{nullptr};
+    QString m_kpaPending;
+    QString m_kpaResult;
+    bool m_kpaResultOk{false};
+    QTimer* m_kpaPendingTimer{nullptr};
+    QString m_kpaTune;
+    QTimer* m_kpaTuneTimer{nullptr};
+    QElapsedTimer m_kpaTuneClock;
+    bool m_kpaTuneSawTuning{false};
+    bool m_kpaTuneKeyed{false};
+    qint64 m_kpaTuneDoneMs{0};  // when ^TP first read 0 after the search
+    int m_kpaTuneLeftShown{-1};
+    bool m_kpaSet{false};
+    bool m_kpaWanted{false};
+    QString m_kpaTarget;
+    QString m_kpaState{QStringLiteral("off")};
+    QString m_kpaError;
+    int m_kpaLastFault{0};
     void syncDigiAudio();
     void onDigiSlot(qint64 slotMs);
     void handleDigiDecodes(const QVariantList& decodes, qint64 slotMs);
@@ -2364,6 +2435,16 @@ private:
     qint64 m_midiVfoLogMs{0};
     int m_midiVfoRawLogged{0};
     int m_midiVfoStepsLogged{0};
+    // A VFO knob that sends a position (roadmap 60's second part: a CTR2's
+    // knob modes 1-3 are SliderA, 0-127): runs of one-count steps seen, not
+    // tuned while it does, named on Radio Setup › MIDI.
+    void midiVfoWatchPosition(int number, int value);
+    int m_midiVfoPrev{-1};
+    int m_midiVfoRun{0};
+    int m_midiVfoRunSign{0};
+    int m_midiVfoSame{0};
+    bool m_midiVfoPosition{false};
+    int m_midiVfoPositionCc{-1};
     bool m_bigButtons{false};
     // Auto AGC-T (MobileEngineAgcAuto.cpp).
     void setupAgcAuto();

@@ -121,6 +121,11 @@ struct Status {
     std::optional<bool>  atuInline;       // ^AI
     std::optional<bool>  tuning;          // ^TP, a full-search tune is running
     std::optional<bool>  keyed;           // ^TQ — amp's own view of its key state
+    std::optional<float> inputWatts;      // ^PWI, the drive (0 in STBY or while tuning)
+    std::optional<float> paVolts;         // ^VI, the PA supply in volts
+    std::optional<int>   paAmps;          // ^VI, the PA current in whole amperes
+    std::optional<bool>  powerOn;         // ^ON, the main power supplies
+    std::optional<QString> firmware;      // ^RV, "nn.nn"
 };
 
 // Folds one decoded message into `status`, returning true if it changed
@@ -135,6 +140,10 @@ bool applyMessage(const Message& message, Status& status);
 // rather than as a band the operator does not have.
 QString bandName(int code);
 
+// `^FL` code → the reference's fault description ("Temperature is too
+// high"); empty for 0x00 (no fault) and for a code outside its table.
+QString faultDescription(int code);
+
 // ── Command builders (host → amp) ────────────────────────────────────────
 //
 // Queries. The amp does not broadcast spontaneously, so the connection
@@ -144,6 +153,9 @@ QByteArray buildQuery(const QString& cmd);
 // Control.
 QByteArray buildSetOperate(bool operate);       // ^OS1 / ^OS0
 QByteArray buildSetAtuInline(bool inLine);      // ^AI1 / ^AI0
+// The ATU MODE for the present band and antenna, as holding the front
+// panel's ATU MODE does: ^AMI; in line, ^AMB; bypassed.
+QByteArray buildSetAtuMode(bool inLine);        // ^AMI / ^AMB
 QByteArray buildStartTune();                    // ^FT
 QByteArray buildCancelTune();                   // ^FE
 // The amp has two connectors, ANT1 and ANT2, and those are the only

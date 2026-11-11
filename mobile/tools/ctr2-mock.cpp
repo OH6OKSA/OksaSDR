@@ -11,12 +11,18 @@
 //   down:4 / up:4  button 4 pressed / let go (held between)
 //   long:4       button 4 held long (note 14)
 //   sleep:500    wait 500 ms
+//   mode:2       the knob's mode, as a short press on the knob steps them
+//                (manual, Knob Mode Indications): 0 Home (CC 100, WheelA),
+//                1-3 (CC 102 / 104 / 106) SliderA in Map 1's defaults: a
+//                position 0-127, one count a click, kept per mode
+//   pos:40       the present mode's slider position (40 to start with)
 // With "-" the steps come from stdin, one a line, so a test can send each
 // when the app is ready for it.
 // Build: g++ -O2 -D__LINUX_ALSA__ -Ithird_party/rtmidi mobile/tools/ctr2-mock.cpp
 //        third_party/rtmidi/RtMidi.cpp -lasound -lpthread -o build-mobile/ctr2-mock
 #include "RtMidi.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -51,6 +57,8 @@ int main(int argc, char** argv)
     std::vector<std::string> steps(argv + 1, argv + argc);
     const bool fromStdin = steps.size() == 1 && steps.front() == "-";
     std::string line;
+    int mode = 0;
+    int position[4] = {40, 40, 40, 40};
     for (std::size_t i = 0; fromStdin || i < steps.size(); ++i) {
         if (fromStdin && !std::getline(std::cin, line)) {
             break;
@@ -67,9 +75,19 @@ int main(int argc, char** argv)
             const int count = std::stoi(rest.substr(0, x));
             const int speed = x == std::string::npos ? 1 : std::stoi(rest.substr(x + 1));
             for (int n = 0; n < std::abs(count); ++n) {
-                send(out, 0xB0, 100, static_cast<unsigned char>(count > 0 ? 64 + speed : 64 - speed));
+                if (mode == 0) {
+                    send(out, 0xB0, 100, static_cast<unsigned char>(count > 0 ? 64 + speed : 64 - speed));
+                } else {
+                    // SliderA: the position, stopping at 0 and 127.
+                    position[mode] = std::clamp(position[mode] + (count > 0 ? 1 : -1), 0, 127);
+                    send(out, 0xB0, static_cast<unsigned char>(100 + 2 * mode), static_cast<unsigned char>(position[mode]));
+                }
                 pause(30);
             }
+        } else if (verb == "mode") {
+            mode = std::clamp(std::stoi(rest), 0, 3);
+        } else if (verb == "pos") {
+            position[mode] = std::clamp(std::stoi(rest), 0, 127);
         } else if (verb == "tap" || verb == "down" || verb == "up" || verb == "long") {
             const int button = std::stoi(rest);
             const unsigned char note = static_cast<unsigned char>(verb == "long" ? 10 + button : button);

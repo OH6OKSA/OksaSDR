@@ -51,8 +51,9 @@ for t in "${tabs[@]}"; do phone_shots+=("tab-$t"); done
 modes_shots=(mode-usb mode-cw mode-am mode-fm fm-tx tx-lock mode-rtty rtty-panel tab-rtty digi-operating mode-psk)
 amp_shots=(tab-amp amp-controls amp-confirm amp-tune setup-amp setup-txband setup-rx setup-usb meter-amp)
 midi_shots=(setup-midi)
+kpa_shots=(tab-kpa kpa-controls)
 all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${phone_shots[@]}" phone-landscape bandchooser
-           "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
+           "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" "${kpa_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
     printf '%s\n' "${all_shots[@]}" | sort -u
     exit 0
@@ -299,6 +300,39 @@ if want "${amp_shots[@]}"; then
     fi
 fi
 
+# The Amp tab with an Elecraft KPA1500 against a stand-in (kpa1500-mock.py,
+# keyed, on this computer's own network address and the amplifier's port
+# 1500, read over its UDP server as the app reads a real one); then Control
+# on, as the user turns it on, for its control rows (its TCP link opens,
+# nothing is sent). The stand-in counts any command it gets: none. The app
+# forgets the amplifier (and Control with it) after.
+if want "${kpa_shots[@]}" && [ "$DRY" = 0 ]; then
+    klan="$(ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p')"
+    klan="${klan:-127.0.0.1}"
+    python3 "$ROOT/mobile/tools/kpa1500-mock.py" --bind "$klan" --port 1500 --keyed >"$TMP/kpa-mock.log" 2>&1 &
+    kpamock=$!
+    sleep 1
+    if ! kill -0 "$kpamock" 2>/dev/null; then
+        echo "  the KPA1500 stand-in did not start (port 1500 taken?): $(tail -1 "$TMP/kpa-mock.log")" >&2
+    fi
+fi
+if want "${kpa_shots[@]}"; then
+    {
+        printf 'ready\nkpa %s:1500\nwait 4000\n' "${klan:-127.0.0.1}"
+        if want tab-kpa; then printf 'drawer 12\nwait 1500\nscroll 0\nwait 800\nshot tab-kpa\nclose\nwait 600\n'; fi
+        if want kpa-controls; then
+            printf 'popup radioSetup\nwait 800\nclick setupTab7\nwait 1500\ntapname kpaControlOn\nwait 3000\nclose\nwait 600\n'
+            printf 'drawer 12\nwait 1500\nshowname ampReset\nwait 800\nshot kpa-controls\nclose\nwait 600\n'
+        fi
+        printf 'kpa off\nwait 1000\n'
+    } | plan kpa 440x956 "${src[@]}"
+    if [ "$DRY" = 0 ]; then
+        kill "$kpamock" 2>/dev/null || true
+        wait "$kpamock" 2>/dev/null || true
+        tail -1 "$TMP/kpa-mock.log" | sed 's/^/  KPA1500 stand-in: /'
+    fi
+fi
+
 # Radio Setup › MIDI against a stand-in CTR2-MIDI (ctr2-mock, an ALSA virtual
 # MIDI port on this computer), chosen as the user chooses it; nothing is
 # learned and the stand-in sends nothing. The functions shown are this
@@ -434,6 +468,8 @@ done
 jpg ft8-hound 440x520+0+436
 jpg tab-amp 440x520+0+436
 jpg tab-genius 440x520+0+436
+jpg tab-kpa 440x520+0+436
+jpg kpa-controls 440x520+0+436
 jpg setup-amp 418x700+11+40 330x
 jpg setup-txband 418x700+11+40 330x
 jpg setup-rx 418x825+11+40 330x

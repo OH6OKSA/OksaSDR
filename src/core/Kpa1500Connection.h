@@ -38,6 +38,10 @@ public:
     void connectNetwork(const QString& host, quint16 port = Kpa1500::kDefaultPort);
     void disconnect();
     void setAutoReconnect(bool on) { m_autoReconnect = on; }
+    // Off: the link carries only the commands below, no poll of its own
+    // (a host that reads the amplifier another way, e.g. OksaSDR over its
+    // UDP server). On by default. Takes effect at the next connect.
+    void setPolling(bool on) { m_polling = on; }
 
     // Control (host -> amp). Every one is a no-op, logged, when not
     // connected — the amp is the authority on its own state, so nothing
@@ -47,6 +51,7 @@ public:
     void startTune();   // the exciter must supply RF for the tune to finish
     void cancelTune();
     void setAtuInline(bool inLine);
+    void setAtuMode(bool inLine);  // ^AMI / ^AMB for the present band and antenna
     void selectAntenna(int port);  // ANT1/ANT2; out of range is a no-op, logged
     void clearFault();
 
@@ -106,6 +111,7 @@ private:
     bool m_autoReconnect{false};
     bool m_deliberateDisconnect{false};
     bool m_keyed{false};
+    bool m_polling{true};
 
     // Logs a fault once when it appears rather than on every poll — `^FL`
     // answers with the same code for as long as the fault stands.

@@ -38,7 +38,7 @@ ColumnLayout {
     ].concat(ampSet ? [{ name: "Amp", button: qsTr("Amp"), title: qsTr("Amplifier"), component: ampSection }] : [])
     // A bool of its own: Engine.amp changes with every reading, and a new
     // sections list would rebuild every tab.
-    readonly property bool ampSet: !!Engine.amp.set || !!Engine.pgxl.present || !!Engine.tgxl.present || !!Engine.ag.present
+    readonly property bool ampSet: !!Engine.amp.set || !!Engine.kpa.set || !!Engine.pgxl.present || !!Engine.tgxl.present || !!Engine.ag.present
     // One row of all on a wide panel, else rows of six (6 + 6); with the
     // Amp tab rows of seven (7 + 6) where the widest label still fits at
     // 12 px, else 5 + 5 + 3 (a low side drawer, 667 x 375, cut "FreeDV").
@@ -352,12 +352,14 @@ ColumnLayout {
     Component { id: digiSection; DigiControls {} }
     Component { id: freedvSection; FreeDvControls {} }
     Component { id: rttySection; RttyControls {} }
-    // The RF2K-S set up in Radio Setup, and the 4O3A devices the radio reports.
+    // The RF2K-S and the KPA1500 set up in Radio Setup, and the 4O3A devices
+    // the radio reports.
     Component {
         id: ampSection
         ColumnLayout {
             spacing: Theme.spacing
             AmpControls { visible: !!Engine.amp.set; Layout.fillWidth: true }
+            AmpControls { a: Engine.kpa; visible: !!Engine.kpa.set; Layout.fillWidth: true }
             GeniusControls { visible: !!Engine.pgxl.present || !!Engine.tgxl.present || !!Engine.ag.present; Layout.fillWidth: true }
         }
     }

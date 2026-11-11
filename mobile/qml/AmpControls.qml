@@ -4,7 +4,11 @@ import QtQuick.Layouts
 import AetherMobile
 
 // The amplifier: an RF-KIT RF2K-S over its own REST API
-// (MobileEngineAmp.cpp). Its state, forward and reflected power, SWR, the
+// (MobileEngineAmp.cpp), or with a: Engine.kpa an Elecraft KPA1500
+// (MobileEngineKpa.cpp: its drive and faults instead of the RF2K-S's
+// frequency, interface and status; control over its TCP connection: the
+// antennas ANT1 / ANT2, the ATU mode, the fault clear, Tune its ATU's full
+// search). Its state, forward and reflected power, SWR, the
 // PA's temperature, voltage and current, band, frequency, tuner, antenna and
 // interface, as the amplifier reports them; with Control on (Radio Setup ›
 // Amp), Operate / Standby, the internal antennas and the error reset, each
@@ -15,13 +19,15 @@ ColumnLayout {
     id: ampTab
     spacing: Theme.spacing / 2
 
-    readonly property var a: Engine.amp
+    property var a: Engine.amp
+    readonly property bool kpa: a.model === "KPA1500"
     readonly property bool reading: a.state === "connected"
     readonly property bool control: !!a.control
     readonly property bool transmitting: Engine.radioTransmitting
     // A command can go: control on, the amplifier read, the radio in
     // receive and no other command waiting for its answer.
     readonly property bool canCommand: control && reading && !transmitting && !a.pending
+                                       && (!kpa || (a.link === "connected" && !a.tune))
     // The tune carrier for the amplifier's tuner is on, or STANDBY is
     // being asked for it.
     readonly property bool tuneRunning: !!a.tune
@@ -121,13 +127,28 @@ ColumnLayout {
         text: {
             const a = ampTab.a
             if (!a.on) return qsTr("Reading is off (Radio Setup › Amp).")
-            if (a.state === "connected") return qsTr("Read from %1, every half second.").arg(a.target)
+            if (a.state === "connected")
+                return ampTab.kpa && !ampTab.control ? qsTr("Read from %1 every half second, read only.").arg(a.target)
+                                  : qsTr("Read from %1, every half second.").arg(a.target)
             if (a.state === "failed") return qsTr("%1 not reached: %2. Trying again…").arg(a.target).arg(a.error)
             if (a.state === "connecting") return qsTr("Connecting to %1…").arg(a.target)
             return qsTr("Read while connected to a radio.")
         }
         color: ampTab.reading ? Theme.textDim : (ampTab.a.state === "failed" ? Theme.transmit : Theme.textDim)
         font.pixelSize: Theme.px(13)
+        wrapMode: Text.Wrap
+    }
+    // A fault or error first, where it is seen without scrolling (the
+    // KPA1500 goes to STANDBY on one).
+    Label {
+        objectName: "ampError"
+        Layout.fillWidth: true
+        visible: !!ampTab.a.ifaceError || !!ampTab.a.fault
+        text: ampTab.a.fault ? qsTr("Amplifier fault: %1").arg(ampTab.a.fault)
+                             : qsTr("Amplifier error: %1").arg(ampTab.a.ifaceError || "")
+        color: Theme.transmit
+        font.pixelSize: Theme.px(15)
+        font.bold: true
         wrapMode: Text.Wrap
     }
 
@@ -189,28 +210,19 @@ ColumnLayout {
         rowSpacing: 2
         Info { label: qsTr("Temperature"); value: ampTab.num(ampTab.a.temp, 0, "°C") }
         Info { label: qsTr("Voltage"); value: ampTab.num(ampTab.a.volts, 1, "V") }
-        Info { label: qsTr("Current"); value: ampTab.num(ampTab.a.amps, 1, "A") }
+        Info { label: qsTr("Current"); value: ampTab.num(ampTab.a.amps, ampTab.kpa ? 0 : 1, "A") }
+        Info { visible: ampTab.kpa; label: qsTr("Drive"); value: ampTab.num(ampTab.a.drive, 0, "W") }
         Info { label: qsTr("Band"); value: ampTab.text(ampTab.a.band) }
-        Info { label: qsTr("Frequency"); value: ampTab.text(ampTab.a.freq) }
+        Info { visible: !ampTab.kpa; label: qsTr("Frequency"); value: ampTab.text(ampTab.a.freq) }
         Info { label: qsTr("Antenna"); value: ampTab.text(ampTab.a.antenna) }
         Info {
             label: qsTr("Tuner")
             value: ampTab.a.tuner === undefined ? "–"
                  : ampTab.a.tuner + (ampTab.a.tunerSetup && ampTab.a.tunerSetup !== "–" ? " (" + ampTab.a.tunerSetup + ")" : "")
         }
-        Info { label: qsTr("Interface"); value: ampTab.text(ampTab.a.iface) }
-        Info { label: qsTr("Status"); value: ampTab.text(ampTab.a.status) }
+        Info { visible: !ampTab.kpa; label: qsTr("Interface"); value: ampTab.text(ampTab.a.iface) }
+        Info { visible: !ampTab.kpa; label: qsTr("Status"); value: ampTab.text(ampTab.a.status) }
         Info { label: qsTr("Firmware"); value: ampTab.text(ampTab.a.firmware) }
-    }
-    Label {
-        objectName: "ampError"
-        Layout.fillWidth: true
-        visible: !!ampTab.a.ifaceError
-        text: qsTr("Amplifier error: %1").arg(ampTab.a.ifaceError || "")
-        color: Theme.transmit
-        font.pixelSize: Theme.px(15)
-        font.bold: true
-        wrapMode: Text.Wrap
     }
 
     // ---- Control (Radio Setup › Amp › Control the amplifier) ----
@@ -251,20 +263,23 @@ ColumnLayout {
             Label { text: qsTr("Antenna"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
             Repeater {
                 // A fixed model: the buttons stay while the readings change.
-                model: 4
+                // A KPA1500's two connectors, ANT1 and ANT2.
+                model: ampTab.kpa ? 2 : 4
                 delegate: AppButton {
                     required property int index
                     readonly property int number: index + 1
-                    readonly property string antState: ampTab.antennaState(number)
+                    readonly property string antState: !ampTab.kpa ? ampTab.antennaState(number)
+                        : ampTab.a.antenna === undefined ? ""
+                        : ampTab.a.antenna === "ANT" + number ? "ACTIVE" : "AVAILABLE"
                     objectName: "ampAntenna" + number
                     visible: antState !== ""
-                    text: number
+                    text: ampTab.kpa ? "ANT" + number : number
                     checked: antState === "ACTIVE"
                     // The active one stays bright (it is the present state);
                     // a tap on it asks nothing.
                     enabled: ampTab.canCommand && antState !== "DISABLED"
                     Accessible.name: qsTr("Antenna %1").arg(number)
-                    Layout.preferredWidth: Theme.touchTarget
+                    Layout.preferredWidth: ampTab.kpa ? Math.max(Theme.touchTarget, implicitWidth) : Theme.touchTarget
                     onClicked: if (!checked) confirm.ask("antenna", number)
                 }
             }
@@ -287,6 +302,29 @@ ColumnLayout {
                 }
             }
         }
+        // A KPA1500's ATU mode for this band and antenna, as a pair.
+        RowLayout {
+            visible: ampTab.kpa
+            Layout.fillWidth: true
+            spacing: 4
+            Label { text: qsTr("ATU"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+            AppButton {
+                objectName: "kpaAtuIn"
+                text: qsTr("In line")
+                checked: ampTab.a.atu === "INLINE"
+                enabled: ampTab.canCommand && ampTab.a.atu !== undefined
+                Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                onClicked: if (!checked) confirm.ask("atuIn", 0)
+            }
+            AppButton {
+                objectName: "kpaAtuBypass"
+                text: qsTr("Bypass")
+                checked: ampTab.a.atu === "BYPASS"
+                enabled: ampTab.canCommand && ampTab.a.atu !== undefined
+                Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                onClicked: if (!checked) confirm.ask("atuBypass", 0)
+            }
+        }
         // Tune: the amplifier's own tuner needs a carrier and its Tune
         // pressed (on its screen, or over VNC); this sends the carrier, in
         // STANDBY, and keeps it while the app is away, 20 s at most.
@@ -302,10 +340,12 @@ ColumnLayout {
                 enabled: ampTab.tuneRunning || (ampTab.canCommand && ampTab.a.operate !== undefined)
                 Accessible.name: ampTab.tuneRunning ? qsTr("Stop the tune carrier") : qsTr("Tune carrier for the amplifier's tuner")
                 Layout.preferredWidth: Math.max(Theme.buttonWidth * 2 + 4, implicitWidth)
-                // Outside the amplifier's 4-39 W the engine refuses with the
-                // reason, no question first.
-                onClicked: ampTab.tuneRunning ? Engine.ampTuneStop()
-                         : Engine.tunePower < 4 || Engine.tunePower > 39 ? Engine.ampTune()
+                // Outside the amplifier's tune power (RF2K-S 4-39 W, KPA1500
+                // 10-50 W) the engine refuses with the reason, no question.
+                readonly property bool powerOk: ampTab.kpa ? Engine.tunePower >= 10 && Engine.tunePower <= 50
+                                                           : Engine.tunePower >= 4 && Engine.tunePower <= 39
+                onClicked: ampTab.tuneRunning ? (ampTab.kpa ? Engine.kpaTuneStop() : Engine.ampTuneStop())
+                         : !powerOk ? (ampTab.kpa ? Engine.kpaTune() : Engine.ampTune())
                          : confirm.ask("tune", 0)
             }
         }
@@ -314,7 +354,7 @@ ColumnLayout {
             spacing: Theme.spacing
             AppButton {
                 objectName: "ampReset"
-                text: qsTr("Reset error")
+                text: ampTab.kpa ? qsTr("Clear fault") : qsTr("Reset error")
                 enabled: ampTab.canCommand
                 Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
                 onClicked: confirm.ask("reset", 0)
@@ -323,13 +363,19 @@ ColumnLayout {
                 objectName: "ampCommandState"
                 Layout.fillWidth: true
                 text: ampTab.a.tune === "carrier"
-                      ? (ampTab.a.tuner === "TUNING" ? qsTr("The amplifier is tuning…")
+                      ? (ampTab.kpa ? (ampTab.a.tuning ? qsTr("The amplifier's ATU is tuning…")
+                                                      : qsTr("Carrier on at %1 W for the amplifier's ATU.").arg(Engine.tunePower))
+                         : ampTab.a.tuner === "TUNING" ? qsTr("The amplifier is tuning…")
                          : qsTr("Carrier on at %1 W: press Tune on the amplifier's screen (VNC).").arg(Engine.tunePower))
                     : ampTab.a.pending ? qsTr("Asking the amplifier…")
+                    : ampTab.kpa && ampTab.a.link === "connecting" ? qsTr("Control link: connecting…")
+                    : ampTab.kpa && ampTab.a.link === "failed"
+                      ? qsTr("Control link not connected (%1): the KPA1500 takes one TCP connection; Elecraft's KPA1500 Utility may hold it. Trying again…").arg(ampTab.a.linkError)
                     : ampTab.transmitting ? qsTr("Not while transmitting.")
                     : ampTab.a.result || ""
                 color: ampTab.a.tune === "carrier" ? Theme.warning
-                     : ampTab.a.pending || ampTab.transmitting ? Theme.textDim
+                     : ampTab.kpa && ampTab.a.link === "failed" ? Theme.transmit
+                     : ampTab.a.pending || ampTab.transmitting || (ampTab.kpa && ampTab.a.link === "connecting") ? Theme.textDim
                      : ampTab.a.resultOk ? "#00cc66" : Theme.transmit
                 font.pixelSize: Theme.px(13)
                 wrapMode: Text.Wrap
@@ -340,8 +386,12 @@ ColumnLayout {
     Label {
         Layout.fillWidth: true
         Layout.topMargin: Theme.spacing / 2
-        text: ampTab.control
+        text: ampTab.control && ampTab.kpa
+              ? qsTr("Each change asks you first and none works while the radio transmits; the tab shows only what the amplifier reads back. Tune starts the ATU's full search and sends the carrier it needs.")
+              : ampTab.control
               ? qsTr("Each change asks you first and none works while the radio transmits; the tab shows only what the amplifier reads back. Tune sends the carrier the amplifier's tuner needs; its Tune is pressed on the amplifier's own screen.")
+              : ampTab.kpa
+              ? qsTr("Read only: nothing is sent that changes the amplifier. Control in Radio Setup › Amp adds Operate / Standby, the antenna, the ATU, Tune and the fault clear.")
               : qsTr("Read only: nothing is sent that changes the amplifier. Control in Radio Setup › Amp adds Operate / Standby, the antenna and the error reset.")
         color: Theme.textDim
         font.pixelSize: Theme.px(12)
@@ -374,6 +424,8 @@ ColumnLayout {
             const label = ampTab.a.antenna || ""
             return /^[0-9]+$/.test(label) ? qsTr("antenna %1").arg(label) : (label || qsTr("the present antenna"))
         }
+        // The antenna asked for, by the amplifier's own name for it.
+        readonly property string askedAntenna: ampTab.kpa ? "ANT" + antenna : qsTr("antenna %1").arg(antenna)
 
         contentItem: ColumnLayout {
             spacing: Theme.spacing
@@ -382,8 +434,11 @@ ColumnLayout {
                 Layout.fillWidth: true
                 text: confirm.action === "operate" ? qsTr("Put the amplifier in OPERATE?")
                     : confirm.action === "standby" ? qsTr("Put the amplifier in STANDBY?")
-                    : confirm.action === "antenna" ? qsTr("Switch the amplifier to antenna %1?").arg(confirm.antenna)
-                    : confirm.action === "tune" ? qsTr("Send a tune carrier for the amplifier?")
+                    : confirm.action === "antenna" ? qsTr("Switch the amplifier to %1?").arg(confirm.askedAntenna)
+                    : confirm.action === "atuIn" ? qsTr("Put the amplifier's ATU in line?")
+                    : confirm.action === "atuBypass" ? qsTr("Bypass the amplifier's ATU?")
+                    : confirm.action === "tune" ? (ampTab.kpa ? qsTr("Tune the amplifier's ATU?") : qsTr("Send a tune carrier for the amplifier?"))
+                    : ampTab.kpa ? qsTr("Clear the amplifier's fault?")
                     : qsTr("Reset the amplifier's error?")
                 color: Theme.text
                 font.pixelSize: Theme.px(18)
@@ -392,14 +447,25 @@ ColumnLayout {
             }
             Label {
                 Layout.fillWidth: true
-                text: confirm.action === "operate"
+                text: confirm.action === "operate" && ampTab.kpa
+                      ? qsTr("The next transmission goes through the amplifier. The KPA1500 gives 1500 W from 50-60 W and faults above 65 W in: the radio's power is now %1.").arg(Engine.rfPower + (Engine.rfPowerIsPercent ? " %" : " W"))
+                        + (!Engine.rfPowerIsPercent && Engine.rfPower > 65 ? " " + qsTr("Lower it to 50-60 W first.") : "")
+                    : confirm.action === "operate"
                       ? qsTr("The next transmission goes through the amplifier: check that the radio's power suits it.")
                     : confirm.action === "standby"
                       ? qsTr("The radio's signal goes past the amplifier, not amplified.")
                     : confirm.action === "antenna"
-                      ? qsTr("The amplifier's output moves from %1 to antenna %2. Check that antenna %2 is connected and suits this band.").arg(confirm.activeAntenna).arg(confirm.antenna)
+                      ? qsTr("The amplifier's output moves from %1 to %2. Check that %2 is connected and suits this band.").arg(confirm.activeAntenna).arg(confirm.askedAntenna)
+                    : confirm.action === "atuIn"
+                      ? qsTr("The ATU matches the antenna on this band and antenna with its stored settings (Tune trains it).")
+                    : confirm.action === "atuBypass"
+                      ? qsTr("The antenna is connected straight, without the ATU: check that its SWR suits the power.")
+                    : confirm.action === "tune" && ampTab.kpa
+                      ? qsTr("The amplifier's ATU starts a full-search tune and the radio transmits a TUNE carrier at %1 W until the amplifier shows the tune done, for up to 20 s.").arg(Engine.tunePower)
                     : confirm.action === "tune"
                       ? qsTr("The amplifier goes to STANDBY and the radio transmits a TUNE carrier at %1 W for up to 20 s, also while you open the amplifier's own screen (VNC) to press its Tune. It stops by itself once the amplifier has tuned, or after 20 s.").arg(Engine.tunePower)
+                    : ampTab.kpa
+                      ? qsTr("Clears the KPA1500's present fault (a temperature fault clears only as it cools). Deal with the cause first.")
                       : qsTr("Clear the RF-KIT's error state? Make sure the cause of the error has been resolved first.")
                 color: Theme.textDim
                 font.pixelSize: Theme.px(15)
@@ -417,8 +483,11 @@ ColumnLayout {
                     objectName: "ampConfirmYes"
                     text: confirm.action === "operate" ? qsTr("Operate")
                         : confirm.action === "standby" ? qsTr("Standby")
-                        : confirm.action === "antenna" ? qsTr("Antenna %1").arg(confirm.antenna)
+                        : confirm.action === "antenna" ? (ampTab.kpa ? confirm.askedAntenna : qsTr("Antenna %1").arg(confirm.antenna))
+                        : confirm.action === "atuIn" ? qsTr("In line")
+                        : confirm.action === "atuBypass" ? qsTr("Bypass")
                         : confirm.action === "tune" ? qsTr("Tune")
+                        : ampTab.kpa ? qsTr("Clear")
                         : qsTr("Reset")
                     checked: true
                     Layout.fillWidth: true
@@ -426,7 +495,13 @@ ColumnLayout {
                         const what = confirm.action
                         const n = confirm.antenna
                         confirm.close()
-                        if (what === "operate" || what === "standby") Engine.ampSetOperate(what === "operate")
+                        if (ampTab.kpa) {
+                            if (what === "operate" || what === "standby") Engine.kpaSetOperate(what === "operate")
+                            else if (what === "antenna") Engine.kpaSelectAntenna(n)
+                            else if (what === "atuIn" || what === "atuBypass") Engine.kpaSetAtu(what === "atuIn")
+                            else if (what === "reset") Engine.kpaClearFault()
+                            else if (what === "tune") Engine.kpaTune()
+                        } else if (what === "operate" || what === "standby") Engine.ampSetOperate(what === "operate")
                         else if (what === "antenna") Engine.ampSelectAntenna(n)
                         else if (what === "reset") Engine.ampResetError()
                         else if (what === "tune") Engine.ampTune()

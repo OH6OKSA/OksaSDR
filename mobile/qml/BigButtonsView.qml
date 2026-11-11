@@ -40,6 +40,7 @@ Rectangle {
     }
     readonly property bool chipRow: allSlices.length > 2
     readonly property bool ampOperating: (!!Engine.amp.set && Engine.amp.operate === "OPERATE")
+                                         || (!!Engine.kpa.set && Engine.kpa.operate === "OPERATE")
                                          || (!!Engine.pgxl.present && !!Engine.pgxl.operate)
     // The meters' reading size (the first version's S reading), larger on a
     // tablet, and the chips' text from it.

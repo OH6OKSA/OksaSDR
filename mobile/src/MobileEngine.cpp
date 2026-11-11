@@ -757,6 +757,7 @@ MobileEngine::MobileEngine(QObject* parent)
     setupSharedAdif();
     setupLogger32();
     setupAmp();
+    setupKpa();
     setup4o3a();
     m_cty = std::make_unique<CtyDatParser>();
     m_cty->loadFromResource(QStringLiteral(":/cty.dat"));
@@ -2871,6 +2872,9 @@ bool MobileEngine::linkedAmpOperating() const
     if (pgxlOperating()) {
         return true;
     }
+    if (m_kpaSet && !m_ampSet) {
+        return kpaOperating();
+    }
     return m_ampStatus.operate && *m_ampStatus.operate == Rfkit::OperateMode::Operate;
 }
 
@@ -2878,6 +2882,9 @@ double MobileEngine::linkedAmpForwardW() const
 {
     if (pgxlOperating()) {
         return pgxlForwardW();
+    }
+    if (m_kpaSet && !m_ampSet) {
+        return kpaForwardW();
     }
     return m_ampStatus.power ? m_ampStatus.power->forward.value : 0.0;
 }
@@ -2952,10 +2959,11 @@ QStringList MobileEngine::meterKindsFor(const QString& side, bool tx) const
         kinds.insert(1, QStringLiteral("SNR"));
     }
     // The amplifier's readings on every meter, receive and transmit, while
-    // one is set up (Radio Setup › Amp; Sebastian Schu DG5CST), or a Power
-    // Genius XL is there (the radio reports it, or the app reads it).
+    // one is set up (Radio Setup › Amp: an RF2K-S, Sebastian Schu DG5CST; a
+    // KPA1500, Rich Yost N2RY), or a Power Genius XL is there (the radio
+    // reports it, or the app reads it).
     const RadioModel& rm = m_session.radioModel();
-    if (m_ampSet || rm.amplifier().present() || (m_pgxlConn && m_pgxlConn->isConnected())) {
+    if (m_ampSet || m_kpaSet || rm.amplifier().present() || (m_pgxlConn && m_pgxlConn->isConnected())) {
         kinds << QStringLiteral("Amp power") << QStringLiteral("Amp refl") << QStringLiteral("Amp SWR")
               << QStringLiteral("Amp temp") << QStringLiteral("Amp volts") << QStringLiteral("Amp current");
     }

@@ -275,6 +275,47 @@ int main()
                    && s.atuMode && *s.atuMode == AtuMode::Inline);
     }
 
+    // ── The readings the app adds: drive, PA supply, power, firmware ─────
+    {
+        Status s;
+        // Reference p.43: "^PWInnnn; where nnnn is the RF input power in watts."
+        report("^PWI85; decodes as 85 W drive",
+               applyMessage(Message{"PWI", "85"}, s) && s.inputWatts && nearlyEqual(*s.inputWatts, 85.0f));
+        // Reference p.54: "^VI513 061; is 51.3V at 61 Amperes."
+        report("^VI513 061; decodes as 51.3 V at 61 A",
+               applyMessage(Message{"VI", "513 061"}, s) && s.paVolts && nearlyEqual(*s.paVolts, 51.3f)
+                   && s.paAmps && *s.paAmps == 61);
+        report("^VI without the current is rejected and changes nothing",
+               !applyMessage(Message{"VI", "513"}, s) && nearlyEqual(*s.paVolts, 51.3f));
+        report("^VI with a non-number is rejected",
+               !applyMessage(Message{"VI", "51x 061"}, s) && *s.paAmps == 61);
+        report("^ON1; is the main supplies on, ^ON0; off",
+               applyMessage(Message{"ON", "1"}, s) && *s.powerOn
+                   && applyMessage(Message{"ON", "0"}, s) && !*s.powerOn);
+        // Reference p.44: "^RV01.23; means firmware version 1.23 is installed."
+        report("^RV01.23; is firmware 01.23",
+               applyMessage(Message{"RV", "01.23"}, s) && s.firmware && *s.firmware == "01.23");
+        report("^RV with letters is rejected", !applyMessage(Message{"RV", "1.2a"}, s) && *s.firmware == "01.23");
+        // Reference p.13 prints the bypassed reply as "^AT0;".
+        applyMessage(Message{"AI", "1"}, s);
+        report("^AT0; (the reference's spelling) reads as ATU bypassed",
+               applyMessage(Message{"AT", "0"}, s) && s.atuInline && !*s.atuInline);
+        report("^AT1; does not read as in-line", !applyMessage(Message{"AT", "1"}, s) && !*s.atuInline);
+    }
+    {
+        MessageParser p;
+        Status s;
+        p.setMessageCallback([&s](const Message& m) { applyMessage(m, s); });
+        p.feed("^PWI012;^VI498 045;");
+        report("wire ^PWI012;^VI498 045; decodes as 12 W drive, 49.8 V, 45 A",
+               s.inputWatts && nearlyEqual(*s.inputWatts, 12.0f) && s.paVolts && nearlyEqual(*s.paVolts, 49.8f)
+                   && s.paAmps && *s.paAmps == 45);
+    }
+    report("faultDescription(0x40) is the temperature fault",
+           faultDescription(0x40) == "Temperature is too high");
+    report("faultDescription() is empty for no fault and outside the table",
+           faultDescription(0).isEmpty() && faultDescription(0x55).isEmpty());
+
     // ── Band names ───────────────────────────────────────────────────────
     report("bandName(0) == 160", bandName(0) == "160");
     report("bandName(5) == 20", bandName(5) == "20");
@@ -289,6 +330,9 @@ int main()
     report("buildStartTune() == ^FT;", buildStartTune() == "^FT;");
     report("buildCancelTune() == ^FE;", buildCancelTune() == "^FE;");
     report("buildSetAtuInline(true) == ^AI1;", buildSetAtuInline(true) == "^AI1;");
+    // Reference p.14: "SET/RESPONSE format: ^AMI; or ^AMB;".
+    report("buildSetAtuMode(true) == ^AMI;, (false) == ^AMB;",
+           buildSetAtuMode(true) == "^AMI;" && buildSetAtuMode(false) == "^AMB;");
     report("buildSelectAntenna(2) == ^AN2;", buildSelectAntenna(2) == "^AN2;");
     report("buildSelectAntenna refuses anything but connectors 1 and 2",
            buildSelectAntenna(0).isEmpty() && buildSelectAntenna(3).isEmpty());

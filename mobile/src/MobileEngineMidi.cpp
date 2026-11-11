@@ -52,6 +52,10 @@ constexpr int kMidiActivityMs = 200;
 constexpr int kMidiVfoTurnGapMs = 1500;
 constexpr int kMidiVfoLogPerTurn = 6;
 const QString kMidiVfoParam = QStringLiteral("rx.tuneKnob");
+// One-count steps in one direction, this many in a row, make a position: a
+// CTR2's SliderA sends one a click, a wheel 64 +/- 1, 10 or 50 (its manual),
+// and an accelerating encoder seldom ramps by exactly one this long.
+constexpr int kMidiVfoPositionRun = 6;
 const QString kMidiTransmitKey = QStringLiteral("MobileMidiTransmit");
 } // namespace
 
@@ -71,6 +75,11 @@ void MobileEngine::setupMidi()
             });
     connect(m_midi, &MidiControlManager::relativeAction, this, [this](const QString& paramId, int steps) {
         if (MidiControlManager::isVfoTuneKnob(paramId)) {
+            // A position decodes as steps one way whichever way it turns
+            // (Hanno Vogels DK3HV's CTR2 in its knob mode 2): not tuned.
+            if (m_midiVfoPosition) {
+                return;
+            }
             if (m_midiVfoStepsLogged < kMidiVfoLogPerTurn) {
                 ++m_midiVfoStepsLogged;
                 qCInfo(lcMobile).noquote() << "MIDI: VFO knob"
@@ -102,6 +111,9 @@ void MobileEngine::setupMidi()
                                                                               : QStringLiteral("CC %1 = %2").arg(number).arg(value))
                                            << QStringLiteral("channel %1,").arg(channel + 1)
                                            << (b.relative ? "relative" : "not relative") + QString(b.inverted ? ", inverted" : "");
+            }
+            if (type == MidiBinding::CC) {
+                midiVfoWatchPosition(number, value);
             }
             break;
         }
@@ -419,6 +431,46 @@ void MobileEngine::midiRefresh()
 void MobileEngine::midiSaveBindings()
 {
     MidiSettings::instance().saveBindings(m_midi->bindings());
+    // Learned, cleared or imported again: the VFO knob is watched afresh.
+    m_midiVfoPrev = -1;
+    m_midiVfoRun = 0;
+    m_midiVfoSame = 0;
+    m_midiVfoPosition = false;
+}
+
+// Roadmap 60's second part: a knob learned for the VFO that sends where it
+// is (0-127) rather than which way it turned. A CTR2-MIDI's knob modes 1-3
+// do (its manual: Map 1 makes only the Home mode's CC 100 a WheelA, the rest
+// SliderA); learned for the VFO, a position below the middle decodes as
+// "down" both ways. Seen from runs of one-count steps; cleared by two equal
+// values in a row (a wheel's repeated detent; a slider never repeats one,
+// except held at its 0 or 127).
+void MobileEngine::midiVfoWatchPosition(int number, int value)
+{
+    if (m_midiVfoPrev >= 0) {
+        const int d = value - m_midiVfoPrev;
+        if (d == 1 || d == -1) {
+            m_midiVfoRun = d == m_midiVfoRunSign ? m_midiVfoRun + 1 : 1;
+            m_midiVfoRunSign = d;
+        } else {
+            m_midiVfoRun = 0;
+        }
+        m_midiVfoSame = d == 0 && value != 0 && value != 127 ? m_midiVfoSame + 1 : 0;
+    }
+    m_midiVfoPrev = value;
+    if (!m_midiVfoPosition && m_midiVfoRun >= kMidiVfoPositionRun) {
+        m_midiVfoPosition = true;
+        m_midiVfoPositionCc = number;
+        qCInfo(lcMobile).noquote() << "MIDI: the VFO knob sends a position, not turns: CC" << number
+                                   << "in one-count steps, now" << value
+                                   << "- not tuned with it (a CTR2: its knob's Home mode sends CC 100)";
+        setLastError(tr("The MIDI controller's VFO knob sends a position, not turns: see Radio Setup › MIDI."));
+        emit midiChanged();
+    } else if (m_midiVfoPosition && m_midiVfoSame >= 2) {
+        m_midiVfoPosition = false;
+        qCInfo(lcMobile) << "MIDI: the VFO knob sends turns again";
+        emit midiChanged();
+    }
 }
 
 bool MobileEngine::midiTransmitRefused()
@@ -476,6 +528,8 @@ QVariantMap MobileEngine::midi() const
     m.insert(QStringLiteral("functions"), functions);
     m.insert(QStringLiteral("bound"), static_cast<int>(m_midi->bindings().size()));
     m.insert(QStringLiteral("import"), m_midiImport);
+    m.insert(QStringLiteral("vfoPosition"), m_midiVfoPosition);
+    m.insert(QStringLiteral("vfoPositionCc"), m_midiVfoPositionCc);
     return m;
 }
 
