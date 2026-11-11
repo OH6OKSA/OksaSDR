@@ -2107,6 +2107,16 @@ radio.
   and Control (a new address starts read only). This device reaches the
   amplifier directly: on the same network, or over your VPN when away —
   not through the radio, and not over SmartLink.
+  The RF2K-S picks its band itself, from what its INTERFACE menu sets
+  (the Amp tab's **Interface** shows which): *UNIV* measures the drive's
+  frequency, no cable; *CAT* takes the radio's frequency before you
+  transmit, through its CAT USB port (FlexRadio is among its makes). For
+  CAT with a FLEX: a USB-A to USB-A null-modem cable with FTDI chips at
+  both ends from one of the radio's USB ports to the amplifier's (a FLEX
+  user reports FTDI's USB-NMC-2.5M working), set in [Radio Setup ›
+  USB](#9-radio-setup): **Type** *CAT*, **Frequency from** *TX slice*,
+  **auto report** on, and a speed; in the amplifier's CAT setup choose
+  FlexRadio and the same speed. No SmartSDR is needed for either.
   **4O3A Power Genius XL** and **Tuner Genius XL**: each one's state (found
   by the radio and read directly at its address, read directly at an
   address you set, or through the radio only),
