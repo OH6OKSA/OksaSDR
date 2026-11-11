@@ -875,22 +875,15 @@ MobileEngine::MobileEngine(QObject* parent)
         }
         // Over SmartLink the radio's licence can allow two stations while
         // multiFLEX is off, so the question before connecting is not asked;
-        // with SmartLink's list of the stations on the radio it is asked now,
-        // once the refused connection is closed.
+        // with SmartLink's list of the stations on the radio it is asked
+        // once the refused connection is closed, when the app is idle again
+        // (asked at once, the connection was still closing and nothing was
+        // asked: the developer's phone, beta 77).
         if (m_wanActive) {
-            const QString serial = m_pendingWan.serial;
-            QTimer::singleShot(0, this, [this, serial] {
-                for (int i = 0; i < m_wanRadios.size(); ++i) {
-                    const WanRadioInfo& radio = m_wanRadios.at(i);
-                    const QVariantList clients = wanClients(radio);
-                    if (radio.serial == serial && !clients.isEmpty() && m_connectionState == QLatin1String("idle")) {
-                        m_conflictWanIndex = i;
-                        openStationConflict(true, radio.nickname.isEmpty() ? radio.model : radio.nickname, clients,
-                                            m_registrationFull);
-                        return;
-                    }
-                }
-            });
+            m_pendingWanConflict = m_pendingWan.serial;
+            if (m_connectionState == QLatin1String("idle")) {
+                askWanStationConflict();
+            }
         }
     });
     // On the radio's network, multiFLEX off with another station on the
@@ -1841,6 +1834,8 @@ void MobileEngine::connectSmartLinkRadio(int index)
 
 void MobileEngine::openStationConflict(bool wan, const QString& radio, const QVariantList& clients, bool full)
 {
+    qCInfo(lcMobile).noquote() << "station conflict: asking which of" << clients.size() << "station(s) to disconnect"
+                               << (wan ? "(SmartLink)" : "(this network)") << (full ? "slots full" : "multiFLEX off");
     m_stationConflict = {{QStringLiteral("open"), true},
                          {QStringLiteral("wan"), wan},
                          {QStringLiteral("full"), full},
@@ -9119,7 +9114,29 @@ void MobileEngine::setConnectionState(const QString& state)
         m_connectionState = state;
         qCInfo(lcMobile) << "connection state" << state;
         emit connectionStateChanged();
+        if (state == QLatin1String("connecting")) {
+            m_pendingWanConflict.clear();
+        } else if (state == QLatin1String("idle") && !m_pendingWanConflict.isEmpty()) {
+            askWanStationConflict();
+        }
     }
+}
+
+void MobileEngine::askWanStationConflict()
+{
+    const QString serial = m_pendingWanConflict;
+    m_pendingWanConflict.clear();
+    for (int i = 0; i < m_wanRadios.size(); ++i) {
+        const WanRadioInfo& radio = m_wanRadios.at(i);
+        const QVariantList clients = wanClients(radio);
+        if (radio.serial == serial && !clients.isEmpty()) {
+            m_conflictWanIndex = i;
+            openStationConflict(true, radio.nickname.isEmpty() ? radio.model : radio.nickname, clients,
+                                m_registrationFull);
+            return;
+        }
+    }
+    qCInfo(lcMobile) << "station conflict: SmartLink lists no stations on the radio, nothing to ask";
 }
 
 void MobileEngine::setLastError(const QString& error)

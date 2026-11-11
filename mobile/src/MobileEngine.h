@@ -1962,6 +1962,7 @@ private:
     void startWanConnect();
     void connectSmartLinkRadioNow(int index, const QList<quint32>& disconnectHandles);
     void openStationConflict(bool wan, const QString& radio, const QVariantList& clients, bool full = false);
+    void askWanStationConflict();
     void setSmartLinkState(const QString& state);
 
     RadioSession m_session;
@@ -2578,6 +2579,8 @@ private:
     QVariantMap m_stationConflict;
     // The SmartLink radio a conflict question is about (-1: a LAN one).
     int m_conflictWanIndex{-1};
+    // The SmartLink radio that refused this app, asked about once the app is idle.
+    QString m_pendingWanConflict;
     // Slots full on the radio's network: where to connect again (m_lastTarget).
     QString m_conflictLanTarget;
     QVariantMap m_fullConflict;  // the slots-full question, until the connection closes

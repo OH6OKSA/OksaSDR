@@ -284,6 +284,7 @@ Page {
                             delegate: RadioRow {
                                 required property int index
                                 required property var modelData
+                                objectName: "smartLinkRadio" + index
                                 title: (modelData.nickname.length > 0 ? modelData.nickname + " — " : "") + modelData.model
                                 subtitle: modelData.status + (modelData.reachable ? "" : qsTr("   not reachable"))
                                 enabled: Engine.connectionState === "idle" && modelData.reachable

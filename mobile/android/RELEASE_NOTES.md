@@ -3,6 +3,7 @@
 ### New in beta 78
 - **Fixed: the app froze for seconds and dropped the radio** (thanks Kurt Hanisch DL5EAG, and the developer's two phones): in beta 77 turning the phone or tablet, folding or unfolding it, or anything else that resized the window could start a layout loop in the hidden Big buttons screen. The app stopped answering for 1 to 8 s at a time, the network badge showed seconds of ping or *Off*, the radio dropped the connection and Android could close the app. Big buttons is now made only while it is on, and its − / + no longer size themselves from their own text.
 - **Big buttons: tap the frequency** to type one, as on the main screen. On a phone on its side **Step** sits beside **Exit**, so **PTT** keeps a height to press and read.
+- **SmartLink: the question when every station slot is taken** (the developer's phone): connecting over SmartLink to a radio whose slots were all in use only said so; the app asked which station to disconnect before the refused connection had closed, so nothing was asked. Now it asks once it has, as on the radio's own network.
 - **Log: the Developer link address** has a line of its own on a phone (it was squeezed too narrow to read).
 
 ### Still new from beta 77
