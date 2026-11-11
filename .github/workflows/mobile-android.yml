@@ -175,18 +175,24 @@ jobs:
 
       # ccache keeps compiled objects between runs, so a change compiles
       # only what it touched. The NDK is installed afresh every run, so the
-      # compiler is checked by content, not by its file time.
+      # compiler is checked by content, not by its file time. The runner
+      # image has no ccache: when apt cannot get it (the Ubuntu mirrors out
+      # of reach on 2026-11-11), the build goes on without it, only slower.
       - name: ccache
         run: |
-          sudo apt-get install -y -qq ccache >/dev/null
-          {
-            echo "CCACHE_DIR=$HOME/.ccache"
-            echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
-            echo "CCACHE_NOHASHDIR=true"
-            echo "CCACHE_COMPILERCHECK=content"
-            echo "CCACHE_MAXSIZE=2G"
-          } >> "$GITHUB_ENV"
-          ccache --version | head -1
+          if sudo apt-get install -y -qq ccache >/dev/null; then
+            {
+              echo "CCACHE_LAUNCHER=ccache"
+              echo "CCACHE_DIR=$HOME/.ccache"
+              echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
+              echo "CCACHE_NOHASHDIR=true"
+              echo "CCACHE_COMPILERCHECK=content"
+              echo "CCACHE_MAXSIZE=2G"
+            } >> "$GITHUB_ENV"
+            ccache --version | head -1
+          else
+            echo "::warning::ccache could not be installed; building without it"
+          fi
 
       - name: Restore ccache
         uses: actions/cache@v4
@@ -213,8 +219,8 @@ jobs:
           fi
           echo "Shows build ($shown); versionCode ${{ github.run_number }}." >> "$GITHUB_STEP_SUMMARY"
           "$QT_ANDROID/bin/qt-cmake" -S . -B build-android -G Ninja \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_C_COMPILER_LAUNCHER="${CCACHE_LAUNCHER:-}" \
+            -DCMAKE_CXX_COMPILER_LAUNCHER="${CCACHE_LAUNCHER:-}" \
             -DCMAKE_BUILD_TYPE=Release \
             -DQT_HOST_PATH="$QT_HOST" \
             -DANDROID_SDK_ROOT="$ANDROID_SDK_ROOT" \
@@ -231,10 +237,10 @@ jobs:
       - name: Build APK
         run: |
           set -o pipefail
-          ccache --zero-stats >/dev/null
+          if [ -n "${CCACHE_LAUNCHER:-}" ]; then ccache --zero-stats >/dev/null; fi
           cmake --build build-android --target apk 2>&1 | tee build.log
           ls -la build-android/mobile/android-build/build/outputs/apk/release/
-          ccache --show-stats | head -20
+          if [ -n "${CCACHE_LAUNCHER:-}" ]; then ccache --show-stats | head -20; fi
 
       - name: Sign APK
         env:
