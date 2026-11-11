@@ -571,16 +571,20 @@ Page {
     }
 
     // Big buttons (roadmap 55) over the whole page, which keeps the keyboard
-    // (Space and a Bluetooth PTT button key, the arrows tune).
-    BigButtonsView {
+    // (Space and a Bluetooth PTT button key, the arrows tune). Made only
+    // while on, so it costs nothing hidden.
+    Loader {
         anchors.fill: parent
         z: 100
-        visible: Engine.bigButtons
-        formatMhz: page.formatMhz
-        marginLeft: page.SafeArea.margins.left
-        marginRight: page.SafeArea.margins.right
-        marginTop: page.SafeArea.margins.top
-        marginBottom: page.SafeArea.margins.bottom
+        active: Engine.bigButtons
+        sourceComponent: BigButtonsView {
+            formatMhz: page.formatMhz
+            marginLeft: page.SafeArea.margins.left
+            marginRight: page.SafeArea.margins.right
+            marginTop: page.SafeArea.margins.top
+            marginBottom: page.SafeArea.margins.bottom
+            onFrequencyTapped: freqDialog.open()
+        }
     }
     Connections {
         target: Engine

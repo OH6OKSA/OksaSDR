@@ -1,6 +1,11 @@
-**OksaSDR for Android — beta 77.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
+**OksaSDR for Android — beta 78.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
-### New in beta 77
+### New in beta 78
+- **Fixed: the app froze for seconds and dropped the radio** (thanks Kurt Hanisch DL5EAG, and the developer's two phones): in beta 77 turning the phone or tablet, folding or unfolding it, or anything else that resized the window could start a layout loop in the hidden Big buttons screen. The app stopped answering for 1 to 8 s at a time, the network badge showed seconds of ping or *Off*, the radio dropped the connection and Android could close the app. Big buttons is now made only while it is on, and its − / + no longer size themselves from their own text.
+- **Big buttons: tap the frequency** to type one, as on the main screen. On a phone on its side **Step** sits beside **Exit**, so **PTT** keeps a height to press and read.
+- **Log: the Developer link address** has a line of its own on a phone (it was squeezed too narrow to read).
+
+### Still new from beta 77
 - **Big buttons** (thanks Michael Walker): **Controls › View › Big buttons** (or **⋯** → *Big buttons*) covers the main screen with a few large controls for the car (the phone mounted, used as the law allows), gloves or a glance: the frequency and mode large, the S meter as a bar, **−** and **+** that tune one step a tap and repeat while held, **Step** (a tap takes the next one) and **PTT** across the bottom, working as the main screen's. A Bluetooth PTT button or a keyboard's Space keys there too, the arrows tune. Hold **Exit** to leave.
 - **SmartLink keeps you signed in through a network dropout** (thanks Ian Gilchrist VK1HF): a phone losing the network (a tunnel, airplane mode, a weak signal) lost its SmartLink sign-in and asked for the password again. Now only SmartLink refusing the sign-in asks for it: without a network, or while SmartLink's server does not answer, the sign-in stays, the Connect page says *SmartLink server not reachable. Retrying…*, and the app tries again by itself (after 5 s, then less often up to every minute, and at once when the network or the app comes back). A **Sign out** now also stays signed out when the app is closed right after it.
 - **Hiding the demo radio** (thanks Ian Gilchrist VK1HF): **Demo** on the Connect page's *On this network* line hides the built-in demo radio (*Hidden*) or shows it again (*Shown*), remembered.

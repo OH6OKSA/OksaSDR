@@ -37,6 +37,7 @@ Popup {
         RowLayout {
             Layout.fillWidth: true
             Label {
+                objectName: "logTitle"
                 text: qsTr("Log (%1 lines)").arg(popup.opened ? LogBuffer.lines.length : 0)
                 color: Theme.text
                 font.pixelSize: Theme.px(22)
@@ -88,34 +89,48 @@ Popup {
         }
 
         // Developer link (off by default): streams this log to a developer's
-        // PC and lets it take screenshots. It cannot transmit.
-        RowLayout {
+        // PC and lets it take screenshots. It cannot transmit. On a phone
+        // upright the address has a row of its own: beside the rest it was
+        // squeezed too narrow to read.
+        component HostField: TextField {
+            Accessible.name: qsTr("Developer link PC address")
+            Layout.fillWidth: true
+            text: DevLink.host
+            placeholderText: qsTr("PC address")
+            inputMethodHints: Qt.ImhPreferNumbers | Qt.ImhNoPredictiveText
+            font.pixelSize: Theme.px(15)
+            onEditingFinished: DevLink.host = text
+        }
+        ColumnLayout {
             Layout.fillWidth: true
             visible: popup.devTools || DevLink.enabled
-            Switch {
-                id: devSwitch
-                checked: DevLink.enabled
-                onToggled: DevLink.enabled = checked
-            }
-            Label { text: qsTr("Developer link"); color: Theme.text; font.pixelSize: Theme.px(15) }
-            TextField {
-                Accessible.name: qsTr("Developer link PC address")
+            spacing: Theme.spacing
+            RowLayout {
                 Layout.fillWidth: true
-                text: DevLink.host
-                placeholderText: qsTr("PC address")
-                inputMethodHints: Qt.ImhPreferNumbers | Qt.ImhNoPredictiveText
-                font.pixelSize: Theme.px(15)
-                onEditingFinished: DevLink.host = text
+                Switch {
+                    id: devSwitch
+                    checked: DevLink.enabled
+                    onToggled: DevLink.enabled = checked
+                }
+                Label {
+                    text: qsTr("Developer link")
+                    color: Theme.text
+                    font.pixelSize: Theme.px(15)
+                    elide: Text.ElideRight
+                    Layout.fillWidth: !popup.wide
+                }
+                HostField { visible: popup.wide }
+                Label {
+                    text: DevLink.status
+                    color: DevLink.status === "connected" ? Theme.accent : Theme.textDim
+                    font.pixelSize: Theme.px(13)
+                    elide: Text.ElideRight
+                    Layout.maximumWidth: 160
+                }
+                // Empties the log, so the next report starts from a known point.
+                AppButton { text: qsTr("Clear"); onClicked: LogBuffer.clear() }
             }
-            Label {
-                text: DevLink.status
-                color: DevLink.status === "connected" ? Theme.accent : Theme.textDim
-                font.pixelSize: Theme.px(13)
-                elide: Text.ElideRight
-                Layout.maximumWidth: 160
-            }
-            // Empties the log, so the next report starts from a known point.
-            AppButton { text: qsTr("Clear"); onClicked: LogBuffer.clear() }
+            HostField { visible: !popup.wide }
         }
 
         ListView {

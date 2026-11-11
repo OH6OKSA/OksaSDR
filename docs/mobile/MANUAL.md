@@ -610,7 +610,9 @@ tune one step a tap (held, they repeat), **Step** (a tap takes the next
 step, after the largest the smallest) and **PTT** across the bottom,
 which works as the main screen's (hold to talk in the voice modes, KEY in
 CW, the transmit lock). A keyboard's Space and a Bluetooth PTT button key
-there too, and the arrows tune. Hold **Exit** to leave; a tap only says
+there too, and the arrows tune. A tap on the frequency opens frequency
+entry, as on the main screen. On a phone on its side **Step** sits beside
+**Exit**, so PTT keeps its height. Hold **Exit** to leave; a tap only says
 so. With a MIDI controller's knob ([Radio Setup › MIDI](#9-radio-setup))
 the tuning needs no look at the screen.
 

@@ -15,6 +15,9 @@ Rectangle {
     id: big
     color: Theme.background
     readonly property bool landscape: width > height * 1.2
+    // A low screen on its side (a phone): the step beside Exit, so PTT keeps
+    // a height to press and read.
+    readonly property bool lowLandscape: landscape && height < 480
     // The page's formatter (14.074.000).
     property var formatMhz: (mhz) => mhz.toFixed(6)
     // The page's safe area, given by the page.
@@ -22,6 +25,8 @@ Rectangle {
     property real marginRight: 0
     property real marginTop: 0
     property real marginBottom: 0
+    // The frequency tapped: the page opens its frequency entry.
+    signal frequencyTapped()
     // S units from dBm (S9 = -73 dBm, 6 dB a unit), as the S meter.
     readonly property real dbm: Engine.sMeterDbm
     readonly property string sText: dbm >= -73 ? "S9+" + Math.round(dbm + 73) : "S" + Math.max(0, Math.floor((dbm + 127) / 6))
@@ -38,6 +43,15 @@ Rectangle {
     // Touches never reach the page under it.
     MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
 
+    // The next tuning step a tap.
+    component StepButton: AppButton {
+        objectName: "bigStep"
+        text: qsTr("Step %1").arg(big.stepText(Engine.stepHz))
+        Accessible.description: qsTr("Tap for the next tuning step")
+        focusPolicy: Qt.NoFocus
+        onClicked: big.nextStep()
+    }
+
     // One step down or up a tap, repeating while held.
     component TuneButton: AppButton {
         id: tune
@@ -45,6 +59,11 @@ Rectangle {
         objectName: direction > 0 ? "bigTuneUp" : "bigTuneDown"
         text: direction > 0 ? "+" : "−"
         Accessible.name: direction > 0 ? qsTr("Tune up one step") : qsTr("Tune down one step")
+        // The size the layout starts from is fixed: taken from the font, which
+        // follows the size the layout gives, it made a layout loop that hung
+        // the app on a turn or a resize (Kurt Hanisch DL5EAG, beta 77).
+        implicitWidth: Theme.touchTarget * 2
+        implicitHeight: Theme.touchTarget * 2
         font.pixelSize: Math.min(width, height) * 0.45
         font.bold: true
         autoRepeat: true
@@ -101,6 +120,12 @@ Rectangle {
                     Timer { running: holdHint.visible; interval: 2500; onTriggered: holdHint.visible = false }
                 }
                 Item { Layout.fillWidth: true }
+                StepButton {
+                    visible: big.lowLandscape
+                    leftPadding: 10
+                    rightPadding: 10
+                    font.pixelSize: Theme.px(18)
+                }
                 Label {
                     text: Engine.mode
                     color: Theme.accent
@@ -118,7 +143,12 @@ Rectangle {
                 fontSizeMode: Text.HorizontalFit
                 minimumPixelSize: 24
                 horizontalAlignment: Text.AlignHCenter
+                // Tap for direct entry, as on the page.
+                Accessible.role: Accessible.Button
                 Accessible.name: qsTr("Frequency %1 kHz").arg((Engine.frequencyMhz * 1000).toFixed(3))
+                Accessible.description: qsTr("Opens frequency entry")
+                Accessible.onPressAction: big.frequencyTapped()
+                TapHandler { onTapped: big.frequencyTapped() }
             }
             // The S meter as a bar, its value at the right.
             RowLayout {
@@ -155,15 +185,11 @@ Rectangle {
                 TuneButton { direction: -1 }
                 TuneButton { direction: 1 }
             }
-            AppButton {
-                objectName: "bigStep"
+            StepButton {
+                visible: !big.lowLandscape
                 Layout.fillWidth: true
                 Layout.preferredHeight: Theme.touchTarget * 1.3
-                text: qsTr("Step %1").arg(big.stepText(Engine.stepHz))
-                Accessible.description: qsTr("Tap for the next tuning step")
                 font.pixelSize: Math.max(Theme.px(22), big.height * 0.03)
-                focusPolicy: Qt.NoFocus
-                onClicked: big.nextStep()
             }
             PttButton {
                 objectName: "bigPtt"
@@ -171,8 +197,10 @@ Rectangle {
                 Layout.fillHeight: true
                 Layout.verticalStretchFactor: 9
                 Layout.preferredHeight: Theme.touchTarget * 2
-                // Large enough to read on a tablet's large button too.
-                fontPx: Math.round(Math.max(40, Math.min(80, big.height * 0.06)))
+                Layout.minimumHeight: Theme.touchTarget
+                // Large enough to read on a tablet's large button too, and
+                // inside a low one on a phone on its side.
+                fontPx: Math.round(Math.max(Math.min(40, big.height * 0.1), Math.min(80, big.height * 0.06)))
             }
         }
         TuneButton {

@@ -9,12 +9,13 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Radio Setup > MIDI: a MIDI controller such as Lynovation's CTR2-MIDI as a VFO knob and buttons, over Bluetooth or USB. Learn each function or import its SmartSDR map; TX from it is off until allowed (thanks Hanno DK3HV, Michael Walker). Android later.
-- View > Big buttons: large − / +, the step and PTT on one screen, for the car (mounted), gloves or a glance (thanks Michael Walker).
-- SmartLink keeps you signed in through a network dropout; the Connect page's Demo hides the demo radio (thanks Ian VK1HF).
-- From build 163: FTx > DXpedition > Hound; the Fox's and contest messages in FT8 / FT4.
+- Fixed: builds 164–165 could freeze for seconds and drop the radio when the screen turned or resized (thanks Kurt DL5EAG).
+- Big buttons: tap the frequency to type one; on a phone on its side Step sits beside Exit, so PTT keeps its size.
+- Log: the Developer link address on its own line on a phone.
+- From build 164: Radio Setup > MIDI controllers (thanks Hanno DK3HV, Michael Walker); View > Big buttons (thanks Michael Walker); SmartLink keeps you signed in through a dropout; Demo hides the demo radio (thanks Ian VK1HF).
 
-RECENT (builds 94–162)
+RECENT (builds 94–163)
+- FTx > DXpedition > Hound; the Fox's and contest messages in FT8 / FT4.
 - Auto AGC-T on every radio; app setups (thanks Larry W9FLA); Macros > Repeat (thanks Robin Bishop); SNR on the meters (thanks Scott L Stanford).
 - The filter centred on a chosen frequency; Log > Send to the developer; NRS up to 50.
 - TUNE restores only what it inhibited; Sound from The radio; the FTx QSO in the Log tab; measured TX power.
