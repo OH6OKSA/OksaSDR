@@ -1246,8 +1246,9 @@ seven.
   - **Voice keyer** (voice modes) — twelve voice macros F1–F12. Tap one to
     transmit it, tap again to stop; press and hold to record (from this
     device's microphone; recording does not transmit), rename or clear. On a
-    radio with SmartSDR+ these are the radio's own DVK slots (up to 10 s,
-    shared with other programs); otherwise the app keeps them on this
+    radio that reports SmartSDR+'s voice keyer these are the radio's own
+    DVK slots (up to 10 s, shared with other programs); otherwise (no
+    SmartSDR+, or a radio that does not say) the app keeps them on this
     device (up to 15 s) and plays them into the transmit audio as if
     spoken. Either way **Listen** plays a recording to you without
     transmitting, so you can check it before naming it. Features that need
@@ -1667,7 +1668,12 @@ seven.
   The app then runs the QSO as WSJT-X does (report, R-report, RR73 or RRR,
   73), stops after six tries without the reply it waits for, and writes the
   contact to the Log tab's log (MODE FT8, or MFSK / FT4) with the
-  frequency of the slice it was made on. As soon as a QSO starts, the Log
+  frequency of the slice it was made on. A DX working several stations at
+  once (MSHV's multi-answer, without Hound) sends your report and your RR73
+  inside its messages to others (*RC3KK RR73; OH6OKSA <KH8A> -16*, then
+  *OH6OKSA RR73; JK1TMP <KH8A> -16*): the app reads both, and that RR73
+  logs the QSO and ends it without a 73, as WSJT-X does, since the DX has
+  gone on (thanks Ben Morris KT4O). As soon as a QSO starts, the Log
   tab shows its call (lookup and worked before), FT8 / FT4 as the mode and
   the reports as they are exchanged; the app logs the QSO itself at the
   end, so the Log button there is not needed. **TX power** in the log is
@@ -2091,7 +2097,9 @@ radio.
     Setup. A USB controller shows when plugged in. **Connect to it by
     itself** opens the last one used whenever it is there (the CTR2 once
     it is switched on). **Last message** shows what the controller sent,
-    e.g. *CC 100 = 65, channel 1*.
+    e.g. *CC 100 = 65, channel 1*. The app's log also gets the VFO knob's
+    first messages and steps of each turn, so a log sent with **Log ›
+    Send to the developer** tells how a controller's knob is read.
   - **Functions**: tap **Learn** by a function, then turn or press the
     control on the controller; a knob learned for the **VFO knob** tunes
     by the tuning step. **×** clears one, **Clear all** every one.

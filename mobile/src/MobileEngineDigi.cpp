@@ -1917,6 +1917,16 @@ void MobileEngine::handleDigiDecodes(const QVariantList& decodes, qint64 slotMs)
             m_digiRxHz = d.value(QStringLiteral("freq")).toInt();
             emit digiChanged();
         }
+        // A DX working several at once (MSHV's multi-answer, a Fox) ends our
+        // QSO in its message to the next: "KT4O RR73; JK1TMP <KH8A> -16".
+        // Logged, and no 73: the DX has gone on (WSJT-X's "dual Fox style
+        // message"). Hound has its own rules above. Ben Morris KT4O, build 166.
+        if (p.dxped && !my.isEmpty() && p.rr73To == my && !m_digiDx.isEmpty()
+            && (p.de.isEmpty() || baseCall(p.de) == baseCall(m_digiDx))) {
+            digiLogQso();
+            digiFinishQso(tr("RR73 from %1: QSO logged").arg(m_digiDx));
+            return;
+        }
         if (p.to != my || p.de.isEmpty()) {
             continue;
         }

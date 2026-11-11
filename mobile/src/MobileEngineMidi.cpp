@@ -23,6 +23,7 @@
 #include "core/MidiSettings.h"
 #endif
 
+#include <QDateTime>
 #include <QLoggingCategory>
 #include <QUrl>
 
@@ -46,6 +47,11 @@ constexpr int kMidiWatchMs = 4000;
 constexpr int kMidiTuneIdleMs = 250;
 // The last-message line is updated at most this often.
 constexpr int kMidiActivityMs = 200;
+// A turn of the VFO knob starts after this long without its messages; the
+// first few messages and steps of each turn go to the log.
+constexpr int kMidiVfoTurnGapMs = 1500;
+constexpr int kMidiVfoLogPerTurn = 6;
+const QString kMidiVfoParam = QStringLiteral("rx.tuneKnob");
 const QString kMidiTransmitKey = QStringLiteral("MobileMidiTransmit");
 } // namespace
 
@@ -65,10 +71,40 @@ void MobileEngine::setupMidi()
             });
     connect(m_midi, &MidiControlManager::relativeAction, this, [this](const QString& paramId, int steps) {
         if (MidiControlManager::isVfoTuneKnob(paramId)) {
+            if (m_midiVfoStepsLogged < kMidiVfoLogPerTurn) {
+                ++m_midiVfoStepsLogged;
+                qCInfo(lcMobile).noquote() << "MIDI: VFO knob"
+                                           << (steps > 0 ? QStringLiteral("+%1").arg(steps) : QString::number(steps))
+                                           << "step(s) of" << stepHz() << "Hz";
+            }
             midiTune(steps);
         }
     });
     connect(m_midi, &MidiControlManager::midiActivity, this, [this](int channel, int type, int number, int value) {
+        // The VFO knob's raw values, a few at the start of each turn: the
+        // encoding a controller uses (64 +/- n, 1 / 127, 0 / 127 ...) is
+        // read from them, and the steps above show how they were taken.
+        for (const MidiBinding& b : m_midi->bindings()) {
+            if (b.paramId != kMidiVfoParam || static_cast<int>(b.msgType) != type
+                || (type != MidiBinding::PitchBend && b.number != number) || (b.channel >= 0 && b.channel != channel)) {
+                continue;
+            }
+            const qint64 now = QDateTime::currentMSecsSinceEpoch();
+            if (now - m_midiVfoLogMs > kMidiVfoTurnGapMs) {
+                m_midiVfoRawLogged = 0;
+                m_midiVfoStepsLogged = 0;
+            }
+            m_midiVfoLogMs = now;
+            if (m_midiVfoRawLogged < kMidiVfoLogPerTurn) {
+                ++m_midiVfoRawLogged;
+                qCInfo(lcMobile).noquote() << "MIDI: VFO knob sent"
+                                           << (type == MidiBinding::PitchBend ? QStringLiteral("pitch bend = %1").arg(value)
+                                                                              : QStringLiteral("CC %1 = %2").arg(number).arg(value))
+                                           << QStringLiteral("channel %1,").arg(channel + 1)
+                                           << (b.relative ? "relative" : "not relative") + QString(b.inverted ? ", inverted" : "");
+            }
+            break;
+        }
         QString what;
         switch (type) {
         case MidiBinding::CC: what = QStringLiteral("CC %1 = %2").arg(number).arg(value); break;
@@ -98,6 +134,12 @@ void MobileEngine::setupMidi()
     });
     connect(m_midi, &MidiControlManager::portOpened, this, [this](const QString& name) {
         qCInfo(lcMobile).noquote() << "MIDI: opened" << name << "," << m_midi->bindings().size() << "bindings";
+        for (const MidiBinding& b : m_midi->bindings()) {
+            if (b.paramId == kMidiVfoParam) {
+                qCInfo(lcMobile).noquote() << "MIDI: VFO knob on" << b.sourceDisplayName()
+                                           << QString(b.relative ? "(relative" : "(not relative") + (b.inverted ? ", inverted)" : ")");
+            }
+        }
         MidiSettings::instance().setLastDevice(name);
         MidiSettings::instance().save();
         emit midiChanged();

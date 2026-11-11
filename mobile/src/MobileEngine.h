@@ -2359,6 +2359,11 @@ private:
     bool m_midiDah{false};
     // A transmission MIDI keyed is under way: ended when the controller goes.
     bool m_midiKeyed{false};
+    // The VFO knob's first messages and steps of each turn go to the log
+    // (roadmap 60: what a controller sends is known from a tester's log).
+    qint64 m_midiVfoLogMs{0};
+    int m_midiVfoRawLogged{0};
+    int m_midiVfoStepsLogged{0};
     bool m_bigButtons{false};
     // Auto AGC-T (MobileEngineAgcAuto.cpp).
     void setupAgcAuto();

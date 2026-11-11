@@ -9,11 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Fixed: builds 164–165 could freeze for seconds and drop the radio when the screen turned or resized (thanks Kurt DL5EAG).
-- Big buttons: the slices as on the main screen (TX power, tap and hold as there), two meters you choose, tap the frequency to type one, a larger Step; on its side the meters run across the top.
-- SmartLink: with all station slots taken, it asks again which to drop.
-- Log: the Developer link address on its own line on phones.
-- From build 164: MIDI controllers (thanks Hanno DK3HV, Michael Walker); Big buttons (thanks Michael Walker); SmartLink sign-in kept in a dropout; Demo hides the demo radio (thanks Ian VK1HF).
+- FTx: a DX working several at once (as KH8A) sends your RR73 inside its message to the next; it now logs the QSO (thanks Ben KT4O).
+- Voice keyer: the radio's own DVK only when the radio reports SmartSDR+ for it, otherwise the app's recordings (thanks Ian VK1HF).
+- MIDI: the log shows what the VFO knob sends.
+- The app icon made again from the vector original: clean at every size.
+- From builds 164–166: the freeze on a turn fixed (thanks Kurt DL5EAG); Big buttons with the slices and two meters (thanks Michael Walker); MIDI controllers (thanks Hanno DK3HV); SmartLink sign-in kept in a dropout; Demo hides the demo radio (thanks Ian VK1HF).
 
 RECENT (builds 94–163)
 - FTx > DXpedition > Hound; the Fox's and contest messages in FT8 / FT4.

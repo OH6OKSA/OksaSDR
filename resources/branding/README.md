@@ -19,6 +19,9 @@ The OksaSDR mark (circular green→blue emblem, circuit-trace / rising-arrow
 motif), symbol only, no wordmark, on a white background. The original source
 is a 1024×1024 raster; a **vector (SVG) version now exists** in `source/`
 (see below) — use it as the master for any new or regenerated sizes.
+`source/make-icons.sh` makes the whole set from it (iOS, Android's
+adaptive, legacy and round icons at five densities, the Play icon) with
+the mark at the sizes the raster set had (rsvg-convert and ImageMagick 7).
 
 Note: the vector scales cleanly, but the mark itself is detailed. At the
 smallest launcher sizes (≈32–64 px) the fine traces and node circles still

@@ -3150,14 +3150,16 @@ QString MobileEngine::dvkStateName(int status)
 bool MobileEngine::radioFeatureLicensed(const QString& feature) const
 {
     // SmartSDR+ features: the radio's `license feature` status says which it
-    // has. Until it has said, assume present (older firmware never says).
+    // has. Until it has said, not present (roadmap 53: a radio without
+    // SmartSDR+ got the radio's DVK, Ian Gilchrist VK1HF): the app's own
+    // way serves meanwhile, and always on firmware that never says.
     const RadioModel& rm = m_session.radioModel();
     for (const QString& name : {feature.toLower(), feature.toUpper()}) {
         if (rm.licenseFeatureSeen(name)) {
             return rm.licenseFeatureEnabled(name);
         }
     }
-    return true;
+    return false;
 }
 
 bool MobileEngine::dvkOnRadio() const

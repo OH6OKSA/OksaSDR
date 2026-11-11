@@ -2549,6 +2549,49 @@ int main(int argc, char* argv[])
             engine.setDigiProtocol(protocolBefore);
             QTimer::singleShot(500, &app, &QCoreApplication::quit);
         });
+    } else if (parser.isSet(ft8TestOption) && parser.value(ft8TestOption).contains(QStringLiteral("multi"))) {
+        // A DX working several at once (roadmap 59, Ben Morris KT4O's KH8A),
+        // Hound off, without RF: its report and its RR73 come in its
+        // messages to others. Another DX's RR73 to us must not end the QSO.
+        const QString protocolBefore = engine.digiProtocol();
+        engine.setDigiDryRun(true);
+        const auto feed = [&engine](const QString& text, int hz, int snr) {
+            engine.digiInjectDecodes({QVariantMap{{QStringLiteral("utc"), QStringLiteral("000000")},
+                                                  {QStringLiteral("snr"), snr}, {QStringLiteral("dt"), QStringLiteral("0.1")},
+                                                  {QStringLiteral("freq"), hz}, {QStringLiteral("text"), text},
+                                                  {QStringLiteral("hl"), QString()}}});
+        };
+        const auto show = [&engine](const QString& what) {
+            const QVariantMap d = engine.digi();
+            qInfo().noquote() << "multi-test:" << what << "->" << d.value(QStringLiteral("state")).toString() << "|"
+                              << d.value(QStringLiteral("status")).toString() << "| next" << d.value(QStringLiteral("txMsg")).toString();
+        };
+        QTimer::singleShot(9000, &app, [&engine, feed, show] {
+            engine.setDigiProtocol(QStringLiteral("FT8"));
+            engine.setDigiRunning(true);
+            feed(QStringLiteral("CQ KH8A AH45"), 503, -8);
+            engine.digiAnswer(0);
+            show(QStringLiteral("CQ KH8A answered"));
+        });
+        QTimer::singleShot(30000, &app, [feed, show] {
+            feed(QStringLiteral("RC3KK RR73; OH6OKSA <KH8A> -16"), 503, -11);
+            show(QStringLiteral("report in another's RR73"));
+        });
+        QTimer::singleShot(45000, &app, [feed, show] {
+            feed(QStringLiteral("OH6OKSA RR73; W9XYZ <KH1/KH7Z> -11"), 360, -6);
+            show(QStringLiteral("another DX's RR73"));
+        });
+        QTimer::singleShot(60000, &app, [feed, show] {
+            feed(QStringLiteral("OH6OKSA RR73; JK1TMP <KH8A> -16"), 503, -12);
+            show(QStringLiteral("RR73 in its message to the next"));
+        });
+        QTimer::singleShot(70000, &app, [&app, &engine, show, protocolBefore] {
+            show(QStringLiteral("end"));
+            engine.digiHalt();
+            engine.setDigiRunning(false);
+            engine.setDigiProtocol(protocolBefore);
+            QTimer::singleShot(500, &app, &QCoreApplication::quit);
+        });
     } else if (parser.isSet(ft8TestOption) && parser.value(ft8TestOption).contains(QStringLiteral("keepcq"))) {
         // Keep CQ and the CQ slot without RF: dry transmissions, a station
         // answering our CQ fed in by hand, then CQ must start again.
