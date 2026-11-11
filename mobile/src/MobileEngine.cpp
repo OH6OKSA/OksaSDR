@@ -2999,7 +2999,9 @@ void MobileEngine::setMeterStyle(const QString& side, const QString& style)
 QString MobileEngine::meterChoice(const char* key, const char* fallback) const
 {
     const QString k = QLatin1String(key);
-    const QString side = k.contains(QLatin1String("Left")) ? QStringLiteral("left") : QStringLiteral("right");
+    // Big buttons' bars offer the left meter's kinds (the mic level too).
+    const QString side = k.contains(QLatin1String("Left")) || k.contains(QLatin1String("Big")) ? QStringLiteral("left")
+                                                                                             : QStringLiteral("right");
     const QString kind = AppSettings::instance().value(k, QLatin1String(fallback)).toString();
     return meterKindsFor(side, k.endsWith(QLatin1String("Tx"))).contains(kind) ? kind : QString::fromLatin1(fallback);
 }
@@ -3027,6 +3029,8 @@ void MobileEngine::setMeter(const QString& side, bool tx, const QString& kind)
     const QString base = side == QLatin1String("left")     ? QStringLiteral("MobileMeterLeft")
                          : side == QLatin1String("left2")  ? QStringLiteral("MobileMeterLeft2")
                          : side == QLatin1String("right2") ? QStringLiteral("MobileMeterRight2")
+                         : side == QLatin1String("big1")   ? QStringLiteral("MobileMeterBig1")
+                         : side == QLatin1String("big2")   ? QStringLiteral("MobileMeterBig2")
                                                            : QStringLiteral("MobileMeterRight");
     const QString key = tx ? base + QStringLiteral("Tx") : base;
     if (meterKindsFor(side, tx).contains(kind) && AppSettings::instance().value(key).toString() != kind) {

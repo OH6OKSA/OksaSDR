@@ -248,6 +248,8 @@ Page {
     GridLayout {
         id: grid
         anchors.fill: parent
+        // Off under Big buttons, so no tap there reaches it.
+        enabled: !Engine.bigButtons
         // Stay clear of the home indicator and rounded corners: iOS defers or
         // cancels touches at the screen edges, which would end a held PTT.
         // The page's safe area, not the grid's own (that is a binding loop:

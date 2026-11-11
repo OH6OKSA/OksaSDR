@@ -121,6 +121,7 @@ ColumnLayout {
         Layout.fillWidth: true
         AppButton {
             id: tuneButton
+            objectName: "txTune"
             text: Engine.tuning ? qsTr("TUNE ●") : Engine.txLocked ? qsTr("TUNE · SB") : qsTr("TUNE")
             enabled: Engine.tuneAvailable || Engine.tuning
             Layout.fillWidth: true

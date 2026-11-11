@@ -605,16 +605,29 @@ screen reader inside them, are still to come.
 **View › Big buttons** (or **⋯** → *Big buttons* on a phone) covers the
 main screen with a few large controls, for the car (the device mounted,
 used as the law allows), gloves or a glance (asked by Michael Walker):
-the frequency and mode large, the S meter as a bar, **−** and **+** that
-tune one step a tap (held, they repeat), **Step** (a tap takes the next
-step, after the largest the smallest) and **PTT** across the bottom,
-which works as the main screen's (hold to talk in the voice modes, KEY in
-CW, the transmit lock). A keyboard's Space and a Bluetooth PTT button key
-there too, and the arrows tune. A tap on the frequency opens frequency
-entry, as on the main screen. On a phone on its side **Step** sits beside
-**Exit**, so PTT keeps its height. Hold **Exit** to leave; a tap only says
-so. With a MIDI controller's knob ([Radio Setup › MIDI](#9-radio-setup))
-the tuning needs no look at the screen.
+
+- **Exit** at the top left: hold it to leave; a tap only says so.
+- **The slices** beside it as on the main screen: the transmit slice's
+  chip shows its letter and the set power (*TX 100 W*; a % on an Aurora,
+  AMP with an amplifier in Operate), the others their letter. A tap makes a
+  slice the active one, a tap on the red tag opens the power slider, a hold
+  the menu (*Make TX slice*, *Close slice*). With three or more slices the
+  chips have a row of their own.
+- **The mode** at the top right and **the frequency** large; a tap on the
+  frequency opens frequency entry, as on the main screen.
+- **Two meters** as bars with their readings large (S and the supply
+  voltage, Power and SWR while transmitting). A tap on one chooses what it
+  shows, in receive and in transmit, apart from the main screen's meters.
+- **−** and **+** tune one step a tap (held, they repeat); **Step** takes
+  the next step (after the largest the smallest).
+- **PTT** across the bottom works as the main screen's (hold to talk in the
+  voice modes, KEY in CW, the transmit lock; TUNE shows on it while tuning).
+
+On its side the top row and the meters run across the whole width, − and
++ at the sides of the frequency and PTT; on a low phone **Step** sits in
+the top row. A keyboard's Space and a Bluetooth PTT button key there too,
+and the arrows tune. With a MIDI controller's knob ([Radio Setup ›
+MIDI](#9-radio-setup)) the tuning needs no look at the screen.
 
 ![Big buttons](manual/big-buttons.jpg)
 

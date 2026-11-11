@@ -123,6 +123,8 @@ Page {
     GridLayout {
         id: grid
         anchors.fill: parent
+        // Off under Big buttons, so no tap there reaches it.
+        enabled: !Engine.bigButtons
         // The page's safe area, not the grid's own: the grid's margins move
         // the grid, which changes its own safe area (a binding loop that left
         // the layout unsettled after a rotation on Android).

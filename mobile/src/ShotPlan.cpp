@@ -1017,7 +1017,11 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                 if (QString::fromLatin1(child->metaObject()->className()).contains(QLatin1String("Overlay"))) {
                     for (QQuickItem* c : child->childItems()) {
                         if (c->isVisible()) {
-                            overlay << QString::fromLatin1(c->metaObject()->className()) + QLatin1Char(' ') + c->objectName();
+                            // The popup's own objectName too (its item's
+                            // QObject parent), to tell plain Popups apart.
+                            const QString name = c->parent() ? c->parent()->objectName() : QString();
+                            overlay << QString::fromLatin1(c->metaObject()->className()) + QLatin1Char(' ') + c->objectName()
+                                           + (name.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(name));
                         }
                     }
                 }

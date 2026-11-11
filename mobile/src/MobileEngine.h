@@ -650,6 +650,12 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QString meterLeft2Tx READ meterLeft2Tx NOTIFY meterSelectionChanged)
     Q_PROPERTY(QString meterRight2 READ meterRight2 NOTIFY meterSelectionChanged)
     Q_PROPERTY(QString meterRight2Tx READ meterRight2Tx NOTIFY meterSelectionChanged)
+    // Big buttons' two bars (roadmap 58), their own choices: S and the
+    // supply voltage in receive, power and SWR in transmit.
+    Q_PROPERTY(QString meterBig1 READ meterBig1 NOTIFY meterSelectionChanged)
+    Q_PROPERTY(QString meterBig1Tx READ meterBig1Tx NOTIFY meterSelectionChanged)
+    Q_PROPERTY(QString meterBig2 READ meterBig2 NOTIFY meterSelectionChanged)
+    Q_PROPERTY(QString meterBig2Tx READ meterBig2Tx NOTIFY meterSelectionChanged)
     // Development (--preview-tx): the meters as while transmitting, nothing
     // keyed (screenshots of the transmit layout).
     Q_PROPERTY(bool previewTx MEMBER m_previewTx NOTIFY meterSelectionChanged)
@@ -1647,8 +1653,12 @@ public:
     QString meterLeft2Tx() const { return meterChoice("MobileMeterLeft2Tx", "Mic"); }
     QString meterRight2() const;
     QString meterRight2Tx() const { return meterChoice("MobileMeterRight2Tx", "ALC"); }
-    // side "left"/"right" (the lower bars "left2"/"right2"), tx: the
-    // transmit choice instead of the receive one.
+    QString meterBig1() const { return meterChoice("MobileMeterBig1", "S"); }
+    QString meterBig1Tx() const { return meterChoice("MobileMeterBig1Tx", "Power"); }
+    QString meterBig2() const { return meterChoice("MobileMeterBig2", "Volts"); }
+    QString meterBig2Tx() const { return meterChoice("MobileMeterBig2Tx", "SWR"); }
+    // side "left"/"right" (the lower bars "left2"/"right2", Big buttons'
+    // "big1"/"big2"), tx: the transmit choice instead of the receive one.
     Q_INVOKABLE void setMeter(const QString& side, bool tx, const QString& kind);
 
     // Tune carrier and the radio's ATU. Both transmit, so both go through

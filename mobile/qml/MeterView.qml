@@ -21,9 +21,14 @@ Item {
     // Receive and transmit each have their own choice (e.g. S / SWR).
     readonly property bool txView: Engine.radioTransmitting || Engine.tuning || Engine.previewTx
     readonly property string rxKind: side === "left" ? Engine.meterLeft : side === "right" ? Engine.meterRight
-                                   : side === "left2" ? Engine.meterLeft2 : Engine.meterRight2
+                                   : side === "left2" ? Engine.meterLeft2 : side === "big1" ? Engine.meterBig1
+                                   : side === "big2" ? Engine.meterBig2 : Engine.meterRight2
     readonly property string txKind: side === "left" ? Engine.meterLeftTx : side === "right" ? Engine.meterRightTx
-                                   : side === "left2" ? Engine.meterLeft2Tx : Engine.meterRight2Tx
+                                   : side === "left2" ? Engine.meterLeft2Tx : side === "big1" ? Engine.meterBig1Tx
+                                   : side === "big2" ? Engine.meterBig2Tx : Engine.meterRight2Tx
+    // False for a bar with no style of its own (Big buttons' "big1" /
+    // "big2"): its chooser offers only what it shows.
+    property bool styleChoice: true
     readonly property string kind: txView ? txKind : rxKind
 
     implicitWidth: compact ? 120 : 180
@@ -259,6 +264,7 @@ Item {
             // Two bars: one over the other, each with its own receive and
             // transmit choice (the lower bar's from a tap on it).
             RowLayout {
+                visible: meter.styleChoice
                 spacing: 4
                 Repeater {
                     // Two analog faces side by side only where there can be
@@ -303,7 +309,7 @@ Item {
                 }
             }
             Label {
-                visible: (meter.style === "analog" && !meter.lower || meter.style === "analog2") && !meter.analogAllowed
+                visible: meter.styleChoice && (meter.style === "analog" && !meter.lower || meter.style === "analog2") && !meter.analogAllowed
                 text: meter.style === "analog2" ? qsTr("Two bars here: two analog faces need more room. They return where there is space.")
                                                 : qsTr("Bars here: an analog face needs more room. It returns where there is space.")
                 color: Theme.textDim
@@ -313,7 +319,9 @@ Item {
             }
             Repeater {
                 // With two bars each has its own choices.
-                model: meter.lower ? (meter.style === "analog2"
+                model: meter.side === "big1" ? [{ title: qsTr("Upper bar: receive"), tx: false }, { title: qsTr("Upper bar: transmit"), tx: true }]
+                     : meter.side === "big2" ? [{ title: qsTr("Lower bar: receive"), tx: false }, { title: qsTr("Lower bar: transmit"), tx: true }]
+                     : meter.lower ? (meter.style === "analog2"
                                       ? [{ title: qsTr("Second meter: receive"), tx: false }, { title: qsTr("Second meter: transmit"), tx: true }]
                                       : [{ title: qsTr("Lower bar: receive"), tx: false }, { title: qsTr("Lower bar: transmit"), tx: true }])
                      : meter.style === "analog2" ? [{ title: qsTr("First meter: receive"), tx: false }, { title: qsTr("First meter: transmit"), tx: true }]

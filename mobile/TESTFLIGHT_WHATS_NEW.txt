@@ -10,17 +10,17 @@ GETTING STARTED
 
 NEW IN THIS BUILD
 - Fixed: builds 164–165 could freeze for seconds and drop the radio when the screen turned or resized (thanks Kurt DL5EAG).
-- Big buttons: tap the frequency to type one; on a phone on its side Step sits beside Exit, so PTT keeps its size.
-- SmartLink: with every station slot taken, the app asks again which station to drop.
-- Log: the Developer link address on its own line on a phone.
+- Big buttons: the slices as on the main screen (TX power, tap and hold as there), two meters you choose, tap the frequency to type one, a larger Step; on its side the meters run across the top.
+- SmartLink: with all station slots taken, it asks again which to drop.
+- Log: the Developer link address on its own line on phones.
 - From build 164: MIDI controllers (thanks Hanno DK3HV, Michael Walker); Big buttons (thanks Michael Walker); SmartLink sign-in kept in a dropout; Demo hides the demo radio (thanks Ian VK1HF).
 
 RECENT (builds 94–163)
 - FTx > DXpedition > Hound; the Fox's and contest messages in FT8 / FT4.
 - Auto AGC-T on every radio; app setups (thanks Larry W9FLA); Macros > Repeat (thanks Robin Bishop); SNR on the meters (thanks Scott L Stanford).
-- The filter centred on a chosen frequency; Log > Send to the developer; NRS up to 50.
-- TUNE restores only what it inhibited; Sound from The radio; the FTx QSO in the Log tab; measured TX power.
-- eSSB tube, EVO, reverb; Amp by maker; first-run hints; felt slider taps.
+- The filter centred on a chosen frequency; Log > Send to the developer.
+- TUNE restores only what it inhibited; Sound from The radio; measured TX power.
+- eSSB tube, EVO, reverb; Amp by maker; first-run hints.
 - Band plan lock (thanks Tyler K0OTC); FTx CQ DX (thanks Kurt DL5EAG); Display Zoom (thanks Evgeny R0ACS); Antenna Genius (thanks Ben Morris).
 - RF2K-S control and Tune, the amp on every meter (thanks Sebastian DG5CST, Jeff Stinger); Macros by PTT (thanks Tyler K0OTC).
 - PSK31 / PSK63 and RTTY on the Digi tab; ⌘1–⌘0 as F1–F10; worked before from Wavelog, QRZ.com or a shared ADIF file.
@@ -38,7 +38,7 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab: decode, drag the red TX band to a free frequency, answer a CQ at low power and check the log. [TX]
 - The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: Radio Setup > MIDI with a MIDI controller, and View > Big buttons.
+- New: View > Big buttons and Radio Setup > MIDI.
 - AGC panel > Auto on a clear spot.
 - The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]
 

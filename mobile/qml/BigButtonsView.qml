@@ -2,10 +2,13 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import AetherMobile
+import "MeterMarks.js" as MeterMarks
 
 // Big buttons (roadmap 55, Michael Walker): the operating page covered by a
 // few large controls for the car (mounted, used as the law allows), gloves
-// or a glance: the frequency and mode large, the S meter as a bar, − and +
+// or a glance: the frequency and mode large, the slice as the main screen's
+// chip with the set power and two bar meters of their own choosing (roadmap
+// 58, the user), − and +
 // filling the middle (one tuning step a tap, repeating while held), the step
 // (a tap takes the next one), and PTT across the bottom. It lies over the
 // page rather than in a popup, so the page keeps the keyboard: Space and a
@@ -27,9 +30,20 @@ Rectangle {
     property real marginBottom: 0
     // The frequency tapped: the page opens its frequency entry.
     signal frequencyTapped()
-    // S units from dBm (S9 = -73 dBm, 6 dB a unit), as the S meter.
-    readonly property real dbm: Engine.sMeterDbm
-    readonly property string sText: dbm >= -73 ? "S9+" + Math.round(dbm + 73) : "S" + Math.max(0, Math.floor((dbm + 127) / 6))
+    // Every slice as a chip, as on the main screen (by letter): up to two in
+    // the top row, more on a row of their own. The frequency, mode, − / +
+    // and the meters follow the active one.
+    readonly property var allSlices: {
+        const list = []
+        for (const s of Engine.slices) list.push(s)
+        return list.sort((x, y) => x.letter.localeCompare(y.letter))
+    }
+    readonly property bool chipRow: allSlices.length > 2
+    readonly property bool ampOperating: (!!Engine.amp.set && Engine.amp.operate === "OPERATE")
+                                         || (!!Engine.pgxl.present && !!Engine.pgxl.operate)
+    // The meters' reading size (the first version's S reading), larger on a
+    // tablet, and the chips' text from it.
+    readonly property real readingPx: Math.round(Math.max(Theme.px(24), Math.min(44, height * 0.03)))
     function stepText(hz) {
         return hz >= 1000 ? (hz / 1000) + " kHz" : hz + " Hz"
     }
@@ -40,7 +54,9 @@ Rectangle {
         Engine.setStepHz(list[(i + 1) % list.length])
     }
 
-    // Touches never reach the page under it.
+    // Touches never reach the page under it (the page also turns its own
+    // controls off meanwhile: tap handlers under an item that takes a press
+    // still get it, and a tap on a meter here opened the page's mode list).
     MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
 
     // The next tuning step a tap.
@@ -50,6 +66,155 @@ Rectangle {
         Accessible.description: qsTr("Tap for the next tuning step")
         focusPolicy: Qt.NoFocus
         onClicked: big.nextStep()
+    }
+
+    // A slice as the main screen's chip, working as it does there: its
+    // letter and, on the transmit slice, the red tag with the set power
+    // ("TX 100 W", a % on an Aurora, AMP with an amplifier in Operate). A tap
+    // makes it the active slice, a tap on the tag opens the power slider, a
+    // hold the menu (Make TX slice, Close slice).
+    component SliceChip: AppButton {
+        id: chip
+        property var slice
+        objectName: "bigSlice" + slice.letter
+        checked: slice.active
+        leftPadding: 10
+        rightPadding: 10
+        font.pixelSize: Math.round(Math.max(Theme.buttonFont, big.readingPx * 0.7))
+        focusPolicy: Qt.NoFocus
+        Accessible.name: qsTr("Slice %1%2").arg(slice.letter)
+                         .arg(slice.tx ? qsTr(", the transmit slice, %1").arg(chip.powerText) : "")
+        Accessible.description: qsTr("Hold for Make TX slice and Close slice")
+        readonly property string powerText: Engine.rfPower + (Engine.rfPowerIsPercent ? " %" : " W")
+                                            + (big.ampOperating ? " AMP" : "")
+        onClicked: Engine.selectSlice(slice.id)
+        onPressAndHold: sliceMenu.popup(chip, 0, chip.height)
+        // The letter at the left, the tag at the right and room between
+        // them, so a tap in the middle selects the slice (a large hand in the
+        // car hit the tag).
+        contentItem: Item {
+            implicitWidth: letter.implicitWidth + (tag.visible ? tag.width + Theme.touchTarget * 0.6 : Theme.touchTarget * 0.4)
+            implicitHeight: Math.max(letter.implicitHeight, tag.height)
+            Text {
+                id: letter
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                text: chip.slice.letter
+                font.pixelSize: chip.font.pixelSize
+                font.bold: true
+                color: chip.checked ? Theme.buttonTextOn : Theme.buttonText
+            }
+            Rectangle {
+                id: tag
+                visible: !!chip.slice.tx
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                width: tagText.implicitWidth + 10
+                height: tagText.implicitHeight + 4
+                radius: 4
+                color: Theme.transmitTag
+                Accessible.role: Accessible.Button
+                Accessible.name: qsTr("Transmit power %1").arg(chip.powerText)
+                Accessible.description: qsTr("Opens the power slider")
+                Accessible.onPressAction: powerPopup.open()
+                Text {
+                    id: tagText
+                    Accessible.ignored: true
+                    anchors.centerIn: parent
+                    text: "TX " + chip.powerText
+                    font.pixelSize: chip.font.pixelSize
+                    font.bold: true
+                    color: "#ffffff"
+                }
+                // Its own tap, the tag alone; the rest of the chip selects
+                // the slice.
+                MouseArea {
+                    objectName: "bigSliceTxPower"
+                    anchors.fill: parent
+                    onClicked: powerPopup.open()
+                }
+            }
+        }
+        SlicePowerPopup {
+            id: powerPopup
+            objectName: "bigSlicePowerPopup"
+            ampOperating: big.ampOperating
+        }
+        SliceMenu {
+            id: sliceMenu
+            slice: chip.slice
+        }
+    }
+
+    // A meter as the first version's S bar, readable in the car: its name,
+    // a thick bar and the reading large beside it. A tap chooses what it
+    // shows (the main meters' chooser, receive and transmit each, kept apart
+    // from them), through the meter face hidden under it.
+    component BigMeter: Item {
+        id: bm
+        property alias side: face.side
+        implicitHeight: Math.max(big.readingPx * 1.25, Theme.touchTarget * 0.6)
+        MeterView {
+            id: face
+            anchors.fill: parent
+            opacity: 0
+            compact: true
+            analogAllowed: false
+            styleChoice: false
+        }
+        readonly property var r: face.reading
+        // S: the S units (S9+10); the others: the number and unit alone.
+        readonly property string value: !r.live ? "–"
+            : face.kind === "S" ? r.text.split(" ")[0] : r.text.replace(/^[A-Za-z]+ (?=[-−0-9<])/, "")
+        // S9 and over red, as the first version; the others at their alarm.
+        readonly property real redAt: face.kind === "S" ? -73 : r.red
+        RowLayout {
+            anchors.fill: parent
+            spacing: Theme.spacing
+            Label {
+                text: MeterMarks.meterName(face.kind, true)
+                color: Theme.textDim
+                font.pixelSize: Math.round(big.readingPx * 0.6)
+                Layout.preferredWidth: nameMetrics.advanceWidth
+                TextMetrics { id: nameMetrics; font.pixelSize: Math.round(big.readingPx * 0.6); text: "Power" }
+            }
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: Math.round(big.readingPx * 0.9)
+                radius: 4
+                color: Theme.surface
+                Rectangle {
+                    height: parent.height
+                    width: bm.r.live ? parent.width * Math.max(0, Math.min(1, (bm.r.v - bm.r.min) / (bm.r.max - bm.r.min))) : 0
+                    radius: 4
+                    color: bm.r.v >= bm.redAt ? Theme.transmit : Theme.accent
+                }
+            }
+            Label {
+                text: bm.value
+                color: Theme.text
+                font.pixelSize: big.readingPx
+                font.bold: true
+                horizontalAlignment: Text.AlignRight
+                // A fixed width, so the bar does not jump with the reading.
+                Layout.preferredWidth: valueMetrics.advanceWidth
+                TextMetrics { id: valueMetrics; font.pixelSize: big.readingPx; font.bold: true; text: "S9+40" }
+            }
+        }
+    }
+
+    component BigMeters: ColumnLayout {
+        spacing: Theme.spacing / 2
+        BigMeter {
+            objectName: "bigMeter1"
+            side: "big1"
+            Layout.fillWidth: true
+        }
+        BigMeter {
+            objectName: "bigMeter2"
+            side: "big2"
+            Layout.fillWidth: true
+        }
     }
 
     // One step down or up a tap, repeating while held.
@@ -88,51 +253,82 @@ Rectangle {
         columnSpacing: Theme.spacing
         rowSpacing: Theme.spacing
 
+        // The top row and the slices across the whole width, upright and on
+        // its side.
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.columnSpan: big.landscape ? 3 : 1
+            AppButton {
+                id: exitButton
+                objectName: "bigExit"
+                text: qsTr("Exit")
+                Accessible.name: qsTr("Exit big buttons")
+                Accessible.description: qsTr("Hold to exit")
+                focusPolicy: Qt.NoFocus
+                onPressAndHold: Engine.bigButtons = false
+                onClicked: holdHint.visible = true
+            }
+            Label {
+                id: holdHint
+                visible: false
+                text: qsTr("hold to exit")
+                color: Theme.textDim
+                font.pixelSize: Theme.px(14)
+                Timer { running: holdHint.visible; interval: 2500; onTriggered: holdHint.visible = false }
+            }
+            Repeater {
+                model: big.chipRow ? [] : big.allSlices
+                delegate: SliceChip {
+                    required property var modelData
+                    slice: modelData
+                }
+            }
+            Item { Layout.fillWidth: true }
+            StepButton {
+                visible: big.lowLandscape
+                leftPadding: 14
+                rightPadding: 14
+                font.pixelSize: Theme.px(20)
+            }
+            Label {
+                text: Engine.mode
+                color: Theme.accent
+                font.pixelSize: Theme.px(28)
+                font.bold: true
+            }
+        }
+        RowLayout {
+            visible: big.chipRow
+            Layout.fillWidth: true
+            Layout.columnSpan: big.landscape ? 3 : 1
+            spacing: Theme.spacing
+            Repeater {
+                model: big.chipRow ? big.allSlices : []
+                delegate: SliceChip {
+                    required property var modelData
+                    slice: modelData
+                    Layout.fillWidth: true
+                }
+            }
+        }
+        // On its side the meters across the whole width too, − and + lower
+        // beside the frequency, Step and PTT (the user).
+        BigMeters {
+            visible: big.landscape
+            Layout.fillWidth: true
+            Layout.columnSpan: 3
+        }
         // Landscape: − at the left, the rest in the middle, + at the right.
         TuneButton {
             visible: big.landscape
             direction: -1
-            Layout.horizontalStretchFactor: 2
+            Layout.horizontalStretchFactor: 1
         }
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.horizontalStretchFactor: 3
+            Layout.horizontalStretchFactor: 2
             spacing: Theme.spacing
-            RowLayout {
-                Layout.fillWidth: true
-                AppButton {
-                    id: exitButton
-                    objectName: "bigExit"
-                    text: qsTr("Exit")
-                    Accessible.name: qsTr("Exit big buttons")
-                    Accessible.description: qsTr("Hold to exit")
-                    focusPolicy: Qt.NoFocus
-                    onPressAndHold: Engine.bigButtons = false
-                    onClicked: holdHint.visible = true
-                }
-                Label {
-                    id: holdHint
-                    visible: false
-                    text: qsTr("hold to exit")
-                    color: Theme.textDim
-                    font.pixelSize: Theme.px(14)
-                    Timer { running: holdHint.visible; interval: 2500; onTriggered: holdHint.visible = false }
-                }
-                Item { Layout.fillWidth: true }
-                StepButton {
-                    visible: big.lowLandscape
-                    leftPadding: 10
-                    rightPadding: 10
-                    font.pixelSize: Theme.px(18)
-                }
-                Label {
-                    text: Engine.mode
-                    color: Theme.accent
-                    font.pixelSize: Theme.px(28)
-                    font.bold: true
-                }
-            }
             Label {
                 objectName: "bigFrequency"
                 Layout.fillWidth: true
@@ -150,37 +346,19 @@ Rectangle {
                 Accessible.onPressAction: big.frequencyTapped()
                 TapHandler { onTapped: big.frequencyTapped() }
             }
-            // The S meter as a bar, its value at the right.
-            RowLayout {
+            // Upright the two bars under the frequency.
+            BigMeters {
+                visible: !big.landscape
                 Layout.fillWidth: true
-                spacing: Theme.spacing
-                Rectangle {
-                    Layout.fillWidth: true
-                    implicitHeight: Theme.touchTarget * 0.5
-                    radius: 4
-                    color: Theme.surface
-                    Rectangle {
-                        height: parent.height
-                        width: parent.width * Math.max(0, Math.min(1, (big.dbm + 127) / 94))
-                        radius: 4
-                        color: big.dbm >= -73 ? Theme.transmit : Theme.accent
-                    }
-                }
-                Label {
-                    text: big.sText
-                    color: Theme.text
-                    font.pixelSize: Theme.px(24)
-                    font.bold: true
-                    Layout.preferredWidth: implicitWidth
-                }
             }
             // Portrait: − and + side by side in the middle.
             RowLayout {
                 visible: !big.landscape
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                // The rest of the height: about 55 % to − and +, 45 % to PTT.
-                Layout.verticalStretchFactor: 11
+                // The rest of the height: − and + as PTT, Step two fifths of
+                // them, large enough for a big hand in the car (the user).
+                Layout.verticalStretchFactor: 5
                 spacing: Theme.spacing
                 TuneButton { direction: -1 }
                 TuneButton { direction: 1 }
@@ -188,14 +366,17 @@ Rectangle {
             StepButton {
                 visible: !big.lowLandscape
                 Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.verticalStretchFactor: 2
                 Layout.preferredHeight: Theme.touchTarget * 1.3
-                font.pixelSize: Math.max(Theme.px(22), big.height * 0.03)
+                Layout.minimumHeight: Theme.touchTarget
+                font.pixelSize: Math.round(Math.max(Theme.px(22), big.readingPx))
             }
             PttButton {
                 objectName: "bigPtt"
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.verticalStretchFactor: 9
+                Layout.verticalStretchFactor: 5
                 Layout.preferredHeight: Theme.touchTarget * 2
                 Layout.minimumHeight: Theme.touchTarget
                 // Large enough to read on a tablet's large button too, and
@@ -206,7 +387,7 @@ Rectangle {
         TuneButton {
             visible: big.landscape
             direction: 1
-            Layout.horizontalStretchFactor: 2
+            Layout.horizontalStretchFactor: 1
         }
     }
 }

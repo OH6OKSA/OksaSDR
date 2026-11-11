@@ -117,6 +117,8 @@ qt_add_qml_module(aether-mobile
         qml/EssbControls.qml
         qml/RxControls.qml
         qml/SliceBar.qml
+        qml/SliceMenu.qml
+        qml/SlicePowerPopup.qml
         qml/CwControls.qml
         qml/DisplayControls.qml
         qml/ModeButton.qml

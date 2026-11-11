@@ -213,63 +213,14 @@ RowLayout {
                         }
                     }
                     // The power slider under the chip, as on the TX tab.
-                    Popup {
+                    SlicePowerPopup {
                         id: powerPopup
                         objectName: "slicePowerPopup" + chip.modelData.letter
-                        modal: true
-                        dim: false
-                        y: chip.height + 4
-                        width: Math.min(380, Theme.windowWidth - 2 * Theme.spacing)
-                        margins: Theme.spacing
-                        bottomMargin: Theme.spacing + (parent && parent.Window.contentItem ? parent.Window.contentItem.SafeArea.margins.bottom : 0)
-                        padding: Theme.spacing
-                        background: Rectangle { color: Theme.surface; border.color: Theme.surfaceRaised; radius: Theme.radius }
-                        contentItem: PanelContent {
-                            title: qsTr("TX power")
-                            panel: powerPopup
-                            rowSpacing: Theme.spacing / 2
-                            Label {
-                                text: Engine.rfPowerIsPercent ? qsTr("RF power  %1 %").arg(Engine.rfPower) : qsTr("RF power  %1 W").arg(Engine.rfPower)
-                                color: Theme.textDim
-                                font.pixelSize: Theme.px(15)
-                            }
-                            FineSlider {
-                                objectName: "slicePowerSlider"
-                                accessibleName: qsTr("RF power")
-                                Layout.fillWidth: true
-                                from: 0
-                                to: 100
-                                stepSize: 1
-                                value: Engine.rfPower
-                                enabled: Engine.transmitAvailable || Engine.canUseDeviceMicrophone || Engine.tuneAvailable
-                                onMoved: (v) => Engine.rfPower = Math.round(v)
-                            }
-                            Label {
-                                Layout.fillWidth: true
-                                visible: chip.ampOperating || Engine.rfPowerIsPercent
-                                text: chip.ampOperating ? qsTr("An amplifier is in Operate: this is its drive; its output is on the meters.")
-                                                        : qsTr("A share of the radio's 500 W; the power out is on the Power meter.")
-                                color: Theme.textDim
-                                font.pixelSize: Theme.px(12)
-                                wrapMode: Text.Wrap
-                            }
-                        }
+                        ampOperating: chip.ampOperating
                     }
-                    Menu {
+                    SliceMenu {
                         id: sliceMenu
-                        modal: true
-                        dim: false
-                        MenuItem {
-                            text: qsTr("Make TX slice")
-                            enabled: !chip.modelData.tx
-                            onTriggered: Engine.makeTxSlice(chip.modelData.id)
-                        }
-                        MenuItem {
-                            objectName: "sliceClose" + chip.modelData.letter
-                            text: qsTr("Close slice")
-                            enabled: Engine.slices.length > 1
-                            onTriggered: Engine.removeSlice(chip.modelData.id)
-                        }
+                        slice: chip.modelData
                     }
                 }
             }
