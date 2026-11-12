@@ -39,6 +39,7 @@ class Ft8Engine;
 
 namespace AetherSDR {
 class AudioEngine;
+class PcmFrame;
 class RfkitConnection;
 class Kpa1500Connection;
 class AntennaGeniusModel;
@@ -1577,6 +1578,13 @@ public:
     {
         m_session.radioModel().handleStatusForTest(object, kvs);
     }
+    // Development (render tool `record`): the RX audio as the speaker gets
+    // it, for a video's sound; kept across reconnects (wireRxAudio). Empty
+    // stops it.
+    void setRxAudioTestSink(std::function<void(const AetherSDR::PcmFrame&)> sink);
+    // RADE's decoded speech (24 kHz stereo float32), which the speaker mixes
+    // in; set before RADE starts.
+    void setRxSpeechTestSink(std::function<void(const QByteArray&)> sink) { m_rxSpeechTestSink = std::move(sink); }
     int cwDecoderSensitivity() const;
     void setCwDecoderSensitivity(int sens);
     // Development: letters shown / dropped by the sensitivity since start.
@@ -2078,6 +2086,8 @@ private:
     int m_splitTxId{-1};
     bool m_splitPending{false};
     QList<QMetaObject::Connection> m_rxAudioConnections;
+    std::function<void(const AetherSDR::PcmFrame&)> m_rxAudioTestSink;
+    std::function<void(const QByteArray&)> m_rxSpeechTestSink;
     QList<QMetaObject::Connection> m_sliceConnections;
     QList<QMetaObject::Connection> m_panConnections;
     QMetaObject::Connection m_txSinkConnection;

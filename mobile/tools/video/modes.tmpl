@@ -1,0 +1,57 @@
+# OksaSDR tour, "On the air": each mode heard as it is, iPad landscape 1366x1024.
+# A template: make-modes.py fills {SSB_MHZ} {SSB_NOTE} {CW_MHZ} {CW_NOTE} {DV_MHZ} {DV_NOTE}
+# from the spots of the moment (the DX cluster, FreeDV Reporter). Receive only; RADE on makes the
+# slice the TX slice for a while (no transmission). Put back on 14.074 DIGU at the end.
+pin 5
+record 15
+caption !speed 3
+caption # On the air
+caption Each mode as it sounds on the band right now, live from the radio.
+ready
+wait 4000
+caption !speed 1
+caption SSB: tap the frequency and type it.
+caption !mark 240,145
+frequency-dialog
+wait 1500
+keys {SSB_MHZ}
+wait 1500
+keys <Enter>
+wait 1500
+taptext DIGU
+wait 2000
+taptext USB ~442,159
+wait 2500
+caption {SSB_NOTE}
+wait 20000
+caption CW: the CW section shows the decoder's text as it copies.
+taptext CW ~1263,82
+taptext View ~1324,82
+freq {CW_MHZ}
+wait 1000
+taptext USB
+wait 2000
+taptext CW ~510,159
+wait 3000
+caption {CW_NOTE}
+wait 22000
+taptext FreeDV ~1263,141
+taptext CW ~1263,82
+caption FreeDV: RADE digital voice, decoded in the app.
+freq {DV_MHZ}
+mode DIGU
+wait 2500
+tapname radeButton
+wait 3000
+caption {DV_NOTE}
+wait 30000
+tapname radeButton
+wait 3000
+taptext View ~1324,82
+taptext FreeDV ~1263,141
+caption -
+record off
+freq 14.074
+mode DIGU
+wait 2000
+slices

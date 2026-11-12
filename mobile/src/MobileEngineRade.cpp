@@ -363,6 +363,9 @@ void MobileEngine::activateRade()
     }));
     m_radeDiagTimer.start();
     connect(engine, &RADEEngine::rxSpeechReady, m_audio, &AudioEngine::feedDecodedSpeech, Qt::QueuedConnection);
+    if (m_rxSpeechTestSink) {
+        connect(engine, &RADEEngine::rxSpeechReady, this, m_rxSpeechTestSink, Qt::QueuedConnection);
+    }
     m_radeDaxChannel = s->daxChannel();
     rm.acquireDaxChannel(m_radeDaxChannel, PanadapterStream::DaxConsumer::Rade);
     m_radeConnections.append(connect(s, &SliceModel::daxChannelChanged, this, [this](int ch) {

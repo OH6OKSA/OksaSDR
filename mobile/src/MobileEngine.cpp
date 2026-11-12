@@ -8705,10 +8705,22 @@ void MobileEngine::wireRxAudio()
     if (backend->ownsRxAudio()) {
         m_rxAudioConnections.append(connect(&rm, &RadioModel::backendAudioFrameReady,
                                             m_audio, &AudioEngine::feedPcmFrame));
+        if (m_rxAudioTestSink) {
+            m_rxAudioConnections.append(connect(&rm, &RadioModel::backendAudioFrameReady, this, m_rxAudioTestSink));
+        }
     } else if (PanadapterStream* ps = rm.panStream()) {
         m_rxAudioConnections.append(connect(ps, &PanadapterStream::pcmFrameReady,
                                             m_audio, &AudioEngine::feedPcmFrame));
+        if (m_rxAudioTestSink) {
+            m_rxAudioConnections.append(connect(ps, &PanadapterStream::pcmFrameReady, this, m_rxAudioTestSink));
+        }
     }
+}
+
+void MobileEngine::setRxAudioTestSink(std::function<void(const PcmFrame&)> sink)
+{
+    m_rxAudioTestSink = std::move(sink);
+    wireRxAudio();
 }
 
 void MobileEngine::onSliceAdded(SliceModel* slice)

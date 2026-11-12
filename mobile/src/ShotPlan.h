@@ -4,8 +4,13 @@
 #include <QObject>
 #include <QStringList>
 
+class QFile;
 class QQmlApplicationEngine;
 class QTimer;
+
+namespace AetherSDR {
+class PcmFrame;
+}
 
 namespace AetherSDR::mobile {
 
@@ -97,7 +102,9 @@ class MobileEngine;
 //   layout                  log the page's layout decisions and the info
 //                           panels' geometry (layout-diff.py compares runs)
 //   record FPS|off          save the window FPS times a second as
-//                           DIR/frames/MS.jpg (MS since the start) and log
+//                           DIR/frames/MS.jpg (MS since the start), the RX
+//                           audio as DIR/audio.f32 and RADE's speech as
+//                           DIR/speech.f32 (24 kHz stereo), and log
 //                           each later line with its time, for a video
 //                           (mobile/tools/make-video.py); off stops it
 //   caption TEXT            nothing; with record on its time is logged, so
@@ -115,6 +122,8 @@ private:
     void step();
     void run(const QString& command, const QStringList& args, int* delayMs);
     void closePopups();
+    void writeAudio(const PcmFrame& frame);
+    void writeSpeech(const QByteArray& pcm);
     void logLayout();
 
     QQmlApplicationEngine& m_qml;
@@ -136,6 +145,10 @@ private:
     // record: the frame timer and the clock the frames and lines are timed by.
     QTimer* m_recordTimer{nullptr};
     QElapsedTimer m_recordClock;
+    QFile* m_audioFile{nullptr};
+    qint64 m_audioFrames{0}; // written, at 24 kHz
+    QFile* m_speechFile{nullptr};
+    qint64 m_speechFrames{0};
 };
 
 } // namespace AetherSDR::mobile

@@ -6,7 +6,7 @@
         --shot-plan mobile/tools/video/ipad.plan --shot-dir RUN_DIR > RUN.log 2>&1
     (the phone part: --size 440x956 and mobile/tools/video/phone.plan)
 
-    make-video.py segment RUN_DIR RUN.log OUT.mp4 [--scale 1.40625] [--footer TEXT]
+    make-video.py segment RUN_DIR RUN.log OUT.mp4 [--scale 1.40625] [--footer TEXT] [--loudness LUFS]
     make-video.py still OUT.mp4 SECONDS IMAGE        (mobile/tools/video/brand.png)
     make-video.py card OUT.mp4 SECONDS "Title" "line" ... [--icon mobile/tools/video/icon.png]
     make-video.py join OUT.mp4 SEG.mp4 ...
@@ -27,6 +27,7 @@ import os
 import re
 import subprocess
 import sys
+from array import array
 
 W, H = 1920, 1080
 APP_W = 1440               # the app's area at the left; the caption panel right of it
@@ -34,6 +35,8 @@ PANEL_X = APP_W + 30
 BG = "0x0b0f13"
 FPS = 30
 FONT = "Noto Sans"
+AUDIO_RATE = 24000          # record writes 24 kHz stereo float32
+BAND_LOUDNESS = -32         # LUFS: the band quietly in the background
 
 
 def ass_time(t):
@@ -102,7 +105,52 @@ def parse_log(log, scale):
     return events
 
 
-def segment(run_dir, log, out, scale=1.40625, footer="OksaSDR  ·  receive only"):
+def band_audio(run_dir, times, out_t, durations, speeds, path):
+    """The record's RX audio laid along the video: at normal speed as it was,
+    through a sped-up wait the band plays on at its own pace (it sounds like
+    the band, not a chipmunk), cut frames leave it out. False if none."""
+    src_path = os.path.join(run_dir, "audio.f32")
+    if not os.path.exists(src_path) or os.path.getsize(src_path) == 0:
+        return False
+    src = array("f")
+    with open(src_path, "rb") as f:
+        src.frombytes(f.read())
+    # RADE's decoded speech, as the speaker mixes it in.
+    speech_path = os.path.join(run_dir, "speech.f32")
+    if os.path.exists(speech_path) and os.path.getsize(speech_path) > 0:
+        speech = array("f")
+        with open(speech_path, "rb") as f:
+            speech.frombytes(f.read())
+        if len(speech) > len(src):
+            src.extend(array("f", [0.0]) * (len(speech) - len(src)))
+        for i, v in enumerate(speech):
+            if v:
+                src[i] += v
+    frames = len(src) // 2
+    out = array("f")
+    cursor = 0.0                      # source position, ms
+    for i, ms in enumerate(times):
+        if out_t[i] is None or durations[i] <= 0:
+            continue
+        if speeds[i] == 1.0:
+            cursor = float(ms)
+        want = round((out_t[i] + durations[i]) * AUDIO_RATE) - len(out) // 2
+        if want <= 0:
+            continue
+        start = int(cursor * AUDIO_RATE / 1000)
+        end = min(start + want, frames)
+        if start < end:
+            out.extend(src[start * 2:end * 2])
+        missing = want - max(0, end - start)
+        if missing > 0:
+            out.extend(array("f", [0.0]) * (missing * 2))
+        cursor += want * 1000 / AUDIO_RATE
+    with open(path, "wb") as f:
+        out.tofile(f)
+    return True
+
+
+def segment(run_dir, log, out, scale=1.40625, footer="OksaSDR  ·  receive only", loudness=BAND_LOUDNESS):
     frames_dir = os.path.join(run_dir, "frames")
     names = sorted(f for f in os.listdir(frames_dir) if f.endswith(".jpg"))
     times = [int(n[:-4]) for n in names]
@@ -136,10 +184,12 @@ def segment(run_dir, log, out, scale=1.40625, footer="OksaSDR  ·  receive only"
 
     out_t = []          # output start time of each frame (None when cut)
     durations = []
+    speeds = []
     t_out = 0.0
     for i, ms in enumerate(times):
         nxt = times[i + 1] if i + 1 < len(times) else ms + 66
         speed, cut = state_at(ms)
+        speeds.append(speed)
         if cut:
             out_t.append(None)
             durations.append(0)
@@ -231,9 +281,18 @@ def segment(run_dir, log, out, scale=1.40625, footer="OksaSDR  ·  receive only"
           f"pad={W}:{H}:x=({APP_W}-iw)/2:y=({H}-ih)/2:color={BG},"
           f"drawbox=x={APP_W}:y=0:w=2:h={H}:color=0x243040:t=fill,"
           f"fps={FPS},format=yuv420p,ass={ass}")
-    subprocess.check_call(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0",
-                           "-i", concat, "-vf", vf, "-c:v", "libx264", "-preset", "medium", "-crf", "20",
-                           "-r", str(FPS), "-movflags", "+faststart", out])
+    audio = out[:-4] + ".f32"
+    cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", concat]
+    if band_audio(run_dir, times, out_t, durations, speeds, audio):
+        cmd += ["-f", "f32le", "-ar", str(AUDIO_RATE), "-ac", "2", "-i", audio]
+        af = f"loudnorm=I={loudness}:TP=-6:LRA=11,aresample=48000,afade=t=in:d=1,afade=t=out:st={max(0, total - 1.5):.2f}:d=1.5"
+    else:
+        cmd += ["-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo"]
+        af = "aresample=48000"
+    cmd += ["-vf", vf, "-af", af, "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-preset", "medium",
+            "-crf", "20", "-r", str(FPS), "-c:a", "aac", "-b:a", "128k", "-t", f"{total:.3f}",
+            "-movflags", "+faststart", out]
+    subprocess.check_call(cmd)
     print(f"{out}: {total:.1f} s from {len(names)} frames")
 
 
@@ -246,16 +305,18 @@ def card(out, seconds, title, *rows, icon=None):
     lines.append(f"Dialogue: 0,{ass_time(0.3)},{ass_time(seconds)},CardLine,,0,0,{top + 150},,{{\\fad(400,400)}}{body}")
     ass = out[:-4] + ".ass"
     open(ass, "w", encoding="utf-8").write("\n".join(lines) + "\n")
-    cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi",
-           "-i", f"color=c={BG}:s={W}x{H}:r={FPS}:d={seconds}"]
+    # Inputs: the background, a silent track, and the icon when given.
+    cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+           "-f", "lavfi", "-i", f"color=c={BG}:s={W}x{H}:r={FPS}:d={seconds}",
+           "-f", "lavfi", "-t", str(seconds), "-i", "anullsrc=r=48000:cl=stereo"]
     if icon:
         cmd += ["-loop", "1", "-t", str(seconds), "-i", icon]
-        vf = (f"[1:v]format=rgba,fade=in:st=0:d=0.4:alpha=1,fade=out:st={seconds - 0.4}:d=0.4:alpha=1[ic];"
-              f"[0:v][ic]overlay=x=(W-w)/2:y=120,format=yuv420p,ass={ass}")
-        cmd += ["-filter_complex", vf]
+        graph = (f"[2:v]format=rgba,fade=in:st=0:d=0.4:alpha=1,fade=out:st={seconds - 0.4}:d=0.4:alpha=1[ic];"
+                 f"[0:v][ic]overlay=x=(W-w)/2:y=120,format=yuv420p,ass={ass}[v]")
     else:
-        cmd += ["-vf", f"format=yuv420p,ass={ass}"]
-    cmd += ["-c:v", "libx264", "-preset", "medium", "-crf", "20", "-r", str(FPS), out]
+        graph = f"[0:v]format=yuv420p,ass={ass}[v]"
+    cmd += ["-filter_complex", graph, "-map", "[v]", "-map", "1:a", "-c:v", "libx264", "-preset", "medium",
+            "-crf", "20", "-r", str(FPS), "-c:a", "aac", "-b:a", "128k", "-shortest", out]
     subprocess.check_call(cmd)
     print(f"{out}: card {seconds} s")
 
@@ -263,9 +324,10 @@ def card(out, seconds, title, *rows, icon=None):
 def still(out, seconds, image):
     """A full-frame picture (the brand logo) fading in and out."""
     subprocess.check_call(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-loop", "1", "-t", str(seconds),
-                           "-i", image, "-vf",
+                           "-i", image, "-f", "lavfi", "-t", str(seconds), "-i", "anullsrc=r=48000:cl=stereo", "-vf",
                            f"scale={W}:{H},fps={FPS},fade=in:st=0:d=0.6,fade=out:st={seconds - 0.6}:d=0.6,format=yuv420p",
-                           "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-r", str(FPS), out])
+                           "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-r", str(FPS),
+                           "-c:a", "aac", "-b:a", "128k", "-shortest", out])
     print(f"{out}: still {seconds} s")
 
 
@@ -284,7 +346,8 @@ if __name__ == "__main__":
     if what == "segment":
         scale = float(sys.argv[sys.argv.index("--scale") + 1]) if "--scale" in sys.argv else 1.40625
         footer = sys.argv[sys.argv.index("--footer") + 1] if "--footer" in sys.argv else "OksaSDR  ·  receive only"
-        segment(sys.argv[2], sys.argv[3], sys.argv[4], scale, footer)
+        loud = float(sys.argv[sys.argv.index("--loudness") + 1]) if "--loudness" in sys.argv else BAND_LOUDNESS
+        segment(sys.argv[2], sys.argv[3], sys.argv[4], scale, footer, loud)
     elif what == "card":
         rest = sys.argv[4:]
         icon = None
