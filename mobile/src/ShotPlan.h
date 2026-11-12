@@ -107,6 +107,8 @@ class MobileEngine;
 //                           DIR/speech.f32 (24 kHz stereo), and log
 //                           each later line with its time, for a video
 //                           (mobile/tools/make-video.py); off stops it
+//   where TEXT|@NAME|...    log where each visible control showing TEXT (or
+//                           named NAME) is, for a plan's coordinates
 //   caption TEXT            nothing; with record on its time is logged, so
 //                           the video's captions come from the plan
 //

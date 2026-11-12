@@ -36,7 +36,7 @@ BG = "0x0b0f13"
 FPS = 30
 FONT = "Noto Sans"
 AUDIO_RATE = 24000          # record writes 24 kHz stereo float32
-BAND_LOUDNESS = -32         # LUFS: the band quietly in the background
+BAND_LOUDNESS = -24         # LUFS: the band behind the tour (easy to turn down)
 
 
 def ass_time(t):
@@ -57,12 +57,12 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Chapter,{FONT},44,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,0,0,7,{PANEL_X},30,70,1
-Style: Caption,{FONT},33,&H00F3EDE6,&H00F3EDE6,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,{PANEL_X},34,170,1
-Style: Footer,{FONT},24,&H00A5988B,&H00A5988B,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,1,{PANEL_X},30,40,1
+Style: Chapter,{FONT},64,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,0,0,7,{PANEL_X},30,70,1
+Style: Caption,{FONT},48,&H00F3EDE6,&H00F3EDE6,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,{PANEL_X},28,260,1
+Style: Footer,{FONT},28,&H00A5988B,&H00A5988B,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,1,{PANEL_X},30,40,1
 Style: Shape,{FONT},20,&H00FFFFFF,&H00FFFFFF,&H00FFB63F,&H00000000,0,0,0,0,100,100,0,0,1,4,0,7,0,0,0,1
-Style: CardTitle,{FONT},72,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,0,0,8,120,120,330,1
-Style: CardLine,{FONT},38,&H00F3EDE6,&H00F3EDE6,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,8,160,160,480,1
+Style: CardTitle,{FONT},110,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,0,0,8,120,120,330,1
+Style: CardLine,{FONT},56,&H00F3EDE6,&H00F3EDE6,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,8,160,160,480,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -299,10 +299,10 @@ def segment(run_dir, log, out, scale=1.40625, footer="OksaSDR  ·  receive only"
 def card(out, seconds, title, *rows, icon=None):
     """A dark card: the app icon over the title when given, the lines under it."""
     lines = [ass_header()]
-    top = 470 if icon else 330
+    top = 440 if icon else 300
     lines.append(f"Dialogue: 0,{ass_time(0)},{ass_time(seconds)},CardTitle,,0,0,{top},,{{\\fad(400,400)}}{esc(title)}")
     body = "\\N".join(esc(r) for r in rows)
-    lines.append(f"Dialogue: 0,{ass_time(0.3)},{ass_time(seconds)},CardLine,,0,0,{top + 150},,{{\\fad(400,400)}}{body}")
+    lines.append(f"Dialogue: 0,{ass_time(0.3)},{ass_time(seconds)},CardLine,,0,0,{top + 190},,{{\\fad(400,400)}}{body}")
     ass = out[:-4] + ".ass"
     open(ass, "w", encoding="utf-8").write("\n".join(lines) + "\n")
     # Inputs: the background, a silent track, and the icon when given.

@@ -1,13 +1,14 @@
 # OksaSDR tour, iPad landscape 1366x1024 (QT_SCALE_FACTOR 1.40625: frames 1921x1440), --connect 192.168.0.40.
+# On a 20 m SSB station for the sound (14.205 USB, HZ1LR on 2026-11-12); put back on 14.074 DIGU at the end.
 # Captions: "caption # T" a chapter, "caption [box x,y,w,h] text" (frame px), "caption !mark x,y",
 # "caption !speed N", "caption !cut" / "!uncut", "caption -" clears. Receive only.
 pin 5
+ready
+freq 14.205
+mode USB
+wait 1500
 record 15
 caption # Getting started
-caption !speed 3
-caption Connecting to the radio on the home network.
-ready
-caption !speed 1
 caption The first time, four short hints show the gestures that cannot be seen.
 wait 3500
 tapname hintsNext
@@ -75,9 +76,9 @@ wait 5500
 caption -
 caption # Tuning
 caption Tap the spectrum to tune there; drag it to tune smoothly.
-tapmhz 14.0755
+tapmhz 14.2065
 wait 3500
-tapmhz 14.0738
+tapmhz 14.2050
 wait 3500
 caption The step buttons: one step a tap, and they keep stepping while held.
 taptext +1k
@@ -102,7 +103,7 @@ wait 2500
 keys <Enter>
 wait 3500
 caption Now on 40 m. Tap the mode for the list of modes.
-taptext DIGU
+taptext USB
 wait 3500
 taptext LSB
 wait 3500
@@ -113,11 +114,7 @@ close
 wait 1000
 caption A band button goes back to where you were on that band.
 taptext 20m
-wait 4500
-caption Back on FT8 for the rest of the tour.
-mode DIGU
-freq 14.074
-wait 3000
+wait 5000
 caption -
 caption # Receiving
 caption RF gain: tap its tag on the spectrum.
@@ -126,7 +123,8 @@ wait 4500
 close
 wait 1000
 caption AGC: its mode, AGC-T, and Auto.
-taptext AGC-F
+caption !mark 1042,115
+popup agcChooser
 wait 5000
 close
 wait 1000
@@ -174,8 +172,8 @@ caption + Slice adds a receiver on the same panadapter: slice B.
 taptext + Slice
 wait 5500
 slices
-caption Tap the spectrum to tune the active slice: B moves, A stays on FT8.
-tapmhz 14.0768
+caption Tap the spectrum to tune the active slice: B moves, A stays on the station.
+tapmhz 14.2080
 wait 4500
 caption Each slice has its chip, its flag on the spectrum, its own mode, filter and volume.
 wait 5500

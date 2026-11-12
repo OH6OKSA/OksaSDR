@@ -1,0 +1,24 @@
+# OksaSDR tour, "On the air" continued: RTTY or PSK, iPad landscape 1366x1024.
+# Filled by hand or by the spot watcher: {DIGI_MODE} {DIGI_SETUP} {DIGI_NOTE}. Receive only.
+pin 5
+record 15
+caption !speed 3
+caption # On the air
+caption {DIGI_MODE}: the Digi section decodes it as text.
+ready
+wait 4000
+caption !speed 1
+taptext Digi ~1324,141
+taptext View ~1324,82
+{DIGI_SETUP}
+wait 3000
+caption {DIGI_NOTE}
+wait 30000
+taptext View ~1324,82
+taptext Digi ~1324,141
+caption -
+record off
+freq 14.074
+mode DIGU
+wait 2000
+slices

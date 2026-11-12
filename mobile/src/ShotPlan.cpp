@@ -1451,6 +1451,27 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             m_recordTimer->start(1000 / std::clamp(arg.toInt(), 1, 60));
             qInfo() << "shot-plan: record" << arg << "fps into" << dir;
         }
+    } else if (command == QLatin1String("where")) {
+        // Where things are, for a plan's coordinates: every visible control
+        // showing TEXT (or named NAME with @NAME), | between them.
+        for (const QString& want : args.join(QLatin1Char(' ')).split(QLatin1Char('|'), Qt::SkipEmptyParts)) {
+            const bool byName = want.startsWith(QLatin1Char('@'));
+            for (QObject* root : m_qml.rootObjects()) {
+                for (QObject* o : byName ? findNamed(root, want.mid(1)) : allObjects(root)) {
+                    auto* item = qobject_cast<QQuickItem*>(o);
+                    if (!item || !seen(item)) {
+                        continue;
+                    }
+                    if (!byName && item->property("text").toString().replace(QChar(0x2212), QLatin1Char('-')) != want) {
+                        continue;
+                    }
+                    const QRectF r = item->mapRectToScene(QRectF(0, 0, item->width(), item->height()));
+                    qInfo().noquote() << QStringLiteral("shot-plan: where %1 at %2,%3 %4x%5").arg(want)
+                                             .arg(qRound(r.x())).arg(qRound(r.y())).arg(qRound(r.width())).arg(qRound(r.height()));
+                }
+            }
+        }
+        *delayMs = 100;
     } else if (command == QLatin1String("caption")) {
         // Timed by the line log above while recording.
     } else {
