@@ -1,5 +1,5 @@
 # OksaSDR tour, "On the air": each mode heard as it is, iPad landscape 1366x1024.
-# A template: make-modes.py fills 14.252 20 m SSB at 14.252 MHz: a DX station, spotted on the DX cluster as JY4CI in Jordan. 14.0272 CW on 20 m: callers in a pileup for C8K, Mozambique, as they sound; the decoder copies them. 7.177 40 m, 7.177 MHz: the FreeDV Reporter list shows RADE stations on the air now; their voice comes through the app.
+# A template: make-modes.py fills 14.252 20 m SSB at 14.252 MHz: a DX station, spotted on the DX cluster as JY4CI in Jordan. 14.0280 CW on 20 m: callers in a pileup for C8K, Mozambique, as they sound; the decoder copies them. 7.177 40 m, 7.177 MHz: the FreeDV Reporter list shows RADE stations on the air; their voice comes through the app.
 # from the spots of the moment (the DX cluster, FreeDV Reporter). Receive only; RADE on makes the
 # slice the TX slice for a while (no transmission). Put back on 14.074 DIGU at the end.
 pin 5
@@ -18,6 +18,8 @@ keys 14.252
 wait 1500
 keys <Enter>
 wait 1500
+span 10
+wait 1000
 taptext DIGU
 wait 2000
 taptext USB ~442,159
@@ -27,7 +29,8 @@ wait 20000
 caption CW: the CW section shows the decoder's text as it copies.
 taptext CW ~1263,82
 taptext View ~1324,82
-freq 14.0272
+freq 14.0280
+span 6
 wait 1000
 taptext USB
 wait 2000
@@ -40,10 +43,11 @@ taptext CW ~1263,82
 caption FreeDV: RADE digital voice, decoded in the app.
 freq 7.177
 mode DIGU
+span 10
 wait 2500
 tapname radeButton
 wait 3000
-caption 40 m, 7.177 MHz: the FreeDV Reporter list shows RADE stations on the air now; their voice comes through the app.
+caption 40 m, 7.177 MHz: the FreeDV Reporter list shows RADE stations on the air; their voice comes through the app.
 wait 30000
 tapname radeButton
 wait 3000

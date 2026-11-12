@@ -18,6 +18,8 @@ keys {SSB_MHZ}
 wait 1500
 keys <Enter>
 wait 1500
+span 10
+wait 1000
 taptext DIGU
 wait 2000
 taptext USB ~442,159
@@ -28,6 +30,7 @@ caption CW: the CW section shows the decoder's text as it copies.
 taptext CW ~1263,82
 taptext View ~1324,82
 freq {CW_MHZ}
+span 6
 wait 1000
 taptext USB
 wait 2000
@@ -40,6 +43,7 @@ taptext CW ~1263,82
 caption FreeDV: RADE digital voice, decoded in the app.
 freq {DV_MHZ}
 mode DIGU
+span 10
 wait 2500
 tapname radeButton
 wait 3000

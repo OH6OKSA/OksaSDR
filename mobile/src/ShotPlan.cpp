@@ -524,9 +524,9 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             *delayMs = ms + 2000;
         }
     } else if (command == QLatin1String("freq")) {
-        // As the frequency entry: the view follows (a plain set left the
-        // slice outside the pan, which the radio refuses).
-        m_engine.tuneTo(arg.toDouble());
+        // As the frequency entry: the slice centred in the view (tuneTo is
+        // the drag's follow, which left a far jump at the display's edge).
+        m_engine.tuneToCentred(arg.toDouble());
         *delayMs = 1500;
     } else if (command == QLatin1String("mode")) {
         m_engine.setMode(arg);

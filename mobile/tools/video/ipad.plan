@@ -6,7 +6,8 @@ pin 5
 ready
 freq 14.205
 mode USB
-wait 1500
+span 10
+wait 3000
 record 15
 caption # Getting started
 caption The first time, four short hints show the gestures that cannot be seen.
@@ -102,11 +103,11 @@ keys 7.155
 wait 2500
 keys <Enter>
 wait 3500
-caption Now on 40 m. Tap the mode for the list of modes.
-taptext USB
-wait 3500
+caption Now on 40 m, where the band plan gives LSB. Tap the mode for the list of modes.
 taptext LSB
 wait 3500
+close
+wait 800
 caption Tap the filter width for the filter choices.
 taptext 2.7K
 wait 4500
