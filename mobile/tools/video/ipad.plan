@@ -1,0 +1,295 @@
+# OksaSDR tour, iPad landscape 1366x1024 (QT_SCALE_FACTOR 1.40625: frames 1921x1440), --connect 192.168.0.40.
+# Captions: "caption # T" a chapter, "caption [box x,y,w,h] text" (frame px), "caption !mark x,y",
+# "caption !speed N", "caption !cut" / "!uncut", "caption -" clears. Receive only.
+pin 5
+record 15
+caption # Getting started
+caption !speed 3
+caption Connecting to the radio on the home network.
+ready
+caption !speed 1
+caption The first time, four short hints show the gestures that cannot be seen.
+wait 3500
+tapname hintsNext
+wait 3500
+tapname hintsNext
+wait 3500
+tapname hintsNext
+wait 3500
+tapname hintsNext
+wait 1500
+caption Disconnect goes back to the Connect page.
+taptext Disconnect
+wait 3500
+caption The Connect page: radios on this network, your SmartLink radios once you sign in, and radios kept by IP address or host name.
+wait 6500
+caption + Add a radio keeps one by its IP address or host name: a dynamic DNS name, or Tailscale over a VPN.
+tapname addRadio
+wait 5000
+close
+wait 1000
+caption Check the connection tests the way to a radio that cannot be reached.
+tapname checkConnection
+wait 6500
+close
+wait 1000
+caption One tap on a radio connects.
+tapname savedRadio0
+caption !speed 3
+ready
+caption !speed 1
+caption -
+caption !speed 3
+span 10
+wait 9000
+caption !speed 1
+caption # The main screen
+caption [box 10,82,480,120] The frequency of the active slice. Tap it to type a frequency.
+wait 4500
+caption [box 488,82,170,125] The mode, and the tuning step under it.
+wait 4000
+caption [box 692,90,620,52] The slice: its letter, TX on the transmitting slice, the RX and TX antennas, filter, AGC, volume, tuning lock, record and play.
+wait 6500
+caption [box 700,152,490,48] The radio's noise and notch filters, lit when on. Tap them for the filter and DSP choices.
+wait 4000
+caption [box 14,232,1366,82] Bands: one tap. The radio's band stack remembers where you were on each.
+wait 4500
+caption [box 16,328,300,198] Two meters, the S-meter and the radio's voltage here. Tap a meter to choose it.
+wait 5000
+caption [box 546,328,304,82] A chip for every slice: tap to make it active, press and hold for Make TX slice and Close slice.
+wait 5500
+caption [box 16,530,1362,522] Spectrum and waterfall from the radio's panadapter.
+wait 5000
+caption [box 22,1078,360,90] Zoom out and in, the whole Band, and B/S to hide the band and step rows for a taller waterfall.
+wait 6000
+caption [box 1203,1078,176,90] + Slice adds a receiver, + Pan a second panadapter.
+wait 4500
+caption [box 16,1186,1362,86] Step buttons tune down and up, 1 Hz to 1 kHz a tap.
+wait 4500
+caption [box 16,1283,1362,124] Macros (voice keyer, CW and more) and a large PTT.
+wait 4500
+caption [box 1390,68,520,1345] The controls in twelve sections. On a tablet they stay beside the display; on a phone they open as a drawer.
+wait 6000
+caption [box 880,0,1041,58] The network quality, Radio Setup, the Manual, the app's Log and Disconnect.
+wait 5500
+caption -
+caption # Tuning
+caption Tap the spectrum to tune there; drag it to tune smoothly.
+tapmhz 14.0755
+wait 3500
+tapmhz 14.0738
+wait 3500
+caption The step buttons: one step a tap, and they keep stepping while held.
+taptext +1k
+wait 1500
+taptext +100
+wait 1500
+taptext -100
+wait 1500
+taptext -1k
+wait 2000
+caption Tap STEP to choose the tuning step.
+tapname stepButton
+wait 4000
+close
+wait 1000
+caption Tap the frequency to type one, on the keypad or a keyboard.
+caption !mark 240,145
+frequency-dialog
+wait 2500
+keys 7.155
+wait 2500
+keys <Enter>
+wait 3500
+caption Now on 40 m. Tap the mode for the list of modes.
+taptext DIGU
+wait 3500
+taptext LSB
+wait 3500
+caption Tap the filter width for the filter choices.
+taptext 2.7K
+wait 4500
+close
+wait 1000
+caption A band button goes back to where you were on that band.
+taptext 20m
+wait 4500
+caption Back on FT8 for the rest of the tour.
+mode DIGU
+freq 14.074
+wait 3000
+caption -
+caption # Receiving
+caption RF gain: tap its tag on the spectrum.
+tapname rfGainLabel
+wait 4500
+close
+wait 1000
+caption AGC: its mode, AGC-T, and Auto.
+taptext AGC-F
+wait 5000
+close
+wait 1000
+caption The RX antenna; the TX antenna is beside it.
+caption !mark 833,115
+popup rxAntennaChooser
+wait 4500
+close
+wait 1000
+caption The slice's volume, and the radio's own line out.
+caption !mark 1125,115
+popup volumePopup
+wait 4500
+close
+wait 1000
+caption Tap the DSP flags for the filter widths and the DSP switches: NR on, and off again.
+taptext NR ~600,126
+wait 3000
+taptext NR ~543,401
+wait 3500
+taptext NR ~543,401
+wait 2500
+close
+wait 1000
+caption SPLIT: a tap turns split on and off; press and hold for a second slice or XIT, and the offset.
+holdname splitHit
+wait 4500
+close
+wait 1000
+caption -
+caption # Meters
+caption Tap a meter for the choices: S-meter, dBm, voltage, temperature, ALC and more, analog or as bars.
+tapname meterLeft
+wait 5500
+close
+wait 1000
+caption While you transmit, the meters show power, SWR and the microphone.
+preview-tx on
+wait 5000
+preview-tx off
+wait 1000
+caption -
+caption # Slices
+caption + Slice adds a receiver on the same panadapter: slice B.
+taptext + Slice
+wait 5500
+slices
+caption Tap the spectrum to tune the active slice: B moves, A stays on FT8.
+tapmhz 14.0768
+wait 4500
+caption Each slice has its chip, its flag on the spectrum, its own mode, filter and volume.
+wait 5500
+caption Tap a chip to make that slice active.
+tapname sliceChipA
+wait 3500
+tapname sliceChipB
+wait 3500
+caption Press and hold a chip: Make TX slice, or Close slice.
+holdname sliceChipB
+wait 3500
+caption Close slice removes it. A stays the TX slice, with the red TX tag.
+taptext Close slice
+wait 4000
+slices
+closeslice B
+slice A
+wait 1500
+caption -
+caption # The controls
+caption Tap a section to show it beside the display; several can show at once.
+taptext DSP ~1021,82
+wait 4500
+taptext View ~1324,82
+wait 2500
+caption DSP: noise reduction and blanking, notches and the radio's DSP settings.
+wait 4000
+taptext Audio ~1081,82
+taptext DSP ~1021,82
+caption Audio: where the sound comes from and goes to, and the levels.
+wait 5000
+taptext TX ~1142,82
+taptext Audio ~1081,82
+caption TX: power, tune power, the microphone, VOX, the transmit lock and split.
+wait 5000
+taptext eSSB ~1203,82
+taptext TX ~1142,82
+caption eSSB: the TX filter, equaliser and the microphone chain.
+wait 5000
+taptext CW ~1263,82
+taptext eSSB ~1203,82
+caption CW: speed, paddles, the decoder, autotune and CW memories.
+wait 5000
+taptext Prof ~1021,141
+taptext CW ~1263,82
+caption Prof: the radio's profiles, and App setups for the app's own settings.
+wait 5000
+taptext Mem ~1081,141
+taptext Prof ~1021,141
+caption Mem: the radio's memories.
+wait 4500
+taptext Log ~1142,141
+taptext Mem ~1081,141
+caption Log: the QSO log, callsign lookup, and logbooks such as QRZ.com and Wavelog.
+wait 5000
+taptext FTx ~1203,141
+taptext Log ~1142,141
+caption FTx: FT8 and FT4 in the app itself, no computer needed.
+wait 5000
+taptext FreeDV ~1263,141
+taptext FTx ~1203,141
+caption FreeDV: RADE and FreeDV digital voice.
+wait 5000
+taptext Digi ~1324,141
+taptext FreeDV ~1263,141
+caption Digi: RTTY and PSK.
+wait 5000
+taptext View ~1324,82
+taptext Digi ~1324,141
+caption View: Big buttons, the band plan, text size and the display.
+wait 5000
+caption -
+caption # Radio Setup
+caption !cut
+taptext Setup
+wait 900
+click setupTab1
+wait 900
+caption !uncut
+caption Radio Setup holds the radio's own settings, as in SmartSDR. Transmit: what the radio sends on each band.
+wait 5500
+click setupTab3
+caption Audio: the radio's audio settings.
+wait 4500
+click setupTab4
+caption RX: the receiver's settings.
+wait 4500
+click setupTab7
+caption Amp: amplifiers, tuners and antenna switches.
+wait 4500
+click setupTab8
+caption USB: the radio's USB cables for CAT, band data and serial ports.
+wait 4500
+click setupTab9
+caption MIDI: a controller as a VFO knob and buttons.
+wait 4500
+close
+wait 1200
+caption -
+caption # Macros and Big buttons
+caption Macros: voice keyer slots, CW memories and more, one tap away.
+tapname macrosButton
+wait 5000
+tapname macrosButton
+wait 1200
+caption Big buttons: large controls for the car, gloves or a quick look. Hold Exit to leave.
+tapname bigButtonsOpen
+wait 6500
+holdname bigExit
+wait 1500
+caption -
+record off
+slices
+freq 14.074
+mode DIGU
+wait 1500
+slices

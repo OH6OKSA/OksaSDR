@@ -13,6 +13,7 @@
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QSet>
+#include <QThreadPool>
 #include <QTimer>
 #include <qpa/qwindowsysteminterface.h>
 
@@ -51,6 +52,16 @@ QList<QObject*> allObjects(QObject* root)
         walk(window->contentItem());
     }
     return found;
+}
+
+// A mouse event at a position in the window's own pixels. The window system
+// takes native ones, which differ under QT_SCALE_FACTOR (a video's sharper
+// frames): unscaled, every tap landed short of its control.
+void nativeMouse(QWindow* w, const QPointF& p, const QPointF& g, Qt::MouseButtons state, Qt::MouseButton button,
+                 QEvent::Type type)
+{
+    const qreal dpr = w->devicePixelRatio();
+    QWindowSystemInterface::handleMouseEvent(w, p * dpr, g * dpr, state, button, type);
 }
 
 // On screen: visible and not under an item at opacity 0 (the tablet page's
@@ -125,6 +136,7 @@ void ShotPlan::step()
             m_engine.setPinnedSections(m_savedPinned);
         }
         qInfo() << "shot-plan: done" << (m_failed ? "(with failures)" : "");
+        QThreadPool::globalInstance()->waitForDone(); // record's last frames
         QCoreApplication::exit(m_failed ? 2 : 0);
         return;
     }
@@ -138,6 +150,9 @@ void ShotPlan::step()
             return;
         }
         command = words.takeFirst();
+    }
+    if (m_recordClock.isValid()) {
+        qInfo().noquote() << QStringLiteral("shot-plan: at %1 %2").arg(m_recordClock.elapsed()).arg(line);
     }
     int delayMs = kSettleMs;
     run(command, words, &delayMs);
@@ -338,8 +353,8 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         if (window && xy.size() == 2) {
             const QPointF p(xy.at(0).toDouble() * window->width(), xy.at(1).toDouble() * window->height());
             const QPointF g = window->mapToGlobal(p);
-            QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
-            QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+            nativeMouse(window, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
+            nativeMouse(window, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
             QWindowSystemInterface::flushWindowSystemEvents();
         }
     } else if (command == QLatin1String("tapmhz") || command == QLatin1String("holdmhz")) {
@@ -363,21 +378,21 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             const QPointF local((mhz - low) / m_engine.panBandwidthMhz() * spectrum->width(), spectrum->height() * 0.12);
             const QPointF p = spectrum->mapToScene(local);
             const QPointF g = window->mapToGlobal(p);
-            qInfo().noquote() << QStringLiteral("shot-plan: %1 at %2 MHz (x %3)").arg(holdMs > 0 ? QStringLiteral("hold") : QStringLiteral("tap"))
-                                     .arg(mhz, 0, 'f', 6).arg(qRound(p.x()));
-            QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
+            qInfo().noquote() << QStringLiteral("shot-plan: %1 at %2 MHz (x %3, y %4)").arg(holdMs > 0 ? QStringLiteral("hold") : QStringLiteral("tap"))
+                                     .arg(mhz, 0, 'f', 6).arg(qRound(p.x())).arg(qRound(p.y()));
+            nativeMouse(window, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
             QWindowSystemInterface::flushWindowSystemEvents();
             if (holdMs > 0) {
                 QPointer<QQuickWindow> w(window);
                 QTimer::singleShot(holdMs, this, [w, p, g] {
                     if (w) {
-                        QWindowSystemInterface::handleMouseEvent(w, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+                        nativeMouse(w, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
                         QWindowSystemInterface::flushWindowSystemEvents();
                     }
                 });
                 *delayMs = holdMs + 1500;
             } else {
-                QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+                nativeMouse(window, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
                 QWindowSystemInterface::flushWindowSystemEvents();
             }
         } else {
@@ -443,14 +458,14 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             const QPointF g = window->mapToGlobal(p);
             const int ms = xym.at(2).toInt();
             qInfo() << "shot-plan: hold" << ms << "ms, frequency" << QString::number(m_engine.frequencyMhz(), 'f', 6);
-            QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
+            nativeMouse(window, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
             QWindowSystemInterface::flushWindowSystemEvents();
             QPointer<QQuickWindow> w(window);
             QTimer::singleShot(ms, this, [this, w, p, g] {
                 if (!w) {
                     return;
                 }
-                QWindowSystemInterface::handleMouseEvent(w, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+                nativeMouse(w, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
                 QWindowSystemInterface::flushWindowSystemEvents();
                 qInfo() << "shot-plan: released, frequency" << QString::number(m_engine.frequencyMhz(), 'f', 6);
                 QTimer::singleShot(1500, this, [this] {
@@ -716,17 +731,67 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         qInfo().noquote() << "shot-plan: setupget" << shown.join(QLatin1Char(' '));
         *delayMs = 100;
     } else if (command == QLatin1String("tapname") || command == QLatin1String("showname")
-               || command == QLatin1String("holdname")) {
+               || command == QLatin1String("holdname") || command == QLatin1String("taptext")) {
         // A finger on the named control's middle, through the window system
         // (click only emits its clicked): whatever covers it, a popup's
         // press-outside close included, acts as for a user. showname only
         // scrolls it into view; holdname keeps the finger down 1.2 s (a
-        // press and hold).
+        // press and hold). NAME@TEXT: of the controls so named, the one
+        // showing TEXT (the step buttons share a name); taptext TEXT: the
+        // control showing TEXT, for one with no name (− written as -).
+        auto shows = [](const QQuickItem* item, const QString& text) {
+            return item->property("text").toString().replace(QChar(0x2212), QLatin1Char('-')) == text;
+        };
+        const bool byText = command == QLatin1String("taptext");
+        const QString name = byText ? QString() : arg.section(QLatin1Char('@'), 0, 0);
+        QStringList words = args;
+        // TEXT or NAME, then >X: only right of X (the TX tab, not the TX
+        // tag); ~X,Y: of the matches, the one nearest to X,Y (window pixels;
+        // a slice's chip among the chips).
+        qreal minX = -1;
+        QPointF near(-1, -1);
+        while (words.size() > 1
+               && (words.constLast().startsWith(QLatin1Char('>')) || words.constLast().startsWith(QLatin1Char('~')))) {
+            const QString w = words.takeLast();
+            if (w.startsWith(QLatin1Char('>'))) {
+                minX = w.mid(1).toDouble();
+            } else {
+                const QStringList xy = w.mid(1).split(QLatin1Char(','));
+                near = QPointF(xy.value(0).toDouble(), xy.value(1).toDouble());
+            }
+        }
+        const QString text = byText ? words.join(QLatin1Char(' ')) : arg.section(QLatin1Char('@'), 1);
+        auto rightOf = [minX](const QQuickItem* item) {
+            return minX < 0 || item->mapToScene(QPointF(item->width() / 2.0, 0)).x() >= minX;
+        };
         QQuickItem* target = nullptr;
         for (QObject* root : m_qml.rootObjects()) {
-            for (QObject* o : findNamed(root, arg)) {
+            QList<QObject*> candidates = byText ? allObjects(root) : findNamed(root, name);
+            if (!byText && !text.isEmpty()) {
+                // Inside the named one too: controlsTabs@TX is the TX tab.
+                for (QObject* named : findNamed(root, name)) {
+                    if (auto* item = qobject_cast<QQuickItem*>(named)) {
+                        std::function<void(QQuickItem*)> walk = [&](QQuickItem* i) {
+                            for (QQuickItem* child : i->childItems()) {
+                                candidates << child;
+                                walk(child);
+                            }
+                        };
+                        walk(item);
+                    }
+                }
+            }
+            for (QObject* o : candidates) {
                 auto* item = qobject_cast<QQuickItem*>(o);
-                if (item && item->isVisible()) {
+                if (item && (byText || !text.isEmpty() ? seen(item) : item->isVisible()) && (text.isEmpty() || shows(item, text))
+                    && rightOf(item)) {
+                    if (near.x() >= 0 && target) {
+                        const QPointF a = item->mapToScene(QPointF(item->width() / 2.0, item->height() / 2.0)) - near;
+                        const QPointF b = target->mapToScene(QPointF(target->width() / 2.0, target->height() / 2.0)) - near;
+                        if (QPointF::dotProduct(a, a) >= QPointF::dotProduct(b, b)) {
+                            continue;
+                        }
+                    }
                     target = item;
                 }
             }
@@ -765,20 +830,20 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             }
             const QPointF g = window->mapToGlobal(p);
             qInfo().noquote() << QStringLiteral("shot-plan: %1 %2 at %3,%4").arg(command == QLatin1String("holdname") ? QStringLiteral("hold") : QStringLiteral("tap"), arg).arg(qRound(p.x())).arg(qRound(p.y()));
-            QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
+            nativeMouse(window, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
             QWindowSystemInterface::flushWindowSystemEvents();
             if (command == QLatin1String("holdname")) {
                 QPointer<QQuickWindow> w(window);
                 QTimer::singleShot(1200, [w, p, g] {
                     if (w) {
-                        QWindowSystemInterface::handleMouseEvent(w, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+                        nativeMouse(w, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
                         QWindowSystemInterface::flushWindowSystemEvents();
                     }
                 });
                 *delayMs = std::max(*delayMs, 1600);
                 return;
             }
-            QWindowSystemInterface::handleMouseEvent(window, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+            nativeMouse(window, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
             QWindowSystemInterface::flushWindowSystemEvents();
         } else {
             qWarning() << "shot-plan: no visible" << arg;
@@ -959,8 +1024,8 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         }
         const auto press = [](QQuickWindow* w, const QPointF& p) {
             const QPointF g = w->mapToGlobal(p);
-            QWindowSystemInterface::handleMouseEvent(w, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
-            QWindowSystemInterface::handleMouseEvent(w, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+            nativeMouse(w, p, g, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
+            nativeMouse(w, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
             QWindowSystemInterface::flushWindowSystemEvents();
         };
         QPointer<QQuickWindow> w(window);
@@ -1143,14 +1208,15 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         // text "\\b"). Then the focused field's text.
         if (window) {
             QString keys = args.join(QLatin1Char(' '));  // words with spaces between
-            // <F1> ... <F12>, <Esc>: that key alone, no text. <Cmd-1> ...
+            // <F1> ... <F12>, <Esc>, <Enter>: that key alone, no text. <Cmd-1> ...
             // <Cmd-0>: the digit with Control, as Qt hands an iPad's ⌘ on
             // (Ctrl on Android and a PC).
-            static const QRegularExpression named(QStringLiteral("^<(F([1-9]|1[0-2])|Esc|Cmd-([0-9]))>$"));
+            static const QRegularExpression named(QStringLiteral("^<(F([1-9]|1[0-2])|Esc|Enter|Cmd-([0-9]))>$"));
             if (const QRegularExpressionMatch m = named.match(keys); m.hasMatch()) {
                 const bool cmd = !m.captured(3).isEmpty();
                 const int key = cmd ? Qt::Key_0 + m.captured(3).toInt()
-                                    : m.captured(1) == QLatin1String("Esc") ? Qt::Key_Escape : Qt::Key_F1 + m.captured(2).toInt() - 1;
+                                    : m.captured(1) == QLatin1String("Esc") ? Qt::Key_Escape
+                                    : m.captured(1) == QLatin1String("Enter") ? Qt::Key_Return : Qt::Key_F1 + m.captured(2).toInt() - 1;
                 const Qt::KeyboardModifiers mods = cmd ? Qt::ControlModifier : Qt::NoModifier;
                 QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyPress, key, mods);
                 QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyRelease, key, mods);
@@ -1285,6 +1351,37 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         if (window && wh.size() == 2) {
             window->resize(wh.at(0).toInt(), wh.at(1).toInt());
         }
+    } else if (command == QLatin1String("record")) {
+        if (arg == QLatin1String("off")) {
+            if (m_recordTimer) {
+                m_recordTimer->stop();
+            }
+            qInfo() << "shot-plan: record off at" << m_recordClock.elapsed();
+        } else if (window) {
+            const QString dir = QDir(m_outDir).filePath(QStringLiteral("frames"));
+            QDir().mkpath(dir);
+            if (!m_recordTimer) {
+                m_recordTimer = new QTimer(this);
+                connect(m_recordTimer, &QTimer::timeout, this, [this, dir] {
+                    auto* w = m_qml.rootObjects().isEmpty() ? nullptr
+                                                            : qobject_cast<QQuickWindow*>(m_qml.rootObjects().constFirst());
+                    if (w) {
+                        // Grabbed here, written on a pool thread: the window's own
+                        // thread is kept to rendering.
+                        const QImage frame = w->grabWindow();
+                        const QString path = QDir(dir).filePath(QStringLiteral("%1.jpg").arg(m_recordClock.elapsed(), 9, 10, QLatin1Char('0')));
+                        QThreadPool::globalInstance()->start([frame, path] { frame.save(path, "JPG", 88); });
+                    }
+                });
+            }
+            if (!m_recordClock.isValid()) {
+                m_recordClock.start();
+            }
+            m_recordTimer->start(1000 / std::clamp(arg.toInt(), 1, 60));
+            qInfo() << "shot-plan: record" << arg << "fps into" << dir;
+        }
+    } else if (command == QLatin1String("caption")) {
+        // Timed by the line log above while recording.
     } else {
         qWarning() << "shot-plan: unknown command" << command;
         m_failed = true;

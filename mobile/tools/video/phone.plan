@@ -1,0 +1,49 @@
+# OksaSDR tour, phone portrait 440x956 (frames 619x1344). Receive only.
+ready
+record 15
+caption !speed 4
+caption # On a phone
+caption The same app on an iPhone or an Android phone.
+wait 8000
+caption !speed 1
+caption The display fills the screen; the frequency, mode and slice are at the top.
+wait 5500
+caption FT8 on the go: the FTx tab decodes 20 m while you watch.
+drawer 9
+caption !mark 70,1290
+wait 2500
+tapname digiDecode
+wait 1500
+caption The decodes are under the FTx controls.
+scroll 2000
+wait 2500
+caption !speed 3
+caption Decoding: every 15 seconds the decodes of the last cycle come in. Tap one to answer it.
+wait 40000
+caption !speed 1
+caption The decodes: time, SNR, offset and the message. CQs, your own calls and new ones stand out.
+scroll 2000
+wait 6000
+shot p-ftx
+scroll 0
+wait 1500
+tapname digiDecode
+wait 1500
+close
+wait 1500
+caption The ⋯ menu: Radio Setup, the Manual, the Log, Big buttons and Disconnect.
+tap 0.93,0.03
+wait 4500
+shot p-menu
+close
+wait 1500
+caption Turn the phone for the landscape layout.
+size 956x440
+wait 6000
+shot p-land
+size 440x956
+wait 3000
+caption -
+record off
+slices
+shot end

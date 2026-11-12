@@ -5,6 +5,7 @@
 #include <QStringList>
 
 class QQmlApplicationEngine;
+class QTimer;
 
 namespace AetherSDR::mobile {
 
@@ -57,7 +58,12 @@ class MobileEngine;
 //                           amplifier's tuner) / its Stop
 //   tunepower W             the TX tab's Tune power (put it back after)
 //   click NAME              clicked() on the visible buttons with this objectName
-//   tapname NAME            a tap through the window on that control's middle
+//   tapname NAME[@TEXT] [~X,Y] a tap through the window on that control's
+//                           middle (@TEXT: the one so named that shows TEXT;
+//                           ~X,Y: the one nearest to X,Y; holdname too)
+//   taptext TEXT [>X] [~X,Y] a tap on the control showing TEXT (one with no
+//                           name; >X: only one right of X; ~X,Y: the one
+//                           nearest to X,Y)
 //   ready                   wait until connected with a slice (up to 30 s),
 //                           then 4 s for the display
 //   setup KEY=VALUE         a Radio Setup value, as the page sets it (e.g.
@@ -77,7 +83,7 @@ class MobileEngine;
 //   focus                   log where the keyboard is (keyboardOnPage, active item)
 //   keys TEXT               type TEXT through the window ("\\b": Backspace as a
 //                           Mac's UIKit sends it), then log the focused field's text;
-//                           <F1>..<F12>, <Esc>, <Cmd-0>..<Cmd-9> alone: that key
+//                           <F1>..<F12>, <Esc>, <Enter>, <Cmd-0>..<Cmd-9> alone: that key
 //   focussweep              give the keyboard to every control in view that takes it
 //                           on a press (no press): each must hand it back to the page
 //   focusaudit FX,FY        tap every text field in view, then FX,FY: each must
@@ -90,6 +96,12 @@ class MobileEngine;
 //   a11ydec NAME            its decrease action (a swipe down)
 //   layout                  log the page's layout decisions and the info
 //                           panels' geometry (layout-diff.py compares runs)
+//   record FPS|off          save the window FPS times a second as
+//                           DIR/frames/MS.jpg (MS since the start) and log
+//                           each later line with its time, for a video
+//                           (mobile/tools/make-video.py); off stops it
+//   caption TEXT            nothing; with record on its time is logged, so
+//                           the video's captions come from the plan
 //
 // The run quits after the last command (exit status 2 if a shot failed).
 class ShotPlan : public QObject {
@@ -121,6 +133,9 @@ private:
     qsizetype m_lastTextLen{0};
     QStringList m_savedPinned;
     bool m_pinned{false};
+    // record: the frame timer and the clock the frames and lines are timed by.
+    QTimer* m_recordTimer{nullptr};
+    QElapsedTimer m_recordClock;
 };
 
 } // namespace AetherSDR::mobile
