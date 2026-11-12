@@ -1,0 +1,40 @@
+# OksaSDR tour, "The app's own": beat cancel (BC) on a phone frequency, USB with the 2.9 kHz
+# receive filter (the user: phone always with 2.9 kHz). A 41 m broadcast carrier on 7.335,
+# 1 kHz off the dial, stands in for someone tuning up. Receive only; BC put back off.
+pin 5
+record 15
+caption !speed 3
+caption # The app's own
+ready
+wait 4000
+caption !speed 1
+caption Beat cancel (BC), the app's own, not in SmartSDR. In a phone QSO someone tunes up on your frequency: a steady whistle over the voice, worst in headphones. A broadcast carrier 1 kHz off the dial stands in for him here.
+freq 7.334
+span 10
+wait 1000
+caption !mark 560,115
+mode USB
+wait 2500
+caption !mark 933,115
+popup filterChooser
+wait 1500
+taptext 2.9k
+wait 1500
+close
+wait 4000
+caption Tap the DSP flags, then BC: it finds the steady carrier and notches it out within 0.15 s; the voice stays.
+taptext NR ~600,126
+wait 2000
+taptext BC ~743,464
+wait 9000
+caption BC off: the whistle is back. Up to four carriers at a time, in the voice modes.
+taptext BC ~743,464
+wait 5000
+close
+wait 1000
+caption -
+record off
+freq 14.074
+mode DIGU
+wait 2000
+slices

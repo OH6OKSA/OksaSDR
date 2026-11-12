@@ -8,10 +8,6 @@ class QFile;
 class QQmlApplicationEngine;
 class QTimer;
 
-namespace AetherSDR {
-class PcmFrame;
-}
-
 namespace AetherSDR::mobile {
 
 class MobileEngine;
@@ -124,7 +120,7 @@ private:
     void step();
     void run(const QString& command, const QStringList& args, int* delayMs);
     void closePopups();
-    void writeAudio(const PcmFrame& frame);
+    void writeAudio(const QByteArray& pcm, int rate);
     void writeSpeech(const QByteArray& pcm);
     void logLayout();
 

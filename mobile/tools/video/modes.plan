@@ -1,7 +1,8 @@
-# OksaSDR tour, "On the air": each mode heard as it is, iPad landscape 1366x1024.
-# A template: make-modes.py fills 14.252 20 m SSB at 14.252 MHz: a DX station, spotted on the DX cluster as JY4CI in Jordan. 14.0280 CW on 20 m: callers in a pileup for C8K, Mozambique, as they sound; the decoder copies them. 7.177 40 m, 7.177 MHz: the FreeDV Reporter list shows RADE stations on the air; their voice comes through the app.
-# from the spots of the moment (the DX cluster, FreeDV Reporter). Receive only; RADE on makes the
-# slice the TX slice for a while (no transmission). Put back on 14.074 DIGU at the end.
+# OksaSDR tour, "On the air": each mode heard as it is, iPad landscape 1366x1024 (QT_SCALE_FACTOR 1.40625).
+# 2026-11-12 evening. The video keeps this take's RADE part (3.763, cut after the speech); its SSB,
+# CW and BC parts were taken again: ssb.plan and bc.plan with the 2.9 kHz phone filter (the user),
+# cw.plan on stronger stations. Needs an audio output (the app's own DSP runs only with one; a
+# PipeWire null sink here). Receive only; the radio's NR is put back off, the slice on 14.074 DIGU.
 pin 5
 record 15
 caption !speed 3
@@ -10,45 +11,71 @@ caption Each mode as it sounds on the band right now, live from the radio.
 ready
 wait 4000
 caption !speed 1
-caption SSB: tap the frequency and type it.
+caption SSB on 80 m in the evening: tap the frequency and type it. The band plan makes it LSB.
 caption !mark 240,145
 frequency-dialog
 wait 1500
-keys 14.252
+keys 3.680
 wait 1500
 keys <Enter>
 wait 1500
 span 10
-wait 1000
-taptext DIGU
+wait 4000
+caption The radio's NR, from the DSP flags, takes the noise down between the words.
+taptext NR ~600,126
 wait 2000
-taptext USB ~442,159
+taptext NR ~543,401
 wait 2500
-caption 20 m SSB at 14.252 MHz: a DX station, spotted on the DX cluster as JY4CI in Jordan.
+close
+wait 1000
+caption 80 m SSB at 3.680 MHz, the radio's NR on.
 wait 20000
-caption CW: the CW section shows the decoder's text as it copies.
+caption CW: the CW section, and Autotune puts the signal on the pitch for the decoder.
 taptext CW ~1263,82
 taptext View ~1324,82
-freq 14.0280
+freq 3.5393
 span 6
 wait 1000
-taptext USB
-wait 2000
-taptext CW ~510,159
+caption !mark 560,115
+mode CW
+wait 2500
+tapname cwAutotune
 wait 3000
-caption CW on 20 m: callers in a pileup for C8K, Mozambique, as they sound; the decoder copies them.
-wait 22000
-taptext FreeDV ~1263,141
+caption CW on 80 m at 3.539 MHz, as it sounds; the decoder copies it.
+wait 20000
+caption # The app's own
+caption Beat cancel (BC), the app's own, not in SmartSDR. In a phone QSO someone tunes up on your frequency: a steady whistle over the voice, worst in headphones. A broadcast carrier 1 kHz off the dial stands in for him here.
+taptext View ~1324,82
 taptext CW ~1263,82
+freq 7.334
+span 10
+wait 1000
+caption !mark 560,115
+mode USB
+wait 6000
+caption Tap the DSP flags, then BC: it finds the steady carrier and notches it out within 0.15 s; the voice stays.
+taptext NR ~600,126
+wait 2000
+taptext BC ~743,464
+wait 9000
+caption BC off: the whistle is back. Up to four carriers at a time, in the voice modes.
+taptext BC ~743,464
+wait 5000
+close
+wait 1000
+caption -
+caption # On the air
 caption FreeDV: RADE digital voice, decoded in the app.
-freq 7.177
+taptext FreeDV ~1263,141
+taptext View ~1324,82
+freq 3.763
 mode DIGU
 span 10
 wait 2500
 tapname radeButton
 wait 3000
-caption 40 m, 7.177 MHz: the FreeDV Reporter list shows RADE stations on the air; their voice comes through the app.
-wait 30000
+caption 80 m, 3.763 MHz: RADE stations in a QSO, as FreeDV Reporter shows them; their voice comes through the app.
+wait 45000
 tapname radeButton
 wait 3000
 taptext View ~1324,82
@@ -58,4 +85,11 @@ record off
 freq 14.074
 mode DIGU
 wait 2000
+taptext NR ~600,126
+wait 1500
+taptext NR ~543,401
+wait 1500
+close
+wait 1500
+shot end
 slices

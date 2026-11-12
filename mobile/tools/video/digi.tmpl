@@ -1,5 +1,5 @@
 # OksaSDR tour, "On the air" continued: RTTY or PSK, iPad landscape 1366x1024.
-# Filled by hand or by the spot watcher: {DIGI_MODE} {DIGI_SETUP} {DIGI_NOTE}. Receive only.
+# Filled by hand or by the spot watcher (the mode, its setup lines, the note). Receive only.
 pin 5
 record 15
 caption !speed 3
@@ -13,6 +13,9 @@ taptext View ~1324,82
 {DIGI_SETUP}
 span 6
 wait 3000
+caption Autotune finds the signal and locks the decoder on it.
+taptext Autotune
+wait 4000
 caption {DIGI_NOTE}
 wait 30000
 taptext View ~1324,82

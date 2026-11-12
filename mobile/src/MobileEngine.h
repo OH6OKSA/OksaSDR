@@ -39,7 +39,6 @@ class Ft8Engine;
 
 namespace AetherSDR {
 class AudioEngine;
-class PcmFrame;
 class RfkitConnection;
 class Kpa1500Connection;
 class AntennaGeniusModel;
@@ -1579,9 +1578,9 @@ public:
         m_session.radioModel().handleStatusForTest(object, kvs);
     }
     // Development (render tool `record`): the RX audio as the speaker gets
-    // it, for a video's sound; kept across reconnects (wireRxAudio). Empty
-    // stops it.
-    void setRxAudioTestSink(std::function<void(const AetherSDR::PcmFrame&)> sink);
+    // it (stereo float32 and its rate, after the app's own DSP), for a
+    // video's sound. Empty stops it.
+    void setRxAudioTestSink(std::function<void(const QByteArray&, int)> sink);
     // RADE's decoded speech (24 kHz stereo float32), which the speaker mixes
     // in; set before RADE starts.
     void setRxSpeechTestSink(std::function<void(const QByteArray&)> sink) { m_rxSpeechTestSink = std::move(sink); }
@@ -2086,7 +2085,8 @@ private:
     int m_splitTxId{-1};
     bool m_splitPending{false};
     QList<QMetaObject::Connection> m_rxAudioConnections;
-    std::function<void(const AetherSDR::PcmFrame&)> m_rxAudioTestSink;
+    std::function<void(const QByteArray&, int)> m_rxAudioTestSink;
+    QMetaObject::Connection m_rxAudioTestConnection;
     std::function<void(const QByteArray&)> m_rxSpeechTestSink;
     QList<QMetaObject::Connection> m_sliceConnections;
     QList<QMetaObject::Connection> m_panConnections;

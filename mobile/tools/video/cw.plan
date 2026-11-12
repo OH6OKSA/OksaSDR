@@ -1,0 +1,93 @@
+# OksaSDR tour, "On the air": CW, a sweep of the evening's CW stations (DX cluster spots and the
+# panadapter's strongest), Autotune on each; the video keeps the one that keys and copies best.
+pin 5
+record 15
+caption !speed 3
+caption # On the air
+ready
+wait 4000
+caption !speed 1
+caption CW: the CW section, and Autotune puts the signal on the pitch for the decoder.
+taptext CW ~1263,82
+taptext View ~1324,82
+caption @cw 7.0300
+caption CW: the CW section, and Autotune puts the signal on the pitch for the decoder.
+freq 7.0300
+span 6
+wait 1000
+caption !mark 560,115
+mode CW
+wait 2000
+tapname cwAutotune
+wait 2500
+caption CW on 40 m at 7.030 MHz, as it sounds; the decoder copies it.
+wait 18000
+caption @cw 7.0320
+caption CW: the CW section, and Autotune puts the signal on the pitch for the decoder.
+freq 7.0320
+span 6
+wait 1000
+caption !mark 560,115
+mode CW
+wait 2000
+tapname cwAutotune
+wait 2500
+caption CW on 40 m at 7.032 MHz, as it sounds; the decoder copies it.
+wait 18000
+caption @cw 7.0270
+caption CW: the CW section, and Autotune puts the signal on the pitch for the decoder.
+freq 7.0270
+span 6
+wait 1000
+caption !mark 560,115
+mode CW
+wait 2000
+tapname cwAutotune
+wait 2500
+caption CW on 40 m at 7.027 MHz, as it sounds; the decoder copies it.
+wait 18000
+caption @cw 7.0176
+caption CW: the CW section, and Autotune puts the signal on the pitch for the decoder.
+freq 7.0176
+span 6
+wait 1000
+caption !mark 560,115
+mode CW
+wait 2000
+tapname cwAutotune
+wait 2500
+caption CW on 40 m at 7.017 MHz, as it sounds; the decoder copies it.
+wait 18000
+caption @cw 3.5070
+caption CW: the CW section, and Autotune puts the signal on the pitch for the decoder.
+freq 3.5070
+span 6
+wait 1000
+caption !mark 560,115
+mode CW
+wait 2000
+tapname cwAutotune
+wait 2500
+caption CW on 80 m at 3.507 MHz, as it sounds; the decoder copies it.
+wait 18000
+caption @cw 3.5194
+caption CW: the CW section, and Autotune puts the signal on the pitch for the decoder.
+freq 3.5194
+span 6
+wait 1000
+caption !mark 560,115
+mode CW
+wait 2000
+tapname cwAutotune
+wait 2500
+caption CW on 80 m at 3.519 MHz, as it sounds; the decoder copies it.
+wait 18000
+caption @cw end
+caption -
+taptext View ~1324,82
+taptext CW ~1263,82
+record off
+freq 14.074
+mode DIGU
+wait 2000
+slices

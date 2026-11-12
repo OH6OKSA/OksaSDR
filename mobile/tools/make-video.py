@@ -253,8 +253,11 @@ def segment(run_dir, log, out, scale=1.40625, footer="OksaSDR  ·  receive only"
         lines.append(f"Dialogue: 1,{ass_time(chapter_start)},{ass_time(total)},Chapter,,0,0,0,,{esc(chapter)}")
     lines.append(f"Dialogue: 0,{ass_time(0)},{ass_time(total)},Footer,,0,0,0,,{esc(footer)}")
 
-    # Tap marks: a white ring that fades.
+    # Tap marks: a white ring that fades; a tap in a cut part is left out
+    # (it would ring where the cut ends).
     for ms, k, v in events:
+        if k in ("tap", "tapfrac") and state_at(ms)[1]:
+            continue
         if k == "tap":
             x, y = xy(*v)
         elif k == "tapfrac":

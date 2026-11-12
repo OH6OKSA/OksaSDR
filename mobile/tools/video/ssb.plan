@@ -1,0 +1,65 @@
+# OksaSDR tour, "On the air": 80 m SSB in the evening, LSB with the 2.9 kHz receive filter
+# (the user: phone always with 2.9 kHz). The radio recalls each band's last mode, so LSB is
+# chosen from the mode list (80 m was left in DIGU). Five active frequencies, 20 s each; the
+# video keeps the best (the others !cut in the log). Receive only.
+pin 5
+record 15
+caption !speed 3
+caption # On the air
+caption Each mode as it sounds on the band right now, live from the radio.
+ready
+wait 4000
+caption !speed 1
+caption SSB on 80 m in the evening: tap the frequency and type it.
+caption !mark 240,145
+frequency-dialog
+wait 1500
+keys 3.650
+wait 1500
+keys <Enter>
+wait 1500
+span 10
+wait 2000
+caption Then the mode: LSB, the sideband of the low bands.
+taptext DIGU
+wait 2000
+taptext LSB
+wait 2500
+caption Phone sounds fuller with the 2.9 kHz receive filter: tap the filter width, then 2.9k.
+caption !mark 933,115
+popup filterChooser
+wait 2000
+taptext 2.9k
+wait 2000
+close
+wait 1000
+caption @ssb 3.650
+caption 80 m SSB at 3.650 MHz, LSB with the 2.9 kHz filter.
+wait 20000
+caption @ssb 3.641
+caption 80 m SSB at 3.641 MHz, LSB with the 2.9 kHz filter.
+freq 3.641
+span 10
+wait 20000
+caption @ssb 3.695
+caption 80 m SSB at 3.695 MHz, LSB with the 2.9 kHz filter.
+freq 3.695
+span 10
+wait 20000
+caption @ssb 3.743
+caption 80 m SSB at 3.743 MHz, LSB with the 2.9 kHz filter.
+freq 3.743
+span 10
+wait 20000
+caption @ssb 3.750
+caption 80 m SSB at 3.750 MHz, LSB with the 2.9 kHz filter.
+freq 3.750
+span 10
+wait 20000
+caption @ssb end
+caption -
+record off
+freq 14.074
+mode DIGU
+wait 2000
+slices

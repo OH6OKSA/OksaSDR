@@ -8705,22 +8705,27 @@ void MobileEngine::wireRxAudio()
     if (backend->ownsRxAudio()) {
         m_rxAudioConnections.append(connect(&rm, &RadioModel::backendAudioFrameReady,
                                             m_audio, &AudioEngine::feedPcmFrame));
-        if (m_rxAudioTestSink) {
-            m_rxAudioConnections.append(connect(&rm, &RadioModel::backendAudioFrameReady, this, m_rxAudioTestSink));
-        }
     } else if (PanadapterStream* ps = rm.panStream()) {
         m_rxAudioConnections.append(connect(ps, &PanadapterStream::pcmFrameReady,
                                             m_audio, &AudioEngine::feedPcmFrame));
-        if (m_rxAudioTestSink) {
-            m_rxAudioConnections.append(connect(ps, &PanadapterStream::pcmFrameReady, this, m_rxAudioTestSink));
-        }
     }
 }
 
-void MobileEngine::setRxAudioTestSink(std::function<void(const PcmFrame&)> sink)
+void MobileEngine::setRxAudioTestSink(std::function<void(const QByteArray&, int)> sink)
 {
+    // The receive audio after the app's own DSP (beat cancel among it), as
+    // the speaker gets it: the automation bridge's post-DSP tap.
+    disconnect(m_rxAudioTestConnection);
     m_rxAudioTestSink = std::move(sink);
-    wireRxAudio();
+    if (m_rxAudioTestSink) {
+        m_rxAudioTestConnection = connect(m_audio, &AudioEngine::receivePresentationPostDspAudioReady, this,
+                                          [this](const QString& source, const QString&, const QByteArray& pcm,
+                                                 int sampleRate, int channels) {
+                                              if (m_rxAudioTestSink && source == QLatin1String("flex") && channels == 2) {
+                                                  m_rxAudioTestSink(pcm, sampleRate);
+                                              }
+                                          });
+    }
 }
 
 void MobileEngine::onSliceAdded(SliceModel* slice)

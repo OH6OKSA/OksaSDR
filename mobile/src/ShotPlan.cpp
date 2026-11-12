@@ -2,8 +2,6 @@
 
 #include "MobileEngine.h"
 
-#include "core/PcmFrame.h"
-
 #include <QAccessible>
 #include <QCoreApplication>
 #include <QGuiApplication>
@@ -66,15 +64,21 @@ void nativeMouse(QWindow* w, const QPointF& p, const QPointF& g, Qt::MouseButton
     QWindowSystemInterface::handleMouseEvent(w, p * dpr, g * dpr, state, button, type);
 }
 
-// On screen: visible and not under an item at opacity 0 (the tablet page's
-// probes are shown so, to be measured, never seen).
+// On screen: visible, not under an item at opacity 0 (the tablet page's
+// probes are shown so, to be measured, never seen), and its middle inside
+// every clipping item above it (a list row scrolled out of a panel is not
+// seen: tapping where it maps hit the spectrum and tuned the radio).
 bool seen(const QQuickItem* item)
 {
     if (!item->isVisible()) {
         return false;
     }
+    const QPointF middle = item->mapToScene(QPointF(item->width() / 2.0, item->height() / 2.0));
     for (const QQuickItem* i = item; i; i = i->parentItem()) {
         if (i->opacity() <= 0) {
+            return false;
+        }
+        if (i != item && i->clip() && !i->mapRectToScene(QRectF(0, 0, i->width(), i->height())).contains(middle)) {
             return false;
         }
     }
@@ -161,32 +165,30 @@ void ShotPlan::step()
     QTimer::singleShot(delayMs, this, &ShotPlan::step);
 }
 
-void ShotPlan::writeAudio(const PcmFrame& frame)
+void ShotPlan::writeAudio(const QByteArray& pcm, int rate)
 {
-    if (!m_audioFile || !m_audioFile->isOpen() || !m_recordClock.isValid()) {
+    if (!m_audioFile || !m_audioFile->isOpen() || !m_recordClock.isValid() || (rate != 24000 && rate != 48000)) {
         return;
     }
-    const int rate = frame.stream().format.sampleRateHz;
-    const int channels = frame.stream().format.channels();
-    const qsizetype count = frame.frameCount();
-    if (count <= 0 || (rate != 24000 && rate != 48000)) {
+    // Stereo float32 at 24 or 48 kHz, written at 24 kHz. Where it belongs:
+    // it ends now. A gap longer than 0.2 s (no stream, a reconnect) is
+    // filled with silence; shorter jitter is not.
+    const auto* in = reinterpret_cast<const float*>(pcm.constData());
+    const qsizetype count = pcm.size() / qsizetype(2 * sizeof(float));
+    if (count <= 0) {
         return;
     }
-    // Where it belongs: it ends now. A gap longer than 0.2 s (no stream,
-    // a reconnect) is filled with silence; shorter jitter is not.
     const qint64 at = m_recordClock.elapsed() * 24 - count * 24000 / rate;
     if (at - m_audioFrames > 4800) {
         const QByteArray silence((at - m_audioFrames) * 2 * qsizetype(sizeof(float)), '\0');
         m_audioFile->write(silence);
         m_audioFrames = at;
     }
-    const QVector<float>& in = frame.samples();
     const int step = rate / 24000;
     QVector<float> out;
     out.reserve(count / step * 2 + 2);
     for (qsizetype i = 0; i < count; i += step) {
-        const float left = in.at(i * channels);
-        out << left << (channels == 2 ? in.at(i * channels + 1) : left);
+        out << in[i * 2] << in[i * 2 + 1];
     }
     m_audioFile->write(reinterpret_cast<const char*>(out.constData()), out.size() * qsizetype(sizeof(float)));
     m_audioFrames += out.size() / 2;
@@ -1439,7 +1441,7 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             if (!m_audioFile) {
                 m_audioFile = new QFile(QDir(m_outDir).filePath(QStringLiteral("audio.f32")), this);
                 if (m_audioFile->open(QIODevice::WriteOnly)) {
-                    m_engine.setRxAudioTestSink([this](const PcmFrame& frame) { writeAudio(frame); });
+                    m_engine.setRxAudioTestSink([this](const QByteArray& pcm, int rate) { writeAudio(pcm, rate); });
                     qInfo() << "shot-plan: record audio into" << m_audioFile->fileName();
                 }
                 // RADE's decoded speech beside it (speech.f32, the same timing).
