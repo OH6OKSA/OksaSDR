@@ -158,7 +158,10 @@ radio interface, with no computer running alongside.
   SmartSDR and AetherSDR.
 - **Auto AGC-T**: the radio's own on Early Access radios; on every other
   radio the app finds the AGC knee on a clear spot and keeps it per band
-  and mode group.
+  and mode group, and **Follow** keeps AGC-T on the noise as it rises and
+  falls (as Thetis's Auto AGC).
+- **Noise floor line** (View): the noise floor as a dashed line with its
+  dBm, 2D and 3D.
 - **App setups** (Prof tab): the app's own settings saved under a name,
   switched in a tap, exported as a file and imported on another device.
 - Filter passband drawn on the display, on the correct side for USB/LSB and

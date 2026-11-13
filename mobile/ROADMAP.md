@@ -5,7 +5,7 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
-Build 169 / beta 81, in progress (the user, 2026-11-13: "48 pitää huomioida miten toimitaan muilla kuin phone modeilla, 63, 64, 66"): **48** the noise floor line and Auto: follow the noise, each mode handled as below; **63** the iOS 27 MIDI pairing crash; **64** the KPA1500's tune seen to its end; **66** the passband kept in view as tuning follows it.
+Build 169 / beta 81, released 2026-11-13 (the user, 2026-11-13: "48 pitää huomioida miten toimitaan muilla kuin phone modeilla, 63, 64, 66"): **48** the noise floor line and Auto: follow the noise, each mode handled as below; **63** the iOS 27 MIDI pairing crash; **64** the KPA1500's tune seen to its end; **66** the passband kept in view as tuning follows it.
 
 Build 168 / beta 80, released 2026-11-11 (the user, 2026-11-11: "Otetaan nämä seuraavaan buildiin": 60's second part and the KPA1500; then "Tutki myös tuo 2 smartlink tiliä onko mahdollista"): **60** (second part) a VFO knob that sends a position (the CTR2's knob modes 1-3, SliderA) named on Radio Setup › MIDI and in the log, with the CTR2's Home mode as the hint. **61** Elecraft KPA1500: its readings on Controls › Amp and every meter, over its UDP server (the amplifier takes one TCP client); then (the user: "tehdään myös koko lähetyspuoli kuntoon kuten tehtiin rfkit") its control as the RF2K-S's over its TCP connection: Operate / Standby, ANT1 / ANT2, the ATU mode, the fault clear and Tune (the ATU's full search with the radio's TUNE carrier at 10-50 W); not keying it over the network (^TX). **62** two SmartLink accounts: pre-analysed, not chosen yet.
 
