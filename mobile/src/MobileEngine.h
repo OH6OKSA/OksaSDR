@@ -578,6 +578,13 @@ class MobileEngine : public QObject {
     // 3D stacked trace (the desktop's 3DSS, CPU-drawn) in place of the
     // 2D waterfall.
     Q_PROPERTY(bool spectrum3D READ spectrum3D WRITE setSpectrum3D NOTIFY displayLevelsChanged)
+    // The noise floor as its own dashed line with its dBm (roadmap 48, as
+    // Thetis's "Show noise floor on panadapter"); off by default.
+    Q_PROPERTY(bool noiseFloorLine READ noiseFloorLine WRITE setNoiseFloorLine NOTIFY displayLevelsChanged)
+    // The noise floor the line shows: the averaged FFT frame's noise
+    // estimate (the one Auto AGC-T reads), not the display's auto-level
+    // anchor, which sits a few dB under the noise.
+    Q_PROPERTY(double noiseFloorEstimateDbm READ noiseFloorEstimateDbm NOTIFY noiseFloorEstimateChanged)
     // The spectrum's share of the display in percent (the desktop's
     // draggable divider, 10-90); 0 is automatic. Remembered.
     Q_PROPERTY(int spectrumSplit READ spectrumSplit WRITE setSpectrumSplit NOTIFY displayLevelsChanged)
@@ -1435,6 +1442,9 @@ public:
     // The AGC panel's Auto: the radio's Auto on / off, or the app's
     // measurement started (pressed again: stopped, AGC-T put back).
     Q_INVOKABLE void agcAutoPress();
+    // Auto: follow the noise (roadmap 48): AGC-T moved with the noise floor
+    // by the slope Auto measured, for every band and mode Auto has measured.
+    Q_INVOKABLE void setAgcFollow(bool on);
     QVariantMap midi() const;
     QString midiActivity() const { return m_midiActivity; }
     bool bigButtons() const { return m_bigButtons; }
@@ -1507,6 +1517,9 @@ public:
     void setTraceRangeDb(int v) { setDisplayInt("MobileTraceRange", std::clamp(v, 20, 150)); }
     bool spectrum3D() const { return displayInt("MobileSpectrum3D", 0) != 0; }
     void setSpectrum3D(bool on) { setDisplayInt("MobileSpectrum3D", on ? 1 : 0); }
+    bool noiseFloorLine() const { return displayInt("MobileNoiseFloorLine", 0) != 0; }
+    double noiseFloorEstimateDbm() const { return m_floorEstimateDbm; }
+    void setNoiseFloorLine(bool on) { setDisplayInt("MobileNoiseFloorLine", on ? 1 : 0); }
     // The 3D floor (its zero) this many dB under the noise, as the desktop's
     // "3D Floor" (0-24, default 6).
     int spectrum3DFloorDepth() const { return displayInt("Mobile3DFloorDepth", 6); }
@@ -1945,6 +1958,7 @@ signals:
     void profilesChanged();
     void appSetupsChanged();
     void agcAutoChanged();
+    void noiseFloorEstimateChanged();
     void midiChanged();
     void bigButtonsChanged();
     void showDemoRadioChanged();
@@ -2480,6 +2494,20 @@ private:
     QString m_agcRecallKey;
     QTimer m_agcRecallTimer;
     bool m_agcRecalling{false};
+    // Following the noise (roadmap 48).
+    void updateFloorEstimate();
+    double m_floorEstimateDbm{-999.0};
+    qint64 m_floorEstimateMs{0};
+    bool agcFollowOn() const;
+    double localFloorDbm() const;
+    void agcFollowTick();
+    QTimer m_agcFollowTimer;
+    QString m_agcFollowKey;
+    QString m_agcFollowNote;
+    double m_agcFollowFloor{0.0};   // the smoothed floor at the slice, dBm
+    int m_agcFollowTicks{0};        // seconds the floor has called for a move
+    qint64 m_agcFollowMovedMs{0};
+    qint64 m_agcFollowTxMs{0};      // last second seen transmitting
     bool m_agcStopping{false};
     bool m_agcKnee{true};
     bool m_agcFlat{false};

@@ -788,6 +788,35 @@ on the radio leaves the AGC alone.
   AGC speed stays as it is (fast for CW and data, slow for voice). For FT8,
   measure in DIGU just beside the FT8 frequencies, where it is quiet: the
   value is kept for that band's data modes.
+- **FM** has no AGC on the radio (SmartSDR hides it there): Auto and
+  Follow are dimmed in FM, NFM and DFM, and the note says so.
+
+**Follow** (under Auto, on radios without the radio's own Auto) keeps
+AGC-T on the noise as it rises and falls, as Thetis's Auto AGC does: at
+dusk on 80 m, at sunrise on 40 m, or when you change antenna. It works
+from Auto's measurement: with Follow on, a measurement also keeps the
+noise floor at the slice, how many dB the noise rose per AGC-T step (the
+AGC's gain a step, about 1 dB on a FLEX) and the filter width. Every
+second the app reads the noise floor beside the slice again (the
+display's noise estimate over about 5 kHz either side of the passband,
+which leaves signals out: an AM carrier, FT8's tones and a CW signal
+alike), and when it has moved enough for a change of 3 dB or more for
+10 s, AGC-T moves by that much over the measured gain: lower noise, a
+higher AGC-T. The note under it says what it follows, or why it waits:
+
+- *Follows once Auto has measured this band and mode*: measure with Auto
+  first (each band and mode group: voice, CW, data).
+- *The filter is not the width Auto measured with*: a CW filter of 250 Hz
+  after a measurement at 500 Hz (or an AM filter after SSB) lets a
+  different amount of noise through; press Auto again with it.
+- *AGC is off*: AGC-T is a fixed gain then and is left alone.
+- *Held while transmitting*: never while you transmit (also a TUNE or an
+  FT8 period) and 2 s after.
+- With the radio's own Auto on, the radio follows by itself.
+
+Moving the slider by hand lets the band and mode's measured value go, so
+nothing follows there until Auto measures again. Follow stays on or off
+as you left it.
 
 **Sliders with − and +.** AGC-T, RF gain, each slice's volume and pan, the
 squelch level, the DSP levels, RF and tune power, the microphone and
@@ -999,6 +1028,11 @@ does not transmit RTTY.
 
 **View** (in Controls) switches between the 2D waterfall and the **3D**
 stacked trace and sets the levels. They work as on the desktop AetherSDR:
+
+- **Noise floor line** — *On* draws the noise floor the app reads (the
+  one Auto AGC-T and Follow use) as a dashed yellow line across the
+  spectrum, *noise -127 dBm* at its right edge; in 3D it lies at the
+  surface's front row. Off by default.
 
 - **Spectrum** — *Auto* keeps the noise floor a quarter of the way up and
   follows it calmly: it rises only once a change has lasted over a second

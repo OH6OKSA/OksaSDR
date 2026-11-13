@@ -83,6 +83,8 @@ Popup {
                 text: Engine.agcAuto.measuring ? qsTr("Stop") : qsTr("Auto")
                 checked: !!Engine.agcAuto.radioOn || !!Engine.agcAuto.measuring
                 warn: !!Engine.agcAuto.radioPending
+                // FM has no AGC (roadmap 48).
+                enabled: !Engine.agcAuto.noAgc
                 focusPolicy: Qt.NoFocus
                 Accessible.name: Engine.agcAuto.radioAvailable ? qsTr("Auto AGC-T, the radio's") : qsTr("Auto AGC-T, measure")
                 Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
@@ -93,6 +95,34 @@ Popup {
                 objectName: "agcAutoNote"
                 Layout.fillWidth: true
                 text: Engine.agcAuto.note || ""
+                color: Theme.textDim
+                font.pixelSize: 12
+                wrapMode: Text.Wrap
+            }
+        }
+        // Auto: follow the noise (roadmap 48): AGC-T kept on the noise as
+        // it rises and falls, from Auto's measurement of each band and mode;
+        // not with the radio's own Auto, which follows by itself.
+        RowLayout {
+            Layout.fillWidth: true
+            visible: Engine.connectionState === "connected" && !Engine.agcAuto.radioAvailable
+            AppButton {
+                objectName: "agcFollow"
+                text: qsTr("Follow")
+                checked: !!Engine.agcAuto.follow
+                enabled: !Engine.agcAuto.noAgc
+                focusPolicy: Qt.NoFocus
+                Accessible.name: qsTr("Follow the noise")
+                Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                Layout.preferredHeight: Theme.touchTarget
+                onClicked: Engine.setAgcFollow(!checked)
+            }
+            Label {
+                objectName: "agcFollowNote"
+                Layout.fillWidth: true
+                text: Engine.agcAuto.follow
+                      ? (Engine.agcAuto.followNote || qsTr("Follows the noise."))
+                      : qsTr("Follow the noise: AGC-T moves as the noise rises and falls, from Auto's measurement.")
                 color: Theme.textDim
                 font.pixelSize: 12
                 wrapMode: Text.Wrap

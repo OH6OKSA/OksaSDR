@@ -1189,6 +1189,7 @@ MobileEngine::MobileEngine(QObject* parent)
                 }
             }
             m_lastFftMs = QDateTime::currentMSecsSinceEpoch();
+            updateFloorEstimate();
             if (m_displayActive) {
                 emit spectrumFrame(bins);
             }
@@ -6140,6 +6141,10 @@ void MobileEngine::setAgcThreshold(int value)
         const QString key = agcAutoKey();
         if (!m_agcMeasuring && !key.isEmpty() && AppSettings::instance().contains(key)) {
             AppSettings::instance().remove(key);
+            // Following the noise lets go with it (roadmap 48).
+            for (const char* part : {"_floor", "_slope", "_width"}) {
+                AppSettings::instance().remove(key + QLatin1String(part));
+            }
             AppSettings::instance().save();
             m_agcNote = tr("Set by hand: Auto's value for this band and mode is let go.");
             emit agcAutoChanged();
@@ -8291,6 +8296,10 @@ QString MobileEngine::agcModeClass(const QString& mode)
     if (mode.startsWith(QLatin1String("CW"))) {
         return QStringLiteral("cw");
     }
+    // FM has no AGC (roadmap 48): a group of its own, for Auto AGC-T's sake.
+    if (mode == QLatin1String("FM") || mode == QLatin1String("NFM") || mode == QLatin1String("DFM")) {
+        return QStringLiteral("fm");
+    }
     return data.contains(mode) ? QStringLiteral("data") : QStringLiteral("voice");
 }
 
@@ -8300,6 +8309,9 @@ void MobileEngine::applyModeAgc()
         return;
     }
     const QString kind = agcModeClass(m_slice->mode());
+    if (kind == QLatin1String("fm")) {
+        return;  // no AGC in FM
+    }
     const QString agc = AppSettings::instance()
                             .value(QStringLiteral("MobileAgc_") + kind,
                                    kind == QLatin1String("voice") ? QStringLiteral("slow") : QStringLiteral("fast"))

@@ -9,9 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Amp: the Elecraft KPA1500 on the Amp tab and every meter; Control on: Operate / Standby, antenna, ATU, Tune, fault clear (thanks Rich N2RY). Experimental: tested only against a simulator; no responsibility for your equipment.
-- MIDI: a VFO knob that sends a position (a CTR2 outside its Home mode) is named, not tuning down (thanks Hanno DK3HV).
-- From builds 164–167: FTx logs a multi-answer DX's RR73 (thanks Ben KT4O); the radio's DVK only with SmartSDR+ (thanks Ian VK1HF); the freeze on a turn fixed (thanks Kurt DL5EAG); Big buttons with the slices and two meters (thanks Michael Walker); MIDI controllers (thanks Hanno DK3HV); a new app icon.
+- AGC panel > Follow: AGC-T follows the noise as it rises and falls (as Thetis's Auto AGC), from Auto's measurement. FM has no AGC: Auto is dimmed there.
+- View > Noise floor line: the noise floor as a dashed line with its dBm.
+- The passband stays in view as the display follows your tuning.
+- MIDI pairing fixed on iOS 27; KPA1500 Tune ends when the amp says done (thanks Rich N2RY).
+- From builds 164–168: the KPA1500, experimental (thanks Rich N2RY); MIDI controllers (thanks Hanno DK3HV); multi-answer RR73 (thanks Ben KT4O); the DVK only with SmartSDR+ (thanks Ian VK1HF); Big buttons (thanks Michael Walker).
 
 RECENT (builds 94–163)
 - FTx > DXpedition > Hound; the Fox's and contest messages in FT8 / FT4.
@@ -37,7 +39,7 @@ PLEASE TRY
 - The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
 - New: View > Big buttons and Radio Setup > MIDI.
-- AGC panel > Auto on a clear spot.
+- AGC panel > Auto on a clear spot, then Follow; View > Noise floor line.
 - The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]
 
 REPORTING A PROBLEM

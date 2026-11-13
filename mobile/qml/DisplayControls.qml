@@ -336,6 +336,28 @@ ColumnLayout {
             onClicked: Engine.spectrum3D = true
         }
     }
+    // The noise floor the display reads (its auto levels, Auto AGC-T's
+    // following) as a dashed line with its dBm, 2D and 3D (roadmap 48).
+    RowLayout {
+        Layout.fillWidth: true
+        Label {
+            Layout.fillWidth: true
+            text: qsTr("Noise floor line")
+            color: Theme.textDim
+            font.pixelSize: Theme.px(15)
+            wrapMode: Text.WordWrap
+        }
+        AppButton {
+            objectName: "noiseFloorLine"
+            text: Engine.noiseFloorLine ? qsTr("On") : qsTr("Off")
+            checked: Engine.noiseFloorLine
+            focusPolicy: Qt.NoFocus
+            Accessible.name: qsTr("Noise floor line")
+            leftPadding: 10
+            rightPadding: 10
+            onClicked: Engine.noiseFloorLine = !Engine.noiseFloorLine
+        }
+    }
     // The desktop's 3D Floor: how far under the noise the 3D zero sits (also
     // set by dragging the dBm scale on the display).
     Label {

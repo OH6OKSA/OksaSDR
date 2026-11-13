@@ -691,6 +691,28 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         }
         qInfo() << "shot-plan: RF power" << m_engine.rfPower() << "W, tune power" << m_engine.tunePower()
                 << "W, tuning" << m_engine.tuning() << ", transmitting" << m_engine.radioTransmitting();
+    } else if (command == QLatin1String("agcstate")) {
+        // Auto AGC-T as the AGC panel shows it, the AGC, AGC-T and RX antenna.
+        const QVariantMap a = m_engine.agcAuto();
+        QStringList parts;
+        for (auto it = a.cbegin(); it != a.cend(); ++it) {
+            parts << it.key() + QLatin1Char('=') + it.value().toString();
+        }
+        qInfo().noquote() << "shot-plan: agc" << m_engine.agcMode() << "AGC-T" << m_engine.agcThreshold()
+                          << "rx" << m_engine.rxAntenna() << "of" << m_engine.rxAntennas().join(QLatin1Char(','))
+                          << "|" << parts.join(QLatin1String(" | "));
+    } else if (command == QLatin1String("agct")) {
+        // AGC-T as by the slider (by hand: Auto's values for the band and
+        // mode let go), to put a test's value back.
+        m_engine.setAgcThreshold(arg.toInt());
+        qInfo() << "shot-plan: AGC-T" << arg;
+    } else if (command == QLatin1String("agcfollow")) {
+        m_engine.setAgcFollow(arg == QLatin1String("on"));
+        qInfo() << "shot-plan: follow the noise" << arg;
+    } else if (command == QLatin1String("rxant")) {
+        m_engine.setRxAntenna(arg);
+        qInfo() << "shot-plan: RX antenna" << arg;
+        *delayMs = 800;
     } else if (command == QLatin1String("waittx") || command == QLatin1String("waitcall")
                || command == QLatin1String("waitover")) {
         // At most MS: waittx until this app's text has gone out; waitcall

@@ -88,6 +88,50 @@ Rectangle {
         colorGain: Engine.spectrum3DGain
     }
 
+    // The noise floor (roadmap 48): a dashed line at the engine's noise
+    // estimate, its dBm at the right edge, over the 2D trace or at the 3D
+    // surface's front row (the shader's height there: ((noise - the 3D zero)
+    // / range)^zCurve of the front's ridge height).
+    Item {
+        id: floorLine
+        objectName: "noiseFloorMark"
+        visible: Engine.noiseFloorLine && Engine.panBandwidthMhz > 0 && Engine.noiseFloorEstimateDbm > -999
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 1
+        readonly property real traceH: spectrum.height * spectrum.spectrumFraction
+        readonly property real frac2D: (Engine.noiseFloorEstimateDbm - spectrum.traceBottomDbm)
+                                       / Math.max(1, spectrum.traceTopDbm - spectrum.traceBottomDbm)
+        readonly property real frac3D: Math.pow(Math.max(0, Math.min(1, (Engine.noiseFloorEstimateDbm - surface3D.floor)
+                                                                        / Math.max(1, surface3D.span))), 0.70) * 0.46
+        y: Engine.spectrum3D ? Math.round(surface3D.height * (1 - frac3D))
+                             : Math.round(traceH * (1 - Math.max(0, Math.min(1, frac2D))))
+        Row {
+            spacing: 4
+            Repeater {
+                model: Math.ceil(floorLine.width / 10)
+                Rectangle { width: 6; height: 1; color: "#f2c94c"; opacity: 0.9 }
+            }
+        }
+        Rectangle {
+            anchors.right: parent.right
+            anchors.rightMargin: 4
+            anchors.bottom: parent.top
+            anchors.bottomMargin: 2
+            width: floorLabel.implicitWidth + 8
+            height: floorLabel.implicitHeight + 2
+            radius: 3
+            color: Qt.rgba(0, 0, 0, 0.55)
+            Label {
+                id: floorLabel
+                anchors.centerIn: parent
+                text: qsTr("noise %1 dBm").arg(Math.round(Engine.noiseFloorEstimateDbm))
+                color: "#f2c94c"
+                font.pixelSize: Theme.px(11)
+            }
+        }
+    }
+
     // FT8 / FT4: the transmit tone's band in red, dragged (1 Hz, no steps)
     // or set by a tap to place the TX audio frequency by eye.
     Item {
