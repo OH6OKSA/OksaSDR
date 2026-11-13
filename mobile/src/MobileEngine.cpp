@@ -173,7 +173,7 @@ const QString kSmartLinkTokenKey = QStringLiteral("smartlink_refresh_token");
 // SmartLink UDP port when the radio reports none (FlexLib default).
 constexpr quint16 kDefaultWanUdpPort = 4993;
 constexpr int kWanReconnectMs = 5000;
-// Fraction of the span kept between the slice and the edge while tuning.
+// Fraction of the span kept between the passband and the edge while tuning.
 constexpr double kPanFollowEdge = 0.1;
 // Coalescing interval for pan moves during a drag.
 constexpr int kPanMoveMs = 40;
@@ -4120,14 +4120,26 @@ void MobileEngine::tuneTo(double mhz)
         return;
     }
     m_slice->setFrequency(mhz);
-    // Near or past an edge the view follows, keeping the slice
+    // Near or past an edge the view follows, keeping the whole passband
     // kPanFollowEdge of a span inside it, so dragging keeps going up or down
-    // the band instead of stopping at the edge of the display.
+    // the band instead of stopping at the edge of the display. The passband,
+    // not the carrier (roadmap 66): an SSB one lies on one side of it, so at
+    // a narrow span an LSB slice tuned down showed only part of its filter.
     const double bandwidth = m_pan->bandwidthMhz();
-    const double offset = mhz - panCenterMhz();
-    const double limit = bandwidth * (0.5 - kPanFollowEdge);
-    if (std::abs(offset) > limit) {
-        panTo(offset > 0.0 ? mhz - limit : mhz + limit);
+    const double center = panCenterMhz();
+    const double margin = bandwidth * kPanFollowEdge;
+    const double low = mhz + m_slice->filterLow() / 1.0e6;
+    const double high = mhz + m_slice->filterHigh() / 1.0e6;
+    if (high - low > bandwidth - 2.0 * margin) {
+        // Wider than the view less both margins: the passband's middle.
+        const double middle = (low + high) / 2.0;
+        if (std::abs(middle - center) > bandwidth * 0.01) {
+            panTo(middle);
+        }
+    } else if (low < center - bandwidth / 2.0 + margin) {
+        panTo(low + bandwidth / 2.0 - margin);
+    } else if (high > center + bandwidth / 2.0 - margin) {
+        panTo(high - bandwidth / 2.0 + margin);
     }
 }
 
