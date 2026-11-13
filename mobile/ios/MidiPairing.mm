@@ -62,6 +62,17 @@ bool showBluetoothMidiPairing()
     // controller keeps the navigation controller while it is shown.
     static OksaMidiPairingCloser* closer = [[OksaMidiPairingCloser alloc] init];
     CABTMIDICentralViewController* central = [[[CABTMIDICentralViewController alloc] init] autorelease];
+    if (@available(iOS 27, *)) {
+        // iOS 27's -[CABTMIDICentralViewController loadView] lays its table
+        // view out with a NaN height and CALayer raises
+        // CALayerInvalidGeometry (FB25301268, Apple Developer Forums thread
+        // 850584; roadmap 63, Rich Yost N2RY's crash). Apple DTS's
+        // workaround: the controller gets its table view before it is shown,
+        // so loadView never runs, and its viewDidLoad is called here
+        // (without it no devices are listed).
+        central.tableView = [[[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleGrouped] autorelease];
+        [central viewDidLoad];
+    }
     central.navigationItem.rightBarButtonItem =
         [[[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone
                                                        target:closer
