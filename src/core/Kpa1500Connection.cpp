@@ -214,6 +214,10 @@ void Kpa1500Connection::onMessage(const Kpa1500::Message& message)
 {
     const bool changed = Kpa1500::applyMessage(message, m_status);
 
+    if (message.cmd == QLatin1String("FT") && message.arg.isEmpty()) {
+        emit tuneEnded();
+    }
+
     // The amp's own `^TQ` is authoritative for the key state (Principle II):
     // every reply counts, repeated or not, and only a `^TQ` reply does.
     if (message.cmd == QLatin1String("TQ") && m_status.keyed && !*m_status.keyed && m_keyed) {

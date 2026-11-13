@@ -5,7 +5,7 @@
                                  [--tx-cycle S | --keyed] [--forward W] [--swr X]
                                  [--standby] [--fault HH] [--off] [--atu bypass]
                                  [--antenna N] [--band BB] [--firmware NN.NN]
-                                 [--silent-after S] [--tune-seconds S] [--no-match]
+                                 [--silent-after S] [--tune-seconds S] [--no-match] [--no-ft-reply]
                                  [--log FILE]
 
 Answers the KPA1500 Programming Reference V3's command set as the amplifier
@@ -31,7 +31,11 @@ them as the amplifier does: ^OS0 / ^OS1 (OPERATE clears a fault but the
 temperature one), ^AN1 / ^AN2, ^AMI / ^AMB, ^AI0 / ^AI1, ^FLC (clears the
 fault but a temperature one), ^FT (a full-search tune: ^TP1 for
 --tune-seconds, 3, then done and in line, or with --no-match fault 92 in
-STANDBY), ^FE (cancels it).
+STANDBY), ^FE (cancels it). A tune started over TCP ends with the
+amplifier's "^FT;" on that link, done or cancelled, as the reference says
+("When the tune completes or is cancelled, the KPA1500 responds with
+^FT;"); --no-ft-reply leaves it out (only ^TP tells). A short search
+(--tune-seconds 0.3) is over between two of the app's ^TP readings.
 """
 
 import argparse
@@ -63,6 +67,7 @@ def main():
     ap.add_argument("--firmware", default="03.08")
     ap.add_argument("--silent-after", type=float, default=0.0)
     ap.add_argument("--tune-seconds", type=float, default=3.0)
+    ap.add_argument("--no-ft-reply", action="store_true")
     ap.add_argument("--no-match", action="store_true")
     ap.add_argument("--log")
     args = ap.parse_args()
@@ -77,7 +82,8 @@ def main():
     start = time.monotonic()
     # What a SET changes, as the amplifier keeps it.
     st = {"operate": not args.standby and args.fault == "00", "antenna": args.antenna,
-          "atu": "I" if args.atu == "inline" else "B", "fault": args.fault.upper(), "tune_end": 0.0}
+          "atu": "I" if args.atu == "inline" else "B", "fault": args.fault.upper(), "tune_end": 0.0,
+          "ft_owed": False}
 
     def tune_poll():
         # A running search ends after --tune-seconds: in line and stored, or
@@ -183,6 +189,8 @@ def main():
             counts["writes"] += 1
             say("%s WRITE ^%s%s;" % (via, cmd, arg))
             act(cmd, arg)
+            if cmd in ("FT", "FE") and via == "TCP" and not args.no_ft_reply:
+                st["ft_owed"] = st["ft_owed"] or cmd == "FT"
             return None
         counts["queries"] += 1
         say("%s ^%s;" % (via, cmd))
@@ -208,7 +216,15 @@ def main():
     try:
         while True:
             socks = [udp, tcp] + ([client] if client else [])
-            ready, _, _ = select.select(socks, [], [], 0.5)
+            ready, _, _ = select.select(socks, [], [], 0.05)
+            # A search over (done, no match or cancelled): its ^FT; on the
+            # TCP link that started it.
+            tune_poll()
+            if st["ft_owed"] and not st["tune_end"]:
+                st["ft_owed"] = False
+                if client:
+                    client.sendall(b"^FT;")
+                    say("TCP ^FT; sent (the tune is over)")
             for s in ready:
                 if s is udp:
                     data, peer = udp.recvfrom(512)

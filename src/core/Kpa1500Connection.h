@@ -86,6 +86,9 @@ signals:
     // something. Consumers read the fields they care about; unset optionals
     // mean "the amp has not reported this yet", not zero.
     void statusUpdated(const AetherSDR::Kpa1500::Status& status);
+    // The amplifier's bare `^FT;` on this link: "When the tune completes or
+    // is cancelled, the KPA1500 responds with ^FT;" (Programming Reference).
+    void tuneEnded();
 
 private slots:
     void onReadyRead();

@@ -149,7 +149,8 @@ void Kpa1500Reader::cycle()
         m_paceTimer.start();
         return;
     }
-    m_queue = fastQueries() + m_extra;
+    // Extra queries first: a tune's ^TP is read at the start of every cycle.
+    m_queue = m_extra + fastQueries();
     const QStringList& slow = slowQueries();
     m_queue << slow.at(m_slowIndex % slow.size());
     m_slowIndex = (m_slowIndex + 1) % slow.size();

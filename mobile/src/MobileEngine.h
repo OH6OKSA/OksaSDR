@@ -2267,6 +2267,7 @@ private:
     void checkKpaTune();
     // cancel: ^FE for a search not seen done (by default when not ok).
     void endKpaTune(const QString& result, bool ok, int cancel = -1);
+    void logKpaTune(qint64 ms, bool radioTuning) const;
     Kpa1500Reader* m_kpa{nullptr};
     Kpa1500Connection* m_kpaCtl{nullptr};
     bool m_kpaCtlWanted{false};
@@ -2287,6 +2288,8 @@ private:
     bool m_kpaTuneSawTuning{false};
     bool m_kpaTuneKeyed{false};
     qint64 m_kpaTuneDoneMs{0};  // when ^TP first read 0 after the search
+    bool m_kpaTuneEndSeen{false};  // the control link's ^FT; (roadmap 64)
+    qint64 m_kpaTuneLoggedMs{-1};
     int m_kpaTuneLeftShown{-1};
     bool m_kpaSet{false};
     bool m_kpaWanted{false};

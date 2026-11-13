@@ -18,9 +18,13 @@
 // power to complete" (Programming Reference V3, ^FE); its manual: "Apply 10
 // to 50 W of transmit drive", in STBY or OPER (the PA is bypassed while it
 // tunes). So kpaTune starts the search, keys the radio's TUNE carrier at the
-// TX tab's Tune power (10-50 W) and stops it once ^TP shows the search done,
-// on a fault (no match), over 55 W from the radio, a lost link, Stop or after
-// 20 s (then ^FE cancels the search).
+// TX tab's Tune power (10-50 W) and stops it once the search is done: the
+// control link's ^FT; ("When the tune completes or is cancelled, the KPA1500
+// responds with ^FT;", roadmap 64: a search that tried the stored settings
+// first can be over between two ^TP readings) or ^TP read 0 after 1; on a
+// fault (no match), over 55 W from the radio, a lost link, Stop or after 20 s
+// (then ^FE cancels the search). While it runs, one log line a second says
+// what the amplifier showed.
 //
 // As the RF2K-S: a device on the operator's network (same network or a
 // VPN), never over SmartLink; read while the app is on screen and connected
@@ -208,6 +212,16 @@ void MobileEngine::setupKpa()
     m_kpaTuneTimer = new QTimer(this);
     m_kpaTuneTimer->setInterval(250);
     connect(m_kpaTuneTimer, &QTimer::timeout, this, &MobileEngine::checkKpaTune);
+    connect(m_kpaCtl, &Kpa1500Connection::tuneEnded, this, [this] {
+        if (m_kpaTune.isEmpty() || m_kpaTuneEndSeen) {
+            return;  // our own ^FE's answer, or a repeat
+        }
+        qCInfo(lcMobile).noquote() << "amp: the KPA1500 says its tune is over (^FT) at"
+                                   << QString::number(m_kpaTuneClock.elapsed() / 1000.0, 'f', 1) << "s";
+        m_kpaTuneEndSeen = true;
+        m_kpa->queryNow(QStringLiteral("FL"));
+        checkKpaTune();
+    });
 
     connect(this, &MobileEngine::connectionStateChanged, this, [this] {
         if (!m_connected && !m_kpaTune.isEmpty()) {
@@ -480,6 +494,8 @@ void MobileEngine::kpaTune()
     m_kpaTuneSawTuning = false;
     m_kpaTuneKeyed = false;
     m_kpaTuneDoneMs = 0;
+    m_kpaTuneEndSeen = false;
+    m_kpaTuneLoggedMs = -1;
     m_kpaTuneLeftShown = -1;
     m_kpaResult.clear();
     m_kpaTuneClock.start();
@@ -502,6 +518,10 @@ void MobileEngine::checkKpaTune()
         m_kpaTuneKeyed = true;
     }
     const Kpa1500::Status& s = m_kpa->status();
+    if (ms / 1000 != m_kpaTuneLoggedMs) {
+        m_kpaTuneLoggedMs = ms / 1000;
+        logKpaTune(ms, tuning);
+    }
     if (m_kpaTuneKeyed && !tuning) {
         endKpaTune(tr("The tune carrier stopped."), false);
         return;
@@ -523,23 +543,24 @@ void MobileEngine::checkKpaTune()
                    false);
         return;
     }
-    if (s.tuning) {
-        if (*s.tuning) {
-            if (!m_kpaTuneSawTuning) {
-                qCInfo(lcMobile) << "amp: the KPA1500 is tuning";
-            }
-            m_kpaTuneSawTuning = true;
-        } else if (m_kpaTuneSawTuning && m_kpaTuneKeyed && m_kpaTuneDoneMs == 0) {
-            m_kpaTuneDoneMs = ms;
-            m_kpa->queryNow(QStringLiteral("FL"));
-        } else if (m_kpaTuneDoneMs > 0 && ms - m_kpaTuneDoneMs >= kKpaTuneSettleMs) {
-            // No fault read since: tuned. Read with the carrier still on:
-            // the SWR it tuned to.
-            const bool swrRead = s.swr && s.forwardWatts && *s.forwardWatts >= 1.0f;
-            endKpaTune(swrRead ? tr("The amplifier tuned (SWR %1).").arg(double(*s.swr), 0, 'f', 2)
-                               : tr("The amplifier tuned."), true);
-            return;
+    // Done: its ^FT; on the control link, or ^TP read 0 after 1. A ^TP still
+    // reading 1 after ^FT; is a reading from before it.
+    const bool searching = s.tuning && *s.tuning && !m_kpaTuneEndSeen;
+    if (searching) {
+        if (!m_kpaTuneSawTuning) {
+            qCInfo(lcMobile) << "amp: the KPA1500 is tuning";
         }
+        m_kpaTuneSawTuning = true;
+    } else if (m_kpaTuneDoneMs == 0 && m_kpaTuneKeyed && (m_kpaTuneEndSeen || (s.tuning && m_kpaTuneSawTuning))) {
+        m_kpaTuneDoneMs = ms;
+        m_kpa->queryNow(QStringLiteral("FL"));
+    } else if (m_kpaTuneDoneMs > 0 && ms - m_kpaTuneDoneMs >= kKpaTuneSettleMs) {
+        // No fault read since: tuned. Read with the carrier still on: the
+        // SWR it tuned to.
+        const bool swrRead = s.swr && s.forwardWatts && *s.forwardWatts >= 1.0f;
+        endKpaTune(swrRead ? tr("The amplifier tuned (SWR %1).").arg(double(*s.swr), 0, 'f', 2)
+                           : tr("The amplifier tuned."), true);
+        return;
     }
     if (ms >= kKpaTuneSeconds * 1000) {
         endKpaTune(m_kpaTuneSawTuning ? tr("The amplifier was still tuning after 20 s: the tune stopped.")
@@ -551,6 +572,26 @@ void MobileEngine::checkKpaTune()
         m_kpaTuneLeftShown = left;
         emit kpaChanged();
     }
+}
+
+// One line a second while a tune runs: what the amplifier showed, so a
+// report tells whether it tuned at all (roadmap 64).
+void MobileEngine::logKpaTune(qint64 ms, bool radioTuning) const
+{
+    const Kpa1500::Status& s = m_kpa->status();
+    const auto num = [](const std::optional<float>& v, int decimals) {
+        return v ? QString::number(double(*v), 'f', decimals) : QStringLiteral("-");
+    };
+    const QString tp = s.tuning ? (*s.tuning ? QStringLiteral("1") : QStringLiteral("0")) : QStringLiteral("-");
+    const QString fl = s.faultCode ? QStringLiteral("%1").arg(*s.faultCode, 2, 16, QLatin1Char('0')).toUpper() : QStringLiteral("-");
+    const QString os = s.operate ? (*s.operate ? QStringLiteral("OPERATE") : QStringLiteral("STANDBY")) : QStringLiteral("-");
+    const QString atu = s.atuMode && *s.atuMode != Kpa1500::AtuMode::Unknown
+        ? (*s.atuMode == Kpa1500::AtuMode::Inline ? QStringLiteral("in line") : QStringLiteral("bypassed")) : QStringLiteral("-");
+    qCInfo(lcMobile).noquote() << QStringLiteral("amp: KPA1500 tune %1 s: TP %2, out %3 W, drive %4 W, SWR %5, FL %6, %7, ATU %8%9; radio %10, %11 W")
+                                      .arg(ms / 1000).arg(tp, num(s.forwardWatts, 0), num(s.inputWatts, 0), num(s.swr, 2), fl, os, atu,
+                                           m_kpaTuneEndSeen ? QStringLiteral(", ^FT seen") : QString(),
+                                           radioTuning ? QStringLiteral("TUNE") : QStringLiteral("not tuning"))
+                                      .arg(qRound(m_forwardPowerW));
 }
 
 void MobileEngine::endKpaTune(const QString& result, bool ok, int cancel)
