@@ -1,7 +1,7 @@
-# OksaSDR tour, "On the air": 80 m SSB in the evening, tuned onto stations: each station's
-# voice band found in a 10 kHz view and the dial on its carrier (LSB: the band's sharp top
+# OksaSDR tour, "On the air": 20 m SSB in the afternoon, an English-speaking station (M7KOD POTA, 14.219): its
+# voice band found in a 10 kHz view and the dial on its carrier (USB: the band's sharp bottom
 # edge at the dial), checked from the picture before use (the user: the passband on the
-# station, never between two). 2.9 kHz receive filter. 3.663 (-85 dBm) and 3.778 (spare).
+# station, never between two). 2.9 kHz receive filter. 14.219 USB (-98 dBm), 2026-11-13 14:40.
 pin 5
 record 15
 caption !speed 3
@@ -10,19 +10,19 @@ caption Each mode as it sounds on the band right now, live from the radio.
 ready
 wait 4000
 caption !speed 1
-caption SSB on 80 m in the evening: tap the frequency and type it.
+caption SSB on 20 m: tap the frequency and type it.
 caption !mark 240,145
 frequency-dialog
 wait 1500
-keys 3.663
+keys 14.219
 wait 1500
 keys <Enter>
 wait 1500
 span 10
 wait 2000
-caption Then the mode: LSB, the sideband of the low bands.
+caption Then the mode: USB, the sideband of the high bands.
 caption !mark 560,115
-mode LSB
+mode USB
 wait 2500
 caption Phone sounds fuller with the 2.9 kHz receive filter: tap the filter width, then 2.9k.
 caption !mark 933,115
@@ -32,14 +32,9 @@ taptext 2.9k
 wait 2000
 close
 wait 1000
-caption @ssb 3.663
-caption 80 m SSB at 3.663 MHz: the station's voice fills the passband, LSB with the 2.9 kHz filter.
-wait 45000
-caption @ssb 3.778
-caption 80 m SSB at 3.778 MHz: the station's voice fills the passband, LSB with the 2.9 kHz filter.
-freq 3.778
-span 10
-wait 30000
+caption @ssb 14.219
+caption 20 m SSB at 14.219 MHz: the station's voice fills the passband, USB with the 2.9 kHz filter.
+wait 60000
 caption @ssb end
 caption -
 record off

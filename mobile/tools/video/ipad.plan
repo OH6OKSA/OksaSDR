@@ -1,12 +1,12 @@
 # OksaSDR tour, iPad landscape 1366x1024 (QT_SCALE_FACTOR 1.40625: frames 1921x1440), --connect 192.168.0.40.
-# On an 80 m SSB station for the sound (3.663 LSB, S9+10 on 2026-11-13 00:05, its voice band filling the
-# passband: the dial on its carrier), phone with the 2.9 kHz receive filter (the user); put back on 14.074 DIGU.
+# On a 20 m SSB station for the sound, English-speaking (M7KOD POTA, 14.219 USB, -98 dBm on 2026-11-13 14:40, its
+# voice band filling the passband: the dial on its carrier), phone with the 2.9 kHz receive filter; put back on 14.074 DIGU.
 # Captions: "caption # T" a chapter, "caption [box x,y,w,h] text" (frame px), "caption !mark x,y",
 # "caption !speed N", "caption !cut" / "!uncut", "caption -" clears. Receive only.
 pin 5
 ready
-freq 3.663
-mode LSB
+freq 14.219
+mode USB
 span 10
 wait 1500
 popup filterChooser
@@ -85,9 +85,9 @@ wait 5500
 caption -
 caption # Tuning
 caption Tap the spectrum to tune there; drag it to tune smoothly.
-tapmhz 3.6615
+tapmhz 14.2175
 wait 3500
-tapmhz 3.6630
+tapmhz 14.2190
 wait 3500
 caption The step buttons: one step a tap, and they keep stepping while held.
 taptext +1k
@@ -126,7 +126,7 @@ wait 2000
 close
 wait 1000
 caption A band button goes back to where you were on that band.
-taptext 80m
+taptext 20m
 wait 5000
 caption The band stack brings back that band's own filter too: 2.9k again for phone.
 caption !mark 933,115
@@ -201,7 +201,7 @@ close
 wait 1500
 slices
 caption Tap the spectrum to tune the active slice: B moves, A stays on the station.
-tapmhz 3.6655
+tapmhz 14.2225
 wait 4500
 caption Each slice has its chip, its flag on the spectrum, its own mode, filter and volume.
 wait 5500

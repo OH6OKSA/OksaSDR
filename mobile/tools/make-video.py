@@ -150,7 +150,7 @@ def band_audio(run_dir, times, out_t, durations, speeds, path):
     return True
 
 
-def segment(run_dir, log, out, scale=1.40625, footer="OksaSDR  ·  receive only", loudness=BAND_LOUDNESS):
+def segment(run_dir, log, out, scale=1.40625, footer="OksaSDR", loudness=BAND_LOUDNESS):
     frames_dir = os.path.join(run_dir, "frames")
     names = sorted(f for f in os.listdir(frames_dir) if f.endswith(".jpg"))
     times = [int(n[:-4]) for n in names]
@@ -348,7 +348,7 @@ if __name__ == "__main__":
     what = sys.argv[1]
     if what == "segment":
         scale = float(sys.argv[sys.argv.index("--scale") + 1]) if "--scale" in sys.argv else 1.40625
-        footer = sys.argv[sys.argv.index("--footer") + 1] if "--footer" in sys.argv else "OksaSDR  ·  receive only"
+        footer = sys.argv[sys.argv.index("--footer") + 1] if "--footer" in sys.argv else "OksaSDR"
         loud = float(sys.argv[sys.argv.index("--loudness") + 1]) if "--loudness" in sys.argv else BAND_LOUDNESS
         segment(sys.argv[2], sys.argv[3], sys.argv[4], scale, footer, loud)
     elif what == "card":
