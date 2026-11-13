@@ -663,6 +663,21 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         // The TX tab's Tune power (put it back after a test).
         m_engine.setTunePower(arg.toInt());
         *delayMs = 800;
+    } else if (command == QLatin1String("freedvlist")) {
+        // FreeDV Reporter's stations on all bands, one line each, for a plan
+        // that goes where someone is on the air (the list is public).
+        m_engine.setFreedvAllBands(true);
+        for (const QVariant& v : m_engine.freedvStations()) {
+            const QVariantMap s = v.toMap();
+            qInfo().noquote() << "shot-plan: freedv" << s.value(QStringLiteral("callsign")).toString()
+                              << QString::number(s.value(QStringLiteral("mhz")).toDouble(), 'f', 4)
+                              << s.value(QStringLiteral("mode")).toString()
+                              << (s.value(QStringLiteral("tx")).toBool() ? QStringLiteral("tx=now")
+                                  : s.contains(QStringLiteral("txAgoMin"))
+                                      ? QStringLiteral("tx=%1").arg(s.value(QStringLiteral("txAgoMin")).toInt())
+                                      : QStringLiteral("tx=-"))
+                              << QStringLiteral("km=%1").arg(s.value(QStringLiteral("km"), -1).toInt());
+        }
     } else if (command == QLatin1String("slices")) {
         // Every slice on the radio, the TX slice and the power: what a test
         // left behind.

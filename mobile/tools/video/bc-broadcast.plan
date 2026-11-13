@@ -1,3 +1,4 @@
+# Not used: the broadcast carrier 1 kHz off the dial shifts the broadcaster's voice 1 kHz (not speech); bc.tmpl needs a real carrier in a tuned phone QSO.
 # OksaSDR tour, "The app's own": beat cancel (BC) on a phone frequency, USB with the 2.9 kHz
 # receive filter (the user: phone always with 2.9 kHz). A 41 m broadcast carrier on 7.335,
 # 1 kHz off the dial, stands in for someone tuning up. Receive only; BC put back off.

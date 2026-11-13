@@ -1,16 +1,24 @@
 # OksaSDR tour, iPad landscape 1366x1024 (QT_SCALE_FACTOR 1.40625: frames 1921x1440), --connect 192.168.0.40.
-# On a 20 m SSB station for the sound (14.205 USB, HZ1LR on 2026-11-12); put back on 14.074 DIGU at the end.
+# On an 80 m SSB station for the sound (3.663 LSB, S9+10 on 2026-11-13 00:05, its voice band filling the
+# passband: the dial on its carrier), phone with the 2.9 kHz receive filter (the user); put back on 14.074 DIGU.
 # Captions: "caption # T" a chapter, "caption [box x,y,w,h] text" (frame px), "caption !mark x,y",
 # "caption !speed N", "caption !cut" / "!uncut", "caption -" clears. Receive only.
 pin 5
 ready
-freq 14.205
-mode USB
+freq 3.663
+mode LSB
 span 10
-wait 3000
+wait 1500
+popup filterChooser
+wait 1200
+taptext 2.9k
+wait 1200
+close
+wait 1500
 record 15
 caption # Getting started
-caption The first time, four short hints show the gestures that cannot be seen.
+caption Four short hints show the gestures that cannot be seen: they come by themselves the first time, and View › Hints › Show again brings them back.
+taptext Show again
 wait 3500
 tapname hintsNext
 wait 3500
@@ -77,9 +85,9 @@ wait 5500
 caption -
 caption # Tuning
 caption Tap the spectrum to tune there; drag it to tune smoothly.
-tapmhz 14.2065
+tapmhz 3.6615
 wait 3500
-tapmhz 14.2050
+tapmhz 3.6630
 wait 3500
 caption The step buttons: one step a tap, and they keep stepping while held.
 taptext +1k
@@ -103,19 +111,31 @@ keys 7.155
 wait 2500
 keys <Enter>
 wait 3500
-caption Now on 40 m, where the band plan gives LSB. Tap the mode for the list of modes.
-taptext LSB
-wait 3500
-close
-wait 800
-caption Tap the filter width for the filter choices.
-taptext 2.7K
-wait 4500
+caption Now on 40 m. Tap the mode for the list of modes: LSB, the sideband of the low bands.
+caption !mark 560,115
+popup modeChooser
+wait 2500
+taptext LSB ~369,155
+wait 2000
+caption Tap the filter width for the filter choices: 2.9k for phone.
+caption !mark 933,115
+popup filterChooser
+wait 2500
+taptext 2.9k
+wait 2000
 close
 wait 1000
 caption A band button goes back to where you were on that band.
-taptext 20m
+taptext 80m
 wait 5000
+caption The band stack brings back that band's own filter too: 2.9k again for phone.
+caption !mark 933,115
+popup filterChooser
+wait 2000
+taptext 2.9k
+wait 2000
+close
+wait 1000
 caption -
 caption # Receiving
 caption RF gain: tap its tag on the spectrum.
@@ -169,12 +189,19 @@ preview-tx off
 wait 1000
 caption -
 caption # Slices
-caption + Slice adds a receiver on the same panadapter: slice B.
+caption + Slice adds a receiver on the same panadapter: slice B. Each slice has its own volume and Mute: B muted here, so A's station is heard alone.
 taptext + Slice
-wait 5500
+wait 800
+caption !mark 1125,115
+popup volumePopup
+wait 1000
+taptext Mute ~824,351
+wait 2500
+close
+wait 1500
 slices
 caption Tap the spectrum to tune the active slice: B moves, A stays on the station.
-tapmhz 14.2080
+tapmhz 3.6655
 wait 4500
 caption Each slice has its chip, its flag on the spectrum, its own mode, filter and volume.
 wait 5500

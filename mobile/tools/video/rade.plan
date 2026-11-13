@@ -1,0 +1,37 @@
+# OksaSDR tour, "On the air": RADE on 80 m, 3.625: CT2HFZ and CT2IOK in a QSO (FreeDV Reporter, 2026-11-13 01:40),
+# tuned from the list's frequency, RADE on (DIGL below 10 MHz, as FreeDV's convention). Receive only.
+pin 5
+record 15
+caption !speed 3
+caption # On the air
+ready
+wait 4000
+caption !speed 1
+caption FreeDV: RADE digital voice, decoded in the app. The FreeDV section lists the stations on FreeDV Reporter; a tap on one tunes there and turns RADE on.
+taptext FreeDV ~1263,141
+taptext View ~1324,82
+wait 2500
+taptext All bands
+wait 6000
+caption FreeDV: RADE digital voice, decoded in the app.
+freq 3.625
+mode DIGU
+span 10
+wait 1500
+tapname radeButton
+wait 1500
+caption 80 m, 3.625 MHz: RADE stations in a QSO, as FreeDV Reporter lists them; their voice comes through the app.
+wait 150000
+caption !rade-off
+tapname radeButton
+wait 2000
+taptext This band
+wait 800
+taptext View ~1324,82
+taptext FreeDV ~1263,141
+caption -
+record off
+freq 14.074
+mode DIGU
+wait 2000
+slices
