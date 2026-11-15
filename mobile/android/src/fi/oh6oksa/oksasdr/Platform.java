@@ -466,6 +466,7 @@ public final class Platform {
     private static volatile boolean sSpeechReady = false;
     private static SpeechRecognizer sListening;   // main thread only
     private static volatile boolean sStopWanted = false;
+    private static Boolean sOnDeviceEnglish = null;   // main thread only; null: not checked yet
 
     public static String speechUnavailable(Context context) {
         if (Build.VERSION.SDK_INT < 33) {
@@ -499,34 +500,43 @@ public final class Platform {
                 sListening = null;
             }
             final Intent intent = speechIntent(context);
-            if (SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
+            // Beta 90 on the developer's phone: with the alphabet as biasing
+            // strings the on-device service disconnected (error 11) at every
+            // press, and the probe recogniser destroyed just before a new one
+            // did it too (beta 89); without hints its first answers came. So
+            // no hints, English is checked once a run, and the probe itself
+            // listens.
+            if (sOnDeviceEnglish == Boolean.TRUE) {
+                listen(context, intent, SpeechRecognizer.createOnDeviceSpeechRecognizer(context), true,
+                        "on-device English installed");
+                return;
+            }
+            if (sOnDeviceEnglish == null && SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
                 try {
                     final SpeechRecognizer probe = SpeechRecognizer.createOnDeviceSpeechRecognizer(context);
                     probe.checkRecognitionSupport(intent, context.getMainExecutor(), new RecognitionSupportCallback() {
                         @Override public void onSupportResult(RecognitionSupport support) {
-                            probe.destroy();
                             final String english = englishOnDevice(support);
-                            final boolean onDevice = english.equals("installed");
-                            if (onDevice) {
-                                // The NATO words, which the on-device recogniser
-                                // takes as hints (Google's over the network wrote
-                                // nothing at all with them, beta 87).
-                                intent.putExtra(RecognizerIntent.EXTRA_BIASING_STRINGS,
-                                        new ArrayList<>(java.util.Arrays.asList(vocabulary)));
+                            sOnDeviceEnglish = english.equals("installed");
+                            if (sOnDeviceEnglish) {
+                                listen(context, intent, probe, true, "on-device English " + english);
+                            } else {
+                                probe.destroy();
+                                listen(context, intent, null, false, "on-device English " + english);
                             }
-                            listen(context, intent, onDevice, "on-device English " + english);
                         }
                         @Override public void onError(int error) {
                             probe.destroy();
-                            listen(context, intent, false, "on-device check error " + error);
+                            sOnDeviceEnglish = false;
+                            listen(context, intent, null, false, "on-device check error " + error);
                         }
                     });
                     return;
                 } catch (Exception e) {
-                    // No check offered: the other recognisers below.
+                    sOnDeviceEnglish = false;
                 }
             }
-            listen(context, intent, false, "no on-device recogniser");
+            listen(context, intent, null, false, sOnDeviceEnglish == null ? "no on-device recogniser" : "the on-device one not used");
         });
         return "";
     }
@@ -565,7 +575,8 @@ public final class Platform {
     }
 
     @android.annotation.TargetApi(33)
-    private static void listen(final Context context, final Intent intent, final boolean onDevice, final String why) {
+    private static void listen(final Context context, final Intent intent, final SpeechRecognizer given,
+                               final boolean onDevice, final String why) {
         try {
             ComponentName google = null;
             StringBuilder found = new StringBuilder();
@@ -580,7 +591,7 @@ public final class Platform {
                 }
             }
             final String fallback = Settings.Secure.getString(context.getContentResolver(), "voice_recognition_service");
-            final SpeechRecognizer recognizer = onDevice ? SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
+            final SpeechRecognizer recognizer = given != null ? given
                     : google != null ? SpeechRecognizer.createSpeechRecognizer(context, google)
                     : SpeechRecognizer.createSpeechRecognizer(context);
             sListening = recognizer;
@@ -629,6 +640,19 @@ public final class Platform {
                 }
                 @Override public void onError(int error) {
                     sSpeechNotes += String.format(java.util.Locale.ROOT, ", loudest %.1f dB, error %d", loudest[0], error);
+                    if (onDevice && error == SpeechRecognizer.ERROR_SERVER_DISCONNECTED && !sSpeechReady) {
+                        // The on-device service went away before it listened:
+                        // the other recogniser takes this press, and the rest
+                        // of the run.
+                        recognizer.destroy();
+                        if (sListening == recognizer) {
+                            sListening = null;
+                        }
+                        sOnDeviceEnglish = false;
+                        sSpeechNotes += "; ";
+                        listen(context, intent, null, false, "the on-device one disconnected");
+                        return;
+                    }
                     if (!partial.isEmpty()) {
                         // Heard on the way, then stopped: that is the answer.
                         sSpeechNotes += ", the partial result used: \"" + partial.get(0) + "\"";

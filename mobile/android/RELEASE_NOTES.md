@@ -1,6 +1,9 @@
-**OksaSDR for Android — beta 90.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
+**OksaSDR for Android — beta 91.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
-### New in beta 90
+### New in beta 91
+- **Spelling the call by voice: the phone's own recogniser without hints**: beta 90's hints made the phone's on-device recogniser drop out at every press (*Speech recognition failed (11)*) or hang. They are gone; the recogniser that checks for English now also listens (beta 89 closed it and opened another at once, which also made it drop out), English is checked once while the app runs, and if the on-device recogniser still drops out before it listens, the phone's other recogniser takes the press.
+
+### Still new from beta 90
 - **Spelling the call by voice: hints for the phone's own recogniser**: beta 88 got text from Google's recogniser over the network at last, but it writes plain English words for the alphabet (on the developer's phone *"Oscar Auto 6 Oscar kilo Seattle"* for *Oscar Hotel Six Oscar Kilo Sierra Alpha*). The phone's own recogniser, used when it has English installed (beta 89), now gets the alphabet's words as hints, as the iPhone's does; Google's over the network gets none (with them it wrote nothing in beta 87). The log has each thing the recogniser wrote on its own line.
 
 ### Still new from beta 89
