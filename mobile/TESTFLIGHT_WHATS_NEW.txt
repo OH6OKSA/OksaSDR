@@ -9,21 +9,22 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Log tab: spell the call by voice with the mic button (Alfa, Bravo…); nothing logs until Log (idea Michael Walker).
-- Log tab: tap a logged contact to edit or delete it; × clears the call; a Name field (thanks Christoph DM5HF).
+- RIT / XIT: tap the value to type it (1.34 kHz); hold SPLIT > Other… for any split (thanks Sebastian DG5CST).
+- Big buttons: tap the mode to change it.
+- Voice entry: Android uses Google's recogniser when English is not on the phone; only this device's audio mutes while listening.
 
-RECENT (builds 94–171)
-- Self-spot to POTA, Big buttons > Log, KPA1500 Tune in STANDBY, MIDI Learn asks, audio in order over VPN (thanks Christoph DM5HF, Michael Walker, Rich N2RY).
+RECENT (builds 94–172)
+- Log tab: spell the call by voice (idea Michael Walker); edit or delete a logged contact, a Name field, × clears the call (thanks Christoph DM5HF).
+- POTA self-spot, Big buttons > Log, KPA1500 Tune in STANDBY, audio in order over VPN (thanks Christoph DM5HF, Michael Walker, Rich N2RY).
 - Log tab > Spot, MIDI F1–F12 (thanks Christoph DM5HF); Big buttons' Step halves (thanks Michael Walker); Noise line; TGXL first (thanks Hanno DK3HV).
 - AGC Follow; the KPA1500 (thanks Rich N2RY); MIDI controllers (thanks Hanno DK3HV); multi-answer RR73 (thanks Ben KT4O); the DVK (thanks Ian VK1HF); Big buttons (thanks Michael Walker).
 - FTx > DXpedition > Hound; the Fox's and contest messages in FT8 / FT4.
 - Auto AGC-T on every radio; app setups (thanks Larry W9FLA); Macros > Repeat (thanks Robin Bishop); SNR on the meters (thanks Scott L Stanford).
-- TUNE restores only what it inhibited; Sound from The radio; measured TX power.
-- eSSB tube, EVO, reverb; Amp by maker; first-run hints.
+- eSSB tube, EVO, reverb; Amp by maker; first-run hints; measured TX power.
 - Band plan lock (thanks Tyler K0OTC); FTx CQ DX (thanks Kurt DL5EAG); Display Zoom (thanks Evgeny R0ACS); Antenna Genius (thanks Ben Morris).
 - RF2K-S control and Tune, the amp on every meter (thanks Sebastian DG5CST, Jeff Stinger); Macros by PTT (thanks Tyler K0OTC).
 - PSK31 / PSK63 and RTTY on the Digi tab; ⌘1–⌘0 as F1–F10; worked before from Wavelog, QRZ.com or a shared ADIF file.
-- The transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG); no band noise burst at PTT (thanks Jeff Stinger).
+- The transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG).
 - Mac typing (thanks Pentti OH6PP); QSOs to Logger32 (thanks Juho Kontio); slice volume by the speaker icon (thanks Wayne WA2N).
 
 PLEASE TRY

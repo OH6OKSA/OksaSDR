@@ -513,13 +513,25 @@ Item {
         objectName: "splitChooser"
         title: Engine.splitActive ? qsTr("Split") : qsTr("Split up")
         // XIT reaches ±9.999 kHz: +2 there instead of +10.
+        // Other…: any distance typed (roadmap 80), "up 1.34".
         options: Engine.splitActive ? [qsTr("Off")]
-               : Engine.splitMethod === "xit" ? ["+1 kHz", "+2 kHz", "+5 kHz"] : ["+1 kHz", "+5 kHz", "+10 kHz"]
+               : Engine.splitMethod === "xit" ? ["+1 kHz", "+2 kHz", "+5 kHz", qsTr("Other…")]
+               : ["+1 kHz", "+5 kHz", "+10 kHz", qsTr("Other…")]
         y: info.height + 4
         onPicked: (name) => {
             if (Engine.splitActive) Engine.toggleSplit()
+            else if (name === qsTr("Other…")) splitEditor.ask(qsTr("Split up"), 0)
             else Engine.toggleSplitUp(parseInt(name.replace("+", "")))
         }
+    }
+    OffsetEditor {
+        id: splitEditor
+        objectName: "splitOffsetEditor"
+        showReset: false
+        quick: [-1000, 1000, 2000, 3000, 5000]
+        // XIT reaches ±9.999 kHz; a second slice anywhere near.
+        limitHz: Engine.splitMethod === "xit" ? 9999 : 100000
+        onApplied: (hz) => { if (hz !== 0) Engine.toggleSplitUpHz(hz) }
     }
     ChooserPopup {
         id: rxChooser

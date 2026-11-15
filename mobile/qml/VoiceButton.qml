@@ -25,9 +25,13 @@ AppButton {
         Engine.voiceInputStart()
     }
     // Held: let go to stop. A quick tap keeps listening until tapped again.
-    onReleased: {
+    // A press the system cancels (the on-screen keyboard closing moves the
+    // layout under the finger) ends as a release.
+    function letGo() {
         if (pressedAt > 0 && Date.now() - pressedAt > 400 && listening)
             Engine.voiceInputStop()
         pressedAt = 0
     }
+    onReleased: letGo()
+    onCanceled: letGo()
 }

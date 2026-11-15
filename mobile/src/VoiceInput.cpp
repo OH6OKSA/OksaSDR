@@ -1,25 +1,33 @@
 #include "VoiceInput.h"
 
 #include <QCoreApplication>
+#include <QTimer>
 
 namespace AetherSDR::mobile {
 
-// The desktop build has no recogniser: the render tool's "voicetext"
-// command stands in for one in tests.
+// The desktop build has no recogniser. For tests, OKSASDR_VOICE_FAKE stands
+// in for one: its text is what it "hears", after 300 ms, whatever was
+// recorded (the render tool's voicetext skips the recording altogether).
 bool voiceInputAvailable()
 {
-    return false;
+    return !qEnvironmentVariableIsEmpty("OKSASDR_VOICE_FAKE");
 }
 
 QString voiceInputUnavailableReason()
 {
-    return QCoreApplication::translate("VoiceInput", "No speech recognition in this build.");
+    return voiceInputAvailable() ? QString()
+                                 : QCoreApplication::translate("VoiceInput", "No speech recognition in this build.");
 }
 
 void recognizeSpeech(const QByteArray&, int, const QStringList&,
                      std::function<void(const QStringList&, const QString&)> done)
 {
-    done({}, voiceInputUnavailableReason());
+    if (!voiceInputAvailable()) {
+        done({}, voiceInputUnavailableReason());
+        return;
+    }
+    const QString heard = qEnvironmentVariable("OKSASDR_VOICE_FAKE");
+    QTimer::singleShot(300, qApp, [done, heard] { done({heard}, QString()); });
 }
 
 } // namespace AetherSDR::mobile

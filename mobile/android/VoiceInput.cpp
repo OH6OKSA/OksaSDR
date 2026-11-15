@@ -4,6 +4,7 @@
 
 #include <QJniEnvironment>
 #include <QPointer>
+#include <QDebug>
 #include <QTimer>
 
 #include <algorithm>
@@ -90,8 +91,11 @@ void recognizeSpeech(const QByteArray& floatMono, int rate, const QStringList& v
         }
         timer->stop();
         timer->deleteLater();
-        if (answer.startsWith(QLatin1String("ok\n"))) {
-            done(answer.mid(3).split(QLatin1Char('\n'), Qt::SkipEmptyParts), QString());
+        if (answer.startsWith(QLatin1String("ok"))) {
+            // "ok on device" / "ok network", then the alternatives.
+            const qsizetype eol = answer.indexOf(QLatin1Char('\n'));
+            qInfo().noquote() << "voice log: Android recogniser:" << answer.left(eol).mid(3);
+            done(eol < 0 ? QStringList() : answer.mid(eol + 1).split(QLatin1Char('\n'), Qt::SkipEmptyParts), QString());
         } else if (answer.startsWith(QLatin1String("error\n"))) {
             done({}, answer.mid(6));
         } else {

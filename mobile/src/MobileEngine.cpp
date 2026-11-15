@@ -4873,9 +4873,14 @@ void MobileEngine::setSplitMethod(const QString& method)
 
 void MobileEngine::toggleSplitUp(int khz)
 {
-    m_splitUpKhz = splitActive() ? 0 : std::clamp(khz, 0, 100);
+    toggleSplitUpHz(std::clamp(khz, 0, 100) * 1000);
+}
+
+void MobileEngine::toggleSplitUpHz(int hz)
+{
+    m_splitUpHz = splitActive() ? 0 : std::clamp(hz, -100000, 100000);
     toggleSplit();
-    m_splitUpKhz = 0;
+    m_splitUpHz = 0;
 }
 
 QVariantMap MobileEngine::panDisplay() const
@@ -4970,7 +4975,7 @@ void MobileEngine::toggleSplit()
             m_slice->setXit(false, 0);
             qCInfo(lcMobile) << "split (XIT) off";
         } else {
-            const int hz = std::clamp(m_splitUpKhz > 0 ? m_splitUpKhz * 1000 : splitDefaultHz(m_slice->mode()),
+            const int hz = std::clamp(m_splitUpHz != 0 ? m_splitUpHz : splitDefaultHz(m_slice->mode()),
                                       -kRitXitLimitHz, kRitXitLimitHz);
             if (!m_slice->isTxSlice()) {
                 stopTransmit(QStringLiteral("TX slice changed"));
@@ -5006,7 +5011,7 @@ void MobileEngine::toggleSplit()
         setLastError(tr("No free slice for the transmit side of a split."));
         return;
     }
-    const double txMhz = m_slice->frequency() + (m_splitUpKhz > 0 ? m_splitUpKhz * 1000 : splitDefaultHz(m_slice->mode())) / 1e6;
+    const double txMhz = m_slice->frequency() + (m_splitUpHz != 0 ? m_splitUpHz : splitDefaultHz(m_slice->mode())) / 1e6;
     m_splitRxId = m_slice->sliceId();
     m_splitTxId = -1;
     m_splitPending = true;

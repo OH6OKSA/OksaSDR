@@ -1848,6 +1848,8 @@ public:
     // Split with the TX slice this many kHz up (the desktop's Split Up 1/5/10);
     // 0 = the mode's default (1 kHz CW, 5 kHz voice). Off when split is on.
     Q_INVOKABLE void toggleSplitUp(int khz);
+    // Split by any distance in Hz, down too (roadmap 80: "Other…").
+    Q_INVOKABLE void toggleSplitUpHz(int hz);
     // The pan's display settings, as the desktop's overlay menu: average
     // (0-100), fps (5-60), wfRate (1-100, the waterfall's speed), bandZoom.
     QVariantMap panDisplay() const;
@@ -2607,7 +2609,7 @@ private:
     void ensurePanDbmRange(const QString& panId);
     qint64 m_lastDbmRangeSendMs{0};
     bool m_dbmRangeRetryPending{false};
-    int m_splitUpKhz{0};
+    int m_splitUpHz{0};  // a chosen split distance (0: the mode's default)
     void onVoiceClipRecorded(const QByteArray& clip, int rate);
     void onVoiceClipFinished();
     QString m_voiceState{QStringLiteral("idle")};
@@ -2669,10 +2671,10 @@ private:
     QString m_speechState{QStringLiteral("idle")};
     QString m_speechStatus;
     bool m_speechRecording{false};
-    bool m_speechMutedBefore{false};
     QTimer m_speechTimer;
     void setSpeechState(const QString& state, const QString& status);
     void recognizeVoiceClip(const QByteArray& clip, int rate);
+    void duckReceiveForSpeech(bool on);
     void setPotaSpotStatus(const QString& text, bool ok);
     QTimer m_dxSpotTimer;
     void setDxSpotStatus(const QString& status);

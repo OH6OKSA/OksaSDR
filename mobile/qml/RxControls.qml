@@ -19,6 +19,7 @@ ColumnLayout {
         property int hz
         signal toggled(bool on)
         signal changed(int hz)
+        signal edit()
         Layout.fillWidth: true
         property int acc: 0
         // On the step's grid: from an odd value (9999 at the limit) plain
@@ -30,6 +31,7 @@ ColumnLayout {
             changed(acc)
         }
         AppButton {
+            objectName: row.label.toLowerCase() + "Toggle"
             text: row.label
             checked: row.on
             Layout.preferredWidth: 60
@@ -51,7 +53,12 @@ ColumnLayout {
             horizontalAlignment: Text.AlignHCenter
             font.pixelSize: Theme.px(15)
             Layout.fillWidth: true
-            TapHandler { onTapped: row.changed(0) }
+            // A tap types the offset (roadmap 80); Reset there sets 0.
+            objectName: row.label.toLowerCase() + "Value"
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("%1 %2 Hz, type it").arg(row.label).arg(row.hz)
+            Accessible.onPressAction: row.edit()
+            TapHandler { onTapped: row.edit() }
         }
         RepeatButton {
             text: "+"
@@ -67,6 +74,10 @@ ColumnLayout {
         visible: Engine.mode !== "FM"
         onToggled: (on) => Engine.ritOn = on
         onChanged: (hz) => Engine.ritHz = hz
+        onEdit: {
+            offsetEditor.target = "rit"
+            offsetEditor.ask(qsTr("RIT offset"), Engine.ritHz)
+        }
     }
     OffsetRow {
         label: qsTr("XIT")
@@ -75,6 +86,10 @@ ColumnLayout {
         visible: Engine.mode !== "FM"
         onToggled: (on) => Engine.xitOn = on
         onChanged: (hz) => Engine.xitHz = hz
+        onEdit: {
+            offsetEditor.target = "xit"
+            offsetEditor.ask(qsTr("XIT offset"), Engine.xitHz)
+        }
     }
 
     RowLayout {
@@ -139,6 +154,21 @@ ColumnLayout {
             color: Theme.textDim
             font.pixelSize: Theme.smallFont
             wrapMode: Text.WordWrap
+        }
+    }
+    // The RIT / XIT offset typed (roadmap 80, Sebastian Schumann DG5CST): a
+    // value set turns it on; Reset sets 0 and leaves on / off as it is.
+    OffsetEditor {
+        id: offsetEditor
+        property string target: "xit"
+        onApplied: (hz) => {
+            if (target === "rit") {
+                Engine.ritHz = hz
+                if (hz !== 0) Engine.ritOn = true
+            } else {
+                Engine.xitHz = hz
+                if (hz !== 0) Engine.xitOn = true
+            }
         }
     }
 }

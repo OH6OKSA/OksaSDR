@@ -615,7 +615,8 @@ used as the law allows), gloves or a glance (asked by Michael Walker):
   the menu (*Make TX slice*, *Close slice*). With three or more slices the
   chips have a row of their own.
 - **The mode** at the top right and **the frequency** large; a tap on the
-  frequency opens frequency entry, as on the main screen.
+  mode opens the mode chooser and a tap on the frequency frequency entry,
+  as on the main screen.
 - **Log** beside the mode (asked by Michael Walker) logs a contact in big
   type: the call in a large field (its name and QTH under it once
   looked up), the two reports with big **−** / **+** (59 or 599 by mode,
@@ -1105,8 +1106,9 @@ Tap **SPLIT** again — or close either slice — to end split: the transmit
 slice closes and transmit returns to the receive slice.
 
 **Press and hold SPLIT** to choose the offset: **+1 kHz**, **+5 kHz** or
-**+10 kHz** above the receive frequency. While split is on, the same menu
-offers **Off**.
+**+10 kHz** above the receive frequency, or **Other…** to type it (*1.34*
+for "up 1.34", *-0.5* below; thanks Sebastian Schumann DG5CST). While
+split is on, the same menu offers **Off**.
 
 ![Split offset chooser](manual/split.jpg)
 
@@ -1114,8 +1116,9 @@ offers **Off**.
 radio whose slices other programs hold (as a Maestro user splits). **SPLIT**
 then turns on the XIT of the slice you are on: it transmits 1 kHz up in CW
 and the data modes, 5 kHz in voice, and keeps receiving where it is. Hold SPLIT for **+1**,
-**+2** or **+5 kHz** (XIT reaches ±9.999 kHz). The **XIT** row on the RX
-tab shows the offset and moves it; SPLIT again (or XIT off there) ends it.
+**+2** or **+5 kHz**, or **Other…** to type it (XIT reaches ±9.999 kHz).
+The **XIT** row on the DSP tab shows the offset and moves it (a tap on
+the value types it); SPLIT again (or XIT off there) ends it.
 *Second slice* is the way above.
 
 ## 7. Transmitting: PTT, KEY and TUNE
@@ -1232,8 +1235,10 @@ seven.
 | ![DSP](manual/tab-dsp.jpg) | ![Audio](manual/tab-audio.jpg) | ![TX](manual/tab-tx.jpg) | ![eSSB](manual/tab-essb.jpg) |
 
 - **DSP** — RIT and XIT (on/off; − and + step 10 Hz and run while held,
-  faster the longer: 10, then 50, then 100 Hz; tap the value to reset;
-  not in FM), squelch (where the radio has it: not in CW, the digital modes, RTTY or DFM, whose data an audio squelch would cut; − / + and the level beside the slider), and **TNF** (the radio's notch filters on/off, kept when off; *+ TNF*
+  faster the longer: 10, then 50, then 100 Hz; tap the value to type it in
+  kHz, e.g. *1.34* or *-0.5* (a whole number of 10 or more is Hz), or pick
+  −1 / +1 / +2 / +3 / +5 kHz, and *Reset* sets 0; a value set turns it on;
+  thanks Sebastian Schumann DG5CST; not in FM), squelch (where the radio has it: not in CW, the digital modes, RTTY or DFM, whose data an audio squelch would cut; − / + and the level beside the slider), and **TNF** (the radio's notch filters on/off, kept when off; *+ TNF*
   opens a new notch in the middle of the passband to set and *Add*; see
   [Panadapter and waterfall](#5-panadapter-and-waterfall)).
 - **Audio** — **Receive audio**: *Auto* uses Opus (compressed, made for

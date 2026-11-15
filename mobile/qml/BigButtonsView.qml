@@ -419,11 +419,11 @@ Rectangle {
             LogButton {
                 visible: big.lowLandscape
             }
-            Label {
-                text: Engine.mode
-                color: Theme.accent
-                font.pixelSize: Theme.px(28)
-                font.bold: true
+            // The mode with its chooser, as on the main screen (the user,
+            // build 172 on Android: "Yläkulmasta pitää pystyä mode valitsemaan").
+            ModeButton {
+                objectName: "bigMode"
+                fontSize: Theme.px(28)
             }
         }
         RowLayout {
@@ -582,11 +582,11 @@ Rectangle {
                 horizontalAlignment: Text.AlignHCenter
                 elide: Text.ElideRight
             }
-            Label {
-                text: Engine.mode
-                color: Theme.accent
-                font.pixelSize: Theme.px(28)
-                font.bold: true
+            // The mode with its chooser, as on the main screen (the user,
+            // build 172 on Android: "Yläkulmasta pitää pystyä mode valitsemaan").
+            ModeButton {
+                objectName: "bigMode"
+                fontSize: Theme.px(28)
             }
         }
         // Upright: the call, its lookup, then Log; on its side one row, as

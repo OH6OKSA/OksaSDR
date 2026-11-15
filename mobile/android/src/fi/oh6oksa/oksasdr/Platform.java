@@ -467,57 +467,79 @@ public final class Platform {
             return why;
         }
         sSpeech = "";
-        new Handler(Looper.getMainLooper()).post(() -> {
-            try {
-                final SpeechRecognizer recognizer = SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
-                        ? SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
-                        : SpeechRecognizer.createSpeechRecognizer(context);
-                final ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
-                Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US");
-                intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5);
-                intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
-                intent.putExtra(RecognizerIntent.EXTRA_BIASING_STRINGS, new ArrayList<>(java.util.Arrays.asList(vocabulary)));
-                intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, pipe[0]);
-                intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, 1);
-                intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING, AudioFormat.ENCODING_PCM_16BIT);
-                intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE, rate);
-                recognizer.setRecognitionListener(new RecognitionListener() {
-                    @Override public void onReadyForSpeech(Bundle params) {}
-                    @Override public void onBeginningOfSpeech() {}
-                    @Override public void onRmsChanged(float rmsdB) {}
-                    @Override public void onBufferReceived(byte[] buffer) {}
-                    @Override public void onEndOfSpeech() {}
-                    @Override public void onPartialResults(Bundle partialResults) {}
-                    @Override public void onEvent(int eventType, Bundle params) {}
-                    @Override public void onResults(Bundle results) {
-                        ArrayList<String> list = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                        sSpeech = "ok\n" + (list == null ? "" : String.join("\n", list));
-                        recognizer.destroy();
-                    }
-                    @Override public void onError(int error) {
-                        sSpeech = "error\n" + speechError(error);
-                        recognizer.destroy();
-                    }
-                });
-                recognizer.startListening(intent);
-                new Thread(() -> {
-                    try (OutputStream out = new ParcelFileDescriptor.AutoCloseOutputStream(pipe[1])) {
-                        out.write(pcm16);
-                    } catch (IOException e) {
-                        // The recogniser closed its end: its own answer says why.
-                    }
-                    try {
-                        pipe[0].close();
-                    } catch (IOException e) {
-                    }
-                }).start();
-            } catch (Exception e) {
-                sSpeech = "error\n" + e;
-            }
-        });
+        new Handler(Looper.getMainLooper()).post(() ->
+                runSpeech(context, pcm16, rate, vocabulary, SpeechRecognizer.isOnDeviceRecognitionAvailable(context)));
         return "";
+    }
+
+    // One recognition of the recording. The on-device recogniser first; when
+    // it has no English (a phone set to another language: build 172 on the
+    // developer's phone, "English speech recognition is not installed"), its
+    // English model is asked for, for the next time, and this time the
+    // device's default recogniser (Google's, over the network) reads it.
+    @android.annotation.TargetApi(33)
+    private static void runSpeech(final Context context, final byte[] pcm16, final int rate, final String[] vocabulary,
+                                  final boolean onDevice) {
+        try {
+            final SpeechRecognizer recognizer = onDevice
+                    ? SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
+                    : SpeechRecognizer.createSpeechRecognizer(context);
+            final ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
+            final Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US");
+            intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5);
+            intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, onDevice);
+            intent.putExtra(RecognizerIntent.EXTRA_BIASING_STRINGS, new ArrayList<>(java.util.Arrays.asList(vocabulary)));
+            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, pipe[0]);
+            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, 1);
+            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING, AudioFormat.ENCODING_PCM_16BIT);
+            intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE, rate);
+            recognizer.setRecognitionListener(new RecognitionListener() {
+                @Override public void onReadyForSpeech(Bundle params) {}
+                @Override public void onBeginningOfSpeech() {}
+                @Override public void onRmsChanged(float rmsdB) {}
+                @Override public void onBufferReceived(byte[] buffer) {}
+                @Override public void onEndOfSpeech() {}
+                @Override public void onPartialResults(Bundle partialResults) {}
+                @Override public void onEvent(int eventType, Bundle params) {}
+                @Override public void onResults(Bundle results) {
+                    ArrayList<String> list = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                    sSpeech = (onDevice ? "ok on device\n" : "ok network\n") + (list == null ? "" : String.join("\n", list));
+                    recognizer.destroy();
+                }
+                @Override public void onError(int error) {
+                    final boolean noEnglish = error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED
+                            || error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE;
+                    if (onDevice && noEnglish) {
+                        try {
+                            recognizer.triggerModelDownload(intent);
+                        } catch (Exception e) {
+                            // Not offered: the network recogniser still reads it.
+                        }
+                        recognizer.destroy();
+                        runSpeech(context, pcm16, rate, vocabulary, false);
+                        return;
+                    }
+                    sSpeech = "error\n" + speechError(error);
+                    recognizer.destroy();
+                }
+            });
+            recognizer.startListening(intent);
+            new Thread(() -> {
+                try (OutputStream out = new ParcelFileDescriptor.AutoCloseOutputStream(pipe[1])) {
+                    out.write(pcm16);
+                } catch (IOException e) {
+                    // The recogniser closed its end: its own answer says why.
+                }
+                try {
+                    pipe[0].close();
+                } catch (IOException e) {
+                }
+            }).start();
+        } catch (Exception e) {
+            sSpeech = "error\n" + e;
+        }
     }
 
     public static String speechPoll() {

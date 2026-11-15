@@ -1,7 +1,8 @@
 // Logging by voice, step 1 (roadmap 79, Michael Walker): hold the voice
 // button, spell the call, let go. The microphone the app already uses is
-// recorded as for a voice macro (nothing is sent), the radio's audio here
-// muted meanwhile so the speaker does not talk over it; the recording goes
+// recorded as for a voice macro (nothing is sent), the radio's audio held
+// silent on this device meanwhile so the speaker does not talk over it (not
+// the slice's mute: that is the radio's, every station's); the recording goes
 // to the device's own recogniser, and what it heard is read as a call by
 // CallsignSpeech. The call is filled in for the operator to check and Log:
 // nothing is logged by voice alone.
@@ -31,6 +32,15 @@ bool MobileEngine::voiceInputOffered() const
     return voiceInputAvailable();
 }
 
+// This device's receive playback held silent (AudioEngine's duck, as while
+// its microphone is keyed); let go only when nothing keys it.
+void MobileEngine::duckReceiveForSpeech(bool on)
+{
+    AudioEngine* audio = m_audio;
+    const bool duck = on || m_pttHeld;
+    QMetaObject::invokeMethod(audio, [audio, duck] { audio->setRxDucked(duck); }, Qt::QueuedConnection);
+}
+
 void MobileEngine::setSpeechState(const QString& state, const QString& status)
 {
     m_speechState = state;
@@ -58,10 +68,7 @@ void MobileEngine::voiceInputStart()
         setSpeechState(QStringLiteral("idle"), why);
         return;
     }
-    m_speechMutedBefore = muted();
-    if (!m_speechMutedBefore) {
-        setMuted(true);
-    }
+    duckReceiveForSpeech(true);
     startDeviceMicrophoneCapture();
     m_speechRecording = true;
     AudioEngine* audio = m_audio;
@@ -86,9 +93,7 @@ void MobileEngine::voiceInputStop()
 // here): to the recogniser.
 void MobileEngine::recognizeVoiceClip(const QByteArray& clip, int rate)
 {
-    if (!m_speechMutedBefore) {
-        setMuted(false);
-    }
+    duckReceiveForSpeech(false);
     qCInfo(lcMobile) << "voice log: recorded" << clip.size() / sizeof(float) / double(std::max(1, rate)) << "s";
     setSpeechState(QStringLiteral("recognizing"), tr("Recognising…"));
     recognizeSpeech(clip, rate, CallsignSpeech::vocabulary(), [this](const QStringList& alternatives, const QString& error) {
