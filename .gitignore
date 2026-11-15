@@ -89,3 +89,6 @@ third_party/macos-deps/
 
 # macOS Finder metadata
 .DS_Store
+
+# Vosk speech model for the Android build (roadmap 81): put there by CI
+mobile/android/assets/vosk/

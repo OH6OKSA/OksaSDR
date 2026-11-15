@@ -1439,18 +1439,21 @@ seven.
 - **Log** — quick QSO logging into a log on this device (an ADIF file,
   `oksasdr-log.adi`). Type the **callsign**, or tap the call of the spot
   you tuned to last; **×** in the field clears it (thanks Christoph
-  Steinert DM5HF). Or spell it by voice with **🎤** beside it (iPhone,
-  iPad, Mac and Android 13 or later; asked by Michael Walker): hold the
-  button, spell the call with the ITU / NATO alphabet (*Victor Alpha Three
-  Mike Whiskey*, *niner* for 9, *stroke portable* for /P), and let go; a
-  quick tap listens until a second tap, 8 s at most. The device's own
-  speech recognition turns it into text (on the device where it can), the
-  call goes into the field and a report said after it (*five nine*) into
-  *Sent*; the line under the field says what was heard. Nothing is logged
-  until you tap Log. It listens through the microphone the app already
-  uses (on Android the phone's recogniser takes the microphone itself, and
-  the line says *Starting…* until it listens), mutes the radio's audio here
-  meanwhile, and does not work while transmitting. It understands, in English whatever the device's language:
+  Steinert DM5HF). Or spell it by voice with **🎤** beside it (asked by
+  Michael Walker): hold the button, spell the call with the ITU / NATO
+  alphabet (*Victor Alpha Three Mike Whiskey*, *niner* for 9, *stroke
+  portable* for /P), and let go; a quick tap listens until a second tap,
+  8 s at most. The call goes into the field and a report said after it
+  (*five nine*) into *Sent*; the line under the field says what was heard.
+  Nothing is logged until you tap Log. It records through the microphone
+  the app transmits with (the device's, or a Bluetooth headset's when that
+  is the app's; an older headset with narrowband audio is heard less
+  well), mutes the radio's audio here meanwhile, and does not work while
+  transmitting. On an iPhone, iPad or Mac Apple's speech recognition reads
+  the recording (on the device where it can); on Android the app's own
+  offline recogniser (Vosk) does, listening only for the alphabet's words,
+  so nothing leaves the phone and no network is needed. It understands, in
+  English whatever the device's language:
   - **Letters**: the ITU / NATO alphabet (*Alfa* or *Alpha* … *Zulu*,
     *Juliet*, *Whisky*, *X-ray*), the older Allied one (*Able*, *Baker*,
     *Dog* … *Sugar*, *King* … *Zebra*), the ITU's of 1927 (*Amsterdam*,
@@ -1467,7 +1470,10 @@ seven.
   - **A report** after the call: *five nine*, *five nine nine*, *fifty
     nine*.
   - Words around the call (*log*, *the call is*, *okay*, *uh*) are left
-    out. National alphabets (*Aarne*, *Anton* …) may follow on request.
+    out. On Android the recogniser listens for the words above but not
+    for the letters' own names or the 1927 place names, which made it
+    worse in noise. National alphabets (*Aarne*, *Anton* …) may follow:
+    a spelling language to choose is on the roadmap.
 
   With the CW decoder on, **Heard in CW** offers the
   calls it heard (after *DE*, or twice; the newest first, up to three):

@@ -19,6 +19,7 @@
 #include <QMetaObject>
 
 #include <algorithm>
+#include <cmath>
 
 Q_DECLARE_LOGGING_CATEGORY(lcMobile)
 
@@ -120,10 +121,32 @@ void MobileEngine::voiceInputStop()
 
 // The recording made for the voice button (onVoiceClipRecorded hands it
 // here): to the recogniser.
+void MobileEngine::voiceInputClip(const QByteArray& floatMono, int rate)
+{
+    if (m_speechState != QLatin1String("idle")) {
+        return;
+    }
+    recognizeVoiceClip(floatMono, rate);
+}
+
 void MobileEngine::recognizeVoiceClip(const QByteArray& clip, int rate)
 {
     duckReceiveForSpeech(false);
-    qCInfo(lcMobile) << "voice log: recorded" << clip.size() / sizeof(float) / double(std::max(1, rate)) << "s";
+    // How loud it was (a silent recording reads nothing whatever the recogniser).
+    const auto* s = reinterpret_cast<const float*>(clip.constData());
+    const qsizetype n = clip.size() / qsizetype(sizeof(float));
+    double peak = 0.0;
+    double power = 0.0;
+    for (qsizetype i = 0; i < n; ++i) {
+        peak = std::max(peak, double(std::abs(s[i])));
+        power += double(s[i]) * double(s[i]);
+    }
+    auto dbfs = [](double v) { return v > 1e-9 ? 20.0 * std::log10(v) : -180.0; };
+    qCInfo(lcMobile).noquote() << QStringLiteral("voice log: recorded %1 s at %2 Hz, peak %3 dBFS, rms %4 dBFS")
+                                      .arg(double(n) / double(std::max(1, rate)), 0, 'f', 2)
+                                      .arg(rate)
+                                      .arg(dbfs(peak), 0, 'f', 1)
+                                      .arg(dbfs(n > 0 ? std::sqrt(power / double(n)) : 0.0), 0, 'f', 1);
     setSpeechState(QStringLiteral("recognizing"), tr("Recognising…"));
     recognizeSpeech(clip, rate, CallsignSpeech::vocabulary(), [this](const QStringList& alternatives, const QString& error) {
         voiceAnswered(alternatives, error);

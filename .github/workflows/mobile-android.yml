@@ -173,6 +173,47 @@ jobs:
           git checkout -q "$ANDROID_OPENSSL_COMMIT"
           ls -la "ssl_3/$ANDROID_ABI"
 
+      # Vosk for logging by voice (roadmap 81): libvosk from the release's
+      # Android zip and the small English model, both pinned by SHA-256;
+      # the model goes into the APK's assets (mobile/android/assets/vosk is
+      # not in git), with Vosk's licence (Apache 2.0) beside it.
+      - name: Restore Vosk
+        id: cache-vosk
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/vosk-dl
+          key: vosk-0.3.45-en-us-0.15-v1
+
+      - name: Vosk (libvosk and the English model)
+        run: |
+          set -euo pipefail
+          dl="$RUNNER_TEMP/vosk-dl"
+          mkdir -p "$dl"
+          get() {  # url file sha256
+            if [ ! -f "$dl/$2" ] || ! echo "$3  $dl/$2" | sha256sum -c --quiet; then
+              curl -fsSL --retry 3 -o "$dl/$2" "$1"
+            fi
+            echo "$3  $dl/$2" | sha256sum -c --quiet
+          }
+          get https://github.com/alphacep/vosk-api/releases/download/v0.3.45/vosk-android-0.3.45.zip \
+              vosk-android-0.3.45.zip c5a59838f98c052b7e295f9c2aae45f68ab279e376ae8f49f18ab918448ec33a
+          get https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip \
+              vosk-model-small-en-us-0.15.zip 30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498
+          get https://raw.githubusercontent.com/alphacep/vosk-api/v0.3.45/COPYING \
+              COPYING bb618af833c817ab01c1564bd3ec75ba4b4f9cf30910a4a2168e30a674ee8cc6
+          rm -rf "$RUNNER_TEMP/vosk" mobile/android/assets/vosk
+          unzip -q "$dl/vosk-android-0.3.45.zip" -d "$RUNNER_TEMP/vosk"
+          unzip -q "$dl/vosk-model-small-en-us-0.15.zip" -d "$RUNNER_TEMP/vosk-model"
+          mkdir -p mobile/android/assets/vosk
+          mv "$RUNNER_TEMP/vosk-model/vosk-model-small-en-us-0.15" mobile/android/assets/vosk/en-us
+          cp "$dl/COPYING" mobile/android/assets/vosk/LICENSE
+          # The app copies the model out by this list (listing the APK's
+          # assets is not reliable).
+          (cd mobile/android/assets/vosk/en-us && find . -type f | sed 's|^\./||' | sort > ../en-us.files)
+          wc -l mobile/android/assets/vosk/en-us.files
+          ls -la "$RUNNER_TEMP/vosk/$ANDROID_ABI" mobile/android/assets/vosk/en-us
+          du -sh mobile/android/assets/vosk
+
       # ccache keeps compiled objects between runs, so a change compiles
       # only what it touched. The NDK is installed afresh every run, so the
       # compiler is checked by content, not by its file time. The runner
@@ -232,6 +273,7 @@ jobs:
             -DAETHER_MOBILE_BUILD_NUMBER="$shown" \
             -DAETHER_MOBILE_VERSION_CODE="${{ github.run_number }}" \
             -DAETHER_ANDROID_OPENSSL_DIR="$RUNNER_TEMP/android_openssl" \
+            -DAETHER_ANDROID_VOSK_DIR="$RUNNER_TEMP/vosk" \
             2>&1 | tee configure.log
 
       - name: Build APK

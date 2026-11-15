@@ -23,5 +23,9 @@ Result parse(const QString& text);
 Result parseBest(const QStringList& alternatives);
 // The words a recogniser is told to expect (contextual strings).
 QStringList vocabulary();
+// The words a recogniser held to a grammar may hear (Vosk, roadmap 81), in
+// lower case, a phrase for the two-word forms: what parse() reads as part of
+// a call or its report, less the plain letters and the ITU's 1927 words.
+QStringList recognizerWords();
 
 } // namespace AetherSDR::mobile::CallsignSpeech

@@ -1447,6 +1447,9 @@ public:
     Q_INVOKABLE void voiceInputStart();
     Q_INVOKABLE void voiceInputStop();
     Q_INVOKABLE void voiceInputText(const QStringList& alternatives);
+    // A recording (32-bit float mono at rate Hz) to the recogniser as the
+    // voice button's own (the render tool's voicewav).
+    void voiceInputClip(const QByteArray& floatMono, int rate);
     // Tunes the active slice to a spot (and its mode, as the desktop), and
     // tells the radio it was chosen (for loggers).
     Q_INVOKABLE void tuneToSpot(int index);

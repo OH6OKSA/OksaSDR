@@ -1,6 +1,7 @@
 #include "VoiceInput.h"
 
 #include "AndroidJni.h"
+#include "VoskSpeech.h"
 
 #include <QCoreApplication>
 #include <QJniEnvironment>
@@ -13,30 +14,36 @@ Q_DECLARE_LOGGING_CATEGORY(lcMobile)
 
 namespace AetherSDR::mobile {
 
+// Logging by voice on Android (roadmap 81): the app's own recording read by
+// Vosk, held to the alphabet's words. The phone's own recognisers could not
+// take the English alphabet on the developer's phone (betas 85-91: plain
+// English words over the network, nothing or error 11 on the device).
 QString voiceInputUnavailableReason()
 {
-    const QJniObject why = QJniObject::callStaticObjectMethod(kPlatformClass, "speechUnavailable",
-                                                              "(Landroid/content/Context;)Ljava/lang/String;",
-                                                              androidContext().object());
-    return why.isValid() ? why.toString() : QStringLiteral("No speech recognition.");
+    const QString why = VoskSpeech::unavailableReason();
+    if (!why.isEmpty()) {
+        qCInfo(lcMobile).noquote() << "voice log: no voice entry -" << why;
+    }
+    return why.isEmpty() ? QString() : QCoreApplication::translate("VoiceInput", "No speech recognition in this build.");
 }
 
 bool voiceInputAvailable()
 {
-    return voiceInputUnavailableReason().isEmpty();
+    return VoskSpeech::unavailableReason().isEmpty();
 }
 
-// Android's recogniser listens to the microphone itself (startListening):
-// a recording handed to it is not read by every recogniser.
-bool voiceInputListensItself()
-{
-    return true;
-}
-
-void recognizeSpeech(const QByteArray&, int, const QStringList&,
+void recognizeSpeech(const QByteArray& floatMono, int rate, const QStringList&,
                      std::function<void(const QStringList&, const QString&)> done)
 {
-    done({}, QCoreApplication::translate("VoiceInput", "Android's recogniser listens to the microphone itself."));
+    VoskSpeech::recognizeClip(floatMono, rate, std::move(done));
+}
+
+// The phone's own recogniser listening to the microphone itself (betas
+// 87-91, Platform.startListening): unused while Vosk reads the recording,
+// kept for a spelling language Vosk has no model for (Finnish, roadmap 81).
+bool voiceInputListensItself()
+{
+    return false;
 }
 
 void startListening(const QStringList& vocabulary, std::function<void()> ready,

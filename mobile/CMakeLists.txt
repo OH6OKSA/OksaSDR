@@ -87,12 +87,15 @@ elseif(ANDROID)
     target_sources(aether-mobile PRIVATE android/AndroidJni.h android/ScreenAwake.cpp android/SecureStore.cpp
                                          src/AudioSession.cpp android/ShareText.cpp src/SideKeys.cpp
                                          android/Haptics.cpp android/TextScale.cpp src/DeviceId.cpp
-                                         android/MidiPairing.cpp android/VoiceInput.cpp)
+                                         android/MidiPairing.cpp android/VoiceInput.cpp
+                                         src/VoskSpeech.h src/VoskSpeech.cpp)
     target_include_directories(aether-mobile PRIVATE src)
 else()
     target_sources(aether-mobile PRIVATE src/ScreenAwake.cpp src/SecureStore.cpp src/AudioSession.cpp src/ShareText.cpp
                                          src/SideKeys.cpp src/Haptics.cpp src/TextScale.cpp
-                                         src/DeviceId.cpp src/MidiPairing.cpp src/VoiceInput.cpp)
+                                         src/DeviceId.cpp src/MidiPairing.cpp src/VoiceInput.cpp
+                                         src/VoskSpeech.h src/VoskSpeech.cpp)
+    target_link_libraries(aether-mobile PRIVATE ${CMAKE_DL_LIBS})
 endif()
 
 # Must precede qt_add_qml_module, which reads it when writing the qmldir.
@@ -281,6 +284,17 @@ if(ANDROID)
             "${_ssl}/libcrypto_3.so" "${_ssl}/libssl_3.so")
     else()
         message(WARNING "AETHER_ANDROID_OPENSSL_DIR not set: the APK has no OpenSSL, so SmartLink cannot sign in")
+    endif()
+    # Vosk for logging by voice (roadmap 81): libvosk from the release's
+    # vosk-android zip (<dir>/<abi>/libvosk.so), opened at run time; its
+    # English model goes in as assets (android/assets/vosk/en-us, put there
+    # by CI, not in git). Without them the voice button is not offered.
+    set(AETHER_ANDROID_VOSK_DIR "" CACHE PATH "Unpacked vosk-android release zip (libvosk.so per ABI)")
+    if(AETHER_ANDROID_VOSK_DIR)
+        set_property(TARGET aether-mobile APPEND PROPERTY QT_ANDROID_EXTRA_LIBS
+            "${AETHER_ANDROID_VOSK_DIR}/${CMAKE_ANDROID_ARCH_ABI}/libvosk.so")
+    else()
+        message(WARNING "AETHER_ANDROID_VOSK_DIR not set: the APK has no Vosk, so voice entry is not offered")
     endif()
     # USB-C headsets: Qt 6.12.0 leaves them out of its Android device list
     # (android/qt-patches). The patched class goes into the Qt install's jar,

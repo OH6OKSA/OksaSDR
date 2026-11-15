@@ -618,6 +618,48 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         m_engine.voiceInputText({args.join(QLatin1Char(' '))});
         qInfo().noquote() << "shot-plan: voicetext" << args.join(QLatin1Char(' ')) << "->" << m_engine.voiceInputStatus();
         *delayMs = 500;
+    } else if (command == QLatin1String("voicewav")) {
+        // A recording (16-bit PCM WAV, any rate, mono or stereo) to the
+        // recogniser as the voice button's own (roadmap 81: Vosk with
+        // OKSASDR_VOSK_LIB / _MODEL); what it heard goes to the log.
+        QFile wav(arg);
+        QByteArray floatMono;
+        int rate = 0;
+        if (wav.open(QIODevice::ReadOnly)) {
+            const QByteArray d = wav.readAll();
+            int channels = 0;
+            int bits = 0;
+            auto u16 = [&d](qsizetype at) { return int(quint8(d[at])) | int(quint8(d[at + 1])) << 8; };
+            auto u32 = [&d, &u16](qsizetype at) { return quint32(u16(at)) | quint32(u16(at + 2)) << 16; };
+            for (qsizetype at = 12; at + 8 <= d.size();) {
+                const QByteArray id = d.mid(at, 4);
+                const qsizetype size = u32(at + 4);
+                if (id == "fmt " && at + 24 <= d.size()) {
+                    channels = u16(at + 10);
+                    rate = int(u32(at + 12));
+                    bits = u16(at + 22);
+                } else if (id == "data" && channels > 0 && bits == 16) {
+                    const qsizetype frames = std::min(size, d.size() - at - 8) / (2 * channels);
+                    floatMono.resize(frames * qsizetype(sizeof(float)));
+                    auto* out = reinterpret_cast<float*>(floatMono.data());
+                    for (qsizetype f = 0; f < frames; ++f) {
+                        float sum = 0.0f;
+                        for (int c = 0; c < channels; ++c) {
+                            sum += float(qint16(u16(at + 8 + (f * channels + c) * 2))) / 32768.0f;
+                        }
+                        out[f] = sum / float(channels);
+                    }
+                }
+                at += 8 + size + (size & 1);
+            }
+        }
+        if (floatMono.isEmpty() || rate <= 0) {
+            qWarning().noquote() << "shot-plan: voicewav: not a 16-bit PCM WAV:" << arg;
+        } else {
+            m_engine.voiceInputClip(floatMono, rate);
+            qInfo().noquote() << "shot-plan: voicewav" << arg;
+        }
+        *delayMs = 3000;
     } else if (command == QLatin1String("kpa")) {
         // The KPA1500's address (Radio Setup › Amp › Elecraft); "off"
         // forgets it, "pause" / "resume" are its Read the amplifier switch.

@@ -1,6 +1,9 @@
-**OksaSDR for Android — beta 91.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
+**OksaSDR for Android — beta 92.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
-### New in beta 91
+### New in beta 92
+- **Spelling the call by voice works on Android, with the app's own recogniser**: betas 84 to 91 used the phone's own speech recognition, and on the developer's phone it could not take the alphabet (Google's over the network wrote *"Oscar Auto 6 Oscar kilo Seattle"* for *Oskar Hotel six Oscar Kilo Sierra Alfa*, the on-device one heard speech and answered nothing). Now the app records you as for a voice macro and its own offline recogniser, **Vosk** (alphacephei, Apache 2.0, the small English model inside the app), reads the recording listening only for the alphabet's words, the digits, *slash* / *stroke* / *portable* and the report, so *Hotel* cannot come out as *Auto* whatever the accent. Nothing leaves the phone and no network is needed; it works on every Android the app runs on, not only 13 and later, and with a Bluetooth headset when that is the app's microphone. On this developer's PC, spelled calls in two synthesized English voices came right 20 times in 20, and 19 in 20 with loud background noise. The first use copies the speech model (68 MB) out of the app, a few seconds once. The APK is about 40 MB larger for the model.
+
+### Still new from beta 91
 - **Spelling the call by voice: the phone's own recogniser without hints**: beta 90's hints made the phone's on-device recogniser drop out at every press (*Speech recognition failed (11)*) or hang. They are gone; the recogniser that checks for English now also listens (beta 89 closed it and opened another at once, which also made it drop out), English is checked once while the app runs, and if the on-device recogniser still drops out before it listens, the phone's other recogniser takes the press.
 
 ### Still new from beta 90
