@@ -145,6 +145,10 @@ void MobileEngine::voiceAnswered(const QStringList& alternatives, const QString&
 void MobileEngine::voiceInputText(const QStringList& alternatives)
 {
     const CallsignSpeech::Result r = CallsignSpeech::parseBest(alternatives);
+    // What the recogniser wrote, for reports (the words a parser must know).
+    for (qsizetype i = 0; i < alternatives.size(); ++i) {
+        qCInfo(lcMobile).noquote() << QStringLiteral("voice log: alternative %1: \"%2\"").arg(i + 1).arg(alternatives.at(i).left(200));
+    }
     if (r.call.isEmpty()) {
         qCInfo(lcMobile).noquote() << "voice log: no call in" << alternatives.size() << "alternative(s)";
         setSpeechState(QStringLiteral("idle"), r.heard.isEmpty() ? tr("Nothing was heard.")

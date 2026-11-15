@@ -484,7 +484,7 @@ public final class Platform {
     // default one (on the developer's phone it heard speech and wrote
     // nothing with beta 87, having no English).
     @android.annotation.TargetApi(33)
-    public static String startListening(final Context context) {
+    public static String startListening(final Context context, final String[] vocabulary) {
         final String why = speechUnavailable(context);
         if (!why.isEmpty()) {
             return why;
@@ -506,7 +506,15 @@ public final class Platform {
                         @Override public void onSupportResult(RecognitionSupport support) {
                             probe.destroy();
                             final String english = englishOnDevice(support);
-                            listen(context, intent, english.equals("installed"), "on-device English " + english);
+                            final boolean onDevice = english.equals("installed");
+                            if (onDevice) {
+                                // The NATO words, which the on-device recogniser
+                                // takes as hints (Google's over the network wrote
+                                // nothing at all with them, beta 87).
+                                intent.putExtra(RecognizerIntent.EXTRA_BIASING_STRINGS,
+                                        new ArrayList<>(java.util.Arrays.asList(vocabulary)));
+                            }
+                            listen(context, intent, onDevice, "on-device English " + english);
                         }
                         @Override public void onError(int error) {
                             probe.destroy();
