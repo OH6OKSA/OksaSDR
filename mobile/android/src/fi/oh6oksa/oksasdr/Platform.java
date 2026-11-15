@@ -8,6 +8,8 @@ import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ComponentName;
+import android.content.pm.ResolveInfo;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.AudioDeviceInfo;
@@ -23,6 +25,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.speech.RecognitionListener;
+import android.speech.RecognitionService;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.security.keystore.KeyGenParameterSpec;
@@ -447,9 +450,14 @@ public final class Platform {
     // handed it the app's recording instead (Android 13's EXTRA_AUDIO_SOURCE):
     // Google's recogniser over the network gave nothing back for it on the
     // developer's phone, and the on-device one had no English there.
-    // The answer is polled: "ok" and the alternatives a line each, or
-    // "error" and the reason; empty while it runs. sSpeechNotes tells the
-    // log what the recogniser did (ready, speech heard, its loudest level).
+    // Beta 87 on the developer's phone: the recogniser heard speech (its
+    // level up to 10 dB) and still answered with an empty list, so the text
+    // it gives on the way (partial results) is kept and used when the final
+    // answer is empty, and no biasing strings are sent (they are for
+    // on-device recognisers). The answer is polled: "ok" and the
+    // alternatives a line each, or "error" and the reason; empty while it
+    // runs. sSpeechNotes tells the log what the recogniser did: which one,
+    // ready, speech heard, its loudest level, what it answered.
 
     private static volatile String sSpeech = "";
     private static volatile String sSpeechNotes = "";
@@ -468,7 +476,7 @@ public final class Platform {
 
     // Called only once speechUnavailable() has passed, which needs Android 13.
     @android.annotation.TargetApi(33)
-    public static String startListening(final Context context, final String[] vocabulary) {
+    public static String startListening(final Context context) {
         final String why = speechUnavailable(context);
         if (!why.isEmpty()) {
             return why;
@@ -481,15 +489,37 @@ public final class Platform {
                 if (sListening != null) {
                     sListening.destroy();
                 }
-                final SpeechRecognizer recognizer = SpeechRecognizer.createSpeechRecognizer(context);
+                // The Google app's recogniser where the phone has it: English
+                // over the network whatever is installed on the phone. The
+                // default one (on the developer's phone with beta 87) heard
+                // the speech and wrote nothing, as it had no English there.
+                final String fallback = Settings.Secure.getString(context.getContentResolver(), "voice_recognition_service");
+                ComponentName chosen = null;
+                StringBuilder found = new StringBuilder();
+                for (ResolveInfo info : context.getPackageManager().queryIntentServices(
+                        new Intent(RecognitionService.SERVICE_INTERFACE), 0)) {
+                    if (info.serviceInfo == null) {
+                        continue;
+                    }
+                    found.append(found.length() == 0 ? "" : " ").append(info.serviceInfo.packageName);
+                    if (info.serviceInfo.packageName.equals("com.google.android.googlequicksearchbox")) {
+                        chosen = new ComponentName(info.serviceInfo.packageName, info.serviceInfo.name);
+                    }
+                }
+                final SpeechRecognizer recognizer = chosen != null
+                        ? SpeechRecognizer.createSpeechRecognizer(context, chosen)
+                        : SpeechRecognizer.createSpeechRecognizer(context);
                 sListening = recognizer;
                 final float[] loudest = {-100f};
+                final ArrayList<String> partial = new ArrayList<>();
+                sSpeechNotes = "services [" + found + "], default " + (fallback == null ? "none" : fallback)
+                        + ", using " + (chosen != null ? chosen.getPackageName() : "the default") + ": ";
                 final Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
                 intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
                 intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US");
                 intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5);
+                intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
                 intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.getPackageName());
-                intent.putExtra(RecognizerIntent.EXTRA_BIASING_STRINGS, new ArrayList<>(java.util.Arrays.asList(vocabulary)));
                 // A pause between the letters is not the end of the call.
                 intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500);
                 intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500);
@@ -508,17 +538,38 @@ public final class Platform {
                     @Override public void onEndOfSpeech() {
                         sSpeechNotes += ", speech ended";
                     }
-                    @Override public void onPartialResults(Bundle partialResults) {}
+                    @Override public void onPartialResults(Bundle partialResults) {
+                        ArrayList<String> list = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                        if (list != null && !list.isEmpty() && !list.get(0).trim().isEmpty()) {
+                            partial.clear();
+                            partial.addAll(list);
+                        }
+                    }
                     @Override public void onEvent(int eventType, Bundle params) {}
                     @Override public void onResults(Bundle results) {
                         ArrayList<String> list = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                        sSpeechNotes += String.format(java.util.Locale.ROOT, ", loudest %.1f dB", loudest[0]);
+                        final boolean empty = list == null || list.isEmpty() || list.get(0).trim().isEmpty();
+                        sSpeechNotes += String.format(java.util.Locale.ROOT, ", loudest %.1f dB, %d result(s)",
+                                loudest[0], list == null ? 0 : list.size());
+                        if (empty && !partial.isEmpty()) {
+                            list = partial;
+                            sSpeechNotes += ", the partial result used";
+                        }
+                        if (list != null && !list.isEmpty()) {
+                            sSpeechNotes += ": \"" + list.get(0) + "\"";
+                        }
                         sSpeech = "ok\n" + (list == null ? "" : String.join("\n", list));
                         finish(recognizer);
                     }
                     @Override public void onError(int error) {
                         sSpeechNotes += String.format(java.util.Locale.ROOT, ", loudest %.1f dB, error %d", loudest[0], error);
-                        sSpeech = "error\n" + speechError(error);
+                        if (!partial.isEmpty()) {
+                            // Heard on the way, then stopped: that is the answer.
+                            sSpeechNotes += ", the partial result used: \"" + partial.get(0) + "\"";
+                            sSpeech = "ok\n" + String.join("\n", partial);
+                        } else {
+                            sSpeech = "error\n" + speechError(error);
+                        }
                         finish(recognizer);
                     }
                 });

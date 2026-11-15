@@ -3,7 +3,6 @@
 #include "AndroidJni.h"
 
 #include <QCoreApplication>
-#include <QJniEnvironment>
 #include <QLoggingCategory>
 #include <QTimer>
 
@@ -39,21 +38,13 @@ void recognizeSpeech(const QByteArray&, int, const QStringList&,
     done({}, QCoreApplication::translate("VoiceInput", "Android's recogniser listens to the microphone itself."));
 }
 
-void startListening(const QStringList& vocabulary, std::function<void()> ready,
+void startListening(const QStringList&, std::function<void()> ready,
                     std::function<void(const QStringList&, const QString&)> done)
 {
-    QJniEnvironment env;
-    jclass stringClass = env->FindClass("java/lang/String");
-    jobjectArray words = env->NewObjectArray(jsize(vocabulary.size()), stringClass, nullptr);
-    for (qsizetype i = 0; i < vocabulary.size(); ++i) {
-        const QJniObject w = QJniObject::fromString(vocabulary.at(i));
-        env->SetObjectArrayElement(words, jsize(i), w.object<jstring>());
-    }
+    // No biasing strings: they are for on-device recognisers, and the
+    // NATO words are plain English to any recogniser.
     const QJniObject why = QJniObject::callStaticObjectMethod(
-        kPlatformClass, "startListening", "(Landroid/content/Context;[Ljava/lang/String;)Ljava/lang/String;",
-        androidContext().object(), words);
-    env->DeleteLocalRef(words);
-    env->DeleteLocalRef(stringClass);
+        kPlatformClass, "startListening", "(Landroid/content/Context;)Ljava/lang/String;", androidContext().object());
     if (why.isValid() && !why.toString().isEmpty()) {
         done({}, why.toString());
         return;

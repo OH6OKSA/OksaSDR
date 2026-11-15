@@ -1,6 +1,9 @@
-**OksaSDR for Android — beta 87.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
+**OksaSDR for Android — beta 88.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
-### New in beta 87
+### New in beta 88
+- **Spelling the call by voice, the next step on Android**: with beta 87 the phone's recogniser heard the speech (the log showed it) but wrote nothing, as the developer's phone's default recogniser has no English. Now the Google app's recogniser is used where the phone has it (English over the network), the text it gives on the way is kept when its final answer comes back empty, and the log names the recognisers on the phone, the one used and what it heard. Please try it and send the log (Log › Send to the developer) if the call still does not come.
+
+### Still new from beta 87
 - **Spelling the call by voice listens on Android**: in betas 84 to 86 the app recorded you and handed the recording to the phone's recogniser, and Google's recogniser gave nothing back for it (on the developer's phone *Nothing was heard*, whatever was said). Now the phone's own recogniser listens to the microphone itself while you hold **🎤**, as in any Android app with a microphone button; the line under the field says *Starting…* until it listens, then *Listening…*. It is usually Google's recogniser, on the phone where it has English, otherwise over the network. The log tells what the recogniser did, for reports.
 
 ### Still new from beta 86
