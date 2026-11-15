@@ -26,6 +26,8 @@ import android.os.PowerManager;
 import android.provider.Settings;
 import android.speech.RecognitionListener;
 import android.speech.RecognitionService;
+import android.speech.RecognitionSupport;
+import android.speech.RecognitionSupportCallback;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.security.keystore.KeyGenParameterSpec;
@@ -463,6 +465,7 @@ public final class Platform {
     private static volatile String sSpeechNotes = "";
     private static volatile boolean sSpeechReady = false;
     private static SpeechRecognizer sListening;   // main thread only
+    private static volatile boolean sStopWanted = false;
 
     public static String speechUnavailable(Context context) {
         if (Build.VERSION.SDK_INT < 33) {
@@ -475,6 +478,11 @@ public final class Platform {
     }
 
     // Called only once speechUnavailable() has passed, which needs Android 13.
+    // Which recogniser: the phone's on-device one when it has English
+    // installed (nothing leaves the phone; beta 85 asked for its English
+    // model), else the Google app's (English over the network), else the
+    // default one (on the developer's phone it heard speech and wrote
+    // nothing with beta 87, having no English).
     @android.annotation.TargetApi(33)
     public static String startListening(final Context context) {
         final String why = speechUnavailable(context);
@@ -484,106 +492,159 @@ public final class Platform {
         sSpeech = "";
         sSpeechNotes = "";
         sSpeechReady = false;
+        sStopWanted = false;
         new Handler(Looper.getMainLooper()).post(() -> {
-            try {
-                if (sListening != null) {
-                    sListening.destroy();
-                }
-                // The Google app's recogniser where the phone has it: English
-                // over the network whatever is installed on the phone. The
-                // default one (on the developer's phone with beta 87) heard
-                // the speech and wrote nothing, as it had no English there.
-                final String fallback = Settings.Secure.getString(context.getContentResolver(), "voice_recognition_service");
-                ComponentName chosen = null;
-                StringBuilder found = new StringBuilder();
-                for (ResolveInfo info : context.getPackageManager().queryIntentServices(
-                        new Intent(RecognitionService.SERVICE_INTERFACE), 0)) {
-                    if (info.serviceInfo == null) {
-                        continue;
-                    }
-                    found.append(found.length() == 0 ? "" : " ").append(info.serviceInfo.packageName);
-                    if (info.serviceInfo.packageName.equals("com.google.android.googlequicksearchbox")) {
-                        chosen = new ComponentName(info.serviceInfo.packageName, info.serviceInfo.name);
-                    }
-                }
-                final SpeechRecognizer recognizer = chosen != null
-                        ? SpeechRecognizer.createSpeechRecognizer(context, chosen)
-                        : SpeechRecognizer.createSpeechRecognizer(context);
-                sListening = recognizer;
-                final float[] loudest = {-100f};
-                final ArrayList<String> partial = new ArrayList<>();
-                sSpeechNotes = "services [" + found + "], default " + (fallback == null ? "none" : fallback)
-                        + ", using " + (chosen != null ? chosen.getPackageName() : "the default") + ": ";
-                final Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US");
-                intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5);
-                intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
-                intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.getPackageName());
-                // A pause between the letters is not the end of the call.
-                intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500);
-                intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500);
-                recognizer.setRecognitionListener(new RecognitionListener() {
-                    @Override public void onReadyForSpeech(Bundle params) {
-                        sSpeechReady = true;
-                        sSpeechNotes += "ready";
-                    }
-                    @Override public void onBeginningOfSpeech() {
-                        sSpeechNotes += ", speech began";
-                    }
-                    @Override public void onRmsChanged(float rmsdB) {
-                        loudest[0] = Math.max(loudest[0], rmsdB);
-                    }
-                    @Override public void onBufferReceived(byte[] buffer) {}
-                    @Override public void onEndOfSpeech() {
-                        sSpeechNotes += ", speech ended";
-                    }
-                    @Override public void onPartialResults(Bundle partialResults) {
-                        ArrayList<String> list = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                        if (list != null && !list.isEmpty() && !list.get(0).trim().isEmpty()) {
-                            partial.clear();
-                            partial.addAll(list);
-                        }
-                    }
-                    @Override public void onEvent(int eventType, Bundle params) {}
-                    @Override public void onResults(Bundle results) {
-                        ArrayList<String> list = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                        final boolean empty = list == null || list.isEmpty() || list.get(0).trim().isEmpty();
-                        sSpeechNotes += String.format(java.util.Locale.ROOT, ", loudest %.1f dB, %d result(s)",
-                                loudest[0], list == null ? 0 : list.size());
-                        if (empty && !partial.isEmpty()) {
-                            list = partial;
-                            sSpeechNotes += ", the partial result used";
-                        }
-                        if (list != null && !list.isEmpty()) {
-                            sSpeechNotes += ": \"" + list.get(0) + "\"";
-                        }
-                        sSpeech = "ok\n" + (list == null ? "" : String.join("\n", list));
-                        finish(recognizer);
-                    }
-                    @Override public void onError(int error) {
-                        sSpeechNotes += String.format(java.util.Locale.ROOT, ", loudest %.1f dB, error %d", loudest[0], error);
-                        if (!partial.isEmpty()) {
-                            // Heard on the way, then stopped: that is the answer.
-                            sSpeechNotes += ", the partial result used: \"" + partial.get(0) + "\"";
-                            sSpeech = "ok\n" + String.join("\n", partial);
-                        } else {
-                            sSpeech = "error\n" + speechError(error);
-                        }
-                        finish(recognizer);
-                    }
-                });
-                recognizer.startListening(intent);
-            } catch (Exception e) {
-                sSpeech = "error\n" + e;
+            if (sListening != null) {
+                sListening.destroy();
+                sListening = null;
             }
+            final Intent intent = speechIntent(context);
+            if (SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
+                try {
+                    final SpeechRecognizer probe = SpeechRecognizer.createOnDeviceSpeechRecognizer(context);
+                    probe.checkRecognitionSupport(intent, context.getMainExecutor(), new RecognitionSupportCallback() {
+                        @Override public void onSupportResult(RecognitionSupport support) {
+                            probe.destroy();
+                            final String english = englishOnDevice(support);
+                            listen(context, intent, english.equals("installed"), "on-device English " + english);
+                        }
+                        @Override public void onError(int error) {
+                            probe.destroy();
+                            listen(context, intent, false, "on-device check error " + error);
+                        }
+                    });
+                    return;
+                } catch (Exception e) {
+                    // No check offered: the other recognisers below.
+                }
+            }
+            listen(context, intent, false, "no on-device recogniser");
         });
         return "";
+    }
+
+    @android.annotation.TargetApi(33)
+    private static String englishOnDevice(RecognitionSupport support) {
+        for (String l : support.getInstalledOnDeviceLanguages()) {
+            if (l.toLowerCase(java.util.Locale.ROOT).startsWith("en")) {
+                return "installed";
+            }
+        }
+        for (String l : support.getPendingOnDeviceLanguages()) {
+            if (l.toLowerCase(java.util.Locale.ROOT).startsWith("en")) {
+                return "downloading";
+            }
+        }
+        for (String l : support.getSupportedOnDeviceLanguages()) {
+            if (l.toLowerCase(java.util.Locale.ROOT).startsWith("en")) {
+                return "not installed";
+            }
+        }
+        return "not offered";
+    }
+
+    private static Intent speechIntent(Context context) {
+        final Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US");
+        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5);
+        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+        intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.getPackageName());
+        // A pause between the letters is not the end of the call.
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500);
+        intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500);
+        return intent;
+    }
+
+    @android.annotation.TargetApi(33)
+    private static void listen(final Context context, final Intent intent, final boolean onDevice, final String why) {
+        try {
+            ComponentName google = null;
+            StringBuilder found = new StringBuilder();
+            for (ResolveInfo info : context.getPackageManager().queryIntentServices(
+                    new Intent(RecognitionService.SERVICE_INTERFACE), 0)) {
+                if (info.serviceInfo == null) {
+                    continue;
+                }
+                found.append(found.length() == 0 ? "" : " ").append(info.serviceInfo.packageName);
+                if (info.serviceInfo.packageName.equals("com.google.android.googlequicksearchbox")) {
+                    google = new ComponentName(info.serviceInfo.packageName, info.serviceInfo.name);
+                }
+            }
+            final String fallback = Settings.Secure.getString(context.getContentResolver(), "voice_recognition_service");
+            final SpeechRecognizer recognizer = onDevice ? SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
+                    : google != null ? SpeechRecognizer.createSpeechRecognizer(context, google)
+                    : SpeechRecognizer.createSpeechRecognizer(context);
+            sListening = recognizer;
+            sSpeechNotes = why + "; services [" + found + "], default " + (fallback == null ? "none" : fallback)
+                    + "; using " + (onDevice ? "the on-device one" : google != null ? google.getPackageName() : "the default")
+                    + ": ";
+            final float[] loudest = {-100f};
+            final ArrayList<String> partial = new ArrayList<>();
+            recognizer.setRecognitionListener(new RecognitionListener() {
+                @Override public void onReadyForSpeech(Bundle params) {
+                    sSpeechReady = true;
+                    sSpeechNotes += "ready";
+                }
+                @Override public void onBeginningOfSpeech() {
+                    sSpeechNotes += ", speech began";
+                }
+                @Override public void onRmsChanged(float rmsdB) {
+                    loudest[0] = Math.max(loudest[0], rmsdB);
+                }
+                @Override public void onBufferReceived(byte[] buffer) {}
+                @Override public void onEndOfSpeech() {
+                    sSpeechNotes += ", speech ended";
+                }
+                @Override public void onPartialResults(Bundle partialResults) {
+                    ArrayList<String> list = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                    if (list != null && !list.isEmpty() && !list.get(0).trim().isEmpty()) {
+                        partial.clear();
+                        partial.addAll(list);
+                    }
+                }
+                @Override public void onEvent(int eventType, Bundle params) {}
+                @Override public void onResults(Bundle results) {
+                    ArrayList<String> list = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                    final boolean empty = list == null || list.isEmpty() || list.get(0).trim().isEmpty();
+                    sSpeechNotes += String.format(java.util.Locale.ROOT, ", loudest %.1f dB, %d result(s)",
+                            loudest[0], list == null ? 0 : list.size());
+                    if (empty && !partial.isEmpty()) {
+                        list = partial;
+                        sSpeechNotes += ", the partial result used";
+                    }
+                    if (list != null && !list.isEmpty()) {
+                        sSpeechNotes += ": \"" + list.get(0) + "\"";
+                    }
+                    sSpeech = "ok\n" + (list == null ? "" : String.join("\n", list));
+                    finish(recognizer);
+                }
+                @Override public void onError(int error) {
+                    sSpeechNotes += String.format(java.util.Locale.ROOT, ", loudest %.1f dB, error %d", loudest[0], error);
+                    if (!partial.isEmpty()) {
+                        // Heard on the way, then stopped: that is the answer.
+                        sSpeechNotes += ", the partial result used: \"" + partial.get(0) + "\"";
+                        sSpeech = "ok\n" + String.join("\n", partial);
+                    } else {
+                        sSpeech = "error\n" + speechError(error);
+                    }
+                    finish(recognizer);
+                }
+            });
+            recognizer.startListening(intent);
+            if (sStopWanted) {
+                // Let go while the recogniser was being chosen.
+                recognizer.stopListening();
+            }
+        } catch (Exception e) {
+            sSpeech = "error\n" + e;
+        }
     }
 
     // The button let go: the recogniser stops listening and answers.
     public static void stopListening() {
         new Handler(Looper.getMainLooper()).post(() -> {
+            sStopWanted = true;
             if (sListening != null) {
                 sListening.stopListening();
             }
