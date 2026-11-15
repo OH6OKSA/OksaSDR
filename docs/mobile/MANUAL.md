@@ -616,6 +616,13 @@ used as the law allows), gloves or a glance (asked by Michael Walker):
   chips have a row of their own.
 - **The mode** at the top right and **the frequency** large; a tap on the
   frequency opens frequency entry, as on the main screen.
+- **Log** beside the mode (asked by Michael Walker) logs a contact in big
+  type: the call in a large field (its name and QTH under it once
+  looked up), the two reports with big **−** / **+** (59 or 599 by mode,
+  the strength digit stepped; an FTx report in dB), then **Log CALL**. The
+  time is when the call was typed, My park from the Log tab goes with it,
+  and the call is the Log tab's too. **Cancel** goes back; PTT stays at
+  the bottom. With a keyboard, Return logs and Esc cancels.
 - **Two meters** as bars with their readings large (S and the supply
   voltage, Power and SWR while transmitting). A tap on one chooses what it
   shows, in receive and in transmit, apart from the main screen's meters.
@@ -634,6 +641,8 @@ and the arrows tune. With a MIDI controller's knob ([Radio Setup ›
 MIDI](#9-radio-setup)) the tuning needs no look at the screen.
 
 ![Big buttons](manual/big-buttons.jpg)
+
+![Big buttons' log](manual/big-buttons-log.jpg)
 
 ### Network quality
 
@@ -1296,7 +1305,9 @@ seven.
     DVK slots (up to 10 s, shared with other programs); otherwise (no
     SmartSDR+, or a radio that does not say) the app keeps them on this
     device (up to 15 s) and plays them into the transmit audio as if
-    spoken. Either way **Listen** plays a recording to you without
+    spoken. In RADE the app's own recordings go out as RADE like your voice;
+    the radio's DVK slots do not play there (the radio sends them as analog
+    audio; thanks Christoph Steinert DM5HF). Either way **Listen** plays a recording to you without
     transmitting, so you can check it before naming it. Features that need
     SmartSDR+ appear only when the radio reports the subscription.
 - **eSSB** — this device's microphone processing: AetherSDR's client-side
@@ -1441,7 +1452,18 @@ seven.
   call was typed and your own callsign come from the radio; your grid
   comes from the radio's GPS, or from *My grid*. **Their park** and **My
   park** (POTA or WWFF with the reference) go into ADIF's SIG / MY_SIG
-  fields; your own park stays for every contact while you activate.
+  fields; your own park stays for every contact while you activate (and
+  Big buttons' Log uses it too). With My park on **POTA**, **Self-spot**
+  beside the reference (asked by Christoph Steinert DM5HF) spots your own
+  activation on pota.app, for hunters to find you: it shows what goes out
+  (*OH6OKSA at US-1234, 14285.0 kHz SSB*: your callsign, the park, the
+  transmit slice's frequency and mode, FT8 or FT4 while FTx runs) with an
+  optional comment, and posts it on **Spot**. With two parks in the
+  reference (*US-1234, US-5678*) it asks which, one spot each. The line
+  under it gives POTA's answer (*Spotted on POTA*, or POTA's own reason
+  when it refuses), at most one spot in 30 s; nothing is sent by itself.
+  pota.app's spot interface is unofficial, so if POTA changes it the answer
+  says so.
   *Sent* and *Rcvd* hold the reports and *Comment* a note for the
   contact. **Log CALL** (the button names the call) writes the contact;
   the newest ten are listed. **Spot** beside it (asked by Christoph
@@ -1947,11 +1969,16 @@ seven.
   - **Antenna** — *ANT1* and *ANT2*, the amplifier's two connectors.
   - **ATU** — *In line* or *Bypass*, the ATU mode for this band and antenna
     (as holding ATU MODE on the amplifier).
-  - **Tune** — the ATU's full-search tune: the amplifier starts it and the
-    radio sends its TUNE carrier at the TX tab's Tune power, which must be
-    10-50 W (Elecraft's manual; over 20 W tunes more exactly). The button
-    shows *Stop* and the seconds left; the carrier stops by itself once the
-    amplifier shows the tune done (*The amplifier tuned (SWR 1.20).*), on
+  - **Tune** — the ATU's full-search tune: an amplifier in OPERATE is put
+    in STANDBY first (*Asking the amplifier for STANDBY…*), so the carrier
+    is never amplified (a tune in OPERATE sent it out at full power once
+    the ATU had tuned: Rich Yost N2RY's log); then the amplifier starts the
+    search and the radio sends its TUNE carrier at the TX tab's Tune power,
+    which must be 10-50 W (Elecraft's manual; over 20 W tunes more
+    exactly). The button shows *Stop* and the seconds left; the carrier
+    stops by itself once the amplifier shows the tune done (*The amplifier
+    tuned (SWR 1.20). Put it in OPERATE when you are ready.*), if it ever
+    reads OPERATE, on
     a fault (*The amplifier's ATU found no match: check the band and
     antenna.*), when the radio sends more than 55 W, the link drops, on
     *Stop* or after 20 s (the search is then cancelled). Not while the
@@ -2257,7 +2284,12 @@ radio.
     Vogels DK3HV).
   - **Functions**: tap **Learn** by a function, then turn or press the
     control on the controller; a knob learned for the **VFO knob** tunes
-    by the tuning step. **×** clears one, **Clear all** every one.
+    by the tuning step. A control another function already has is not
+    taken over silently (thanks Rich Yost N2RY): the row names it (*Ch 1
+    CC #100 is already the VFO knob's.*) and nothing changes until you tap
+    **Replace** (it moves to this function) or **Learn again** (the other
+    keeps it; move another control). **×** clears one, **Clear all** every
+    one.
     **Import a map…** takes the controller's map for SmartSDR for iOS /
     macOS (*.map*, as Lynovation ships for the CTR2) or an AetherSDR
     profile (*.xml*) and replaces the functions; the result names what has

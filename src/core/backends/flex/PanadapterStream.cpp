@@ -14,6 +14,7 @@
 #include <QtEndian>
 #include <QSet>
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
 
@@ -27,6 +28,11 @@ constexpr int kAudioSampleRate = AudioEngine::DEFAULT_SAMPLE_RATE;
 constexpr int kOpusFramesPerPacket = 240;
 constexpr int kWanRegisterIntervalMs = 50;
 constexpr int kWanKeepaliveIntervalMs = 5000;
+constexpr int kLanKeepaliveIntervalMs = 5000;
+// The radio sends LAN VITA from this port (measured, fw 4.3.16: FLEX-8600 IPv4 and
+// IPv6, FLEX-8400 with concurrent multiFLEX clients). Sending to it keeps a
+// stateful host firewall's return path open.
+constexpr quint16 kLanVitaSourcePort = 4993;
 
 QString streamCategoryName(PanadapterStream::StreamCategory cat)
 {
@@ -92,9 +98,12 @@ PanadapterStream::PanadapterStream(QObject* parent)
     : QObject(parent)
 {
     m_pcmProducer.start();
+    m_rxReorderClock.start();
     // Socket and timer connections are deferred to init() which runs
     // on the network thread after moveToThread(). (#561)
 }
+
+PanadapterStream::~PanadapterStream() = default;
 
 void PanadapterStream::init()
 {
@@ -106,6 +115,15 @@ void PanadapterStream::init()
     }
     if (!m_routedPrimeTimer) {
         m_routedPrimeTimer = new QTimer(this);
+    }
+    if (!m_lanKeepaliveTimer) {
+        m_lanKeepaliveTimer = new QTimer(this);
+    }
+    if (!m_rxReorderTimer) {
+        m_rxReorderTimer = new QTimer(this);
+        m_rxReorderTimer->setSingleShot(true);
+        m_rxReorderTimer->setTimerType(Qt::PreciseTimer);
+        connect(m_rxReorderTimer, &QTimer::timeout, this, &PanadapterStream::flushRxReorder);
     }
 
     // Pick up the persisted PLC toggle. Default true — strictly better in
@@ -135,18 +153,23 @@ void PanadapterStream::init()
             return;
         }
         const QByteArray reg(1, '\x00');
-        const qint64 sent = m_socket->writeDatagram(reg, m_radioAddress, 4992);
+        const qint64 sent = writeLanDatagram(reg, m_radioAddress, 4992);
         if (sent > 0)
             m_totalTxBytes.fetch_add(sent);
     });
+
+    m_lanKeepaliveTimer->setInterval(kLanKeepaliveIntervalMs);
+    connect(m_lanKeepaliveTimer, &QTimer::timeout,
+            this, &PanadapterStream::sendLanKeepalive, Qt::UniqueConnection);
 }
 
 bool PanadapterStream::isRunning() const
 {
     // Truthful for the demo too: a demo stream binds no socket and runs no timer
     // (SimBackend produces the demo's audio and spectrum), so it is not running.
-    return m_wanBindForTest ? m_wanBoundForTest
-                            : (m_socket && m_socket->state() == QAbstractSocket::BoundState);
+    if (m_wanBindForTest || m_lanBindForTest)
+        return m_wanBoundForTest || m_lanBoundForTest;
+    return m_socket && m_socket->state() == QAbstractSocket::BoundState;
 }
 
 void PanadapterStream::applyReceiveBufferSize()
@@ -219,7 +242,9 @@ bool PanadapterStream::start(RadioConnection* conn)
     const QHostAddress bindAddr = chooseLanBindAddress(conn, &chosenReason, &chosenAddress, &bindMode);
     const QString bindReason = chosenReason.isEmpty() ? QStringLiteral("auto") : chosenReason;
 
-    const bool bound = m_socket->bind(bindAddr, 0, kLanVitaBindMode);
+    const bool bound = m_lanBindForTest ? m_lanBindForTest()
+                                        : m_socket->bind(bindAddr, 0, kLanVitaBindMode);
+    m_lanBoundForTest = m_lanBindForTest && bound;
     if (bound)
         qCInfo(lcVita49).noquote()
             << "PanadapterStream: LAN VITA UDP bind"
@@ -236,21 +261,23 @@ bool PanadapterStream::start(RadioConnection* conn)
         return false;
     }
 
-    applyReceiveBufferSize();   // #3810 — absorb VITA-49 bursts so they don't drop
-    applyDscpEf(conn ? conn->radioAddress() : QHostAddress(), {4991, 4992});
+    if (!m_lanBindForTest) {
+        applyReceiveBufferSize();   // #3810 — absorb VITA-49 bursts so they don't drop
+        applyDscpEf(conn ? conn->radioAddress() : QHostAddress(), {4991, 4992});
+    }
     m_localAddress = m_socket->localAddress();
     m_localPort = m_socket->localPort();
     qCDebug(lcVita49) << "PanadapterStream: local UDP endpoint"
                       << m_localAddress.toString() << ":" << m_localPort;
 
-    // Send a one-byte UDP registration datagram to the radio's VITA-49 port.
+    // Send a one-byte UDP registration datagram to the radio's command port (4992).
     // The radio learns our IP:port from the source address of this datagram.
     // This is required on firmware v1.4.0.0 where the TCP "client udpport"
     // command may return 0x50001000 ("command not supported").
     const QHostAddress radioAddr = conn->radioAddress();
     if (!radioAddr.isNull()) {
         const QByteArray reg(1, '\x00');
-        const qint64 sent = m_socket->writeDatagram(reg, radioAddr, 4992);
+        const qint64 sent = writeLanDatagram(reg, radioAddr, 4992);
         if (sent == 1) {
             m_totalTxBytes.fetch_add(sent);
             qCDebug(lcVita49) << "PanadapterStream: sent UDP registration to"
@@ -270,6 +297,7 @@ bool PanadapterStream::start(RadioConnection* conn)
     m_radioPort = 4991;
 
     m_conn = conn;
+    startLanKeepalive();
     return true;
 }
 
@@ -291,6 +319,8 @@ bool PanadapterStream::rebindToEphemeralPort(RadioConnection* conn)
 
     if (m_routedPrimeTimer)
         m_routedPrimeTimer->stop();
+    if (m_lanKeepaliveTimer)
+        m_lanKeepaliveTimer->stop();
 
     m_dscpMarker.reset();
     if (m_socket->state() != QAbstractSocket::UnconnectedState)
@@ -306,7 +336,9 @@ bool PanadapterStream::rebindToEphemeralPort(RadioConnection* conn)
     const QHostAddress bindAddr = chooseLanBindAddress(conn, &chosenReason, &chosenAddress, &bindMode);
     const QString bindReason = chosenReason.isEmpty() ? QStringLiteral("auto") : chosenReason;
 
-    const bool bound = m_socket->bind(bindAddr, 0, kLanVitaBindMode);
+    const bool bound = m_lanBindForTest ? m_lanBindForTest()
+                                        : m_socket->bind(bindAddr, 0, kLanVitaBindMode);
+    m_lanBoundForTest = m_lanBindForTest && bound;
     if (!bound) {
         qCWarning(lcVita49) << "PanadapterStream: failed to rebind UDP socket after port collision:"
                             << m_socket->errorString()
@@ -316,8 +348,10 @@ bool PanadapterStream::rebindToEphemeralPort(RadioConnection* conn)
         return false;
     }
 
-    applyReceiveBufferSize();   // #3810 — absorb VITA-49 bursts so they don't drop
-    applyDscpEf(conn ? conn->radioAddress() : QHostAddress(), {4991, 4992});
+    if (!m_lanBindForTest) {
+        applyReceiveBufferSize();   // #3810 — absorb VITA-49 bursts so they don't drop
+        applyDscpEf(conn ? conn->radioAddress() : QHostAddress(), {4991, 4992});
+    }
     m_localAddress = m_socket->localAddress();
     m_localPort = m_socket->localPort();
     m_radioAddress = conn ? conn->radioAddress() : QHostAddress();
@@ -333,7 +367,7 @@ bool PanadapterStream::rebindToEphemeralPort(RadioConnection* conn)
 
     if (!m_radioAddress.isNull()) {
         const QByteArray reg(1, '\x00');
-        const qint64 sent = m_socket->writeDatagram(reg, m_radioAddress, 4992);
+        const qint64 sent = writeLanDatagram(reg, m_radioAddress, 4992);
         if (sent == 1) {
             m_totalTxBytes.fetch_add(sent);
             qCDebug(lcVita49) << "PanadapterStream: sent UDP registration to"
@@ -348,7 +382,45 @@ bool PanadapterStream::rebindToEphemeralPort(RadioConnection* conn)
         qCWarning(lcVita49) << "PanadapterStream: radio address unknown - skipping UDP registration after rebind";
     }
 
+    startLanKeepalive();
     return true;
+}
+
+qint64 PanadapterStream::writeLanDatagram(const QByteArray& data, const QHostAddress& to,
+                                          quint16 port)
+{
+    return m_lanWriteForTest ? m_lanWriteForTest(data, to, port)
+                             : m_socket->writeDatagram(data, to, port);
+}
+
+void PanadapterStream::startLanKeepalive()
+{
+    if (m_isWanMode || m_radioAddress.isNull())
+        return;
+    m_lanKeepaliveFailed = false;
+    qCDebug(lcVita49) << "PanadapterStream: LAN keepalive to"
+                      << m_radioAddress.toString() << ":" << kLanVitaSourcePort;
+    sendLanKeepalive();
+    m_lanKeepaliveTimer->start();
+}
+
+// Without this, a host firewall that drops unsolicited UDP (UFW, firewalld)
+// sees radio VITA as a new inbound flow and drops it while TCP stays up.
+void PanadapterStream::sendLanKeepalive()
+{
+    if (m_isWanMode || m_radioAddress.isNull())
+        return;
+    const QByteArray ping(1, '\x00');
+    const qint64 sent = writeLanDatagram(ping, m_radioAddress, kLanVitaSourcePort);
+    if (sent > 0) {
+        m_totalTxBytes.fetch_add(sent);
+        m_lanKeepaliveFailed = false;
+    } else if (!m_lanKeepaliveFailed) {
+        m_lanKeepaliveFailed = true;
+        qCWarning(lcVita49) << "PanadapterStream: LAN keepalive send to"
+                            << m_radioAddress.toString() << ":" << kLanVitaSourcePort
+                            << "failed:" << m_socket->errorString();
+    }
 }
 
 bool PanadapterStream::startWan(const QHostAddress& radioAddr, quint16 radioUdpPort)
@@ -459,6 +531,13 @@ void PanadapterStream::confirmWanRegistration(const QByteArray& data)
 
 void PanadapterStream::stop()
 {
+    if (m_rxReorderTimer) {
+        m_rxReorderTimer->stop();
+    }
+    m_audioPlc.clear();
+    m_audioPlcGenerations.clear();
+    m_opusCodecs.clear();
+    restartAllStreamSequences();
     m_pcmProducer.invalidate();
     {
         QMutexLocker lock(&m_streamMutex);
@@ -470,7 +549,11 @@ void PanadapterStream::stop()
     if (m_routedPrimeTimer) {
         m_routedPrimeTimer->stop();
     }
+    if (m_lanKeepaliveTimer) {
+        m_lanKeepaliveTimer->stop();
+    }
     m_wanBoundForTest = false;
+    m_lanBoundForTest = false;
     m_isWanMode = false;
     m_wanRegistered = false;
     m_wanClientHandle = 0;
@@ -511,10 +594,13 @@ void PanadapterStream::unregisterPanStream(quint32 streamId)
     {
         QMutexLocker lock(&m_streamMutex);
         m_knownPanStreams.remove(streamId);
-        m_frames.remove(streamId);
         m_dbmRanges.remove(streamId);
         m_dbmRangeGenerations.remove(streamId);
         m_pendingDbmRanges.remove(streamId);
+    }
+    {
+        QMutexLocker frameLock(&m_frameMutex);
+        m_frames.remove(streamId);
     }
     restartStreamSequence(streamId);
 }
@@ -524,9 +610,28 @@ void PanadapterStream::unregisterWfStream(quint32 streamId)
     {
         QMutexLocker lock(&m_streamMutex);
         m_knownWfStreams.remove(streamId);
+    }
+    {
+        QMutexLocker frameLock(&m_frameMutex);
         m_wfFrames.remove(streamId);
     }
     restartStreamSequence(streamId);
+}
+
+void PanadapterStream::restartStreamLocked(quint32 streamId, StreamStats& stats)
+{
+    m_pendingRxStreams.remove(streamId);
+    m_queuedAudioBytes -= stats.audioReorder.queuedBytes();
+    stats.audioReorder.reset();
+    ++stats.generation;
+    stats.audioWindowStartMs = -1;
+    stats.audioWindowPackets = 0;
+    stats.audioWindowReordered = 0;
+    stats.audioWindowConcealed = 0;
+    stats.audioWindowLate = 0;
+    stats.lastSeq = -1;
+    stats.reorderTracker.reset();
+    stats.started = false;
 }
 
 void PanadapterStream::restartStreamSequence(quint32 streamId)
@@ -534,9 +639,7 @@ void PanadapterStream::restartStreamSequence(quint32 streamId)
     QMutexLocker statsLock(&m_statsMutex);
     const auto it = m_streamStats.find(streamId);
     if (it != m_streamStats.end()) {
-        it->lastSeq = -1;
-        it->reorderTracker.reset();
-        it->started = false;
+        restartStreamLocked(streamId, it.value());
     }
 }
 
@@ -544,19 +647,20 @@ void PanadapterStream::restartAllStreamSequences()
 {
     QMutexLocker statsLock(&m_statsMutex);
     for (auto it = m_streamStats.begin(); it != m_streamStats.end(); ++it) {
-        it->lastSeq = -1;
-        it->reorderTracker.reset();
-        it->started = false;
+        restartStreamLocked(it.key(), it.value());
     }
 }
 
 void PanadapterStream::clearRegisteredStreams()
 {
+    {
+        QMutexLocker frameLock(&m_frameMutex);
+        m_frames.clear();
+        m_wfFrames.clear();
+    }
     QMutexLocker lock(&m_streamMutex);
     m_knownPanStreams.clear();
     m_knownWfStreams.clear();
-    m_frames.clear();
-    m_wfFrames.clear();
     m_dbmRanges.clear();
     m_dbmRangeGenerations.clear();
     m_pendingDbmRanges.clear();
@@ -682,27 +786,9 @@ void PanadapterStream::onDatagramReady()
     while (m_socket && m_socket->hasPendingDatagrams()) {
         const QNetworkDatagram dg = m_socket->receiveDatagram();
         if (!dg.isNull()) {
-            const QByteArray payload = dg.data();
-            const int payloadBytes = payload.size();
             batchDatagrams++;
-            batchBytes += payloadBytes;
-            if (!m_hasReceivedPacket) {
-                m_hasReceivedPacket = true;
-                if (m_routedPrimeTimer) {
-                    m_routedPrimeTimer->stop();
-                }
-                const qint64 afterMs = m_routedPrimeElapsed.isValid()
-                    ? m_routedPrimeElapsed.elapsed()
-                    : -1;
-                qCInfo(lcVita49).noquote()
-                    << "PanadapterStream: first UDP packet received"
-                    << QStringLiteral("after_ms=%1").arg(afterMs)
-                    << QStringLiteral("local_port=%1").arg(m_localPort)
-                    << QStringLiteral("from=%1:%2").arg(dg.senderAddress().toString()).arg(dg.senderPort());
-            }
-            confirmWanRegistration(payload);
-            m_totalRxBytes.fetch_add(payloadBytes);
-            processDatagram(payload);
+            batchBytes += dg.data().size();
+            handleReceivedDatagram(dg);
         }
     }
 
@@ -710,6 +796,28 @@ void PanadapterStream::onDatagramReady()
         perf.recordUdpBatch(batchDatagrams, batchBytes,
                             static_cast<double>(PerfTelemetry::nowNs() - batchStartNs) / 1000000.0);
     }
+}
+
+void PanadapterStream::handleReceivedDatagram(const QNetworkDatagram& dg)
+{
+    const QByteArray payload = dg.data();
+    if (!m_hasReceivedPacket) {
+        m_hasReceivedPacket = true;
+        if (m_routedPrimeTimer) {
+            m_routedPrimeTimer->stop();
+        }
+        const qint64 afterMs = m_routedPrimeElapsed.isValid()
+            ? m_routedPrimeElapsed.elapsed()
+            : -1;
+        qCInfo(lcVita49).noquote()
+            << "PanadapterStream: first UDP packet received"
+            << QStringLiteral("after_ms=%1").arg(afterMs)
+            << QStringLiteral("local_port=%1").arg(m_localPort)
+            << QStringLiteral("from=%1:%2").arg(dg.senderAddress().toString()).arg(dg.senderPort());
+    }
+    confirmWanRegistration(payload);
+    m_totalRxBytes.fetch_add(payload.size());
+    processDatagram(payload);
 }
 
 void PanadapterStream::processDatagram(const QByteArray& data)
@@ -833,8 +941,21 @@ void PanadapterStream::processDatagram(const QByteArray& data)
     // Per-category byte/packet/sequence tracking.
     // Only track owned/routed streams — skip uncategorized packets. (#455)
     bool sequenceError = false;
-    int  audioMissedThisPacket = 0;
-    bool audioLate = false;   // an audio packet behind the newest: dropped
+    // Audio: the packets the reorder window releases, in order (#6992).
+    VitaRxReorder::Result audioReady;
+    quint64 audioGeneration = 0;
+    QString audioWindowLine;  // the minute's summary, logged after the lock
+    if (cat == CatAudio) {
+        // Nothing malformed is queued: it would hold a slot for 30 ms.
+        const int payloadBytes = data.size() - VITA49_HEADER_BYTES - (hasTrailer ? 4 : 0);
+        if (data.size() > VitaRxReorder::kMaxPacketBytes || payloadBytes <= 0
+            || (pcc == PCC_IF_NARROW && (payloadBytes % 8 != 0
+                || payloadBytes / 8 > PcmFrame::kMaxFrames))
+            || (pcc == PCC_IF_NARROW_REDUCED && (payloadBytes % 2 != 0
+                || payloadBytes / 2 > PcmFrame::kMaxFrames))) {
+            return;
+        }
+    }
     // Filled under the stats lock; formatted and logged after it is released.
     bool reportSequenceLoss = false;
     int lossHeldBackErrors = 0;
@@ -857,25 +978,53 @@ void PanadapterStream::processDatagram(const QByteArray& data)
             }
             stats.lossLog.start(m_seqLossClock.elapsed());
         }
-        // Errors: packets actually lost, net of reordering. Audio conceals
-        // the numbers a packet skips over at once (it cannot wait), and a
-        // late audio packet is dropped: its slot was concealed already, and
-        // decoding it now would play it out of order. Measuring a late
-        // packet's 4-bit count against the newest read as a jump of up to
-        // 15 and concealed 8 frames for it; across a reordering path (a
-        // tester's iPad over VPN and SmartLink: 10-50 % "sequence errors")
-        // that made the audio choppy.
+        // Errors: packets actually lost, net of reordering. Audio is put
+        // back in order before decoding (upstream #6992, #6051): a packet
+        // after a gap waits up to 30 ms for the missing one, then the gap
+        // is concealed; one later than that is dropped. Decoding packets as
+        // they came made a reordering path (a tester's iPad over VPN and
+        // SmartLink: 10-50 % "sequence errors") sound like loss.
         int lostPackets = 0;
         if (cat == CatAudio) {
             const VitaSequenceTracker::Result seq = stats.reorderTracker.add(vitaSeq);
             lostPackets = seq.lost;
-            if (seq.reordered || seq.duplicate) {
-                audioLate = true;
-                if (seq.reordered) {
-                    stats.reorderedCount++;
+            if (seq.reordered) {
+                stats.reorderedCount++;
+            }
+            const qsizetype queuedBefore = stats.audioReorder.queuedBytes();
+            const qint64 nowMs = rxReorderNowMs();
+            audioReady = stats.audioReorder.add(vitaSeq, rxPacketKey(data, pcc), nowMs, data,
+                std::max(qsizetype{0}, kMaxQueuedAudioBytes - m_queuedAudioBytes + queuedBefore));
+            m_queuedAudioBytes += stats.audioReorder.queuedBytes() - queuedBefore;
+            if (stats.audioReorder.deadlineMs() >= 0) {
+                m_pendingRxStreams.insert(streamId);
+            } else {
+                m_pendingRxStreams.remove(streamId);
+            }
+            audioGeneration = stats.generation;
+            // Neither played nor waiting: later than its slot, or a copy.
+            const bool late = !audioReady.rejected && audioReady.count == 0
+                && stats.audioReorder.queuedBytes() == queuedBefore;
+            if (stats.audioWindowStartMs < 0) {
+                stats.audioWindowStartMs = nowMs;
+            }
+            stats.audioWindowPackets++;
+            stats.audioWindowReordered += seq.reordered ? 1 : 0;
+            stats.audioWindowConcealed += audioReady.lost;
+            stats.audioWindowLate += late ? 1 : 0;
+            if (nowMs - stats.audioWindowStartMs >= 60000) {
+                if (stats.audioWindowReordered + stats.audioWindowConcealed + stats.audioWindowLate > 0) {
+                    audioWindowLine = QStringLiteral("PanadapterStream: audio stream 0x%1 in %2 s: %3 packets, "
+                                                     "%4 out of order (played in order), %5 concealed, %6 too late")
+                        .arg(streamId, 8, 16, QLatin1Char('0')).arg((nowMs - stats.audioWindowStartMs) / 1000)
+                        .arg(stats.audioWindowPackets).arg(stats.audioWindowReordered)
+                        .arg(stats.audioWindowConcealed).arg(stats.audioWindowLate);
                 }
-            } else if (stats.lastSeq >= 0) {
-                audioMissedThisPacket = (vitaSeq - stats.lastSeq - 1) & 0x0F;
+                stats.audioWindowStartMs = nowMs;
+                stats.audioWindowPackets = 0;
+                stats.audioWindowReordered = 0;
+                stats.audioWindowConcealed = 0;
+                stats.audioWindowLate = 0;
             }
         } else {
             const VitaSequenceTracker::Result seq = stats.reorderTracker.add(vitaSeq);
@@ -902,10 +1051,7 @@ void PanadapterStream::processDatagram(const QByteArray& data)
                 lossStreamPackets = stats.totalCount - stats.startTotalCount;
             }
         }
-        // Audio measures the next packet from the newest in-order one.
-        if (!audioLate) {
-            stats.lastSeq = vitaSeq;
-        }
+        stats.lastSeq = vitaSeq;
 
         if (cat == CatAudio) {
             const int payloadBytes = data.size() - VITA49_HEADER_BYTES - (hasTrailer ? 4 : 0);
@@ -951,6 +1097,14 @@ void PanadapterStream::processDatagram(const QByteArray& data)
             cat == CatWaterfall ? PerfTelemetry::FrameKind::Waterfall
                                 : PerfTelemetry::FrameKind::Panadapter,
             sequenceError);
+    }
+    if (cat == CatAudio) {
+        if (!audioWindowLine.isEmpty()) {
+            qCInfo(lcVita49).noquote() << audioWindowLine;
+        }
+        deliverRxAudio(streamId, audioGeneration, audioReady);
+        scheduleRxReorderFlush();
+        return;
     }
 
     if (daxChannel >= 0) {
@@ -1021,30 +1175,8 @@ void PanadapterStream::processDatagram(const QByteArray& data)
         return;
     }
 
-    // A late audio packet's slot was concealed when the newer one came.
-    if (audioLate) {
-        return;
-    }
-
-    // Accumulate PLC pending-missed count before dispatching the audio
-    // decoder, so it can prepend concealment to the new packet's PCM. (#2731)
-    if (audioMissedThisPacket > 0 && m_plcEnabled.load()) {
-        auto& plc = m_audioPlc[streamId];
-        plc.pendingMissed =
-            std::min(plc.pendingMissed + audioMissedThisPacket, kMaxConcealPackets);
-    }
-
-    // Route by PacketClassCode
+    // Route by PacketClassCode (audio went to the reorder window above).
     switch (pcc) {
-    case PCC_IF_NARROW:
-        decodeNarrowAudio(raw, data.size(), hasTrailer, streamId);
-        return;
-    case PCC_IF_NARROW_REDUCED:
-        decodeReducedBwAudio(raw, data.size(), hasTrailer, streamId);
-        return;
-    case PCC_OPUS:
-        decodeOpusAudio(raw, data.size(), hasTrailer, streamId);
-        return;
     case PCC_FFT:
         if (!isPan) return;
         decodeFFT(raw, data.size(), hasTrailer, streamId);
@@ -1059,6 +1191,129 @@ void PanadapterStream::processDatagram(const QByteArray& data)
     default:
         break;
     }
+}
+
+qint64 PanadapterStream::rxReorderNowMs() const
+{
+    return m_rxReorderNowForTest >= 0 ? m_rxReorderNowForTest : m_rxReorderClock.elapsed();
+}
+
+VitaRxReorder::Key PanadapterStream::rxPacketKey(const QByteArray& data, quint16 pcc)
+{
+    if (pcc != PCC_OPUS || data.size() < VITA49_HEADER_BYTES) {
+        return {};
+    }
+    const auto* raw = reinterpret_cast<const uchar*>(data.constData());
+    const quint32 word0 = qFromBigEndian<quint32>(raw);
+    const quint32 seconds = qFromBigEndian<quint32>(raw + 16);
+    const quint64 fraction = qFromBigEndian<quint64>(raw + 20);
+    // FlexLib RXAudioStream orders Opus by its VITA timestamp. PCM firmware
+    // can repeat placeholder timestamps, so its ordering uses only the count.
+    return {seconds, fraction, ((word0 >> 22) & 3) != 0
+        && ((word0 >> 20) & 3) != 0 && (seconds != 0 || fraction != 0), true,
+        VitaRxReorder::Key::Kind::OpusTimestamp};
+}
+
+// Decodes what the reorder window released, in order; a gap before a packet
+// is concealed first. Worker thread.
+void PanadapterStream::deliverRxAudio(quint32 streamId, quint64 generation,
+                                      const VitaRxReorder::Result& result)
+{
+    for (int i = 0; i < result.count; ++i) {
+        {
+            QMutexLocker lock(&m_statsMutex);
+            const auto current = m_streamStats.constFind(streamId);
+            if (current == m_streamStats.cend() || current->generation != generation) {
+                return;
+            }
+        }
+        if (m_audioPlcGenerations.value(streamId) != generation) {
+            m_audioPlc.remove(streamId);
+            m_opusCodecs.erase(streamId);
+            m_audioPlcGenerations[streamId] = generation;
+        }
+        const auto& delivery = result.ready[i];
+        if (delivery.missed > 0 && m_plcEnabled.load()) {
+            auto& plc = m_audioPlc[streamId];
+            plc.pendingMissed = std::min(plc.pendingMissed + delivery.missed, kMaxConcealPackets);
+        }
+        const QByteArray& packet = delivery.packet;
+        const auto* raw = reinterpret_cast<const uchar*>(packet.constData());
+        const quint16 pcc = static_cast<quint16>(qFromBigEndian<quint32>(raw + 12) & 0xFFFFu);
+        const bool trailer = (qFromBigEndian<quint32>(raw) & 0x04000000u) != 0;
+        switch (pcc) {
+        case PCC_IF_NARROW: decodeNarrowAudio(raw, packet.size(), trailer, streamId); break;
+        case PCC_IF_NARROW_REDUCED: decodeReducedBwAudio(raw, packet.size(), trailer, streamId); break;
+        case PCC_OPUS: decodeOpusAudio(raw, packet.size(), trailer, streamId); break;
+        default: break;
+        }
+    }
+}
+
+void PanadapterStream::scheduleRxReorderFlush()
+{
+    if (!m_rxReorderTimer) {
+        return;
+    }
+    qint64 next = -1;
+    {
+        QMutexLocker lock(&m_statsMutex);
+        for (quint32 streamId : std::as_const(m_pendingRxStreams)) {
+            const auto stats = m_streamStats.constFind(streamId);
+            if (stats == m_streamStats.cend()) {
+                continue;
+            }
+            const qint64 deadline = stats->audioReorder.deadlineMs();
+            if (deadline >= 0 && (next < 0 || deadline < next)) {
+                next = deadline;
+            }
+        }
+    }
+    if (next < 0) {
+        m_rxReorderTimer->stop();
+        return;
+    }
+    const int delay = static_cast<int>(std::max(qint64{1}, next - rxReorderNowMs()));
+    if (!m_rxReorderTimer->isActive() || m_rxReorderTimer->remainingTime() > delay) {
+        m_rxReorderTimer->start(delay);
+    }
+}
+
+// A gap's 30 ms are up: what waited behind it is released, the gap concealed.
+void PanadapterStream::flushRxReorder()
+{
+    struct ReadyAudio {
+        quint32 streamId;
+        quint64 generation;
+        VitaRxReorder::Result result;
+    };
+    QVector<ReadyAudio> audio;
+    {
+        QMutexLocker lock(&m_statsMutex);
+        for (auto pending = m_pendingRxStreams.begin(); pending != m_pendingRxStreams.end();) {
+            const auto it = m_streamStats.find(*pending);
+            if (it == m_streamStats.end()) {
+                pending = m_pendingRxStreams.erase(pending);
+                continue;
+            }
+            const qsizetype queuedBefore = it->audioReorder.queuedBytes();
+            VitaRxReorder::Result result = it->audioReorder.expire(rxReorderNowMs());
+            m_queuedAudioBytes += it->audioReorder.queuedBytes() - queuedBefore;
+            if (it->audioReorder.deadlineMs() < 0) {
+                pending = m_pendingRxStreams.erase(pending);
+            } else {
+                ++pending;
+            }
+            if (result.count > 0) {
+                it->audioWindowConcealed += result.lost;
+                audio.append({it.key(), it->generation, std::move(result)});
+            }
+        }
+    }
+    for (const ReadyAudio& ready : audio) {
+        deliverRxAudio(ready.streamId, ready.generation, ready.result);
+    }
+    scheduleRxReorderFlush();
 }
 
 // ─── FFT decode ──────────────────────────────────────────────────────────────
@@ -1088,46 +1343,66 @@ void PanadapterStream::decodeFFT(const uchar* raw, int totalBytes, bool hasTrail
 
     const uchar* binData = raw + binDataOffset;
 
-    // Per-stream frame assembly.
-    auto& frame = m_frames[streamId];
-    const bool startsNewFrame =
-        frameIndex != frame.frameIndex || totalBins != frame.totalBins;
-    if (startsNewFrame) {
-        if (frame.totalBins > 0 && !frame.isComplete())
-            PerfTelemetry::instance().recordFrameRestart(PerfTelemetry::FrameKind::Panadapter);
-        frame.reset(frameIndex, totalBins);
+    // Per-stream frame assembly. A completed frame is copied out so the
+    // lock is not held for the dBm conversion or the emit.
+    QVector<quint16> frameBins;
+    int floorFilledSuffixStart = -1;
+    bool latePacket = false;
+    {
+        QMutexLocker frameLock(&m_frameMutex);
+        auto& frame = m_frames[streamId];
+        // A late packet from an already-replaced frame must not restart
+        // assembly and throw away the frame now in progress; FlexLib drops it
+        // (reference/FlexLib/FlexLib/Panadapter.cs:805, v4.3.16), whatever its
+        // width, so a resize's last old-width packet cannot break the first
+        // new-width frame (#6883).
+        latePacket = frame.totalBins > 0
+            && isLateVitaFrame(frame.frameIndex, frameIndex);
+        if (!latePacket) {
+            const bool startsNewFrame =
+                frameIndex != frame.frameIndex || totalBins != frame.totalBins;
+            if (startsNewFrame) {
+                if (frame.totalBins > 0 && !frame.isComplete())
+                    PerfTelemetry::instance().recordFrameRestart(PerfTelemetry::FrameKind::Panadapter);
+                frame.reset(frameIndex, totalBins);
+            }
+
+            if (static_cast<int>(startBin) + binsToRead > frame.buf.size())
+                return;
+            if (frame.isComplete())
+                return;
+            if (!frame.coverage.markRange(startBin, binsToRead))
+                return;
+
+            for (int i = 0; i < binsToRead; ++i)
+                frame.buf[startBin + i] = qFromBigEndian<quint16>(binData + i * 2);
+
+            if (!frame.isComplete()) return;
+
+            // On an x_pixels grow, firmware 4.2.18 can complete one expanded
+            // frame with the old-width prefix followed by zero-filled new bins.
+            // Zero means max dBm in the radio's vertical pixel encoding. Reject
+            // that placeholder before it reaches FFT averaging or retained 3D
+            // history; the previous complete FFT remains live until the first
+            // valid expanded frame arrives.
+            const bool zeroFilledGrowth = hasZeroFilledFftGrowthSuffix(
+                frame.buf, frame.lastAcceptedTotalBins);
+            const FftGrowthSuffixAction growthAction =
+                frame.growthSuffixGuard.observe(zeroFilledGrowth, frame.totalBins);
+            if (growthAction == FftGrowthSuffixAction::Reject) {
+                return;
+            }
+            if (growthAction == FftGrowthSuffixAction::EmitWithFloorSuffix) {
+                floorFilledSuffixStart = frame.lastAcceptedTotalBins;
+            } else {
+                frame.lastAcceptedTotalBins = frame.totalBins;
+            }
+            frameBins = frame.buf;
+        }
     }
-
-    if (static_cast<int>(startBin) + binsToRead > frame.buf.size())
+    if (latePacket) {
+        recordLatePacket(CatFFT);
         return;
-    if (frame.isComplete())
-        return;
-    if (!frame.coverage.markRange(startBin, binsToRead))
-        return;
-
-    for (int i = 0; i < binsToRead; ++i)
-        frame.buf[startBin + i] = qFromBigEndian<quint16>(binData + i * 2);
-
-    if (!frame.isComplete()) return;
-
-    // On an x_pixels grow, firmware 4.2.18 can complete one expanded frame
-    // with the old-width prefix followed by zero-filled new bins. Zero means
-    // max dBm in the radio's vertical pixel encoding. Reject that placeholder
-    // before it reaches FFT averaging or retained 3D history; the previous
-    // complete FFT remains live until the first valid expanded frame arrives.
-    const bool zeroFilledGrowth = hasZeroFilledFftGrowthSuffix(
-        frame.buf, frame.lastAcceptedTotalBins);
-    const FftGrowthSuffixAction growthAction =
-        frame.growthSuffixGuard.observe(zeroFilledGrowth, frame.totalBins);
-    if (growthAction == FftGrowthSuffixAction::Reject) {
-        return;
-    }
-    const int floorFilledSuffixStart =
-        growthAction == FftGrowthSuffixAction::EmitWithFloorSuffix
-        ? frame.lastAcceptedTotalBins
-        : -1;
-    if (growthAction == FftGrowthSuffixAction::Accept) {
-        frame.lastAcceptedTotalBins = frame.totalBins;
     }
 
     // Convert to dBm using per-stream range
@@ -1151,7 +1426,7 @@ void PanadapterStream::decodeFFT(const uchar* raw, int totalBytes, bool hasTrail
     const float range = maxDbm - minDbm;
     if (range <= 0.0f) return;
 
-    const int   count = frame.buf.size();
+    const int   count = frameBins.size();
     QVector<float> bins(count);
 
     // The radio's configured y_pixels is the encoding scale. Values at or
@@ -1170,7 +1445,7 @@ void PanadapterStream::decodeFFT(const uchar* raw, int totalBytes, bool hasTrail
         const float pixel = floorFillSuffix
             ? yPix - 1.0f
             : std::clamp(
-                static_cast<float>(frame.buf[i]), 0.0f, yPix - 1.0f);
+                static_cast<float>(frameBins[i]), 0.0f, yPix - 1.0f);
         const float dbm = maxDbm - (pixel / (yPix - 1.0f)) * range;
         bins[i] = std::clamp(dbm, minDbm, maxDbm);
     }
@@ -1240,41 +1515,57 @@ void PanadapterStream::decodeWaterfallTile(const uchar* raw, int totalBytes, boo
     // relative to the bounds calculation below, and the inner write loop
     // then writes past the buffer's end with attacker-chosen bytes.
     // See GHSA-7gvg-x594-pprq.
-    auto& wfFrame = m_wfFrames[streamId];
-    if (timecode != wfFrame.timecode
-        || totalBinsInFrame != wfFrame.totalBins) {
-        if (wfFrame.totalBins > 0 && !wfFrame.isComplete())
-            PerfTelemetry::instance().recordFrameRestart(PerfTelemetry::FrameKind::Waterfall);
-        wfFrame.reset(timecode, totalBinsInFrame, lowFreqMhz, binBwMhz, autoBlack);
-    }
-
-    // Copy this fragment's bins into the assembly buffer.
-    // Only process the first row (height is typically 1).
     const uchar* tilePayload = raw + payloadOffset;
-    const int binsToRead = qMin(static_cast<int>(tileWidth),
-                                static_cast<int>(totalBinsInFrame) - static_cast<int>(firstBinIndex));
-    if (binsToRead <= 0) return;
+    WaterfallFrame row;
+    bool latePacket = false;
+    {
+        QMutexLocker frameLock(&m_frameMutex);
+        auto& wfFrame = m_wfFrames[streamId];
+        // A late tile from an already-replaced row is dropped rather than
+        // restarting assembly and losing the row in progress (#6883).
+        latePacket = wfFrame.totalBins > 0
+            && isLateVitaFrame(wfFrame.timecode, timecode);
+        if (!latePacket) {
+            if (timecode != wfFrame.timecode
+                || totalBinsInFrame != wfFrame.totalBins) {
+                if (wfFrame.totalBins > 0 && !wfFrame.isComplete())
+                    PerfTelemetry::instance().recordFrameRestart(PerfTelemetry::FrameKind::Waterfall);
+                wfFrame.reset(timecode, totalBinsInFrame, lowFreqMhz, binBwMhz, autoBlack);
+            }
 
-    // Defense in depth: even with the reset condition above, validate that
-    // the upper write index fits the buffer.  Guards against any future
-    // refactor that breaks the wfFrame.buf.size() <-> wfFrame.totalBins
-    // invariant.  GHSA-7gvg-x594-pprq.
-    if (firstBinIndex + binsToRead > wfFrame.buf.size()) return;
-    if (wfFrame.isComplete()) return;
-    if (!wfFrame.coverage.markRange(firstBinIndex, binsToRead)) return;
+            // Copy this fragment's bins into the assembly buffer.
+            // Only process the first row (height is typically 1).
+            const int binsToRead = qMin(static_cast<int>(tileWidth),
+                                        static_cast<int>(totalBinsInFrame) - static_cast<int>(firstBinIndex));
+            if (binsToRead <= 0) return;
 
-    for (int i = 0; i < binsToRead; ++i) {
-        const auto raw16 = static_cast<qint16>(qFromBigEndian<quint16>(tilePayload + i * 2));
-        wfFrame.buf[firstBinIndex + i] = static_cast<float>(raw16) / 128.0f;
+            // Defense in depth: even with the reset condition above, validate
+            // that the upper write index fits the buffer.  Guards against any
+            // future refactor that breaks the wfFrame.buf.size() <->
+            // wfFrame.totalBins invariant.  GHSA-7gvg-x594-pprq.
+            if (firstBinIndex + binsToRead > wfFrame.buf.size()) return;
+            if (wfFrame.isComplete()) return;
+            if (!wfFrame.coverage.markRange(firstBinIndex, binsToRead)) return;
+
+            for (int i = 0; i < binsToRead; ++i) {
+                const auto raw16 = static_cast<qint16>(qFromBigEndian<quint16>(tilePayload + i * 2));
+                wfFrame.buf[firstBinIndex + i] = static_cast<float>(raw16) / 128.0f;
+            }
+            // Only emit when the full frame is assembled
+            if (!wfFrame.isComplete()) return;
+            row = wfFrame;
+        }
     }
-    // Only emit when the full frame is assembled
-    if (!wfFrame.isComplete()) return;
+    if (latePacket) {
+        recordLatePacket(CatWaterfall);
+        return;
+    }
 
-    const double frameHighMhz = wfFrame.lowFreqMhz + wfFrame.binBwMhz * wfFrame.totalBins;
-    emit waterfallAutoBlackLevel(streamId, wfFrame.autoBlack);
+    const double frameHighMhz = row.lowFreqMhz + row.binBwMhz * row.totalBins;
+    emit waterfallAutoBlackLevel(streamId, row.autoBlack);
     const qint64 emittedNs = PerfTelemetry::instance().enabled() ? PerfTelemetry::nowNs() : 0;
-    emit waterfallRowReady(streamId, wfFrame.buf, wfFrame.lowFreqMhz, frameHighMhz,
-                           wfFrame.timecode, emittedNs);
+    emit waterfallRowReady(streamId, row.buf, row.lowFreqMhz, frameHighMhz,
+                           row.timecode, emittedNs);
 }
 
 // ─── Audio decode ─────────────────────────────────────────────────────────────
@@ -1434,12 +1725,19 @@ void PanadapterStream::decodeOpusAudio(const uchar* raw, int totalBytes, bool ha
     if (payloadBytes <= 0) return;
 
     // Lazy-init Opus decoder on first packet
-    if (!m_opusCodec) {
-        m_opusCodec = new OpusCodec();
-        if (!m_opusCodec->isValid()) {
+    // Decoder history belongs to each Opus stream. A stream that ends sends
+    // nothing more to retire its decoder, so keep only a few; the lowest id
+    // is the oldest the radio allocated. (upstream #6992)
+    constexpr std::size_t kMaxOpusDecoders = 4;
+    if (!m_opusCodecs.count(streamId) && m_opusCodecs.size() >= kMaxOpusDecoders) {
+        m_opusCodecs.erase(m_opusCodecs.begin());
+    }
+    std::unique_ptr<OpusCodec>& codec = m_opusCodecs[streamId];
+    if (!codec) {
+        codec = std::make_unique<OpusCodec>();
+        if (!codec->isValid()) {
             qCWarning(lcVita49) << "PanadapterStream: Opus codec init failed";
-            delete m_opusCodec;
-            m_opusCodec = nullptr;
+            m_opusCodecs.erase(streamId);
             return;
         }
         qCDebug(lcVita49) << "PanadapterStream: Opus decoder initialized";
@@ -1454,7 +1752,7 @@ void PanadapterStream::decodeOpusAudio(const uchar* raw, int totalBytes, bool ha
     if (m_plcEnabled.load() && plc.pendingMissed > 0) {
         const int n = std::min(plc.pendingMissed, kMaxConcealPackets);
         for (int i = 0; i < n; ++i) {
-            QByteArray frame = m_opusCodec->concealLost();
+            QByteArray frame = codec->concealLost();
             if (frame.isEmpty()) break;
             int16Concealed.append(frame);
         }
@@ -1463,7 +1761,7 @@ void PanadapterStream::decodeOpusAudio(const uchar* raw, int totalBytes, bool ha
 
     // Opus payload is raw bytes — no byte-swapping needed
     QByteArray opusFrame(reinterpret_cast<const char*>(raw + payloadStart), payloadBytes);
-    QByteArray int16pcm = m_opusCodec->decode(opusFrame);
+    QByteArray int16pcm = codec->decode(opusFrame);
     if (int16pcm.isEmpty()) return;
 
     QByteArray combined = int16Concealed;
@@ -1615,6 +1913,12 @@ int PanadapterStream::packetTotalCount() const
     for (auto it = m_streamStats.constBegin(); it != m_streamStats.constEnd(); ++it)
         total += it->totalCount;
     return total;
+}
+
+void PanadapterStream::recordLatePacket(StreamCategory cat)
+{
+    QMutexLocker lock(&m_statsMutex);
+    m_catStats[cat].late++;
 }
 
 PanadapterStream::CategoryStats PanadapterStream::categoryStats(StreamCategory cat) const

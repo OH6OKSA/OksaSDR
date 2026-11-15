@@ -367,6 +367,7 @@ ColumnLayout {
                                                       : qsTr("Carrier on at %1 W for the amplifier's ATU.").arg(Engine.tunePower))
                          : ampTab.a.tuner === "TUNING" ? qsTr("The amplifier is tuning…")
                          : qsTr("Carrier on at %1 W: press Tune on the amplifier's screen (VNC).").arg(Engine.tunePower))
+                    : ampTab.a.tune === "standby" ? qsTr("Asking the amplifier for STANDBY…")
                     : ampTab.a.pending ? qsTr("Asking the amplifier…")
                     : ampTab.kpa && ampTab.a.link === "connecting" ? qsTr("Control link: connecting…")
                     : ampTab.kpa && ampTab.a.link === "failed"
@@ -461,7 +462,7 @@ ColumnLayout {
                     : confirm.action === "atuBypass"
                       ? qsTr("The antenna is connected straight, without the ATU: check that its SWR suits the power.")
                     : confirm.action === "tune" && ampTab.kpa
-                      ? qsTr("The amplifier's ATU starts a full-search tune and the radio transmits a TUNE carrier at %1 W until the amplifier shows the tune done, for up to 20 s.").arg(Engine.tunePower)
+                      ? qsTr("The amplifier goes to STANDBY, its ATU starts a full-search tune and the radio transmits a TUNE carrier at %1 W until the amplifier shows the tune done, for up to 20 s. Put it back in OPERATE afterwards.").arg(Engine.tunePower)
                     : confirm.action === "tune"
                       ? qsTr("The amplifier goes to STANDBY and the radio transmits a TUNE carrier at %1 W for up to 20 s, also while you open the amplifier's own screen (VNC) to press its Tune. It stops by itself once the amplifier has tuned, or after 20 s.").arg(Engine.tunePower)
                     : ampTab.kpa

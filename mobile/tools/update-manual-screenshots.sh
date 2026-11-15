@@ -46,7 +46,7 @@ tabs=(dsp audio tx essb cw view profiles memory log digi freedv rtty)
 # overview. The modes run's segments (one per mode) run only when wanted.
 ipad_shots=(overview infopanel slicerow spectrum filter agc antenna mode frequency step volume split
             network setup tnf noslice tx-meters meter)
-phone_shots=(phone-portrait phone-menu memory-edit log-page ft8-hound big-buttons)
+phone_shots=(phone-portrait phone-menu memory-edit log-page ft8-hound big-buttons big-buttons-log)
 for t in "${tabs[@]}"; do phone_shots+=("tab-$t"); done
 modes_shots=(mode-usb mode-cw mode-am mode-fm fm-tx tx-lock mode-rtty rtty-panel tab-rtty digi-operating mode-psk)
 amp_shots=(tab-amp amp-controls amp-confirm amp-tune setup-amp setup-txband setup-rx setup-usb meter-amp)
@@ -193,9 +193,16 @@ if want "${phone_shots[@]}"; then
             [ "${tabs[$i]}" = rtty ] && continue
             if want "tab-${tabs[$i]}"; then printf 'drawer %s\nshot tab-%s\n' "$i" "${tabs[$i]}"; fi
         done
-        # Big buttons from the View tab, as the user opens it; held Exit leaves.
-        if want big-buttons; then
-            printf 'drawer 5\ntapname bigButtonsOpen\nwait 1500\nshot big-buttons\nholdname bigExit\nwait 1200\n'
+        # Big buttons from the View tab, as the user opens it; its Log with a
+        # call typed (W1AW, ARRL's station: a public lookup), cancelled;
+        # held Exit leaves.
+        if want big-buttons big-buttons-log; then
+            printf 'drawer 5\ntapname bigButtonsOpen\nwait 1500\n'
+            if want big-buttons; then printf 'shot big-buttons\n'; fi
+            if want big-buttons-log; then
+                printf 'tapname bigLog\nwait 800\nkeys W1AW\nwait 2500\nshot big-buttons-log\ntapname bigLogCancel\nwait 800\n'
+            fi
+            printf 'holdname bigExit\nwait 1200\n'
         fi
         # Hound on (it starts decoding), then off and decoding off again.
         if want ft8-hound; then
@@ -425,6 +432,7 @@ jpg connect "" 900x
 jpg overview "" 1100x
 jpg phone-portrait
 jpg big-buttons "" 330x
+jpg big-buttons-log "" 330x
 jpg phone-landscape
 if [ -f "$TMP/overview.png" ]; then
     cp "$TMP/overview.png" "$TMP/infopanel.png"

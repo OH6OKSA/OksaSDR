@@ -106,8 +106,9 @@ radio interface, with no computer running alongside.
   controls over the main screen for the car (mounted, used as the law
   allows), gloves or a glance: the frequency and S meter large, − and +
   by the tuning step (held, they repeat), the step in two halves (smaller,
-  larger), and PTT across the bottom; Space or a Bluetooth PTT button keys there too. Hold Exit to
-  leave.
+  larger), and PTT across the bottom; Space or a Bluetooth PTT button keys there too. **Log** beside
+  Step logs a contact in big type (the call, the reports with − / +).
+  Hold Exit to leave.
 - **MIDI controllers** (iPhone, iPad, Mac): Radio Setup › MIDI takes a
   controller such as Lynovation's CTR2-MIDI over Bluetooth (paired there
   on an iPhone or iPad) or USB, as a VFO knob and buttons: Learn each
@@ -116,8 +117,9 @@ radio interface, with no computer running alongside.
   or the Digi macros as a keyboard's F-keys. Transmitting from it (PTT,
   MOX, TUNE, ATU, the CW paddles, F1–F12) is off until turned on, and what it keyed ends when it
   goes. A VFO knob that sends a position instead of turns (a CTR2's knob
-  outside its Home mode) is named there and does not tune. Android comes
-  later.
+  outside its Home mode) is named there and does not tune, and a Learn
+  that catches a control another function has asks before taking it.
+  Android comes later.
 - **Amplifier: RF-KIT RF2K-S**: its address in Radio Setup › Amp, and
   Controls gets an **Amp** tab with what the amplifier reports over its
   own network port: Operate / Standby, forward power with a 3-second peak
@@ -139,7 +141,8 @@ radio interface, with no computer running alongside.
   the amplifier's UDP server. With *Control the amplifier* on (off by
   default, over its one TCP connection): Operate / Standby, ANT1 / ANT2,
   the ATU in line / bypass, the fault clear and **Tune** (the ATU's full
-  search with the radio's TUNE carrier at 10-50 W, stopped once tuned),
+  search in STANDBY, so the carrier is never amplified, with the radio's
+  TUNE carrier at 10-50 W, stopped once tuned),
   each confirmed first, none while the radio transmits. Experimental:
   tested only against a simulator so far; no responsibility is taken for
   any problems using OksaSDR may cause to your equipment.
@@ -283,7 +286,8 @@ radio interface, with no computer running alongside.
 - **Log** tab: quick QSO logging with QRZ.com lookup (or the country from
   the prefix), worked-before and dupe check, POTA / WWFF references, the
   calls the CW decoder heard offered for the Call field, **Spot** to the DX
-  cluster (the exact line shown first), and
+  cluster (the exact line shown first), **Self-spot** of your own POTA
+  activation to pota.app (shown first), and
   the log as an ADIF file in Files (iPhone, iPad) or Documents (Android,
   computer): share it to your logbook or LoTW, or import contacts from
   another logbook. Every QSO can also go straight to your **Wavelog** or
@@ -390,6 +394,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | USB cables in Radio Setup › USB (CAT, BCD, Bit, LDPA, passthrough) | 🧪 A real CAT cable's settings shown and one changed and set back on the FLEX (build 149); the other types tried with stand-in cables; reports with a cable plugged in welcome |
 | Mac (Apple silicon), the iPad app from TestFlight | ✅ In use by testers; typing straight into the fields (the text box on press and hold since build 140, Backspace since 142) |
 | Log tab, ADIF export and import, QRZ.com lookup | ✅ In use by testers |
+| Log › Self-spot to POTA (build 171) | 🧪 Tested against a stand-in for pota.app's spot endpoint on this PC (the JSON, the app's User-Agent, the two-park choice, 30 s between spots); not yet posted to pota.app |
 | Log › Spot to the DX cluster (build 170) | 🧪 Tested against a DX Spider stand-in on this PC (echoed, refused, not seen back, not connected); not yet posted to a public cluster |
 | Several slices and panadapters, multiFLEX | ✅ Supported |
 | Spots and DX cluster, TNF, memory editing | ✅ Tested against a FLEX-6600M (build 77; the notch panel with Add in build 139) |
@@ -402,7 +407,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | Big buttons (build 164) | 🧪 Checked on the FLEX by the user's path (View › Big buttons, − / + and held −, Step, Space reaching PTT, held Exit) and rendered on phones and tablets both ways; Step's halves and the shorter Exit hold (build 170) the same way; in-car use to hear about |
 | MIDI controllers (build 164) | 🧪 Tested against a stand-in CTR2-MIDI (an ALSA virtual port) on the FLEX: Learn, the VFO knob, a SmartSDR map imported, PTT held and ended when the controller went (USB, 1 W, no audio); pairing and the CTR2 itself to verify (Hanno DK3HV); F1–F12 and Stop (build 170) learned on the stand-in, F7 sending CW memory 7 at 5 W and Stop ending it |
 | RF-KIT RF2K-S amplifier | ✅ Readings checked on a real RF2K-S (Sebastian Schu DG5CST, build 148). 🧪 Control (Operate / Standby, antenna, error reset) tested against a stand-in of its REST API: confirmations, a refusal (409), no answer, a lost link, never while transmitting (checked keyed on the FLEX); to verify on a real RF2K-S. 🧪 Tune's carrier (build 150) keyed on the FLEX at 5 W against the stand-in: STANDBY first, kept with the app in the background, off once tuned, after 20 s, on Stop, with the amplifier in OPERATE, on a lost link, and the radio unkeying by itself when the app was killed |
-| Elecraft KPA1500 amplifier (build 168) | 🧪 Tested against a stand-in of its UDP and TCP servers (the Programming Reference V3's replies, acting on its commands) with the FLEX connected: readings on the Amp tab and the meters, a fault, the supplies off, silence and back, the logged power in OPERATE (USB, 5 W, no audio); Control: Operate, ANT2, ATU bypass, a fault cleared and a temperature fault not, Tune keyed at 10 W on 14.345 (tuned, no match, Stop, 5 W refused), the TCP connection held by another program; nothing sent with Control off; to verify on a real KPA1500 (Rich Yost N2RY) |
+| Elecraft KPA1500 amplifier (build 168) | 🧪 Tested against a stand-in of its UDP and TCP servers (the Programming Reference V3's replies, acting on its commands) with the FLEX connected: readings on the Amp tab and the meters, a fault, the supplies off, silence and back, the logged power in OPERATE (USB, 5 W, no audio); Control: Operate, ANT2, ATU bypass, a fault cleared and a temperature fault not, Tune keyed at 10 W on 14.345 (tuned, no match, Stop, 5 W refused), the TCP connection held by another program; nothing sent with Control off; on a real KPA1500 (Rich Yost N2RY, builds 169-170) the readings, Tune and its end; Tune in STANDBY (build 171) tested on the stand-in with the FLEX at 10 W |
 | 4O3A Power Genius XL / Tuner Genius XL (readings and control) | 🧪 Built in (build 152); tested against a stand-in that replays real devices' frames; reports from owners welcome |
 | APD (FLEX-8000, Aurora) | 🧪 Built in (build 152); tested with the radio's status stood in; reports welcome |
 | Macros panel by PTT (CW memories, Digi macros, voice keyer) | ✅ In use by a tester since build 150 (Tyler K0OTC: "It looks good"); checked on phones and tablets in USB, CW and RTTY without sending |

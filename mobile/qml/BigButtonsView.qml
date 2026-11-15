@@ -61,6 +61,55 @@ Rectangle {
     // Touches never reach the page under it (the page also turns its own
     // controls off meanwhile: tap handlers under an item that takes a press
     // still get it, and a tap on a meter here opened the page's mode list).
+    // Big buttons' log (roadmap 75, Michael Walker): the call and the two
+    // reports in big type in place of the buttons, PTT kept at the bottom.
+    // The call is the Log tab's too (Engine.workedCall), and so is My park.
+    property bool logging: false
+    property string logTimeOn: ""
+    property string logRstSent: "59"
+    property string logRstRcvd: "59"
+    property string logResult: ""
+    function openLog() {
+        const d = Engine.qsoDefaults()
+        logRstSent = d.rstSent || d.rst || "59"
+        logRstRcvd = d.rstRcvd || d.rst || "59"
+        logTimeOn = ""
+        logCall.text = Engine.workedCall
+        logging = true
+        logCall.forceActiveFocus()
+    }
+    function closeLog() {
+        logCall.focus = false
+        logging = false
+    }
+    // − / + step a report: an RST's strength digit (59, 599) from 1 to 9,
+    // an FTx report in dB.
+    function stepReport(rst, direction) {
+        if (/^[1-5][1-9][1-9]?$/.test(rst)) {
+            const strength = Math.max(1, Math.min(9, parseInt(rst[1]) + direction))
+            return rst[0] + strength + rst.slice(2)
+        }
+        if (/^[+-]?[0-9]{1,2}$/.test(rst)) {
+            const db = Math.max(-30, Math.min(30, parseInt(rst) + direction))
+            return (db < 0 ? "-" : "+") + String(Math.abs(db)).padStart(2, "0")
+        }
+        return rst
+    }
+    function logIt() {
+        const call = logCall.text.trim().toUpperCase()
+        if (call.length < 3) return
+        const ok = Engine.logQso({
+            call: call, rstSent: logRstSent, rstRcvd: logRstRcvd, comment: "", timeOn: logTimeOn,
+            sig: "", sigInfo: "", mySig: Engine.mySig, mySigInfo: Engine.mySig.length > 0 ? Engine.myRef : ""
+        })
+        if (ok) {
+            logResult = qsTr("Logged %1").arg(call)
+            Engine.workedCall = ""
+            closeLog()
+        }
+    }
+    Timer { running: big.logResult.length > 0; interval: 4000; onTriggered: big.logResult = "" }
+
     MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
 
     // The tuning step as one bar of two halves (Michael Walker: "split the
@@ -123,6 +172,19 @@ Rectangle {
     // ("TX 100 W", a % on an Aurora, AMP with an amplifier in Operate). A tap
     // makes it the active slice, a tap on the tag opens the power slider, a
     // hold the menu (Make TX slice, Close slice).
+    // Log (roadmap 75): in the Step row, or the top row on a low landscape
+    // phone where Step sits there (the top row has no room for it upright).
+    component LogButton: AppButton {
+        objectName: "bigLog"
+        text: qsTr("Log")
+        Accessible.name: qsTr("Log a contact")
+        focusPolicy: Qt.NoFocus
+        font.pixelSize: Math.round(Math.max(Theme.buttonFont, big.readingPx * 0.7))
+        leftPadding: 16
+        rightPadding: 16
+        onClicked: big.openLog()
+    }
+
     component SliceChip: AppButton {
         id: chip
         property var slice
@@ -294,6 +356,7 @@ Rectangle {
     }
 
     GridLayout {
+        visible: !big.logging
         anchors.fill: parent
         anchors.leftMargin: Theme.spacing + big.marginLeft
         anchors.rightMargin: Theme.spacing + big.marginRight
@@ -352,6 +415,9 @@ Rectangle {
             StepBar {
                 visible: big.lowLandscape
                 fontPx: Theme.px(20)
+            }
+            LogButton {
+                visible: big.lowLandscape
             }
             Label {
                 text: Engine.mode
@@ -426,14 +492,23 @@ Rectangle {
                 TuneButton { direction: -1 }
                 TuneButton { direction: 1 }
             }
-            StepBar {
+            RowLayout {
                 visible: !big.lowLandscape
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.verticalStretchFactor: 2
                 Layout.preferredHeight: Theme.touchTarget * 1.3
                 Layout.minimumHeight: Theme.touchTarget
-                fontPx: Math.round(Math.max(Theme.px(22), big.readingPx))
+                spacing: Theme.spacing
+                LogButton {
+                    visible: !big.lowLandscape
+                    Layout.fillHeight: true
+                }
+                StepBar {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    fontPx: Math.round(Math.max(Theme.px(22), big.readingPx))
+                }
             }
             PttButton {
                 objectName: "bigPtt"
@@ -451,6 +526,192 @@ Rectangle {
             visible: big.landscape
             direction: 1
             Layout.horizontalStretchFactor: 1
+        }
+    }
+    // "Logged CALL" for a moment over the frequency, outside the layout so
+    // it never widens the top row.
+    Rectangle {
+        objectName: "bigLogResult"
+        visible: big.logResult.length > 0 && !big.logging
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: Theme.spacing + big.marginTop + Theme.touchTarget + Theme.spacing
+        z: 3
+        width: resultText.implicitWidth + 2 * Theme.spacing
+        height: resultText.implicitHeight + Theme.spacing
+        radius: height / 2
+        color: Theme.surface
+        border.color: "#00cc66"
+        Label {
+            id: resultText
+            anchors.centerIn: parent
+            text: big.logResult
+            color: "#00cc66"
+            font.pixelSize: Theme.px(18)
+            font.bold: true
+        }
+    }
+
+    ColumnLayout {
+        id: logPanel
+        objectName: "bigLogPanel"
+        visible: big.logging
+        anchors.fill: parent
+        anchors.leftMargin: Theme.spacing + big.marginLeft
+        anchors.rightMargin: Theme.spacing + big.marginRight
+        anchors.topMargin: Theme.spacing + big.marginTop
+        anchors.bottomMargin: Theme.spacing + big.marginBottom
+        spacing: Theme.spacing
+        readonly property int bigPx: Math.round(big.readingPx * 1.2)
+
+        RowLayout {
+            Layout.fillWidth: true
+            AppButton {
+                objectName: "bigLogCancel"
+                text: qsTr("Cancel")
+                focusPolicy: Qt.NoFocus
+                font.pixelSize: Math.round(Math.max(Theme.buttonFont, big.readingPx * 0.7))
+                leftPadding: 16
+                rightPadding: 16
+                onClicked: big.closeLog()
+            }
+            Label {
+                Layout.fillWidth: true
+                text: Engine.mySig.length > 0 && Engine.myRef.length > 0 ? Engine.mySig + " " + Engine.myRef.toUpperCase() : ""
+                color: Theme.textDim
+                font.pixelSize: Theme.px(16)
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideRight
+            }
+            Label {
+                text: Engine.mode
+                color: Theme.accent
+                font.pixelSize: Theme.px(28)
+                font.bold: true
+            }
+        }
+        // Upright: the call, its lookup, then Log; on its side one row, as
+        // the on-screen keyboard takes the lower part.
+        GridLayout {
+            Layout.fillWidth: true
+            columns: big.landscape ? 2 : 1
+            columnSpacing: Theme.spacing
+            rowSpacing: Theme.spacing
+            TextField {
+                id: logCall
+                objectName: "bigLogCall"
+                Accessible.name: qsTr("Callsign")
+                Layout.fillWidth: true
+                placeholderText: qsTr("Callsign")
+                font.pixelSize: logPanel.bigPx
+                font.family: "monospace"
+                font.capitalization: Font.AllUppercase
+                inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+                onTextChanged: {
+                    if (!big.logging) return
+                    Engine.workedCall = text
+                    if (text.length > 0 && big.logTimeOn.length === 0)
+                        big.logTimeOn = Qt.formatDateTime(new Date(new Date().getTime() + new Date().getTimezoneOffset() * 60000), "HHmm")
+                    if (text.length === 0) big.logTimeOn = ""
+                    lookupDelay.restart()
+                }
+                onAccepted: big.logIt()
+                Keys.onEscapePressed: big.closeLog()
+            }
+            AppButton {
+                objectName: "bigLogSave"
+                text: qsTr("Log %1").arg(logCall.text.trim().toUpperCase())
+                enabled: logCall.text.trim().length >= 3
+                checked: enabled
+                focusPolicy: Qt.NoFocus
+                font.pixelSize: Math.round(Math.max(Theme.buttonFont, big.readingPx * 0.8))
+                Layout.fillWidth: !big.landscape
+                Layout.preferredHeight: Math.max(Theme.touchTarget, logPanel.bigPx * 1.6)
+                onClicked: big.logIt()
+            }
+        }
+        Timer {
+            id: lookupDelay
+            interval: 600
+            onTriggered: if (logCall.text.trim().length >= 3) Engine.lookupCallsign(logCall.text)
+        }
+        Label {
+            objectName: "bigLogLookup"
+            Layout.fillWidth: true
+            readonly property var info: Engine.callLookup
+            visible: logCall.text.trim().length >= 3 && text.length > 0
+            text: (info.call || "").toUpperCase() !== logCall.text.trim().toUpperCase() ? ""
+                  : [info.name, info.qth || info.country].filter(s => s && s.length > 0).join(", ")
+            color: Theme.text
+            font.pixelSize: Theme.px(18)
+            elide: Text.ElideRight
+        }
+        GridLayout {
+            Layout.fillWidth: true
+            columns: big.landscape ? 2 : 1
+            columnSpacing: Theme.spacing * 3
+            rowSpacing: Theme.spacing
+            Repeater {
+                model: [{ key: "sent", name: qsTr("Sent") }, { key: "rcvd", name: qsTr("Rcvd") }]
+                delegate: RowLayout {
+                    id: reportRow
+                    required property var modelData
+                    readonly property string value: modelData.key === "sent" ? big.logRstSent : big.logRstRcvd
+                    function step(direction) {
+                        const next = big.stepReport(value, direction)
+                        if (modelData.key === "sent") big.logRstSent = next
+                        else big.logRstRcvd = next
+                    }
+                    Layout.fillWidth: true
+                    spacing: Theme.spacing
+                    Label {
+                        text: reportRow.modelData.name
+                        color: Theme.textDim
+                        font.pixelSize: Theme.px(18)
+                        Layout.preferredWidth: Theme.px(56)
+                    }
+                    AppButton {
+                        objectName: "bigLogDown_" + reportRow.modelData.key
+                        text: "−"
+                        Accessible.name: qsTr("%1 report down").arg(reportRow.modelData.name)
+                        focusPolicy: Qt.NoFocus
+                        font.pixelSize: logPanel.bigPx
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Math.max(Theme.touchTarget, logPanel.bigPx * 1.6)
+                        onClicked: reportRow.step(-1)
+                    }
+                    Label {
+                        objectName: "bigLogReport_" + reportRow.modelData.key
+                        text: reportRow.value
+                        color: Theme.text
+                        font.pixelSize: logPanel.bigPx
+                        font.bold: true
+                        font.family: "monospace"
+                        horizontalAlignment: Text.AlignHCenter
+                        Layout.preferredWidth: logPanel.bigPx * 2.4
+                    }
+                    AppButton {
+                        objectName: "bigLogUp_" + reportRow.modelData.key
+                        text: "+"
+                        Accessible.name: qsTr("%1 report up").arg(reportRow.modelData.name)
+                        focusPolicy: Qt.NoFocus
+                        font.pixelSize: logPanel.bigPx
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Math.max(Theme.touchTarget, logPanel.bigPx * 1.6)
+                        onClicked: reportRow.step(1)
+                    }
+                }
+            }
+        }
+        // PTT takes the rest, as on Big buttons' own page (the on-screen
+        // keyboard covers it while the call is typed).
+        PttButton {
+            objectName: "bigLogPtt"
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.topMargin: Theme.spacing
+            Layout.preferredHeight: Theme.touchTarget * 2
+            Layout.minimumHeight: Theme.touchTarget
+            fontPx: Math.round(Math.max(Math.min(40, big.height * 0.1), Math.min(80, big.height * 0.06)))
         }
     }
 }

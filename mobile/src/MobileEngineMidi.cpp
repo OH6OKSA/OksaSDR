@@ -139,6 +139,41 @@ void MobileEngine::setupMidi()
     });
     connect(m_midi, &MidiControlManager::learnCompleted, this, [this](const QString& paramId, const MidiBinding& b) {
         const MidiParam* p = m_midi->findParam(paramId);
+        // A control another function has: the dispatch answers only the one
+        // learned last, so the other would stop without a word (Rich Yost
+        // N2RY's log, build 170: Slice volume took the VFO knob's CC 100).
+        // Undone and asked on the row (roadmap 73); the desktop's typed form
+        // asks the same, by the same overlap rule.
+        QStringList shadowedIds;
+        QStringList shadowedNames;
+        for (const MidiBinding& cur : m_midi->bindings()) {
+            const bool sameSource = cur.msgType == b.msgType
+                && (b.msgType == MidiBinding::PitchBend || cur.number == b.number)
+                && (cur.channel < 0 || b.channel < 0 || cur.channel == b.channel);
+            if (cur.paramId != paramId && sameSource) {
+                const MidiParam* cp = m_midi->findParam(cur.paramId);
+                shadowedIds << cur.paramId;
+                shadowedNames << (cp ? cp->displayName : cur.paramId);
+            }
+        }
+        if (!shadowedIds.isEmpty()) {
+            m_midi->removeBinding(paramId);
+            if (m_midiBeforeLearn) {
+                for (const MidiBinding& old : std::as_const(*m_midiBeforeLearn)) {
+                    if (old.paramId == paramId) {
+                        m_midi->addBinding(old);
+                    }
+                }
+            }
+            m_midiConflictParam = paramId;
+            m_midiConflictBinding = std::make_shared<MidiBinding>(b);
+            m_midiConflictIds = shadowedIds;
+            m_midiConflictText = tr("%1 is already the %2's.").arg(b.sourceDisplayName(), shadowedNames.join(QStringLiteral(", ")));
+            qCInfo(lcMobile).noquote() << QStringLiteral("MIDI: learn %1 caught %2, already the %3's: asked")
+                                              .arg(p ? p->displayName : paramId, b.sourceDisplayName(), shadowedNames.join(QStringLiteral(", ")));
+            emit midiChanged();
+            return;
+        }
         qCInfo(lcMobile).noquote() << "MIDI: learned" << b.sourceDisplayName() << "for" << (p ? p->displayName : paramId)
                                    << (b.relative ? "(relative)" : "");
         midiSaveBindings();
@@ -560,6 +595,8 @@ QVariantMap MobileEngine::midi() const
     m.insert(QStringLiteral("autoConnect"), MidiSettings::instance().autoConnect());
     m.insert(QStringLiteral("transmit"), AppSettings::instance().value(kMidiTransmitKey, false).toBool());
     m.insert(QStringLiteral("learning"), m_midi->isLearning() ? m_midi->learningParamId() : QString());
+    m.insert(QStringLiteral("conflict"), m_midiConflictParam);
+    m.insert(QStringLiteral("conflictText"), m_midiConflictText);
     m.insert(QStringLiteral("pairing"), bluetoothMidiPairingAvailable());
     m.insert(QStringLiteral("onMac"), runningOnMac());
     m.insert(QStringLiteral("functions"), functions);
@@ -594,6 +631,8 @@ void MobileEngine::midiLearn(const QString& paramId)
     if (!m_midi->findParam(paramId)) {
         return;
     }
+    m_midiConflictParam.clear();
+    m_midiBeforeLearn = std::make_shared<QVector<MidiBinding>>(m_midi->bindings());
     m_midi->startLearn(paramId);
     qCInfo(lcMobile).noquote() << "MIDI: learn" << m_midi->findParam(paramId)->displayName;
     emit midiChanged();
@@ -602,6 +641,44 @@ void MobileEngine::midiLearn(const QString& paramId)
 void MobileEngine::midiCancelLearn()
 {
     m_midi->cancelLearn();
+    m_midiConflictParam.clear();
+    emit midiChanged();
+}
+
+// The learned control takes over: the other function loses it.
+void MobileEngine::midiConflictReplace()
+{
+    if (m_midiConflictParam.isEmpty() || !m_midiConflictBinding) {
+        return;
+    }
+    for (const QString& id : std::as_const(m_midiConflictIds)) {
+        m_midi->removeBinding(id);
+    }
+    m_midi->addBinding(*m_midiConflictBinding);
+    const MidiParam* p = m_midi->findParam(m_midiConflictParam);
+    QStringList from;
+    for (const QString& id : std::as_const(m_midiConflictIds)) {
+        const MidiParam* o = m_midi->findParam(id);
+        from << (o ? o->displayName : id);
+    }
+    qCInfo(lcMobile).noquote() << QStringLiteral("MIDI: learned %1 for %2, taken from %3")
+                                      .arg(m_midiConflictBinding->sourceDisplayName(), p ? p->displayName : m_midiConflictParam,
+                                           from.join(QStringLiteral(", ")));
+    m_midiConflictParam.clear();
+    midiSaveBindings();
+    emit midiChanged();
+}
+
+// The other function keeps its control: the learn waits for another one.
+void MobileEngine::midiConflictLearnAgain()
+{
+    if (m_midiConflictParam.isEmpty()) {
+        return;
+    }
+    const QString paramId = m_midiConflictParam;
+    m_midiConflictParam.clear();
+    m_midi->startLearn(paramId);
+    qCInfo(lcMobile).noquote() << "MIDI: learn" << m_midi->findParam(paramId)->displayName << "again";
     emit midiChanged();
 }
 
@@ -696,6 +773,8 @@ void MobileEngine::midiOpen(const QString&) {}
 void MobileEngine::midiClose() {}
 void MobileEngine::midiLearn(const QString&) {}
 void MobileEngine::midiCancelLearn() {}
+void MobileEngine::midiConflictReplace() {}
+void MobileEngine::midiConflictLearnAgain() {}
 void MobileEngine::midiUnbind(const QString&) {}
 void MobileEngine::midiClearAll() {}
 void MobileEngine::midiImport(const QUrl&) {}

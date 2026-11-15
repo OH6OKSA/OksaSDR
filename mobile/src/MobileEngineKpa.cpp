@@ -59,6 +59,8 @@ constexpr int kKpaTuneMinWatts = 10;
 constexpr int kKpaTuneMaxWatts = 50;
 constexpr double kKpaTuneStopWatts = 55.0;
 constexpr int kKpaTuneKeyWaitMs = 3000;
+// STANDBY asked before the carrier: seen in the readback in this long.
+constexpr int kKpaTuneStandbyWaitMs = 5000;
 // The search read done (^TP0): a no match shows as fault 92 in the same
 // moment, maybe read after ^TP; "tuned" only once ^FL has been read again
 // (it is asked every cycle while a tune runs, 250 ms keyed).
@@ -477,6 +479,35 @@ void MobileEngine::kpaTune()
         emit kpaChanged();
         return;
     }
+    m_kpaResult.clear();
+    m_kpaTuneWasOperate = false;
+    const Kpa1500::Status& st = m_kpa->status();
+    if (st.operate && *st.operate) {
+        // Tuned in STANDBY only, as the RF2K-S: in OPERATE the PA is back in
+        // line once the search is over, and the tune carrier still on went
+        // out at about 775 W (Rich Yost N2RY's log, build 170; roadmap 72).
+        m_kpaTuneWasOperate = true;
+        m_kpaTune = QStringLiteral("standby");
+        qCInfo(lcMobile) << "amp: tune: asking the KPA1500 for STANDBY first";
+        m_kpaCtl->setOperate(false);
+        m_kpa->setExtraQueries({QStringLiteral("OS")});
+        m_kpa->queryNow(QStringLiteral("OS"));
+        m_kpaTuneLeftShown = -1;
+        m_kpaTuneClock.start();
+        m_kpaTuneTimer->start();
+        emit kpaChanged();
+        return;
+    }
+    startKpaTuneCarrier();
+}
+
+void MobileEngine::startKpaTuneCarrier()
+{
+    const int watts = tunePower();
+    if (radioTransmitting() || !tuneAvailable()) {
+        endKpaTune(tr("The radio cannot send a tune carrier now."), false, 0);
+        return;
+    }
     // The search first, then the carrier it waits for.
     qCInfo(lcMobile) << "amp: asking the KPA1500 for a full-search tune";
     m_kpaCtl->startTune();
@@ -485,6 +516,9 @@ void MobileEngine::kpaTune()
     if (!m_tuneInput.start()) {
         m_tuneInput.stop();
         m_kpaCtl->cancelTune();
+        m_kpaTune.clear();
+        m_kpaTuneTimer->stop();
+        m_kpa->setExtraQueries({});
         m_kpaResult = tr("The radio did not accept the tune request.");
         m_kpaResultOk = false;
         emit kpaChanged();
@@ -497,10 +531,9 @@ void MobileEngine::kpaTune()
     m_kpaTuneEndSeen = false;
     m_kpaTuneLoggedMs = -1;
     m_kpaTuneLeftShown = -1;
-    m_kpaResult.clear();
     m_kpaTuneClock.start();
     m_kpaTuneTimer->start();
-    m_kpa->setExtraQueries({QStringLiteral("TP"), QStringLiteral("FL")});
+    m_kpa->setExtraQueries({QStringLiteral("TP"), QStringLiteral("FL"), QStringLiteral("OS")});
     m_kpa->queryNow(QStringLiteral("TP"));
     qCInfo(lcMobile).noquote() << "amp: KPA1500 tune carrier keyed at" << watts << "W for up to" << kKpaTuneSeconds << "s";
     emit kpaChanged();
@@ -510,6 +543,16 @@ void MobileEngine::kpaTune()
 void MobileEngine::checkKpaTune()
 {
     if (m_kpaTune.isEmpty()) {
+        return;
+    }
+    if (m_kpaTune == QLatin1String("standby")) {
+        const Kpa1500::Status& st = m_kpa->status();
+        if (st.operate && !*st.operate) {
+            qCInfo(lcMobile) << "amp: tune: the KPA1500 is in STANDBY";
+            startKpaTuneCarrier();
+        } else if (m_kpaTuneClock.elapsed() > kKpaTuneStandbyWaitMs) {
+            endKpaTune(tr("The amplifier did not go to STANDBY: no tune carrier was sent."), false, 0);
+        }
         return;
     }
     const qint64 ms = m_kpaTuneClock.elapsed();
@@ -535,6 +578,11 @@ void MobileEngine::checkKpaTune()
                        .arg(qRound(m_forwardPowerW)), false);
         return;
     }
+    // The carrier is for the ATU only: never amplified (roadmap 72).
+    if (s.operate && *s.operate) {
+        endKpaTune(tr("The amplifier went to OPERATE: the tune carrier stopped."), false);
+        return;
+    }
     // A fault while tuning: 92 is the ATU's "no match".
     if (s.faultCode && *s.faultCode != 0) {
         const QString text = Kpa1500::faultDescription(*s.faultCode);
@@ -556,10 +604,14 @@ void MobileEngine::checkKpaTune()
         m_kpa->queryNow(QStringLiteral("FL"));
     } else if (m_kpaTuneDoneMs > 0 && ms - m_kpaTuneDoneMs >= kKpaTuneSettleMs) {
         // No fault read since: tuned. Read with the carrier still on: the
-        // SWR it tuned to.
+        // SWR it tuned to, at the tune drive (in STANDBY, not amplified).
         const bool swrRead = s.swr && s.forwardWatts && *s.forwardWatts >= 1.0f;
-        endKpaTune(swrRead ? tr("The amplifier tuned (SWR %1).").arg(double(*s.swr), 0, 'f', 2)
-                           : tr("The amplifier tuned."), true);
+        QString result = swrRead ? tr("The amplifier tuned (SWR %1).").arg(double(*s.swr), 0, 'f', 2)
+                                 : tr("The amplifier tuned.");
+        if (m_kpaTuneWasOperate) {
+            result += QLatin1Char(' ') + tr("Put it in OPERATE when you are ready.");
+        }
+        endKpaTune(result, true);
         return;
     }
     if (ms >= kKpaTuneSeconds * 1000) {

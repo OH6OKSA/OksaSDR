@@ -231,6 +231,19 @@ public:
         if ((t == QEvent::KeyPress || t == QEvent::InputMethod) && receiver == QGuiApplication::focusObject()) {
             if (t == QEvent::KeyPress) {
                 ++keys;
+                // Navigation keys by their codes (nothing typed): which an
+                // arrow reaches a field as (Christoph Steinert DM5HF's Mac,
+                // build 170: the arrows did not move the cursor).
+                const auto* nk = static_cast<QKeyEvent*>(event);
+                const int code = nk->key();
+                const bool navigation = (code >= Qt::Key_Home && code <= Qt::Key_PageDown) || code == Qt::Key_Delete
+                    || (code >= 0xF700 && code <= 0xF8FF) || (code == 0 && nk->text().size() == 1 && nk->text().at(0).unicode() >= 0xF700);
+                if (navigation && ++navigationKeys <= 4) {
+                    qCInfo(lcMobile).noquote() << QStringLiteral("keyboard: navigation key 0x%1 (text %2) reached %3")
+                                                      .arg(code, 0, 16)
+                                                      .arg(nk->text().isEmpty() ? QStringLiteral("none") : QStringLiteral("0x%1").arg(int(nk->text().at(0).unicode()), 0, 16))
+                                                      .arg(QString::fromLatin1(receiver->metaObject()->className()));
+                }
                 if (keys <= 3) {
                     // Not the key itself: what is typed may be a password.
                     const auto* k = static_cast<QKeyEvent*>(event);
@@ -245,6 +258,7 @@ public:
         return false;
     }
     int keys{0};
+    int navigationKeys{0};
     int inputMethod{0};
 };
 
@@ -353,11 +367,30 @@ public:
             return false;
         }
         const auto* key = static_cast<QKeyEvent*>(event);
-        if (key->key() != 0x08 && key->key() != 0x7F) {
-            return false;
+        // A key Qt's UIKit mapping does not know arrives as its character's
+        // code: Backspace as 8, and a Mac's arrows, Home, End and forward
+        // Delete would as AppKit's function-key characters (0xF700...), as
+        // its own AppKit mapping takes them on macOS.
+        int code = key->key();
+        if ((code == 0 || code == Qt::Key_unknown) && key->text().size() == 1) {
+            code = key->text().at(0).unicode();
         }
-        QKeyEvent backspace(event->type(), Qt::Key_Backspace, key->modifiers(), QString(), key->isAutoRepeat());
-        QCoreApplication::sendEvent(receiver, &backspace);
+        int mapped = 0;
+        switch (code) {
+        case 0x08: case 0x7F: mapped = Qt::Key_Backspace; break;
+        case 0xF700: mapped = Qt::Key_Up; break;
+        case 0xF701: mapped = Qt::Key_Down; break;
+        case 0xF702: mapped = Qt::Key_Left; break;
+        case 0xF703: mapped = Qt::Key_Right; break;
+        case 0xF728: mapped = Qt::Key_Delete; break;
+        case 0xF729: mapped = Qt::Key_Home; break;
+        case 0xF72B: mapped = Qt::Key_End; break;
+        case 0xF72C: mapped = Qt::Key_PageUp; break;
+        case 0xF72D: mapped = Qt::Key_PageDown; break;
+        default: return false;
+        }
+        QKeyEvent sent(event->type(), mapped, key->modifiers(), QString(), key->isAutoRepeat());
+        QCoreApplication::sendEvent(receiver, &sent);
         return true;
     }
 };
@@ -3297,6 +3330,15 @@ void MobileEngine::dvkPlay(int id)
     }
     if (!transmitAvailable()) {
         setLastError(transmitUnavailableReason());
+        return;
+    }
+    // The radio's voice keyer plays its recording through the radio's own
+    // analog chain: in RADE that went out as plain SSB on a RADE frequency
+    // (Christoph Steinert DM5HF, build 170). The app's own recordings take
+    // the microphone's place before the RADE encoder, so they go as RADE.
+    if (radeActive()) {
+        qCInfo(lcMobile) << "DVK play slot" << id << "refused: RADE is on";
+        setLastError(tr("Not in RADE: the radio's voice keyer sends its recording as analog audio, not RADE."));
         return;
     }
     if (txLockRefuses("the voice keyer")) {

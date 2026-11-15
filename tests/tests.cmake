@@ -3211,6 +3211,13 @@ target_link_libraries(wan_udp_keepalive_test PRIVATE aethercore Qt6::Core)
 add_test(NAME wan_udp_keepalive_test COMMAND wan_udp_keepalive_test)
 set_tests_properties(wan_udp_keepalive_test PROPERTIES TIMEOUT 25)
 
+# Socket-free: injected LAN bind/write; drives start(), rebind, receive and the keepalive timer.
+add_executable(lan_udp_keepalive_test tests/lan_udp_keepalive_test.cpp)
+target_include_directories(lan_udp_keepalive_test PRIVATE src tests)
+target_link_libraries(lan_udp_keepalive_test PRIVATE aethercore Qt6::Core Qt6::Network)
+add_test(NAME lan_udp_keepalive_test COMMAND lan_udp_keepalive_test)
+set_tests_properties(lan_udp_keepalive_test PROPERTIES TIMEOUT 25)
+
 # SOCKETS: manual check of the production ephemeral IPv4 VITA socket and two
 # own loopback UDP sinks. No firmware peer or RF. Build/run explicitly.
 # not registered: opt-in real socket wiring; default coverage above is socket-free.
@@ -3240,6 +3247,12 @@ add_test(NAME remote_audio_rx_sequence_restart_test COMMAND remote_audio_rx_sequ
 
 # A late remote_audio_rx packet is dropped, not concealed as a 14-packet jump
 # and played out of order; reordering is not counted as loss.
+# Bounded VITA resequencing (upstream #6992), header only.
+add_executable(vita_rx_reorder_test tests/vita_rx_reorder_test.cpp)
+target_include_directories(vita_rx_reorder_test PRIVATE src)
+target_link_libraries(vita_rx_reorder_test PRIVATE Qt6::Core)
+add_test(NAME vita_rx_reorder_test COMMAND vita_rx_reorder_test)
+
 add_executable(remote_audio_rx_reorder_test tests/remote_audio_rx_reorder_test.cpp)
 target_include_directories(remote_audio_rx_reorder_test PRIVATE src tests)
 target_link_libraries(remote_audio_rx_reorder_test PRIVATE aethercore Qt6::Core)
@@ -6301,6 +6314,12 @@ target_link_libraries(panadapter_dbm_range_test PRIVATE aethercore Qt6::Core)
 set_target_properties(panadapter_dbm_range_test PROPERTIES AUTOMOC ON)
 add_test(NAME panadapter_dbm_range_test COMMAND panadapter_dbm_range_test)
 
+add_executable(panadapter_late_packet_test tests/panadapter_late_packet_test.cpp)
+target_include_directories(panadapter_late_packet_test PRIVATE src)
+target_link_libraries(panadapter_late_packet_test PRIVATE aethercore Qt6::Core)
+set_target_properties(panadapter_late_packet_test PROPERTIES AUTOMOC ON)
+add_test(NAME panadapter_late_packet_test COMMAND panadapter_late_packet_test)
+
 # wirePanadapter() can see the placeholder SpectrumWidget more than once. The
 # helper keeps one timer/path per widget while retaining separate per-pan timers.
 add_executable(owned_single_shot_timer_test tests/owned_single_shot_timer_test.cpp)
@@ -8855,6 +8874,7 @@ set(AETHER_SETTINGS_CONSUMERS
     wfm_controls_test
     spectrum_confirmed_geometry_test
     panadapter_dbm_range_test
+    panadapter_late_packet_test
     flex_slice_mode_intent_test
     rtl_slice_settings_test
     rtl_device_settings_test

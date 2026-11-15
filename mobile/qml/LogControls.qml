@@ -277,24 +277,49 @@ ColumnLayout {
             delegate: AppButton {
                 required property string modelData
                 text: modelData.length > 0 ? modelData : qsTr("None")
-                checked: mySig.value === modelData
+                objectName: "logMySig_" + (modelData.length > 0 ? modelData : "None")
+                checked: Engine.mySig === modelData
                 focusPolicy: Qt.NoFocus
                 Layout.fillWidth: true
                 Layout.preferredHeight: Theme.touchTarget
-                onClicked: mySig.value = modelData
+                onClicked: Engine.mySig = modelData
             }
         }
     }
-    // Kept while activating: the own park stays for every contact.
-    QtObject { id: mySig; property string value: "" }
-    TextField {
-        id: myRef
-        Accessible.name: qsTr("My reference")
-        visible: mySig.value.length > 0
+    // Kept while activating: the own park stays for every contact. In the
+    // engine, so Big buttons' log and the POTA self-spot read the same.
+    RowLayout {
         Layout.fillWidth: true
-        placeholderText: qsTr("My reference")
-        font.pixelSize: Theme.px(15)
-        inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
+        visible: Engine.mySig.length > 0
+        TextField {
+            id: myRef
+            objectName: "logMyRef"
+            Accessible.name: qsTr("My reference")
+            Layout.fillWidth: true
+            text: Engine.myRef
+            onTextEdited: Engine.myRef = text
+            placeholderText: qsTr("My reference")
+            font.pixelSize: Theme.px(15)
+            inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
+        }
+        // A self-spot on pota.app (roadmap 67 b), asked first: a public post.
+        AppButton {
+            objectName: "logSelfSpot"
+            visible: Engine.mySig === "POTA"
+            text: qsTr("Self-spot")
+            focusPolicy: Qt.NoFocus
+            Layout.preferredHeight: Theme.touchTarget
+            onClicked: potaDialog.ask()
+        }
+    }
+    Label {
+        objectName: "logSelfSpotStatus"
+        visible: Engine.mySig === "POTA" && Engine.potaSpotStatus.length > 0
+        Layout.fillWidth: true
+        text: Engine.potaSpotStatus
+        color: Engine.potaSpotOk ? Theme.textDim : Theme.warning
+        font.pixelSize: Theme.px(13)
+        wrapMode: Text.Wrap
     }
 
     RowLayout {
@@ -311,7 +336,7 @@ ColumnLayout {
                     call: callField.text, rstSent: rstSent.text, rstRcvd: rstRcvd.text,
                     comment: comment.text, timeOn: logTab.timeOn,
                     sig: theirSig.value, sigInfo: theirSig.value.length > 0 ? theirRef.text : "",
-                    mySig: mySig.value, mySigInfo: mySig.value.length > 0 ? myRef.text : ""
+                    mySig: Engine.mySig, mySigInfo: Engine.mySig.length > 0 ? Engine.myRef : ""
                 })
                 if (ok) {
                     logTab.reset()
@@ -906,6 +931,102 @@ ColumnLayout {
                         const text = remark.text
                         spotDialog.close()
                         Engine.sendDxSpot(call, text)
+                    }
+                }
+            }
+        }
+    }
+    // The POTA self-spot asked first: what goes out, the park when My park
+    // holds two, a comment.
+    Dialog {
+        id: potaDialog
+        objectName: "logSelfSpotDialog"
+        property var info: ({})
+        property string park: ""
+        function ask() {
+            info = Engine.potaSpotInfo()
+            const parks = info.parks || []
+            park = parks.length > 0 ? parks[0] : ""
+            potaComment.text = ""
+            open()
+        }
+        onClosed: logTab.dropKeyboard()
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(440, parent ? parent.width - 24 : 400)
+        modal: true
+        padding: Theme.spacing
+        background: Rectangle { color: Theme.surface; radius: Theme.radius; border.color: Theme.accent; border.width: 2 }
+        contentItem: ColumnLayout {
+            spacing: Theme.spacing
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Spot yourself on POTA?")
+                color: Theme.text
+                font.pixelSize: Theme.px(18)
+                font.bold: true
+                wrapMode: Text.Wrap
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                visible: potaDialog.info.ok && (potaDialog.info.parks || []).length > 1
+                Repeater {
+                    model: potaDialog.info.parks || []
+                    delegate: AppButton {
+                        required property string modelData
+                        objectName: "logSelfSpotPark_" + modelData.replace(/[^A-Za-z0-9]/g, "")
+                        text: modelData
+                        checked: potaDialog.park === modelData
+                        focusPolicy: Qt.NoFocus
+                        Layout.fillWidth: true
+                        onClicked: potaDialog.park = modelData
+                    }
+                }
+            }
+            TextField {
+                id: potaComment
+                objectName: "logSelfSpotComment"
+                Accessible.name: qsTr("Spot comment")
+                Layout.fillWidth: true
+                visible: !!potaDialog.info.ok
+                placeholderText: qsTr("Comment (optional)")
+                maximumLength: 60
+                font.pixelSize: Theme.px(15)
+            }
+            Label {
+                objectName: "logSelfSpotLine"
+                Layout.fillWidth: true
+                visible: !!potaDialog.info.ok
+                text: qsTr("%1 at %2, %3 kHz %4").arg(potaDialog.info.call || "").arg(potaDialog.park)
+                      .arg(potaDialog.info.kHz || "").arg(potaDialog.info.mode || "")
+                color: Theme.text
+                font.pixelSize: Theme.px(15)
+                font.family: "monospace"
+                wrapMode: Text.WrapAnywhere
+            }
+            Label {
+                Layout.fillWidth: true
+                text: potaDialog.info.ok
+                      ? qsTr("A public spot on pota.app under your call, for hunters to find you.")
+                      : (potaDialog.info.why || "")
+                color: potaDialog.info.ok ? Theme.textDim : Theme.warning
+                font.pixelSize: Theme.px(14)
+                wrapMode: Text.Wrap
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                AppButton { objectName: "logSelfSpotCancel"; text: qsTr("Cancel"); Layout.fillWidth: true; onClicked: potaDialog.close() }
+                AppButton {
+                    objectName: "logSelfSpotSend"
+                    text: qsTr("Spot")
+                    checked: true
+                    enabled: !!potaDialog.info.ok && potaDialog.park.length > 0
+                    Layout.fillWidth: true
+                    onClicked: {
+                        const park = potaDialog.park
+                        const text = potaComment.text
+                        potaDialog.close()
+                        Engine.sendPotaSpot(park, text)
                     }
                 }
             }

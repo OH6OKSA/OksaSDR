@@ -56,6 +56,7 @@ class RadioDiscoverySource;
 class SliceModel;
 class AgcTCalibrator;
 class MidiControlManager;
+struct MidiBinding;
 class CtyDatParser;
 struct CallsignInfo;
 struct PcmFrame;
@@ -431,6 +432,12 @@ class MobileEngine : public QObject {
     // the cluster, refused by it, or not seen back yet; empty two minutes
     // after the outcome.
     Q_PROPERTY(QString dxSpotStatus READ dxSpotStatus NOTIFY dxSpotStatusChanged)
+    // The Log tab's My park, kept for the session (shared with Big buttons'
+    // log and the POTA self-spot), and the self-spot's outcome (roadmap 67 b).
+    Q_PROPERTY(QString mySig READ mySig WRITE setMySig NOTIFY myParkChanged)
+    Q_PROPERTY(QString myRef READ myRef WRITE setMyRef NOTIFY myParkChanged)
+    Q_PROPERTY(QString potaSpotStatus READ potaSpotStatus NOTIFY potaSpotChanged)
+    Q_PROPERTY(bool potaSpotOk READ potaSpotOk NOTIFY potaSpotChanged)
     Q_PROPERTY(QStringList agcModes READ agcModes CONSTANT)
     Q_PROPERTY(int stepHz READ stepHz NOTIFY stepChanged)
     // The slice's step list from the radio (Hz), for the step chooser.
@@ -1415,6 +1422,14 @@ public:
     Q_INVOKABLE QString dxSpotLine(const QString& call, const QString& remark) const;
     Q_INVOKABLE bool sendDxSpot(const QString& call, const QString& remark);
     QString dxSpotStatus() const { return m_dxSpotStatus; }
+    QString mySig() const;
+    void setMySig(const QString& sig);
+    QString myRef() const;
+    void setMyRef(const QString& ref);
+    QString potaSpotStatus() const;
+    bool potaSpotOk() const;
+    Q_INVOKABLE QVariantMap potaSpotInfo() const;
+    Q_INVOKABLE bool sendPotaSpot(const QString& park, const QString& comment);
     // Tunes the active slice to a spot (and its mode, as the desktop), and
     // tells the radio it was chosen (for loggers).
     Q_INVOKABLE void tuneToSpot(int index);
@@ -1470,6 +1485,8 @@ public:
     // this function (a knob on the VFO as a relative one).
     Q_INVOKABLE void midiLearn(const QString& paramId);
     Q_INVOKABLE void midiCancelLearn();
+    Q_INVOKABLE void midiConflictReplace();
+    Q_INVOKABLE void midiConflictLearnAgain();
     Q_INVOKABLE void midiUnbind(const QString& paramId);
     Q_INVOKABLE void midiClearAll();
     // A SmartSDR ".map" (Lynovation's files for SmartSDR for iOS / macOS) or
@@ -1966,6 +1983,8 @@ signals:
     void dxClusterChanged();
     void dxClusterStatusChanged();
     void dxSpotStatusChanged();
+    void myParkChanged();
+    void potaSpotChanged();
     void profilesChanged();
     void appSetupsChanged();
     void agcAutoChanged();
@@ -2290,6 +2309,7 @@ private:
     void checkKpaPending();
     void kpaCommandDone(const QString& result, bool ok);
     void checkKpaTune();
+    void startKpaTuneCarrier();
     // cancel: ^FE for a search not seen done (by default when not ok).
     void endKpaTune(const QString& result, bool ok, int cancel = -1);
     void logKpaTune(qint64 ms, bool radioTuning) const;
@@ -2314,6 +2334,7 @@ private:
     bool m_kpaTuneKeyed{false};
     qint64 m_kpaTuneDoneMs{0};  // when ^TP first read 0 after the search
     bool m_kpaTuneEndSeen{false};  // the control link's ^FT; (roadmap 64)
+    bool m_kpaTuneWasOperate{false};  // put in STANDBY for the tune (roadmap 72)
     qint64 m_kpaTuneLoggedMs{-1};
     int m_kpaTuneLeftShown{-1};
     bool m_kpaSet{false};
@@ -2454,6 +2475,13 @@ private:
     bool midiTransmitRefused();
     void midiEndTransmit(const QString& why);
     AetherSDR::MidiControlManager* m_midi{nullptr};
+    // A learn that caught another function's control (roadmap 73): the
+    // bindings before the learn, what it caught, whose it is.
+    std::shared_ptr<QVector<AetherSDR::MidiBinding>> m_midiBeforeLearn;
+    std::shared_ptr<AetherSDR::MidiBinding> m_midiConflictBinding;
+    QString m_midiConflictParam;
+    QStringList m_midiConflictIds;
+    QString m_midiConflictText;
     QHash<QString, std::function<void(float)>> m_midiActions;
     QSet<QString> m_midiTxFunctions;
     QTimer m_midiWatchTimer;
@@ -2612,6 +2640,13 @@ private:
     QString m_dxSpotCall;
     QString m_dxSpotLine;
     QString m_dxSpotStatus;
+    QString m_mySig;
+    QString m_myRef;
+    QString m_potaSpotStatus;
+    bool m_potaSpotOk{false};
+    bool m_potaSpotBusy{false};
+    QElapsedTimer m_potaSpotClock;
+    void setPotaSpotStatus(const QString& text, bool ok);
     QTimer m_dxSpotTimer;
     void setDxSpotStatus(const QString& status);
     QTimer m_spotsNotifyTimer;   // at most two spot list updates a second

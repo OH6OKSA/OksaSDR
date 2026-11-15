@@ -8,6 +8,7 @@
 #include "core/VitaBinCoverage.h"
 #include "core/backends/flex/VitaSequenceLossReport.h"
 #include "core/backends/flex/VitaSequenceTracker.h"
+#include "core/backends/flex/VitaRxReorder.h"
 #include "VitaDscpMarker.h"
 
 #include <QObject>
@@ -22,8 +23,11 @@
 #include <QMutex>
 #include <QMutexLocker>
 #include <atomic>
+#include <memory>
 #include <functional>
 #include <initializer_list>
+
+class QNetworkDatagram;
 
 namespace AetherSDR {
 
@@ -44,6 +48,7 @@ class PanadapterStream : public QObject {
     friend class VitaDscpStreamTestAccess;
     friend class WanUdpKeepaliveTestAccess;
     friend class WanUdpKeepaliveSocketTestAccess;
+    friend class LanUdpKeepaliveTestAccess;
     // Inject the terminal transport in socket-free queue/cancellation tests.
     std::function<void(const QByteArray&)> m_packetSinkForTest;
 
@@ -51,6 +56,7 @@ public:
     static constexpr int VITA49_HEADER_BYTES = 28;
 
     explicit PanadapterStream(QObject* parent = nullptr);
+    ~PanadapterStream() override;
 
     // Initialize socket and timer connections on the network thread.
     // Call after moveToThread() via QThread::started signal. (#561)
@@ -234,16 +240,21 @@ signals:
 private slots:
     void onDatagramReady();
     void sendWanUdpRegister();
+    void sendLanKeepalive();
 
 private:
     friend class PcmCompatibilityTestAccess;
     friend class VitaSequenceLossLogTestAccess;
     friend struct PanadapterDbmRangeTestAccess;
+    friend struct PanadapterLatePacketTestAccess;
     PcmProducer m_pcmProducer;
     std::map<quint32, std::unique_ptr<PcmProducer>> m_daxPcm;
     void publishLegacyDaxAudio(quint32 streamId, int channel, const QByteArray& pcm);
     void publishLegacyAudio(const QByteArray& pcm);
     void processDatagram(const QByteArray& data);
+    void handleReceivedDatagram(const QNetworkDatagram& dg);
+    void startLanKeepalive();
+    qint64 writeLanDatagram(const QByteArray& data, const QHostAddress& to, quint16 port);
     void confirmWanRegistration(const QByteArray& data);
     // Raise the kernel receive buffer (SO_RCVBUF) on the bound VITA-49 socket so
     // bursts / brief drain stalls don't overflow it and surface as false
@@ -322,6 +333,10 @@ private:
         bool isComplete() const { return coverage.isComplete(); }
     };
 
+    // m_frameMutex guards m_frames and m_wfFrames: assembled on the network
+    // worker thread, removed from the main thread on pan/session teardown.
+    // Never nested with m_streamMutex, and released before any emit.
+    mutable QMutex m_frameMutex;
     QMap<quint32, WaterfallFrame> m_wfFrames;  // per-stream waterfall frame assembly
 
     // Per-stream packet sequence tracking (4-bit count in VITA-49 word0 bits 19:16)
@@ -342,7 +357,21 @@ private:
         int  startErrorCount{0};   // errorCount when this instance started
         int  startTotalCount{0};   // totalCount before its first packet
         VitaSequenceLossLimiter lossLog;
+        // Audio: packets put back in order before decoding (upstream #6992,
+        // #6051), a gap waited for at most 30 ms. The generation retires
+        // the decoder and concealment state of an earlier instance.
+        VitaRxReorder audioReorder;
+        quint64 generation{1};
+        // Audio over the last minute, logged when anything was out of
+        // order: put back in order, concealed, or too late to play.
+        qint64 audioWindowStartMs{-1};
+        int audioWindowPackets{0};
+        int audioWindowReordered{0};
+        int audioWindowConcealed{0};
+        int audioWindowLate{0};
     };
+    // Restarts one stream instance's ordering state; m_statsMutex must be held.
+    void restartStreamLocked(quint32 streamId, StreamStats& stats);
 
 public:
     // Per-category network statistics
@@ -351,6 +380,7 @@ public:
         qint64 bytes{0};
         int    packets{0};
         int    errors{0};
+        int    late{0};    // FFT/waterfall packets discarded as late (#6883)
     };
     struct AudioStreamDiagnostics {
         quint32 streamId{0};
@@ -404,12 +434,13 @@ private:
     QMap<quint32, QPair<float,float>> m_pendingDbmRanges;  // streamId → pending echoed range
     QMap<quint32, int> m_yPixels;  // streamId → ypixels for FFT bin scaling
     RadioConnection* m_conn{nullptr};
-    QMap<quint32, FrameAssembler> m_frames;  // per-stream FFT frame assembly
+    QMap<quint32, FrameAssembler> m_frames;  // per-stream FFT frame assembly; m_frameMutex
     QMap<quint32, StreamStats> m_streamStats;  // keyed by stream ID
     mutable QMutex m_statsMutex;
     QElapsedTimer m_seqLossClock;  // time base for StreamStats::lossLog; read only on new streams and errors
     VitaSequenceLossBudget m_seqLossBudget;  // all streams' lines together; under m_statsMutex
     CategoryStats m_catStats[CatCount]{};
+    void recordLatePacket(StreamCategory cat);
 
     struct AudioStreamTracker {
         quint16 packetClassCode{0};
@@ -459,8 +490,23 @@ private:
     int m_previousAudioPacketGapMs{0};
     double m_audioPacketJitterEstimateMs{0.0};
 
-    // Opus audio decoder (lazy-initialized on first Opus packet)
-    OpusCodec* m_opusCodec{nullptr};
+    // Opus decoders, one per stream (lazy-initialized on its first packet).
+    std::map<quint32, std::unique_ptr<OpusCodec>> m_opusCodecs; // worker only
+
+    // Audio reordering (upstream #6992): streams with packets waiting, the
+    // flush timer for their 30 ms deadline, and the bytes queued in all.
+    QSet<quint32> m_pendingRxStreams;  // m_statsMutex
+    qsizetype m_queuedAudioBytes{0};   // m_statsMutex
+    QHash<quint32, quint64> m_audioPlcGenerations; // worker only
+    QTimer* m_rxReorderTimer{nullptr};
+    QElapsedTimer m_rxReorderClock;
+    qint64 m_rxReorderNowForTest{-1};  // a test's clock, when set
+    static constexpr qsizetype kMaxQueuedAudioBytes = 4 * 1024 * 1024;
+    qint64 rxReorderNowMs() const;
+    static VitaRxReorder::Key rxPacketKey(const QByteArray& data, quint16 pcc);
+    void deliverRxAudio(quint32 streamId, quint64 generation, const VitaRxReorder::Result& result);
+    void scheduleRxReorderFlush();
+    void flushRxReorder();
 
     // DAX stream routing: stream ID → DAX channel (1-8)
     QMap<quint32, int> m_daxStreamIds;
@@ -502,10 +548,16 @@ private:
     std::function<bool()> m_wanBindForTest;
     std::function<qint64(const QByteArray&, const QHostAddress&, quint16)> m_wanWriteForTest;
     bool m_wanBoundForTest{false};
+    // Inject only the terminal LAN bind/write in socket-free lifecycle tests.
+    std::function<bool()> m_lanBindForTest;
+    std::function<qint64(const QByteArray&, const QHostAddress&, quint16)> m_lanWriteForTest;
+    bool m_lanBoundForTest{false};
 
     // WAN UDP registration and keepalive
     QTimer*  m_wanRegisterTimer{nullptr};   // udp_register: 50 ms until VITA, then 5 s
     QTimer*  m_routedPrimeTimer{nullptr};   // 250ms: non-WAN UDP prime retry until first packet
+    QTimer*  m_lanKeepaliveTimer{nullptr};  // 5 s: non-WAN keepalive for the whole session
+    bool     m_lanKeepaliveFailed{false};   // warn once per session, not every 5 s
     bool     m_isWanMode{false};
     bool     m_wanRegistered{false};
     quint32  m_wanClientHandle{0};

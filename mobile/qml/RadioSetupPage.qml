@@ -1995,38 +1995,74 @@ Popup {
                                 Heading { text: midiGroup.modelData.name }
                                 Repeater {
                                     model: midiGroup.modelData.items
-                                    delegate: RowLayout {
+                                    delegate: ColumnLayout {
                                         id: midiRow
                                         required property var modelData
                                         readonly property bool learning: midiTab.m.learning === modelData.id
+                                        // The learn caught another function's control
+                                        // (roadmap 73): nothing changed until a choice.
+                                        readonly property bool conflict: midiTab.m.conflict === modelData.id
                                         Layout.fillWidth: true
-                                        Label {
-                                            text: midiRow.modelData.name
-                                            color: Theme.text
-                                            font.pixelSize: Theme.px(15)
+                                        spacing: 4
+                                        RowLayout {
                                             Layout.fillWidth: true
+                                            Label {
+                                                text: midiRow.modelData.name
+                                                color: Theme.text
+                                                font.pixelSize: Theme.px(15)
+                                                Layout.fillWidth: true
+                                                wrapMode: Text.Wrap
+                                            }
+                                            Label {
+                                                text: midiRow.learning ? qsTr("move it…") : (midiRow.modelData.source || "–")
+                                                color: midiRow.learning ? Theme.warning : Theme.textDim
+                                                font.pixelSize: Theme.px(13)
+                                            }
+                                            AppButton {
+                                                objectName: "midiLearn_" + midiRow.modelData.id.replace(/[^A-Za-z0-9]/g, "")
+                                                text: midiRow.learning ? qsTr("Cancel") : qsTr("Learn")
+                                                checked: midiRow.learning
+                                                focusPolicy: Qt.NoFocus
+                                                Layout.preferredWidth: 76
+                                                onClicked: midiRow.learning ? Engine.midiCancelLearn() : Engine.midiLearn(midiRow.modelData.id)
+                                            }
+                                            AppButton {
+                                                objectName: "midiUnbind_" + midiRow.modelData.id.replace(/[^A-Za-z0-9]/g, "")
+                                                text: "×"
+                                                enabled: (midiRow.modelData.source || "").length > 0
+                                                focusPolicy: Qt.NoFocus
+                                                Layout.preferredWidth: 44
+                                                onClicked: Engine.midiUnbind(midiRow.modelData.id)
+                                            }
+                                        }
+                                        Label {
+                                            objectName: "midiConflict_" + midiRow.modelData.id.replace(/[^A-Za-z0-9]/g, "")
+                                            visible: midiRow.conflict
+                                            Layout.fillWidth: true
+                                            text: qsTr("%1 Replace takes it over; Learn again keeps it and waits for another control.").arg(midiTab.m.conflictText || "")
+                                            color: Theme.warning
+                                            font.pixelSize: Theme.px(13)
                                             wrapMode: Text.Wrap
                                         }
-                                        Label {
-                                            text: midiRow.learning ? qsTr("move it…") : (midiRow.modelData.source || "–")
-                                            color: midiRow.learning ? Theme.warning : Theme.textDim
-                                            font.pixelSize: Theme.px(13)
-                                        }
-                                        AppButton {
-                                            objectName: "midiLearn_" + midiRow.modelData.id.replace(/[^A-Za-z0-9]/g, "")
-                                            text: midiRow.learning ? qsTr("Cancel") : qsTr("Learn")
-                                            checked: midiRow.learning
-                                            focusPolicy: Qt.NoFocus
-                                            Layout.preferredWidth: 76
-                                            onClicked: midiRow.learning ? Engine.midiCancelLearn() : Engine.midiLearn(midiRow.modelData.id)
-                                        }
-                                        AppButton {
-                                            objectName: "midiUnbind_" + midiRow.modelData.id.replace(/[^A-Za-z0-9]/g, "")
-                                            text: "×"
-                                            enabled: (midiRow.modelData.source || "").length > 0
-                                            focusPolicy: Qt.NoFocus
-                                            Layout.preferredWidth: 44
-                                            onClicked: Engine.midiUnbind(midiRow.modelData.id)
+                                        RowLayout {
+                                            visible: midiRow.conflict
+                                            Layout.fillWidth: true
+                                            AppButton {
+                                                objectName: "midiReplace_" + midiRow.modelData.id.replace(/[^A-Za-z0-9]/g, "")
+                                                text: qsTr("Replace")
+                                                focusPolicy: Qt.NoFocus
+                                                Layout.fillWidth: true
+                                                Layout.preferredWidth: 1
+                                                onClicked: Engine.midiConflictReplace()
+                                            }
+                                            AppButton {
+                                                objectName: "midiLearnAgain_" + midiRow.modelData.id.replace(/[^A-Za-z0-9]/g, "")
+                                                text: qsTr("Learn again")
+                                                focusPolicy: Qt.NoFocus
+                                                Layout.fillWidth: true
+                                                Layout.preferredWidth: 1
+                                                onClicked: Engine.midiConflictLearnAgain()
+                                            }
                                         }
                                     }
                                 }
