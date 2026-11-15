@@ -9,9 +9,9 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
+- Voice entry knows the older and DX spelling words too (Sugar, King, Kilowatt, Japan...), "double you", "fox trot"; the manual lists them all (thanks Michael Walker).
 - RIT / XIT: tap the value to type it (1.34 kHz); hold SPLIT > Other… for any split (thanks Sebastian DG5CST).
-- Big buttons: tap the mode to change it.
-- Voice entry: Android uses Google's recogniser when English is not on the phone; only this device's audio mutes while listening.
+- Big buttons: tap the mode to change it. Android voice entry uses Google's recogniser when English is not on the phone.
 
 RECENT (builds 94–172)
 - Log tab: spell the call by voice (idea Michael Walker); edit or delete a logged contact, a Name field, × clears the call (thanks Christoph DM5HF).
@@ -25,7 +25,6 @@ RECENT (builds 94–172)
 - RF2K-S control and Tune, the amp on every meter (thanks Sebastian DG5CST, Jeff Stinger); Macros by PTT (thanks Tyler K0OTC).
 - PSK31 / PSK63 and RTTY on the Digi tab; ⌘1–⌘0 as F1–F10; worked before from Wavelog, QRZ.com or a shared ADIF file.
 - The transmit lock (thanks Larry Averbeck); FTx Answer CQ (thanks Kurt DL5EAG).
-- Mac typing (thanks Pentti OH6PP); QSOs to Logger32 (thanks Juho Kontio); slice volume by the speaker icon (thanks Wayne WA2N).
 
 PLEASE TRY
 - Receive on a few bands with zoom, Band and the 3D view.
@@ -36,7 +35,7 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab: decode, drag the red TX band to a free frequency, answer a CQ at low power and check the log. [TX]
 - The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: Log > Spot with the DX cluster on; Radio Setup > MIDI > Macros. [TX]
+- New: the mic button beside the call on the Log tab: spell a few calls.
 - AGC panel > Auto on a clear spot, then Follow and Noise line.
 - The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]
 

@@ -288,8 +288,8 @@ radio interface, with no computer running alongside.
   calls the CW decoder heard offered for the Call field, **Spot** to the DX
   cluster (the exact line shown first), **Self-spot** of your own POTA
   activation to pota.app (shown first), the call spelled **by voice**
-  (🎤, the device's own speech recognition, the international alphabet;
-  nothing logs until you tap Log), a Name field, a logged contact **edited
+  (🎤, the device's own speech recognition, the international alphabet
+  and the older and DX spelling words; nothing logs until you tap Log), a Name field, a logged contact **edited
   or deleted** with a tap, and
   the log as an ADIF file in Files (iPhone, iPad) or Documents (Android,
   computer): share it to your logbook or LoTW, or import contacts from

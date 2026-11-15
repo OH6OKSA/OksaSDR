@@ -8,7 +8,7 @@ namespace AetherSDR::mobile::CallsignSpeech {
 // A callsign from what a speech recogniser heard (roadmap 79, logging by
 // voice): "Victor Alpha Three Mike Whiskey", "victor alpha 3 mike whisky",
 // "V A 3 M W", "VA3MW", "OH6OKSA stroke portable"... NATO and ITU words,
-// plain letters, digits as numerals or words (niner, fife, tree, oh),
+// the older and DX ones (Sugar, King, Kilowatt, Japan...), plain letters, digits as numerals or words (niner, fife, tree, oh),
 // slash / stroke / portable / mobile. A report after the call ("five nine",
 // "59", "599") comes apart from it. Nothing is guessed: what does not read
 // as a call gives an empty call.

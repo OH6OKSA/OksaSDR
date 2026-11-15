@@ -1,6 +1,9 @@
-**OksaSDR for Android — beta 85.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
+**OksaSDR for Android — beta 86.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
-### New in beta 85
+### New in beta 86
+- **Spelling the call by voice knows more words** (thanks Michael Walker): beta 84 and 85 read only the ITU / NATO alphabet, so *Victor Alpha three sugar Kilo* left the field empty. Now also the older Allied alphabet (*Able*, *Baker* … *Sugar*, *King* … *Zebra*), the ITU's of 1927 (*Amsterdam*, *Baltimore* …), the places hams spell with (*America*, *Boston*, *Canada*, *Japan*, *Kilowatt*, *London*, *Mexico*, *Radio*, *Texas* … *Zanzibar*), the letters themselves (*double you*, *zed*), *fox trot* and *ex-ray* as two words, *forward slash* and *maritime mobile* (/MM), *to* / *for* / *won* / *ate* between spelled characters as the recogniser may write the digits, *fifty nine* as a report, and *uh* / *um* left out. The manual's Log tab section lists them all.
+
+### Still new from beta 85
 - **Spelling the call by voice works on more phones**: beta 84's voice button asked the phone's own on-device recogniser, and on a phone without its English model (one set to another language) it only said "English speech recognition is not installed". Now the recording goes to the phone's default recogniser (Google's, over the network) instead, and the English model is asked for, so later the phone can do it on its own. While listening only this device's audio goes quiet (beta 84 muted the slice on the radio, for every station on it), and a press the system cancels ends the listening as letting go does.
 - **Type the RIT or XIT offset** (thanks Sebastian Schumann DG5CST): a tap on the value in the DSP tab's RIT or XIT row opens a field: *1.34* (kHz) or *-0.5*, a whole number of 10 or more as Hz (*1340*), or −1 / +1 / +2 / +3 / +5 kHz; *Reset* sets 0, and a value set turns it on. **Hold SPLIT › Other…** splits by any distance, "up 1.34" with a second slice or by XIT.
 - **Big buttons: the mode** at the top right opens the mode chooser, as on the main screen.

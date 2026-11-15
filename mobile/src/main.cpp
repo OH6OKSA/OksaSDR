@@ -598,6 +598,29 @@ int main(int argc, char* argv[])
             {"victor alpha three mike whiskey at five nine", "VA3MW", ""},
             {"Echo Alpha Eight slash Delta Lima One Alpha Bravo Charlie", "EA8/DL1ABC", ""},
             {"two", "", ""},
+            // The older and DX words, the forms recognisers write (Michael
+            // Walker's "Victor Alpha three sugar Kilo", build 172).
+            {"Victor Alpha three sugar Kilo", "VA3SK", ""},
+            {"Sugar Mike Five King Love Mike", "SM5KLM", ""},
+            {"Able Baker One Charlie Dog", "AB1CD", ""},
+            {"Kilowatt One Japan Texas", "K1JT", ""},
+            {"Japan Alpha One Nan Oboe", "JA1NO", ""},
+            {"Germany Mexico Zero Roger Peter", "GM0RP", ""},
+            {"William Two Uncle Easy Item", "W2UEI", ""},
+            {"Oskar Hotel Two Baltimore Havana", "OH2BH", ""},
+            {"Victor Alpha three, uh, Mike Whiskey", "VA3MW", ""},
+            {"Kilo to Alpha Bravo Charlie", "K2ABC", ""},
+            {"Kilo for Alpha Bravo Charlie", "K4ABC", ""},
+            {"log for Victor Alpha Three Mike Whiskey", "VA3MW", ""},
+            {"Fox trot Five Golf November Mike", "F5GNM", ""},
+            {"Ex-ray Delta One Zulu", "XD1Z", ""},
+            {"double you one alpha double you", "W1AW", ""},
+            {"Echo Alpha Eight forward slash Delta Lima One Alpha Bravo Charlie", "EA8/DL1ABC", ""},
+            {"Victor Alpha Three Mike Whiskey maritime mobile", "VA3MW/MM", ""},
+            {"Victor Alpha Three Mike Whiskey fifty nine", "VA3MW", "59"},
+            {"Victor Alpha Three Mike Whiskey ok", "VA3MW", ""},
+            {"Victor Alpha Three Mike Whiskey, five nine, thanks", "VA3MW", "59"},
+            {"Zed Lima One Alpha Bravo", "ZL1AB", ""},
         };
         int failed = 0;
         for (const Case& c : cases) {

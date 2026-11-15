@@ -1449,8 +1449,26 @@ seven.
   *Sent*; the line under the field says what was heard. Nothing is logged
   until you tap Log. It listens through the microphone the app already
   uses, mutes the radio's audio here meanwhile, and does not work while
-  transmitting. The alphabet is the international one in English whatever
-  the device's language; national alphabets may follow. With the CW decoder on, **Heard in CW** offers the
+  transmitting. It understands, in English whatever the device's language:
+  - **Letters**: the ITU / NATO alphabet (*Alfa* or *Alpha* … *Zulu*,
+    *Juliet*, *Whisky*, *X-ray*), the older Allied one (*Able*, *Baker*,
+    *Dog* … *Sugar*, *King* … *Zebra*), the ITU's of 1927 (*Amsterdam*,
+    *Baltimore*, *Havana* …), the places hams spell with (*America*,
+    *Boston*, *Canada*, *Japan*, *Kilowatt*, *London*, *Mexico*, *Norway*,
+    *Radio*, *Texas*, *Tokyo* … *Zanzibar*), and the letters themselves
+    (*V A 3 M W*, *double you*, *zed*), mixed as you like (thanks Michael
+    Walker for *Sugar*).
+  - **Digits**: *zero* … *nine*, *niner*, *fife*, *tree*, *fower*, *wun*;
+    between spelled characters also *to* / *too*, *for*, *won* and *ate*
+    as the recogniser may write them.
+  - **Separators**: *slash*, *stroke* or *forward slash*; *portable* (/P),
+    *mobile* (/M), *maritime mobile* (/MM).
+  - **A report** after the call: *five nine*, *five nine nine*, *fifty
+    nine*.
+  - Words around the call (*log*, *the call is*, *okay*, *uh*) are left
+    out. National alphabets (*Aarne*, *Anton* …) may follow on request.
+
+  With the CW decoder on, **Heard in CW** offers the
   calls it heard (after *DE*, or twice; the newest first, up to three):
   a tap puts one in the field, handy when a park activator sends
   `CQ POTA DE` and the call. A card shows who it is: with a **QRZ.com** account
