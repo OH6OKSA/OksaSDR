@@ -621,7 +621,8 @@ used as the law allows), gloves or a glance (asked by Michael Walker):
   looked up), the two reports with big **−** / **+** (59 or 599 by mode,
   the strength digit stepped; an FTx report in dB), then **Log CALL**. The
   time is when the call was typed, My park from the Log tab goes with it,
-  and the call is the Log tab's too. **Cancel** goes back; PTT stays at
+  and the call is the Log tab's too; **🎤** beside the call spells it by
+  voice, as on the Log tab. **Cancel** goes back; PTT stays at
   the bottom. With a keyboard, Return logs and Esc cancels.
 - **Two meters** as bars with their readings large (S and the supply
   voltage, Power and SWR while transmitting). A tap on one chooses what it
@@ -1432,7 +1433,19 @@ seven.
 
 - **Log** — quick QSO logging into a log on this device (an ADIF file,
   `oksasdr-log.adi`). Type the **callsign**, or tap the call of the spot
-  you tuned to last. With the CW decoder on, **Heard in CW** offers the
+  you tuned to last; **×** in the field clears it (thanks Christoph
+  Steinert DM5HF). Or spell it by voice with **🎤** beside it (iPhone,
+  iPad, Mac and Android 13 or later; asked by Michael Walker): hold the
+  button, spell the call with the ITU / NATO alphabet (*Victor Alpha Three
+  Mike Whiskey*, *niner* for 9, *stroke portable* for /P), and let go; a
+  quick tap listens until a second tap, 8 s at most. The device's own
+  speech recognition turns it into text (on the device where it can), the
+  call goes into the field and a report said after it (*five nine*) into
+  *Sent*; the line under the field says what was heard. Nothing is logged
+  until you tap Log. It listens through the microphone the app already
+  uses, mutes the radio's audio here meanwhile, and does not work while
+  transmitting. The alphabet is the international one in English whatever
+  the device's language; national alphabets may follow. With the CW decoder on, **Heard in CW** offers the
   calls it heard (after *DE*, or twice; the newest first, up to three):
   a tap puts one in the field, handy when a park activator sends
   `CQ POTA DE` and the call. A card shows who it is: with a **QRZ.com** account
@@ -1464,9 +1477,18 @@ seven.
   when it refuses), at most one spot in 30 s; nothing is sent by itself.
   pota.app's spot interface is unofficial, so if POTA changes it the answer
   says so.
-  *Sent* and *Rcvd* hold the reports and *Comment* a note for the
-  contact. **Log CALL** (the button names the call) writes the contact;
-  the newest ten are listed. **Spot** beside it (asked by Christoph
+  *Sent* and *Rcvd* hold the reports, *Comment* a note for the contact
+  and **Name** the operator's name: the looked-up first name until you
+  type one (thanks Christoph Steinert DM5HF); it goes into ADIF's NAME.
+  **Log CALL** (the button names the call) writes the contact; the newest
+  ten are listed, and a tap on one opens it to **edit** or **delete**
+  (thanks Christoph): the call, date and time (UTC), frequency, mode,
+  reports, name, comment and the parks, then *Save*, or *Delete* and
+  *Delete it*. It changes this device's log; a contact that already went
+  to Wavelog / Cloudlog, the QRZ.com logbook, the shared ADIF file or
+  Logger32 is not changed there (the dialog names the ones set up), so
+  change it there too. A new call drops the old call's looked-up name and
+  QTH and takes the new call's country. **Spot** beside it (asked by Christoph
   Steinert DM5HF) sends the call to the DX cluster the app is logged in to
   (Controls › View › DX cluster), at the slice frequency. It asks first,
   as a spot is a public post under your call, and shows the exact line

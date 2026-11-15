@@ -612,6 +612,12 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         }
         qInfo().noquote() << "shot-plan: amp" << arg;
         *delayMs = 500;
+    } else if (command == QLatin1String("voicetext")) {
+        // What a speech recogniser heard, as the voice button hands it on
+        // (roadmap 79): this build has no recogniser.
+        m_engine.voiceInputText({args.join(QLatin1Char(' '))});
+        qInfo().noquote() << "shot-plan: voicetext" << args.join(QLatin1Char(' ')) << "->" << m_engine.voiceInputStatus();
+        *delayMs = 500;
     } else if (command == QLatin1String("kpa")) {
         // The KPA1500's address (Radio Setup › Amp › Elecraft); "off"
         // forgets it, "pause" / "resume" are its Read the amplifier switch.

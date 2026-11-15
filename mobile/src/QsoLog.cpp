@@ -6,11 +6,13 @@
 #include <QFileInfo>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QSaveFile>
 #include <QSet>
 #include <QStandardPaths>
 #include <QTextStream>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 
 #ifdef Q_OS_ANDROID
@@ -212,6 +214,110 @@ bool QsoLog::writeText(const QString& path, const QString& mirror, const QString
     if (mirrorOk) {
         *mirrorOk = copied;
     }
+    return true;
+}
+
+namespace {
+
+// Whether a record is the one the operator picked: the fields a list row
+// and a dupe check go by, the frequency by value.
+bool sameContact(const QVariantMap& a, const QVariantMap& b)
+{
+    for (const char* k : {"CALL", "QSO_DATE", "TIME_ON", "BAND", "MODE"}) {
+        const QString key = QLatin1String(k);
+        if (a.value(key).toString().trimmed().compare(b.value(key).toString().trimmed(), Qt::CaseInsensitive) != 0) {
+            return false;
+        }
+    }
+    const QString fa = a.value(QStringLiteral("FREQ")).toString().trimmed();
+    const QString fb = b.value(QStringLiteral("FREQ")).toString().trimmed();
+    return fa == fb || std::abs(fa.toDouble() - fb.toDouble()) < 0.0000005;
+}
+
+} // namespace
+
+bool QsoLog::replaceRecord(const QVariantMap& match, const QVariantMap& replacement)
+{
+    {
+        QMutexLocker lock(&fileMutex());
+        QFile in(m_path);
+        if (!in.open(QIODevice::ReadOnly)) {
+            return false;
+        }
+        const QByteArray data = in.readAll();
+        in.close();
+        // Each record's bytes, from its first tag to the end of its <EOR>,
+        // as parseAdifEach reads them.
+        struct Span {
+            qsizetype start;
+            qsizetype end;
+        };
+        Span found{-1, -1};
+        qsizetype i = 0;
+        const qsizetype eoh = data.indexOf("<EOH>") >= 0 ? data.indexOf("<EOH>") : data.indexOf("<eoh>");
+        if (eoh >= 0) {
+            i = eoh + 5;
+        }
+        qsizetype start = -1;
+        QVariantMap current;
+        while (i < data.size()) {
+            const qsizetype lt = data.indexOf('<', i);
+            if (lt < 0) {
+                break;
+            }
+            const qsizetype gt = data.indexOf('>', lt);
+            if (gt < 0) {
+                break;
+            }
+            const QByteArray tag = data.mid(lt + 1, gt - lt - 1);
+            if (start < 0) {
+                start = lt;
+            }
+            i = gt + 1;
+            if (tag.compare("EOR", Qt::CaseInsensitive) == 0) {
+                if (!current.isEmpty() && sameContact(current, match)) {
+                    found = {start, i};  // the newest one wins
+                }
+                current = QVariantMap();
+                start = -1;
+                continue;
+            }
+            const QList<QByteArray> parts = tag.split(':');
+            if (parts.size() < 2) {
+                continue;
+            }
+            bool ok = false;
+            const int len = parts.at(1).toInt(&ok);
+            if (!ok || len < 0 || i + len > data.size()) {
+                continue;
+            }
+            current.insert(QString::fromLatin1(parts.at(0)).toUpper(), QString::fromUtf8(data.mid(i, len)));
+            i += len;
+        }
+        if (found.start < 0) {
+            return false;
+        }
+        QByteArray out = data.left(found.start);
+        qsizetype rest = found.end;
+        if (replacement.isEmpty()) {
+            // The deleted record's line break goes with it.
+            while (rest < data.size() && (data.at(rest) == '\r' || data.at(rest) == '\n')) {
+                ++rest;
+            }
+        } else {
+            out += adifRecord(replacement).toUtf8();
+        }
+        out += data.mid(rest);
+        QSaveFile save(m_path);
+        if (!save.open(QIODevice::WriteOnly) || save.write(out) != out.size() || !save.commit()) {
+            return false;
+        }
+        m_mirrorOk = copyMirror(m_path, m_mirrorPath);
+    }
+    // Read back whole: worked before and the list from the file as it is.
+    Loaded loaded = read(m_path);
+    m_entries = std::move(loaded.entries);
+    m_recent = std::move(loaded.recent);
     return true;
 }
 

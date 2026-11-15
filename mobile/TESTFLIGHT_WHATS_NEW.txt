@@ -9,14 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Log tab > Self-spot: a POTA spot of yourself from My park (thanks Christoph DM5HF).
-- Big buttons > Log: the call and reports in big type (thanks Michael Walker).
-- KPA1500 Tune in STANDBY: the carrier never amplified (thanks Rich N2RY). [TX]
-- MIDI Learn: a control in use is named: Replace or Learn again (thanks Rich N2RY).
-- Receive audio in order: smoother over VPN and LTE.
-- RADE: no radio voice keyer (it sent analog); Mac arrow keys (thanks Christoph DM5HF).
+- Log tab: spell the call by voice with the mic button (Alfa, Bravo…); nothing logs until Log (idea Michael Walker).
+- Log tab: tap a logged contact to edit or delete it; × clears the call; a Name field (thanks Christoph DM5HF).
 
-RECENT (builds 94–170)
+RECENT (builds 94–171)
+- Self-spot to POTA, Big buttons > Log, KPA1500 Tune in STANDBY, MIDI Learn asks, audio in order over VPN (thanks Christoph DM5HF, Michael Walker, Rich N2RY).
 - Log tab > Spot, MIDI F1–F12 (thanks Christoph DM5HF); Big buttons' Step halves (thanks Michael Walker); Noise line; TGXL first (thanks Hanno DK3HV).
 - AGC Follow; the KPA1500 (thanks Rich N2RY); MIDI controllers (thanks Hanno DK3HV); multi-answer RR73 (thanks Ben KT4O); the DVK (thanks Ian VK1HF); Big buttons (thanks Michael Walker).
 - FTx > DXpedition > Hound; the Fox's and contest messages in FT8 / FT4.

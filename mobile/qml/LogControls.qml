@@ -14,6 +14,14 @@ ColumnLayout {
     spacing: Theme.spacing / 2
     implicitWidth: 200
 
+    // The edit dialog's rows (roadmap 78).
+    component EditLabel: Label { color: Theme.textDim; font.pixelSize: Theme.px(14) }
+    component EditField: TextField {
+        Layout.fillWidth: true
+        font.pixelSize: Theme.px(15)
+        inputMethodHints: Qt.ImhNoPredictiveText
+    }
+
     property var defaults: Engine.qsoDefaults()
     property var worked: ({ worked: 0, dupe: false })
     property string timeOn: ""
@@ -32,6 +40,8 @@ ColumnLayout {
     function reset() {
         callField.text = ""
         comment.text = ""
+        nameField.text = ""
+        nameField.edited = false
         theirRef.text = ""
         rstSent.edited = false
         rstRcvd.edited = false
@@ -65,9 +75,33 @@ ColumnLayout {
                 if (text.length > 0 && logTab.timeOn.length === 0)
                     logTab.timeOn = Qt.formatDateTime(new Date(new Date().getTime() + new Date().getTimezoneOffset() * 60000), "HHmm")
                 if (text.length === 0) logTab.timeOn = ""
+                // Another call: the last one's looked-up name goes.
+                if (!nameField.edited) nameField.text = ""
                 lookupDelay.restart()
             }
             onAccepted: logButton.clicked()
+            rightPadding: clearCall.visible ? clearCall.width + 6 : leftPadding
+            // × clears the call (roadmap 76, Christoph Steinert DM5HF); a
+            // press inside the field keeps the keyboard where it is.
+            AppButton {
+                id: clearCall
+                objectName: "logCallClear"
+                visible: callField.text.length > 0
+                text: "×"
+                Accessible.name: qsTr("Clear the callsign")
+                focusPolicy: Qt.NoFocus
+                anchors.right: parent.right
+                anchors.rightMargin: 3
+                anchors.verticalCenter: parent.verticalCenter
+                height: parent.height - 6
+                width: height
+                padding: 0
+                onClicked: callField.text = ""
+            }
+        }
+        VoiceButton {
+            objectName: "logVoice"
+            Layout.preferredHeight: callField.height
         }
         AppButton {
             visible: Engine.lastSpotCall.length > 0 && callField.text.toUpperCase() !== Engine.lastSpotCall
@@ -75,6 +109,26 @@ ColumnLayout {
             focusPolicy: Qt.NoFocus
             Layout.preferredWidth: Math.max(implicitWidth + 12, 76)
             onClicked: callField.text = Engine.lastSpotCall
+        }
+    }
+    // What the voice button heard, or why it did not listen (roadmap 79).
+    Label {
+        objectName: "logVoiceStatus"
+        visible: Engine.voiceInputOffered && Engine.voiceInputStatus.length > 0
+        Layout.fillWidth: true
+        text: Engine.voiceInputStatus
+        color: Engine.voiceInputState === "idle" && !Engine.voiceInputStatus.startsWith(qsTr("Heard")) ? Theme.warning : Theme.textDim
+        font.pixelSize: Theme.px(13)
+        wrapMode: Text.Wrap
+    }
+    Connections {
+        target: Engine
+        function onVoiceHeard(call, report) {
+            callField.text = call
+            if (report.length > 0) {
+                rstSent.text = report
+                rstSent.edited = true
+            }
         }
     }
     // Calls the CW decoder heard (after DE, or twice), newest first: a tap
@@ -232,12 +286,42 @@ ColumnLayout {
         font.pixelSize: Theme.px(13)
         wrapMode: Text.WordWrap
     }
-    TextField {
-        id: comment
-        Accessible.name: qsTr("Comment")
+    // Comment and the station's Name (roadmap 77, Christoph Steinert DM5HF):
+    // Name takes the lookup's first name unless typed into; it is logged as
+    // ADIF NAME over the lookup's full name.
+    RowLayout {
         Layout.fillWidth: true
-        placeholderText: qsTr("Comment")
-        font.pixelSize: Theme.px(15)
+        TextField {
+            id: comment
+            Accessible.name: qsTr("Comment")
+            Layout.fillWidth: true
+            Layout.horizontalStretchFactor: 2
+            Layout.preferredWidth: 2
+            placeholderText: qsTr("Comment")
+            font.pixelSize: Theme.px(15)
+        }
+        TextField {
+            id: nameField
+            objectName: "logName"
+            Accessible.name: qsTr("Name")
+            property bool edited: false
+            Layout.fillWidth: true
+            Layout.horizontalStretchFactor: 1
+            Layout.preferredWidth: 1
+            placeholderText: qsTr("Name")
+            font.pixelSize: Theme.px(15)
+            onTextEdited: edited = text.length > 0
+        }
+    }
+    // The lookup's first name for this call, unless the operator typed one.
+    Connections {
+        target: Engine
+        function onCallLookupChanged() {
+            const info = Engine.callLookup
+            if (nameField.edited || !info || (info.call || "").toUpperCase() !== callField.text.trim().toUpperCase())
+                return
+            nameField.text = info.firstName || ""
+        }
     }
 
     // ---- POTA / WWFF ----
@@ -326,6 +410,7 @@ ColumnLayout {
         Layout.fillWidth: true
         AppButton {
             id: logButton
+            objectName: "logLog"
             Layout.fillWidth: true
             Layout.preferredHeight: Theme.touchTarget
             text: qsTr("Log %1").arg(callField.text.toUpperCase())
@@ -334,7 +419,7 @@ ColumnLayout {
             onClicked: {
                 const ok = Engine.logQso({
                     call: callField.text, rstSent: rstSent.text, rstRcvd: rstRcvd.text,
-                    comment: comment.text, timeOn: logTab.timeOn,
+                    comment: comment.text, name: nameField.text, timeOn: logTab.timeOn,
                     sig: theirSig.value, sigInfo: theirSig.value.length > 0 ? theirRef.text : "",
                     mySig: Engine.mySig, mySigInfo: Engine.mySig.length > 0 ? Engine.myRef : ""
                 })
@@ -431,10 +516,13 @@ ColumnLayout {
                 : qsTr("Imported %1 contact(s); %2 already in the log.").arg(r.imported).arg(r.duplicates)
         }
     }
+    // A tap on a contact opens it to edit or delete (roadmap 78).
     Repeater {
         model: Engine.recentQsos.slice(0, 10)
         delegate: Label {
             required property var modelData
+            required property int index
+            objectName: "logRecent" + index
             Layout.fillWidth: true
             text: (modelData.TIME_ON || "").slice(0, 2) + ":" + (modelData.TIME_ON || "").slice(2, 4) + "  "
                   + modelData.CALL + "  " + (modelData.BAND || "") + " " + (modelData.SUBMODE || modelData.MODE || "")
@@ -444,6 +532,12 @@ ColumnLayout {
             font.pixelSize: Theme.px(14)
             font.family: "monospace"
             elide: Text.ElideRight
+            topPadding: 4
+            bottomPadding: 4
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Edit %1").arg(modelData.CALL)
+            Accessible.onPressAction: qsoEdit.ask(modelData)
+            TapHandler { onTapped: qsoEdit.ask(modelData) }
         }
     }
 
@@ -1028,6 +1122,137 @@ ColumnLayout {
                         potaDialog.close()
                         Engine.sendPotaSpot(park, text)
                     }
+                }
+            }
+        }
+    }
+    // A logged contact edited or deleted (roadmap 78, Christoph Steinert
+    // DM5HF): the app's own log; the logbooks it went to are named, as an
+    // edit here does not change them.
+    Dialog {
+        id: qsoEdit
+        objectName: "logEditDialog"
+        property var record: ({})
+        property bool confirmDelete: false
+        function ask(r) {
+            record = r
+            confirmDelete = false
+            editCall.text = r.CALL || ""
+            const d = r.QSO_DATE || ""
+            editDate.text = d.length === 8 ? d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8) : d
+            const t = r.TIME_ON || ""
+            editTime.text = t.length >= 4 ? t.slice(0, 2) + ":" + t.slice(2, 4) : t
+            editFreq.text = r.FREQ ? Number(r.FREQ).toFixed(4) : ""
+            editMode.text = r.SUBMODE || r.MODE || ""
+            editSent.text = r.RST_SENT || ""
+            editRcvd.text = r.RST_RCVD || ""
+            editName.text = r.NAME || ""
+            editComment.text = r.COMMENT || ""
+            editTheir.text = r.SIG_INFO || ""
+            editMine.text = r.MY_SIG_INFO || ""
+            open()
+        }
+        onClosed: logTab.dropKeyboard()
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(480, parent ? parent.width - 24 : 440)
+        height: Math.min(implicitHeight, parent ? parent.height - 24 : implicitHeight)
+        modal: true
+        padding: Theme.spacing
+        background: Rectangle { color: Theme.surface; radius: Theme.radius; border.color: Theme.accent; border.width: 2 }
+        contentItem: Flickable {
+            implicitHeight: editColumn.implicitHeight
+            contentHeight: editColumn.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ColumnLayout {
+                id: editColumn
+                width: parent.width
+                spacing: Theme.spacing
+                Label {
+                    Layout.fillWidth: true
+                    text: qsTr("Edit the contact")
+                    color: Theme.text
+                    font.pixelSize: Theme.px(18)
+                    font.bold: true
+                }
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: 2
+                    columnSpacing: Theme.spacing
+                    rowSpacing: 4
+                    EditLabel { text: qsTr("Call") }
+                    EditField { id: editCall; objectName: "logEditCall"; Accessible.name: qsTr("Callsign"); font.family: "monospace"; font.capitalization: Font.AllUppercase; inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText }
+                    EditLabel { text: qsTr("Date (UTC)") }
+                    EditField { id: editDate; objectName: "logEditDate"; Accessible.name: qsTr("Date"); placeholderText: "YYYY-MM-DD"; inputMethodHints: Qt.ImhPreferNumbers | Qt.ImhNoPredictiveText }
+                    EditLabel { text: qsTr("Time (UTC)") }
+                    EditField { id: editTime; objectName: "logEditTime"; Accessible.name: qsTr("Time"); placeholderText: "HH:MM"; inputMethodHints: Qt.ImhPreferNumbers | Qt.ImhNoPredictiveText }
+                    EditLabel { text: qsTr("MHz") }
+                    EditField { id: editFreq; objectName: "logEditFreq"; Accessible.name: qsTr("Frequency in MHz"); inputMethodHints: Qt.ImhFormattedNumbersOnly }
+                    EditLabel { text: qsTr("Mode") }
+                    EditField { id: editMode; objectName: "logEditMode"; Accessible.name: qsTr("Mode"); inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText }
+                    EditLabel { text: qsTr("Sent / Rcvd") }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        EditField { id: editSent; objectName: "logEditSent"; Accessible.name: qsTr("Report sent") }
+                        EditField { id: editRcvd; objectName: "logEditRcvd"; Accessible.name: qsTr("Report received") }
+                    }
+                    EditLabel { text: qsTr("Name") }
+                    EditField { id: editName; objectName: "logEditName"; Accessible.name: qsTr("Name") }
+                    EditLabel { text: qsTr("Comment") }
+                    EditField { id: editComment; objectName: "logEditComment"; Accessible.name: qsTr("Comment") }
+                    EditLabel { text: qsTr("Their park") }
+                    EditField { id: editTheir; objectName: "logEditTheirPark"; Accessible.name: qsTr("Their park reference"); inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText }
+                    EditLabel { text: qsTr("My park") }
+                    EditField { id: editMine; objectName: "logEditMyPark"; Accessible.name: qsTr("My park reference"); inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText }
+                }
+                Label {
+                    Layout.fillWidth: true
+                    readonly property var books: Engine.qsoLogbooks()
+                    visible: books.length > 0
+                    text: qsTr("Changes this device's log only; not %1, where it may have gone already.").arg(books.join(", "))
+                    color: Theme.warning
+                    font.pixelSize: Theme.px(13)
+                    wrapMode: Text.Wrap
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    AppButton {
+                        objectName: "logEditDelete"
+                        text: qsoEdit.confirmDelete ? qsTr("Delete it") : qsTr("Delete")
+                        checked: qsoEdit.confirmDelete
+                        Layout.fillWidth: true
+                        onClicked: {
+                            if (!qsoEdit.confirmDelete) {
+                                qsoEdit.confirmDelete = true
+                                return
+                            }
+                            if (Engine.deleteQso(qsoEdit.record)) qsoEdit.close()
+                        }
+                    }
+                    AppButton { objectName: "logEditCancel"; text: qsTr("Cancel"); Layout.fillWidth: true; onClicked: qsoEdit.close() }
+                    AppButton {
+                        objectName: "logEditSave"
+                        text: qsTr("Save")
+                        checked: true
+                        Layout.fillWidth: true
+                        onClicked: {
+                            const ok = Engine.editQso(qsoEdit.record, {
+                                call: editCall.text, date: editDate.text, time: editTime.text, freq: editFreq.text,
+                                mode: editMode.text, rstSent: editSent.text, rstRcvd: editRcvd.text, name: editName.text,
+                                comment: editComment.text, sigInfo: editTheir.text, mySigInfo: editMine.text
+                            })
+                            if (ok) qsoEdit.close()
+                        }
+                    }
+                }
+                Label {
+                    Layout.fillWidth: true
+                    visible: qsoEdit.confirmDelete
+                    text: qsTr("Tap Delete it to remove the contact from this device's log for good.")
+                    color: Theme.warning
+                    font.pixelSize: Theme.px(13)
+                    wrapMode: Text.Wrap
                 }
             }
         }

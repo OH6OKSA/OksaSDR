@@ -11,12 +11,20 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.AudioDeviceInfo;
+import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.net.wifi.WifiManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.ParcelFileDescriptor;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.speech.RecognitionListener;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
@@ -24,9 +32,12 @@ import androidx.core.content.FileProvider;
 import java.io.File;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.crypto.Cipher;
@@ -428,5 +439,103 @@ public final class Platform {
             run.setLength(0);
         }
         return out.toString();
+    }
+
+    // ---- Speech to text for logging by voice (roadmap 79): a recording the
+    // app made (16-bit PCM, one channel) read by SpeechRecognizer from a pipe
+    // (Android 13's EXTRA_AUDIO_SOURCE), on the device where it offers that.
+    // The answer is polled: "ok" and the alternatives a line each, or
+    // "error" and the reason; empty while it runs.
+
+    private static volatile String sSpeech = "";
+
+    public static String speechUnavailable(Context context) {
+        if (Build.VERSION.SDK_INT < 33) {
+            return "Voice input needs Android 13 or later.";
+        }
+        if (!SpeechRecognizer.isRecognitionAvailable(context)) {
+            return "This device has no speech recognition.";
+        }
+        return "";
+    }
+
+    // Called only once speechUnavailable() has passed, which needs Android 13.
+    @android.annotation.TargetApi(33)
+    public static String startSpeech(final Context context, final byte[] pcm16, final int rate, final String[] vocabulary) {
+        final String why = speechUnavailable(context);
+        if (!why.isEmpty()) {
+            return why;
+        }
+        sSpeech = "";
+        new Handler(Looper.getMainLooper()).post(() -> {
+            try {
+                final SpeechRecognizer recognizer = SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
+                        ? SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
+                        : SpeechRecognizer.createSpeechRecognizer(context);
+                final ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
+                Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US");
+                intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5);
+                intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
+                intent.putExtra(RecognizerIntent.EXTRA_BIASING_STRINGS, new ArrayList<>(java.util.Arrays.asList(vocabulary)));
+                intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, pipe[0]);
+                intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, 1);
+                intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING, AudioFormat.ENCODING_PCM_16BIT);
+                intent.putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE, rate);
+                recognizer.setRecognitionListener(new RecognitionListener() {
+                    @Override public void onReadyForSpeech(Bundle params) {}
+                    @Override public void onBeginningOfSpeech() {}
+                    @Override public void onRmsChanged(float rmsdB) {}
+                    @Override public void onBufferReceived(byte[] buffer) {}
+                    @Override public void onEndOfSpeech() {}
+                    @Override public void onPartialResults(Bundle partialResults) {}
+                    @Override public void onEvent(int eventType, Bundle params) {}
+                    @Override public void onResults(Bundle results) {
+                        ArrayList<String> list = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                        sSpeech = "ok\n" + (list == null ? "" : String.join("\n", list));
+                        recognizer.destroy();
+                    }
+                    @Override public void onError(int error) {
+                        sSpeech = "error\n" + speechError(error);
+                        recognizer.destroy();
+                    }
+                });
+                recognizer.startListening(intent);
+                new Thread(() -> {
+                    try (OutputStream out = new ParcelFileDescriptor.AutoCloseOutputStream(pipe[1])) {
+                        out.write(pcm16);
+                    } catch (IOException e) {
+                        // The recogniser closed its end: its own answer says why.
+                    }
+                    try {
+                        pipe[0].close();
+                    } catch (IOException e) {
+                    }
+                }).start();
+            } catch (Exception e) {
+                sSpeech = "error\n" + e;
+            }
+        });
+        return "";
+    }
+
+    public static String speechPoll() {
+        return sSpeech;
+    }
+
+    @android.annotation.TargetApi(33)
+    private static String speechError(int error) {
+        switch (error) {
+            case SpeechRecognizer.ERROR_NO_MATCH: return "Nothing was recognised.";
+            case SpeechRecognizer.ERROR_SPEECH_TIMEOUT: return "No speech was heard.";
+            case SpeechRecognizer.ERROR_NETWORK:
+            case SpeechRecognizer.ERROR_NETWORK_TIMEOUT: return "The recogniser needs the network and has none.";
+            case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS: return "The recogniser has no permission to listen.";
+            case SpeechRecognizer.ERROR_RECOGNIZER_BUSY: return "The recogniser is busy.";
+            case SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED:
+            case SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE: return "English speech recognition is not installed on this device.";
+            default: return "Speech recognition failed (" + error + ").";
+        }
     }
 }

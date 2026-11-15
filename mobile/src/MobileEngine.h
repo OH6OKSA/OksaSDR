@@ -438,6 +438,11 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QString myRef READ myRef WRITE setMyRef NOTIFY myParkChanged)
     Q_PROPERTY(QString potaSpotStatus READ potaSpotStatus NOTIFY potaSpotChanged)
     Q_PROPERTY(bool potaSpotOk READ potaSpotOk NOTIFY potaSpotChanged)
+    // Logging by voice (roadmap 79): idle, listening or recognizing, and
+    // what the last listen gave (or why it could not).
+    Q_PROPERTY(QString voiceInputState READ voiceInputState NOTIFY voiceInputChanged)
+    Q_PROPERTY(QString voiceInputStatus READ voiceInputStatus NOTIFY voiceInputChanged)
+    Q_PROPERTY(bool voiceInputOffered READ voiceInputOffered CONSTANT)
     Q_PROPERTY(QStringList agcModes READ agcModes CONSTANT)
     Q_PROPERTY(int stepHz READ stepHz NOTIFY stepChanged)
     // The slice's step list from the radio (Hz), for the step chooser.
@@ -1189,6 +1194,12 @@ public:
     // frequency, band, mode and power and the lookup's name, QTH, grid and
     // country are added. True when it was written to the log file.
     Q_INVOKABLE bool logQso(const QVariantMap& fields);
+    // A logged contact edited or deleted in the app's own log (roadmap 78);
+    // changes: call, date, time, freq, mode, rstSent, rstRcvd, name,
+    // comment, sigInfo, mySigInfo.
+    Q_INVOKABLE bool editQso(const QVariantMap& original, const QVariantMap& changes);
+    Q_INVOKABLE bool deleteQso(const QVariantMap& original);
+    Q_INVOKABLE QStringList qsoLogbooks() const;
 
     bool digiRunning() const;
     void setDigiRunning(bool on);
@@ -1430,6 +1441,12 @@ public:
     bool potaSpotOk() const;
     Q_INVOKABLE QVariantMap potaSpotInfo() const;
     Q_INVOKABLE bool sendPotaSpot(const QString& park, const QString& comment);
+    QString voiceInputState() const { return m_speechState; }
+    QString voiceInputStatus() const { return m_speechStatus; }
+    bool voiceInputOffered() const;
+    Q_INVOKABLE void voiceInputStart();
+    Q_INVOKABLE void voiceInputStop();
+    Q_INVOKABLE void voiceInputText(const QStringList& alternatives);
     // Tunes the active slice to a spot (and its mode, as the desktop), and
     // tells the radio it was chosen (for loggers).
     Q_INVOKABLE void tuneToSpot(int index);
@@ -1984,6 +2001,9 @@ signals:
     void dxClusterStatusChanged();
     void dxSpotStatusChanged();
     void myParkChanged();
+    void voiceInputChanged();
+    // A call heard by the voice button, for the log fields (not logged).
+    void voiceHeard(const QString& call, const QString& report);
     void potaSpotChanged();
     void profilesChanged();
     void appSetupsChanged();
@@ -2646,6 +2666,13 @@ private:
     bool m_potaSpotOk{false};
     bool m_potaSpotBusy{false};
     QElapsedTimer m_potaSpotClock;
+    QString m_speechState{QStringLiteral("idle")};
+    QString m_speechStatus;
+    bool m_speechRecording{false};
+    bool m_speechMutedBefore{false};
+    QTimer m_speechTimer;
+    void setSpeechState(const QString& state, const QString& status);
+    void recognizeVoiceClip(const QByteArray& clip, int rate);
     void setPotaSpotStatus(const QString& text, bool ok);
     QTimer m_dxSpotTimer;
     void setDxSpotStatus(const QString& status);

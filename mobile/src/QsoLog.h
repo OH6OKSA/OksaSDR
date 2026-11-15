@@ -74,6 +74,13 @@ public:
     // Appends one record to the file (writing the header first for a new
     // file) and to the log; false when the file cannot be written.
     bool append(const QVariantMap& record);
+    // A logged contact edited or deleted (roadmap 78): the newest record
+    // whose CALL, QSO_DATE, TIME_ON, BAND, MODE and FREQ equal match's is
+    // replaced by replacement, or removed when replacement is empty. The
+    // file is written anew in one safe write, every other record as it
+    // was, then copied to the mirror and read back. False when no record
+    // matches or the file cannot be written.
+    bool replaceRecord(const QVariantMap& match, const QVariantMap& replacement);
     bool appendAll(const QList<QVariantMap>& records);
     // The file part, from any thread (one writer at a time): appends ADIF
     // text (records, each ending in <EOR>) to the file at path and copies

@@ -561,6 +561,8 @@ MobileEngine::MobileEngine(QObject* parent)
     m_audio = new AudioEngine;
     m_audio->moveToThread(m_audioThread);
     connect(m_audio, &AudioEngine::txClipRecorded, this, &MobileEngine::onVoiceClipRecorded);
+    m_speechTimer.setSingleShot(true);
+    connect(&m_speechTimer, &QTimer::timeout, this, &MobileEngine::voiceInputStop);
     connect(m_audio, &AudioEngine::txClipFinished, this, &MobileEngine::onVoiceClipFinished);
     // The meter choices offer SNR while RADE runs: a choice of it comes
     // back with RADE (only the start and end, not every SNR report).
@@ -3393,6 +3395,15 @@ void MobileEngine::dvkRecord(int id)
 
 void MobileEngine::onVoiceClipRecorded(const QByteArray& clip, int rate)
 {
+    // The voice button's recording (roadmap 79): to the recogniser.
+    if (m_speechRecording) {
+        m_speechRecording = false;
+        if (!m_pttHeld) {
+            stopDeviceMicrophoneCapture();
+        }
+        recognizeVoiceClip(clip, rate);
+        return;
+    }
     const int id = m_voiceActiveId;
     if (!m_pttHeld) {
         stopDeviceMicrophoneCapture();
@@ -6698,6 +6709,11 @@ bool MobileEngine::logQso(const QVariantMap& fields)
     if (fields.contains(QStringLiteral("grid"))) {
         r.insert(QStringLiteral("GRIDSQUARE"), fields.value(QStringLiteral("grid")));
     }
+    // The Log tab's Name (roadmap 77): what the operator has there wins over
+    // the lookup's display name.
+    if (const QString name = fields.value(QStringLiteral("name")).toString().simplified(); !name.isEmpty()) {
+        r.insert(QStringLiteral("NAME"), name);
+    }
     // Name, QTH and the rest from the lookup, however the call got in (typed,
     // a heard CW call, a spot, FT8 / FT4 by itself): the Log tab's card when
     // it is for this call, the lookup cache, or a QRZ.com lookup the QSO
@@ -6745,7 +6761,10 @@ void MobileEngine::addLookupFields(QVariantMap& r, const QVariantMap& info) cons
             r.insert(QLatin1String(adif), v);
         }
     };
-    put("NAME", "name");
+    // A name the operator gave stays (roadmap 77).
+    if (r.value(QStringLiteral("NAME")).toString().isEmpty()) {
+        put("NAME", "name");
+    }
     put("QTH", "qth");
     put("GRIDSQUARE", "grid");
     put("COUNTRY", "country");
@@ -6792,6 +6811,133 @@ bool MobileEngine::writeQso(const QVariantMap& r)
     logger32Queue(QsoLog::adifRecord(r));
     emit qsoLogChanged();
     return true;
+}
+
+// A contact already logged, edited from the Log tab's list (roadmap 78,
+// Christoph Steinert DM5HF): the app's own log only. changes uses the
+// dialog's keys; a new call drops the old call's looked-up fields and takes
+// cty.dat's country.
+bool MobileEngine::editQso(const QVariantMap& original, const QVariantMap& changes)
+{
+    QVariantMap r = original;
+    const QString call = changes.value(QStringLiteral("call")).toString().trimmed().toUpper();
+    static const QRegularExpression callRe(QStringLiteral("^[A-Z0-9]+(/[A-Z0-9]+)*$"));
+    if (call.size() < 3 || !callRe.match(call).hasMatch()) {
+        setLastError(tr("Not saved: the callsign is not one."));
+        return false;
+    }
+    const QString date = changes.value(QStringLiteral("date")).toString().remove(QLatin1Char('-')).trimmed();
+    const QString time = changes.value(QStringLiteral("time")).toString().remove(QLatin1Char(':')).trimmed();
+    if (!QDate::fromString(date, QStringLiteral("yyyyMMdd")).isValid() || !QTime::fromString(time, QStringLiteral("HHmm")).isValid()) {
+        setLastError(tr("Not saved: the date is YYYY-MM-DD and the time HH:MM (UTC)."));
+        return false;
+    }
+    const double mhz = changes.value(QStringLiteral("freq")).toString().toDouble();
+    if (mhz <= 0.0) {
+        setLastError(tr("Not saved: the frequency is in MHz."));
+        return false;
+    }
+    if (call.compare(r.value(QStringLiteral("CALL")).toString(), Qt::CaseInsensitive) != 0) {
+        for (const char* k : {"NAME", "QTH", "GRIDSQUARE", "COUNTRY", "CONT", "CQZ", "ITUZ", "DXCC", "STATE", "CNTY", "LAT", "LON"}) {
+            r.remove(QLatin1String(k));
+        }
+        addLookupFields(r, ctyFields(call));
+    }
+    r.insert(QStringLiteral("CALL"), call);
+    r.insert(QStringLiteral("QSO_DATE"), date);
+    r.insert(QStringLiteral("TIME_ON"), time);
+    if (std::abs(mhz - r.value(QStringLiteral("FREQ")).toDouble()) >= 0.0000005) {
+        r.insert(QStringLiteral("FREQ"), QString::number(mhz, 'f', 6));
+        r.insert(QStringLiteral("BAND"), QsoLog::bandOf(mhz));
+    }
+    const QString mode = changes.value(QStringLiteral("mode")).toString().trimmed().toUpper();
+    if (!mode.isEmpty() && mode != r.value(QStringLiteral("MODE")).toString().toUpper()
+        && mode != r.value(QStringLiteral("SUBMODE")).toString().toUpper()) {
+        const auto adif = QsoLog::adifMode(mode);
+        r.insert(QStringLiteral("MODE"), adif.first);
+        if (adif.second.isEmpty()) {
+            r.remove(QStringLiteral("SUBMODE"));
+        } else {
+            r.insert(QStringLiteral("SUBMODE"), adif.second);
+        }
+    }
+    const auto text = [&r, &changes](const char* adif, const char* key, bool upper) {
+        QString v = changes.value(QLatin1String(key)).toString().simplified();
+        if (upper) {
+            v = v.toUpper();
+        }
+        if (v.isEmpty()) {
+            r.remove(QLatin1String(adif));
+        } else {
+            r.insert(QLatin1String(adif), v);
+        }
+    };
+    text("RST_SENT", "rstSent", false);
+    text("RST_RCVD", "rstRcvd", false);
+    text("NAME", "name", false);
+    text("COMMENT", "comment", false);
+    text("SIG_INFO", "sigInfo", true);
+    text("MY_SIG_INFO", "mySigInfo", true);
+    // A park without its programme: WWFF's references read XXFF-NNNN, POTA's
+    // XX-NNNN.
+    for (const auto& [sig, info] : {std::pair{"SIG", "SIG_INFO"}, std::pair{"MY_SIG", "MY_SIG_INFO"}}) {
+        const QString ref = r.value(QLatin1String(info)).toString();
+        if (ref.isEmpty()) {
+            r.remove(QLatin1String(sig));
+        } else if (r.value(QLatin1String(sig)).toString().isEmpty()) {
+            r.insert(QLatin1String(sig), ref.contains(QStringLiteral("FF-")) ? QStringLiteral("WWFF") : QStringLiteral("POTA"));
+        }
+    }
+    if (m_qsoLogDryRun) {
+        qCInfo(lcMobile).noquote() << "edited (dry run):" << QsoLog::adifRecord(r);
+        return true;
+    }
+    if (!m_qsoLog->replaceRecord(original, r)) {
+        setLastError(tr("Not saved: the contact was not found in the log file, or the file could not be written."));
+        return false;
+    }
+    qCInfo(lcMobile).noquote() << QStringLiteral("QSO edited: %1 %2 %3 (was %4 %5 %6)")
+                                      .arg(call, date, time, original.value(QStringLiteral("CALL")).toString(),
+                                           original.value(QStringLiteral("QSO_DATE")).toString(), original.value(QStringLiteral("TIME_ON")).toString());
+    emit qsoLogChanged();
+    return true;
+}
+
+bool MobileEngine::deleteQso(const QVariantMap& original)
+{
+    if (m_qsoLogDryRun) {
+        qCInfo(lcMobile).noquote() << "deleted (dry run):" << QsoLog::adifRecord(original);
+        return true;
+    }
+    if (!m_qsoLog->replaceRecord(original, {})) {
+        setLastError(tr("Not deleted: the contact was not found in the log file, or the file could not be written."));
+        return false;
+    }
+    qCInfo(lcMobile).noquote() << QStringLiteral("QSO deleted: %1 %2 %3")
+                                      .arg(original.value(QStringLiteral("CALL")).toString(),
+                                           original.value(QStringLiteral("QSO_DATE")).toString(), original.value(QStringLiteral("TIME_ON")).toString());
+    emit qsoLogChanged();
+    return true;
+}
+
+// Where a logged contact may also have gone: the logbooks set up here,
+// which an edit in the app does not change.
+QStringList MobileEngine::qsoLogbooks() const
+{
+    QStringList out;
+    if (!m_onlineLogKey.isEmpty()) {
+        out << tr("Wavelog / Cloudlog");
+    }
+    if (!m_qrzLogKey.isEmpty()) {
+        out << tr("the QRZ.com logbook");
+    }
+    if (!m_sharedAdifUrl.isEmpty()) {
+        out << tr("the shared ADIF file");
+    }
+    if (!logger32Host().isEmpty()) {
+        out << tr("Logger32");
+    }
+    return out;
 }
 
 QVariantList MobileEngine::memories() const

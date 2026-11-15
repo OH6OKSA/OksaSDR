@@ -46,6 +46,7 @@ qt_add_executable(aether-mobile
     src/MobileEngineOnlineLog.cpp
     src/MobileEngineQrzLog.cpp
     src/MobileEnginePota.cpp
+    src/MobileEngineVoiceLog.cpp
     src/MobileEngineSharedAdif.cpp
     src/MobileEngineLogger32.cpp
     src/MobileEngineSetups.cpp
@@ -71,24 +72,27 @@ qt_add_executable(aether-mobile
     src/DeviceId.h
     src/SideKeys.h
     src/MidiPairing.h
+    src/VoiceInput.h
+    src/CallsignSpeech.h
+    src/CallsignSpeech.cpp
     ${AETHER_MOBILE_RESOURCES}
 )
 if(IOS)
     target_sources(aether-mobile PRIVATE ios/ScreenAwake.mm ios/SecureStore.mm ios/AudioSession.mm ios/ShareText.mm
                                          ios/SideKeys.mm ios/Haptics.mm ios/TextScale.mm
-                                         ios/DeviceId.mm ios/MidiPairing.mm)
+                                         ios/DeviceId.mm ios/MidiPairing.mm ios/VoiceInput.mm)
     target_link_libraries(aether-mobile PRIVATE "-framework Security" "-framework AVFAudio" "-framework GameController"
-                                                "-framework MessageUI" "-framework CoreAudioKit")
+                                                "-framework MessageUI" "-framework CoreAudioKit" "-framework Speech")
 elseif(ANDROID)
     target_sources(aether-mobile PRIVATE android/AndroidJni.h android/ScreenAwake.cpp android/SecureStore.cpp
                                          src/AudioSession.cpp android/ShareText.cpp src/SideKeys.cpp
                                          android/Haptics.cpp android/TextScale.cpp src/DeviceId.cpp
-                                         android/MidiPairing.cpp)
+                                         android/MidiPairing.cpp android/VoiceInput.cpp)
     target_include_directories(aether-mobile PRIVATE src)
 else()
     target_sources(aether-mobile PRIVATE src/ScreenAwake.cpp src/SecureStore.cpp src/AudioSession.cpp src/ShareText.cpp
                                          src/SideKeys.cpp src/Haptics.cpp src/TextScale.cpp
-                                         src/DeviceId.cpp src/MidiPairing.cpp)
+                                         src/DeviceId.cpp src/MidiPairing.cpp src/VoiceInput.cpp)
 endif()
 
 # Must precede qt_add_qml_module, which reads it when writing the qmldir.
@@ -150,6 +154,7 @@ qt_add_qml_module(aether-mobile
         qml/ProfileControls.qml
         qml/MemoryControls.qml
         qml/LogControls.qml
+        qml/VoiceButton.qml
         qml/DigiControls.qml
         qml/FreeDvControls.qml
         qml/RttyControls.qml

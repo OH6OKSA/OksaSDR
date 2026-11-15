@@ -9,6 +9,7 @@
 #include "models/BandSettings.h"
 #include "DeviceId.h"
 #include "TextScale.h"
+#include "CallsignSpeech.h"
 #include "TrackpadScrollPhases.h"
 
 extern "C" {
@@ -565,7 +566,49 @@ int main(int argc, char* argv[])
                        "size is smaller here than on the devices, so test shots fit where the devices did not."),
         QStringLiteral("px"));
     parser.addOption(fontPxOption);
+    const QCommandLineOption voiceSelftestOption(QStringLiteral("voice-selftest"),
+        QStringLiteral("Development: read the logging-by-voice cases as calls (roadmap 79) and print each; "
+                       "exits with the number that failed."));
+    parser.addOption(voiceSelftestOption);
     parser.process(app);
+    if (parser.isSet(voiceSelftestOption)) {
+        struct Case {
+            const char* heard;
+            const char* call;
+            const char* report;
+        };
+        const Case cases[] = {
+            {"Victor Alpha Three Mike Whiskey", "VA3MW", ""},
+            {"victor alpha 3 mike whisky", "VA3MW", ""},
+            {"V A 3 M W", "VA3MW", ""},
+            {"VA3MW", "VA3MW", ""},
+            {"va 3 mw", "VA3MW", ""},
+            {"log VA3MW five nine", "VA3MW", "59"},
+            {"Log a contact, Victor Alpha Three Mike Whiskey, five nine", "VA3MW", "59"},
+            {"Oscar Hotel Six Oscar Kilo Sierra Alpha", "OH6OKSA", ""},
+            {"OH6OKSA stroke portable", "OH6OKSA/P", ""},
+            {"oscar hotel six oscar kilo sierra alpha portable", "OH6OKSA/P", ""},
+            {"Kilo One Alpha Bravo Charlie five nine nine", "K1ABC", "599"},
+            {"Whiskey One Alpha Whiskey", "W1AW", ""},
+            {"Xray Delta One Zulu", "XD1Z", ""},
+            {"x ray delta one zulu zulu", "XD1ZZ", ""},
+            {"delta lima niner alpha bravo charlie", "DL9ABC", ""},
+            {"Delta Mike Fife Hotel Foxtrot", "DM5HF", ""},
+            {"hello there", "", ""},
+            {"victor alpha three mike whiskey at five nine", "VA3MW", ""},
+            {"Echo Alpha Eight slash Delta Lima One Alpha Bravo Charlie", "EA8/DL1ABC", ""},
+            {"two", "", ""},
+        };
+        int failed = 0;
+        for (const Case& c : cases) {
+            const auto r = AetherSDR::mobile::CallsignSpeech::parse(QString::fromUtf8(c.heard));
+            const bool ok = r.call == QLatin1String(c.call) && r.report == QLatin1String(c.report);
+            failed += ok ? 0 : 1;
+            qInfo().noquote() << (ok ? "voice-selftest ok  " : "voice-selftest FAIL") << c.heard << "->" << r.call << r.report;
+        }
+        qInfo() << "voice-selftest:" << int(std::size(cases)) - failed << "of" << int(std::size(cases)) << "ok";
+        return failed;
+    }
     if (parser.isSet(fontPxOption)) {
         QFont font = QGuiApplication::font();
         font.setPixelSize(parser.value(fontPxOption).toInt());

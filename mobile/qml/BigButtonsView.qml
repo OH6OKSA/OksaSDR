@@ -596,26 +596,36 @@ Rectangle {
             columns: big.landscape ? 2 : 1
             columnSpacing: Theme.spacing
             rowSpacing: Theme.spacing
-            TextField {
-                id: logCall
-                objectName: "bigLogCall"
-                Accessible.name: qsTr("Callsign")
+            RowLayout {
                 Layout.fillWidth: true
-                placeholderText: qsTr("Callsign")
-                font.pixelSize: logPanel.bigPx
-                font.family: "monospace"
-                font.capitalization: Font.AllUppercase
-                inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
-                onTextChanged: {
-                    if (!big.logging) return
-                    Engine.workedCall = text
-                    if (text.length > 0 && big.logTimeOn.length === 0)
-                        big.logTimeOn = Qt.formatDateTime(new Date(new Date().getTime() + new Date().getTimezoneOffset() * 60000), "HHmm")
-                    if (text.length === 0) big.logTimeOn = ""
-                    lookupDelay.restart()
+                spacing: Theme.spacing
+                TextField {
+                    id: logCall
+                    objectName: "bigLogCall"
+                    Accessible.name: qsTr("Callsign")
+                    Layout.fillWidth: true
+                    placeholderText: qsTr("Callsign")
+                    font.pixelSize: logPanel.bigPx
+                    font.family: "monospace"
+                    font.capitalization: Font.AllUppercase
+                    inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+                    onTextChanged: {
+                        if (!big.logging) return
+                        Engine.workedCall = text
+                        if (text.length > 0 && big.logTimeOn.length === 0)
+                            big.logTimeOn = Qt.formatDateTime(new Date(new Date().getTime() + new Date().getTimezoneOffset() * 60000), "HHmm")
+                        if (text.length === 0) big.logTimeOn = ""
+                        lookupDelay.restart()
+                    }
+                    onAccepted: big.logIt()
+                    Keys.onEscapePressed: big.closeLog()
                 }
-                onAccepted: big.logIt()
-                Keys.onEscapePressed: big.closeLog()
+                VoiceButton {
+                    objectName: "bigLogVoice"
+                    Layout.preferredHeight: logCall.height
+                    Layout.preferredWidth: logCall.height
+                    font.pixelSize: Math.round(logPanel.bigPx * 0.8)
+                }
             }
             AppButton {
                 objectName: "bigLogSave"
@@ -628,6 +638,24 @@ Rectangle {
                 Layout.preferredHeight: Math.max(Theme.touchTarget, logPanel.bigPx * 1.6)
                 onClicked: big.logIt()
             }
+        }
+        // A call the voice button heard (roadmap 79), with its report.
+        Connections {
+            target: Engine
+            enabled: big.logging
+            function onVoiceHeard(call, report) {
+                logCall.text = call
+                if (report.length > 0) big.logRstSent = report
+            }
+        }
+        Label {
+            objectName: "bigLogVoiceStatus"
+            visible: Engine.voiceInputOffered && Engine.voiceInputStatus.length > 0
+            Layout.fillWidth: true
+            text: Engine.voiceInputStatus
+            color: Theme.textDim
+            font.pixelSize: Theme.px(16)
+            wrapMode: Text.Wrap
         }
         Timer {
             id: lookupDelay

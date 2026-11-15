@@ -287,7 +287,10 @@ radio interface, with no computer running alongside.
   the prefix), worked-before and dupe check, POTA / WWFF references, the
   calls the CW decoder heard offered for the Call field, **Spot** to the DX
   cluster (the exact line shown first), **Self-spot** of your own POTA
-  activation to pota.app (shown first), and
+  activation to pota.app (shown first), the call spelled **by voice**
+  (🎤, the device's own speech recognition, the international alphabet;
+  nothing logs until you tap Log), a Name field, a logged contact **edited
+  or deleted** with a tap, and
   the log as an ADIF file in Files (iPhone, iPad) or Documents (Android,
   computer): share it to your logbook or LoTW, or import contacts from
   another logbook. Every QSO can also go straight to your **Wavelog** or
@@ -394,6 +397,8 @@ landscape and Android pictures are taken from the devices.</sub>
 | USB cables in Radio Setup › USB (CAT, BCD, Bit, LDPA, passthrough) | 🧪 A real CAT cable's settings shown and one changed and set back on the FLEX (build 149); the other types tried with stand-in cables; reports with a cable plugged in welcome |
 | Mac (Apple silicon), the iPad app from TestFlight | ✅ In use by testers; typing straight into the fields (the text box on press and hold since build 140, Backspace since 142) |
 | Log tab, ADIF export and import, QRZ.com lookup | ✅ In use by testers |
+| Log › voice entry (build 172) | 🧪 The phonetics reader checked with 20 cases (--voice-selftest) and the button's result filling the fields in the app here; the speech recognisers themselves (iOS Speech, Android 13+) to verify on devices |
+| Log › editing and deleting a contact (build 172) | 🧪 Edited and deleted on a copy of a log here: the other records byte for byte as before |
 | Log › Self-spot to POTA (build 171) | 🧪 Tested against a stand-in for pota.app's spot endpoint on this PC (the JSON, the app's User-Agent, the two-park choice, 30 s between spots); not yet posted to pota.app |
 | Log › Spot to the DX cluster (build 170) | 🧪 Tested against a DX Spider stand-in on this PC (echoed, refused, not seen back, not connected); not yet posted to a public cluster |
 | Several slices and panadapters, multiFLEX | ✅ Supported |
