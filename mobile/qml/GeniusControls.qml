@@ -3,11 +3,12 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import AetherMobile
 
-// 4O3A's Power Genius XL and Tuner Genius XL on the Amp tab, as the radio
+// 4O3A's Tuner Genius XL and Power Genius XL on the Amp tab, as the radio
 // reports them and as the app reads them directly (MobileEngine4o3a.cpp).
-// The amplifier: OPERATE / STANDBY, its forward power, SWR, drive, current,
-// supply and temperatures on the desktop applet's scales, its ports and fan.
-// The tuner: OPERATE / BYPASS / STANDBY, TUNE, its relays and antenna switch.
+// The tuner first: OPERATE / BYPASS / STANDBY, TUNE, its relays and antenna
+// switch. The amplifier: OPERATE / STANDBY, its forward power, SWR, drive,
+// current, supply and temperatures on the desktop applet's scales, its ports
+// and fan.
 // With control on (Radio Setup › Amp) every change is confirmed here first;
 // the devices guard themselves, and the tuner's relays and antenna are not
 // moved while the radio transmits.
@@ -51,172 +52,13 @@ ColumnLayout {
         Label { id: chipText; anchors.centerIn: parent; text: parent.word; color: parent.hot ? "white" : Theme.text; font.pixelSize: Theme.px(14); font.bold: true }
     }
 
-    // ================= Power Genius XL =================
-    ColumnLayout {
-        id: pgxlBox
-        visible: !!genius.p.present
-        Layout.fillWidth: true
-        spacing: Theme.spacing / 2
-        readonly property bool canCommand: !!genius.p.control && !!genius.p.radio && !genius.p.pending
-
-        RowLayout {
-            Layout.fillWidth: true
-            Label { Layout.fillWidth: true; text: qsTr("Power Genius XL"); color: Theme.text; font.pixelSize: Theme.px(17); font.bold: true; elide: Text.ElideRight }
-            // IDLE is OPERATE not keyed, as the amplifier's own panel says it.
-            Chip {
-                objectName: "pgxlState"
-                readonly property string st: genius.p.state || ""
-                visible: st.length > 0
-                word: st === "IDLE" ? qsTr("OPERATE") : st.replace("_", " ")
-                hot: st.indexOf("TRANSMIT") === 0
-            }
-        }
-        Label {
-            Layout.fillWidth: true
-            text: genius.link(genius.p, qsTr("The amplifier"))
-            color: Theme.textDim
-            font.pixelSize: Theme.px(13)
-            wrapMode: Text.Wrap
-        }
-        Label {
-            objectName: "pgxlAlert"
-            visible: (genius.p.alert || "").length > 0
-            Layout.fillWidth: true
-            text: genius.p.alert || ""
-            color: Theme.transmit
-            font.pixelSize: Theme.px(15)
-            font.bold: true
-            wrapMode: Text.Wrap
-        }
-        GridLayout {
-            Layout.fillWidth: true
-            columns: genius.width >= 560 ? 3 : 1
-            columnSpacing: Theme.spacing
-            rowSpacing: 4
-            BarGauge {
-                objectName: "pgxlForward"
-                Layout.fillWidth: true
-                Layout.preferredHeight: 44
-                kind: qsTr("Forward")
-                // 0–100 W until the power passes 100 W (back under 80 W): a 15 W tune
-                // carrier on a 2 kW scale was a sliver nobody saw (build 152).
-                property real autoMax: 100
-                onValueChanged: autoMax = value >= 100 ? 2000 : value < 80 ? 100 : autoMax
-                min: 0; max: autoMax; red: autoMax > 100 ? 1500 : 1e9
-                live: !!genius.p.metersLive
-                value: genius.p.fwd || 0
-                text: qsTr("Forward") + " " + genius.num(genius.p.fwd, 0, "W")
-            }
-            BarGauge {
-                objectName: "pgxlSwr"
-                Layout.fillWidth: true
-                Layout.preferredHeight: 44
-                kind: qsTr("SWR")
-                min: 1; max: 3; red: 2.5
-                live: !!genius.p.metersLive && (genius.p.fwd || 0) >= 5
-                value: (genius.p.fwd || 0) >= 5 ? (genius.p.swr || 1) : 1
-                text: qsTr("SWR") + " " + ((genius.p.fwd || 0) >= 5 ? genius.num(genius.p.swr, 2, "") : "–")
-            }
-            BarGauge {
-                objectName: "pgxlDrive"
-                Layout.fillWidth: true
-                Layout.preferredHeight: 44
-                kind: qsTr("Drive")
-                min: 0; max: 100; red: 75
-                live: (genius.p.drive || -1) >= 0
-                value: Math.max(0, genius.p.drive || 0)
-                text: qsTr("Drive") + " " + genius.num(genius.p.drive, 0, "W")
-            }
-        }
-        GridLayout {
-            Layout.fillWidth: true
-            columns: genius.width >= 560 ? 2 : 1
-            columnSpacing: Theme.spacing * 2
-            rowSpacing: 2
-            Info { label: qsTr("Current"); value: genius.num(genius.p.amps, 1, "A") }
-            Info { label: qsTr("Supply"); value: genius.p.direct ? genius.num(genius.p.volts, 1, "V") + "   " + genius.num(genius.p.mains, 0, "V AC") : "–" }
-            Info { label: qsTr("PA temperature"); value: genius.num(genius.p.temp, 0, "°C") }
-            Info { label: qsTr("Harmonic load"); value: genius.p.direct ? genius.num(genius.p.hlTemp, 0, "°C") : "–" }
-            Info {
-                visible: !!genius.p.portsKnown
-                label: qsTr("Port A")
-                value: genius.p.portA && genius.p.portA.live ? genius.p.portA.band + "  " + genius.p.portA.bias : qsTr("not in use")
-            }
-            Info {
-                visible: !!genius.p.portsKnown
-                label: qsTr("Port B")
-                value: genius.p.portB && genius.p.portB.live ? genius.p.portB.band + "  " + genius.p.portB.bias : qsTr("not in use")
-            }
-        }
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 4
-            Label { text: qsTr("Mode"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
-            AppButton {
-                objectName: "pgxlStandby"
-                text: qsTr("Standby")
-                checked: !genius.p.operate
-                enabled: pgxlBox.canCommand
-                Layout.preferredWidth: Theme.buttonWidth * 1.6
-                onClicked: if (!checked) confirm.ask("pgxlStandby")
-            }
-            AppButton {
-                objectName: "pgxlOperate"
-                text: qsTr("Operate")
-                checked: !!genius.p.operate
-                enabled: pgxlBox.canCommand
-                Layout.preferredWidth: Theme.buttonWidth * 1.6
-                onClicked: if (!checked) confirm.ask("pgxlOperate")
-            }
-        }
-        // Why the mode buttons are dim with Control on: an amplifier the radio
-        // does not report (read only at an address set here: Standby / Operate
-        // go through the radio, as on the desktop).
-        Label {
-            objectName: "pgxlModeNote"
-            visible: !!genius.p.control && !genius.p.radio
-            Layout.fillWidth: true
-            text: qsTr("Standby / Operate go through the radio, and the radio does not report this amplifier: check its connection to the radio.")
-            color: Theme.textDim
-            font.pixelSize: Theme.px(13)
-            wrapMode: Text.Wrap
-        }
-        RowLayout {
-            visible: !!genius.p.canWriteFan
-            Layout.fillWidth: true
-            spacing: 4
-            Label { text: qsTr("Fan"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
-            Repeater {
-                model: [{ v: "STANDARD", l: qsTr("Standard") }, { v: "CONTEST", l: qsTr("Contest") }, { v: "BROADCAST", l: qsTr("Broadcast") }]
-                delegate: AppButton {
-                    required property var modelData
-                    objectName: "pgxlFan" + modelData.v
-                    text: modelData.l
-                    checked: genius.p.fanMode === modelData.v
-                    enabled: !!genius.p.control
-                    onClicked: if (!checked) confirm.ask("pgxlFan", modelData.v)
-                }
-            }
-        }
-        Label {
-            objectName: "pgxlNotice"
-            Layout.fillWidth: true
-            text: genius.p.notice ? genius.p.notice
-                : !genius.p.control ? qsTr("Control is off: turn it on in Radio Setup › Amp to change the amplifier from here.")
-                : genius.p.pending ? qsTr("Waiting for the amplifier…") : ""
-            visible: text.length > 0
-            color: genius.p.notice ? Theme.warning : Theme.textDim
-            font.pixelSize: Theme.px(13)
-            wrapMode: Text.Wrap
-        }
-    }
-
     // ================= Tuner Genius XL =================
+    // First, above the amplifier (Hanno Vogels DK3HV, build 168: "I use the
+    // tuner 10 times more than amp. Or switch at least the tuner on top").
     ColumnLayout {
         id: tuner
         visible: !!genius.t.present
         Layout.fillWidth: true
-        Layout.topMargin: genius.p.present ? Theme.spacing : 0
         spacing: Theme.spacing / 2
         readonly property bool control: !!genius.t.control
         // The relays and the antenna: the direct link, and the radio in receive.
@@ -408,6 +250,167 @@ ColumnLayout {
                 : genius.transmitting && genius.t.direct ? qsTr("The relays and the antenna wait until the radio is in receive.") : ""
             visible: text.length > 0
             color: genius.t.notice ? Theme.warning : Theme.textDim
+            font.pixelSize: Theme.px(13)
+            wrapMode: Text.Wrap
+        }
+    }
+
+    // ================= Power Genius XL =================
+    ColumnLayout {
+        id: pgxlBox
+        visible: !!genius.p.present
+        Layout.fillWidth: true
+        Layout.topMargin: genius.t.present ? Theme.spacing : 0
+        spacing: Theme.spacing / 2
+        readonly property bool canCommand: !!genius.p.control && !!genius.p.radio && !genius.p.pending
+
+        RowLayout {
+            Layout.fillWidth: true
+            Label { Layout.fillWidth: true; text: qsTr("Power Genius XL"); color: Theme.text; font.pixelSize: Theme.px(17); font.bold: true; elide: Text.ElideRight }
+            // IDLE is OPERATE not keyed, as the amplifier's own panel says it.
+            Chip {
+                objectName: "pgxlState"
+                readonly property string st: genius.p.state || ""
+                visible: st.length > 0
+                word: st === "IDLE" ? qsTr("OPERATE") : st.replace("_", " ")
+                hot: st.indexOf("TRANSMIT") === 0
+            }
+        }
+        Label {
+            Layout.fillWidth: true
+            text: genius.link(genius.p, qsTr("The amplifier"))
+            color: Theme.textDim
+            font.pixelSize: Theme.px(13)
+            wrapMode: Text.Wrap
+        }
+        Label {
+            objectName: "pgxlAlert"
+            visible: (genius.p.alert || "").length > 0
+            Layout.fillWidth: true
+            text: genius.p.alert || ""
+            color: Theme.transmit
+            font.pixelSize: Theme.px(15)
+            font.bold: true
+            wrapMode: Text.Wrap
+        }
+        GridLayout {
+            Layout.fillWidth: true
+            columns: genius.width >= 560 ? 3 : 1
+            columnSpacing: Theme.spacing
+            rowSpacing: 4
+            BarGauge {
+                objectName: "pgxlForward"
+                Layout.fillWidth: true
+                Layout.preferredHeight: 44
+                kind: qsTr("Forward")
+                // 0–100 W until the power passes 100 W (back under 80 W): a 15 W tune
+                // carrier on a 2 kW scale was a sliver nobody saw (build 152).
+                property real autoMax: 100
+                onValueChanged: autoMax = value >= 100 ? 2000 : value < 80 ? 100 : autoMax
+                min: 0; max: autoMax; red: autoMax > 100 ? 1500 : 1e9
+                live: !!genius.p.metersLive
+                value: genius.p.fwd || 0
+                text: qsTr("Forward") + " " + genius.num(genius.p.fwd, 0, "W")
+            }
+            BarGauge {
+                objectName: "pgxlSwr"
+                Layout.fillWidth: true
+                Layout.preferredHeight: 44
+                kind: qsTr("SWR")
+                min: 1; max: 3; red: 2.5
+                live: !!genius.p.metersLive && (genius.p.fwd || 0) >= 5
+                value: (genius.p.fwd || 0) >= 5 ? (genius.p.swr || 1) : 1
+                text: qsTr("SWR") + " " + ((genius.p.fwd || 0) >= 5 ? genius.num(genius.p.swr, 2, "") : "–")
+            }
+            BarGauge {
+                objectName: "pgxlDrive"
+                Layout.fillWidth: true
+                Layout.preferredHeight: 44
+                kind: qsTr("Drive")
+                min: 0; max: 100; red: 75
+                live: (genius.p.drive || -1) >= 0
+                value: Math.max(0, genius.p.drive || 0)
+                text: qsTr("Drive") + " " + genius.num(genius.p.drive, 0, "W")
+            }
+        }
+        GridLayout {
+            Layout.fillWidth: true
+            columns: genius.width >= 560 ? 2 : 1
+            columnSpacing: Theme.spacing * 2
+            rowSpacing: 2
+            Info { label: qsTr("Current"); value: genius.num(genius.p.amps, 1, "A") }
+            Info { label: qsTr("Supply"); value: genius.p.direct ? genius.num(genius.p.volts, 1, "V") + "   " + genius.num(genius.p.mains, 0, "V AC") : "–" }
+            Info { label: qsTr("PA temperature"); value: genius.num(genius.p.temp, 0, "°C") }
+            Info { label: qsTr("Harmonic load"); value: genius.p.direct ? genius.num(genius.p.hlTemp, 0, "°C") : "–" }
+            Info {
+                visible: !!genius.p.portsKnown
+                label: qsTr("Port A")
+                value: genius.p.portA && genius.p.portA.live ? genius.p.portA.band + "  " + genius.p.portA.bias : qsTr("not in use")
+            }
+            Info {
+                visible: !!genius.p.portsKnown
+                label: qsTr("Port B")
+                value: genius.p.portB && genius.p.portB.live ? genius.p.portB.band + "  " + genius.p.portB.bias : qsTr("not in use")
+            }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 4
+            Label { text: qsTr("Mode"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+            AppButton {
+                objectName: "pgxlStandby"
+                text: qsTr("Standby")
+                checked: !genius.p.operate
+                enabled: pgxlBox.canCommand
+                Layout.preferredWidth: Theme.buttonWidth * 1.6
+                onClicked: if (!checked) confirm.ask("pgxlStandby")
+            }
+            AppButton {
+                objectName: "pgxlOperate"
+                text: qsTr("Operate")
+                checked: !!genius.p.operate
+                enabled: pgxlBox.canCommand
+                Layout.preferredWidth: Theme.buttonWidth * 1.6
+                onClicked: if (!checked) confirm.ask("pgxlOperate")
+            }
+        }
+        // Why the mode buttons are dim with Control on: an amplifier the radio
+        // does not report (read only at an address set here: Standby / Operate
+        // go through the radio, as on the desktop).
+        Label {
+            objectName: "pgxlModeNote"
+            visible: !!genius.p.control && !genius.p.radio
+            Layout.fillWidth: true
+            text: qsTr("Standby / Operate go through the radio, and the radio does not report this amplifier: check its connection to the radio.")
+            color: Theme.textDim
+            font.pixelSize: Theme.px(13)
+            wrapMode: Text.Wrap
+        }
+        RowLayout {
+            visible: !!genius.p.canWriteFan
+            Layout.fillWidth: true
+            spacing: 4
+            Label { text: qsTr("Fan"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+            Repeater {
+                model: [{ v: "STANDARD", l: qsTr("Standard") }, { v: "CONTEST", l: qsTr("Contest") }, { v: "BROADCAST", l: qsTr("Broadcast") }]
+                delegate: AppButton {
+                    required property var modelData
+                    objectName: "pgxlFan" + modelData.v
+                    text: modelData.l
+                    checked: genius.p.fanMode === modelData.v
+                    enabled: !!genius.p.control
+                    onClicked: if (!checked) confirm.ask("pgxlFan", modelData.v)
+                }
+            }
+        }
+        Label {
+            objectName: "pgxlNotice"
+            Layout.fillWidth: true
+            text: genius.p.notice ? genius.p.notice
+                : !genius.p.control ? qsTr("Control is off: turn it on in Radio Setup › Amp to change the amplifier from here.")
+                : genius.p.pending ? qsTr("Waiting for the amplifier…") : ""
+            visible: text.length > 0
+            color: genius.p.notice ? Theme.warning : Theme.textDim
             font.pixelSize: Theme.px(13)
             wrapMode: Text.Wrap
         }

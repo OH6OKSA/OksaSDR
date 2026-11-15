@@ -105,15 +105,16 @@ radio interface, with no computer running alongside.
 - **Big buttons** (View › Big buttons, or ⋯ on a phone): a few large
   controls over the main screen for the car (mounted, used as the law
   allows), gloves or a glance: the frequency and S meter large, − and +
-  by the tuning step (held, they repeat), the step, and PTT across the
-  bottom; Space or a Bluetooth PTT button keys there too. Hold Exit to
+  by the tuning step (held, they repeat), the step in two halves (smaller,
+  larger), and PTT across the bottom; Space or a Bluetooth PTT button keys there too. Hold Exit to
   leave.
 - **MIDI controllers** (iPhone, iPad, Mac): Radio Setup › MIDI takes a
   controller such as Lynovation's CTR2-MIDI over Bluetooth (paired there
   on an iPhone or iPad) or USB, as a VFO knob and buttons: Learn each
   function, or import the controller's SmartSDR map (.map) or an
-  AetherSDR profile (.xml). Transmitting from it (PTT, MOX, TUNE, ATU,
-  the CW paddles) is off until turned on, and what it keyed ends when it
+  AetherSDR profile (.xml); F1–F12 play the voice keyer, the CW memories
+  or the Digi macros as a keyboard's F-keys. Transmitting from it (PTT,
+  MOX, TUNE, ATU, the CW paddles, F1–F12) is off until turned on, and what it keyed ends when it
   goes. A VFO knob that sends a position instead of turns (a CTR2's knob
   outside its Home mode) is named there and does not tune. Android comes
   later.
@@ -160,8 +161,8 @@ radio interface, with no computer running alongside.
   radio the app finds the AGC knee on a clear spot and keeps it per band
   and mode group, and **Follow** keeps AGC-T on the noise as it rises and
   falls (as Thetis's Auto AGC).
-- **Noise floor line** (View): the noise floor as a dashed line with its
-  dBm, 2D and 3D.
+- **Noise floor line** (the AGC panel's Noise line, or View): the noise
+  floor as a dashed line with its dBm, 2D and 3D.
 - **App setups** (Prof tab): the app's own settings saved under a name,
   switched in a tap, exported as a file and imported on another device.
 - Filter passband drawn on the display, on the correct side for USB/LSB and
@@ -182,7 +183,7 @@ radio interface, with no computer running alongside.
 - Connected stations (multiFLEX): every program on the radio, and
   disconnecting one to free its slices.
 - **Split**, as SmartSDR and AetherSDR: SPLIT on the info panel adds a TX
-  slice 1 kHz (CW) or 5 kHz up, muted, with transmit and focus to tune the
+  slice 1 kHz (CW, DIGU, DIGL, RTTY) or 5 kHz (voice) up, muted, with transmit and focus to tune the
   offset; tap again to end it. Press and hold SPLIT for +1, +5 or +10 kHz.
 - RF gain shown at the top right of the spectrum; a preamp or attenuator
   step shows on the waterfall and trace, as on the desktop.
@@ -281,7 +282,8 @@ radio interface, with no computer running alongside.
   there.
 - **Log** tab: quick QSO logging with QRZ.com lookup (or the country from
   the prefix), worked-before and dupe check, POTA / WWFF references, the
-  calls the CW decoder heard offered for the Call field, and
+  calls the CW decoder heard offered for the Call field, **Spot** to the DX
+  cluster (the exact line shown first), and
   the log as an ADIF file in Files (iPhone, iPad) or Documents (Android,
   computer): share it to your logbook or LoTW, or import contacts from
   another logbook. Every QSO can also go straight to your **Wavelog** or
@@ -388,6 +390,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | USB cables in Radio Setup › USB (CAT, BCD, Bit, LDPA, passthrough) | 🧪 A real CAT cable's settings shown and one changed and set back on the FLEX (build 149); the other types tried with stand-in cables; reports with a cable plugged in welcome |
 | Mac (Apple silicon), the iPad app from TestFlight | ✅ In use by testers; typing straight into the fields (the text box on press and hold since build 140, Backspace since 142) |
 | Log tab, ADIF export and import, QRZ.com lookup | ✅ In use by testers |
+| Log › Spot to the DX cluster (build 170) | 🧪 Tested against a DX Spider stand-in on this PC (echoed, refused, not seen back, not connected); not yet posted to a public cluster |
 | Several slices and panadapters, multiFLEX | ✅ Supported |
 | Spots and DX cluster, TNF, memory editing | ✅ Tested against a FLEX-6600M (build 77; the notch panel with Add in build 139) |
 | eSSB: TX processing (gate, EQ, compressor) | ✅ Measured on the FLEX with a test tone; testers' on-air reports welcome |
@@ -396,8 +399,8 @@ landscape and Android pictures are taken from the devices.</sub>
 | CW straight key and paddles on air | ✅ Checked on the FLEX at 10 W: straight key, paddles (elements on time at 30 WPM), iambic A and B squeeze |
 | Transmit lock (SB / OA) | ✅ Checked on the FLEX without transmitting (build 141); the countdown back to SB and Hold to arm at start checked in build 151 |
 | RTTY decoding and sending | ✅ Contest stations decoded live (build 141); DIGL / DIGU decoded live (IT9EJW, SV1EKI); sent at 10 W and decoded by RBN skimmers across Europe (OE9GHV 33 dB, GM0UDL 27 dB) |
-| Big buttons (build 164) | 🧪 Checked on the FLEX by the user's path (View › Big buttons, − / + and held −, Step, Space reaching PTT, held Exit) and rendered on phones and tablets both ways; in-car use to hear about |
-| MIDI controllers (build 164) | 🧪 Tested against a stand-in CTR2-MIDI (an ALSA virtual port) on the FLEX: Learn, the VFO knob, a SmartSDR map imported, PTT held and ended when the controller went (USB, 1 W, no audio); pairing and the CTR2 itself to verify (Hanno DK3HV) |
+| Big buttons (build 164) | 🧪 Checked on the FLEX by the user's path (View › Big buttons, − / + and held −, Step, Space reaching PTT, held Exit) and rendered on phones and tablets both ways; Step's halves and the shorter Exit hold (build 170) the same way; in-car use to hear about |
+| MIDI controllers (build 164) | 🧪 Tested against a stand-in CTR2-MIDI (an ALSA virtual port) on the FLEX: Learn, the VFO knob, a SmartSDR map imported, PTT held and ended when the controller went (USB, 1 W, no audio); pairing and the CTR2 itself to verify (Hanno DK3HV); F1–F12 and Stop (build 170) learned on the stand-in, F7 sending CW memory 7 at 5 W and Stop ending it |
 | RF-KIT RF2K-S amplifier | ✅ Readings checked on a real RF2K-S (Sebastian Schu DG5CST, build 148). 🧪 Control (Operate / Standby, antenna, error reset) tested against a stand-in of its REST API: confirmations, a refusal (409), no answer, a lost link, never while transmitting (checked keyed on the FLEX); to verify on a real RF2K-S. 🧪 Tune's carrier (build 150) keyed on the FLEX at 5 W against the stand-in: STANDBY first, kept with the app in the background, off once tuned, after 20 s, on Stop, with the amplifier in OPERATE, on a lost link, and the radio unkeying by itself when the app was killed |
 | Elecraft KPA1500 amplifier (build 168) | 🧪 Tested against a stand-in of its UDP and TCP servers (the Programming Reference V3's replies, acting on its commands) with the FLEX connected: readings on the Amp tab and the meters, a fault, the supplies off, silence and back, the logged power in OPERATE (USB, 5 W, no audio); Control: Operate, ANT2, ATU bypass, a fault cleared and a temperature fault not, Tune keyed at 10 W on 14.345 (tuned, no match, Stop, 5 W refused), the TCP connection held by another program; nothing sent with Control off; to verify on a real KPA1500 (Rich Yost N2RY) |
 | 4O3A Power Genius XL / Tuner Genius XL (readings and control) | 🧪 Built in (build 152); tested against a stand-in that replays real devices' frames; reports from owners welcome |

@@ -606,7 +606,8 @@ screen reader inside them, are still to come.
 main screen with a few large controls, for the car (the device mounted,
 used as the law allows), gloves or a glance (asked by Michael Walker):
 
-- **Exit** at the top left: hold it to leave; a tap only says so.
+- **Exit** at the top left, as large as the slice buttons: hold it a
+  moment (half the usual press and hold) to leave; a tap only says so.
 - **The slices** beside it as on the main screen: the transmit slice's
   chip shows its letter and the set power (*TX 100 W*; a % on an Aurora,
   AMP with an amplifier in Operate), the others their letter. A tap makes a
@@ -618,8 +619,11 @@ used as the law allows), gloves or a glance (asked by Michael Walker):
 - **Two meters** as bars with their readings large (S and the supply
   voltage, Power and SWR while transmitting). A tap on one chooses what it
   shows, in receive and in transmit, apart from the main screen's meters.
-- **−** and **+** tune one step a tap (held, they repeat); **Step** takes
-  the next step (after the largest the smallest).
+- **−** and **+** tune one step a tap (held, they repeat). **Step** is one
+  bar of two halves (asked by Michael Walker): the left half (▼) takes the
+  next smaller step, the right half (▲) the next larger one, the step
+  shown across the middle; at the smallest or largest step its half is
+  dimmed.
 - **PTT** across the bottom works as the main screen's (hold to talk in the
   voice modes, KEY in CW, the transmit lock; TUNE shows on it while tuning).
 
@@ -817,6 +821,11 @@ higher AGC-T. The note under it says what it follows, or why it waits:
 Moving the slider by hand lets the band and mode's measured value go, so
 nothing follows there until Auto measures again. Follow stays on or off
 as you left it.
+
+**Noise line** (under Follow) shows the noise floor that Auto and Follow
+work from on the display: a dashed yellow line with its dBm at the right
+edge, in 2D and 3D. It is the same switch as **View › Noise floor line**
+([5](#5-panadapter-and-waterfall)), off until you turn it on.
 
 **Sliders with − and +.** AGC-T, RF gain, each slice's volume and pan, the
 squelch level, the DSP levels, RF and tune power, the microphone and
@@ -1032,7 +1041,8 @@ stacked trace and sets the levels. They work as on the desktop AetherSDR:
 - **Noise floor line** — *On* draws the noise floor the app reads (the
   one Auto AGC-T and Follow use) as a dashed yellow line across the
   spectrum, *noise -127 dBm* at its right edge; in 3D it lies at the
-  surface's front row. Off by default.
+  surface's front row. Off by default; the AGC panel's **Noise line** is
+  the same switch.
 
 - **Spectrum** — *Auto* keeps the noise floor a quarter of the way up and
   follows it calmly: it rises only once a change has lasted over a second
@@ -1075,7 +1085,8 @@ other pans** on the display closes the others.
 Tap **SPLIT** on the info panel. As on SmartSDR and AetherSDR, a second slice
 is created on the same panadapter for transmit:
 
-- 1 kHz above in CW, 5 kHz above in other modes, same mode;
+- 1 kHz above in CW and the data modes (DIGU, DIGL, RTTY: on 14.074 the
+  transmit slice stays in the FT8 segment), 5 kHz above in voice, same mode;
 - it is muted (you listen on the original slice) and takes transmit;
 - it becomes the active slice, so you can tune the transmit frequency at
   once (drag its passband, or the step buttons).
@@ -1091,8 +1102,8 @@ offers **Off**.
 
 **Split by XIT** (Controls → TX → Split *XIT*): no second slice, for a
 radio whose slices other programs hold (as a Maestro user splits). **SPLIT**
-then turns on the XIT of the slice you are on: it transmits 1 kHz up in CW,
-5 kHz in voice, and keeps receiving where it is. Hold SPLIT for **+1**,
+then turns on the XIT of the slice you are on: it transmits 1 kHz up in CW
+and the data modes, 5 kHz in voice, and keeps receiving where it is. Hold SPLIT for **+1**,
 **+2** or **+5 kHz** (XIT reaches ±9.999 kHz). The **XIT** row on the RX
 tab shows the offset and moves it; SPLIT again (or XIT off there) ends it.
 *Second slice* is the way above.
@@ -1433,7 +1444,18 @@ seven.
   fields; your own park stays for every contact while you activate.
   *Sent* and *Rcvd* hold the reports and *Comment* a note for the
   contact. **Log CALL** (the button names the call) writes the contact;
-  the newest ten are listed. **Share the log
+  the newest ten are listed. **Spot** beside it (asked by Christoph
+  Steinert DM5HF) sends the call to the DX cluster the app is logged in to
+  (Controls › View › DX cluster), at the slice frequency. It asks first,
+  as a spot is a public post under your call, and shows the exact line
+  (*DX 14154.0 K1ABC SSB*); the remark is the mode, with their park first
+  when one is set (*POTA US-1234 SSB*), and can be changed (30
+  characters). The line under the buttons then says *Spotted on the
+  cluster* when the spot comes back from it, the cluster's own answer if it
+  refuses the spot, or that it was not seen back within 30 s (a filter on
+  the cluster may hide your own spots). Without the cluster connected
+  Spot is dimmed, and a tap says where to turn it on. Spot only stations
+  you hear. **Share the log
   (ADIF)** opens the share sheet with the whole log as an `.adi` file: mail
   it, save it to Files or Drive, AirDrop it, or open it in your logbook
   program or TQSL for LoTW. **Import contacts (ADIF)** adds the contacts of
@@ -1963,15 +1985,8 @@ seven.
   its state, power, SWR and Operate / Standby (over SmartLink too), and
   this device also reads it directly at its address (the PGXL's port 9008,
   the TGXL's 9010; on the same network or your VPN) for more. A line under
-  each name says how it is read.
-  - **Power Genius XL**: its state (*OPERATE*, *STANDBY*, *TRANSMIT A* /
-    *B*, a fault), **Forward** (0-100 W, past 100 W 0-2000 W, red from
-    1500), **SWR** (red from
-    2.5, – below 5 W) and **Drive** (the radio's power into it, 0-100 W),
-    current, supply (the PA's volts and the mains), PA and harmonic-load
-    temperatures, the bands and bias of its ports A and B, an alert when it
-    shows one; **Mode** *Standby* / *Operate* and **Fan** *Standard* /
-    *Contest* / *Broadcast* (until the amplifier restarts).
+  each name says how it is read. The tuner comes first, then the
+  amplifier (asked by Hanno Vogels DK3HV: the tuner is used far more).
   - **Tuner Genius XL**: its state (*OPERATE*, *BYPASS*, *STANDBY*,
     *TUNING*), forward power (0-100 W as for the amplifier, so a tune
     carrier reads) and SWR, **Mode** *Standby* / *Bypass* / *Operate*, **Tune** (it keys the radio for its tune carrier itself, and
@@ -1980,6 +1995,14 @@ seven.
     +, on a 1x3 model **Antenna** 1-3, and on an SO2R model **Channel**
     *A* / *B* (the radio port its meters and Tune belong to, with each
     side's frequency); an alert such as *Tuned SWR 1.13:1*.
+  - **Power Genius XL**: its state (*OPERATE*, *STANDBY*, *TRANSMIT A* /
+    *B*, a fault), **Forward** (0-100 W, past 100 W 0-2000 W, red from
+    1500), **SWR** (red from
+    2.5, – below 5 W) and **Drive** (the radio's power into it, 0-100 W),
+    current, supply (the PA's volts and the mains), PA and harmonic-load
+    temperatures, the bands and bias of its ports A and B, an alert when it
+    shows one; **Mode** *Standby* / *Operate* and **Fan** *Standard* /
+    *Contest* / *Broadcast* (until the amplifier restarts).
   - **Antenna Genius** (at the address set in Radio Setup › Amp): each
     radio port's band, RX and TX antenna, *auto* or *manual*, *TX* while
     it transmits, *inhibited*; and the antennas the Antenna Genius allows
@@ -1993,7 +2016,10 @@ seven.
   The buttons change a device only with **Control** on in Radio Setup ›
   Amp, and each change asks first (stopping a tune does not). A command
   the radio refuses says *The radio refused it:* with the radio's own
-  words. A tuner the radio does not report, reached at its address alone,
+  words. Tune goes to the tuner over this device's own link when that is
+  up, otherwise through the radio, and some radios do not pass it on
+  (*code 0x50001000*): the note then says the link is down and to check
+  that the tuner is on and its address in Radio Setup › Amp. A tuner the radio does not report, reached at its address alone,
   takes Standby / Bypass / Operate directly. The devices
   guard their own SWR, power and temperature, and the radio waits for the
   amplifier before it transmits; the tuner's relays and antenna switch wait
@@ -2239,10 +2265,15 @@ radio.
     up / down 1 MHz, zoom in / out, split, band up / down and each band,
     mode next / previous and each mode, filter wider / narrower, slice
     volume, mute, AGC-T, NB, NR, ANF, RF power, CW speed, MOX, TUNE, ATU,
-    PTT (hold), the CW paddles (dit, dah) and the straight key.
+    PTT (hold), the CW paddles (dit, dah) and the straight key; and under
+    **Macros** **F1**–**F12** and **Stop (Esc)** (asked by Christoph
+    Steinert DM5HF). F1–F12 do what a keyboard's F-keys do: in a voice
+    mode they play the voice keyer's recordings (a press while one plays
+    stops it), in CW they send the CW memories M1–M12, in RTTY and PSK the
+    Digi tab's macros F1–F8. Stop ends any of them, as Esc.
   - **Transmit from the controller** is **Off** until turned on (it asks
-    first). While off, the controller's PTT, MOX, TUNE, ATU and CW paddles
-    do nothing, so a stray press does not key the radio. A transmission
+    first). While off, the controller's PTT, MOX, TUNE, ATU, CW paddles and
+    F1–F12 do nothing, so a stray press does not key the radio. A transmission
     the controller started ends when the controller goes (switched off or
     out of range). The app's own rules apply: PTT is for voice, as the PTT
     button.

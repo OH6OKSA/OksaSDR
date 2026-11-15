@@ -354,6 +354,16 @@ void MobileEngine::setup4o3a()
             m_pgxlPending = false;
             m_pgxlNotice = tr("The radio refused it: %1").arg(message);
             emit pgxlChanged();
+        } else if (!(m_tgxlConn && m_tgxlConn->isConnected())) {
+            // With the app's own link down a Tune goes through the radio,
+            // which may not pass it on (Hanno Vogels DK3HV's, build 168:
+            // 0x50001000, not supported; an unknown tuner here: 0x5000003C):
+            // say that the link is down, not only the code.
+            m_tgxlNotice = tr("The radio refused it: %1. It went through the radio (the app's own link to the tuner is "
+                              "not up%2); with that link up, Tune goes to the tuner directly. Check that the tuner is on "
+                              "and its address in Radio Setup › Amp (the link reconnects by itself).")
+                               .arg(message, m_tgxlLinkError.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(m_tgxlLinkError));
+            emit tgxlChanged();
         } else {
             m_tgxlNotice = tr("The radio refused it: %1").arg(message);
             emit tgxlChanged();

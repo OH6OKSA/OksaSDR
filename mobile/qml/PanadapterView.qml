@@ -91,7 +91,9 @@ Rectangle {
     // The noise floor (roadmap 48): a dashed line at the engine's noise
     // estimate, its dBm at the right edge, over the 2D trace or at the 3D
     // surface's front row (the shader's height there: ((noise - the 3D zero)
-    // / range)^zCurve of the front's ridge height).
+    // / range)^zCurve of the front's ridge height). Two pixels, longer
+    // dashes, fully opaque: one pixel at 0.9 all but vanished into the 2D
+    // trace's own noise.
     Item {
         id: floorLine
         objectName: "noiseFloorMark"
@@ -107,10 +109,11 @@ Rectangle {
         y: Engine.spectrum3D ? Math.round(surface3D.height * (1 - frac3D))
                              : Math.round(traceH * (1 - Math.max(0, Math.min(1, frac2D))))
         Row {
-            spacing: 4
+            y: -1
+            spacing: 5
             Repeater {
-                model: Math.ceil(floorLine.width / 10)
-                Rectangle { width: 6; height: 1; color: "#f2c94c"; opacity: 0.9 }
+                model: Math.ceil(floorLine.width / 13)
+                Rectangle { width: 8; height: 2; color: "#f2c94c" }
             }
         }
         Rectangle {

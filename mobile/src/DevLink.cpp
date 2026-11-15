@@ -31,7 +31,7 @@ const QStringList kSettable = {
     QStringLiteral("wfColorGain"), QStringLiteral("traceAutoRange"), QStringLiteral("traceRefDbm"),
     QStringLiteral("traceRangeDb"), QStringLiteral("controlsVisible"), QStringLiteral("muted"),
     QStringLiteral("afGain"), QStringLiteral("locked"), QStringLiteral("cwDecoderEnabled"),
-    QStringLiteral("meterLeft"), QStringLiteral("meterRight"),
+    QStringLiteral("meterLeft"), QStringLiteral("meterRight"), QStringLiteral("noiseFloorLine"),
 };
 } // namespace
 
@@ -264,8 +264,24 @@ QJsonObject DevLink::state() const
     }
     for (const char* name : {"connectionState", "radioName", "frequencyMhz", "mode", "filterLow", "filterHigh",
                              "panCenterMhz", "panBandwidthMhz", "spectrum3D", "transmitting", "transmitAvailable",
-                             "transmitUnavailableReason", "sMeterDbm", "lastError", "locked", "controlsVisible"}) {
+                             "transmitUnavailableReason", "sMeterDbm", "lastError", "locked", "controlsVisible",
+                             "noiseFloorLine", "noiseFloorEstimateDbm"}) {
         s.insert(QLatin1String(name), QJsonValue::fromVariant(m_engine->property(name)));
+    }
+    // The noise floor line as drawn (roadmap 48): shown or not, and where.
+    if (m_qml) {
+        for (QObject* root : m_qml->rootObjects()) {
+            if (const auto* mark = root->findChild<QQuickItem*>(QStringLiteral("noiseFloorMark"))) {
+                const QQuickItem* pan = mark->parentItem();
+                s.insert(QStringLiteral("noiseFloorMark"),
+                         QJsonObject{{QStringLiteral("visible"), mark->isVisible()},
+                                     {QStringLiteral("y"), mark->y()},
+                                     {QStringLiteral("z"), mark->z()},
+                                     {QStringLiteral("width"), mark->width()},
+                                     {QStringLiteral("panHeight"), pan ? pan->height() : -1.0}});
+                break;
+            }
+        }
     }
     return s;
 }

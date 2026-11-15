@@ -185,6 +185,10 @@ constexpr int kCentreSettleMs = 600;
 constexpr int kCentreWithinMs = 4000;
 // How long a dragged pan centre is shown before the radio's echo rules again.
 constexpr int kPanPreviewHoldMs = 700;
+// A spot from the Log tab: its echo from the cluster waited for this long,
+// then the outcome shown this long (roadmap 67).
+constexpr int kDxSpotEchoMs = 30000;
+constexpr int kDxSpotStatusMs = 120000;
 constexpr double kDbPerSUnit = 6.0;
 
 // The app's memory in MB: on iOS and macOS its physical footprint (what
@@ -4888,12 +4892,23 @@ void MobileEngine::setPanDisplay(const QString& key, int value)
     qCInfo(lcMobile) << "pan display" << key << value;
 }
 
+// SPLIT's offset unless Split up is chosen: 1 kHz up in CW, and in the data
+// modes too (roadmap 71: 5 kHz put DIGU's TX slice on 14.079, outside the
+// FT8 segment; RTTY DX listens "up 1"), 5 kHz in voice as SmartSDR.
+int MobileEngine::splitDefaultHz(const QString& mode)
+{
+    static const QStringList narrow = {QStringLiteral("CW"),   QStringLiteral("CWL"),  QStringLiteral("CWU"),
+                                       QStringLiteral("DIGU"), QStringLiteral("DIGL"), QStringLiteral("RTTY")};
+    return narrow.contains(mode) ? 1000 : 5000;
+}
+
 void MobileEngine::toggleSplit()
 {
     RadioModel& rm = m_session.radioModel();
     if (splitMethod() == QLatin1String("xit")) {
         // Split by XIT: this slice transmits the offset away (1 kHz up in
-        // CW, 5 kHz in voice, or the chosen Split up), receives where it is.
+        // CW and the data modes, 5 kHz in voice, or the chosen Split up),
+        // receives where it is.
         if (!m_slice) {
             return;
         }
@@ -4902,9 +4917,8 @@ void MobileEngine::toggleSplit()
             m_slice->setXit(false, 0);
             qCInfo(lcMobile) << "split (XIT) off";
         } else {
-            const QString mode = m_slice->mode();
-            const bool cw = mode == QLatin1String("CW") || mode == QLatin1String("CWL") || mode == QLatin1String("CWU");
-            const int hz = std::clamp(m_splitUpKhz > 0 ? m_splitUpKhz * 1000 : (cw ? 1000 : 5000), -kRitXitLimitHz, kRitXitLimitHz);
+            const int hz = std::clamp(m_splitUpKhz > 0 ? m_splitUpKhz * 1000 : splitDefaultHz(m_slice->mode()),
+                                      -kRitXitLimitHz, kRitXitLimitHz);
             if (!m_slice->isTxSlice()) {
                 stopTransmit(QStringLiteral("TX slice changed"));
                 m_slice->setTxSlice(true);
@@ -4939,9 +4953,7 @@ void MobileEngine::toggleSplit()
         setLastError(tr("No free slice for the transmit side of a split."));
         return;
     }
-    const QString mode = m_slice->mode();
-    const bool cw = mode == QLatin1String("CW") || mode == QLatin1String("CWL") || mode == QLatin1String("CWU");
-    const double txMhz = m_slice->frequency() + (m_splitUpKhz > 0 ? m_splitUpKhz / 1000.0 : (cw ? 0.001 : 0.005));
+    const double txMhz = m_slice->frequency() + (m_splitUpKhz > 0 ? m_splitUpKhz * 1000 : splitDefaultHz(m_slice->mode())) / 1e6;
     m_splitRxId = m_slice->sliceId();
     m_splitTxId = -1;
     m_splitPending = true;
@@ -7055,6 +7067,17 @@ void MobileEngine::setupDxCluster()
         ++m_dxSpotCount;
         m_dxLastSpotUtc = QDateTime::currentDateTimeUtc();
         emit dxClusterStatusChanged();
+        // Our own spot back from the cluster, under the login call (with or
+        // without its SSID).
+        if (!m_dxSpotCall.isEmpty() && spot.dxCall.compare(m_dxSpotCall, Qt::CaseInsensitive) == 0
+            && spot.spotterCall.section(QLatin1Char('-'), 0, 0)
+                       .compare(dxCallsign().section(QLatin1Char('-'), 0, 0), Qt::CaseInsensitive) == 0) {
+            qCInfo(lcMobile).noquote() << "DX cluster: our spot of" << spot.dxCall << "is on the cluster";
+            m_dxSpotCall.clear();
+            m_dxSpotTimer.start(kDxSpotStatusMs);
+            setDxSpotStatus(tr("Spotted on the cluster: %1 on %2 kHz.")
+                                .arg(spot.dxCall).arg(spot.freqMhz * 1000.0, 0, 'f', 1));
+        }
         RadioModel& rm = m_session.radioModel();
         if (!m_connected || spot.dxCall.trimmed().isEmpty() || spot.freqMhz <= 0.0) {
             return;
@@ -7092,6 +7115,34 @@ void MobileEngine::setupDxCluster()
         cmd += QStringLiteral(" color=") + color;
         m_dxQueue.append(cmd);
         Q_UNUSED(rm);
+    });
+    // A spot the cluster refuses is answered with a line of its own (DX
+    // Spider: "Error - ...", "Sorry, ...").
+    connect(m_dx, &DxClusterClient::rawLineReceived, this, [this](const QString& line) {
+        if (m_dxSpotCall.isEmpty() || !m_dxSpotTimer.isActive()) {
+            return;
+        }
+        if (line.startsWith(QLatin1String("Error"), Qt::CaseInsensitive)
+            || line.startsWith(QLatin1String("Sorry"), Qt::CaseInsensitive)) {
+            qCInfo(lcMobile).noquote() << "DX cluster: spot refused:" << line;
+            m_dxSpotCall.clear();
+            m_dxSpotTimer.start(kDxSpotStatusMs);
+            setDxSpotStatus(tr("The cluster did not take the spot: %1").arg(line));
+        }
+    });
+    // Waits for the echo, then keeps the outcome on show for a while.
+    m_dxSpotTimer.setSingleShot(true);
+    connect(&m_dxSpotTimer, &QTimer::timeout, this, [this] {
+        if (m_dxSpotCall.isEmpty()) {
+            setDxSpotStatus({});
+            return;
+        }
+        qCInfo(lcMobile).noquote() << "DX cluster: our spot of" << m_dxSpotCall << "not seen back in"
+                                   << kDxSpotEchoMs / 1000 << "s";
+        m_dxSpotCall.clear();
+        m_dxSpotTimer.start(kDxSpotStatusMs);
+        setDxSpotStatus(tr("Spot sent: %1. Not seen back from the cluster yet (a filter there may hide it).")
+                            .arg(m_dxSpotLine));
     });
     m_dxSendTimer.setInterval(1000);
     connect(&m_dxSendTimer, &QTimer::timeout, this, [this] {
@@ -7181,6 +7232,56 @@ void MobileEngine::devCommand(const QString& command)
     m_session.radioModel().sendCmdPublic(command, [command](int code, const QString& body) {
         qInfo().noquote() << QStringLiteral("radio-commands: \"%1\" -> 0x%2 %3").arg(command, QString::number(code, 16), body);
     });
+}
+
+QString MobileEngine::dxSpotLine(const QString& call, const QString& remark) const
+{
+    const QString dx = call.trimmed().toUpper();
+    // A call: letters and digits (both), parts joined by "/".
+    static const QRegularExpression callRe(QStringLiteral("^[A-Z0-9]+(/[A-Z0-9]+)*$"));
+    static const QRegularExpression letter(QStringLiteral("[A-Z]"));
+    static const QRegularExpression digit(QStringLiteral("[0-9]"));
+    const double mhz = qsoDefaults().value(QStringLiteral("freq")).toDouble();
+    if (dx.size() < 3 || !callRe.match(dx).hasMatch() || !dx.contains(letter) || !dx.contains(digit) || mhz <= 0.0) {
+        return {};
+    }
+    // Never empty: DX Spider drops a spot without a remark (the desktop's
+    // note), so the mode when none is typed.
+    QString text = remark.simplified();
+    if (text.isEmpty()) {
+        text = QsoLog::adifMode(qsoDefaults().value(QStringLiteral("mode")).toString()).first;
+    }
+    if (text.isEmpty()) {
+        text = QStringLiteral("Spotted via OksaSDR");
+    }
+    return QStringLiteral("DX %1 %2 %3").arg(mhz * 1000.0, 0, 'f', 1).arg(dx, text);
+}
+
+bool MobileEngine::sendDxSpot(const QString& call, const QString& remark)
+{
+    const QString line = dxSpotLine(call, remark);
+    if (line.isEmpty()) {
+        return false;
+    }
+    if (!m_dx || !m_dx->isConnected()) {
+        setLastError(tr("Not spotted: the DX cluster is not connected (Controls › View › DX cluster)."));
+        return false;
+    }
+    m_dx->sendCommand(line);
+    qCInfo(lcMobile).noquote() << "DX cluster: spot sent:" << line;
+    m_dxSpotCall = call.trimmed().toUpper();
+    m_dxSpotLine = line;
+    m_dxSpotTimer.start(kDxSpotEchoMs);
+    setDxSpotStatus(tr("Spot sent: %1").arg(line));
+    return true;
+}
+
+void MobileEngine::setDxSpotStatus(const QString& status)
+{
+    if (status != m_dxSpotStatus) {
+        m_dxSpotStatus = status;
+        emit dxSpotStatusChanged();
+    }
 }
 
 QString MobileEngine::dxCallsign() const

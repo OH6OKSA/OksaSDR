@@ -4,8 +4,9 @@ import QtQuick.Layouts
 import AetherMobile
 
 // AGC from the info panel: the mode (off/slow/med/fast; picking one keeps
-// the popup open), the AGC threshold (AGC-T) and the panadapter's RF gain,
-// each slider with − / + for the last step.
+// the popup open), the AGC threshold (AGC-T) with Auto, Follow and the noise
+// floor line, and the panadapter's RF gain, each slider with − / + for the
+// last step.
 Popup {
     id: chooser
     objectName: "agcChooser"
@@ -123,6 +124,33 @@ Popup {
                 text: Engine.agcAuto.follow
                       ? (Engine.agcAuto.followNote || qsTr("Follows the noise."))
                       : qsTr("Follow the noise: AGC-T moves as the noise rises and falls, from Auto's measurement.")
+                color: Theme.textDim
+                font.pixelSize: 12
+                wrapMode: Text.Wrap
+            }
+        }
+        // The noise floor line (roadmap 48) by Auto and Follow, which work
+        // from that noise: in View alone it went unfound (the user, build
+        // 169: "pitäisi olla samassa valikossa missä rf gain, auto jne").
+        RowLayout {
+            Layout.fillWidth: true
+            visible: Engine.connectionState === "connected"
+            AppButton {
+                objectName: "agcNoiseLine"
+                text: qsTr("Noise line")
+                checked: Engine.noiseFloorLine
+                focusPolicy: Qt.NoFocus
+                Accessible.name: qsTr("Noise floor line")
+                Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                Layout.preferredHeight: Theme.touchTarget
+                onClicked: Engine.noiseFloorLine = !Engine.noiseFloorLine
+            }
+            Label {
+                objectName: "agcNoiseLineNote"
+                Layout.fillWidth: true
+                text: Engine.noiseFloorLine
+                      ? qsTr("The noise floor on the display: a dashed line with its dBm.")
+                      : qsTr("Show the noise floor on the display as a dashed line with its dBm (also in View).")
                 color: Theme.textDim
                 font.pixelSize: 12
                 wrapMode: Text.Wrap

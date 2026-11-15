@@ -1,6 +1,14 @@
-**OksaSDR for Android — beta 81.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
+**OksaSDR for Android — beta 82.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
-### New in beta 81
+### New in beta 82
+- **Spot from the Log tab** (thanks Christoph Steinert DM5HF): **Spot** beside Log sends the call to the DX cluster the app is logged in to (Controls › View › DX cluster), at the slice frequency. It asks first and shows the exact line that goes out (*DX 14154.0 K1ABC SSB*), as it is a public post under your call; the remark is the mode, with their park first when you have set one (*POTA US-1234 SSB*), and you can change it. Under the row: *Spotted on the cluster* when the spot comes back, the cluster's own answer if it refuses it, or *Not seen back* after 30 s. Without the cluster Spot is dimmed and a tap says where to turn it on.
+- **Big buttons: Step in two halves and a larger Exit** (thanks Michael Walker): the left half of the Step bar takes a smaller step (▼), the right half a larger one (▲), the step shown across the middle; at the smallest or largest step its half is dimmed. **Exit** is as large as the slice buttons beside it, and leaves after half the hold it needed.
+- **Noise line in the AGC panel**: the noise floor line's switch was only in Controls › View, easy to miss; now it is also **Noise line** under Auto and Follow in the AGC panel (tap the RF GAIN label or the AGC in the info row). The line is thicker in 2D, where it sank into the trace's own noise.
+- **The Tuner Genius XL first on the Amp tab** (thanks Hanno Vogels DK3HV): above the Power Genius XL. A Tune the radio refuses while the app's own link to the tuner is down now says so (it went through the radio; with the link up Tune goes to the tuner directly) and what to check, not only the radio's code.
+- **SPLIT 1 kHz up in DIGU, DIGL and RTTY**, as in CW (5 kHz put an FT8 transmit slice outside the FT8 segment); voice stays 5 kHz, and holding SPLIT still chooses.
+- (iPhone, iPad and Mac only: **F1–F12 and Stop on a MIDI controller's buttons**, Radio Setup › MIDI › Macros, thanks Christoph Steinert DM5HF. MIDI controllers come to Android later.)
+
+### Still new from beta 81
 - **AGC-T follows the noise** (AGC panel › **Follow**, as Thetis's Auto AGC): from Auto's measurement of each band and mode, AGC-T moves as the noise floor rises and falls, at dusk on 80 m, at sunrise on 40 m or on another antenna. It waits, and says why, until Auto has measured the band and mode, with a filter much wider or narrower than measured with, in AGC off, while you transmit and in FM. FM has no AGC on the radio, so Auto is dimmed there.
 - **Noise floor line** (Controls › View): the noise floor the app reads as a dashed yellow line across the spectrum with its dBm, in 2D and 3D. Off by default.
 - The passband stays in view as the display follows your tuning (an LSB slice tuned down showed only part of its filter at a narrow span).

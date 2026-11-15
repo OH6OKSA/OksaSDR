@@ -6,8 +6,8 @@
 // files Lynovation ships for SmartSDR for iOS / macOS) or the desktop's XML
 // profile. The functions are the app's own, under the desktop's ids, so the
 // same maps work. Transmitting from MIDI (PTT, MOX, TUNE, ATU, the CW
-// paddles) stays off until the operator turns it on, and a transmission a
-// controller keyed ends when the controller goes. Android: RtMidi has no
+// paddles, the F1-F12 macros) stays off until the operator turns it on, and
+// a transmission a controller keyed ends when the controller goes. Android: RtMidi has no
 // backend there yet (its AMIDI one needs API 29), so the page says so.
 
 #include "MobileEngine.h"
@@ -367,6 +367,43 @@ void MobileEngine::registerMidiFunctions()
             setCwKey(false, QStringLiteral("MIDI released"));
         }
     }, true);
+
+    // ---- Macros (roadmap 68, Christoph Steinert DM5HF) ----
+    // F1-F12 as the keyboard's F-keys (OperateKeys.qml): the voice keyer's
+    // file in a voice mode (a press while it plays stops it), the CW memory
+    // in CW, the Digi tab's macro (F1-F8) in RTTY and PSK. Neither the
+    // desktop nor a SmartSDR map names these, so the ids are the app's own.
+    const QString macros = tr("Macros");
+    const auto macro = [this](int index) {
+        if (midiTransmitRefused()) {
+            return;
+        }
+        // Any key ends a repeating macro, as on the keyboard.
+        cancelMacroRepeat(QStringLiteral("a MIDI button"));
+        m_midiKeyed = true;
+        if (cwMode()) {
+            qCInfo(lcMobile).noquote() << "MIDI: F" + QString::number(index + 1) << "sends CW memory" << index + 1;
+            sendCwMemory(index);
+        } else if (textModeActive()) {
+            if (index < 8) {
+                qCInfo(lcMobile).noquote() << "MIDI: F" + QString::number(index + 1) << "sends the Digi macro";
+                sendTextMacro(index);
+            }
+        } else {
+            qCInfo(lcMobile).noquote() << "MIDI: F" + QString::number(index + 1) << "plays the voice keyer";
+            dvkPlay(index + 1);
+        }
+    };
+    for (int i = 0; i < 12; ++i) {
+        reg(QByteArray("macro.f").append(QByteArray::number(i + 1)).constData(), tr("F%1").arg(i + 1), macros,
+            P::Trigger, 0, 1, [macro, i](float) { macro(i); }, true);
+    }
+    // Esc: stops, never keys.
+    reg("macro.stop", tr("Stop (Esc)"), macros, P::Trigger, 0, 1, [this](float) {
+        stopCwx();
+        dvkStop();
+        stopTextTx();
+    });
 }
 
 void MobileEngine::midiAction(const QString& paramId, float value)

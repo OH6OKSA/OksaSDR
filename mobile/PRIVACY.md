@@ -37,6 +37,9 @@ these services:
   you type is looked up there with your account.
 - **A DX cluster**, if you turn it on: the app connects to the cluster
   server you choose, signs in with your callsign and receives its spots.
+  When you tap **Spot** on the Log tab and confirm, the spot (the call,
+  the frequency and the remark shown to you) goes to that cluster under
+  your callsign, and the cluster publishes it to its users.
 - **PSK Reporter**, only if you turn on *Report to PSK Reporter* on the
   FTx tab (off by default): the callsigns, locators, frequencies, SNR and
   times of the FT8 / FT4 stations this device decodes are sent to

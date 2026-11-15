@@ -419,8 +419,8 @@ ColumnLayout {
     Label {
         Layout.fillWidth: true
         text: Engine.splitMethod === "xit"
-              ? qsTr("SPLIT turns this slice's XIT on: it transmits 1 kHz up in CW, 5 kHz in voice (hold SPLIT for +1 / +2 / +5 kHz) and receives where it is. No second slice; the XIT row on the RX tab shows and moves it.")
-              : qsTr("SPLIT opens a second slice for transmit, 1 kHz up in CW, 5 kHz in voice. It needs a free slice on the radio.")
+              ? qsTr("SPLIT turns this slice's XIT on: it transmits 1 kHz up in CW and the data modes, 5 kHz in voice (hold SPLIT for +1 / +2 / +5 kHz) and receives where it is. No second slice; the XIT row on the RX tab shows and moves it.")
+              : qsTr("SPLIT opens a second slice for transmit, 1 kHz up in CW and the data modes, 5 kHz in voice. It needs a free slice on the radio.")
         color: Theme.textDim
         font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap

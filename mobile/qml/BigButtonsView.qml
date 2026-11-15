@@ -10,10 +10,10 @@ import "MeterMarks.js" as MeterMarks
 // chip with the set power and two bar meters of their own choosing (roadmap
 // 58, the user), − and +
 // filling the middle (one tuning step a tap, repeating while held), the step
-// (a tap takes the next one), and PTT across the bottom. It lies over the
-// page rather than in a popup, so the page keeps the keyboard: Space and a
-// Bluetooth PTT button key, the arrows tune. Out by holding Exit, so a stray
-// tap does not leave it.
+// as two halves (the left a smaller step, the right a larger, roadmap 69),
+// and PTT across the bottom. It lies over the page rather than in a popup,
+// so the page keeps the keyboard: Space and a Bluetooth PTT button key, the
+// arrows tune. Out by holding Exit, so a stray tap does not leave it.
 Rectangle {
     id: big
     color: Theme.background
@@ -48,11 +48,14 @@ Rectangle {
     function stepText(hz) {
         return hz >= 1000 ? (hz / 1000) + " kHz" : hz + " Hz"
     }
-    function nextStep() {
-        const list = Engine.stepList.slice().sort((a, b) => a - b)
-        if (list.length === 0) return
-        const i = list.indexOf(Engine.stepHz)
-        Engine.setStepHz(list[(i + 1) % list.length])
+    readonly property var steps: Engine.stepList.slice().sort((a, b) => a - b)
+    readonly property int stepIndex: steps.indexOf(Engine.stepHz)
+    // The next smaller (-1) or larger (+1) step, stopping at the ends.
+    function stepBy(direction) {
+        if (steps.length === 0) return
+        const i = stepIndex < 0 ? (direction > 0 ? -1 : steps.length) : stepIndex
+        const next = Math.max(0, Math.min(steps.length - 1, i + direction))
+        if (next !== stepIndex) Engine.setStepHz(steps[next])
     }
 
     // Touches never reach the page under it (the page also turns its own
@@ -60,13 +63,59 @@ Rectangle {
     // still get it, and a tap on a meter here opened the page's mode list).
     MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
 
-    // The next tuning step a tap.
-    component StepButton: AppButton {
-        objectName: "bigStep"
-        text: qsTr("Step %1").arg(big.stepText(Engine.stepHz))
-        Accessible.description: qsTr("Tap for the next tuning step")
-        focusPolicy: Qt.NoFocus
-        onClicked: big.nextStep()
+    // The tuning step as one bar of two halves (Michael Walker: "split the
+    // Bar and have an UP and DOWN"): the left half a smaller step (▼ at its
+    // edge), the right a larger (▲), the step itself across the middle. An
+    // end dims its half; neither wraps round.
+    component StepBar: Item {
+        id: bar
+        property int fontPx: Theme.buttonFont
+        // The step between the two glyphs, clear of both.
+        implicitWidth: Math.max(stepLabel.implicitWidth + 2 * (glyph.advanceWidth + 20) + 2,
+                                Theme.touchTarget * 2)
+        implicitHeight: Theme.touchTarget
+        TextMetrics { id: glyph; font.pixelSize: bar.fontPx; text: "▼" }
+        RowLayout {
+            anchors.fill: parent
+            spacing: 2
+            Repeater {
+                model: [-1, 1]
+                delegate: AppButton {
+                    id: half
+                    required property int modelData
+                    objectName: modelData < 0 ? "bigStepDown" : "bigStepUp"
+                    text: modelData < 0 ? "▼" : "▲"
+                    font.pixelSize: bar.fontPx
+                    leftPadding: 10
+                    rightPadding: 10
+                    enabled: modelData < 0 ? big.stepIndex !== 0
+                                           : big.stepIndex < big.steps.length - 1
+                    Accessible.name: modelData < 0 ? qsTr("Smaller tuning step") : qsTr("Larger tuning step")
+                    Accessible.description: qsTr("Step %1").arg(big.stepText(Engine.stepHz))
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    contentItem: Text {
+                        text: half.text
+                        font: half.font
+                        horizontalAlignment: half.modelData < 0 ? Text.AlignLeft : Text.AlignRight
+                        verticalAlignment: Text.AlignVCenter
+                        color: Theme.buttonText
+                        opacity: half.enabled ? 1.0 : 0.4
+                    }
+                    onClicked: big.stepBy(modelData)
+                }
+            }
+        }
+        // Over both halves; a tap on it falls to the half under it.
+        Label {
+            id: stepLabel
+            objectName: "bigStep"
+            anchors.centerIn: parent
+            Accessible.ignored: true
+            text: qsTr("Step %1").arg(big.stepText(Engine.stepHz))
+            font.pixelSize: bar.fontPx
+            color: Theme.buttonText
+        }
     }
 
     // A slice as the main screen's chip, working as it does there: its
@@ -259,6 +308,9 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             Layout.columnSpan: big.landscape ? 3 : 1
+            // As large as the slice chips beside it, and out after half the
+            // usual press and hold (Michael Walker: "a big bigger and less of
+            // a HOLD time by 1/2").
             AppButton {
                 id: exitButton
                 objectName: "bigExit"
@@ -266,8 +318,20 @@ Rectangle {
                 Accessible.name: qsTr("Exit big buttons")
                 Accessible.description: qsTr("Hold to exit")
                 focusPolicy: Qt.NoFocus
-                onPressAndHold: Engine.bigButtons = false
-                onClicked: holdHint.visible = true
+                font.pixelSize: Math.round(Math.max(Theme.buttonFont, big.readingPx * 0.7))
+                leftPadding: 16
+                rightPadding: 16
+                property bool exiting: false
+                onPressedChanged: if (pressed) exiting = false
+                Timer {
+                    running: exitButton.pressed
+                    interval: Qt.styleHints.mousePressAndHoldInterval / 2
+                    onTriggered: {
+                        exitButton.exiting = true
+                        Engine.bigButtons = false
+                    }
+                }
+                onClicked: if (!exiting) holdHint.visible = true
             }
             Label {
                 id: holdHint
@@ -285,11 +349,9 @@ Rectangle {
                 }
             }
             Item { Layout.fillWidth: true }
-            StepButton {
+            StepBar {
                 visible: big.lowLandscape
-                leftPadding: 14
-                rightPadding: 14
-                font.pixelSize: Theme.px(20)
+                fontPx: Theme.px(20)
             }
             Label {
                 text: Engine.mode
@@ -364,14 +426,14 @@ Rectangle {
                 TuneButton { direction: -1 }
                 TuneButton { direction: 1 }
             }
-            StepButton {
+            StepBar {
                 visible: !big.lowLandscape
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.verticalStretchFactor: 2
                 Layout.preferredHeight: Theme.touchTarget * 1.3
                 Layout.minimumHeight: Theme.touchTarget
-                font.pixelSize: Math.round(Math.max(Theme.px(22), big.readingPx))
+                fontPx: Math.round(Math.max(Theme.px(22), big.readingPx))
             }
             PttButton {
                 objectName: "bigPtt"

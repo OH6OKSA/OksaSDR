@@ -824,7 +824,8 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         // (click only emits its clicked): whatever covers it, a popup's
         // press-outside close included, acts as for a user. showname only
         // scrolls it into view; holdname keeps the finger down 1.2 s (a
-        // press and hold). NAME@TEXT: of the controls so named, the one
+        // press and hold), or MS given last (holdname bigExit 300: shorter
+        // than Exit's hold). NAME@TEXT: of the controls so named, the one
         // showing TEXT (the step buttons share a name); taptext TEXT: the
         // control showing TEXT, for one with no name (− written as -).
         auto shows = [](const QQuickItem* item, const QString& text) {
@@ -838,6 +839,15 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         // a slice's chip among the chips).
         qreal minX = -1;
         QPointF near(-1, -1);
+        int holdMs = 1200;
+        if (command == QLatin1String("holdname") && words.size() > 1) {
+            bool ok = false;
+            const int ms = words.constLast().toInt(&ok);
+            if (ok && ms > 0) {
+                holdMs = ms;
+                words.removeLast();
+            }
+        }
         while (words.size() > 1
                && (words.constLast().startsWith(QLatin1Char('>')) || words.constLast().startsWith(QLatin1Char('~')))) {
             const QString w = words.takeLast();
@@ -922,13 +932,13 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             QWindowSystemInterface::flushWindowSystemEvents();
             if (command == QLatin1String("holdname")) {
                 QPointer<QQuickWindow> w(window);
-                QTimer::singleShot(1200, [w, p, g] {
+                QTimer::singleShot(holdMs, [w, p, g] {
                     if (w) {
                         nativeMouse(w, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
                         QWindowSystemInterface::flushWindowSystemEvents();
                     }
                 });
-                *delayMs = std::max(*delayMs, 1600);
+                *delayMs = std::max(*delayMs, holdMs + 400);
                 return;
             }
             nativeMouse(window, p, g, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);

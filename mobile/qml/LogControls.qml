@@ -23,6 +23,12 @@ ColumnLayout {
         if (!rstSent.activeFocus && !rstSent.edited) rstSent.text = defaults.rstSent || defaults.rst || ""
         if (!rstRcvd.activeFocus && !rstRcvd.edited) rstRcvd.text = defaults.rstRcvd || defaults.rst || ""
     }
+    // The keyboard back to the page (Space is PTT again on an iPad), also
+    // when Return in a field logged it or a dialog's field had it.
+    function dropKeyboard() {
+        const f = logTab.Window.activeFocusItem
+        if (f && f.cursorPosition !== undefined) f.focus = false
+    }
     function reset() {
         callField.text = ""
         comment.text = ""
@@ -242,6 +248,7 @@ ColumnLayout {
             model: ["", "POTA", "WWFF"]
             delegate: AppButton {
                 required property string modelData
+                objectName: "logTheirSig_" + (modelData || "None")
                 text: modelData.length > 0 ? modelData : qsTr("None")
                 checked: theirSig.value === modelData
                 focusPolicy: Qt.NoFocus
@@ -254,6 +261,7 @@ ColumnLayout {
     QtObject { id: theirSig; property string value: "" }
     TextField {
         id: theirRef
+        objectName: "logTheirRef"
         Accessible.name: qsTr("Their reference")
         visible: theirSig.value.length > 0
         Layout.fillWidth: true
@@ -289,28 +297,52 @@ ColumnLayout {
         inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
     }
 
-    AppButton {
-        id: logButton
+    RowLayout {
         Layout.fillWidth: true
-        Layout.preferredHeight: Theme.touchTarget
-        text: qsTr("Log %1").arg(callField.text.toUpperCase())
-        enabled: callField.text.trim().length >= 3
-        focusPolicy: Qt.NoFocus
-        onClicked: {
-            const ok = Engine.logQso({
-                call: callField.text, rstSent: rstSent.text, rstRcvd: rstRcvd.text,
-                comment: comment.text, timeOn: logTab.timeOn,
-                sig: theirSig.value, sigInfo: theirSig.value.length > 0 ? theirRef.text : "",
-                mySig: mySig.value, mySigInfo: mySig.value.length > 0 ? myRef.text : ""
-            })
-            if (ok) {
-                logTab.reset()
-                // The keyboard back to the page (Space is PTT again on an
-                // iPad), also when Return in a field logged it.
-                const f = logTab.Window.activeFocusItem
-                if (f && f.cursorPosition !== undefined) f.focus = false
+        AppButton {
+            id: logButton
+            Layout.fillWidth: true
+            Layout.preferredHeight: Theme.touchTarget
+            text: qsTr("Log %1").arg(callField.text.toUpperCase())
+            enabled: callField.text.trim().length >= 3
+            focusPolicy: Qt.NoFocus
+            onClicked: {
+                const ok = Engine.logQso({
+                    call: callField.text, rstSent: rstSent.text, rstRcvd: rstRcvd.text,
+                    comment: comment.text, timeOn: logTab.timeOn,
+                    sig: theirSig.value, sigInfo: theirSig.value.length > 0 ? theirRef.text : "",
+                    mySig: mySig.value, mySigInfo: mySig.value.length > 0 ? myRef.text : ""
+                })
+                if (ok) {
+                    logTab.reset()
+                    logTab.dropKeyboard()
+                }
             }
         }
+        // The call to the DX cluster (roadmap 67, Christoph Steinert DM5HF):
+        // asked first with the exact line, as it is a public post under the
+        // operator's call. Dimmed without the cluster; a tap then says where
+        // it is turned on.
+        AppButton {
+            objectName: "logSpot"
+            text: qsTr("Spot")
+            enabled: Engine.dxSpotLine(callField.text, "").length > 0
+            opacity: Engine.dxCluster.state === "connected" ? 1.0 : 0.6
+            focusPolicy: Qt.NoFocus
+            Layout.preferredHeight: Theme.touchTarget
+            Layout.preferredWidth: Math.max(implicitWidth + 24, 76)
+            Accessible.description: qsTr("Spots the call on the DX cluster")
+            onClicked: spotDialog.ask()
+        }
+    }
+    Label {
+        objectName: "logSpotStatus"
+        visible: Engine.dxSpotStatus.length > 0
+        Layout.fillWidth: true
+        text: Engine.dxSpotStatus
+        color: Theme.textDim
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.Wrap
     }
 
     // ---- Recent contacts ----
@@ -791,5 +823,92 @@ ColumnLayout {
         color: Theme.textDim
         font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
+    }
+
+    // The spot asked first: the exact line, the remark to edit (the mode,
+    // with their park when set), whose call it goes out under.
+    Dialog {
+        id: spotDialog
+        objectName: "logSpotDialog"
+        readonly property bool online: Engine.dxCluster.state === "connected"
+        // Follows the slice: the tab's defaults are read again every second.
+        readonly property string line: {
+            logTab.defaults
+            return Engine.dxSpotLine(callField.text, remark.text)
+        }
+        function ask() {
+            const parts = []
+            if (theirSig.value.length > 0 && theirRef.text.trim().length > 0)
+                parts.push(theirSig.value + " " + theirRef.text.trim().toUpperCase())
+            parts.push(Engine.dxSpotLine(callField.text, "").split(" ").slice(3).join(" "))
+            remark.text = parts.join(" ")
+            open()
+        }
+        onClosed: logTab.dropKeyboard()
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(440, parent ? parent.width - 24 : 400)
+        modal: true
+        padding: Theme.spacing
+        background: Rectangle { color: Theme.surface; radius: Theme.radius; border.color: Theme.accent; border.width: 2 }
+        contentItem: ColumnLayout {
+            spacing: Theme.spacing
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Spot %1 on the DX cluster?").arg(callField.text.trim().toUpperCase())
+                color: Theme.text
+                font.pixelSize: Theme.px(18)
+                font.bold: true
+                wrapMode: Text.Wrap
+            }
+            TextField {
+                id: remark
+                objectName: "logSpotRemark"
+                Accessible.name: qsTr("Spot remark")
+                Layout.fillWidth: true
+                visible: spotDialog.online
+                placeholderText: qsTr("Remark")
+                maximumLength: 30
+                font.pixelSize: Theme.px(15)
+                onAccepted: if (spotDialog.line.length > 0) sendSpot.clicked()
+            }
+            Label {
+                objectName: "logSpotLine"
+                Layout.fillWidth: true
+                visible: spotDialog.online
+                text: spotDialog.line
+                color: Theme.text
+                font.pixelSize: Theme.px(15)
+                font.family: "monospace"
+                wrapMode: Text.WrapAnywhere
+            }
+            Label {
+                Layout.fillWidth: true
+                text: spotDialog.online
+                      ? qsTr("Goes out under %1 to everyone on %2: spot a station you hear.").arg(Engine.dxCluster.callsign || "").arg(Engine.dxCluster.host || "")
+                      : qsTr("The DX cluster is not connected: turn it on in Controls › View › DX cluster.")
+                color: spotDialog.online ? Theme.textDim : Theme.warning
+                font.pixelSize: Theme.px(14)
+                wrapMode: Text.Wrap
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                AppButton { objectName: "logSpotCancel"; text: qsTr("Cancel"); Layout.fillWidth: true; onClicked: spotDialog.close() }
+                AppButton {
+                    id: sendSpot
+                    objectName: "logSpotSend"
+                    text: qsTr("Spot")
+                    checked: true
+                    enabled: spotDialog.online && spotDialog.line.length > 0
+                    Layout.fillWidth: true
+                    onClicked: {
+                        const call = callField.text
+                        const text = remark.text
+                        spotDialog.close()
+                        Engine.sendDxSpot(call, text)
+                    }
+                }
+            }
+        }
     }
 }

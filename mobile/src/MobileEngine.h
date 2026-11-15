@@ -427,6 +427,10 @@ class MobileEngine : public QObject {
     // refreshed under the user's fingers each time.
     Q_PROPERTY(QString dxClusterStatus READ dxClusterStatus NOTIFY dxClusterStatusChanged)
     Q_PROPERTY(QString dxClusterStatusKind READ dxClusterStatusKind NOTIFY dxClusterStatusChanged)
+    // The last spot sent from the Log tab (roadmap 67): sent, seen back on
+    // the cluster, refused by it, or not seen back yet; empty two minutes
+    // after the outcome.
+    Q_PROPERTY(QString dxSpotStatus READ dxSpotStatus NOTIFY dxSpotStatusChanged)
     Q_PROPERTY(QStringList agcModes READ agcModes CONSTANT)
     Q_PROPERTY(int stepHz READ stepHz NOTIFY stepChanged)
     // The slice's step list from the radio (Hz), for the step chooser.
@@ -1405,6 +1409,12 @@ public:
     Q_INVOKABLE void setDxCluster(const QString& key, const QVariant& value);
     Q_INVOKABLE void connectDxCluster();
     Q_INVOKABLE void disconnectDxCluster();
+    // A spot of a station heard (roadmap 67, Christoph Steinert DM5HF): the
+    // line the cluster gets ("DX <kHz> <call> <remark>", as the desktop
+    // forwards one), empty for a call that is not one; and sending it.
+    Q_INVOKABLE QString dxSpotLine(const QString& call, const QString& remark) const;
+    Q_INVOKABLE bool sendDxSpot(const QString& call, const QString& remark);
+    QString dxSpotStatus() const { return m_dxSpotStatus; }
     // Tunes the active slice to a spot (and its mode, as the desktop), and
     // tells the radio it was chosen (for loggers).
     Q_INVOKABLE void tuneToSpot(int index);
@@ -1955,6 +1965,7 @@ signals:
     void spotsChanged();
     void dxClusterChanged();
     void dxClusterStatusChanged();
+    void dxSpotStatusChanged();
     void profilesChanged();
     void appSetupsChanged();
     void agcAutoChanged();
@@ -2596,10 +2607,18 @@ private:
     QHash<QString, QPair<double, qint64>> m_dxSeen;
     QStringList m_dxQueue;
     QTimer m_dxSendTimer;
+    // The spot sent last: its call until the cluster echoes it or refuses
+    // it, and the status shown under the Log tab's Spot.
+    QString m_dxSpotCall;
+    QString m_dxSpotLine;
+    QString m_dxSpotStatus;
+    QTimer m_dxSpotTimer;
+    void setDxSpotStatus(const QString& status);
     QTimer m_spotsNotifyTimer;   // at most two spot list updates a second
     QTimer m_spotsAgeTimer;      // spots age out of the age filter
     void setupDxCluster();
     QString dxCallsign() const;
+    static int splitDefaultHz(const QString& mode);
     QTimer m_voicePreviewTimer;
     QElapsedTimer m_voicePreviewClock;
     // A held step button repeats faster than the radio confirms a tune
