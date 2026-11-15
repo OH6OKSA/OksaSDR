@@ -2,44 +2,16 @@
 
 #include "AndroidJni.h"
 
+#include <QCoreApplication>
 #include <QJniEnvironment>
-#include <QPointer>
-#include <QDebug>
+#include <QLoggingCategory>
 #include <QTimer>
 
-#include <algorithm>
-#include <cmath>
 #include <memory>
 
+Q_DECLARE_LOGGING_CATEGORY(lcMobile)
+
 namespace AetherSDR::mobile {
-
-namespace {
-
-// The recogniser takes 16 kHz 16-bit PCM: the recording (the device's
-// capture rate, float) averaged down, or linearly resampled.
-QByteArray toPcm16k(const QByteArray& floatMono, int rate)
-{
-    const auto* in = reinterpret_cast<const float*>(floatMono.constData());
-    const qsizetype n = floatMono.size() / qsizetype(sizeof(float));
-    const double step = double(rate) / 16000.0;
-    const qsizetype out = qsizetype(double(n) / step);
-    QByteArray pcm(out * qsizetype(sizeof(qint16)), Qt::Uninitialized);
-    auto* dst = reinterpret_cast<qint16*>(pcm.data());
-    for (qsizetype i = 0; i < out; ++i) {
-        // The mean over the input samples this output sample covers.
-        const qsizetype a = qsizetype(double(i) * step);
-        const qsizetype b = std::min(n, std::max(a + 1, qsizetype(double(i + 1) * step)));
-        double sum = 0.0;
-        for (qsizetype k = a; k < b; ++k) {
-            sum += in[k];
-        }
-        const double v = sum / double(b - a);
-        dst[i] = qint16(std::clamp(std::isfinite(v) ? v * 32767.0 : 0.0, -32768.0, 32767.0));
-    }
-    return pcm;
-}
-
-} // namespace
 
 QString voiceInputUnavailableReason()
 {
@@ -54,17 +26,23 @@ bool voiceInputAvailable()
     return voiceInputUnavailableReason().isEmpty();
 }
 
-void recognizeSpeech(const QByteArray& floatMono, int rate, const QStringList& vocabulary,
+// Android's recogniser listens to the microphone itself (startListening):
+// a recording handed to it is not read by every recogniser.
+bool voiceInputListensItself()
+{
+    return true;
+}
+
+void recognizeSpeech(const QByteArray&, int, const QStringList&,
                      std::function<void(const QStringList&, const QString&)> done)
 {
-    if (floatMono.isEmpty() || rate <= 0) {
-        done({}, QStringLiteral("Nothing was recorded."));
-        return;
-    }
-    const QByteArray pcm = toPcm16k(floatMono, rate);
+    done({}, QCoreApplication::translate("VoiceInput", "Android's recogniser listens to the microphone itself."));
+}
+
+void startListening(const QStringList& vocabulary, std::function<void()> ready,
+                    std::function<void(const QStringList&, const QString&)> done)
+{
     QJniEnvironment env;
-    jbyteArray bytes = env->NewByteArray(jsize(pcm.size()));
-    env->SetByteArrayRegion(bytes, 0, jsize(pcm.size()), reinterpret_cast<const jbyte*>(pcm.constData()));
     jclass stringClass = env->FindClass("java/lang/String");
     jobjectArray words = env->NewObjectArray(jsize(vocabulary.size()), stringClass, nullptr);
     for (qsizetype i = 0; i < vocabulary.size(); ++i) {
@@ -72,37 +50,49 @@ void recognizeSpeech(const QByteArray& floatMono, int rate, const QStringList& v
         env->SetObjectArrayElement(words, jsize(i), w.object<jstring>());
     }
     const QJniObject why = QJniObject::callStaticObjectMethod(
-        kPlatformClass, "startSpeech", "(Landroid/content/Context;[BI[Ljava/lang/String;)Ljava/lang/String;",
-        androidContext().object(), bytes, jint(16000), words);
-    env->DeleteLocalRef(bytes);
+        kPlatformClass, "startListening", "(Landroid/content/Context;[Ljava/lang/String;)Ljava/lang/String;",
+        androidContext().object(), words);
     env->DeleteLocalRef(words);
     env->DeleteLocalRef(stringClass);
     if (why.isValid() && !why.toString().isEmpty()) {
         done({}, why.toString());
         return;
     }
-    // Polled every 200 ms, 20 s at most.
+    // Polled every 100 ms: ready once, then the answer; 30 s at most (8 s
+    // of listening and the recogniser's own time).
     auto* timer = new QTimer;
-    auto left = std::make_shared<int>(100);
-    QObject::connect(timer, &QTimer::timeout, timer, [timer, left, done] {
+    auto left = std::make_shared<int>(300);
+    auto readySent = std::make_shared<bool>(false);
+    QObject::connect(timer, &QTimer::timeout, timer, [timer, left, readySent, ready, done] {
+        if (!*readySent && QJniObject::callStaticMethod<jboolean>(kPlatformClass, "speechReady", "()Z")) {
+            *readySent = true;
+            if (ready) {
+                ready();
+            }
+        }
         const QString answer = QJniObject::callStaticObjectMethod(kPlatformClass, "speechPoll", "()Ljava/lang/String;").toString();
         if (answer.isEmpty() && --*left > 0) {
             return;
         }
         timer->stop();
         timer->deleteLater();
-        if (answer.startsWith(QLatin1String("ok"))) {
-            // "ok on device" / "ok network", then the alternatives.
-            const qsizetype eol = answer.indexOf(QLatin1Char('\n'));
-            qInfo().noquote() << "voice log: Android recogniser:" << answer.left(eol).mid(3);
-            done(eol < 0 ? QStringList() : answer.mid(eol + 1).split(QLatin1Char('\n'), Qt::SkipEmptyParts), QString());
+        const QString notes = QJniObject::callStaticObjectMethod(kPlatformClass, "speechNotes", "()Ljava/lang/String;").toString();
+        qCInfo(lcMobile).noquote() << "voice log: Android recogniser:" << (notes.isEmpty() ? QStringLiteral("not started") : notes);
+        if (answer.startsWith(QLatin1String("ok\n"))) {
+            done(answer.mid(3).split(QLatin1Char('\n'), Qt::SkipEmptyParts), QString());
         } else if (answer.startsWith(QLatin1String("error\n"))) {
             done({}, answer.mid(6));
         } else {
-            done({}, QStringLiteral("The recogniser did not answer."));
+            stopListening();
+            done({}, QCoreApplication::translate("VoiceInput", "The recogniser did not answer."));
         }
     });
-    timer->start(200);
+    timer->start(100);
+}
+
+void stopListening()
+{
+    QJniObject::callStaticMethod<void>(kPlatformClass, "stopListening", "()V");
 }
 
 } // namespace AetherSDR::mobile

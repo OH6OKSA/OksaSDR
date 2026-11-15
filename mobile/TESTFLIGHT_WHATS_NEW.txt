@@ -11,7 +11,7 @@ GETTING STARTED
 NEW IN THIS BUILD
 - Voice entry knows the older and DX spelling words too (Sugar, King, Kilowatt, Japan...), "double you", "fox trot"; the manual lists them all (thanks Michael Walker).
 - RIT / XIT: tap the value to type it (1.34 kHz); hold SPLIT > Other… for any split (thanks Sebastian DG5CST).
-- Big buttons: tap the mode to change it. Android voice entry uses Google's recogniser when English is not on the phone.
+- Big buttons: tap the mode to change it. On Android the phone's recogniser listens itself.
 
 RECENT (builds 94–172)
 - Log tab: spell the call by voice (idea Michael Walker); edit or delete a logged contact, a Name field, × clears the call (thanks Christoph DM5HF).

@@ -135,4 +135,20 @@ void recognizeSpeech(const QByteArray& floatMono, int rate, const QStringList& v
     }];
 }
 
+// The Speech framework reads the app's own recording (recognizeSpeech).
+bool voiceInputListensItself()
+{
+    return false;
+}
+
+void startListening(const QStringList&, std::function<void()>,
+                    std::function<void(const QStringList&, const QString&)> done)
+{
+    done({}, tr("Speech recognition is not available on this device now."));
+}
+
+void stopListening()
+{
+}
+
 } // namespace AetherSDR::mobile

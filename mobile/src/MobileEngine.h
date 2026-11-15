@@ -2611,6 +2611,7 @@ private:
     bool m_dbmRangeRetryPending{false};
     int m_splitUpHz{0};  // a chosen split distance (0: the mode's default)
     void onVoiceClipRecorded(const QByteArray& clip, int rate);
+    void voiceAnswered(const QStringList& alternatives, const QString& error);
     void onVoiceClipFinished();
     QString m_voiceState{QStringLiteral("idle")};
     int m_voiceActiveId{-1};

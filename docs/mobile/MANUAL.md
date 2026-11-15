@@ -1448,8 +1448,9 @@ seven.
   call goes into the field and a report said after it (*five nine*) into
   *Sent*; the line under the field says what was heard. Nothing is logged
   until you tap Log. It listens through the microphone the app already
-  uses, mutes the radio's audio here meanwhile, and does not work while
-  transmitting. It understands, in English whatever the device's language:
+  uses (on Android the phone's recogniser takes the microphone itself, and
+  the line says *Starting…* until it listens), mutes the radio's audio here
+  meanwhile, and does not work while transmitting. It understands, in English whatever the device's language:
   - **Letters**: the ITU / NATO alphabet (*Alfa* or *Alpha* … *Zulu*,
     *Juliet*, *Whisky*, *X-ray*), the older Allied one (*Able*, *Baker*,
     *Dog* … *Sugar*, *King* … *Zebra*), the ITU's of 1927 (*Amsterdam*,

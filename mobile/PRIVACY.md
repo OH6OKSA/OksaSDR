@@ -42,12 +42,14 @@ these services:
   your callsign, and the cluster publishes it to its users.
 - **Speech recognition**, only while you use the voice button (**🎤**) on
   the Log tab or in Big buttons: the few seconds of you spelling a call are
-  given to the device's own speech recognition (Apple's Speech framework
-  on an iPhone, iPad or Mac; Android's SpeechRecognizer). Where the device
-  offers it, recognition runs on the device and nothing leaves it;
-  otherwise the recording goes to Apple's or Google's speech service, as
-  for any app using it. The app keeps neither the recording nor what was
-  heard, beyond the call it puts into the field.
+  given to the device's own speech recognition (on an iPhone, iPad or Mac
+  the app's recording goes to Apple's Speech framework; on Android the
+  device's default recogniser, usually Google's, listens to the microphone
+  itself while the button is held). Where the device offers it,
+  recognition runs on the device and nothing leaves it; otherwise the
+  speech goes to Apple's or Google's speech service, as for any app using
+  it. The app keeps neither the recording nor what was heard, beyond the
+  call it puts into the field.
 - **POTA (pota.app)**, only when you tap **Self-spot** on the Log tab and
   confirm: a spot of your own activation (your callsign, the park
   reference, the frequency, the mode and the comment shown to you) is sent
