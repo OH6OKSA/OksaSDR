@@ -367,6 +367,9 @@ class MobileEngine : public QObject {
     // Logger32 on the operator's PC: each logged QSO as an ADIF record over
     // TCP (MobileEngineLogger32.cpp).
     Q_PROPERTY(QVariantMap logger32 READ logger32 NOTIFY logger32Changed)
+    // A logging program on the network (RUMlogNG, MacLoggerDX, Log4OM, N1MM+
+    // ...): each logged QSO as WSJT-X's UDP messages (MobileEngineLoggerUdp.cpp).
+    Q_PROPERTY(QVariantMap loggerUdp READ loggerUdp NOTIFY loggerUdpChanged)
     // An RF-KIT RF2K-S amplifier over its REST API (MobileEngineAmp.cpp):
     // set, address, on, control (commands allowed), state ("off",
     // "connecting", "connected", "failed"), error, target, pending (the
@@ -1341,6 +1344,11 @@ public:
     // "host" or "host:port" (52001 when not given); empty turns it off.
     Q_INVOKABLE void setLogger32(const QString& hostPort);
     QVariantMap logger32() const;
+    // "host" or "host:port" (2237 when not given); empty turns it off.
+    Q_INVOKABLE void setLoggerUdp(const QString& hostPort);
+    QVariantMap loggerUdp() const;
+    // One QSO's datagrams: Heartbeat, QSO Logged, Logged ADIF.
+    static QList<QByteArray> loggerUdpMessages(const QVariantMap& record);
     // The amplifier's "host" or "host:port" (8080 when not given); empty
     // forgets it. A new address turns reading on.
     Q_INVOKABLE void setAmpAddress(const QString& hostPort);
@@ -2032,6 +2040,7 @@ signals:
     void qrzLogChanged();
     void sharedAdifChanged();
     void logger32Changed();
+    void loggerUdpChanged();
     void ampChanged();
     void pgxlChanged();
     void tgxlChanged();
@@ -2314,6 +2323,11 @@ private:
     QTimer m_logger32Retry;
     QString m_logger32Status;
     QString m_logger32StatusKind;
+    QString loggerUdpHost() const;
+    void loggerUdpSend(const QVariantMap& record);
+    class QUdpSocket* m_loggerUdpSocket{nullptr};
+    QString m_loggerUdpStatus;
+    QString m_loggerUdpStatusKind;
     // ---- 4O3A PGXL / TGXL (MobileEngine4o3a.cpp) ----
     void setup4o3a();
     void connect4o3a();
@@ -2868,6 +2882,14 @@ private:
     // on the network that went.
     QTimer m_connectReadyTimer;
     QTimer m_networkChangeTimer;
+    // Background time asked of the system while a reconnect runs (roadmap
+    // 84 j: iOS suspended the app halfway through one once its receive audio
+    // stopped); released a moment after the session is up (its audio keeps
+    // the app running then), when it is given up, or after a minute.
+    QTimer m_backgroundHoldTimer;
+    bool m_backgroundHeld{false};
+    void holdBackgroundTime();
+    void releaseBackgroundTime(int afterMs = 0);
     int m_netMedium{-1};
     int m_netReach{-1};
     void noteNetworkChange();
@@ -2898,6 +2920,7 @@ private:
     // this device's own session from the network before, not another device).
     QString m_dxLastLine;
     QElapsedTimer m_dxNetworkMoved;
+    bool m_dxClosedSinceMove{false};   // the closes in a row began after a network change
     // Closed by the radio before it answered: once more with a pause before
     // "wan validate" (Mohammed A71AT's iPad on 5G, 2026-11-16).
     bool m_wanValidateRetried{false};

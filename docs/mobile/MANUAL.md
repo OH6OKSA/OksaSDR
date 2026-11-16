@@ -105,8 +105,9 @@ silent may have its slice muted: tap the speaker on the info panel.
 
 **Logging** (optional): the Log tab logs every contact; import your
 logbook there (ADIF) so FTx and the log know what you have worked. A
-QRZ.com account fills in who each station is; Wavelog / Cloudlog and
-Logger32 get every QSO too ([Log](#8-controls)).
+QRZ.com account fills in who each station is; Wavelog / Cloudlog,
+Logger32 and a logging program that takes QSOs from WSJT-X (RUMlogNG,
+MacLoggerDX, Log4OM…) get every QSO too ([Log](#8-controls)).
 
 ---
 
@@ -451,7 +452,10 @@ The first page lists the ways to reach a radio:
   (Wi-Fi to the mobile network or a phone's hotspot, and back) makes the
   connection to SmartLink again at once, and a remote session that drops
   connects again by itself: *Connecting…* shows meanwhile, with **Cancel**
-  beside it to stop. If the radio no longer has the app's slice then (a
+  beside it to stop. This works with the app in the background too (the
+  radio's audio playing on, the screen off or another app in front): on
+  iPhone and iPad the app asks iOS for time to finish the reconnect, which
+  takes about 10 s, so the audio comes back without opening the app. If the radio no longer has the app's slice then (a
   radio that takes one station still holding the old session), the app
   makes it again on the frequency, mode and filter it had. The eye in the password field
   shows what you typed (dots again when you leave the field); the QRZ.com
@@ -1428,8 +1432,11 @@ seven.
     device its own SSID in the callsign, e.g. *OH6OKSA-2*. Right after
     this device moves to another network (Wi-Fi to the mobile network or
     back) the cluster may still hold its login from the network before
-    and refuse the new one for a few minutes: the line says so, and the
-    app gets on by itself once the cluster lets the old login go.
+    and refuse the new one, for many minutes on some clusters (each
+    network change leaving another old login): the line says so as long as
+    the refusals go on, and the app gets on by itself once the cluster lets
+    the old login go. To get on at once, give this device its own SSID in
+    the callsign, e.g. *OH6OKSA-2*.
 - **Prof** (profiles) — the radio's global, TX and mic profiles: load, save,
   delete, as in SmartSDR. Under them, **App setups** (thanks Larry
   Averbeck W9FLA) do the same for this app's own settings: type a name in
@@ -1545,8 +1552,8 @@ seven.
   (thanks Christoph): the call, date and time (UTC), frequency, mode,
   reports, name, comment and the parks, then *Save*, or *Delete* and
   *Delete it*. It changes this device's log; a contact that already went
-  to Wavelog / Cloudlog, the QRZ.com logbook, the shared ADIF file or
-  Logger32 is not changed there (the dialog names the ones set up), so
+  to Wavelog / Cloudlog, the QRZ.com logbook, the shared ADIF file,
+  Logger32 or the logging program is not changed there (the dialog names the ones set up), so
   change it there too. A new call drops the old call's looked-up name and
   QTH and takes the new call's country. **Spot** beside it (asked by Christoph
   Steinert DM5HF) sends the call to the DX cluster the app is logged in to
@@ -1648,6 +1655,20 @@ seven.
   QSOs that cannot be sent wait on the device and go with the next QSO, the
   next start or every two minutes; the line under the field says how many
   wait. Clear the address to stop. (Asked by Juho Kontio.)
+  **Logging program (WSJT-X UDP)**: for a logging program that takes QSOs
+  from WSJT-X, such as **RUMlogNG** on a Mac, MacLoggerDX, Log4OM, N1MM+ or
+  GridTracker (asked by Christoph Steinert DM5HF for RUMlogNG). Give the
+  computer's address (e.g. `192.168.1.10`, or `192.168.1.10:2238` for
+  another port than WSJT-X's 2237; the app on the same Mac: `127.0.0.1`)
+  and *Save*; from then on every QSO you log goes to the program as WSJT-X
+  sends one (its QSO Logged and Logged ADIF messages over UDP), FT8 / FT4
+  logs too. In RUMlogNG: *Preferences › UDP › WSJT-X*, the same *Data
+  port*, **Save QSOs to logbook** on, and *Switch PTT* off. UDP brings no
+  answer back, so *Save* cannot check that the program listens: log one
+  QSO and look in the program; the line under the field says when the
+  last one went. A QSO that does not arrive (the computer off, away from
+  home without your VPN) is not sent again; take it from the shared ADIF
+  file or the app's log. Clear the address to stop.
   **Where the log is** (shown on the Log tab): on an iPhone or iPad in
   Files › On My iPhone / iPad › OksaSDR › `oksasdr-log.adi`, from where it
   can be moved to iCloud Drive or opened in a logbook; on Android a copy is

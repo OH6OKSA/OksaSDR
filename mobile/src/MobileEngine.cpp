@@ -1724,6 +1724,8 @@ void MobileEngine::wireSmartLink()
         qCInfo(lcMobile).noquote() << "Auth0 through the test proxy at" << proxy;
     }
 #endif
+    m_backgroundHoldTimer.setSingleShot(true);
+    connect(&m_backgroundHoldTimer, &QTimer::timeout, this, [this] { releaseBackgroundTime(); });
     m_networkChangeTimer.setSingleShot(true);
     m_networkChangeTimer.setInterval(kNetworkSettleMs);
     connect(&m_networkChangeTimer, &QTimer::timeout, this, [this] {
@@ -1905,6 +1907,11 @@ void MobileEngine::noteNetworkChange()
     // (Wi-Fi to cellular). Not the first report at start (from Unknown).
     const bool back = reach == online && m_netReach != online && m_netReach != unknownReach;
     const bool moved = reach == online && m_netReach == online && medium != m_netMedium && m_netMedium != unknownMedium;
+    // Any change under a session (the network gone too: the next one can
+    // take seconds to come): time to get through it in the background.
+    if ((reach != m_netReach || medium != m_netMedium) && m_connectionState != QLatin1String("idle")) {
+        holdBackgroundTime();
+    }
     m_netMedium = medium;
     m_netReach = reach;
     if (back || moved) {
@@ -7148,6 +7155,7 @@ bool MobileEngine::writeQso(const QVariantMap& r)
     qrzLogQueue(QsoLog::adifRecord(r));
     sharedAdifQueue(QsoLog::adifRecord(r));
     logger32Queue(QsoLog::adifRecord(r));
+    loggerUdpSend(r);
     emit qsoLogChanged();
     return true;
 }
@@ -7580,7 +7588,13 @@ void MobileEngine::setupDxCluster()
         // that connection is gone (the developer's iPad, build 180).
         if (m_dxConnectedAt.isValid() && m_dxConnectedAt.elapsed() < 60000) {
             const qint64 secs = m_dxConnectedAt.elapsed() / 1000;
-            const bool moved = m_dxNetworkMoved.isValid() && m_dxNetworkMoved.elapsed() < 5 * 60 * 1000;
+            // After a network change, and as long as the closes go on in a row
+            // after one: the cluster kept the old login for over ten minutes,
+            // each network change leaving another (the developer's iPad,
+            // build 181, dxc.nc7j.com).
+            const bool moved = m_dxClosedSinceMove
+                || (m_dxNetworkMoved.isValid() && m_dxNetworkMoved.elapsed() < 5 * 60 * 1000);
+            m_dxClosedSinceMove = moved;
             qCInfo(lcMobile).noquote() << QStringLiteral("DX cluster: closed %1 s after login%2; its last line: \"%3\"")
                                               .arg(secs)
                                               .arg(moved ? QStringLiteral(" (the network changed %1 s ago)")
@@ -7591,7 +7605,8 @@ void MobileEngine::setupDxCluster()
                 const QString call = dxCluster().value(QStringLiteral("callsign")).toString();
                 m_dxError = moved
                     ? tr("The cluster still has this device's login from the network before, and lets the new "
-                         "one on once it notices that one is gone (usually within minutes).")
+                         "one on once it notices that one is gone, which can take many minutes. To get on now, "
+                         "give this device its own SSID in the Callsign field, e.g. %1-2.").arg(call)
                     : tr("The cluster closes each login at once: is %1 logged in from another device? "
                          "Give each its own SSID in the Callsign field, e.g. %1-2.").arg(call);
                 qCInfo(lcMobile) << "DX cluster: closed" << m_dxShortSessions << "times right after login"
@@ -7599,6 +7614,7 @@ void MobileEngine::setupDxCluster()
             }
         } else {
             m_dxShortSessions = 0;
+            m_dxClosedSinceMove = false;
         }
         // It reconnects by itself until disconnect() is called.
         if (m_dxState != QLatin1String("off")) {
@@ -7994,6 +8010,7 @@ void MobileEngine::connectDxCluster()
     m_dxState = QStringLiteral("connecting");
     m_dxError.clear();
     m_dxShortSessions = 0;
+    m_dxClosedSinceMove = false;
     m_dxSpotCount = 0;
     qCInfo(lcMobile) << "DX cluster connect" << cfg.value(QStringLiteral("host")).toString()
                      << cfg.value(QStringLiteral("port")).toInt();
@@ -8008,6 +8025,7 @@ void MobileEngine::testDxConnect(const QString& host, quint16 port)
     m_dxState = QStringLiteral("connecting");
     m_dxError.clear();
     m_dxShortSessions = 0;
+    m_dxClosedSinceMove = false;
     qCInfo(lcMobile) << "DX cluster connect (test)" << host << port;
     m_dx->connectToCluster(host, port, dxCallsign());
     emit dxClusterChanged();
@@ -9531,6 +9549,15 @@ void MobileEngine::bindSlice(SliceModel* slice)
         disconnect(c);
     }
     m_sliceConnections.clear();
+    // Where the slice the app now uses is: after a reconnect the log shows
+    // whether it is the one from before (the developer's iPad, build 181: a
+    // new pan and slice from the radio's own memory, on 80 m as before).
+    if (slice && slice != m_slice) {
+        qCInfo(lcMobile).noquote() << "slice" << slice->letter() << "in use:"
+                                   << QString::number(slice->frequency(), 'f', 6) << slice->mode()
+                                   << QStringLiteral("%1..%2 Hz").arg(slice->filterLow()).arg(slice->filterHigh())
+                                   << "on pan" << slice->panId();
+    }
     m_slice = slice;
     if (slice && std::exchange(m_restoreLostSlice, false)) {
         const SliceState lost = m_lostSlice;
@@ -9891,12 +9918,44 @@ double MobileEngine::panBandwidthMhz() const
     return m_pan ? m_pan->bandwidthMhz() : 0.0;
 }
 
+void MobileEngine::holdBackgroundTime()
+{
+    // Asked each time: one the system let run out is asked for again (the
+    // platform side keeps a single one).
+    m_backgroundHeld = true;
+    setBackgroundTimeHeld(true);
+    m_backgroundHoldTimer.start(60000);
+}
+
+void MobileEngine::releaseBackgroundTime(int afterMs)
+{
+    if (!m_backgroundHeld) {
+        return;
+    }
+    if (afterMs > 0) {
+        m_backgroundHoldTimer.start(afterMs);
+        return;
+    }
+    m_backgroundHoldTimer.stop();
+    m_backgroundHeld = false;
+    setBackgroundTimeHeld(false);
+}
+
 void MobileEngine::setConnectionState(const QString& state)
 {
     if (state != m_connectionState) {
         m_connectionState = state;
         qCInfo(lcMobile) << "connection state" << state;
         emit connectionStateChanged();
+        // A connect or reconnect gets time to finish in the background; once
+        // up, its receive audio keeps the app running (3 s for it to start).
+        if (state == QLatin1String("connecting")) {
+            holdBackgroundTime();
+        } else if (state == QLatin1String("connected")) {
+            releaseBackgroundTime(3000);
+        } else {
+            releaseBackgroundTime();
+        }
         if (state == QLatin1String("connecting")) {
             m_pendingWanConflict.clear();
         } else if (state == QLatin1String("idle") && !m_pendingWanConflict.isEmpty()) {

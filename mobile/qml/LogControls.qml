@@ -944,6 +944,51 @@ ColumnLayout {
         wrapMode: Text.WordWrap
     }
 
+    // ---- A logging program on the network, as WSJT-X sends to it
+    // (roadmap 89: RUMlogNG, Christoph Steinert DM5HF) ----
+    Label { text: qsTr("Logging program (WSJT-X UDP)"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
+    GridLayout {
+        id: loggerUdpRow
+        Layout.fillWidth: true
+        columns: width - loggerUdpSave.implicitWidth - columnSpacing >= loggerUdpHint.advanceWidth + 24 ? 2 : 1
+        TextMetrics { id: loggerUdpHint; font: loggerUdpField.font; text: loggerUdpField.placeholderText }
+        TextField {
+            id: loggerUdpField
+            Accessible.name: qsTr("Logging program's computer address")
+            objectName: "loggerUdpHost"
+            Layout.fillWidth: true
+            placeholderText: qsTr("Computer address, e.g. 192.168.1.10:2237")
+            font.pixelSize: Theme.px(15)
+            text: Engine.loggerUdp.host || ""
+            inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+        }
+        AppButton {
+            id: loggerUdpSave
+            objectName: "loggerUdpSave"
+            Layout.alignment: Qt.AlignRight
+            text: qsTr("Save")
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.setLoggerUdp(loggerUdpField.text)
+        }
+    }
+    Label {
+        objectName: "loggerUdpStatus"
+        Layout.fillWidth: true
+        visible: text.length > 0
+        text: Engine.loggerUdp.status || ""
+        color: Engine.loggerUdp.statusKind === "ok" ? "#00cc66"
+             : Engine.loggerUdp.statusKind === "failed" ? Theme.transmit : Theme.textDim
+        font.pixelSize: Theme.px(13)
+        wrapMode: Text.WordWrap
+    }
+    Label {
+        Layout.fillWidth: true
+        text: qsTr("For a logging program that takes QSOs from WSJT-X (RUMlogNG, MacLoggerDX, Log4OM, N1MM+, GridTracker…): every QSO you log goes to it as WSJT-X sends one, over UDP to its WSJT-X port (2237 unless you give another after a colon; on the same Mac, 127.0.0.1). In RUMlogNG: Preferences › UDP › WSJT-X, the same Data port, Save QSOs to logbook on, Switch PTT off. Nothing answers over UDP, so a QSO that does not arrive is not sent again. Clear the address to stop.")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.WordWrap
+    }
+
     // The spot asked first: the exact line, the remark to edit (the mode,
     // with their park when set), whose call it goes out under.
     Dialog {

@@ -50,6 +50,7 @@ qt_add_executable(aether-mobile
     src/MobileEngineSmartLink.cpp
     src/MobileEngineSharedAdif.cpp
     src/MobileEngineLogger32.cpp
+    src/MobileEngineLoggerUdp.cpp
     src/MobileEngineSetups.cpp
     src/MobileEngineAgcAuto.cpp
     src/MobileEngineMidi.cpp

@@ -206,4 +206,9 @@ void setAudioOutputMode(const QString& mode)
     }
 }
 
+// The foreground service keeps the app running through a reconnect.
+void setBackgroundTimeHeld(bool)
+{
+}
+
 } // namespace AetherSDR::mobile

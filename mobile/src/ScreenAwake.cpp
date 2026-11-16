@@ -8,6 +8,10 @@ void setKeepScreenAwake(bool)
 {
 }
 
+void setBackgroundTimeHeld(bool)
+{
+}
+
 void setAudioOutputMode(const QString&)
 {
 }

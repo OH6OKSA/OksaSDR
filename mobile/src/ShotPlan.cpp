@@ -1425,6 +1425,16 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
     } else if (command == QLatin1String("rttyfeed")) {
         m_engine.testRttyFeed(args.join(QLatin1Char(' ')));
         *delayMs = 1000;
+    } else if (command == QLatin1String("loggerudp")) {
+        // The Log tab's logging program address (WSJT-X UDP), as its Save;
+        // off clears it.
+        m_engine.setLoggerUdp(arg == QLatin1String("off") ? QString() : arg);
+        qInfo().noquote() << "shot-plan: loggerudp" << m_engine.loggerUdp().value(QStringLiteral("status")).toString();
+        *delayMs = 200;
+    } else if (command == QLatin1String("loggerudpstate")) {
+        qInfo().noquote() << "shot-plan: loggerudp state" << m_engine.loggerUdp().value(QStringLiteral("statusKind")).toString()
+                          << m_engine.loggerUdp().value(QStringLiteral("status")).toString();
+        *delayMs = 100;
     } else if (command == QLatin1String("qsodry")) {
         // QSOs printed to the log, not written to the logbook or sent (a test).
         m_engine.setQsoLogDryRun(arg != QLatin1String("off"));

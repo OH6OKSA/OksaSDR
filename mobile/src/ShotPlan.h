@@ -85,6 +85,8 @@ class MobileEngine;
 //   textmode MODE           the Digi tab's mode: RTTY, PSK31 or PSK63
 //   textclear               the Digi tab's text cleared, as its Clear
 //   qsodry [off]            QSOs printed to the log, not written or sent
+//   loggerudp HOST[:PORT]|off  the logging program address (WSJT-X UDP), as Save
+//   loggerudpstate          log its status line
 //   pskfeed [+-HZ] TEXT     TEXT as a PSK signal at the decoder's carrier (HZ off it)
 //   logqso K=V | K=V ...    log a QSO with those fields (call, rstSent, rstRcvd, timeOn, comment)
 //   psk [KEY=VALUE]         setPsk (carrier=HZ, afc=true|false), or log the PSK state

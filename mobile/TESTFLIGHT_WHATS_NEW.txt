@@ -9,20 +9,19 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- SmartLink after a network change, steadier: a session left on the old network (5G to Wi-Fi) is made again instead of freezing (thanks Rich N2RY), and a server connection not up in 8 s is made again.
-- Keys: T TUNE on / off, Shift+T a two-tone TUNE, A an ATU tune. With Ulanzi Studio on a Mac, a Ulanzi dial drives the app through keys (thanks Christoph DM5HF; see the manual).
-- DX cluster: after a network change it says the cluster still has the old login, not "another device".
-- After a reconnect that had to make the slice again, it is back on its frequency, mode and filter (thanks Rich N2RY).
+- SmartLink in the background: after a network change the reconnect now finishes with the app in the background, and the audio comes back without opening the app (found on the developer's iPad).
+- Log tab > Logging program (WSJT-X UDP): every QSO goes to RUMlogNG, MacLoggerDX, Log4OM, N1MM+ or GridTracker as WSJT-X sends it (thanks Christoph DM5HF; see the manual).
+- DX cluster: after a network change it says the cluster still has the old login for as long as the cluster refuses, with the SSID tip to get on at once.
+- Radio Setup no longer scrolls into empty space under its shorter sections.
 
-RECENT (builds 94–180)
+RECENT (builds 94–181)
+- 181: SmartLink steadier from 5G to Wi-Fi, the slice back after a reconnect (thanks Rich N2RY); keys T, Shift+T, A, a Ulanzi dial on a Mac (thanks Christoph DM5HF).
 - 179-180: SmartLink comes back after a network change in seconds; Cancel beside Connecting… (thanks Mohammed A71AT).
 - Voice spelling with the app's own offline recogniser on every device; SmartLink + Account and favourite radios (idea Ian VK1HF).
 - Voice entry knows Sugar, King, Kilowatt, Japan... (thanks Michael Walker); RIT / XIT typed, SPLIT › Other… (thanks Sebastian DG5CST).
 - Log tab: spell the call by voice (idea Michael Walker); edit or delete a logged contact, a Name field, × clears the call (thanks Christoph DM5HF).
 - POTA self-spot, Big buttons > Log, KPA1500 Tune in STANDBY, audio in order over VPN (thanks Christoph DM5HF, Michael Walker, Rich N2RY).
 - Log tab > Spot, MIDI F1–F12 (thanks Christoph DM5HF); Big buttons' Step halves (thanks Michael Walker); Noise line; TGXL first (thanks Hanno DK3HV).
-- AGC Follow; the KPA1500 (thanks Rich N2RY); MIDI controllers (thanks Hanno DK3HV); multi-answer RR73 (thanks Ben KT4O); the DVK (thanks Ian VK1HF); Big buttons (thanks Michael Walker).
-- FTx > DXpedition > Hound; the Fox's and contest messages in FT8 / FT4.
 
 PLEASE TRY
 - Receive on a few bands with zoom, Band and the 3D view.
@@ -33,7 +32,7 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab: decode, drag the red TX band to a free frequency, answer a CQ at low power and check the log. [TX]
 - The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: SmartLink from Wi-Fi to the mobile network and back with the app running; the T, Shift+T and A keys at low power [TX].
+- New: SmartLink with the app in the background: Wi-Fi off and on in Control Centre while listening, the audio should come back by itself. RUMlogNG or another logger on your network (Log tab > Logging program).
 - AGC panel > Auto on a clear spot, then Follow and Noise line.
 - The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]
 

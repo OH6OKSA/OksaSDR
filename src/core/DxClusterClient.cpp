@@ -114,6 +114,10 @@ void DxClusterClient::onConnected()
 {
     qCDebug(lcDxCluster) << "DxClusterClient: TCP connected to" << m_host;
     m_connected = true;
+    // The connect timeout is for this attempt's connecting only: a login the
+    // cluster closed within it was otherwise reported as a timeout as well,
+    // seconds after the close (OksaSDR's iPad, dxc.nc7j.com, 2026-11-16).
+    ++m_connectEpoch;
     // The backoff starts over only after a session that lasted (see
     // onDisconnected): a cluster that closes each login at once (the same
     // call logged in from another device) was retried every 5 s for ever.
