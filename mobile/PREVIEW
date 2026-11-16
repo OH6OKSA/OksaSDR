@@ -1,0 +1,9 @@
+Preview build: with this file in the tree, a push builds for the developer's
+own devices only (iOS: the internal TestFlight group; Android: the APK stays
+the run's artifact). Delete it when the Mobile release workflow hands the
+same builds to the testers.
+
+Build 182 / Android beta 97: the SmartLink reconnect finishing with the app
+in the background (roadmap 84 j, iOS background time), which only a device
+can test: on the iPad, Wi-Fi off and on in Control Centre with the app in the
+background, the radio's audio back without opening the app.
