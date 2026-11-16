@@ -8,6 +8,7 @@
 #include <QJsonParseError>
 #include <QJsonValue>
 #include <QSslCertificate>
+#include <QSignalBlocker>
 #include <QSslCipher>
 #include <QSslConfiguration>
 #include <QTimer>
@@ -164,8 +165,16 @@ void WanConnection::connectToRadio(const QString& host, quint16 tlsPort,
                                     const QString& wanHandle)
 {
     if (m_connected || m_socket.state() != QAbstractSocket::UnconnectedState) {
-        qCWarning(lcSmartLink) << "WanConnection: already connected or still closing";
-        return;
+        // A connect_ready is for a new connection: one left closing or half
+        // made (a cancelled connect) is dropped for it. Refused, the app sat
+        // at Connecting for good (the mobile app's tests, 2026-11-16).
+        qCWarning(lcSmartLink) << "WanConnection: a connection still" << m_socket.state()
+                               << "dropped for the new one";
+        m_heartbeat.stop();
+        {
+            const QSignalBlocker blocker(&m_socket);
+            m_socket.abort();
+        }
     }
 
     resetSessionState();
@@ -191,7 +200,11 @@ void WanConnection::connectToRadio(const QString& host, quint16 tlsPort,
 void WanConnection::disconnectFromRadio()
 {
     m_heartbeat.stop();
-    if (m_socket.state() != QAbstractSocket::UnconnectedState) {
+    if (!m_connected && m_socket.state() != QAbstractSocket::UnconnectedState) {
+        // Not validated yet (a connect cancelled): nothing to close politely,
+        // and a TLS close mid-handshake can hang in ClosingState.
+        m_socket.abort();
+    } else if (m_socket.state() != QAbstractSocket::UnconnectedState) {
         // Send disconnect marker (FlexLib sends 0x04)
         m_socket.write("\x04");
         m_socket.disconnectFromHost();
@@ -232,11 +245,16 @@ void WanConnection::onTlsConnected()
 {
     qCDebug(lcSmartLink) << "WanConnection: TLS handshake complete";
     const QSsl::SslProtocol protocol = m_socket.sessionProtocol();
-    emit tlsReady(QStringLiteral("TLS %1 %2")
+    const QHostAddress peer = m_socket.peerAddress();
+    bool mapped = false;
+    peer.toIPv4Address(&mapped);
+    const QString path = peer.protocol() == QAbstractSocket::IPv6Protocol && !mapped ? QStringLiteral("IPv6")
+                                                                                      : QStringLiteral("IPv4");
+    emit tlsReady(QStringLiteral("TLS %1 %2 over %3")
                       .arg(protocol == QSsl::TlsV1_3   ? QStringLiteral("1.3")
                            : protocol == QSsl::TlsV1_2 ? QStringLiteral("1.2")
                                                        : QString::number(int(protocol)),
-                           m_socket.sessionCipher().name()));
+                           m_socket.sessionCipher().name(), path));
 
     // TOFU cert-pin check (GHSA-wfx7-w6p8-4jr2 phase 2, enforced).
     const QSslCertificate cert = m_socket.peerCertificate();

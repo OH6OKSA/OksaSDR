@@ -361,6 +361,18 @@ void SmartLinkClient::disconnect()
     m_serverConnected = false;
 }
 
+QString SmartLinkClient::serverPath() const
+{
+    const QHostAddress peer = m_socket.peerAddress();
+    if (peer.isNull()) {
+        return QStringLiteral("unknown");
+    }
+    bool mapped = false;
+    peer.toIPv4Address(&mapped);
+    return peer.protocol() == QAbstractSocket::IPv6Protocol && !mapped ? QStringLiteral("IPv6")
+                                                                        : QStringLiteral("IPv4");
+}
+
 void SmartLinkClient::restart()
 {
     if (m_refreshToken.isEmpty()) {

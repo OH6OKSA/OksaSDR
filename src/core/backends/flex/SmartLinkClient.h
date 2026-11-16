@@ -92,6 +92,9 @@ public:
     }
 
     bool isConnected()     const { return m_serverConnected; }
+    // "IPv4" or "IPv6" (a NAT64 address on an IPv6-only network): the way the
+    // server connection goes, no address.
+    QString serverPath() const;
     bool isAuthenticated() const { return m_authenticated; }
     QString publicIp()     const { return m_publicIp; }
     QString callsign()     const { return m_userCallsign; }

@@ -1656,6 +1656,10 @@ void MobileEngine::wireSmartLink()
         setSmartLinkState(QStringLiteral("signedOut"));
     });
     connect(&m_smartLink, &SmartLinkClient::serverConnected, this, [this] {
+        // Which way the server connection went (no address): set beside the
+        // radio connection's (WanConnection's TLS line) for Mohammed A71AT's
+        // radio closing every iPad connection on 5G.
+        qCInfo(lcMobile).noquote() << "SmartLink: the server connection over" << m_smartLink.serverPath();
         setSmartLinkState(QStringLiteral("signedIn"));
     });
     connect(&m_smartLink, &SmartLinkClient::serverDisconnected, this, [this] {
@@ -1734,6 +1738,14 @@ void MobileEngine::wireSmartLink()
             m_connectReadyTimer.stop();
             m_wanReconnectTimer.start();
             m_wanResumeOnList = true;
+        } else if (m_wanActive && !m_wanUserDisconnect && m_connected) {
+            // The session still up over the network the device has left
+            // (iOS keeps a cellular TCP connection when Wi-Fi comes), but the
+            // radio's spectrum and audio go to the old address: the display
+            // froze (Rich Yost N2RY, build 180, 5G to Wi-Fi). Made again over
+            // the new network, as a dropped session is.
+            qCInfo(lcMobile) << "SmartLink: the session is on the network that went; connecting again";
+            m_session.radioModel().disconnectFromRadio();
         }
     });
     m_connectReadyTimer.setSingleShot(true);

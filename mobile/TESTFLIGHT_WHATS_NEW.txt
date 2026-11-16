@@ -9,7 +9,7 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- SmartLink after a network change, steadier: a server connection not up in 8 s is made again (once it took 37 s on the developer's iPad).
+- SmartLink after a network change, steadier: a session left on the old network (5G to Wi-Fi) is made again instead of freezing (thanks Rich N2RY), and a server connection not up in 8 s is made again.
 - Keys: T TUNE on / off, Shift+T a two-tone TUNE, A an ATU tune. With Ulanzi Studio on a Mac, a Ulanzi dial drives the app through keys (thanks Christoph DM5HF; see the manual).
 - DX cluster: after a network change it says the cluster still has the old login, not "another device".
 - After a reconnect that had to make the slice again, it is back on its frequency, mode and filter (thanks Rich N2RY).
@@ -23,7 +23,6 @@ RECENT (builds 94–180)
 - Log tab > Spot, MIDI F1–F12 (thanks Christoph DM5HF); Big buttons' Step halves (thanks Michael Walker); Noise line; TGXL first (thanks Hanno DK3HV).
 - AGC Follow; the KPA1500 (thanks Rich N2RY); MIDI controllers (thanks Hanno DK3HV); multi-answer RR73 (thanks Ben KT4O); the DVK (thanks Ian VK1HF); Big buttons (thanks Michael Walker).
 - FTx > DXpedition > Hound; the Fox's and contest messages in FT8 / FT4.
-- Band plan lock (thanks Tyler K0OTC); FTx CQ DX (thanks Kurt DL5EAG); Display Zoom (thanks Evgeny R0ACS); Antenna Genius (thanks Ben Morris).
 
 PLEASE TRY
 - Receive on a few bands with zoom, Band and the 3D view.
