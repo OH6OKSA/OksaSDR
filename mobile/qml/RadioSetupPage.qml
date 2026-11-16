@@ -377,7 +377,12 @@ Popup {
             // In a layout as the sections are, so its height follows the
             // scroll bar's margin on the layout pass (a bare Label's width
             // and height bound in a loop through it).
-            contentHeight: setupNote.implicitHeight + Theme.spacing / 2 + sections.implicitHeight
+            // The shown section's own height: the StackLayout's is that of
+            // its tallest section, which left empty space to scroll under
+            // every shorter one (the user, build 180 on the iPad).
+            readonly property Item shownSection: sections.children[setup.section] || null
+            contentHeight: setupNote.implicitHeight + Theme.spacing / 2
+                           + (shownSection ? shownSection.implicitHeight : sections.implicitHeight)
             ColumnLayout {
                 id: setupNote
                 width: scroll.availableWidth
