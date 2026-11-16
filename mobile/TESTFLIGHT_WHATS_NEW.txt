@@ -22,7 +22,6 @@ RECENT (builds 94–181)
 - Voice entry knows Sugar, King, Kilowatt, Japan... (thanks Michael Walker); RIT / XIT typed, SPLIT › Other… (thanks Sebastian DG5CST).
 - Log tab: spell the call by voice (idea Michael Walker); edit or delete a logged contact, a Name field, × clears the call (thanks Christoph DM5HF).
 - POTA self-spot, Big buttons > Log, KPA1500 Tune in STANDBY, audio in order over VPN (thanks Christoph DM5HF, Michael Walker, Rich N2RY).
-- Log tab > Spot, MIDI F1–F12 (thanks Christoph DM5HF); Big buttons' Step halves (thanks Michael Walker); Noise line; TGXL first (thanks Hanno DK3HV).
 
 PLEASE TRY
 - Receive on a few bands with zoom, Band and the 3D view.
