@@ -10,7 +10,7 @@ GETTING STARTED
 
 NEW IN THIS BUILD
 - Spelling the call by voice: the app's own offline recogniser (Vosk) now on iPhone, iPad and Mac too, held to the alphabet; nothing leaves the device. A call cut by a misheard word is not filled ("Not sure of the call"); up to 15 s.
-- SmartLink: + Account signs in more accounts, a tap changes between them; ☆ makes a radio a favourite that connects in one tap, on any account (idea Ian VK1HF).
+- SmartLink: + Account signs in more accounts, a tap changes between them; the star beside a radio makes it a favourite that connects in one tap, on any account (idea Ian VK1HF).
 
 RECENT (builds 94–174)
 - Voice entry knows Sugar, King, Kilowatt, Japan... (thanks Michael Walker); RIT / XIT typed, SPLIT › Other… (thanks Sebastian DG5CST).
@@ -33,7 +33,7 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab: decode, drag the red TX band to a free frequency, answer a CQ at low power and check the log. [TX]
 - The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: the mic button beside the call on the Log tab: spell a few calls; SmartLink + Account and ☆ favourites.
+- New: the mic button beside the call on the Log tab: spell a few calls; SmartLink + Account and favourites (the star).
 - AGC panel > Auto on a clear spot, then Follow and Noise line.
 - The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]
 

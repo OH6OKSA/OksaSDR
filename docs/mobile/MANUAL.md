@@ -1469,7 +1469,7 @@ seven.
   recording, on an iPhone, iPad, Mac and Android alike, listening only for
   the alphabet's words, so nothing leaves the device and no network is
   needed (on an iPhone it replaced Apple's speech recognition in build
-  175, which cut calls at a word it misheard). When a word it did not
+  178, which cut calls at a word it misheard). When a word it did not
   understand comes inside the call and more letters follow, the field is
   left as it was and the line says *Not sure of the call*: spell it again
   rather than log half a call. It understands, in English whatever the
