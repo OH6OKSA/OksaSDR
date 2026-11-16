@@ -864,6 +864,17 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
     } else if (command == QLatin1String("netchange")) {
         m_engine.testNetworkChange();
         *delayMs = 500;
+    } else if (command == QLatin1String("dxconnect")) {
+        m_engine.testDxConnect(arg.section(QLatin1Char(':'), 0, 0), quint16(arg.section(QLatin1Char(':'), 1).toUInt()));
+        *delayMs = 500;
+    } else if (command == QLatin1String("dxoff")) {
+        m_engine.disconnectDxCluster();
+        *delayMs = 500;
+    } else if (command == QLatin1String("dxstate")) {
+        const QVariantMap dx = m_engine.dxCluster();
+        qInfo().noquote() << "shot-plan: dx" << dx.value(QStringLiteral("state")).toString() << "|"
+                          << dx.value(QStringLiteral("error")).toString();
+        *delayMs = 100;
     } else if (command == QLatin1String("setupget")) {
         // KEY,...: what Radio Setup shows for those keys now (radioSetup()).
         const QVariantMap d = m_engine.radioSetup();
@@ -1364,13 +1375,16 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             // <F1> ... <F12>, <Esc>, <Enter>: that key alone, no text. <Cmd-1> ...
             // <Cmd-0>: the digit with Control, as Qt hands an iPad's ⌘ on
             // (Ctrl on Android and a PC).
-            static const QRegularExpression named(QStringLiteral("^<(F([1-9]|1[0-2])|Esc|Enter|Cmd-([0-9]))>$"));
+            // <Shift-T>: the letter with Shift.
+            static const QRegularExpression named(QStringLiteral("^<(F([1-9]|1[0-2])|Esc|Enter|Cmd-([0-9])|Shift-([A-Z]))>$"));
             if (const QRegularExpressionMatch m = named.match(keys); m.hasMatch()) {
                 const bool cmd = !m.captured(3).isEmpty();
+                const bool shift = !m.captured(4).isEmpty();
                 const int key = cmd ? Qt::Key_0 + m.captured(3).toInt()
-                                    : m.captured(1) == QLatin1String("Esc") ? Qt::Key_Escape
-                                    : m.captured(1) == QLatin1String("Enter") ? Qt::Key_Return : Qt::Key_F1 + m.captured(2).toInt() - 1;
-                const Qt::KeyboardModifiers mods = cmd ? Qt::ControlModifier : Qt::NoModifier;
+                                : shift ? int(m.captured(4).at(0).unicode())
+                                : m.captured(1) == QLatin1String("Esc") ? Qt::Key_Escape
+                                : m.captured(1) == QLatin1String("Enter") ? Qt::Key_Return : Qt::Key_F1 + m.captured(2).toInt() - 1;
+                const Qt::KeyboardModifiers mods = cmd ? Qt::ControlModifier : shift ? Qt::ShiftModifier : Qt::NoModifier;
                 QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyPress, key, mods);
                 QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyRelease, key, mods);
                 QWindowSystemInterface::flushWindowSystemEvents();

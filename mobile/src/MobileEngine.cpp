@@ -1876,6 +1876,7 @@ void MobileEngine::noteNetworkChange()
     m_netMedium = medium;
     m_netReach = reach;
     if (back || moved) {
+        m_dxNetworkMoved.start();
         m_networkChangeTimer.start();
     }
 }
@@ -2506,6 +2507,22 @@ void MobileEngine::wireTransmit()
     // Tune, ATU and radio-side TX audio state.
     TransmitModel& tm = rm.transmitModel();
     connect(&tm, &TransmitModel::tuneChanged, this, &MobileEngine::tuneStateChanged);
+    // A two-tone TUNE over: the radio's own tune mode back once the radio
+    // has stopped transmitting it (its interlock). Not by the tune state:
+    // the radio's answer to the mode change still says tune=0, and that
+    // "off" put the mode back as the tune began (the first test), which a
+    // FLEX ignores while it tunes.
+    connect(&rm, &RadioModel::radioTransmittingChanged, this, [this, &tm](bool on) {
+        if (m_twoToneRestoreMode.isEmpty()) {
+            return;
+        }
+        if (on) {
+            m_twoToneOn = true;
+        } else if (m_twoToneOn) {
+            m_twoToneOn = false;
+            tm.setTuneMode(std::exchange(m_twoToneRestoreMode, QString()));
+        }
+    });
     connect(&tm, &TransmitModel::tuneAvailabilityChanged, this, &MobileEngine::tuneStateChanged);
     connect(&tm, &TransmitModel::tunePowerChanged, this, &MobileEngine::tuneStateChanged);
     connect(&tm, &TransmitModel::hasTunerChanged, this, &MobileEngine::atuChanged);
@@ -4051,39 +4068,92 @@ void MobileEngine::setRadioMicLevel(int level)
 
 void MobileEngine::toggleTune()
 {
-    RadioModel& rm = m_session.radioModel();
-    if (rm.transmitModel().isTuning()) {
+    TransmitModel& tx = m_session.radioModel().transmitModel();
+    if (tx.isTuning()) {
         stopTransmit(QStringLiteral("tune button"));
+        // A two-tone tune stopped before the radio ever transmitted it:
+        // its mode back once the stop has gone through.
+        if (!m_twoToneRestoreMode.isEmpty() && !m_twoToneOn) {
+            QTimer::singleShot(1500, this, [this] {
+                TransmitModel& t = m_session.radioModel().transmitModel();
+                if (!m_twoToneRestoreMode.isEmpty() && !m_twoToneOn && !t.isTuning()) {
+                    t.setTuneMode(std::exchange(m_twoToneRestoreMode, QString()));
+                }
+            });
+        }
         return;
     }
+    keyTune();
+}
+
+bool MobileEngine::keyTune()
+{
+    RadioModel& rm = m_session.radioModel();
     if (!tuneAvailable()) {
         qCInfo(lcMobile) << "tune press ignored: tune not available";
-        return;
+        return false;
     }
     if (txLockRefuses("TUNE")) {
-        return;
+        return false;
     }
     m_tuneInput = rm.localTxController()->capture(TxController::Activity::Tune);
     if (!m_tuneInput.start()) {
         m_tuneInput.stop();
         qCWarning(lcMobile) << "tune start refused by the TX controller";
         setLastError(tr("The radio did not accept the tune request."));
-        return;
+        return false;
     }
     qCInfo(lcMobile) << "tune keyed";
+    return true;
+}
+
+void MobileEngine::toggleTwoToneTune()
+{
+    TransmitModel& tx = m_session.radioModel().transmitModel();
+    if (tx.isTuning()) {
+        toggleTune();   // its mode goes back when the tune ends
+        return;
+    }
+    const QString mode = tx.tuneMode();
+    if (mode != QLatin1String("two_tone")) {
+        tx.setTuneMode(QStringLiteral("two_tone"));
+    }
+    m_twoToneRestoreMode = mode.isEmpty() ? QStringLiteral("single_tone") : mode;
+    m_twoToneOn = false;
+    // Not keyed (the transmit lock, no TX here): the mode as it was. Keyed,
+    // it goes back when the tune ends: the radio's tune state comes back
+    // later, and a FLEX ignores a tune mode set while it tunes (the first
+    // test left it two_tone).
+    if (!keyTune()) {
+        tx.setTuneMode(std::exchange(m_twoToneRestoreMode, QString()));
+        return;
+    }
+    qCInfo(lcMobile) << "two-tone tune keyed";
 }
 
 void MobileEngine::atuPressed()
+{
+    atuPress(false);
+}
+
+void MobileEngine::atuTune()
+{
+    atuPress(true);
+}
+
+void MobileEngine::atuPress(bool tuneOnly)
 {
     if (!hasTuner() || !m_caps.canTransmit || txLockRefuses("the ATU")) {
         return;
     }
     RadioModel& rm = m_session.radioModel();
     m_atuInput = rm.localTxController()->capture(TxController::Activity::Atu);
-    // Already tuned on this transmit frequency: a press bypasses the ATU.
+    // Already tuned on this transmit frequency: the button bypasses the ATU
+    // (the A key always tunes, as the desktop's ATU Start: it bypassed the
+    // FLEX's tuned ATU in its first test).
     const bool sameFreq = m_atuTunedFreqMhz > 0.0
         && std::abs(rm.transmitModel().transmitFreq() - m_atuTunedFreqMhz) < 1e-6;
-    if (atuTuned() && sameFreq) {
+    if (!tuneOnly && atuTuned() && sameFreq) {
         if (!m_atuInput.bypassAtu()) {
             setLastError(tr("The radio did not accept the ATU bypass."));
         }
@@ -7452,6 +7522,7 @@ void MobileEngine::setupDxCluster()
     connect(m_dx, &DxClusterClient::connected, this, [this] {
         m_dxState = QStringLiteral("connected");
         m_dxConnectedAt.start();
+        m_dxLastLine.clear();
         // Kept while the cluster keeps closing each login at once.
         if (m_dxShortSessions < 2) {
             m_dxError.clear();
@@ -7459,17 +7530,40 @@ void MobileEngine::setupDxCluster()
         qCInfo(lcMobile) << "DX cluster connected to" << m_dx->host() << m_dx->port();
         emit dxClusterChanged();
     });
+    // What the cluster says, kept for the log when it closes a login (its
+    // reason is often its last line: "already logged in" and the like).
+    connect(m_dx, &DxClusterClient::rawLineReceived, this, [this](const QString& line) {
+        const QString text = line.trimmed();
+        if (!text.isEmpty() && !text.startsWith(QLatin1String("DX de"), Qt::CaseInsensitive)) {
+            m_dxLastLine = text.left(160);
+        }
+    });
     connect(m_dx, &DxClusterClient::disconnected, this, [this] {
         // Closed within a minute of each login, twice: the same call is
         // most likely logged in from another device, which the cluster
         // lets on only once (the user's two phones, each knocking the other
         // off every minute, the app stalling at each new login's spots).
+        // Within minutes of a network change it is this device's own login
+        // from the network before, which the cluster keeps until it notices
+        // that connection is gone (the developer's iPad, build 180).
         if (m_dxConnectedAt.isValid() && m_dxConnectedAt.elapsed() < 60000) {
+            const qint64 secs = m_dxConnectedAt.elapsed() / 1000;
+            const bool moved = m_dxNetworkMoved.isValid() && m_dxNetworkMoved.elapsed() < 5 * 60 * 1000;
+            qCInfo(lcMobile).noquote() << QStringLiteral("DX cluster: closed %1 s after login%2; its last line: \"%3\"")
+                                              .arg(secs)
+                                              .arg(moved ? QStringLiteral(" (the network changed %1 s ago)")
+                                                                .arg(m_dxNetworkMoved.elapsed() / 1000)
+                                                         : QString())
+                                              .arg(m_dxLastLine);
             if (++m_dxShortSessions >= 2) {
                 const QString call = dxCluster().value(QStringLiteral("callsign")).toString();
-                m_dxError = tr("The cluster closes each login at once: is %1 logged in from another device? "
-                               "Give each its own SSID in the Callsign field, e.g. %1-2.").arg(call);
-                qCInfo(lcMobile) << "DX cluster: closed" << m_dxShortSessions << "times right after login";
+                m_dxError = moved
+                    ? tr("The cluster still has this device's login from the network before, and lets the new "
+                         "one on once it notices that one is gone (usually within minutes).")
+                    : tr("The cluster closes each login at once: is %1 logged in from another device? "
+                         "Give each its own SSID in the Callsign field, e.g. %1-2.").arg(call);
+                qCInfo(lcMobile) << "DX cluster: closed" << m_dxShortSessions << "times right after login"
+                                 << (moved ? "(after a network change)" : "");
             }
         } else {
             m_dxShortSessions = 0;
@@ -7873,6 +7967,17 @@ void MobileEngine::connectDxCluster()
                      << cfg.value(QStringLiteral("port")).toInt();
     m_dx->connectToCluster(cfg.value(QStringLiteral("host")).toString(),
                            quint16(cfg.value(QStringLiteral("port")).toInt()), call);
+    emit dxClusterChanged();
+}
+
+void MobileEngine::testDxConnect(const QString& host, quint16 port)
+{
+    m_dxWanted = true;
+    m_dxState = QStringLiteral("connecting");
+    m_dxError.clear();
+    m_dxShortSessions = 0;
+    qCInfo(lcMobile) << "DX cluster connect (test)" << host << port;
+    m_dx->connectToCluster(host, port, dxCallsign());
     emit dxClusterChanged();
 }
 

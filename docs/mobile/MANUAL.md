@@ -1423,7 +1423,11 @@ seven.
     with the reason when it could not connect. The same callsign from two
     devices: a cluster lets one on at a time, and each knocks the other
     off; the app then waits longer between tries and says so. Give each
-    device its own SSID in the callsign, e.g. *OH6OKSA-2*.
+    device its own SSID in the callsign, e.g. *OH6OKSA-2*. Right after
+    this device moves to another network (Wi-Fi to the mobile network or
+    back) the cluster may still hold its login from the network before
+    and refuse the new one for a few minutes: the line says so, and the
+    app gets on by itself once the cluster lets the old login go.
 - **Prof** (profiles) — the radio's global, TX and mic profiles: load, save,
   delete, as in SmartSDR. Under them, **App setups** (thanks Larry
   Averbeck W9FLA) do the same for this app's own settings: type a name in
@@ -2456,10 +2460,26 @@ Bluetooth keyboard on a phone, or Android's DeX):
 | Space | PTT (hold) |
 | + / − | Zoom |
 | F | Frequency entry |
+| T | TUNE on / off (the TX tab's Tune power) |
+| Shift + T | TUNE with the radio's two-tone test signal on / off; the radio's own tune mode is put back afterwards |
+| A | An ATU tune cycle (the ATU button bypasses the ATU when it is tuned on this frequency; A always tunes) |
 | F1–F12 | CW memories (CW modes), the Digi tab's macros (F1–F8, RTTY and PSK) or voice macros (voice modes) |
 | ⌘1–⌘9, ⌘0 | As F1–F10, for a keyboard without F-keys (an iPad's Magic Keyboard); Ctrl with the digit on Android and a PC keyboard (not while Ctrl keys the CW paddles) |
 | Esc | Stop CW text, RTTY or PSK text, or a voice macro |
 | Scroll | Tune; ⌘- or Ctrl-scroll zooms |
+
+T, Shift + T and A transmit, so the transmit lock (TX tab › Lock) holds
+them as it holds PTT and TUNE.
+
+**A Ulanzi dial on a Mac** (thanks Christoph Steinert DM5HF): with Ulanzi
+Studio running on the Mac, give the knob and keys key combinations there,
+and the dial drives the app through the keys above: the knob ← and →
+(tuning), the keys for example F1, F2 and F3 (the voice keyer), Esc
+(stop), T (TUNE), A (the ATU) and Space (PTT). If a key sends Space only
+as a short press, choose **Tap on / off** under PTT on the TX tab: the
+first press keys, the next one unkeys. On an iPad or
+iPhone Ulanzi Studio does not run, and the dial's knob stays the
+device's volume.
 
 Sliders, switches and lists do not keep the keyboard: after one is used
 (on a tablet's side panel or in the drawer), Space and the arrows work on

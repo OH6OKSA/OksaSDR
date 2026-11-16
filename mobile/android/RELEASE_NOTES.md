@@ -1,6 +1,11 @@
-**OksaSDR for Android — beta 95.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
+**OksaSDR for Android — beta 96.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
-### New in beta 95
+### New in beta 96
+- **SmartLink after a network change, steadier** (roadmap 84): beta 95 came back from every switch between Wi-Fi and the mobile network by itself, but once its new connection to the SmartLink server took 37 s (the first packets lost while the network came up). A server connection not up in 8 s is now made again, up to three tries.
+- **Keys for TUNE, the ATU and a two-tone tune** (roadmap 85; Christoph Steinert DM5HF): on a keyboard (also a Bluetooth keyboard or DeX) **T** turns TUNE on and off, **Shift+T** tunes with the radio's two-tone test signal (its own tune mode is put back afterwards) and **A** runs an ATU tune. They transmit, so the transmit lock holds them as it holds PTT.
+- **The DX cluster after a network change** (roadmap 86): when the cluster refuses the new login because it still holds this device's login from the network before, the app says so (it used to ask whether the call was logged in from another device), and the log shows what the cluster said.
+
+### Still new from beta 95
 - **SmartLink after a network change, now in seconds** (roadmap 84): beta 94 made the SmartLink connection again after a network change, but the sign-in was renewed over an HTTPS connection kept from the old network, and it waited out a 15 s timeout (on the developer's iPad twice) before the app was back. Those kept connections are now dropped with the network, so the sign-in and the radio come back in a few seconds (tested against the FLEX: signed in again 1.2 s after the change, the dropped session back in 8.6 s).
 
 ### Still new from beta 94

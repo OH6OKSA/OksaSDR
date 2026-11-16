@@ -873,7 +873,14 @@ public:
     void injectRadioStatus(const QString& line);
     // The render tool's network change (netchange): as the system reporting
     // the device on another network, after the settling wait.
-    void testNetworkChange() { m_networkChangeTimer.start(); }
+    void testNetworkChange()
+    {
+        m_dxNetworkMoved.start();
+        m_networkChangeTimer.start();
+    }
+    // The render tool's DX cluster at HOST:PORT for this run only (the
+    // settings untouched): a stand-in cluster that refuses logins.
+    void testDxConnect(const QString& host, quint16 port);
     Q_INVOKABLE void setRadioSetup(const QString& key, const QVariant& value);
     // Receive › Calibration's Start, as the desktop's: the cal frequency
     // set, freq_error_ppb cleared, radio pll_start, done when the radio's
@@ -1833,8 +1840,13 @@ public:
     Q_INVOKABLE void setPtt(bool down, const QString& reason = QString());
     // Tune carrier on/off (latched, like the desktop TUNE button).
     Q_INVOKABLE void toggleTune();
+    // TUNE with the radio's two-tone test signal; its own tune mode back
+    // when the tune ends (the T key with Shift).
+    Q_INVOKABLE void toggleTwoToneTune();
     // ATU: start a tune cycle, or bypass when already tuned on this frequency.
     Q_INVOKABLE void atuPressed();
+    // An ATU tune cycle even when tuned here already (the A key).
+    Q_INVOKABLE void atuTune();
     // Ends every transmission this client keyed (PTT, tune, ATU cycle);
     // keepAmpTune leaves the amplifier's tune carrier (ampTune) running.
     Q_INVOKABLE void stopTransmit(const QString& reason, bool keepAmpTune = false);
@@ -2858,6 +2870,15 @@ private:
     void noteNetworkChange();
     bool m_wanAnswered{false};   // the radio sent its version on this connection
     bool m_wanResumeOnList{false};   // a connect waiting for the server made again
+    QString m_twoToneRestoreMode;    // the radio's tune mode before a two-tone TUNE
+    bool m_twoToneOn{false};         // that tune seen on
+    bool keyTune();                  // TUNE keyed: false when refused
+    void atuPress(bool tuneOnly);
+    // The DX cluster: the last line it sent (what it said before closing a
+    // login), and when the network last changed (a login refused then is
+    // this device's own session from the network before, not another device).
+    QString m_dxLastLine;
+    QElapsedTimer m_dxNetworkMoved;
     // Closed by the radio before it answered: once more with a pause before
     // "wan validate" (Mohammed A71AT's iPad on 5G, 2026-11-16).
     bool m_wanValidateRetried{false};

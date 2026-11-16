@@ -5,7 +5,8 @@ import AetherMobile
 // A hardware keyboard on the operating page, the tablet's and the phone's
 // alike (the phone page took only the CW paddle keys): the CW paddles,
 // arrows tune (up / down ten steps, Shift ten times as far), + / − zoom,
-// F frequency entry, F1–F12 the CW memories, Digi macros or voice macros
+// F frequency entry, T TUNE (Shift+T two tones), A an ATU tune, F1–F12 the CW
+// memories, Digi macros or voice macros
 // (⌘1–⌘9 and ⌘0 too, Ctrl on Android and a PC keyboard: an iPad's Magic
 // Keyboard has no F-keys), Esc stops them, Space PTT. The page forwards its key events and focus changes; the
 // keyboard focus returns to the page whenever a control took it.
@@ -62,6 +63,16 @@ Item {
         case Qt.Key_Equal: Engine.zoom(0.5); break
         case Qt.Key_Minus: Engine.zoom(2.0); break
         case Qt.Key_F: if (keys.freqDialog) keys.freqDialog.open(); break
+        // TUNE on / off, Shift+T with two tones, A an ATU tune cycle
+        // (a Ulanzi dial's keys on a Mac through Ulanzi Studio, Christoph
+        // DM5HF); a held key does not toggle again.
+        case Qt.Key_T:
+            if (!event.isAutoRepeat) {
+                if (event.modifiers & Qt.ShiftModifier) Engine.toggleTwoToneTune()
+                else Engine.toggleTune()
+            }
+            break
+        case Qt.Key_A: if (!event.isAutoRepeat) Engine.atuTune(); break
         case Qt.Key_Escape: Engine.stopCwx(); Engine.dvkStop(); Engine.stopTextTx(); break
         case Qt.Key_Space:
             // iOS: GameController keys Space itself (keyboardOnPage).

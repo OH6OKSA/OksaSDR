@@ -55,6 +55,8 @@ class MobileEngine;
 //   netchange               as the system reporting another network (SmartLink's
 //                           server connection is made again)
 //   smartlink I             connect to the Connect page's SmartLink radio I
+//   dxconnect HOST:PORT     the DX cluster there for this run (settings untouched);
+//                           dxstate logs its state and message, dxoff disconnects it
 //   kpa HOST[:PORT]|off     the KPA1500's address (Radio Setup › Amp › Elecraft); off
 //                           forgets it, pause / resume its Read the amplifier
 //   ampstate                log the Amp tab's link state and readings
@@ -87,7 +89,8 @@ class MobileEngine;
 //   focus                   log where the keyboard is (keyboardOnPage, active item)
 //   keys TEXT               type TEXT through the window ("\\b": Backspace as a
 //                           Mac's UIKit sends it), then log the focused field's text;
-//                           <F1>..<F12>, <Esc>, <Enter>, <Cmd-0>..<Cmd-9> alone: that key
+//                           <F1>..<F12>, <Esc>, <Enter>, <Cmd-0>..<Cmd-9>, <Shift-A>..<Shift-Z>
+//                           alone: that key
 //   focussweep              give the keyboard to every control in view that takes it
 //                           on a press (no press): each must hand it back to the page
 //   focusaudit FX,FY        tap every text field in view, then FX,FY: each must
