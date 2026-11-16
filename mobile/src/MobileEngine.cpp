@@ -101,6 +101,7 @@
 #include <QDateTime>
 #include <QMetaEnum>
 #include <QNetworkInformation>
+#include <QNetworkProxy>
 #include <QNetworkInterface>
 #include <QTimer>
 #ifdef Q_OS_ANDROID
@@ -1674,6 +1675,23 @@ void MobileEngine::wireSmartLink()
     // Development tests: the first remote connection refused before the
     // radio answers (to a closed local port), so the retry runs.
     m_testRefuseFirst = qEnvironmentVariableIsSet("OKSASDR_WAN_REFUSE_FIRST");
+    // Development tests: Auth0's HTTPS through a local CONNECT proxy that can
+    // leave its kept-alive connections dead (OKSASDR_AUTH_PROXY=HOST:PORT).
+    if (const QString proxy = qEnvironmentVariable("OKSASDR_AUTH_PROXY"); proxy.contains(QLatin1Char(':'))) {
+        struct AuthProxyFactory : QNetworkProxyFactory {
+            QNetworkProxy proxy;
+            QList<QNetworkProxy> queryProxy(const QNetworkProxyQuery& query) override
+            {
+                return {query.peerHostName().endsWith(QLatin1String("auth0.com")) ? proxy
+                                                                                  : QNetworkProxy(QNetworkProxy::NoProxy)};
+            }
+        };
+        auto* factory = new AuthProxyFactory;
+        factory->proxy = QNetworkProxy(QNetworkProxy::HttpProxy, proxy.section(QLatin1Char(':'), 0, 0),
+                                       quint16(proxy.section(QLatin1Char(':'), 1).toUInt()));
+        QNetworkProxyFactory::setApplicationProxyFactory(factory);
+        qCInfo(lcMobile).noquote() << "Auth0 through the test proxy at" << proxy;
+    }
 #endif
     m_networkChangeTimer.setSingleShot(true);
     m_networkChangeTimer.setInterval(kNetworkSettleMs);

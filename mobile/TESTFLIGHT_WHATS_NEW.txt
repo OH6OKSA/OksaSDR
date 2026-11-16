@@ -9,9 +9,10 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- SmartLink after a network change: moving between Wi-Fi and the mobile network or a hotspot while the app runs no longer leaves it stuck at Connecting (it needed closing). A dropped remote session connects again by itself; Cancel beside Connecting… stops a connect.
+- SmartLink after a network change, now in seconds: build 179 made the SmartLink connection again but renewed the sign-in over a connection left on the old network and waited 15 s or more (twice on the developer's iPad). Wi-Fi to the mobile network or a hotspot and back with the app running should now come back by itself in a few seconds.
 
-RECENT (builds 94–178)
+RECENT (builds 94–179)
+- 179: SmartLink comes back after a network change; Cancel beside Connecting…; a second try for a remote connection the radio closes at once (thanks Mohammed A71AT).
 - Voice spelling with the app's own offline recogniser on every device; SmartLink + Account and favourite radios (idea Ian VK1HF).
 - Voice entry knows Sugar, King, Kilowatt, Japan... (thanks Michael Walker); RIT / XIT typed, SPLIT › Other… (thanks Sebastian DG5CST).
 - Log tab: spell the call by voice (idea Michael Walker); edit or delete a logged contact, a Name field, × clears the call (thanks Christoph DM5HF).
@@ -21,7 +22,6 @@ RECENT (builds 94–178)
 - FTx > DXpedition > Hound; the Fox's and contest messages in FT8 / FT4.
 - Auto AGC-T on every radio; app setups (thanks Larry W9FLA); Macros > Repeat (thanks Robin Bishop); SNR on the meters (thanks Scott L Stanford).
 - Band plan lock (thanks Tyler K0OTC); FTx CQ DX (thanks Kurt DL5EAG); Display Zoom (thanks Evgeny R0ACS); Antenna Genius (thanks Ben Morris).
-- RF2K-S control and Tune, the amp on every meter (thanks Sebastian DG5CST, Jeff Stinger); Macros by PTT (thanks Tyler K0OTC).
 
 PLEASE TRY
 - Receive on a few bands with zoom, Band and the 3D view.

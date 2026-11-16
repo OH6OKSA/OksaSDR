@@ -1,6 +1,9 @@
-**OksaSDR for Android — beta 94.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
+**OksaSDR for Android — beta 95.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
-### New in beta 94
+### New in beta 95
+- **SmartLink after a network change, now in seconds** (roadmap 84): beta 94 made the SmartLink connection again after a network change, but the sign-in was renewed over an HTTPS connection kept from the old network, and it waited out a 15 s timeout (on the developer's iPad twice) before the app was back. Those kept connections are now dropped with the network, so the sign-in and the radio come back in a few seconds (tested against the FLEX: signed in again 1.2 s after the change, the dropped session back in 8.6 s).
+
+### Still new from beta 94
 - **SmartLink comes back after a network change** (roadmap 84; found on the developer's iPad): moving between Wi-Fi and the mobile network or a phone's hotspot while the app ran left it at *Connecting…* with *SmartLink server not reachable. Retrying…* and no button working, until the app was closed completely. The connection to SmartLink's server stayed on the network that had gone, and the request for the radio sent on it was never answered. Now a network change makes that connection again at once, a request without an answer in 10 s does the same and asks again, a dropped remote session connects again by itself (showing *Connecting…*), and **Cancel** beside *Connecting…* on the Connect page stops a connect. If the radio closes a remote connection before it answers, the app tries once more by itself, and the log tells more of each remote connection (the ports, the TLS session, whether the radio answered) for reports like Mohammed A71AT's.
 
 ### Still new from beta 93

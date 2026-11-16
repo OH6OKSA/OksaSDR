@@ -113,6 +113,9 @@ void SmartLinkClient::login(const QString& email, const QString& password)
             QString desc = err.value("error_description").toString(reply->errorString());
             qCWarning(lcSmartLink) << "SmartLinkClient: Auth0 login failed:" << desc;
             m_lastAuthTransient = transientAuthFailure(reply);
+            if (m_lastAuthTransient) {
+                m_nam.clearConnectionCache();   // the next try on a new connection
+            }
             emit authFailed(desc);
             return;
         }
@@ -178,6 +181,9 @@ void SmartLinkClient::loginWithRefreshToken(const QString& refreshToken)
             QString desc = err.value("error_description").toString(reply->errorString());
             qCWarning(lcSmartLink) << "SmartLinkClient: Auth0 refresh failed:" << desc;
             m_lastAuthTransient = transientAuthFailure(reply);
+            if (m_lastAuthTransient) {
+                m_nam.clearConnectionCache();   // the next try on a new connection
+            }
             emit authFailed(desc);
             return;
         }
@@ -326,6 +332,11 @@ void SmartLinkClient::restart()
     m_pingTimer.stop();
     m_serverConnected = false;
     m_socket.abort();
+    // Auth0's kept-alive HTTPS connections are on the old network too: a
+    // refresh sent on one waited out the whole transfer timeout (15 s, more
+    // than once) before a new connection was made (the developer's iPad,
+    // build 179).
+    m_nam.clearConnectionCache();
     loginWithRefreshToken(m_refreshToken);
 }
 
