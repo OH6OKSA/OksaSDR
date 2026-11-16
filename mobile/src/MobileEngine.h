@@ -871,6 +871,9 @@ public:
     // model=PowerGeniusXL ip=... state=IDLE"): fed to the radio model as if
     // the radio had sent it, for devices the test radio does not have.
     void injectRadioStatus(const QString& line);
+    // The render tool's network change (netchange): as the system reporting
+    // the device on another network, after the settling wait.
+    void testNetworkChange() { m_networkChangeTimer.start(); }
     Q_INVOKABLE void setRadioSetup(const QString& key, const QVariant& value);
     // Receive › Calibration's Start, as the desktop's: the cal frequency
     // set, freq_error_ppb cleared, radio pll_start, done when the radio's
@@ -2843,6 +2846,22 @@ private:
     int m_smartLinkRetryMs{0};
     void retrySmartLinkSignIn(const QString& why);
     QTimer m_wanReconnectTimer;
+    // A network change while the app runs (Wi-Fi to a phone's hotspot and
+    // back, the developer's iPad 2026-11-16): the SmartLink server connection
+    // is made again at once, and a connect request the server does not
+    // answer is asked again over a new one, so nothing waits on a socket left
+    // on the network that went.
+    QTimer m_connectReadyTimer;
+    QTimer m_networkChangeTimer;
+    int m_netMedium{-1};
+    int m_netReach{-1};
+    void noteNetworkChange();
+    bool m_wanAnswered{false};   // the radio sent its version on this connection
+    bool m_wanResumeOnList{false};   // a connect waiting for the server made again
+    // Closed by the radio before it answered: once more with a pause before
+    // "wan validate" (Mohammed A71AT's iPad on 5G, 2026-11-16).
+    bool m_wanValidateRetried{false};
+    bool m_testRefuseFirst{false};   // development: the first remote connection refused
     QString m_smartLinkState{QStringLiteral("signedOut")};
     // SmartLink accounts (roadmap 62, MobileEngineSmartLink.cpp): the list
     // (id, email, label) in AppSettings, each account's refresh token in the

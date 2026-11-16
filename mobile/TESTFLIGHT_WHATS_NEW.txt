@@ -9,10 +9,10 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Spelling the call by voice: the app's own offline recogniser (Vosk) now on iPhone, iPad and Mac too, held to the alphabet; nothing leaves the device. A call cut by a misheard word is not filled ("Not sure of the call"); up to 15 s.
-- SmartLink: + Account signs in more accounts, a tap changes between them; the star beside a radio makes it a favourite that connects in one tap, on any account (idea Ian VK1HF).
+- SmartLink after a network change: moving between Wi-Fi and the mobile network or a hotspot while the app runs no longer leaves it stuck at Connecting (it needed closing). A dropped remote session connects again by itself; Cancel beside Connecting… stops a connect.
 
-RECENT (builds 94–174)
+RECENT (builds 94–178)
+- Voice spelling with the app's own offline recogniser on every device; SmartLink + Account and favourite radios (idea Ian VK1HF).
 - Voice entry knows Sugar, King, Kilowatt, Japan... (thanks Michael Walker); RIT / XIT typed, SPLIT › Other… (thanks Sebastian DG5CST).
 - Log tab: spell the call by voice (idea Michael Walker); edit or delete a logged contact, a Name field, × clears the call (thanks Christoph DM5HF).
 - POTA self-spot, Big buttons > Log, KPA1500 Tune in STANDBY, audio in order over VPN (thanks Christoph DM5HF, Michael Walker, Rich N2RY).
@@ -20,7 +20,6 @@ RECENT (builds 94–174)
 - AGC Follow; the KPA1500 (thanks Rich N2RY); MIDI controllers (thanks Hanno DK3HV); multi-answer RR73 (thanks Ben KT4O); the DVK (thanks Ian VK1HF); Big buttons (thanks Michael Walker).
 - FTx > DXpedition > Hound; the Fox's and contest messages in FT8 / FT4.
 - Auto AGC-T on every radio; app setups (thanks Larry W9FLA); Macros > Repeat (thanks Robin Bishop); SNR on the meters (thanks Scott L Stanford).
-- eSSB tube, EVO, reverb; Amp by maker; first-run hints; measured TX power.
 - Band plan lock (thanks Tyler K0OTC); FTx CQ DX (thanks Kurt DL5EAG); Display Zoom (thanks Evgeny R0ACS); Antenna Genius (thanks Ben Morris).
 - RF2K-S control and Tune, the amp on every meter (thanks Sebastian DG5CST, Jeff Stinger); Macros by PTT (thanks Tyler K0OTC).
 
@@ -33,7 +32,7 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab: decode, drag the red TX band to a free frequency, answer a CQ at low power and check the log. [TX]
 - The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: the mic button beside the call on the Log tab: spell a few calls; SmartLink + Account and favourites (the star).
+- New: with a SmartLink radio connected, go from Wi-Fi to the mobile network or a hotspot and back: it should come back by itself.
 - AGC panel > Auto on a clear spot, then Follow and Noise line.
 - The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]
 

@@ -70,6 +70,18 @@ public:
     void disconnect();
     // Reconnect to SmartLink using the current authenticated token.
     void reconnect();
+    // Drop the server connection at once and sign in again from the refresh
+    // token. After a network change the old socket stays on the network that
+    // went, and nothing sent on it is answered until TCP gives up on it.
+    void restart();
+    // Development tests only: the server reached through a local relay that
+    // can leave a connection dead on purpose. The certificate is still
+    // checked against the server's own name.
+    void setServerRelay(const QString& host, quint16 port)
+    {
+        m_relayHost = host;
+        m_relayPort = port;
+    }
 
     bool isConnected()     const { return m_serverConnected; }
     bool isAuthenticated() const { return m_authenticated; }
@@ -119,6 +131,9 @@ private:
     static constexpr const char* AUTH0_CLIENT_ID = "4Y9fEIIsVYyQo5u6jr7yBWc4lV5ugC2m";
     static constexpr const char* SMARTLINK_HOST  = "smartlink.flexradio.com";
     static constexpr int         SMARTLINK_PORT  = 443;
+
+    QString m_relayHost;
+    quint16 m_relayPort{0};
 
     QNetworkAccessManager m_nam;
     QString m_idToken;

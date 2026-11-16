@@ -52,6 +52,9 @@ class MobileEngine;
 //                           pause / resume its Read the amplifier switch
 //   appstate STATE          the app's state as the system sets it: active, inactive,
 //                           hidden, suspended (background and back)
+//   netchange               as the system reporting another network (SmartLink's
+//                           server connection is made again)
+//   smartlink I             connect to the Connect page's SmartLink radio I
 //   kpa HOST[:PORT]|off     the KPA1500's address (Radio Setup › Amp › Elecraft); off
 //                           forgets it, pause / resume its Read the amplifier
 //   ampstate                log the Amp tab's link state and readings

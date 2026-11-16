@@ -1063,7 +1063,7 @@ ColumnLayout {
             }
             RowLayout {
                 Layout.fillWidth: true
-                visible: potaDialog.info.ok && (potaDialog.info.parks || []).length > 1
+                visible: !!potaDialog.info.ok && (potaDialog.info.parks || []).length > 1
                 Repeater {
                     model: potaDialog.info.parks || []
                     delegate: AppButton {

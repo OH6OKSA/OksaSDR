@@ -105,13 +105,26 @@ Page {
                 AppButton { text: qsTr("Log"); onClicked: logPage.open() }
             }
 
-            Label {
+            // Cancel beside Connecting…: a connect (or a dropped session's
+            // retry) that does not come through no longer holds the page.
+            RowLayout {
                 Layout.fillWidth: true
                 visible: Engine.connectionState !== "idle" || Engine.lastError.length > 0
-                text: Engine.connectionState === "connecting" ? qsTr("Connecting…") : Engine.lastError
-                color: Engine.connectionState === "connecting" ? Theme.textDim : Theme.warning
-                font.pixelSize: Theme.px(17)
-                wrapMode: Text.Wrap
+                spacing: 12
+                Label {
+                    Layout.fillWidth: true
+                    text: Engine.connectionState === "connecting" ? qsTr("Connecting…") : Engine.lastError
+                    color: Engine.connectionState === "connecting" ? Theme.textDim : Theme.warning
+                    font.pixelSize: Theme.px(17)
+                    wrapMode: Text.Wrap
+                }
+                AppButton {
+                    objectName: "cancelConnect"
+                    visible: Engine.connectionState === "connecting"
+                    text: qsTr("Cancel")
+                    focusPolicy: Qt.NoFocus
+                    onClicked: Engine.disconnectRadio()
+                }
             }
             // The connection doctor: what blocks the connection, step by step
             // (MobileEngineDoctor.cpp). Offered after a failed connect, and

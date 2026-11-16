@@ -8,7 +8,11 @@
 #include <QJsonParseError>
 #include <QJsonValue>
 #include <QSslCertificate>
+#include <QSslCipher>
 #include <QSslConfiguration>
+#include <QTimer>
+
+#include <utility>
 
 namespace AetherSDR {
 
@@ -153,6 +157,7 @@ void WanConnection::resetSessionState()
     m_handle     = 0;
     m_connected  = false;
     m_validated  = false;
+    ++m_validateGeneration;
 }
 
 void WanConnection::connectToRadio(const QString& host, quint16 tlsPort,
@@ -226,6 +231,12 @@ quint32 WanConnection::sendCommand(const QString& command, ResponseCallback call
 void WanConnection::onTlsConnected()
 {
     qCDebug(lcSmartLink) << "WanConnection: TLS handshake complete";
+    const QSsl::SslProtocol protocol = m_socket.sessionProtocol();
+    emit tlsReady(QStringLiteral("TLS %1 %2")
+                      .arg(protocol == QSsl::TlsV1_3   ? QStringLiteral("1.3")
+                           : protocol == QSsl::TlsV1_2 ? QStringLiteral("1.2")
+                                                       : QString::number(int(protocol)),
+                           m_socket.sessionCipher().name()));
 
     // TOFU cert-pin check (GHSA-wfx7-w6p8-4jr2 phase 2, enforced).
     const QSslCertificate cert = m_socket.peerCertificate();
@@ -270,6 +281,18 @@ void WanConnection::onTlsConnected()
 
 void WanConnection::sendWanValidate()
 {
+    if (m_validateDelayMs > 0) {
+        const quint64 generation = ++m_validateGeneration;
+        const int delay = std::exchange(m_validateDelayMs, 0);
+        qCDebug(lcSmartLink) << "WanConnection: wan validate after" << delay << "ms";
+        QTimer::singleShot(delay, this, [this, generation] {
+            if (generation == m_validateGeneration && m_socket.state() == QAbstractSocket::ConnectedState
+                && !m_validated) {
+                sendWanValidate();
+            }
+        });
+        return;
+    }
     // Send wan validate as a proper command (C<seq>|wan validate handle=...)
     // FlexLib uses SendCommand() for this, not raw write.
     const quint32 seq = m_seqCounter.fetch_add(1);

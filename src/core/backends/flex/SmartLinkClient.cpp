@@ -298,6 +298,10 @@ void SmartLinkClient::connectToServer()
     sslConfig.setPeerVerifyMode(QSslSocket::VerifyPeer);
     m_socket.setSslConfiguration(sslConfig);
 
+    if (!m_relayHost.isEmpty()) {
+        m_socket.connectToHostEncrypted(m_relayHost, m_relayPort, QString::fromLatin1(SMARTLINK_HOST));
+        return;
+    }
     m_socket.connectToHostEncrypted(SMARTLINK_HOST, SMARTLINK_PORT);
 }
 
@@ -308,6 +312,21 @@ void SmartLinkClient::disconnect()
         m_socket.disconnectFromHost();
     }
     m_serverConnected = false;
+}
+
+void SmartLinkClient::restart()
+{
+    if (m_refreshToken.isEmpty()) {
+        return;
+    }
+    qCDebug(lcSmartLink) << "SmartLinkClient: restarting the server connection";
+    // A refresh still waiting on the old network is answered into nothing.
+    ++m_authGeneration;
+    m_authRequestInProgress = false;
+    m_pingTimer.stop();
+    m_serverConnected = false;
+    m_socket.abort();
+    loginWithRefreshToken(m_refreshToken);
 }
 
 void SmartLinkClient::reconnect()

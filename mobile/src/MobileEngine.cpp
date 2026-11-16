@@ -172,6 +172,10 @@ constexpr float kPanMaxDbm = -20.0f;
 // SmartLink UDP port when the radio reports none (FlexLib default).
 constexpr quint16 kDefaultWanUdpPort = 4993;
 constexpr int kWanReconnectMs = 5000;
+// The SmartLink server answers a connect request within a second or two.
+constexpr int kConnectReadyMs = 10000;
+// Wait for the network to settle after a change (a hotspot comes up in steps).
+constexpr int kNetworkSettleMs = 1500;
 // Fraction of the span kept between the passband and the edge while tuning.
 constexpr double kPanFollowEdge = 0.1;
 // Coalescing interval for pan moves during a drag.
@@ -1522,6 +1526,19 @@ void MobileEngine::disconnectRadio()
     }
     m_wanUserDisconnect = true;
     m_wanReconnectTimer.stop();
+    m_connectReadyTimer.stop();
+    // A remote connect still under way, or retrying after a drop (Cancel):
+    // nothing on the radio to close yet.
+    if (m_wanActive && !m_connected) {
+        m_wanActive = false;
+        if (m_wan.isConnected()) {
+            m_session.radioModel().disconnectFromRadio();   // registering with the radio
+        } else {
+            m_wan.disconnectFromRadio();
+        }
+        setConnectionState(QStringLiteral("idle"));
+        return;
+    }
     stopTransmit(QStringLiteral("operator disconnect"));
     // RADE's unmute must reach the radio before the link goes, or the radio
     // keeps the slice muted for this app.
@@ -1641,7 +1658,50 @@ void MobileEngine::wireSmartLink()
                 retrySmartLinkSignIn(QStringLiteral("the network is back"));
             }
         });
+        m_netMedium = int(net->transportMedium());
+        m_netReach = int(net->reachability());
+        connect(net, &QNetworkInformation::transportMediumChanged, this, [this] { noteNetworkChange(); });
+        connect(net, &QNetworkInformation::reachabilityChanged, this, [this] { noteNetworkChange(); });
     }
+#if !defined(Q_OS_IOS) && !defined(Q_OS_ANDROID)
+    // Development tests: the SmartLink server through a local relay that can
+    // leave its connection dead (OKSASDR_SMARTLINK_RELAY=127.0.0.1:PORT).
+    if (const QString relay = qEnvironmentVariable("OKSASDR_SMARTLINK_RELAY"); relay.contains(QLatin1Char(':'))) {
+        m_smartLink.setServerRelay(relay.section(QLatin1Char(':'), 0, 0),
+                                   quint16(relay.section(QLatin1Char(':'), 1).toUInt()));
+        qCInfo(lcMobile).noquote() << "SmartLink server through the test relay at" << relay;
+    }
+    // Development tests: the first remote connection refused before the
+    // radio answers (to a closed local port), so the retry runs.
+    m_testRefuseFirst = qEnvironmentVariableIsSet("OKSASDR_WAN_REFUSE_FIRST");
+#endif
+    m_networkChangeTimer.setSingleShot(true);
+    m_networkChangeTimer.setInterval(kNetworkSettleMs);
+    connect(&m_networkChangeTimer, &QTimer::timeout, this, [this] {
+        const QNetworkInformation* net = QNetworkInformation::instance();
+        if (!net || net->reachability() != QNetworkInformation::Reachability::Online
+            || m_smartLinkState == QLatin1String("signedOut") || m_smartLink.refreshToken().isEmpty()) {
+            return;
+        }
+        qCInfo(lcMobile) << "SmartLink: the network changed; a new server connection";
+        m_smartLink.restart();
+        if (m_wanActive && !m_wanUserDisconnect && !m_connected) {
+            m_connectReadyTimer.stop();
+            m_wanReconnectTimer.start();
+            m_wanResumeOnList = true;
+        }
+    });
+    m_connectReadyTimer.setSingleShot(true);
+    m_connectReadyTimer.setInterval(kConnectReadyMs);
+    connect(&m_connectReadyTimer, &QTimer::timeout, this, [this] {
+        if (!m_wanActive || m_wanUserDisconnect || m_connected) {
+            return;
+        }
+        qCInfo(lcMobile) << "SmartLink: no answer to the connect request; a new server connection";
+        m_smartLink.restart();
+        m_wanReconnectTimer.start();
+        m_wanResumeOnList = true;
+    });
     connect(qApp, &QGuiApplication::applicationStateChanged, this, [this](Qt::ApplicationState state) {
         if (state == Qt::ApplicationActive && m_smartLinkRetryTimer.isActive()) {
             retrySmartLinkSignIn(QStringLiteral("the app is back"));
@@ -1667,20 +1727,62 @@ void MobileEngine::wireSmartLink()
         emit smartLinkFavouritesChanged();
         // A favourite tapped before the list came connects now.
         QTimer::singleShot(0, this, [this] { favouriteRadioListed(); });
+        // A connect that waited for a new server connection goes on as soon
+        // as the server is back, not at the retry's next tick.
+        if (std::exchange(m_wanResumeOnList, false) && m_wanActive && !m_wanUserDisconnect && !m_connected
+            && m_wanReconnectTimer.isActive()) {
+            m_wanReconnectTimer.stop();
+            startWanConnect();
+        }
     });
     connect(&m_smartLink, &SmartLinkClient::connectReady, this,
             [this](const QString& handle, const QString& serial) {
         if (!m_wanActive || serial != m_pendingWan.serial) {
             return;
         }
+        m_connectReadyTimer.stop();
         qCInfo(lcMobile) << "SmartLink connect_ready for" << serial;
         applyAudioCompression(QHostAddress(), true);
+        m_wanAnswered = false;
+        if (std::exchange(m_testRefuseFirst, false)) {
+            m_wan.connectToRadio(QStringLiteral("127.0.0.1"), 1, handle);
+            return;
+        }
         m_wan.connectToRadio(m_pendingWan.publicIp, static_cast<quint16>(m_pendingWan.publicTlsPort), handle);
     });
     // The mismatch fires before WanConnection::connected, so it is taken from
     // the connection itself; the connect stays paused until answered.
     connect(&m_wan, &WanConnection::certFingerprintMismatch, this, &MobileEngine::certificateChanged);
+    connect(&m_wan, &WanConnection::tlsReady, this, [](const QString& session) {
+        qCInfo(lcMobile).noquote() << "SmartLink: the radio's TLS session up," << session;
+    });
+    connect(&m_wan, &WanConnection::versionReceived, this, [this](const QString& version) {
+        m_wanAnswered = true;
+        qCInfo(lcMobile).noquote() << "SmartLink: the radio took the connection (version" << version + ")"
+                                   << (m_wanValidateRetried ? "on the second try" : "");
+        m_wanValidateRetried = false;
+    });
     connect(&m_wan, &WanConnection::errorOccurred, this, [this](const QString& message) {
+        // Closed before the radio's version: the radio (or something on the
+        // way) refused the session itself (Mohammed A71AT, 2026-11-16, his
+        // iPad on 5G only).
+        qCInfo(lcMobile).noquote() << "SmartLink: the remote connection ended"
+                                   << (m_wanAnswered ? "after the radio answered" : "before the radio answered");
+        // Refused at once, perhaps before SmartLink told the radio this app
+        // was coming: once more, with a pause before "wan validate".
+        if (!m_wanAnswered && m_wanActive && !m_wanUserDisconnect && !m_connected && !m_wanValidateRetried
+            && m_connectionState == QLatin1String("connecting")) {
+            m_wanValidateRetried = true;
+            qCInfo(lcMobile) << "SmartLink: once more, wan validate 1 s after the TLS handshake";
+            m_wan.setValidateDelay(1000);
+            QTimer::singleShot(1000, this, [this] {
+                if (m_wanActive && !m_wanUserDisconnect && !m_connected) {
+                    startWanConnect();
+                }
+            });
+            return;
+        }
+        m_wan.setValidateDelay(0);
         setLastError(tr("Remote connection: %1").arg(message));
         if (m_connectionState == QLatin1String("connecting")) {
             setConnectionState(QStringLiteral("idle"));
@@ -1728,6 +1830,28 @@ void MobileEngine::wireSmartLink()
     if (!token.isEmpty()) {
         setSmartLinkState(QStringLiteral("signingIn"));
         m_smartLink.loginWithRefreshToken(token);
+    }
+}
+
+void MobileEngine::noteNetworkChange()
+{
+    const QNetworkInformation* net = QNetworkInformation::instance();
+    if (!net) {
+        return;
+    }
+    const int medium = int(net->transportMedium());
+    const int reach = int(net->reachability());
+    const int online = int(QNetworkInformation::Reachability::Online);
+    const int unknownMedium = int(QNetworkInformation::TransportMedium::Unknown);
+    const int unknownReach = int(QNetworkInformation::Reachability::Unknown);
+    // Online again after the network went, or online on another medium
+    // (Wi-Fi to cellular). Not the first report at start (from Unknown).
+    const bool back = reach == online && m_netReach != online && m_netReach != unknownReach;
+    const bool moved = reach == online && m_netReach == online && medium != m_netMedium && m_netMedium != unknownMedium;
+    m_netMedium = medium;
+    m_netReach = reach;
+    if (back || moved) {
+        m_networkChangeTimer.start();
     }
 }
 
@@ -2007,6 +2131,8 @@ void MobileEngine::connectSmartLinkRadioNow(int index, const QList<quint32>& dis
     m_pendingWan = radio;
     m_wanActive = true;
     m_wanUserDisconnect = false;
+    m_wanValidateRetried = false;
+    m_wan.setValidateDelay(0);
     m_radioName = radio.nickname.isEmpty() ? radio.model : radio.nickname;
     setLastError({});
     setConnectionState(QStringLiteral("connecting"));
@@ -2024,6 +2150,11 @@ void MobileEngine::connectSmartLinkRadioNow(int index, const QList<quint32>& dis
 
 void MobileEngine::startWanConnect()
 {
+    // One request at a time: a tap while the retry after a drop was due sent
+    // two (the developer's iPad, 2026-11-16).
+    if (m_connectReadyTimer.isActive()) {
+        return;
+    }
     RadioModel& rm = m_session.radioModel();
     rm.ensureBackendFamily(QStringLiteral("flex"));
     PanadapterStream* ps = rm.panStream();
@@ -2041,8 +2172,15 @@ void MobileEngine::startWanConnect()
         QMetaObject::invokeMethod(ps, [ps, address, udpPort] { ps->startWan(address, udpPort); },
                                   Qt::BlockingQueuedConnection);
     }
-    qCInfo(lcMobile) << "SmartLink connect request for" << m_pendingWan.serial;
+    // The ports, never the address: which way in the radio offers.
+    qCInfo(lcMobile).noquote() << "SmartLink connect request for" << m_pendingWan.serial
+                               << QStringLiteral("(TLS port %1, UDP port %2, UPnP %3, hole punch port %4)")
+                                      .arg(m_pendingWan.publicTlsPort)
+                                      .arg(m_pendingWan.publicUdpPort)
+                                      .arg(m_pendingWan.upnpSupported ? QStringLiteral("on") : QStringLiteral("off"))
+                                      .arg(ps->localPort());
     m_smartLink.requestConnect(m_pendingWan.serial, ps->localPort());
+    m_connectReadyTimer.start();
 }
 
 void MobileEngine::answerCertificate(bool accept)
@@ -9059,7 +9197,11 @@ void MobileEngine::onConnectionStateChanged(bool connected)
         m_stationConflict.clear();
         emit stationConflictChanged();
     }
-    setConnectionState(QStringLiteral("idle"));
+    // Retrying a dropped remote session shows as connecting, with Cancel:
+    // shown idle, a tap on the radio started a second connect beside the
+    // retry (the developer's iPad, 2026-11-16).
+    setConnectionState(m_wanActive && m_wanReconnectTimer.isActive() ? QStringLiteral("connecting")
+                                                                     : QStringLiteral("idle"));
 }
 
 void MobileEngine::startAudio()

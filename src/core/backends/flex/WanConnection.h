@@ -53,6 +53,10 @@ public:
     void connectToRadio(const QString& host, quint16 tlsPort,
                         const QString& wanHandle);
     void disconnectFromRadio();
+    // A pause between the TLS handshake and "wan validate" (0: none). A
+    // radio that closed the connection at once may only not have heard
+    // from SmartLink yet that this client is coming.
+    void setValidateDelay(int ms) { m_validateDelayMs = ms; }
 
     // Same command interface as RadioConnection
     using ResponseCallback = std::function<void(int resultCode, const QString& body)>;
@@ -78,6 +82,8 @@ signals:
     void messageReceived(const ParsedMessage& msg);
     void statusReceived(const QString& object, const QMap<QString, QString>& kvs);
     void versionReceived(const QString& version);
+    // The TLS session with the radio is up: its protocol and cipher.
+    void tlsReady(const QString& session);
     void pingRttMeasured(int ms);
 
     // Phase 2 of GHSA-wfx7-w6p8-4jr2 (#2951). Fired when onTlsConnected
@@ -111,6 +117,8 @@ private:
 
     bool    m_connected{false};
     bool    m_validated{false};  // wan validate sent
+    int     m_validateDelayMs{0};
+    quint64 m_validateGeneration{0};   // a delayed validate for an older connection is dropped
     quint32 m_handle{0};
     std::atomic<quint32> m_seqCounter{1};
     quint32 m_lastPingSeq{0};
