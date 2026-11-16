@@ -1672,6 +1672,13 @@ void MobileEngine::wireSmartLink()
                                    quint16(relay.section(QLatin1Char(':'), 1).toUInt()));
         qCInfo(lcMobile).noquote() << "SmartLink server through the test relay at" << relay;
     }
+    // Development tests: the first server connection to an address that never
+    // answers (OKSASDR_SMARTLINK_FIRST=10.255.255.1:443), as one made while
+    // the network was still coming up.
+    if (const QString first = qEnvironmentVariable("OKSASDR_SMARTLINK_FIRST"); first.contains(QLatin1Char(':'))) {
+        m_smartLink.setServerFirstAddress(first.section(QLatin1Char(':'), 0, 0),
+                                          quint16(first.section(QLatin1Char(':'), 1).toUInt()));
+    }
     // Development tests: the first remote connection refused before the
     // radio answers (to a closed local port), so the retry runs.
     m_testRefuseFirst = qEnvironmentVariableIsSet("OKSASDR_WAN_REFUSE_FIRST");

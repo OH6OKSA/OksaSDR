@@ -82,6 +82,14 @@ public:
         m_relayHost = host;
         m_relayPort = port;
     }
+    // Development tests only: the first server connection to this address
+    // instead (one that never answers), as a connection made while the
+    // network was still coming up.
+    void setServerFirstAddress(const QString& host, quint16 port)
+    {
+        m_firstHost = host;
+        m_firstPort = port;
+    }
 
     bool isConnected()     const { return m_serverConnected; }
     bool isAuthenticated() const { return m_authenticated; }
@@ -134,6 +142,8 @@ private:
 
     QString m_relayHost;
     quint16 m_relayPort{0};
+    QString m_firstHost;
+    quint16 m_firstPort{0};
 
     QNetworkAccessManager m_nam;
     QString m_idToken;
@@ -151,6 +161,12 @@ private:
     // disconnected(), which invokes onSslDisconnected() → m_pingTimer.stop().
     QTimer     m_pingTimer;
     bool       m_serverConnected{false};
+    // A server connection not up (encrypted) in a few seconds is made again:
+    // right after a network change the first packets can be lost, and the
+    // system's own retries then wait 15 and 31 s (the developer's iPad,
+    // build 180: 37 s).
+    QTimer     m_connectTimer;
+    int        m_connectTries{0};
     QSslSocket m_socket;
     QByteArray m_readBuffer;
 

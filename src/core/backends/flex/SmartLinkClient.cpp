@@ -6,8 +6,11 @@
 #include <QJsonObject>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QSignalBlocker>
 #include <QSslConfiguration>
 #include <QUrl>
+
+#include <utility>
 
 #ifdef HAVE_KEYCHAIN
 #include <qt6keychain/keychain.h>
@@ -18,6 +21,8 @@ namespace AetherSDR {
 namespace {
 // Stall timeout for SmartLink auth/API requests (#4688 §6).
 constexpr int kTransferTimeoutMs = 15000;
+constexpr int kServerConnectMs = 8000;   // TCP and TLS up, normally under a second
+constexpr int kServerConnectTries = 3;
 
 // No answer, a timeout, rate limiting or the server's own trouble: the
 // sign-in may still be good. Auth0 refuses a wrong password or a revoked
@@ -62,6 +67,34 @@ SmartLinkClient::SmartLinkClient(QObject* parent)
     // Keepalive ping every 10 seconds (matches FlexLib SslClient)
     m_pingTimer.setInterval(10000);
     connect(&m_pingTimer, &QTimer::timeout, this, &SmartLinkClient::onPingTimer);
+
+    m_connectTimer.setSingleShot(true);
+    m_connectTimer.setInterval(kServerConnectMs);
+    connect(&m_socket, &QSslSocket::encrypted, this, [this] {
+        m_connectTimer.stop();
+        m_connectTries = 0;
+    });
+    connect(&m_connectTimer, &QTimer::timeout, this, [this] {
+        if (m_socket.isEncrypted()) {
+            return;
+        }
+        ++m_connectTries;
+        qCWarning(lcSmartLink) << "SmartLinkClient: the server not reached in" << kServerConnectMs / 1000
+                               << "s; a new connection, try" << m_connectTries + 1;
+        m_pingTimer.stop();
+        m_serverConnected = false;
+        {
+            // Not a disconnect for the app: it is being made again.
+            const QSignalBlocker blocker(&m_socket);
+            m_socket.abort();
+        }
+        if (m_connectTries < kServerConnectTries) {
+            connectToServer();
+        } else {
+            m_connectTries = 0;
+            emit serverDisconnected();
+        }
+    });
 }
 
 SmartLinkClient::~SmartLinkClient()
@@ -304,6 +337,12 @@ void SmartLinkClient::connectToServer()
     sslConfig.setPeerVerifyMode(QSslSocket::VerifyPeer);
     m_socket.setSslConfiguration(sslConfig);
 
+    m_connectTimer.start();
+    if (!m_firstHost.isEmpty()) {
+        const QString host = std::exchange(m_firstHost, QString());
+        m_socket.connectToHostEncrypted(host, m_firstPort, QString::fromLatin1(SMARTLINK_HOST));
+        return;
+    }
     if (!m_relayHost.isEmpty()) {
         m_socket.connectToHostEncrypted(m_relayHost, m_relayPort, QString::fromLatin1(SMARTLINK_HOST));
         return;
@@ -314,6 +353,8 @@ void SmartLinkClient::connectToServer()
 void SmartLinkClient::disconnect()
 {
     m_pingTimer.stop();
+    m_connectTimer.stop();
+    m_connectTries = 0;
     if (m_socket.state() != QAbstractSocket::UnconnectedState) {
         m_socket.disconnectFromHost();
     }
@@ -330,6 +371,8 @@ void SmartLinkClient::restart()
     ++m_authGeneration;
     m_authRequestInProgress = false;
     m_pingTimer.stop();
+    m_connectTimer.stop();
+    m_connectTries = 0;
     m_serverConnected = false;
     m_socket.abort();
     // Auth0's kept-alive HTTPS connections are on the old network too: a
