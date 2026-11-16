@@ -26,7 +26,8 @@ Q_DECLARE_LOGGING_CATEGORY(lcMobile)
 namespace AetherSDR::mobile {
 
 namespace {
-constexpr int kSpeechMaxMs = 8000;
+// Long enough to spell a long call slowly (8 s cut the user's).
+constexpr int kSpeechMaxMs = 15000;
 }
 
 bool MobileEngine::voiceInputOffered() const
@@ -173,9 +174,11 @@ void MobileEngine::voiceInputText(const QStringList& alternatives)
         qCInfo(lcMobile).noquote() << QStringLiteral("voice log: alternative %1: \"%2\"").arg(i + 1).arg(alternatives.at(i).left(200));
     }
     if (r.call.isEmpty()) {
-        qCInfo(lcMobile).noquote() << "voice log: no call in" << alternatives.size() << "alternative(s)";
+        qCInfo(lcMobile).noquote() << "voice log: no call in" << alternatives.size() << "alternative(s)"
+                                   << (r.cut.isEmpty() ? QString() : QStringLiteral("(%1 cut by a word not understood)").arg(r.cut));
         setSpeechState(QStringLiteral("idle"), r.heard.isEmpty() ? tr("Nothing was heard.")
-                                                                 : tr("Not a callsign: \"%1\"").arg(r.heard));
+                                               : !r.cut.isEmpty() ? tr("Not sure of the call: \"%1\"").arg(r.heard)
+                                                                  : tr("Not a callsign: \"%1\"").arg(r.heard));
         return;
     }
     qCInfo(lcMobile).noquote() << "voice log: heard" << r.call << (r.report.isEmpty() ? QString() : r.report);

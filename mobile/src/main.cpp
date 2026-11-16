@@ -115,7 +115,7 @@ static void addAndroidSymbolFallbacks()
 {
     // Every symbol the UI draws as text.
     const QString symbols = QStringLiteral("\u2630\u22EF\u25BE\u232B\u25CF\u2713\u2715\u270E\u2325\u21C4"
-                                           "\u2192\u25B2\u25A0\u2022");
+                                           "\u2192\u25B2\u25A0\u2022\u2605\u2606");
     QStringList families;
     auto add = [&families](const QString& path) {
         const int id = QFontDatabase::addApplicationFont(path);
@@ -621,6 +621,15 @@ int main(int argc, char* argv[])
             {"Victor Alpha Three Mike Whiskey ok", "VA3MW", ""},
             {"Victor Alpha Three Mike Whiskey, five nine, thanks", "VA3MW", "59"},
             {"Zed Lima One Alpha Bravo", "ZL1AB", ""},
+            // A word not understood inside the call (build 174's iPhone gave
+            // OH6OK): no call rather than a cut one; after it a report, a
+            // suffix or nothing leave the call as it is.
+            {"Oscar Hotel 6 Oscar Kilo Siera Alpha", "", ""},
+            {"Oscar Hotel 6 Oscar Kilos Sierra Alpha", "", ""},
+            {"oscar hotel six oscar kilo see your alpha", "", ""},
+            {"Victor Alpha Three Mike Whiskey thanks", "VA3MW", ""},
+            {"Victor Alpha Three Mike Whiskey you are five nine", "VA3MW", ""},
+            {"Oscar Hotel Six Oscar Kilo Sierra Alpha, uh, portable", "OH6OKSA/P", ""},
         };
         int failed = 0;
         for (const Case& c : cases) {

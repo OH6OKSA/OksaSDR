@@ -3,7 +3,7 @@ import QtQuick.Controls
 import AetherMobile
 
 // The voice button for logging by voice (roadmap 79): hold it, spell the
-// call, let go; a quick tap listens until a second tap (or 8 s). Shown where
+// call, let go; a quick tap listens until a second tap (or 15 s). Shown where
 // the device has a speech recogniser.
 AppButton {
     id: voice

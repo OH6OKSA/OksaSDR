@@ -3,6 +3,15 @@ package fi.oh6oksa.oksasdr;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ApplicationExitInfo;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanFilter;
+import android.bluetooth.le.ScanRecord;
+import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.Context;
@@ -15,6 +24,11 @@ import android.content.pm.PackageManager;
 import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.media.midi.MidiDevice;
+import android.media.midi.MidiDeviceInfo;
+import android.media.midi.MidiManager;
+import android.media.midi.MidiOutputPort;
+import android.media.midi.MidiReceiver;
 import android.net.wifi.WifiManager;
 import android.net.Uri;
 import android.os.Build;
@@ -22,6 +36,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
+import android.os.ParcelUuid;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.speech.RecognitionListener;
@@ -43,7 +58,10 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.UUID;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -715,5 +733,276 @@ public final class Platform {
             case SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE: return "English speech recognition is not installed on this device.";
             default: return "Speech recognition failed (" + error + ").";
         }
+    }
+
+    // ---- MIDI controllers (roadmap 54): USB ones as Android lists them,
+    // Bluetooth LE ones found by a scan (Android has no pairing screen for
+    // BLE MIDI) and opened with openBluetoothDevice; the one opened sends
+    // its bytes to MidiControlManager through midiReceived. Bluetooth ones
+    // opened before are kept by address, so the app opens them again by
+    // itself after a restart.
+
+    private static final UUID MIDI_SERVICE = UUID.fromString("03B80E5A-EDE8-4B33-A751-6CE34EC4C700");
+    private static final String MIDI_PREFS = "oksasdr_midi_ble";
+    private static final int MIDI_SCAN_MS = 15000;
+    private static MidiManager sMidi;
+    private static final LinkedHashMap<String, String> sBleMidi = new LinkedHashMap<>();   // name -> address
+    private static MidiDevice sMidiDevice;
+    private static MidiOutputPort sMidiPort;
+    private static MidiDeviceInfo sMidiInfo;
+    private static volatile long sMidiTarget;
+    // 0 closed, 1 opening, 2 open.
+    private static volatile int sMidiState;
+    private static volatile boolean sMidiScanning;
+    private static String sMidiScanError = "";
+    private static ScanCallback sScanCallback;
+
+    private static native void midiReceived(long target, byte[] data, int offset, int count);
+
+    private static MidiManager midiManager(Context context) {
+        if (sMidi == null) {
+            sMidi = (MidiManager) context.getSystemService(Context.MIDI_SERVICE);
+            if (sMidi != null) {
+                // A controller unplugged or switched off: closed, so what it keyed ends.
+                sMidi.registerDeviceCallback(new MidiManager.DeviceCallback() {
+                    @Override
+                    public void onDeviceRemoved(MidiDeviceInfo info) {
+                        MidiDeviceInfo open = sMidiInfo;
+                        if (open != null && open.getId() == info.getId()) {
+                            closeMidi();
+                        }
+                    }
+                }, new Handler(Looper.getMainLooper()));
+            }
+            synchronized (sBleMidi) {
+                SharedPreferences prefs = context.getSharedPreferences(MIDI_PREFS, Context.MODE_PRIVATE);
+                for (java.util.Map.Entry<String, ?> e : prefs.getAll().entrySet()) {
+                    sBleMidi.put(e.getKey(), String.valueOf(e.getValue()));
+                }
+            }
+        }
+        return sMidi;
+    }
+
+    private static String midiName(MidiDeviceInfo info) {
+        Bundle p = info.getProperties();
+        String name = p.getString(MidiDeviceInfo.PROPERTY_NAME);
+        if (name == null || name.isEmpty()) {
+            name = p.getString(MidiDeviceInfo.PROPERTY_PRODUCT);
+        }
+        return name == null || name.isEmpty() ? "MIDI " + info.getId() : name;
+    }
+
+    // The controllers the app can listen to: devices that send (an output
+    // port), then the Bluetooth ones found or opened before.
+    public static String[] midiDevices(Context context) {
+        LinkedHashSet<String> names = new LinkedHashSet<>();
+        MidiManager m = midiManager(context);
+        if (m != null) {
+            for (MidiDeviceInfo info : m.getDevices()) {
+                if (info.getOutputPortCount() > 0) {
+                    names.add(midiName(info));
+                }
+            }
+        }
+        synchronized (sBleMidi) {
+            names.addAll(sBleMidi.keySet());
+        }
+        return names.toArray(new String[0]);
+    }
+
+    public static boolean openMidi(Context context, String name, long target) {
+        closeMidi();
+        MidiManager m = midiManager(context);
+        if (m == null) {
+            return false;
+        }
+        Handler main = new Handler(Looper.getMainLooper());
+        for (MidiDeviceInfo info : m.getDevices()) {
+            if (info.getOutputPortCount() > 0 && midiName(info).equals(name)) {
+                sMidiState = 1;
+                sMidiTarget = target;
+                m.openDevice(info, device -> midiOpened(context, device, name, target), main);
+                return true;
+            }
+        }
+        String address;
+        synchronized (sBleMidi) {
+            address = sBleMidi.get(name);
+        }
+        BluetoothAdapter adapter = bluetoothAdapter(context);
+        if (address == null || adapter == null || !adapter.isEnabled() || !mayConnectBluetooth(context)) {
+            return false;
+        }
+        sMidiState = 1;
+        sMidiTarget = target;
+        m.openBluetoothDevice(adapter.getRemoteDevice(address), device -> midiOpened(context, device, name, target), main);
+        return true;
+    }
+
+    private static void midiOpened(Context context, MidiDevice device, String name, long target) {
+        if (device == null || sMidiTarget != target || sMidiState != 1) {
+            if (device != null) {
+                try { device.close(); } catch (IOException e) { }
+            } else if (sMidiTarget == target) {
+                sMidiState = 0;
+            }
+            return;
+        }
+        MidiDeviceInfo info = device.getInfo();
+        int portIndex = 0;
+        for (MidiDeviceInfo.PortInfo port : info.getPorts()) {
+            if (port.getType() == MidiDeviceInfo.PortInfo.TYPE_OUTPUT) {
+                portIndex = port.getPortNumber();
+                break;
+            }
+        }
+        MidiOutputPort port = device.openOutputPort(portIndex);
+        if (port == null) {
+            try { device.close(); } catch (IOException e) { }
+            sMidiState = 0;
+            return;
+        }
+        port.connect(new MidiReceiver() {
+            @Override
+            public void onSend(byte[] msg, int offset, int count, long timestamp) {
+                long to = sMidiTarget;
+                if (to != 0 && sMidiPort == port) {
+                    midiReceived(to, msg, offset, count);
+                }
+            }
+        });
+        sMidiDevice = device;
+        sMidiPort = port;
+        sMidiInfo = info;
+        sMidiState = 2;
+        if (info.getType() == MidiDeviceInfo.TYPE_BLUETOOTH) {
+            BluetoothDevice bt = info.getProperties().getParcelable(MidiDeviceInfo.PROPERTY_BLUETOOTH_DEVICE);
+            if (bt != null) {
+                synchronized (sBleMidi) {
+                    sBleMidi.put(name, bt.getAddress());
+                }
+                context.getSharedPreferences(MIDI_PREFS, Context.MODE_PRIVATE).edit()
+                        .putString(name, bt.getAddress()).commit();
+            }
+        }
+    }
+
+    public static void closeMidi() {
+        sMidiTarget = 0;
+        sMidiState = 0;
+        MidiOutputPort port = sMidiPort;
+        MidiDevice device = sMidiDevice;
+        sMidiPort = null;
+        sMidiDevice = null;
+        sMidiInfo = null;
+        try {
+            if (port != null) port.close();
+        } catch (IOException e) { }
+        try {
+            if (device != null) device.close();
+        } catch (IOException e) { }
+    }
+
+    public static boolean midiOpen() {
+        return sMidiState != 0;
+    }
+
+    private static BluetoothAdapter bluetoothAdapter(Context context) {
+        BluetoothManager bm = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+        return bm == null ? null : bm.getAdapter();
+    }
+
+    private static boolean mayConnectBluetooth(Context context) {
+        return Build.VERSION.SDK_INT < 31
+                || context.checkSelfPermission("android.permission.BLUETOOTH_CONNECT") == PackageManager.PERMISSION_GRANTED;
+    }
+
+    // A 15 s scan for Bluetooth LE MIDI controllers (the MIDI service UUID);
+    // what it finds joins midiDevices. Empty when it started, else why not
+    // (the permission is asked for then: tap again once it is given).
+    public static String scanBluetoothMidi(Context context) {
+        Activity activity = context instanceof Activity ? (Activity) context : null;
+        java.util.ArrayList<String> missing = new java.util.ArrayList<>();
+        String[] needed = Build.VERSION.SDK_INT >= 31
+                ? new String[] {"android.permission.BLUETOOTH_SCAN", "android.permission.BLUETOOTH_CONNECT"}
+                : new String[] {"android.permission.ACCESS_FINE_LOCATION"};
+        for (String p : needed) {
+            if (context.checkSelfPermission(p) != PackageManager.PERMISSION_GRANTED) {
+                missing.add(p);
+            }
+        }
+        if (!missing.isEmpty()) {
+            if (activity != null) {
+                activity.requestPermissions(missing.toArray(new String[0]), 4802);
+            }
+            return Build.VERSION.SDK_INT >= 31
+                    ? "Allow Nearby devices for OksaSDR, then tap Pair again."
+                    : "Allow Location for OksaSDR (Android needs it to find Bluetooth devices), then tap Pair again.";
+        }
+        BluetoothAdapter adapter = bluetoothAdapter(context);
+        if (adapter == null) {
+            return "This device has no Bluetooth.";
+        }
+        if (!adapter.isEnabled()) {
+            return "Turn Bluetooth on, then tap Pair again.";
+        }
+        BluetoothLeScanner scanner = adapter.getBluetoothLeScanner();
+        if (scanner == null) {
+            return "Bluetooth is not ready yet: tap Pair again.";
+        }
+        midiManager(context);
+        if (sScanCallback != null) {
+            try { scanner.stopScan(sScanCallback); } catch (RuntimeException e) { }
+        }
+        sScanCallback = new ScanCallback() {
+            @Override
+            public void onScanResult(int callbackType, ScanResult result) {
+                BluetoothDevice device = result.getDevice();
+                ScanRecord record = result.getScanRecord();
+                String name = record != null ? record.getDeviceName() : null;
+                if (name == null || name.isEmpty()) {
+                    try { name = device.getName(); } catch (SecurityException e) { name = null; }
+                }
+                if (name == null || name.isEmpty()) {
+                    name = "Bluetooth MIDI " + device.getAddress();
+                }
+                synchronized (sBleMidi) {
+                    sBleMidi.put(name, device.getAddress());
+                }
+            }
+
+            @Override
+            public void onScanFailed(int errorCode) {
+                sMidiScanError = "The Bluetooth search failed (" + errorCode + ").";
+                sMidiScanning = false;
+            }
+        };
+        List<ScanFilter> filters = new ArrayList<>();
+        filters.add(new ScanFilter.Builder().setServiceUuid(new ParcelUuid(MIDI_SERVICE)).build());
+        ScanSettings settings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
+        final ScanCallback callback = sScanCallback;
+        try {
+            scanner.startScan(filters, settings, callback);
+        } catch (SecurityException e) {
+            return "Allow Nearby devices for OksaSDR, then tap Pair again.";
+        }
+        sMidiScanError = "";
+        sMidiScanning = true;
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            try { scanner.stopScan(callback); } catch (RuntimeException e) { }
+            if (sScanCallback == callback) {
+                sMidiScanning = false;
+            }
+        }, MIDI_SCAN_MS);
+        return "";
+    }
+
+    public static boolean midiScanning() {
+        return sMidiScanning;
+    }
+
+    public static String midiScanError() {
+        return sMidiScanError;
     }
 }

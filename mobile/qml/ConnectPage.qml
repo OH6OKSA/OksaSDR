@@ -8,6 +8,16 @@ import QtQuick.Layouts
 Page {
     id: page
     background: Rectangle { color: Theme.background }
+    // + Account pressed: the sign-in form for another SmartLink account,
+    // the signed-in one kept until it succeeds.
+    property bool addingAccount: false
+    Connections {
+        target: Engine
+        function onSmartLinkChanged() {
+            if (Engine.smartLinkState === "signingIn")
+                page.addingAccount = false
+        }
+    }
 
     // One tappable radio row (LAN or SmartLink).
     // A radio to connect to: a raised card with an accent edge and a
@@ -185,13 +195,70 @@ Page {
                     anchors.margins: Theme.spacing
                     spacing: Theme.spacing / 2
 
+                    // Favourite radios of every account (roadmap 62): a tap
+                    // connects, changing the account first when it is
+                    // another's; ✕ takes one off the list.
+                    Repeater {
+                        model: page.addingAccount ? [] : Engine.smartLinkFavourites
+                        delegate: RowLayout {
+                            id: favRow
+                            required property int index
+                            required property var modelData
+                            Layout.fillWidth: true
+                            spacing: Theme.spacing
+                            RadioRow {
+                                objectName: "smartLinkFavourite" + favRow.index
+                                title: "★ " + favRow.modelData.name
+                                subtitle: favRow.modelData.account
+                                          + (favRow.modelData.online ? "" : favRow.modelData.active && Engine.smartLinkState === "signedIn"
+                                                                            ? qsTr("   not online") : "")
+                                enabled: Engine.connectionState === "idle" && favRow.modelData.canConnect
+                                onClicked: Engine.connectSmartLinkFavourite(favRow.index)
+                            }
+                            AppButton {
+                                objectName: "smartLinkFavouriteRemove" + favRow.index
+                                text: "✕"
+                                font.pixelSize: Theme.px(20)
+                                Accessible.name: qsTr("Remove %1 from the favourites").arg(favRow.modelData.name)
+                                Layout.preferredWidth: Theme.touchTarget
+                                Layout.fillHeight: true
+                                focusPolicy: Qt.NoFocus
+                                onClicked: Engine.removeSmartLinkFavourite(favRow.index)
+                            }
+                        }
+                    }
+
+                    // The accounts on this device when there are several: the
+                    // active one checked, a tap changes to another.
+                    Flow {
+                        visible: !page.addingAccount && Engine.smartLinkAccounts.length > 1
+                        Layout.fillWidth: true
+                        spacing: 4
+                        Repeater {
+                            model: Engine.smartLinkAccounts
+                            delegate: AppButton {
+                                required property int index
+                                required property var modelData
+                                objectName: "smartLinkAccount" + index
+                                text: modelData.label
+                                checked: modelData.active
+                                leftPadding: 10
+                                rightPadding: 10
+                                focusPolicy: Qt.NoFocus
+                                enabled: Engine.connectionState === "idle"
+                                onClicked: Engine.switchSmartLinkAccount(index)
+                            }
+                        }
+                    }
+
                     // Signed out: e-mail and password (FlexRadio account).
                     ColumnLayout {
-                        visible: Engine.smartLinkState === "signedOut"
+                        visible: Engine.smartLinkState === "signedOut" || (page.addingAccount && Engine.smartLinkState !== "signingIn")
                         Layout.fillWidth: true
                         Label {
                             Layout.fillWidth: true
-                            text: qsTr("Sign in with your FlexRadio SmartLink account to use your radio from anywhere.")
+                            text: page.addingAccount ? qsTr("Sign in with another FlexRadio SmartLink account. The one signed in now is kept: change between them with a tap.")
+                                                     : qsTr("Sign in with your FlexRadio SmartLink account to use your radio from anywhere.")
                             color: Theme.textDim
                             font.pixelSize: Theme.px(14)
                             wrapMode: Text.Wrap
@@ -200,7 +267,7 @@ Page {
                             id: emailField
                             Accessible.name: qsTr("SmartLink e-mail")
                             Layout.fillWidth: true
-                            text: Engine.smartLinkEmail
+                            text: page.addingAccount ? "" : Engine.smartLinkEmail
                             placeholderText: qsTr("E-mail")
                             inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
                             font.pixelSize: Theme.px(17)
@@ -213,14 +280,37 @@ Page {
                             font.pixelSize: Theme.px(17)
                             onAccepted: signIn.clicked()
                         }
-                        AppButton {
-                            id: signIn
-                            text: qsTr("Sign in to SmartLink")
+                        RowLayout {
                             Layout.fillWidth: true
-                            enabled: emailField.text.length > 0 && passwordField.text.length > 0
-                            onClicked: {
-                                Engine.signInSmartLink(emailField.text, passwordField.text)
-                                passwordField.text = ""
+                            AppButton {
+                                id: signIn
+                                text: qsTr("Sign in to SmartLink")
+                                Layout.fillWidth: true
+                                enabled: emailField.text.length > 0 && passwordField.text.length > 0
+                                onClicked: {
+                                    Engine.signInSmartLink(emailField.text, passwordField.text)
+                                    passwordField.text = ""
+                                }
+                            }
+                            AppButton {
+                                objectName: "smartLinkAddCancel"
+                                visible: page.addingAccount
+                                text: qsTr("Cancel")
+                                onClicked: {
+                                    passwordField.text = ""
+                                    page.addingAccount = false
+                                }
+                            }
+                            // An account whose sign-in is gone, with others
+                            // on the device: off the list.
+                            AppButton {
+                                objectName: "smartLinkRemoveAccount"
+                                visible: !page.addingAccount && Engine.smartLinkAccounts.length > 1
+                                text: qsTr("Remove")
+                                onClicked: {
+                                    passwordField.text = ""
+                                    Engine.signOutSmartLink()
+                                }
                             }
                         }
                     }
@@ -234,16 +324,33 @@ Page {
 
                     // Signed in: account, remote radios, sign out.
                     ColumnLayout {
-                        visible: Engine.smartLinkState === "signedIn" || Engine.smartLinkState === "offline"
+                        visible: !page.addingAccount && (Engine.smartLinkState === "signedIn" || Engine.smartLinkState === "offline")
                         Layout.fillWidth: true
                         RowLayout {
                             Layout.fillWidth: true
                             Label {
-                                text: Engine.smartLinkAccount.length > 0 ? Engine.smartLinkAccount : qsTr("Signed in")
+                                // The server's callsign and name, else the
+                                // account's e-mail.
+                                readonly property string activeLabel: {
+                                    const accounts = Engine.smartLinkAccounts
+                                    for (let i = 0; i < accounts.length; ++i)
+                                        if (accounts[i].active)
+                                            return accounts[i].label
+                                    return ""
+                                }
+                                text: Engine.smartLinkAccount.length > 0 ? Engine.smartLinkAccount
+                                      : activeLabel.length > 0 ? activeLabel : qsTr("Signed in")
                                 color: Theme.text
                                 font.pixelSize: Theme.px(16)
                                 elide: Text.ElideRight
                                 Layout.fillWidth: true
+                            }
+                            AppButton {
+                                objectName: "smartLinkAddAccount"
+                                text: qsTr("+ Account")
+                                focusPolicy: Qt.NoFocus
+                                enabled: Engine.connectionState === "idle"
+                                onClicked: page.addingAccount = true
                             }
                             // Two taps: the row appears where the sign-in
                             // form or the "Signing in" line was, and one
@@ -281,14 +388,32 @@ Page {
                         }
                         Repeater {
                             model: Engine.smartLinkRadios
-                            delegate: RadioRow {
+                            delegate: RowLayout {
+                                id: wanRow
                                 required property int index
                                 required property var modelData
-                                objectName: "smartLinkRadio" + index
-                                title: (modelData.nickname.length > 0 ? modelData.nickname + " — " : "") + modelData.model
-                                subtitle: modelData.status + (modelData.reachable ? "" : qsTr("   not reachable"))
-                                enabled: Engine.connectionState === "idle" && modelData.reachable
-                                onClicked: Engine.connectSmartLinkRadio(index)
+                                Layout.fillWidth: true
+                                spacing: Theme.spacing
+                                RadioRow {
+                                    objectName: "smartLinkRadio" + wanRow.index
+                                    title: (wanRow.modelData.nickname.length > 0 ? wanRow.modelData.nickname + " — " : "") + wanRow.modelData.model
+                                    subtitle: wanRow.modelData.status + (wanRow.modelData.reachable ? "" : qsTr("   not reachable"))
+                                    enabled: Engine.connectionState === "idle" && wanRow.modelData.reachable
+                                    onClicked: Engine.connectSmartLinkRadio(wanRow.index)
+                                }
+                                // ☆ makes it a favourite, ★ takes it off.
+                                AppButton {
+                                    objectName: "smartLinkFavouriteToggle" + wanRow.index
+                                    text: wanRow.modelData.favourite ? "★" : "☆"
+                                    checked: wanRow.modelData.favourite
+                                    font.pixelSize: Theme.px(22)
+                                    Accessible.name: wanRow.modelData.favourite ? qsTr("Remove from the favourites")
+                                                                                : qsTr("Add to the favourites")
+                                    Layout.preferredWidth: Theme.touchTarget
+                                    Layout.fillHeight: true
+                                    focusPolicy: Qt.NoFocus
+                                    onClicked: Engine.toggleSmartLinkFavourite(wanRow.index)
+                                }
                             }
                         }
                     }

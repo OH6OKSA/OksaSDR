@@ -20,7 +20,25 @@
 #include <mutex>
 #include <type_traits>
 
-#if defined(Q_OS_LINUX) || defined(Q_OS_ANDROID)
+// The C API's opaque types (vosk_api.h, 0.3.45).
+struct VoskModel;
+struct VoskRecognizer;
+
+#if defined(AETHER_IOS_VOSK)
+// iOS: libvosk linked in statically (no dlopen of an app's own library);
+// the functions used, as vosk_api.h declares them.
+extern "C" {
+VoskModel* vosk_model_new(const char* model_path);
+int vosk_model_find_word(VoskModel* model, const char* word);
+VoskRecognizer* vosk_recognizer_new_grm(VoskModel* model, float sample_rate, const char* grammar);
+void vosk_recognizer_set_max_alternatives(VoskRecognizer* recognizer, int max_alternatives);
+int vosk_recognizer_accept_waveform(VoskRecognizer* recognizer, const char* data, int length);
+const char* vosk_recognizer_result(VoskRecognizer* recognizer);
+const char* vosk_recognizer_final_result(VoskRecognizer* recognizer);
+void vosk_recognizer_free(VoskRecognizer* recognizer);
+void vosk_set_log_level(int log_level);
+}
+#elif defined(Q_OS_LINUX) || defined(Q_OS_ANDROID)
 #include <dlfcn.h>
 #define AETHER_VOSK_DLOPEN 1
 #endif
@@ -31,9 +49,7 @@ namespace AetherSDR::mobile::VoskSpeech {
 
 namespace {
 
-// The C API's opaque types and the functions used (vosk_api.h, 0.3.45).
-struct VoskModel;
-struct VoskRecognizer;
+// The functions used.
 
 struct Api {
     void* lib = nullptr;
@@ -49,9 +65,17 @@ struct Api {
     QString error;
 };
 
-// The English model: in the APK's assets (Android), or OKSASDR_VOSK_MODEL.
+// The English model: in the APK's assets (Android), in the app bundle
+// (iOS, the iPad app on a Mac), or OKSASDR_VOSK_MODEL.
 constexpr const char* kModelName = "vosk-model-small-en-us-0.15";
 constexpr const char* kAssetModel = "assets:/vosk/en-us";
+
+#ifdef Q_OS_IOS
+QString bundledModel()
+{
+    return QCoreApplication::applicationDirPath() + QStringLiteral("/vosk/en-us");
+}
+#endif
 
 std::mutex g_mutex;   // the library, the model and their first loads
 
@@ -63,7 +87,18 @@ const Api& api()
         return a;
     }
     tried = true;
-#ifdef AETHER_VOSK_DLOPEN
+#if defined(AETHER_IOS_VOSK)
+    a.modelNew = vosk_model_new;
+    a.modelFindWord = vosk_model_find_word;
+    a.recognizerNewGrm = vosk_recognizer_new_grm;
+    a.setMaxAlternatives = vosk_recognizer_set_max_alternatives;
+    a.acceptWaveform = vosk_recognizer_accept_waveform;
+    a.result = vosk_recognizer_result;
+    a.finalResult = vosk_recognizer_final_result;
+    a.recognizerFree = vosk_recognizer_free;
+    a.setLogLevel = vosk_set_log_level;
+    a.setLogLevel(-1);   // warnings and errors only
+#elif defined(AETHER_VOSK_DLOPEN)
     const QByteArray name = qEnvironmentVariableIsEmpty("OKSASDR_VOSK_LIB") ? QByteArray("libvosk.so")
                                                                           : qgetenv("OKSASDR_VOSK_LIB");
     a.lib = dlopen(name.constData(), RTLD_NOW | RTLD_LOCAL);
@@ -90,7 +125,7 @@ const Api& api()
         a.setLogLevel(-1);   // warnings and errors only
     }
 #else
-    a.error = QStringLiteral("no Vosk on this platform");
+    a.error = QStringLiteral("no Vosk in this build");
 #endif
     return a;
 }
@@ -147,8 +182,10 @@ VoskModel* model(QString* error)
         *error = failed;
         return m;
     }
-#ifdef Q_OS_ANDROID
+#if defined(Q_OS_ANDROID)
     const QString path = copiedModel(&failed);
+#elif defined(Q_OS_IOS)
+    const QString path = bundledModel();
 #else
     const QString path = qEnvironmentVariable("OKSASDR_VOSK_MODEL");
     if (path.isEmpty()) {
@@ -201,6 +238,10 @@ QString unavailableReason()
     if (!QFile::exists(QString::fromLatin1(kAssetModel) + QStringLiteral(".files"))
         && !QFile::exists(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
                           + QStringLiteral("/vosk/") + QLatin1String(kModelName) + QStringLiteral("/.copied"))) {
+        return QStringLiteral("the speech model is not in this build");
+    }
+#elif defined(Q_OS_IOS)
+    if (!QFile::exists(bundledModel() + QStringLiteral("/am/final.mdl"))) {
         return QStringLiteral("the speech model is not in this build");
     }
 #else

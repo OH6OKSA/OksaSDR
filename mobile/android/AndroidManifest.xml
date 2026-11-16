@@ -26,8 +26,17 @@
     <!-- The QSO log's copy in the shared Documents/OksaSDR (Android 9 and 10;
          from 11 on an app writes its own files there without it). -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
+    <!-- MIDI controllers (Radio Setup › MIDI): Bluetooth LE ones are found
+         by the app's own search (Android 12 on: Nearby devices; before it
+         Location, which Android needs for a Bluetooth search). -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.software.midi" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
     <!-- Log > Send to the developer: whether a mail app takes mailto:; and
          the speech recogniser for logging by voice (package visibility,
          Android 11+). -->

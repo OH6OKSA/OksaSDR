@@ -169,7 +169,6 @@ constexpr int kPanYPixels = 700;
 // wide enough to hold the noise and the strongest signals.
 constexpr float kPanMinDbm = -165.0f;
 constexpr float kPanMaxDbm = -20.0f;
-const QString kSmartLinkTokenKey = QStringLiteral("smartlink_refresh_token");
 // SmartLink UDP port when the radio reports none (FlexLib default).
 constexpr quint16 kDefaultWanUdpPort = 4993;
 constexpr int kWanReconnectMs = 5000;
@@ -1539,21 +1538,40 @@ void MobileEngine::disconnectRadio()
 void MobileEngine::wireSmartLink()
 {
     connect(&m_smartLink, &SmartLinkClient::authenticated, this, [this] {
+        // A password sign-in: its e-mail's account (new or known) active.
+        adoptSmartLinkSignIn();
         // Auth0 may rotate the refresh token on every refresh; keep the
         // latest. Never an empty one over the kept token: that lost the
         // sign-in after every start (a refresh without rotation had none).
         if (!m_smartLink.refreshToken().isEmpty()) {
-            saveSecret(kSmartLinkTokenKey, m_smartLink.refreshToken());
+            saveSecret(activeSmartLinkTokenKey(), m_smartLink.refreshToken());
         }
+        noteSmartLinkAccountLabel();
         m_smartLinkRetryTimer.stop();
         m_smartLinkRetryMs = 0;
         setSmartLinkState(QStringLiteral("signedIn"));
     });
     connect(&m_smartLink, &SmartLinkClient::authFailed, this, [this](const QString& error) {
+        // A password sign-in that failed (another account's, or the first):
+        // the account active before it back, its sign-in untouched.
+        if (!m_smartLinkPendingEmail.isEmpty()) {
+            const bool back = m_smartLinkHasFallback;
+            const QString fallback = m_smartLinkFallbackId;
+            m_smartLinkPendingEmail.clear();
+            m_smartLinkHasFallback = false;
+            qCInfo(lcMobile).noquote() << "SmartLink sign-in failed:" << error;
+            setLastError(tr("SmartLink: %1").arg(error));
+            if (back && !loadSecret(smartLinkTokenKey(fallback)).isEmpty()) {
+                useSmartLinkAccount(fallback);
+            } else {
+                setSmartLinkState(QStringLiteral("signedOut"));
+            }
+            return;
+        }
         // The server refusing an expired id token is not a wrong password:
         // sign in again once from the kept token before giving it up.
         const QString kept = !m_smartLink.refreshToken().isEmpty() ? m_smartLink.refreshToken()
-                                                                   : loadSecret(kSmartLinkTokenKey);
+                                                                   : loadSecret(activeSmartLinkTokenKey());
         if (error.contains(QLatin1String("registration invalid")) && !m_smartLinkRetried && !kept.isEmpty()) {
             m_smartLinkRetried = true;
             qCInfo(lcMobile) << "SmartLink refused the session: signing in again from the kept sign-in";
@@ -1587,7 +1605,10 @@ void MobileEngine::wireSmartLink()
         qCInfo(lcMobile).noquote() << "SmartLink sign-in failed:" << error;
         m_smartLinkRetryTimer.stop();
         m_smartLinkRetryMs = 0;
-        removeSecret(kSmartLinkTokenKey);
+        // The account stays on the list, its sign-in gone: the form comes
+        // with its e-mail.
+        removeSecret(activeSmartLinkTokenKey());
+        emit smartLinkChanged();
         m_wanReconnectTimer.stop();
         if (m_connectionState == QLatin1String("connecting") && m_wanActive) {
             m_wanActive = false;
@@ -1642,6 +1663,10 @@ void MobileEngine::wireSmartLink()
         }
         m_wanRadios = radios;
         emit smartLinkRadiosChanged();
+        noteSmartLinkAccountLabel();
+        emit smartLinkFavouritesChanged();
+        // A favourite tapped before the list came connects now.
+        QTimer::singleShot(0, this, [this] { favouriteRadioListed(); });
     });
     connect(&m_smartLink, &SmartLinkClient::connectReady, this,
             [this](const QString& handle, const QString& serial) {
@@ -1686,7 +1711,15 @@ void MobileEngine::wireSmartLink()
         startWanConnect();
     });
 
-    const QString token = loadSecret(kSmartLinkTokenKey);
+    m_favouriteTimer.setSingleShot(true);
+    connect(&m_favouriteTimer, &QTimer::timeout, this, [this] {
+        if (!m_favouriteSerial.isEmpty()) {
+            m_favouriteSerial.clear();
+            setLastError(tr("That favourite radio is not online on SmartLink now."));
+        }
+    });
+    migrateSmartLinkAccounts();
+    const QString token = loadSecret(activeSmartLinkTokenKey());
     // SmartLinkClient's own QtKeychain store is not built in here (it logs
     // "persistence: disabled"); the app keeps the sign-in itself.
     qCInfo(lcMobile).noquote() << QStringLiteral("SmartLink sign-in kept by the app in the %1: %2")
@@ -1704,7 +1737,7 @@ void MobileEngine::retrySmartLinkSignIn(const QString& why)
     if (m_smartLinkState == QLatin1String("signedOut") || m_smartLink.isConnected()) {
         return;
     }
-    const QString kept = !m_smartLink.refreshToken().isEmpty() ? m_smartLink.refreshToken() : loadSecret(kSmartLinkTokenKey);
+    const QString kept = !m_smartLink.refreshToken().isEmpty() ? m_smartLink.refreshToken() : loadSecret(activeSmartLinkTokenKey());
     if (kept.isEmpty()) {
         return;
     }
@@ -1733,6 +1766,13 @@ QString MobileEngine::smartLinkAccount() const
 
 QString MobileEngine::smartLinkEmail() const
 {
+    // The active account's, for the form when its sign-in is gone.
+    if (const int i = smartLinkAccountIndex(m_smartLinkActiveId); i >= 0) {
+        const QString email = loadSmartLinkAccounts().at(i).toObject().value(QStringLiteral("email")).toString();
+        if (!email.isEmpty()) {
+            return email;
+        }
+    }
     // SmartLinkClient keeps the last e-mail Base64-encoded for pre-filling.
     const QByteArray stored = AppSettings::instance().value(QStringLiteral("SmartLinkEmail")).toByteArray();
     return QString::fromUtf8(QByteArray::fromBase64(stored));
@@ -1770,6 +1810,7 @@ QString smartLinkStatusText(const WanRadioInfo& radio)
 QVariantList MobileEngine::smartLinkRadios() const
 {
     QVariantList list;
+    const QStringList favourites = smartLinkFavouriteSerials();
     for (const WanRadioInfo& radio : m_wanRadios) {
         list.append(QVariantMap{
             {QStringLiteral("nickname"), radio.nickname},
@@ -1778,6 +1819,7 @@ QVariantList MobileEngine::smartLinkRadios() const
             {QStringLiteral("status"), smartLinkStatusText(radio)},
             {QStringLiteral("callsign"), radio.callsign},
             {QStringLiteral("reachable"), radio.publicTlsPort > 0 && !radio.publicIp.isEmpty()},
+            {QStringLiteral("favourite"), favourites.contains(radio.serial)},
         });
     }
     return list;
@@ -1795,6 +1837,20 @@ void MobileEngine::signInSmartLink(const QString& email, const QString& password
         return;
     }
     setLastError({});
+    // Another account while one is signed in (+ Account): that one's session
+    // closed, its sign-in kept, and back to it if this one fails.
+    const QString activeEmail = smartLinkAccountIndex(m_smartLinkActiveId) >= 0 ? smartLinkEmail() : QString();
+    m_smartLinkHasFallback = m_smartLinkState != QLatin1String("signedOut")
+        && activeEmail.compare(email.trimmed(), Qt::CaseInsensitive) != 0;
+    m_smartLinkFallbackId = m_smartLinkActiveId;
+    if (m_smartLinkHasFallback) {
+        m_wanReconnectTimer.stop();
+        m_smartLinkRetryTimer.stop();
+        m_smartLink.logout();
+        m_wanRadios.clear();
+        emit smartLinkRadiosChanged();
+    }
+    m_smartLinkPendingEmail = email.trimmed();
     setSmartLinkState(QStringLiteral("signingIn"));
     m_smartLink.login(email.trimmed(), password);
 }
@@ -1804,10 +1860,23 @@ void MobileEngine::signOutSmartLink()
     m_wanReconnectTimer.stop();
     m_smartLinkRetryTimer.stop();
     m_smartLinkRetryMs = 0;
+    m_favouriteSerial.clear();
+    m_favouriteTimer.stop();
     m_smartLink.logout();
-    removeSecret(kSmartLinkTokenKey);
+    // This account only: another one kept on the device takes over.
+    forgetSmartLinkAccount(m_smartLinkActiveId);
     m_wanRadios.clear();
     emit smartLinkRadiosChanged();
+    for (const QJsonValue& v : loadSmartLinkAccounts()) {
+        const QString id = v.toObject().value(QStringLiteral("id")).toString();
+        if (!loadSecret(smartLinkTokenKey(id)).isEmpty()) {
+            useSmartLinkAccount(id);
+            return;
+        }
+    }
+    const QJsonArray left = loadSmartLinkAccounts();
+    m_smartLinkActiveId = left.isEmpty() ? QString() : left.first().toObject().value(QStringLiteral("id")).toString();
+    AppSettings::instance().setValue(QStringLiteral("MobileSmartLinkActive"), m_smartLinkActiveId);
     setSmartLinkState(QStringLiteral("signedOut"));
 }
 

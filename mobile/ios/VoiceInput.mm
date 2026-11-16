@@ -1,5 +1,7 @@
 #include "VoiceInput.h"
 
+#include "VoskSpeech.h"
+
 #include <QCoreApplication>
 #include <QMetaObject>
 #include <QPointer>
@@ -49,10 +51,21 @@ QString tr(const char* text)
     return QCoreApplication::translate("VoiceInput", text);
 }
 
+// Vosk held to the alphabet when this build has it (roadmap 81: Apple's
+// recogniser cut calls at a word it misheard, build 174); Apple's otherwise.
+bool voskHere()
+{
+    static const bool here = VoskSpeech::unavailableReason().isEmpty();
+    return here;
+}
+
 } // namespace
 
 bool voiceInputAvailable()
 {
+    if (voskHere()) {
+        return true;
+    }
     SFSpeechRecognizer* recognizer = englishRecognizer();
     return recognizer && recognizer.isAvailable;
 }
@@ -65,6 +78,10 @@ QString voiceInputUnavailableReason()
 void recognizeSpeech(const QByteArray& floatMono, int rate, const QStringList& vocabulary,
                      std::function<void(const QStringList&, const QString&)> done)
 {
+    if (voskHere()) {
+        VoskSpeech::recognizeClip(floatMono, rate, std::move(done));
+        return;
+    }
     // The answer on the GUI thread, once.
     auto finish = std::make_shared<std::function<void(const QStringList&, const QString&)>>(std::move(done));
     auto answer = [finish](const QStringList& alternatives, const QString& error) {

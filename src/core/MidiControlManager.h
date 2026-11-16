@@ -58,6 +58,21 @@ struct MidiBinding {
 
 // ── Manager ─────────────────────────────────────────────────────────────────
 
+class MidiControlManager;
+
+// A platform's own MIDI input where RtMidi has none (Android's MidiManager:
+// RtMidi's AMIDI backend needs API 29 and a Java class of its own): the
+// platform lists the controllers by name, opens one for a manager and hands
+// its messages to MidiControlManager::deliverPlatformMessage from its own
+// thread, one whole message at a time. Set once, before ports are listed.
+struct MidiPlatformPorts {
+    std::function<QStringList()> list;
+    std::function<bool(const QString& name, MidiControlManager* target)> open;
+    std::function<void()> close;
+    // Still delivering (a Bluetooth controller switched off is not).
+    std::function<bool()> isOpen;
+};
+
 class MidiControlManager : public QObject {
     Q_OBJECT
 
@@ -72,6 +87,12 @@ public:
         m_captureTxInput = std::move(capture);
         m_discardTxInputs = std::move(discard);
     }
+
+    // The platform's own ports in RtMidi's place (MidiPlatformPorts).
+    static void setPlatformPorts(MidiPlatformPorts ports);
+    // One MIDI message (status and data bytes) from the platform's port, on
+    // its thread, as RtMidi's callback hands one.
+    static void deliverPlatformMessage(MidiControlManager* target, const unsigned char* data, int size);
 
     // Device management
     QStringList availablePorts() const;
@@ -139,6 +160,7 @@ private:
     std::function<void()> m_discardTxInputs;
 
     std::unique_ptr<RtMidiIn> m_midiIn;
+    bool m_platformOpen{false};   // a MidiPlatformPorts port, not RtMidi's
     QString m_portName;
 
     QVector<MidiParam>   m_params;

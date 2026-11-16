@@ -78,7 +78,7 @@ MidiControlManager::MidiControlManager(QObject* parent)
     m_hotplugTimer->setInterval(5000);
     connect(m_hotplugTimer, &QTimer::timeout, this, [this] {
         // Hotplug: if disconnected and we have a saved port name, try to reconnect
-        if (m_midiIn && m_midiIn->isPortOpen()) return;
+        if (isOpen()) return;
         if (m_portName.isEmpty()) return;
         openPortByName(m_portName);
     });
@@ -97,8 +97,37 @@ MidiControlManager::~MidiControlManager()
 
 // ── Device management ───────────────────────────────────────────────────────
 
+namespace {
+MidiPlatformPorts& platformPorts()
+{
+    static MidiPlatformPorts ports;
+    return ports;
+}
+bool hasPlatformPorts()
+{
+    return static_cast<bool>(platformPorts().list);
+}
+} // namespace
+
+void MidiControlManager::setPlatformPorts(MidiPlatformPorts ports)
+{
+    platformPorts() = std::move(ports);
+}
+
+void MidiControlManager::deliverPlatformMessage(MidiControlManager* target, const unsigned char* data, int size)
+{
+    if (!target || !data || size < 2) {
+        return;
+    }
+    std::vector<unsigned char> message(data, data + size);
+    rtmidiCallback(0.0, &message, target);
+}
+
 QStringList MidiControlManager::availablePorts() const
 {
+    if (hasPlatformPorts()) {
+        return platformPorts().list();
+    }
     QStringList result;
     try {
         RtMidiIn probe;
@@ -114,6 +143,20 @@ QStringList MidiControlManager::availablePorts() const
 bool MidiControlManager::openPort(int portIndex)
 {
     closePort();
+    if (hasPlatformPorts()) {
+        const QStringList ports = platformPorts().list();
+        if (portIndex < 0 || portIndex >= ports.size() || !platformPorts().open(ports.at(portIndex), this)) {
+            qCWarning(lcDevices) << "MidiControlManager: platform port" << portIndex << "did not open";
+            emit portError(QStringLiteral("The MIDI device did not open."));
+            return false;
+        }
+        m_portName = ports.at(portIndex);
+        m_platformOpen = true;
+        qCDebug(lcDevices) << "MidiControlManager: opened platform port" << m_portName;
+        m_hotplugTimer->start();
+        emit portOpened(m_portName);
+        return true;
+    }
     try {
         m_midiIn = std::make_unique<RtMidiIn>();
         if (static_cast<unsigned>(portIndex) >= m_midiIn->getPortCount()) {
@@ -139,6 +182,14 @@ bool MidiControlManager::openPort(int portIndex)
 
 bool MidiControlManager::openPortByName(const QString& portName)
 {
+    if (hasPlatformPorts()) {
+        const QStringList ports = platformPorts().list();
+        for (int i = 0; i < ports.size(); ++i) {
+            if (ports.at(i).contains(portName, Qt::CaseInsensitive))
+                return openPort(i);
+        }
+        return false;
+    }
     try {
         RtMidiIn probe;
         unsigned int n = probe.getPortCount();
@@ -157,6 +208,11 @@ void MidiControlManager::closePort()
 {
     if (m_discardTxInputs) { m_discardTxInputs(); }
     m_hotplugTimer->stop();
+    if (m_platformOpen) {
+        m_platformOpen = false;
+        if (platformPorts().close)
+            platformPorts().close();
+    }
     if (m_midiIn) {
         try {
             if (m_midiIn->isPortOpen())
@@ -169,6 +225,8 @@ void MidiControlManager::closePort()
 
 bool MidiControlManager::isOpen() const
 {
+    if (m_platformOpen)
+        return !platformPorts().isOpen || platformPorts().isOpen();
     return m_midiIn && m_midiIn->isPortOpen();
 }
 

@@ -159,8 +159,22 @@ Result parse(const QString& text)
     }
     // Candidates in the order spoken: a call written whole with the
     // separators and suffix after it, or a run of spelled words. The first
-    // that reads as a call (a report after it split off) is the one.
+    // that reads as a call (a report after it split off) is the one, unless
+    // a word not understood cuts it and letters follow ("Oscar Hotel six
+    // Oscar Kilo Siera Alpha"): the call may go on past that word, so it is
+    // not taken (cut tells which); a report, a separator or a suffix after
+    // such a word is no call's continuation.
     static const QRegularExpression tail(QStringLiteral("^(.*[A-Z])([1-5][1-9][1-9]?)$"));
+    static const QRegularExpression goesOn(QStringLiteral("^[A-Z]"));
+    auto continued = [&tokens](qsizetype j) {
+        if (j >= tokens.size() || !tokens.at(j).chars.isEmpty()) {
+            return false;
+        }
+        while (j < tokens.size() && tokens.at(j).chars.isEmpty()) {
+            ++j;
+        }
+        return j < tokens.size() && !tokens.at(j).whole && goesOn.match(tokens.at(j).chars).hasMatch();
+    };
     for (qsizetype i = 0; i < tokens.size(); ++i) {
         if (tokens.at(i).chars.isEmpty()) {
             continue;
@@ -172,13 +186,21 @@ Result parse(const QString& text)
         }
         // "stroke portable": one slash.
         chars.replace(QStringLiteral("//"), QStringLiteral("/"));
+        QString call;
+        QString report;
         if (isCall(chars)) {
-            r.call = chars;
-            return r;
+            call = chars;
+        } else if (const QRegularExpressionMatch m = tail.match(chars); m.hasMatch() && isCall(m.captured(1))) {
+            call = m.captured(1);
+            report = m.captured(2);
         }
-        if (const QRegularExpressionMatch m = tail.match(chars); m.hasMatch() && isCall(m.captured(1))) {
-            r.call = m.captured(1);
-            r.report = m.captured(2);
+        if (!call.isEmpty()) {
+            if (report.isEmpty() && continued(j)) {
+                r.cut = call;
+                return r;
+            }
+            r.call = call;
+            r.report = report;
             return r;
         }
         i = j - 1;
@@ -188,14 +210,16 @@ Result parse(const QString& text)
 
 Result parseBest(const QStringList& alternatives)
 {
+    Result none;
     for (const QString& a : alternatives) {
         Result r = parse(a);
         if (!r.call.isEmpty()) {
             return r;
         }
+        if (none.heard.isEmpty() || (none.cut.isEmpty() && !r.cut.isEmpty())) {
+            none = r;
+        }
     }
-    Result none;
-    none.heard = alternatives.isEmpty() ? QString() : alternatives.first().simplified();
     return none;
 }
 
@@ -212,9 +236,15 @@ QStringList recognizerWords()
         QStringLiteral("liverpool"), QStringLiteral("madagascar"), QStringLiteral("oslo"), QStringLiteral("paris"),
         QStringLiteral("roma"), QStringLiteral("santiago"), QStringLiteral("tripoli"), QStringLiteral("upsala"),
         QStringLiteral("uppsala"), QStringLiteral("valencia"), QStringLiteral("zurich")};
+    // One spelling of each word: written another way it sounds the same, so
+    // a recogniser's alternatives would only differ in spelling (Vosk gave
+    // "oscar hotel" and "oskar hotel" as two of its five).
+    static const QStringList sameSound{
+        QStringLiteral("x-ray"), QStringLiteral("alfa"), QStringLiteral("juliett"), QStringLiteral("juliette"),
+        QStringLiteral("oskar"), QStringLiteral("whisky"), QStringLiteral("charly"), QStringLiteral("charley")};
     QStringList out;
     for (const QString& w : words().keys()) {
-        if (w != QLatin1String("x-ray") && !itu1927.contains(w)) {
+        if (!sameSound.contains(w) && !itu1927.contains(w)) {
             out << w;
         }
     }

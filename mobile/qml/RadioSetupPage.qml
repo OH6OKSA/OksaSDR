@@ -1861,7 +1861,7 @@ Popup {
                         objectName: "midiUnsupported"
                         visible: !midiTab.m.supported
                         Layout.fillWidth: true
-                        text: qsTr("MIDI controllers come to Android in a later build. On an iPhone, iPad or Mac they work now.")
+                        text: qsTr("No MIDI controllers in this build.")
                         color: Theme.text
                         font.pixelSize: Theme.px(15)
                         wrapMode: Text.Wrap
@@ -1905,9 +1905,22 @@ Popup {
                         AppButton {
                             objectName: "midiPair"
                             visible: !!midiTab.m.pairing
+                            enabled: !midiTab.m.searching
                             text: qsTr("Pair a Bluetooth MIDI controller…")
                             focusPolicy: Qt.NoFocus
                             onClicked: Engine.midiPair()
+                        }
+                        // Android searches itself (no pairing screen of its
+                        // own for Bluetooth LE MIDI); what it finds joins the
+                        // list above.
+                        Label {
+                            objectName: "midiSearching"
+                            visible: !!midiTab.m.searching
+                            Layout.fillWidth: true
+                            text: qsTr("Searching for Bluetooth MIDI controllers… Switch the controller on; it joins the list above, then tap it.")
+                            color: Theme.textDim
+                            font.pixelSize: Theme.px(13)
+                            wrapMode: Text.WordWrap
                         }
                         Info { label: qsTr("Last message"); value: Engine.midiActivity }
                         // Roadmap 60: a VFO knob that sends a position (a CTR2's

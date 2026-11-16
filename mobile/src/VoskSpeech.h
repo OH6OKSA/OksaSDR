@@ -9,13 +9,16 @@
 namespace AetherSDR::mobile::VoskSpeech {
 
 // Offline speech recognition by Vosk (roadmap 81: alphacephei's Kaldi-based
-// recogniser, Apache 2.0) for logging by voice where the platform's own
-// recognisers cannot take the spelling alphabet (Android). The recognition
+// recogniser, Apache 2.0) for logging by voice, as the platforms' own
+// recognisers cannot be held to the spelling alphabet (Android's wrote
+// plain English, Apple's cut calls at a word it misheard). The recognition
 // is held to a grammar of the words CallsignSpeech reads, so a word can only
 // come out as one of them, whatever the speaker's accent. libvosk is opened
-// at run time: in the APK (the release's arm64 build) or, on the desktop,
-// OKSASDR_VOSK_LIB; the English model comes in the APK's assets (copied out
-// to the app's data once) or, on the desktop, from OKSASDR_VOSK_MODEL.
+// at run time in the APK (the release's arm64 build) and, on the desktop,
+// from OKSASDR_VOSK_LIB; on iOS it is linked in (AETHER_IOS_VOSK: Alphacephei's
+// iOS build). The English model comes in the APK's assets (copied out to the
+// app's data once), in the app bundle (iOS) or, on the desktop, from
+// OKSASDR_VOSK_MODEL.
 
 // Why it cannot run here (empty when it can); cheap, loads nothing big.
 QString unavailableReason();

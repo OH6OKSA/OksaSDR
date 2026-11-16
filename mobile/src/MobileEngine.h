@@ -197,6 +197,8 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QString smartLinkAccount READ smartLinkAccount NOTIFY smartLinkChanged)
     Q_PROPERTY(QString smartLinkEmail READ smartLinkEmail NOTIFY smartLinkChanged)
     Q_PROPERTY(QVariantList smartLinkRadios READ smartLinkRadios NOTIFY smartLinkRadiosChanged)
+    Q_PROPERTY(QVariantList smartLinkAccounts READ smartLinkAccounts NOTIFY smartLinkChanged)
+    Q_PROPERTY(QVariantList smartLinkFavourites READ smartLinkFavourites NOTIFY smartLinkFavouritesChanged)
     // The connection doctor (MobileEngineDoctor.cpp): what blocks a connection
     // to the last radio tried, step by step in plain words. Each step is
     // {title, state: "running" | "ok" | "warn" | "fail" | "info", detail}.
@@ -939,11 +941,19 @@ public:
 
     // SmartLink (remote access through FlexRadio's service). State is
     // "signedOut", "signingIn", "signedIn" or "offline" (signed in, server
-    // not reachable). The refresh token lives in the iOS Keychain.
+    // not reachable), for the active account. Each account's sign-in (its
+    // refresh token) lives in the platform's secure store.
     QString smartLinkState() const { return m_smartLinkState; }
     QString smartLinkAccount() const;
     QString smartLinkEmail() const;
     QVariantList smartLinkRadios() const;
+    // The SmartLink accounts signed in on this device (roadmap 62): label
+    // (callsign and name, else the e-mail), email, active, signedIn (a
+    // sign-in kept). One is active at a time.
+    QVariantList smartLinkAccounts() const;
+    // Favourite SmartLink radios of any account: name, account (its label),
+    // serial, online (in the active account's list now), canConnect.
+    QVariantList smartLinkFavourites() const;
     bool remoteSession() const;
     // Whether the operate page shows its control panel or gives the spectrum
     // the room (PTT always stays). Remembered on the device.
@@ -1796,6 +1806,16 @@ public:
     Q_INVOKABLE void signOutSmartLink();
     // Connect to the radio at `index` in smartLinkRadios.
     Q_INVOKABLE void connectSmartLinkRadio(int index);
+    // Make the account at `index` in smartLinkAccounts the active one (its
+    // kept sign-in, or the sign-in form with its e-mail); not while a
+    // remote session is open.
+    Q_INVOKABLE void switchSmartLinkAccount(int index);
+    // The radio at `index` in smartLinkRadios in or out of the favourites.
+    Q_INVOKABLE void toggleSmartLinkFavourite(int index);
+    Q_INVOKABLE void removeSmartLinkFavourite(int index);
+    // Connect to a favourite: its account made active first if it is not,
+    // then its radio once the account's list has it.
+    Q_INVOKABLE void connectSmartLinkFavourite(int index);
     // Answer to stationConflict: disconnect that station and connect, or 0
     // to cancel the connect.
     Q_INVOKABLE void resolveStationConflict(int handle);
@@ -1932,6 +1952,7 @@ signals:
     void tuneRowsChanged();
     void smartLinkChanged();
     void smartLinkRadiosChanged();
+    void smartLinkFavouritesChanged();
     // The radio presented a different TLS certificate than the one pinned
     // for it; the connect waits for answerCertificate().
     void certificateChanged(const QString& host, const QString& expected, const QString& presented);
@@ -2823,6 +2844,29 @@ private:
     void retrySmartLinkSignIn(const QString& why);
     QTimer m_wanReconnectTimer;
     QString m_smartLinkState{QStringLiteral("signedOut")};
+    // SmartLink accounts (roadmap 62, MobileEngineSmartLink.cpp): the list
+    // (id, email, label) in AppSettings, each account's refresh token in the
+    // secure store under smartLinkTokenKey(id); the first account keeps the
+    // single key of the builds before (id "").
+    QJsonArray loadSmartLinkAccounts() const;
+    void storeSmartLinkAccounts(const QJsonArray& accounts);
+    int smartLinkAccountIndex(const QString& id) const;
+    static QString smartLinkTokenKey(const QString& id);
+    QString activeSmartLinkTokenKey() const { return smartLinkTokenKey(m_smartLinkActiveId); }
+    void migrateSmartLinkAccounts();
+    // A password sign-in done: that e-mail's account made (or found) and active.
+    void adoptSmartLinkSignIn();
+    void noteSmartLinkAccountLabel();
+    void forgetSmartLinkAccount(const QString& id);
+    void useSmartLinkAccount(const QString& id);
+    void favouriteRadioListed();
+    QString m_smartLinkActiveId;
+    QString m_smartLinkPendingEmail;   // a password sign-in under way
+    QString m_smartLinkFallbackId;     // the account active before it, if it fails
+    bool m_smartLinkHasFallback{false};
+    QStringList smartLinkFavouriteSerials() const;   // the active account's
+    QString m_favouriteSerial;         // a favourite waiting for its account's list
+    QTimer m_favouriteTimer;
     double m_systemTextScale{1.0};   // read at start and on each return to the front
     // The connection doctor's state (MobileEngineDoctor.cpp). m_lastTarget is
     // the radio last tried: an address or host name, or "smartlink:<serial>".

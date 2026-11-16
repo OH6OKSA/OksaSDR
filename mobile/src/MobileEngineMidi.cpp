@@ -34,7 +34,7 @@ Q_DECLARE_LOGGING_CATEGORY(lcMobile)
 
 namespace AetherSDR::mobile {
 
-#if defined(HAVE_MIDI) && !defined(Q_OS_ANDROID)
+#if defined(HAVE_MIDI)
 
 namespace {
 // Ports are listed again this often while a controller is open or waited
@@ -61,6 +61,8 @@ const QString kMidiTransmitKey = QStringLiteral("MobileMidiTransmit");
 
 void MobileEngine::setupMidi()
 {
+    // Android: its MidiManager in RtMidi's place (no backend there).
+    setupPlatformMidi();
     m_midi = new MidiControlManager(this);
     registerMidiFunctions();
     MidiSettings::instance().load();
@@ -598,6 +600,7 @@ QVariantMap MobileEngine::midi() const
     m.insert(QStringLiteral("conflict"), m_midiConflictParam);
     m.insert(QStringLiteral("conflictText"), m_midiConflictText);
     m.insert(QStringLiteral("pairing"), bluetoothMidiPairingAvailable());
+    m.insert(QStringLiteral("searching"), bluetoothMidiSearching());
     m.insert(QStringLiteral("onMac"), runningOnMac());
     m.insert(QStringLiteral("functions"), functions);
     m.insert(QStringLiteral("bound"), static_cast<int>(m_midi->bindings().size()));
@@ -730,9 +733,12 @@ void MobileEngine::midiImport(const QUrl& url)
 void MobileEngine::midiPair()
 {
     if (!showBluetoothMidiPairing()) {
-        setLastError(runningOnMac() ? tr("On a Mac, pair the Bluetooth MIDI controller in Audio MIDI Setup.")
-                                    : tr("Bluetooth MIDI pairing is not available here."));
+        const QString why = bluetoothMidiPairingProblem();
+        setLastError(!why.isEmpty() ? why
+                     : runningOnMac() ? tr("On a Mac, pair the Bluetooth MIDI controller in Audio MIDI Setup.")
+                                      : tr("Bluetooth MIDI pairing is not available here."));
     }
+    emit midiChanged();
 }
 
 void MobileEngine::setMidiAutoConnect(bool on)
@@ -758,7 +764,7 @@ void MobileEngine::setMidiTransmit(bool on)
 
 #else
 
-// Android (no RtMidi backend yet) and builds without MIDI.
+// Builds without MIDI.
 void MobileEngine::setupMidi() {}
 void MobileEngine::registerMidiFunctions() {}
 void MobileEngine::midiAction(const QString&, float) {}

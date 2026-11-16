@@ -32,7 +32,8 @@ these services:
   before this is allowed.
 - **SmartLink** (FlexRadio), if you sign in on the Connect page: your
   FlexRadio account sign-in and the connection to your radio go through
-  FlexRadio's SmartLink service, under FlexRadio's terms.
+  FlexRadio's SmartLink service, under FlexRadio's terms. With several
+  accounts signed in, only the active one talks to SmartLink at a time.
 - **QRZ.com**, if you save a QRZ.com account on the Log tab: the callsign
   you type is looked up there with your account.
 - **A DX cluster**, if you turn it on: the app connects to the cluster
@@ -42,12 +43,12 @@ these services:
   your callsign, and the cluster publishes it to its users.
 - **Speech recognition**, only while you use the voice button (**🎤**) on
   the Log tab or in Big buttons: the few seconds of you spelling a call are
-  recorded by the app and recognised: on an iPhone, iPad or Mac by Apple's
-  Speech framework (on the device where it offers that and nothing leaves
-  it; otherwise the recording goes to Apple's speech service, as for any
-  app using it); on Android by the app's own offline recogniser (Vosk),
-  on the phone, so nothing leaves it. The app keeps neither the recording
-  nor what was heard, beyond the call it puts into the field.
+  recorded by the app and recognised on the device by the app's own
+  offline recogniser (Vosk), on an iPhone, iPad, Mac and Android alike, so
+  nothing leaves the device. (Up to build 174 an iPhone, iPad or Mac used
+  Apple's Speech framework, which may send the recording to Apple's speech
+  service.) The app keeps neither the recording nor what was heard, beyond
+  the call it puts into the field.
 - **POTA (pota.app)**, only when you tap **Self-spot** on the Log tab and
   confirm: a spot of your own activation (your callsign, the park
   reference, the frequency, the mode and the comment shown to you) is sent
@@ -138,7 +139,14 @@ Android ask for microphone permission first.
 On an iPhone or iPad the app uses Bluetooth only when you pair a Bluetooth
 MIDI controller (Radio Setup › MIDI › Pair a Bluetooth MIDI controller…),
 through iOS's own pairing sheet; iOS asks for Bluetooth permission first.
-The controller's knob and button messages are read on the device and never
+On Android the same button makes the app search for Bluetooth MIDI
+controllers for 15 seconds (Android has no pairing screen of its own for
+them): Android asks for the *Nearby devices* permission first (on Android
+11 and older *Location*, which Android requires for any Bluetooth search;
+the app reads no location). The search looks only for devices offering
+the Bluetooth MIDI service, and the app keeps the name and Bluetooth
+address of a controller you use, so it can open it again by itself. The
+controller's knob and button messages are read on the device and never
 leave it. The controller's functions and its name are kept in the app's own
 storage on your device.
 
@@ -158,10 +166,12 @@ your device, except as part of the normal connection to your radio.
   the device: in the app's folder in Files on iPhone and iPad, in
   Documents › OksaSDR on Android and on a computer. It leaves the device
   only when you share or move it yourself.
-- **Sign-ins**: the SmartLink sign-in, the QRZ.com password and the
-  Wavelog / Cloudlog API key are kept in
+- **Sign-ins**: the SmartLink sign-in (one per account signed in), the
+  QRZ.com password and the Wavelog / Cloudlog API key are kept in
   the device's secure store (Keychain on Apple devices); a SmartLink
-  password is never stored.
+  password is never stored. The SmartLink accounts' e-mail addresses and
+  names (as SmartLink gives them) and your favourite SmartLink radios are
+  kept in the app's own storage, for the Connect page.
 - The in-app diagnostic log (what the app did: connections, commands sent
   to the radio, errors) is also written to a file in the app's own
   storage as it runs, so that after a crash the next start can show the
@@ -202,4 +212,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-11-11 (the Elecraft KPA1500; earlier: Bluetooth MIDI controllers, App setups)
+Last updated: 2026-11-16 (speech recognition on the device everywhere, SmartLink accounts and favourites, Bluetooth MIDI search on Android; earlier: the Elecraft KPA1500, Bluetooth MIDI controllers, App setups)

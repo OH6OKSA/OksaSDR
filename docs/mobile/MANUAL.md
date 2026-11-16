@@ -454,6 +454,22 @@ The first page lists the ways to reach a radio:
   does not sign you out. Each radio's card says whether it is free
   (*Available*) or *In use by* and the station using it (e.g. another
   computer running SmartSDR).
+  **Several accounts** (idea: Ian Gilchrist VK1HF): **+ Account** signs in
+  another FlexRadio account (the one signed in now is kept; *Cancel* goes
+  back to it, and so does a failed sign-in). With two or more, a row of
+  buttons shows them (the callsign and name SmartLink gives, else the
+  e-mail), the active one lit: a tap changes to another account, not
+  while connected to a radio. **Sign out** signs out the active account
+  only and changes to the next one kept; an account whose sign-in is gone
+  shows its e-mail in the form, with **Remove** to take it off the list.
+  **Favourites**: **☆** beside a radio makes it a favourite (**★**, a tap
+  again takes it off); the favourites of every account stay at the top of
+  the SmartLink box, with the account under the name. A tap on one
+  connects, changing to its account first when another is active (the
+  app waits up to 20 s for the radio to show on that account); **✕** takes
+  it off the list. The e-mails, the account names and the favourites are
+  kept on this device only, each account's sign-in in the secure store as
+  above.
 - **By IP address or host name** — the radios you have entered, one card
   each: your name for it, or what the radio calls itself (its name and
   model, learned when you connect), with the address and *last used* on
@@ -1443,17 +1459,21 @@ seven.
   Michael Walker): hold the button, spell the call with the ITU / NATO
   alphabet (*Victor Alpha Three Mike Whiskey*, *niner* for 9, *stroke
   portable* for /P), and let go; a quick tap listens until a second tap,
-  8 s at most. The call goes into the field and a report said after it
+  15 s at most. The call goes into the field and a report said after it
   (*five nine*) into *Sent*; the line under the field says what was heard.
   Nothing is logged until you tap Log. It records through the microphone
   the app transmits with (the device's, or a Bluetooth headset's when that
   is the app's; an older headset with narrowband audio is heard less
   well), mutes the radio's audio here meanwhile, and does not work while
-  transmitting. On an iPhone, iPad or Mac Apple's speech recognition reads
-  the recording (on the device where it can); on Android the app's own
-  offline recogniser (Vosk) does, listening only for the alphabet's words,
-  so nothing leaves the phone and no network is needed. It understands, in
-  English whatever the device's language:
+  transmitting. The app's own offline recogniser (Vosk) reads the
+  recording, on an iPhone, iPad, Mac and Android alike, listening only for
+  the alphabet's words, so nothing leaves the device and no network is
+  needed (on an iPhone it replaced Apple's speech recognition in build
+  175, which cut calls at a word it misheard). When a word it did not
+  understand comes inside the call and more letters follow, the field is
+  left as it was and the line says *Not sure of the call*: spell it again
+  rather than log half a call. It understands, in English whatever the
+  device's language:
   - **Letters**: the ITU / NATO alphabet (*Alfa* or *Alpha* … *Zulu*,
     *Juliet*, *Whisky*, *X-ray*), the older Allied one (*Able*, *Baker*,
     *Dog* … *Sugar*, *King* … *Zebra*), the ITU's of 1927 (*Amsterdam*,
@@ -1470,9 +1490,9 @@ seven.
   - **A report** after the call: *five nine*, *five nine nine*, *fifty
     nine*.
   - Words around the call (*log*, *the call is*, *okay*, *uh*) are left
-    out. On Android the recogniser listens for the words above but not
-    for the letters' own names or the 1927 place names, which made it
-    worse in noise. National alphabets (*Aarne*, *Anton* …) may follow:
+    out. The recogniser listens for the words above but not for the
+    letters' own names or the 1927 place names, which made it worse in
+    noise. National alphabets (*Aarne*, *Anton* …) may follow:
     a spelling language to choose is on the roadmap.
 
   With the CW decoder on, **Heard in CW** offers the
@@ -2316,13 +2336,20 @@ radio.
 
 - **MIDI** — not a setting of the radio: a MIDI controller as a VFO knob
   and buttons on this device, such as Lynovation's **CTR2-MIDI** (asked by
-  Hanno Vogels DK3HV and Michael Walker). On an iPhone, iPad or Mac;
-  Android comes later.
+  Hanno Vogels DK3HV and Michael Walker). On an iPhone, iPad, Mac and,
+  since beta 93, Android.
   - **Controller**: the MIDI devices this device sees; tap one to use it
     (tap it again to let it go). A Bluetooth controller is paired first:
     on an iPhone or iPad with **Pair a Bluetooth MIDI controller…** (iOS's
     own sheet: tap the controller, then *Done*), on a Mac in Audio MIDI
-    Setup. A USB controller shows when plugged in. **Connect to it by
+    Setup. Android has no pairing screen for Bluetooth MIDI, so there the
+    same button makes the app search for 15 s (*Searching for Bluetooth
+    MIDI controllers…*): switch the controller on, it joins the list, then
+    tap it. The first search asks for *Nearby devices* (Android 12 and
+    later; *Location* before it, which Android needs for a Bluetooth
+    search); allow it and tap the button again. A Bluetooth controller
+    used once is opened again by itself later, without a search. A USB
+    controller shows when plugged in (USB-C, or a USB OTG adapter). **Connect to it by
     itself** opens the last one used whenever it is there (the CTR2 once
     it is switched on). **Last message** shows what the controller sent,
     e.g. *CC 100 = 65, channel 1*. The app's log also gets the VFO knob's

@@ -47,6 +47,7 @@ qt_add_executable(aether-mobile
     src/MobileEngineQrzLog.cpp
     src/MobileEnginePota.cpp
     src/MobileEngineVoiceLog.cpp
+    src/MobileEngineSmartLink.cpp
     src/MobileEngineSharedAdif.cpp
     src/MobileEngineLogger32.cpp
     src/MobileEngineSetups.cpp
@@ -80,9 +81,35 @@ qt_add_executable(aether-mobile
 if(IOS)
     target_sources(aether-mobile PRIVATE ios/ScreenAwake.mm ios/SecureStore.mm ios/AudioSession.mm ios/ShareText.mm
                                          ios/SideKeys.mm ios/Haptics.mm ios/TextScale.mm
-                                         ios/DeviceId.mm ios/MidiPairing.mm ios/VoiceInput.mm)
+                                         ios/DeviceId.mm ios/MidiPairing.mm ios/VoiceInput.mm
+                                         src/VoskSpeech.h src/VoskSpeech.cpp)
     target_link_libraries(aether-mobile PRIVATE "-framework Security" "-framework AVFAudio" "-framework GameController"
                                                 "-framework MessageUI" "-framework CoreAudioKit" "-framework Speech")
+    # Vosk for logging by voice (roadmap 81): Alphacephei's iOS libvosk
+    # (static, arm64; BLAS and LAPACK from Accelerate) and the English model
+    # in the bundle (vosk/en-us), as the iOS workflow unpacks them. Without
+    # it the voice button uses Apple's recogniser.
+    set(AETHER_IOS_VOSK_DIR "" CACHE PATH "libvosk.a (arm64), en-us/ (the model) and LICENSE for iOS")
+    if(AETHER_IOS_VOSK_DIR)
+        target_compile_definitions(aether-mobile PRIVATE AETHER_IOS_VOSK=1)
+        target_link_libraries(aether-mobile PRIVATE "${AETHER_IOS_VOSK_DIR}/libvosk.a" "-framework Accelerate")
+        file(GLOB_RECURSE _vosk_files RELATIVE "${AETHER_IOS_VOSK_DIR}/en-us" "${AETHER_IOS_VOSK_DIR}/en-us/*")
+        foreach(_f IN LISTS _vosk_files)
+            get_filename_component(_d "${_f}" DIRECTORY)
+            set(_at "Resources/vosk/en-us")
+            if(_d)
+                set(_at "${_at}/${_d}")
+            endif()
+            target_sources(aether-mobile PRIVATE "${AETHER_IOS_VOSK_DIR}/en-us/${_f}")
+            set_source_files_properties("${AETHER_IOS_VOSK_DIR}/en-us/${_f}" PROPERTIES MACOSX_PACKAGE_LOCATION "${_at}")
+        endforeach()
+        target_sources(aether-mobile PRIVATE "${AETHER_IOS_VOSK_DIR}/LICENSE")
+        set_source_files_properties("${AETHER_IOS_VOSK_DIR}/LICENSE" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/vosk")
+        list(LENGTH _vosk_files _n)
+        message(STATUS "Vosk for iOS: ${_n} model files from ${AETHER_IOS_VOSK_DIR}")
+    else()
+        message(WARNING "AETHER_IOS_VOSK_DIR not set: the voice button uses Apple's recogniser")
+    endif()
 elseif(ANDROID)
     target_sources(aether-mobile PRIVATE android/AndroidJni.h android/ScreenAwake.cpp android/SecureStore.cpp
                                          src/AudioSession.cpp android/ShareText.cpp src/SideKeys.cpp

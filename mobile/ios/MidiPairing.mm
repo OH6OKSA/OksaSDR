@@ -83,6 +83,19 @@ bool showBluetoothMidiPairing()
     return true;
 }
 
+QString bluetoothMidiPairingProblem()
+{
+    return {};
+}
+
+bool bluetoothMidiSearching()
+{
+    return false;
+}
+
+// CoreMIDI through RtMidi: nothing of the platform's own.
+void setupPlatformMidi() {}
+
 } // namespace AetherSDR::mobile
 
 @implementation OksaMidiPairingCloser

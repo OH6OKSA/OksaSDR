@@ -8,13 +8,14 @@
 
 namespace AetherSDR::mobile {
 
-// Speech to text on this device for logging by voice (roadmap 79). iOS /
-// iPadOS and the iPad app on a Mac: a short recording of the microphone the
-// app already captures (the voice keyer's recorder), handed to the Speech
-// framework in one piece, on device where the device offers it. Android 13
-// and later: the device's default recogniser listens to the microphone
-// itself while the button is held (the app records nothing then). Elsewhere
-// none.
+// Speech to text on this device for logging by voice (roadmaps 79 and 81):
+// a short recording of the microphone the app already captures (the voice
+// keyer's recorder), recognised in one piece on the device by Vosk held to
+// the spelling alphabet (VoskSpeech): Android, iOS / iPadOS and the iPad app
+// on a Mac. An iOS build without Vosk hands it to Apple's Speech framework;
+// the desktop has Vosk from OKSASDR_VOSK_LIB / _MODEL. Android's own
+// recogniser listening to the microphone itself (startListening) is kept
+// for languages Vosk has no model for.
 bool voiceInputAvailable();
 // Why voice input is not offered here (empty when it is).
 QString voiceInputUnavailableReason();

@@ -199,6 +199,46 @@ jobs:
           done
           ls -la "$RUNNER_TEMP/fftw-ios/lib"
 
+      # Vosk for logging by voice (roadmap 81): Alphacephei's iOS libvosk as
+      # react-native-vosk publishes it (its xcframework's device slice, at a
+      # fixed commit; arm64 taken out of it) and the same small English model
+      # as the APK, both pinned by SHA-256; the model goes into the app bundle
+      # (vosk/en-us) with Vosk's licence (Apache 2.0).
+      - name: Restore Vosk
+        id: cache-vosk
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/vosk-dl
+          key: vosk-ios-rnv-1ebdd9e-en-us-0.15-v1
+
+      - name: Vosk (libvosk for iOS and the English model)
+        run: |
+          set -euo pipefail
+          dl="$RUNNER_TEMP/vosk-dl"
+          mkdir -p "$dl"
+          get() {  # url file sha256
+            if [ ! -f "$dl/$2" ] || ! echo "$3  $dl/$2" | shasum -a 256 -c - >/dev/null; then
+              curl -fsSL --retry 3 -o "$dl/$2" "$1"
+            fi
+            echo "$3  $dl/$2" | shasum -a 256 -c -
+          }
+          get https://raw.githubusercontent.com/riderodd/react-native-vosk/1ebdd9e92f9f59a303080ab0a367425d34be77bf/ios/libvosk.xcframework/ios-arm64_armv7_armv7s/libvosk.a \
+              libvosk-ios.a a6705b01390ec42a33f4f3b83ac4f2d760d74bf15e5a82cf7ea1710aca1115f9
+          get https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip \
+              vosk-model-small-en-us-0.15.zip 30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498
+          get https://raw.githubusercontent.com/alphacep/vosk-api/v0.3.45/COPYING \
+              COPYING bb618af833c817ab01c1564bd3ec75ba4b4f9cf30910a4a2168e30a674ee8cc6
+          out="$RUNNER_TEMP/vosk-ios"
+          rm -rf "$out" "$RUNNER_TEMP/vosk-model"
+          mkdir -p "$out"
+          lipo "$dl/libvosk-ios.a" -thin arm64 -output "$out/libvosk.a"
+          unzip -q "$dl/vosk-model-small-en-us-0.15.zip" -d "$RUNNER_TEMP/vosk-model"
+          mv "$RUNNER_TEMP/vosk-model/vosk-model-small-en-us-0.15" "$out/en-us"
+          cp "$dl/COPYING" "$out/LICENSE"
+          lipo -info "$out/libvosk.a"
+          find "$out/en-us" -type f | wc -l
+          du -sh "$out"/*
+
       # The Xcode archive below compiles everything itself, so a Ninja build
       # first doubled the compile time (about 10 minutes a run). On demand
       # (ninja_check) it still runs, for every compile error in one go.
@@ -214,6 +254,7 @@ jobs:
             -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/fftw-ios" \
             -DCMAKE_FIND_ROOT_PATH="$RUNNER_TEMP/fftw-ios" \
             -DAETHER_USE_PINNED_QT=OFF \
+            -DAETHER_IOS_VOSK_DIR="$RUNNER_TEMP/vosk-ios" \
             2>&1 | tee configure.log
 
       - name: Build aethercore (keep going)
@@ -245,6 +286,7 @@ jobs:
             -DAETHER_MOBILE_BUNDLE_ID="$BUNDLE_ID" \
             -DAETHER_MOBILE_BUILD_NUMBER="${{ github.run_number }}" \
             -DAETHER_MOBILE_TEAM_ID="$team" \
+            -DAETHER_IOS_VOSK_DIR="$RUNNER_TEMP/vosk-ios" \
             2>&1 | tee xcode-configure.log
       - name: Archive (unsigned check, no upload)
         if: env.UPLOAD != 'true'
@@ -255,6 +297,9 @@ jobs:
             -archivePath "$RUNNER_TEMP/aether-mobile.xcarchive" archive \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcode-archive.log | grep -E "error:|warning: .*aether-mobile|ARCHIVE" || true
           test -d "$RUNNER_TEMP/aether-mobile.xcarchive/Products/Applications/aether-mobile.app"
+          # The speech model went into the bundle where VoskSpeech looks.
+          find "$RUNNER_TEMP/aether-mobile.xcarchive/Products/Applications/aether-mobile.app/vosk" -type f
+          test -f "$RUNNER_TEMP/aether-mobile.xcarchive/Products/Applications/aether-mobile.app/vosk/en-us/am/final.mdl"
       - name: Archive, sign and upload to TestFlight
         if: env.UPLOAD == 'true'
         env:
@@ -278,6 +323,8 @@ jobs:
             CODE_SIGNING_ALLOWED=NO DEBUG_INFORMATION_FORMAT=dwarf-with-dsym \
             2>&1 | tee xcode-archive.log | grep -E "error:|ARCHIVE" || true
           test -d "$RUNNER_TEMP/aether-mobile.xcarchive"
+          find "$RUNNER_TEMP/aether-mobile.xcarchive/Products/Applications/aether-mobile.app/vosk" -type f
+          test -f "$RUNNER_TEMP/aether-mobile.xcarchive/Products/Applications/aether-mobile.app/vosk/en-us/am/final.mdl"
           # Symbols of exactly the binary that goes to TestFlight, so tester
           # crash reports (.ips) can be symbolized.
           mkdir -p testflight-symbols

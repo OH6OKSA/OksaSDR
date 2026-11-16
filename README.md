@@ -109,9 +109,10 @@ radio interface, with no computer running alongside.
   larger), and PTT across the bottom; Space or a Bluetooth PTT button keys there too. **Log** beside
   Step logs a contact in big type (the call, the reports with − / +).
   Hold Exit to leave.
-- **MIDI controllers** (iPhone, iPad, Mac): Radio Setup › MIDI takes a
+- **MIDI controllers** (iPhone, iPad, Mac, Android): Radio Setup › MIDI takes a
   controller such as Lynovation's CTR2-MIDI over Bluetooth (paired there
-  on an iPhone or iPad) or USB, as a VFO knob and buttons: Learn each
+  on an iPhone or iPad, found by the app's own search on Android) or USB,
+  as a VFO knob and buttons: Learn each
   function, or import the controller's SmartSDR map (.map) or an
   AetherSDR profile (.xml); F1–F12 play the voice keyer, the CW memories
   or the Digi macros as a keyboard's F-keys. Transmitting from it (PTT,
@@ -288,8 +289,8 @@ radio interface, with no computer running alongside.
   calls the CW decoder heard offered for the Call field, **Spot** to the DX
   cluster (the exact line shown first), **Self-spot** of your own POTA
   activation to pota.app (shown first), the call spelled **by voice**
-  (🎤, Apple's speech recognition on an iPhone, iPad or Mac and the
-  app's own offline recogniser, Vosk, on Android; the international
+  (🎤, the app's own offline recogniser, Vosk, held to the alphabet on
+  every device, nothing leaving it; the international
   alphabet and the older and DX spelling words; nothing logs until you
   tap Log), a Name field, a logged contact **edited
   or deleted** with a tap, and
@@ -311,6 +312,8 @@ radio interface, with no computer running alongside.
   from anywhere, with Opus-compressed audio. The sign-in is kept in the iOS
   Keychain or the Android Keystore on this device only; the password is
   never stored.
+- Several accounts on one device (**+ Account**, a tap changes between
+  them) and **☆ favourite radios** of any account that connect in one tap.
 
 **Made for the device**
 - A tablet layout and a phone layout. They switch live on rotation, Split
