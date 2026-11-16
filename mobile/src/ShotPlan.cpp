@@ -864,6 +864,9 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
     } else if (command == QLatin1String("netchange")) {
         m_engine.testNetworkChange();
         *delayMs = 500;
+    } else if (command == QLatin1String("slicerecovery")) {
+        m_engine.testSliceRecovery();
+        *delayMs = 4000;
     } else if (command == QLatin1String("dxconnect")) {
         m_engine.testDxConnect(arg.section(QLatin1Char(':'), 0, 0), quint16(arg.section(QLatin1Char(':'), 1).toUInt()));
         *delayMs = 500;

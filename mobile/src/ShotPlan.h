@@ -55,6 +55,8 @@ class MobileEngine;
 //   netchange               as the system reporting another network (SmartLink's
 //                           server connection is made again)
 //   smartlink I             connect to the Connect page's SmartLink radio I
+//   slicerecovery           this app's slice and pan removed and made again, as after
+//                           a reconnect that gave no slice (the slice put back where it was)
 //   dxconnect HOST:PORT     the DX cluster there for this run (settings untouched);
 //                           dxstate logs its state and message, dxoff disconnects it
 //   kpa HOST[:PORT]|off     the KPA1500's address (Radio Setup › Amp › Elecraft); off

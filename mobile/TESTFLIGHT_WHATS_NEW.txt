@@ -12,6 +12,7 @@ NEW IN THIS BUILD
 - SmartLink after a network change, steadier: a server connection not up in 8 s is made again (once it took 37 s on the developer's iPad).
 - Keys: T TUNE on / off, Shift+T a two-tone TUNE, A an ATU tune. With Ulanzi Studio on a Mac, a Ulanzi dial drives the app through keys (thanks Christoph DM5HF; see the manual).
 - DX cluster: after a network change it says the cluster still has the old login, not "another device".
+- After a reconnect that had to make the slice again, it is back on its frequency, mode and filter (thanks Rich N2RY).
 
 RECENT (builds 94–180)
 - 179-180: SmartLink comes back after a network change in seconds; Cancel beside Connecting… (thanks Mohammed A71AT).

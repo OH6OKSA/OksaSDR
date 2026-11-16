@@ -1179,7 +1179,27 @@ MobileEngine::MobileEngine(QObject* parent)
             m_sliceRecoveryPending = false;
             qCInfo(lcMobile) << "slice recovery: creating the slice on the new pan" << pan->panId();
             const QString panId = pan->panId();
-            QTimer::singleShot(400, this, [this, panId] { m_session.radioModel().addSliceOnPan(panId); });
+            // Where the slice was when the session ended (on this radio, not
+            // long ago): there again, its mode and filter after it.
+            const bool back = m_lostSlice.mhz > 0.0 && m_lostSliceAge.isValid()
+                && m_lostSliceAge.elapsed() < 10 * 60 * 1000
+                && m_lostSlice.radio == m_session.radioModel().serial();
+            m_restoreLostSlice = back;
+            const double mhz = m_lostSlice.mhz;
+            // A FLEX may put a slice on the new pan itself (the FLEX-6500
+            // and 6600M both did): then that one is put back where the slice
+            // was, and no second one is made (Rich's radio had two).
+            QTimer::singleShot(1200, this, [this, panId, back, mhz] {
+                if (!m_session.radioModel().slices().isEmpty()) {
+                    qCInfo(lcMobile) << "slice recovery: the radio put a slice on the new pan itself";
+                    return;
+                }
+                if (back) {
+                    m_session.radioModel().addSliceOnPan(panId, mhz);
+                } else {
+                    m_session.radioModel().addSliceOnPan(panId);
+                }
+            });
         }
         selectActiveSlice();
         emit slicesChanged();
@@ -9216,6 +9236,11 @@ void MobileEngine::onConnectionStateChanged(bool connected)
     if (!connected) {
         setMacroRepeat(false);
         m_loggedLicenseSubscription.clear();
+        // Where the slice was, for a slice made again after a reconnect.
+        if (m_sliceNow.mhz > 0.0) {
+            m_lostSlice = m_sliceNow;
+            m_lostSliceAge.start();
+        }
     }
     m_micDefaulted = false;
     m_cwPitchRepaired = false;
@@ -9453,6 +9478,41 @@ void MobileEngine::selectActiveSlice()
     }
 }
 
+void MobileEngine::noteSliceState()
+{
+    if (m_slice && m_slice->frequency() > 0.0) {
+        m_sliceNow = {m_slice->frequency(), m_slice->mode(), m_slice->filterLow(), m_slice->filterHigh(),
+                      m_session.radioModel().serial()};
+    }
+}
+
+void MobileEngine::testSliceRecovery()
+{
+    RadioModel& rm = m_session.radioModel();
+    if (!m_connected || !m_slice) {
+        return;
+    }
+    // As when a session ends: the slice as it was kept, then no slice.
+    m_lostSlice = m_sliceNow;
+    m_lostSliceAge.start();
+    qCInfo(lcMobile) << "slice recovery (test): removing this app's slice and pan";
+    m_sliceRecoveryTried = true;
+    m_sliceRecoveryPending = true;
+    // The radio itself told to drop the slices (removeSlice keeps the last
+    // one), so the new pan comes with none, as when the radio refused it.
+    for (SliceModel* s : rm.slices()) {
+        rm.sendCommand(QStringLiteral("slice remove %1").arg(s->sliceId()));
+    }
+    QTimer::singleShot(800, this, [this] {
+        RadioModel& r = m_session.radioModel();
+        const QList<PanadapterModel*> pans = r.panadapters();
+        for (PanadapterModel* pan : pans) {
+            r.removePanadapter(pan->panId());
+        }
+        QTimer::singleShot(800, this, [this] { m_session.radioModel().createPanadapter(); });
+    });
+}
+
 void MobileEngine::bindSlice(SliceModel* slice)
 {
     for (const QMetaObject::Connection& c : std::as_const(m_sliceConnections)) {
@@ -9460,11 +9520,32 @@ void MobileEngine::bindSlice(SliceModel* slice)
     }
     m_sliceConnections.clear();
     m_slice = slice;
+    if (slice && std::exchange(m_restoreLostSlice, false)) {
+        const SliceState lost = m_lostSlice;
+        qCInfo(lcMobile).noquote() << "slice recovery: back to" << QString::number(lost.mhz, 'f', 6) << lost.mode
+                                   << QStringLiteral("%1..%2 Hz").arg(lost.lo).arg(lost.hi);
+        QTimer::singleShot(300, this, [this, lost] {
+            if (!m_slice) {
+                return;
+            }
+            if (!lost.mode.isEmpty() && m_slice->mode() != lost.mode) {
+                setMode(lost.mode);
+            }
+            if (lost.hi > lost.lo) {
+                m_slice->setFilterWidth(lost.lo, lost.hi);
+            }
+            tuneToCentred(lost.mhz);
+        });
+    }
     bindAgcAutoSlice();
     planRegionNow();
     applyBeatCancel();
     emit fmChanged();
     if (slice) {
+        noteSliceState();
+        m_sliceConnections.append(connect(slice, &SliceModel::frequencyChanged, this, &MobileEngine::noteSliceState));
+        m_sliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::noteSliceState));
+        m_sliceConnections.append(connect(slice, &SliceModel::filterChanged, this, &MobileEngine::noteSliceState));
         m_sliceConnections.append(connect(slice, &SliceModel::frequencyChanged, this, &MobileEngine::frequencyChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::modeChanged));
         m_sliceConnections.append(connect(slice, &SliceModel::frequencyChanged, this, &MobileEngine::followBandPlanMode));

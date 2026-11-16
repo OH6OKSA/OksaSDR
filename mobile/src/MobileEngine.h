@@ -881,6 +881,9 @@ public:
     // The render tool's DX cluster at HOST:PORT for this run only (the
     // settings untouched): a stand-in cluster that refuses logins.
     void testDxConnect(const QString& host, quint16 port);
+    // The render tool's slice recovery: this app's slice and pan removed and
+    // made again, as after a reconnect the radio gave no slice.
+    void testSliceRecovery();
     Q_INVOKABLE void setRadioSetup(const QString& key, const QVariant& value);
     // Receive › Calibration's Start, as the desktop's: the cal frequency
     // set, freq_error_ppb cleared, radio pll_start, done when the radio's
@@ -2870,6 +2873,22 @@ private:
     void noteNetworkChange();
     bool m_wanAnswered{false};   // the radio sent its version on this connection
     bool m_wanResumeOnList{false};   // a connect waiting for the server made again
+    // The slice as it last was (kept up to date), and the one the session
+    // that ended had: a slice the app has to make again after a reconnect
+    // gets it back (Rich Yost N2RY: a one-station FLEX-6500, the new slice
+    // on the radio's default 14.111 CW after a network change).
+    struct SliceState {
+        double mhz{0.0};
+        QString mode;
+        int lo{0};
+        int hi{0};
+        QString radio;
+    };
+    SliceState m_sliceNow;
+    SliceState m_lostSlice;
+    QElapsedTimer m_lostSliceAge;
+    bool m_restoreLostSlice{false};
+    void noteSliceState();
     QString m_twoToneRestoreMode;    // the radio's tune mode before a two-tone TUNE
     bool m_twoToneOn{false};         // that tune seen on
     bool keyTune();                  // TUNE keyed: false when refused

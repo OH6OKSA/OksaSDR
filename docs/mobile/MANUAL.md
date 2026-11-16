@@ -451,7 +451,9 @@ The first page lists the ways to reach a radio:
   (Wi-Fi to the mobile network or a phone's hotspot, and back) makes the
   connection to SmartLink again at once, and a remote session that drops
   connects again by itself: *Connecting…* shows meanwhile, with **Cancel**
-  beside it to stop. The eye in the password field
+  beside it to stop. If the radio no longer has the app's slice then (a
+  radio that takes one station still holding the old session), the app
+  makes it again on the frequency, mode and filter it had. The eye in the password field
   shows what you typed (dots again when you leave the field); the QRZ.com
   password and the Wavelog / Cloudlog API key have the same eye. **Sign out** takes two taps
   (the first turns it into *Sign out?* for three seconds), so a stray tap
