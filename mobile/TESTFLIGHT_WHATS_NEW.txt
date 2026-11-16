@@ -12,6 +12,7 @@ NEW IN THIS BUILD
 - SmartLink in the background: after a network change the reconnect now finishes with the app in the background, and the audio comes back without opening the app (found on the developer's iPad).
 - Log tab > Logging program (WSJT-X UDP): every QSO goes to RUMlogNG, MacLoggerDX, Log4OM, N1MM+ or GridTracker as WSJT-X sends it (thanks Christoph DM5HF; see the manual).
 - DX cluster: after a network change it says the cluster still has the old login for as long as the cluster refuses, with the SSID tip to get on at once.
+- Keys: F1–F12 and Esc on a Mac (also from Ulanzi Studio), and F1–F12, ⌘1–⌘0 and Esc while typing in the Log tab, for a pile-up (thanks Christoph DM5HF).
 - Radio Setup no longer scrolls into empty space under its shorter sections.
 
 RECENT (builds 94–181)

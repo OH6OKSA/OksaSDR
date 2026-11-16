@@ -61,6 +61,10 @@ ColumnLayout {
         Layout.fillWidth: true
         TextField {
             id: callField
+            // F1-F12, ⌘ / Ctrl 1-0 and Esc work while typing here too, as on
+            // the page (Christoph Steinert DM5HF: a pile-up from the Log tab;
+            // roadmap 90); letters, digits and Space still type.
+            Keys.onPressed: (event) => { if (Engine.operateKey(event.key, event.modifiers, event.isAutoRepeat)) event.accepted = true }
             objectName: "logCall"
             Accessible.name: qsTr("Callsign")
             Layout.fillWidth: true
@@ -252,6 +256,7 @@ ColumnLayout {
         Label { text: qsTr("Sent"); color: Theme.textDim; font.pixelSize: Theme.px(15) }
         TextField {
             id: rstSent
+            Keys.onPressed: (event) => { if (Engine.operateKey(event.key, event.modifiers, event.isAutoRepeat)) event.accepted = true }
             Accessible.name: qsTr("Report sent")
             property bool edited: false
             Layout.preferredWidth: 64
@@ -263,6 +268,7 @@ ColumnLayout {
         Label { text: qsTr("Rcvd"); color: Theme.textDim; font.pixelSize: Theme.px(15) }
         TextField {
             id: rstRcvd
+            Keys.onPressed: (event) => { if (Engine.operateKey(event.key, event.modifiers, event.isAutoRepeat)) event.accepted = true }
             Accessible.name: qsTr("Report received")
             property bool edited: false
             Layout.preferredWidth: 64
@@ -293,6 +299,7 @@ ColumnLayout {
         Layout.fillWidth: true
         TextField {
             id: comment
+            Keys.onPressed: (event) => { if (Engine.operateKey(event.key, event.modifiers, event.isAutoRepeat)) event.accepted = true }
             Accessible.name: qsTr("Comment")
             Layout.fillWidth: true
             Layout.horizontalStretchFactor: 2
@@ -302,6 +309,7 @@ ColumnLayout {
         }
         TextField {
             id: nameField
+            Keys.onPressed: (event) => { if (Engine.operateKey(event.key, event.modifiers, event.isAutoRepeat)) event.accepted = true }
             objectName: "logName"
             Accessible.name: qsTr("Name")
             property bool edited: false
@@ -345,6 +353,7 @@ ColumnLayout {
     QtObject { id: theirSig; property string value: "" }
     TextField {
         id: theirRef
+        Keys.onPressed: (event) => { if (Engine.operateKey(event.key, event.modifiers, event.isAutoRepeat)) event.accepted = true }
         objectName: "logTheirRef"
         Accessible.name: qsTr("Their reference")
         visible: theirSig.value.length > 0
@@ -377,6 +386,7 @@ ColumnLayout {
         visible: Engine.mySig.length > 0
         TextField {
             id: myRef
+            Keys.onPressed: (event) => { if (Engine.operateKey(event.key, event.modifiers, event.isAutoRepeat)) event.accepted = true }
             objectName: "logMyRef"
             Accessible.name: qsTr("My reference")
             Layout.fillWidth: true
@@ -1027,6 +1037,7 @@ ColumnLayout {
             }
             TextField {
                 id: remark
+                Keys.onPressed: (event) => { if (Engine.operateKey(event.key, event.modifiers, event.isAutoRepeat)) event.accepted = true }
                 objectName: "logSpotRemark"
                 Accessible.name: qsTr("Spot remark")
                 Layout.fillWidth: true
@@ -1124,6 +1135,7 @@ ColumnLayout {
             }
             TextField {
                 id: potaComment
+                Keys.onPressed: (event) => { if (Engine.operateKey(event.key, event.modifiers, event.isAutoRepeat)) event.accepted = true }
                 objectName: "logSelfSpotComment"
                 Accessible.name: qsTr("Spot comment")
                 Layout.fillWidth: true

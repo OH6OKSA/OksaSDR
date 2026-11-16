@@ -2498,7 +2498,9 @@ them as it holds PTT and TUNE.
 Studio running on the Mac, give the knob and keys key combinations there,
 and the dial drives the app through the keys above: the knob ← and →
 (tuning), the keys for example F1, F2 and F3 (the voice keyer), Esc
-(stop), T (TUNE), A (the ATU) and Space (PTT). If a key sends Space only
+(stop), T (TUNE), A (the ATU) and Space (PTT). F1–F12 and Esc from a
+Mac's keyboard or Ulanzi Studio work since build 182 (before, the Mac
+handed them to the app in a form it did not read). If a key sends Space only
 as a short press, choose **Tap on / off** under PTT on the TX tab: the
 first press keys, the next one unkeys. On an iPad or
 iPhone Ulanzi Studio does not run, and the dial's knob stays the
@@ -2507,6 +2509,11 @@ device's volume.
 Sliders, switches and lists do not keep the keyboard: after one is used
 (on a tablet's side panel or in the drawer), Space and the arrows work on
 the page again at once. A text field keeps it until you tap outside it.
+In the Log tab's fields (the call, reports, comment, name, the parks and
+the spot comments) F1–F12, ⌘1–⌘0 and Esc still do what they do on the
+page, so a pile-up can be worked from the log (asked by Christoph
+Steinert DM5HF); letters, digits and Space type there, as do T and A. The
+CW tab's text and the Digi tab's *Text to send* take them the same way.
 
 **Apple Pencil** drags tune ten times finer, for zero-beating.
 

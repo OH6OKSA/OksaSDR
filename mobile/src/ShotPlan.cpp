@@ -1379,6 +1379,20 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             // <Cmd-0>: the digit with Control, as Qt hands an iPad's ⌘ on
             // (Ctrl on Android and a PC).
             // <Shift-T>: the letter with Shift.
+            // <Mac-F1> ... <Mac-F12>: the F-key as an iPad app on a Mac gets
+            // it, an unknown key with AppKit's character (0xF704...).
+            static const QRegularExpression macF(QStringLiteral("^<Mac-F([1-9]|1[0-2])>$"));
+            if (const QRegularExpressionMatch m = macF.match(keys); m.hasMatch()) {
+                const QString text(QChar(char16_t(0xF704 + m.captured(1).toInt() - 1)));
+                QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyPress, Qt::Key_unknown, Qt::NoModifier, text);
+                QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyRelease, Qt::Key_unknown, Qt::NoModifier, text);
+                QWindowSystemInterface::flushWindowSystemEvents();
+                QQuickItem* item = window->activeFocusItem();
+                qInfo().noquote() << "shot-plan: key" << keys << "->" << (item ? QString::fromLatin1(item->metaObject()->className()) : QStringLiteral("none"))
+                                  << (item ? item->property("text").toString() : QString());
+                *delayMs = 500;
+                return;
+            }
             static const QRegularExpression named(QStringLiteral("^<(F([1-9]|1[0-2])|Esc|Enter|Cmd-([0-9])|Shift-([A-Z]))>$"));
             if (const QRegularExpressionMatch m = named.match(keys); m.hasMatch()) {
                 const bool cmd = !m.captured(3).isEmpty();

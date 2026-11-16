@@ -1726,6 +1726,11 @@ public:
     double macroRepeatDueAt() const { return m_repeatDueAt; }
     // Ends a running repeat (the switch stays as it is).
     Q_INVOKABLE void cancelMacroRepeat(const QString& reason);
+    // F1-F12 (⌘ / Ctrl with 1-9 and 0 as F1-F10) and Esc as the operating
+    // page takes them, for the page and the Log tab's fields alike: the CW
+    // memories in CW, the Digi macros in RTTY / PSK (F1-F8), the voice keyer
+    // in voice modes; Esc stops them all. False for any other key.
+    Q_INVOKABLE bool operateKey(int key, int modifiers, bool autoRepeat = false);
     // Radio RF power setting (Flex rfpower, 0..100).
     int rfPower() const;
     void setRfPower(int power);

@@ -95,6 +95,7 @@ class MobileEngine;
 //                           Mac's UIKit sends it), then log the focused field's text;
 //                           <F1>..<F12>, <Esc>, <Enter>, <Cmd-0>..<Cmd-9>, <Shift-A>..<Shift-Z>
 //                           alone: that key
+//                           <Mac-F1>..<Mac-F12>: an F-key as a Mac hands it to an iPad app
 //   focussweep              give the keyboard to every control in view that takes it
 //                           on a press (no press): each must hand it back to the page
 //   focusaudit FX,FY        tap every text field in view, then FX,FY: each must

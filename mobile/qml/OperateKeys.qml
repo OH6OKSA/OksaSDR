@@ -23,16 +23,6 @@ Item {
 
     CwKeyboardPaddles { id: paddles }
 
-    // F1-F12, or ⌘ / Ctrl with 1-9 and 0 as F1-F10: 0-11, else -1.
-    function memoryKey(event) {
-        if (event.key >= Qt.Key_F1 && event.key <= Qt.Key_F12) {
-            return event.key - Qt.Key_F1
-        }
-        if ((event.modifiers & Qt.ControlModifier) && event.key >= Qt.Key_0 && event.key <= Qt.Key_9) {
-            return event.key === Qt.Key_0 ? 9 : event.key - Qt.Key_1
-        }
-        return -1
-    }
 
     function press(event) {
         // Any key ends a repeating macro (an F-key then starts its own).
@@ -45,12 +35,9 @@ Item {
         }
         // CW memories M1-M12 and abort, as the desktop's CWX F-keys and Esc:
         // CW modes send the CW memories, RTTY and PSK the Digi tab's macros
-        // (F1-F8, as fldigi's F-keys), voice modes the voice keyer.
-        const memory = keys.memoryKey(event)
-        if (memory >= 0) {
-            if (Engine.cwMode) Engine.sendCwMemory(memory)
-            else if (Engine.textModeActive) { if (memory < 8) Engine.sendTextMacro(memory) }
-            else Engine.dvkPlay(memory + 1)
+        // (F1-F8, as fldigi's F-keys), voice modes the voice keyer; Esc
+        // stops them (the Log tab's fields take the same, roadmap 90).
+        if (Engine.operateKey(event.key, event.modifiers, event.isAutoRepeat)) {
             return true
         }
         const mult = (event.modifiers & Qt.ShiftModifier) ? 10 : 1
@@ -73,7 +60,6 @@ Item {
             }
             break
         case Qt.Key_A: if (!event.isAutoRepeat) Engine.atuTune(); break
-        case Qt.Key_Escape: Engine.stopCwx(); Engine.dvkStop(); Engine.stopTextTx(); break
         case Qt.Key_Space:
             // iOS: GameController keys Space itself (keyboardOnPage).
             if (Engine.nativeKeyboardSides) break

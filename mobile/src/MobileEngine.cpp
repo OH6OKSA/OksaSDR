@@ -391,7 +391,16 @@ public:
         case 0xF72B: mapped = Qt::Key_End; break;
         case 0xF72C: mapped = Qt::Key_PageUp; break;
         case 0xF72D: mapped = Qt::Key_PageDown; break;
-        default: return false;
+        // Esc as its character, and F1-F12 as AppKit's (0xF704...): an F-key
+        // from a Mac's keyboard or Ulanzi Studio did nothing on the page and
+        // was typed into a text field (Christoph Steinert DM5HF, build 181).
+        case 0x1B: mapped = Qt::Key_Escape; break;
+        default:
+            if (code >= 0xF704 && code <= 0xF70F) {
+                mapped = Qt::Key_F1 + (code - 0xF704);
+                break;
+            }
+            return false;
         }
         QKeyEvent sent(event->type(), mapped, key->modifiers(), QString(), key->isAutoRepeat());
         QCoreApplication::sendEvent(receiver, &sent);
@@ -9916,6 +9925,45 @@ double MobileEngine::panCenterMhz() const
 double MobileEngine::panBandwidthMhz() const
 {
     return m_pan ? m_pan->bandwidthMhz() : 0.0;
+}
+
+bool MobileEngine::operateKey(int key, int modifiers, bool autoRepeat)
+{
+    int memory = -1;
+    if (key >= Qt::Key_F1 && key <= Qt::Key_F12) {
+        memory = key - Qt::Key_F1;
+    } else if ((modifiers & Qt::ControlModifier) && key >= Qt::Key_0 && key <= Qt::Key_9) {
+        memory = key == Qt::Key_0 ? 9 : key - Qt::Key_1;
+    }
+    if (memory < 0 && key != Qt::Key_Escape) {
+        return false;
+    }
+    // A repeating macro ends at any key (an F-key then starts its own).
+    if (!autoRepeat) {
+        cancelMacroRepeat(QStringLiteral("a key"));
+        // Which key came and where it goes (a Mac's keys from Ulanzi Studio:
+        // whether they arrive at all).
+        const QObject* focus = QGuiApplication::focusObject();
+        qCInfo(lcMobile).noquote() << "key" << (key == Qt::Key_Escape ? QStringLiteral("Esc") : QStringLiteral("F%1").arg(memory + 1))
+                                   << (key == Qt::Key_Escape ? QStringLiteral("stops the keyers")
+                                       : cwMode() ? QStringLiteral("-> CW memory")
+                                       : textModeActive() ? QStringLiteral("-> Digi macro") : QStringLiteral("-> voice keyer"))
+                                   << "from" << (focus ? QString::fromLatin1(focus->metaObject()->className()) : QStringLiteral("none"));
+    }
+    if (key == Qt::Key_Escape) {
+        stopCwx();
+        dvkStop();
+        stopTextTx();
+    } else if (cwMode()) {
+        sendCwMemory(memory);
+    } else if (textModeActive()) {
+        if (memory < 8) {
+            sendTextMacro(memory);
+        }
+    } else {
+        dvkPlay(memory + 1);
+    }
+    return true;
 }
 
 void MobileEngine::holdBackgroundTime()
