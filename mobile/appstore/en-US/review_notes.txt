@@ -1,0 +1,21 @@
+OksaSDR is a control app for FlexRadio software-defined amateur radio transceivers (FLEX-6000, FLEX-8000 and Aurora series). It needs such a radio, which we do not expect the review team to have.
+
+HOW TO REVIEW WITHOUT A RADIO
+1. Open the app. The Connect page lists "AetherSDR Demo" under "On this network" (a built-in demo radio, shown by default; the "Demo" switch on that heading line hides or shows it).
+2. Tap "AetherSDR Demo" (or its "Connect ›"). The app connects to the built-in receive-only demo radio.
+3. The panadapter and waterfall, tuning by touch, the band and mode buttons, the filters and the Controls drawer (DSP, Audio, View, Log and the other tabs) work with it. Transmitting is not possible with the demo radio.
+
+A video of the app operating a real FLEX-6600M (receive, SSB, CW and digital modes): VIDEO_URL
+
+PERMISSIONS AND BACKGROUND MODE
+- Background audio: the app goes on playing the radio's receive audio while the screen is locked or another app is in front, as a radio does.
+- Microphone: only to send the operator's voice to their own radio while they transmit (PTT).
+- Local network: to find and connect to the operator's radio on the local network.
+- Bluetooth: only to pair a Bluetooth MIDI controller the operator chooses.
+- Speech recognition: the voice button on the Log tab recognises a spelled callsign on the device.
+- Camera: the app does not use the camera; the audio library it includes (Qt Multimedia) links camera functions, so the purpose string is required.
+
+SIGN-IN
+SmartLink (Connect page) is FlexRadio's own account service for reaching the operator's radio over the internet. It needs a FlexRadio account with a registered radio, so it cannot be tried without one. The app has no account of its own and needs no sign-in for the demo radio or a radio on the local network.
+
+The app is free, has no in-app purchases, advertising or analytics, and its source code is public under the GPLv3: https://github.com/OH6OKSA/OksaSDR

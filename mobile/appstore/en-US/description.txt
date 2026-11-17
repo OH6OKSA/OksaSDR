@@ -1,0 +1,35 @@
+OksaSDR turns an iPhone, iPad or Apple silicon Mac into a control head for FlexRadio FLEX-6000, FLEX-8000 and Aurora software-defined transceivers. Operate on your home network, from anywhere over SmartLink, or through your own VPN.
+
+RECEIVE AND TUNE
+• Panadapter and waterfall in 2D or 3D, tuned by touch, a keyboard or a MIDI controller
+• Several slices and panadapters, each band on a panadapter of its own
+• Modes, filters, AGC, noise reduction, notch filters, split, RIT and XIT
+• Band stack, memories, DX cluster spots on the display
+• Meters as analog dials, a bar or two bars
+
+TRANSMIT
+• Voice with the device's microphone or a Bluetooth headset, PTT on the screen or the Space bar
+• CW with a keyer, memories and a decoder
+• A voice keyer with your recorded messages
+• TUNE, the radio's ATU and a transmit lock
+
+DIGITAL MODES IN THE APP
+• FT8 and FT4 decoding and QSOs, on several slices at once, with PSK Reporter
+• RTTY and PSK
+• RADE digital voice with FreeDV Reporter
+No computer, DAX or WSJT-X needed.
+
+LOGGING
+• A log on the device with QRZ.com lookups, ADIF import and export, and POTA
+• Each QSO also to Wavelog, Cloudlog, the QRZ.com Logbook, Logger32 or a logging program on your network
+
+FOR THE STATION
+• Radio Setup for the radio's own settings, TX band settings and accessories
+• 4O3A Power Genius XL, Tuner Genius XL and Antenna Genius, Elecraft KPA1500 and RF-KIT RF2K-S amplifiers, MIDI controllers
+• Big buttons: a screen of a few large controls for the car or for gloves
+
+Requires a FlexRadio FLEX-6000, FLEX-8000 or Aurora series transceiver, and an amateur radio licence to transmit. A built-in receive-only demo radio lets you try the app without one.
+
+OksaSDR is an unofficial community app built on the open-source AetherSDR engine. It is not published or endorsed by FlexRadio or by the AetherSDR project. FlexRadio, SmartLink, SmartSDR and Aurora are trademarks of FlexRadio, Inc.
+
+Source code (GPLv3): https://github.com/OH6OKSA/OksaSDR

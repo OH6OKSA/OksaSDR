@@ -1,0 +1,1 @@
+ham radio,amateur radio,SDR,transceiver,panadapter,waterfall,FT8,FT4,CW,RTTY,PSK,digital voice,POTA

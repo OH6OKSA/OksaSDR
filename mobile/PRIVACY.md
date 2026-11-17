@@ -3,7 +3,7 @@
 OksaSDR is a FlexRadio client for iPad, iPhone, Mac and Android, built on the
 [AetherSDR](https://github.com/aethersdr/AetherSDR) engine. It is
 maintained by Niko Oksa (OH6OKSA). This policy covers the app distributed
-through TestFlight and as the Android beta from
+through the App Store, TestFlight and as the Android beta from
 [this source](https://github.com/OH6OKSA/OksaSDR/tree/mobile/oksasdr).
 
 ## Summary
@@ -34,7 +34,7 @@ these services:
   FlexRadio account sign-in and the connection to your radio go through
   FlexRadio's SmartLink service, under FlexRadio's terms. With several
   accounts signed in, only the active one talks to SmartLink at a time.
-- **QRZ.com**, if you save a QRZ.com account on the Log tab: the callsign
+- **QRZ.com**, if you save a QRZ.com account in Radio Setup › Logging: the callsign
   you type is looked up there with your account.
 - **A DX cluster**, if you turn it on: the app connects to the cluster
   server you choose, signs in with your callsign and receives its spots.
@@ -72,29 +72,33 @@ these services:
   callsigns and SNR of the stations RADE hears are sent to qso.freedv.org
   and shown publicly there, as FreeDV does.
 - **Wavelog or Cloudlog**, only if you enter your logbook's address and API
-  key on the Log tab: each QSO you log is sent to that logbook (your own
+  key in Radio Setup › Logging: each QSO you log is sent to that logbook (your own
   server, or the one you use) with its ADIF fields. QSOs that could not be
   sent wait on the device until they can. With *Worked before from the
   logbook* on, the app also reads your QSOs back from that Wavelog
   logbook (its station locations and each QSO's call, band, mode, date,
   time and CQ zone) and keeps them on the device for worked-before;
   turning it off deletes them from the device.
-- **QRZ.com Logbook**, only if you enter your logbook's API key on the Log
-  tab: each QSO you log is sent to your QRZ.com logbook (logbook.qrz.com)
+- **QRZ.com Logbook**, only if you enter your logbook's API key in Radio
+  Setup › Logging: each QSO you log is sent to your QRZ.com logbook (logbook.qrz.com)
   with its ADIF fields, and with *Worked before from the logbook* on, the
   app reads your logbook's QSOs back from it (each QSO's call, band, mode,
   date, time and CQ zone are kept on the device for worked-before).
   *Remove* deletes the key and those QSOs from the device.
-- **A shared ADIF file**, only if you choose one on the Log tab: the app
+- **A shared ADIF file**, only if you choose one in Radio Setup › Logging: the app
   reads the file you picked (in iCloud Drive, Google Drive, OneDrive or
   another storage you chose; it goes wherever that storage sends it) and
   adds each QSO you log to its end. The device keeps the system's
   permission to reach that one file and a copy of each QSO's call, band,
   mode, date, time and CQ zone from it; *Remove* deletes both.
-- **Logger32**, only if you enter your PC's address on the Log tab: each QSO
+- **Logger32**, only if you enter your PC's address in Radio Setup › Logging: each QSO
   you log is sent with its ADIF fields to Logger32 on that PC (your own
   computer, on your network or through your VPN). QSOs that could not be
   sent wait on the device until they can.
+- **A logging program on your network** (WSJT-X UDP), only if you enter its
+  computer's address in Radio Setup › Logging: each QSO you log is sent
+  over UDP, as WSJT-X sends one, to that computer (your own, on your network
+  or through your VPN), for a logger such as RUMlogNG or Log4OM.
 - **An amplifier** (RF-KIT RF2K-S), only if you enter its address in Radio
   Setup › Amp: while the app is on screen and connected to a radio it reads
   the amplifier's state and meters from that address (your own device, on
@@ -117,7 +121,8 @@ these services:
   asks for is kept only in this device's secure store (iOS Keychain,
   Android Keystore, the desktop's keyring on Linux) once the device has
   accepted it.
-- **Developer link** (Log tab), off unless turned on: for the developer's
+- **Developer link** (hidden on the Log page, under a press and hold on its
+  title), off unless turned on: for the developer's
   own devices; it sends the app's log, and screenshots when asked, to the
   address set there.
 
