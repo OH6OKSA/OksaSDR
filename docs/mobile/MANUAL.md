@@ -2405,6 +2405,8 @@ radio.
   Cloudlog, the QRZ.com Logbook, the shared ADIF file, Logger32 and the
   logging program, as described under [Controls › Log](#8-controls)). The Log tab's
   **Logbooks…** opens this tab.
+
+  ![Setup › Logging](manual/setup-logging.jpg)
 - **MIDI** — not a setting of the radio: a MIDI controller as a VFO knob
   and buttons on this device, such as Lynovation's **CTR2-MIDI** (asked by
   Hanno Vogels DK3HV and Michael Walker). On an iPhone, iPad, Mac and,

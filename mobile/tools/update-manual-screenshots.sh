@@ -51,9 +51,10 @@ for t in "${tabs[@]}"; do phone_shots+=("tab-$t"); done
 modes_shots=(mode-usb mode-cw mode-am mode-fm fm-tx tx-lock mode-rtty rtty-panel tab-rtty digi-operating mode-psk)
 amp_shots=(tab-amp amp-controls amp-confirm amp-tune setup-amp setup-txband setup-rx setup-usb meter-amp)
 midi_shots=(setup-midi)
+logging_shots=(setup-logging)
 kpa_shots=(tab-kpa kpa-controls)
 all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${phone_shots[@]}" phone-landscape bandchooser
-           "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" "${kpa_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
+           "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" "${logging_shots[@]}" "${kpa_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
     printf '%s\n' "${all_shots[@]}" | sort -u
     exit 0
@@ -362,6 +363,15 @@ if want "${midi_shots[@]}"; then
     fi
 fi
 
+# Setup › Logging (roadmap 95): the logbooks and accounts the Log tab had.
+# The logbook address shown is the manual's example, not this machine's own
+# (typed over, never saved: the field is saved only by its Save).
+if want "${logging_shots[@]}"; then
+    bs="$(printf '\\b%.0s' $(seq 60))"
+    printf 'ready\npopup radioSetup\nwait 800\nclick setupTab10\nwait 1500\ntapname onlineLogUrl\nwait 500\nkeys %s\nkeys https://log.example.com/index.php\nwait 800\nshot setup-logging\nkeys <Esc>\n' "$bs" \
+        | plan logging 440x956 "${src[@]}"
+fi
+
 # The Amp tab with a 4O3A Power Genius XL and Tuner Genius XL: the radio's
 # device status stood in for by the render tool (radiostatus), the devices'
 # direct links by genius-mock.py on this machine. Nothing reaches a device
@@ -483,6 +493,7 @@ jpg setup-txband 418x700+11+40 330x
 jpg setup-rx 418x825+11+40 330x
 jpg setup-usb 418x700+11+40 330x
 jpg setup-midi 418x825+11+40 330x
+jpg setup-logging 418x825+11+40 330x
 jpg amp-controls 440x520+0+436
 jpg amp-confirm 440x420+0+395
 jpg amp-tune 440x432+0+383
