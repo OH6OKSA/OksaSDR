@@ -983,7 +983,11 @@ Power meter. Two fit side by side, four make 2 × 2.
   other slices stay where they were. A slice left on another band than its
   panadapter anyway (tuned there by a drag or the knob, or no panadapter
   free) has an orange outline on its chip; the FTx tab says so while it
-  decodes. Tune it back, or give that band a panadapter (**+ Pan**).
+  decodes. Tune it back, or give that band a panadapter (**+ Pan**). Only
+  the panadapter on the screen streams at full width; the others are sent
+  narrow while hidden (their slices go on receiving and decoding), so
+  several bands fit a slow link, such as a mobile network to a remote
+  station.
 - Closing the transmit slice hands transmit to the slice that stays, so PTT
   keeps working.
 
@@ -1280,8 +1284,9 @@ seven.
   opens a new notch in the middle of the passband to set and *Add*; see
   [Panadapter and waterfall](#5-panadapter-and-waterfall)).
 - **Audio** — **Receive audio**: *Auto* uses Opus (compressed, made for
-  the internet) over SmartLink or when the radio is reached through a VPN,
-  and uncompressed audio on the local network; *Opus* or *Uncompressed* fix
+  the internet) over SmartLink, through a VPN or when the radio is on
+  another network than this device (a router's VPN to a remote station
+  among them), and uncompressed audio only on the radio's own network; *Opus* or *Uncompressed* fix
   it. It shows what the current connection uses; a change applies from the
   next connection. **Audio buffer**: *Low latency* (100 ms), *Normal*
   (200 ms, the default) or *Smooth* (400 ms) — a longer buffer evens out a
@@ -1581,7 +1586,14 @@ seven.
   you hear. **Share the log
   (ADIF)** opens the share sheet with the whole log as an `.adi` file: mail
   it, save it to Files or Drive, AirDrop it, or open it in your logbook
-  program or TQSL for LoTW. **Import contacts (ADIF)** adds the contacts of
+  program or TQSL for LoTW. Under the recent contacts a line says where
+  each QSO also goes (*Each QSO also to: QRZ.com Logbook, Wavelog /
+  Cloudlog*), and **Logbooks…** opens **Setup › Logging**, where the rest of
+  this section lives: the ADIF import, the station and the QRZ.com
+  account, Wavelog / Cloudlog, the QRZ.com Logbook, the shared ADIF file,
+  Logger32 and the logging program. They are set once, so they moved out
+  of the Log tab (the user's request, build 183).
+  **Import contacts (ADIF)** adds the contacts of
   an ADIF file (from another logbook, or another device's OksaSDR log) to
   this log, so worked-before colours and New call count them too;
   those already in the log (same call, date, time, band and mode) are
@@ -1693,7 +1705,12 @@ seven.
   |---|---|
   | ![FTx](manual/tab-digi.jpg) | ![Decodes](manual/digi-decodes.jpg) |
 
-  **Decode** turns decoding on (*FT8* or *FT4*); a band button makes the
+  **Decode** turns decoding on; *FT8* or *FT4* is chosen per slice, for the
+  active one, so one slice can decode FT8 and another FT4 at once (FT8 on
+  7.074 on slice A and FT4 on 7.0475 on slice B): a slice on a mode's dial
+  frequency starts in that mode, an FT4 decode shows its time with the
+  seconds (as WSJT-X), and transmitting, the slot bar and the log go by the
+  TX slice's mode. A band button makes the
   active slice the TX slice, tunes it to the mode's dial frequency in DIGU,
   starts decoding and zooms the display to the 4 kHz audio band (again with
   *Zoom*). The bar shows where in the 15 s (FT4: 7.5 s) slot you are.
@@ -1709,7 +1726,8 @@ seven.
   scrolls anyway. (Michael Whaley's request.)
 
   **Every slice in DIGU / DIGL decodes at once** (say 40 m on slice A and
-  20 m on slice B), each on a DAX channel of its own so the other slices'
+  20 m on slice B, each band on a panadapter of its own: see *Slices on
+  several bands*), each on a DAX channel of its own so the other slices'
   audio stays out: a slice without one, or one sharing its channel with
   another slice, gets a free channel while it decodes and its old one back
   after. The decodes come at the end of each slot, newest first: slice
@@ -2381,6 +2399,12 @@ radio.
 
   ![Radio Setup › USB](manual/setup-usb.jpg)
 
+- **Logging** — not a setting of the radio: where this device logs each
+  QSO besides its own log, the accounts for it, and contacts to import
+  (the ADIF import, the station and the QRZ.com account, Wavelog /
+  Cloudlog, the QRZ.com Logbook, the shared ADIF file, Logger32 and the
+  logging program, as described under [Controls › Log](#8-controls)). The Log tab's
+  **Logbooks…** opens this tab.
 - **MIDI** — not a setting of the radio: a MIDI controller as a VFO knob
   and buttons on this device, such as Lynovation's **CTR2-MIDI** (asked by
   Hanno Vogels DK3HV and Michael Walker). On an iPhone, iPad, Mac and,
