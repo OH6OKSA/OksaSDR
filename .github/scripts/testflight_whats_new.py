@@ -42,21 +42,42 @@ def token() -> str:
 
 
 def call(method: str, path: str, body=None, query=None):
+    """One App Store Connect request. A server error (5xx) or a dropped
+    connection is tried again, up to 6 times over about 2.5 minutes: on
+    2026-11-17 the API answered HTTP 500 to every second request for hours,
+    and build 184's notes failed twice on the first GET. A write retried after
+    such an error may meet its own earlier success: a 409 on a retried POST
+    counts as done."""
     url = API + path
     if query:
         url += "?" + urllib.parse.urlencode(query)
     data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(url, data=data, method=method, headers={
-        "Authorization": "Bearer " + token(),
-        "Content-Type": "application/json",
-    })
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            raw = resp.read()
-            return json.loads(raw) if raw else {}
-    except urllib.error.HTTPError as err:
-        detail = err.read().decode(errors="replace")[:500]
-        raise RuntimeError(f"{method} {path}: HTTP {err.code}: {detail}") from None
+    for attempt in range(6):
+        req = urllib.request.Request(url, data=data, method=method, headers={
+            "Authorization": "Bearer " + token(),
+            "Content-Type": "application/json",
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                raw = resp.read()
+                return json.loads(raw) if raw else {}
+        except urllib.error.HTTPError as err:
+            detail = err.read().decode(errors="replace")[:500]
+            if err.code == 409 and method == "POST" and attempt > 0:
+                # The first try went through before its answer was lost.
+                print(f"{method} {path}: HTTP 409 on a retry: taken as done", file=sys.stderr)
+                return {}
+            if err.code >= 500 and attempt < 5:
+                print(f"{method} {path}: HTTP {err.code}, trying again", file=sys.stderr)
+                time.sleep(10 + 10 * attempt)
+                continue
+            raise RuntimeError(f"{method} {path}: HTTP {err.code}: {detail}") from None
+        except (urllib.error.URLError, TimeoutError) as err:
+            if attempt < 5:
+                print(f"{method} {path}: {err}, trying again", file=sys.stderr)
+                time.sleep(10 + 10 * attempt)
+                continue
+            raise RuntimeError(f"{method} {path}: {err}") from None
 
 
 def main() -> int:
