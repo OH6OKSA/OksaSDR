@@ -169,7 +169,19 @@ def distribute(app, build, build_number: str, deadline: float) -> bool:
         print(f"build {build_number} is {state}; waiting to hand it to the testers")
         time.sleep(POLL_SECONDS)
 
-    groups = call("GET", f"/apps/{app['id']}/betaGroups", query={"limit": "50"})["data"]
+    # An app with TestFlight testers always has a group; an empty list is
+    # App Store Connect failing (2026-11-17 it answered 200 with no groups,
+    # and build 184 went to no one while the run passed): ask again, then fail.
+    for attempt in range(6):
+        groups = call("GET", f"/apps/{app['id']}/betaGroups", query={"limit": "50"})["data"]
+        if groups:
+            break
+        if attempt == 5:
+            print("App Store Connect listed no beta groups: the build was not handed to testers",
+                  file=sys.stderr)
+            return False
+        print("App Store Connect listed no beta groups; asking again", file=sys.stderr)
+        time.sleep(15 + 15 * attempt)
     wanted = [n.strip() for n in os.environ.get("TESTFLIGHT_GROUPS", "").split(",") if n.strip()]
     if wanted:
         chosen = [g for g in groups if g["attributes"].get("name") in wanted]
