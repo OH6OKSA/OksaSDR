@@ -1,4 +1,5 @@
 #include "ThemeManager.h"
+#include "SettingsPaths.h"
 #include "AppSettings.h"
 #include "LogManager.h"
 
@@ -413,8 +414,7 @@ void ThemeManager::scanAvailableThemes()
     // editor creates it on first save). Built-in names are reserved: a colliding
     // user file is skipped with a warning so a stale copy can't shadow the bundled
     // theme; users Save As under a new name.
-    const QString userDir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
-                                + QStringLiteral("/AetherSDR/themes");
+    const QString userDir = SettingsPaths::configDir() + QStringLiteral("/themes");
     QDir d(userDir);
     if (d.exists()) {
         const auto entries = d.entryList({"*.json"}, QDir::Files);
@@ -1148,9 +1148,7 @@ bool ThemeManager::saveCurrentThemeAs(const QString& newThemeName)
     // Mirror scanAvailableThemes — GenericConfigLocation + "/AetherSDR"
     // keeps the saved theme alongside the existing user-dir layout
     // (singular path, not the double-nested AppConfigLocation form).
-    const QString userDir = QStandardPaths::writableLocation(
-                                QStandardPaths::GenericConfigLocation)
-                            + QStringLiteral("/AetherSDR/themes");
+    const QString userDir = SettingsPaths::configDir() + QStringLiteral("/themes");
     QDir().mkpath(userDir);
     const QString path = userDir + QLatin1Char('/')
                        + name + QStringLiteral(".json");
@@ -1278,9 +1276,7 @@ QString ThemeManager::importThemeFromFile(const QString& filePath,
                                    "Rename the file's \"name\" field or "
                                    "rename the file itself.").arg(name));
 
-    const QString userDir = QStandardPaths::writableLocation(
-                                QStandardPaths::GenericConfigLocation)
-                            + QStringLiteral("/AetherSDR/themes");
+    const QString userDir = SettingsPaths::configDir() + QStringLiteral("/themes");
     QDir().mkpath(userDir);
     const QString destPath = userDir + QLatin1Char('/')
                            + name + QStringLiteral(".json");

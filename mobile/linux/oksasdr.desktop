@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=OksaSDR
+GenericName=FlexRadio client
+Comment=Operate a FlexRadio: receive, transmit, FT8, CW, digital modes and logging in one app
+Exec=aether-mobile
+Icon=oksasdr
+Terminal=false
+Categories=Network;HamRadio;
+Keywords=FlexRadio;SDR;ham;amateur radio;FT8;CW;SmartLink;
+StartupWMClass=AetherSDR-Mobile

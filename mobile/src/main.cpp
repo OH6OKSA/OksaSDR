@@ -40,6 +40,9 @@ extern "C" {
 #include <QMetaEnum>
 #include <QKeyEvent>
 #include <QQuickWindow>
+#include <QSocketNotifier>
+#include <QIcon>
+#include <QScreen>
 #include <QQuickItem>
 #include <QTimer>
 #include <QRawFont>
@@ -55,6 +58,10 @@ extern "C" {
 #include <QWheelEvent>
 
 #include <algorithm>
+#if defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
+#include <csignal>
+#include <unistd.h>
+#endif
 #include <cmath>
 #include <cstring>
 #include <functional>
@@ -163,8 +170,118 @@ static void addAndroidSymbolFallbacks()
 }
 #endif
 
+#if defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
+// Ctrl+C in a terminal, or SIGTERM when the session ends: the app quits as
+// from its window, so what it keeps on quitting (the window's size and
+// place, a clean goodbye to the radio) is kept (roadmap 91).
+static int g_quitPipe[2] = {-1, -1};
+
+static void quitOnSignal(int)
+{
+    const char c = 1;
+    (void)!::write(g_quitPipe[1], &c, 1);
+}
+
+static void installQuitSignals(QCoreApplication* app)
+{
+    if (::pipe(g_quitPipe) != 0) {
+        return;
+    }
+    auto* notifier = new QSocketNotifier(g_quitPipe[0], QSocketNotifier::Read, app);
+    QObject::connect(notifier, &QSocketNotifier::activated, app, [] {
+        char c = 0;
+        (void)!::read(g_quitPipe[0], &c, 1);
+        qInfo() << "quit signal: quitting";
+        QCoreApplication::quit();
+    });
+    struct sigaction action{};
+    action.sa_handler = quitOnSignal;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = SA_RESTART;
+    sigaction(SIGTERM, &action, nullptr);
+    sigaction(SIGINT, &action, nullptr);
+}
+#endif
+
+#if !defined(Q_OS_IOS) && !defined(Q_OS_ANDROID)
+// The desktop window (roadmap 91): its size and place as the operator left
+// them, else a first size that fits the screen; the layouts follow the
+// window's size as on a tablet in Split View. The place is the window
+// system's on Wayland.
+static void keepDesktopGeometry(QQuickWindow* window)
+{
+    const QString key = QStringLiteral("DesktopWindowGeometry");
+    const QStringList saved = AetherSDR::AppSettings::instance().value(key).toString().split(QLatin1Char(','));
+    QRect r;
+    if (saved.size() >= 4) {
+        r = QRect(saved.at(0).toInt(), saved.at(1).toInt(), saved.at(2).toInt(), saved.at(3).toInt());
+    }
+    if (QScreen* screen = window->screen()) {
+        const QRect area = screen->availableGeometry();
+        if (!r.isValid()) {
+            r = QRect(QPoint(), QSize(1366, 1024).boundedTo(area.size() * 0.9));
+            r.moveCenter(area.center());
+        }
+        r.setSize(r.size().boundedTo(screen->availableVirtualSize()));
+        if (!screen->availableVirtualGeometry().intersects(r)) {
+            r.moveCenter(area.center());
+        }
+    }
+    if (r.isValid()) {
+        window->resize(r.size());
+        window->setPosition(r.topLeft());
+    }
+    const bool maximize = saved.size() >= 5 && saved.at(4) == QLatin1String("max");
+    if (maximize) {
+        window->setVisibility(QWindow::Maximized);
+    }
+    qInfo().noquote() << QStringLiteral("desktop window: %1x%2 at %3,%4%5 (%6)")
+                             .arg(r.width()).arg(r.height()).arg(r.x()).arg(r.y())
+                             .arg(maximize ? QStringLiteral(", maximised") : QString(),
+                                  saved.size() >= 4 ? QStringLiteral("as left") : QStringLiteral("first start"));
+    // The size and place while not maximised, kept when the app quits.
+    auto normal = std::make_shared<QRect>(r);
+    const auto track = [window, normal] {
+        if (window->visibility() == QWindow::Windowed) {
+            *normal = QRect(window->position(), window->size());
+        }
+    };
+    QObject::connect(window, &QWindow::xChanged, window, track);
+    QObject::connect(window, &QWindow::yChanged, window, track);
+    QObject::connect(window, &QWindow::widthChanged, window, track);
+    QObject::connect(window, &QWindow::heightChanged, window, track);
+    QObject::connect(qApp, &QCoreApplication::aboutToQuit, window, [window, normal, key] {
+        if (!normal->isValid()) {
+            return;
+        }
+        const bool maximized = window->visibility() == QWindow::Maximized
+                               || window->visibility() == QWindow::FullScreen;
+        AetherSDR::AppSettings::instance().setValue(key,
+            QStringLiteral("%1,%2,%3,%4%5").arg(normal->x()).arg(normal->y()).arg(normal->width())
+                .arg(normal->height()).arg(maximized ? QStringLiteral(",max") : QString()));
+        AetherSDR::AppSettings::instance().save();
+        qInfo().noquote() << QStringLiteral("desktop window kept: %1x%2 at %3,%4%5")
+                                 .arg(normal->width()).arg(normal->height()).arg(normal->x()).arg(normal->y())
+                                 .arg(maximized ? QStringLiteral(", maximised") : QString());
+    });
+}
+#endif
+
 int main(int argc, char* argv[])
 {
+#if !defined(Q_OS_IOS) && !defined(Q_OS_ANDROID) && !defined(Q_OS_MACOS) && !defined(Q_OS_WIN)
+    // Linux: the core keeps its settings database, MIDI, spot and log files
+    // under one config directory, ~/.config/AetherSDR by default, which
+    // upstream AetherSDR uses too. On one computer the two would share a
+    // settings database and a GUI client ID, each taking the other's session
+    // on the radio, so OksaSDR keeps its own (roadmap 91).
+    if (qEnvironmentVariableIsEmpty("AETHER_SETTINGS_DIR")) {
+        const QString base = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
+        if (!base.isEmpty()) {
+            qputenv("AETHER_SETTINGS_DIR", QFile::encodeName(base + QStringLiteral("/OksaSDR")));
+        }
+    }
+#endif
     AetherSDR::QtAudioBackendGuard::applyAtStartup();
 
 #if !defined(Q_OS_IOS) && !defined(Q_OS_ANDROID) && !defined(Q_OS_MACOS)
@@ -186,6 +303,9 @@ int main(int argc, char* argv[])
         qputenv("QT_SCALE_FACTOR", QByteArray::number(narrowScale, 'f', 4));
     }
     QGuiApplication app(argc, argv);
+#if defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
+    installQuitSignals(&app);
+#endif
     // Before the GUI client ID is first read: settings restored from another
     // device's backup then get an ID of their own (two devices of one owner
     // took each other's session on the radio).
@@ -220,6 +340,12 @@ int main(int argc, char* argv[])
     QGuiApplication::setApplicationName(QStringLiteral("AetherSDR-Mobile"));
     QGuiApplication::setOrganizationName(QStringLiteral("AetherSDR"));
     QGuiApplication::setApplicationVersion(QStringLiteral(AETHERSDR_VERSION));
+#if !defined(Q_OS_IOS) && !defined(Q_OS_ANDROID) && !defined(Q_OS_MACOS)
+    // The Linux desktop (roadmap 91): the window's icon, and the entry
+    // oksasdr.desktop as the Wayland app ID, so the dock shows OksaSDR's.
+    QGuiApplication::setDesktopFileName(QStringLiteral("oksasdr"));
+    QGuiApplication::setWindowIcon(QIcon(QStringLiteral(":/oksasdr.png")));
+#endif
     qInfo().noquote() << QStringLiteral("OksaSDR %1 (build %2)")
                              .arg(QStringLiteral(AETHERSDR_VERSION), QStringLiteral(AETHER_MOBILE_BUILD_NUMBER));
 
@@ -728,6 +854,13 @@ int main(int argc, char* argv[])
             window->resize(wh.at(0).toInt(), wh.at(1).toInt());
         }
     }
+#if !defined(Q_OS_IOS) && !defined(Q_OS_ANDROID)
+    else if (!parser.isSet(shotPlanOption) && !qml.rootObjects().isEmpty()) {
+        if (auto* window = qobject_cast<QQuickWindow*>(qml.rootObjects().constFirst())) {
+            keepDesktopGeometry(window);
+        }
+    }
+#endif
 
     if (parser.isSet(demoOption)) {
         engine.connectToDemoWhenListed();

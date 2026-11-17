@@ -1,4 +1,5 @@
 #include "PotaClient.h"
+#include "SettingsPaths.h"
 #include "LogManager.h"
 #include "AppSettings.h"
 
@@ -42,8 +43,7 @@ PotaClient::~PotaClient()
 
 QString PotaClient::logFilePath() const
 {
-    return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
-           + "/AetherSDR/spothub/pota.log";
+    return SettingsPaths::configDir() + "/spothub/pota.log";
 }
 
 void PotaClient::startPolling(int intervalSec)

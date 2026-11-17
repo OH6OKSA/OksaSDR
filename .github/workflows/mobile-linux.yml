@@ -1,0 +1,286 @@
+name: Mobile Linux
+
+# Builds OksaSDR for the Linux desktop as an AppImage (x86_64) from the same
+# code as the iOS and Android apps (roadmap 91) and uploads it as a run
+# artifact. Runs on mobile/** and linux/** branches when something that goes
+# into the app changes, and on demand. Built on Ubuntu 22.04, so it runs on
+# Ubuntu 22.04 / Linux Mint 21 (glibc 2.35) and newer. Packaged as upstream's
+# appimage.yml packages AetherSDR: Qt 6.12.0 from aqt, qtkeychain built by
+# scripts/setup/setup-qtkeychain.sh (secrets in the desktop's Secret
+# Service), linuxdeploy with its Qt plugin, the Wayland and X11 platform
+# plugins; and for logging by voice libvosk and the small English model.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['mobile/**', 'linux/**']
+    paths:
+      - 'src/**'
+      - 'resources/**'
+      - 'third_party/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - 'scripts/setup/setup-qtkeychain.sh'
+      - 'mobile/CMakeLists.txt'
+      - 'mobile/src/**'
+      - 'mobile/qml/**'
+      - 'mobile/shaders/**'
+      - 'mobile/fonts/**'
+      - 'mobile/linux/**'
+      - '.github/workflows/mobile-linux.yml'
+
+permissions:
+  contents: read
+
+# Same Qt pin as cmake/qt-pin.env, mobile-ios.yml and mobile-android.yml.
+env:
+  QT_VERSION: '6.12.0'
+  QT_PACKAGE_REVISION: '202609280346'
+  AQTINSTALL_VERSION: '3.3.0'
+  PY7ZR_VERSION: '1.1.3'
+
+jobs:
+  # A push builds unless every commit in it that changes the paths above
+  # carries the trailer "Linux: unchanged (why)", as the iOS and Android
+  # workflows read theirs. On demand it always builds.
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'push'
+        with:
+          fetch-depth: 0
+          filter: blob:none
+      - id: check
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          build=true
+          if [ "$EVENT" = push ]; then
+            # The same list as on.push.paths.
+            paths=(src resources third_party cmake CMakeLists.txt scripts/setup/setup-qtkeychain.sh mobile/CMakeLists.txt mobile/src mobile/qml mobile/shaders mobile/fonts mobile/linux .github/workflows/mobile-linux.yml)
+            if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+              commits=$(git rev-list "$BEFORE..$GITHUB_SHA" -- "${paths[@]}")
+            else
+              commits=$GITHUB_SHA
+            fi
+            if [ -n "$commits" ]; then
+              build=false
+              for c in $commits; do
+                if git log -1 --format=%B "$c" | grep -qiE '^Linux:[[:space:]]*unchanged'; then
+                  echo "no Linux change: $(git log -1 --format='%h %s' "$c")"
+                else
+                  build=true
+                  echo "Linux build: $(git log -1 --format='%h %s' "$c")"
+                fi
+              done
+            fi
+          fi
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+
+  appimage:
+    needs: gate
+    if: needs.gate.outputs.build == 'true'
+    concurrency:
+      group: mobile-linux-${{ github.ref }}
+      cancel-in-progress: true
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    env:
+      # linuxdeploy and the AppImage it makes run without FUSE on the runner.
+      APPIMAGE_EXTRACT_AND_RUN: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System packages
+        run: |
+          set -o pipefail
+          sudo apt-get update -qq
+          # Ninja and the compilers; FFTW (the core's FFTs), ALSA (RtMidi),
+          # libsecret (qtkeychain's Secret Service backend), the X11 / XCB
+          # libraries Qt's xcb plugin links, and the AppImage tools' needs.
+          sudo apt-get install -y -qq ninja-build pkg-config \
+            libgl1-mesa-dev libegl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-0 \
+            libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 \
+            libxcb-render-util0 libxcb-xinerama0 libxcb-randr0 libxcb-xfixes0 \
+            libfftw3-dev libasound2-dev libsecret-1-dev libpulse0 \
+            libfuse2 file desktop-file-utils >/dev/null
+          cmake --version | head -1
+
+      - name: Restore Qt
+        id: cache-qt
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/Qt
+          key: qt-${{ env.QT_VERSION }}-${{ env.QT_PACKAGE_REVISION }}-linux_gcc_64-aqt${{ env.AQTINSTALL_VERSION }}-mm.ws
+
+      - name: Install Qt via aqtinstall
+        if: steps.cache-qt.outputs.cache-hit != 'true'
+        run: |
+          set -o pipefail
+          python3 -m venv "$RUNNER_TEMP/aqtvenv"
+          "$RUNNER_TEMP/aqtvenv/bin/pip" install -q "aqtinstall==${AQTINSTALL_VERSION}" "py7zr==${PY7ZR_VERSION}"
+          "$RUNNER_TEMP/aqtvenv/bin/aqt" install-qt linux desktop "$QT_VERSION" linux_gcc_64 \
+            -m qtmultimedia qtwebsockets \
+            --outputdir "${{ github.workspace }}/Qt"
+
+      - name: Export Qt environment
+        run: |
+          QT_ROOT="${{ github.workspace }}/Qt/$QT_VERSION/gcc_64"
+          test -x "$QT_ROOT/bin/qmake" || { echo "ERROR: no qmake at $QT_ROOT"; ls "${{ github.workspace }}/Qt/$QT_VERSION/"; exit 1; }
+          {
+            echo "QT_ROOT=$QT_ROOT"
+            echo "CMAKE_PREFIX_PATH=$QT_ROOT"
+            echo "LD_LIBRARY_PATH=$QT_ROOT/lib:${LD_LIBRARY_PATH:-}"
+          } >> "$GITHUB_ENV"
+          "$QT_ROOT/bin/qmake" -query QT_VERSION
+
+      - name: qtkeychain (the Secret Service backend)
+        run: bash scripts/setup/setup-qtkeychain.sh
+
+      # Vosk for logging by voice (roadmap 81): libvosk from the release's
+      # Linux zip and the small English model, both pinned by SHA-256, with
+      # Vosk's licence (Apache 2.0) beside the model.
+      - name: Restore Vosk
+        id: cache-vosk
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/vosk-dl
+          key: vosk-linux-0.3.45-en-us-0.15-v1
+
+      - name: Vosk (libvosk and the English model)
+        run: |
+          set -euo pipefail
+          dl="$RUNNER_TEMP/vosk-dl"
+          mkdir -p "$dl"
+          get() {  # url file sha256
+            if [ ! -f "$dl/$2" ] || ! echo "$3  $dl/$2" | sha256sum -c --quiet; then
+              curl -fsSL --retry 3 -o "$dl/$2" "$1"
+            fi
+            echo "$3  $dl/$2" | sha256sum -c --quiet
+          }
+          get https://github.com/alphacep/vosk-api/releases/download/v0.3.45/vosk-linux-x86_64-0.3.45.zip \
+              vosk-linux-x86_64-0.3.45.zip bbdc8ed85c43979f6443142889770ea95cbfbc56cffb5c5dcd73afa875c5fbb2
+          get https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip \
+              vosk-model-small-en-us-0.15.zip 30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498
+          get https://raw.githubusercontent.com/alphacep/vosk-api/v0.3.45/COPYING \
+              COPYING bb618af833c817ab01c1564bd3ec75ba4b4f9cf30910a4a2168e30a674ee8cc6
+          rm -rf "$RUNNER_TEMP/vosk" "$RUNNER_TEMP/vosk-model"
+          unzip -q "$dl/vosk-linux-x86_64-0.3.45.zip" -d "$RUNNER_TEMP/vosk"
+          unzip -q "$dl/vosk-model-small-en-us-0.15.zip" -d "$RUNNER_TEMP/vosk-model"
+          echo "VOSK_LIB=$RUNNER_TEMP/vosk/vosk-linux-x86_64-0.3.45/libvosk.so" >> "$GITHUB_ENV"
+          echo "VOSK_MODEL=$RUNNER_TEMP/vosk-model/vosk-model-small-en-us-0.15" >> "$GITHUB_ENV"
+          echo "VOSK_LICENSE=$dl/COPYING" >> "$GITHUB_ENV"
+
+      - name: Configure (AETHER_MOBILE, Linux desktop)
+        run: |
+          set -o pipefail
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr \
+            -DAETHER_USE_PINNED_QT=OFF \
+            -DAETHER_MOBILE=ON \
+            -DREQUIRE_KEYCHAIN=ON \
+            -DAETHER_MOBILE_BUILD_NUMBER="L${{ github.run_number }}" \
+            -DCMAKE_PREFIX_PATH="$QT_ROOT" 2>&1 | tee configure.log
+          grep -q "OksaSDR: secrets in the Secret Service" configure.log \
+            || { echo "ERROR: built without qtkeychain: the secrets would go to a file"; exit 1; }
+          echo "Shows build (L${{ github.run_number }})." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build
+        run: |
+          set -o pipefail
+          # RADE's Opus first, as upstream's appimage.yml builds it.
+          cmake --build build --target build_opus --parallel "$(nproc)" 2>&1 | tail -3
+          cmake --build build --target aether-mobile --parallel "$(nproc)" 2>&1 | tee build.log | tail -5
+
+      - name: AppDir
+        run: |
+          set -euo pipefail
+          mkdir -p AppDir/usr/bin AppDir/usr/lib AppDir/usr/share/applications \
+                   AppDir/usr/share/icons/hicolor/256x256/apps AppDir/usr/share/oksasdr/vosk \
+                   AppDir/usr/plugins/multimedia AppDir/usr/plugins/wayland-graphics-integration-client
+          cp build/mobile/aether-mobile AppDir/usr/bin/
+          cp mobile/linux/oksasdr.desktop AppDir/usr/share/applications/
+          cp mobile/linux/oksasdr.png AppDir/usr/share/icons/hicolor/256x256/apps/
+          # Vosk: opened at run time from usr/lib, its model from usr/share.
+          cp "$VOSK_LIB" AppDir/usr/lib/
+          cp -R "$VOSK_MODEL" AppDir/usr/share/oksasdr/vosk/en-us
+          cp "$VOSK_LICENSE" AppDir/usr/share/oksasdr/vosk/LICENSE
+          # Qt's media backend (QtMultimedia loads one before audio opens),
+          # and Wayland's OpenGL integration, which no linuxdeploy variable
+          # deploys (upstream's appimage.yml, #1389).
+          cp -v "$QT_ROOT"/plugins/multimedia/libffmpegmediaplugin.so AppDir/usr/plugins/multimedia/
+          cp -v "$QT_ROOT"/plugins/wayland-graphics-integration-client/* \
+            AppDir/usr/plugins/wayland-graphics-integration-client/
+
+      - name: linuxdeploy and its Qt plugin
+        run: |
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+
+      - name: AppImage
+        env:
+          QT_SELECT: qt6
+          # The app's QML imports (QtQuick, Controls, Layouts, Dialogs...).
+          QML_SOURCES_PATHS: ${{ github.workspace }}/mobile/qml
+          EXTRA_QT_PLUGINS: multimedia
+          # The Wayland platform plugin beside xcb (upstream's #1389).
+          EXTRA_PLATFORM_PLUGINS: libqwayland.so
+        run: |
+          set -euo pipefail
+          export QMAKE="$QT_ROOT/bin/qmake"
+          export LD_LIBRARY_PATH="$PWD/third_party/qtkeychain/lib:$QT_ROOT/lib:${LD_LIBRARY_PATH:-}"
+          export LDAI_OUTPUT="OksaSDR-L${{ github.run_number }}-x86_64.AppImage"
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt \
+            --library AppDir/usr/lib/libvosk.so \
+            --desktop-file AppDir/usr/share/applications/oksasdr.desktop \
+            --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/oksasdr.png \
+            --output appimage
+          ls -la OksaSDR-*.AppImage
+
+      # What Qt opens at run time is in no dependency walk: check it is there.
+      - name: Check the AppDir
+        run: |
+          set -euo pipefail
+          fail=0
+          for f in usr/bin/aether-mobile usr/lib/libvosk.so usr/share/oksasdr/vosk/en-us/am/final.mdl \
+                   usr/plugins/platforms/libqxcb.so usr/plugins/multimedia/libffmpegmediaplugin.so \
+                   usr/plugins/wayland-graphics-integration-client/libqt-plugin-wayland-egl.so; do
+            [ -e "AppDir/$f" ] && echo "ok  $f" || { echo "MISSING $f"; fail=1; }
+          done
+          ls AppDir/usr/plugins/platforms/ | grep -q '^libqwayland' && echo "ok  Wayland platform plugin" \
+            || { echo "MISSING Wayland platform plugin"; fail=1; }
+          ls AppDir/usr/plugins/tls/ 2>/dev/null | grep -q openssl && echo "ok  TLS (OpenSSL) plugin" \
+            || { echo "MISSING plugins/tls: SmartLink needs TLS"; fail=1; }
+          ls AppDir/usr/lib/ | grep -q '^libqt6keychain' && echo "ok  qtkeychain" \
+            || { echo "MISSING libqt6keychain"; fail=1; }
+          if LD_LIBRARY_PATH=AppDir/usr/lib ldd AppDir/usr/bin/aether-mobile | grep 'not found'; then fail=1; fi
+          exit $fail
+
+      # The app started offscreen for 20 s: still running at the end, its
+      # first log lines written and no QML module missing.
+      - name: Start test (offscreen)
+        run: |
+          set -uo pipefail
+          image=$(ls OksaSDR-*.AppImage)
+          export HOME="$RUNNER_TEMP/home"
+          mkdir -p "$HOME"
+          timeout 20 env QT_QPA_PLATFORM=offscreen "./$image" > run.log 2>&1
+          rc=$?
+          head -40 run.log
+          [ "$rc" = 124 ] || { echo "ERROR: the app exited with $rc within 20 s"; tail -40 run.log; exit 1; }
+          if grep -E 'is not installed|failed to load component|QQmlApplicationEngine failed|module .* not found' run.log; then
+            echo "ERROR: QML did not load"; exit 1
+          fi
+          grep -q 'OksaSDR .*(build L' run.log || { echo "ERROR: no start line in the log"; exit 1; }
+
+      - name: Upload the AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: OksaSDR-linux-x86_64
+          path: OksaSDR-*.AppImage
+          if-no-files-found: error

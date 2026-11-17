@@ -2671,7 +2671,11 @@ if(Qt6WebSockets_FOUND)
     target_link_libraries(aethercore PUBLIC Qt6::WebSockets)
 endif()
 
-if(Qt6Keychain_FOUND)
+# OksaSDR (AETHER_MOBILE) keeps its secrets through its own store
+# (mobile/src/SecureStore.cpp, under its own service name): the core's
+# keychain code would write the SmartLink token under "AetherSDR", the entry
+# upstream AetherSDR on the same computer signs in with.
+if(Qt6Keychain_FOUND AND NOT AETHER_MOBILE)
     # PUBLIC (both): gui setup tabs test HAVE_KEYCHAIN *and* MqttApplet.cpp /
     # MqttSettingsDialog.cpp include <qt6keychain/keychain.h> directly, so the
     # exe's gui TUs need the imported target's INTERFACE_INCLUDE_DIRECTORIES.

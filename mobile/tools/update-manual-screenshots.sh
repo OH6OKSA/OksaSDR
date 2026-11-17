@@ -343,7 +343,7 @@ fi
 # Radio Setup › MIDI against a stand-in CTR2-MIDI (ctr2-mock, an ALSA virtual
 # MIDI port on this computer), chosen as the user chooses it; nothing is
 # learned and the stand-in sends nothing. The functions shown are this
-# computer's own MIDI bindings (~/.config/AetherSDR/midi.settings).
+# computer's own MIDI bindings (~/.config/OksaSDR/midi.settings on Linux).
 if want "${midi_shots[@]}" && [ "$DRY" = 0 ]; then
     if [ ! -x "$ROOT/build-mobile/ctr2-mock" ]; then
         g++ -O2 -D__LINUX_ALSA__ -I"$ROOT/third_party/rtmidi" "$ROOT/mobile/tools/ctr2-mock.cpp" \

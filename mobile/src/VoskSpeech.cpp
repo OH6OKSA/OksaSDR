@@ -66,7 +66,8 @@ struct Api {
 };
 
 // The English model: in the APK's assets (Android), in the app bundle
-// (iOS, the iPad app on a Mac), or OKSASDR_VOSK_MODEL.
+// (iOS, the iPad app on a Mac), in the Linux AppImage (usr/share/oksasdr),
+// or OKSASDR_VOSK_MODEL.
 constexpr const char* kModelName = "vosk-model-small-en-us-0.15";
 constexpr const char* kAssetModel = "assets:/vosk/en-us";
 
@@ -74,6 +75,19 @@ constexpr const char* kAssetModel = "assets:/vosk/en-us";
 QString bundledModel()
 {
     return QCoreApplication::applicationDirPath() + QStringLiteral("/vosk/en-us");
+}
+#endif
+
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
+// OKSASDR_VOSK_MODEL, else the Linux AppImage's (usr/share/oksasdr).
+QString desktopModel()
+{
+    const QString path = qEnvironmentVariable("OKSASDR_VOSK_MODEL");
+    if (!path.isEmpty()) {
+        return path;
+    }
+    const QFileInfo packaged(QCoreApplication::applicationDirPath() + QStringLiteral("/../share/oksasdr/vosk/en-us"));
+    return packaged.isDir() ? packaged.canonicalFilePath() : QString();
 }
 #endif
 
@@ -99,8 +113,17 @@ const Api& api()
     a.setLogLevel = vosk_set_log_level;
     a.setLogLevel(-1);   // warnings and errors only
 #elif defined(AETHER_VOSK_DLOPEN)
-    const QByteArray name = qEnvironmentVariableIsEmpty("OKSASDR_VOSK_LIB") ? QByteArray("libvosk.so")
-                                                                          : qgetenv("OKSASDR_VOSK_LIB");
+    QByteArray name = qgetenv("OKSASDR_VOSK_LIB");
+#ifndef Q_OS_ANDROID
+    // The Linux AppImage: beside the app's other libraries (usr/lib).
+    const QString packaged = QCoreApplication::applicationDirPath() + QStringLiteral("/../lib/libvosk.so");
+    if (name.isEmpty() && QFile::exists(packaged)) {
+        name = QFile::encodeName(QFileInfo(packaged).canonicalFilePath());
+    }
+#endif
+    if (name.isEmpty()) {
+        name = "libvosk.so";
+    }
     a.lib = dlopen(name.constData(), RTLD_NOW | RTLD_LOCAL);
     if (!a.lib) {
         a.error = QStringLiteral("libvosk not loaded: %1").arg(QString::fromLocal8Bit(dlerror()));
@@ -187,7 +210,7 @@ VoskModel* model(QString* error)
 #elif defined(Q_OS_IOS)
     const QString path = bundledModel();
 #else
-    const QString path = qEnvironmentVariable("OKSASDR_VOSK_MODEL");
+    const QString path = desktopModel();
     if (path.isEmpty()) {
         failed = QStringLiteral("no speech model (OKSASDR_VOSK_MODEL)");
     }
@@ -245,7 +268,7 @@ QString unavailableReason()
         return QStringLiteral("the speech model is not in this build");
     }
 #else
-    if (qEnvironmentVariableIsEmpty("OKSASDR_VOSK_MODEL")) {
+    if (desktopModel().isEmpty()) {
         return QStringLiteral("no speech model (OKSASDR_VOSK_MODEL)");
     }
 #endif

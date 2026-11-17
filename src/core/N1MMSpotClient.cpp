@@ -1,4 +1,5 @@
 #include "N1MMSpotClient.h"
+#include "SettingsPaths.h"
 #include "LogManager.h"
 
 #include <QStandardPaths>
@@ -29,8 +30,7 @@ N1MMSpotClient::~N1MMSpotClient()
 
 QString N1MMSpotClient::logFilePath() const
 {
-    return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
-           + "/AetherSDR/spothub/n1mmspot.log";
+    return SettingsPaths::configDir() + "/spothub/n1mmspot.log";
 }
 
 void N1MMSpotClient::startListening(quint16 port)

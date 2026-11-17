@@ -1,4 +1,5 @@
 #include "AudioEngine.h"
+#include "SettingsPaths.h"
 #include "RxChainRunner.h"
 #include "RxClientEffects.h"
 #include <QSignalBlocker>
@@ -7526,7 +7527,10 @@ static QString wisdomDir()
     // and the other ConfigLocation users.  Pre-fix this was the
     // double-nested ~/.config/AetherSDR/AetherSDR/ path, which forced an
     // FFTW wisdom regeneration on first launch after the dir unified.
-    QString dir = QDir::homePath() + "/.config/AetherSDR/";
+    // AETHER_SETTINGS_DIR (OksaSDR on Linux) moves it with the settings.
+    QString dir = qEnvironmentVariableIsEmpty("AETHER_SETTINGS_DIR")
+        ? QDir::homePath() + "/.config/AetherSDR/"
+        : SettingsPaths::configDir() + "/";
 #endif
     QDir().mkpath(dir);
     return dir;

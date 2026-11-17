@@ -115,7 +115,8 @@ these services:
   › Amp), on your own network or through your VPN. With Control on, it
   sends the changes you confirm on the Amp tab. A remote code the device
   asks for is kept only in this device's secure store (iOS Keychain,
-  Android Keystore) once the device has accepted it.
+  Android Keystore, the desktop's keyring on Linux) once the device has
+  accepted it.
 - **Developer link** (Log tab), off unless turned on: for the developer's
   own devices; it sends the app's log, and screenshots when asked, to the
   address set there.
@@ -168,7 +169,8 @@ your device, except as part of the normal connection to your radio.
   only when you share or move it yourself.
 - **Sign-ins**: the SmartLink sign-in (one per account signed in), the
   QRZ.com password and the Wavelog / Cloudlog API key are kept in
-  the device's secure store (Keychain on Apple devices); a SmartLink
+  the device's secure store (Keychain on Apple devices, the desktop's
+  keyring on Linux); a SmartLink
   password is never stored. The SmartLink accounts' e-mail addresses and
   names (as SmartLink gives them) and your favourite SmartLink radios are
   kept in the app's own storage, for the Connect page.

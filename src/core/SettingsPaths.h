@@ -10,7 +10,10 @@ namespace AetherSDR {
 namespace SettingsPaths {
 
 // ~/.config/AetherSDR (Linux), ~/Library/Preferences/AetherSDR (macOS),
-// %LOCALAPPDATA%/AetherSDR (Windows). Does NOT create the directory.
+// %LOCALAPPDATA%/AetherSDR (Windows), or AETHER_SETTINGS_DIR. Does NOT
+// create the directory. Every file the core keeps there (MIDI, spot logs,
+// themes, memories, firmware) is built from it, so the override moves them
+// all: OksaSDR on Linux keeps its own beside upstream AetherSDR's.
 QString configDir();
 
 // The SQLite settings store: <configDir>/AetherSDR.db

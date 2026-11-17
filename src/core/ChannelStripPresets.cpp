@@ -1,4 +1,5 @@
 #include "ChannelStripPresets.h"
+#include "SettingsPaths.h"
 
 #include "AudioEngine.h"
 #include "ClientComp.h"
@@ -218,8 +219,7 @@ QString ChannelStripPresets::legacyLibraryPath()
     // + "/AetherSDR" matches the AppSettings convention and avoids the
     // double-nested ~/.config/AetherSDR/AetherSDR/ path that AppConfigLocation
     // produces when both org and app names are "AetherSDR".
-    const QString dir = QStandardPaths::writableLocation(
-        QStandardPaths::GenericConfigLocation) + "/AetherSDR";
+    const QString dir = SettingsPaths::configDir();
     QDir().mkpath(dir);
     return dir + "/ChannelStrip.settings";
 }

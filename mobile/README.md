@@ -14,7 +14,9 @@ The code: `src/MobileEngine*.cpp` composes the engine for the QML pages
 (radio, slices, audio, transmit, FT8 / FT4, RADE, the log, FreeDV
 Reporter), `src/SpectrumItem` and the 3D surface draw the display, and
 `qml/` holds the tablet and phone pages, the controls drawer and its tabs.
-`ios/` and `android/` carry the platform code and packaging.
+`ios/` and `android/` carry the platform code and packaging; `linux/` the
+Linux desktop's entry and icon for its AppImage (roadmap 91, built by
+`.github/workflows/mobile-linux.yml`).
 
 ## Develop on Linux or macOS
 
@@ -31,6 +33,12 @@ the window after a delay and quit, which also works with
 `QT_QPA_PLATFORM=offscreen` (the 3D view needs a GPU and stays blank
 there). `--help` lists the development options (layouts, popups, drawer
 tabs, receive-only tests and the transmit tests, which key the radio).
+
+On Linux the app keeps its settings in `~/.config/OksaSDR`, apart from
+upstream AetherSDR's `~/.config/AetherSDR`, and its passwords and sign-ins
+in the desktop's keyring (Secret Service) when qtkeychain is found
+(`scripts/setup/setup-qtkeychain.sh`); without it, in a file only you can
+read.
 
 ## README screenshots
 

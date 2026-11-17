@@ -7,9 +7,10 @@
 
 namespace AetherSDR::mobile {
 
-// The desktop build recognises with Vosk when OKSASDR_VOSK_LIB / _MODEL
-// point at a libvosk and a model (roadmap 81, as on Android; the render
-// tool's voicewav feeds it a recording). For tests without them,
+// The desktop build recognises with Vosk: the Linux AppImage carries a
+// libvosk and the English model (roadmap 91), a development build finds
+// them through OKSASDR_VOSK_LIB / _MODEL (roadmap 81, as on Android; the
+// render tool's voicewav feeds it a recording). For tests without them,
 // OKSASDR_VOICE_FAKE stands in: its text is what it "hears", after 300 ms,
 // whatever was recorded (the render tool's voicetext skips the recording
 // altogether); with OKSASDR_VOICE_LIVE set too it listens itself, as a

@@ -124,6 +124,21 @@ else()
                                          src/DeviceId.cpp src/MidiPairing.cpp src/VoiceInput.cpp
                                          src/VoskSpeech.h src/VoskSpeech.cpp)
     target_link_libraries(aether-mobile PRIVATE ${CMAKE_DL_LIBS})
+    # The desktop's Secret Service (GNOME Keyring, KWallet, KeePassXC) for
+    # the secrets, through qtkeychain (roadmap 91; the AppImage builds it
+    # with scripts/setup/setup-qtkeychain.sh). Without it they stay in a file
+    # only this user can read, as in the development build.
+    if(Qt6Keychain_FOUND)
+        target_compile_definitions(aether-mobile PRIVATE OKSASDR_KEYCHAIN=1)
+        target_link_libraries(aether-mobile PRIVATE Qt6Keychain::Qt6Keychain)
+        message(STATUS "OksaSDR: secrets in the Secret Service (qtkeychain)")
+    else()
+        message(STATUS "OksaSDR: no qtkeychain, secrets in a file only this user can read")
+    endif()
+    if(NOT APPLE)
+        # The window's icon (the AppImage's entry and icon: mobile/linux).
+        qt_add_resources(aether-mobile "linux_icon" PREFIX "/" BASE linux FILES linux/oksasdr.png)
+    endif()
 endif()
 
 # Must precede qt_add_qml_module, which reads it when writing the qmldir.
