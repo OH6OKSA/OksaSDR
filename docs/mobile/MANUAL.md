@@ -1592,7 +1592,7 @@ seven.
   this section lives: the ADIF import, the station and the QRZ.com
   account, Wavelog / Cloudlog, the QRZ.com Logbook, the shared ADIF file,
   Logger32 and the logging program. They are set once, so they moved out
-  of the Log tab (the user's request, build 183).
+  of the Log tab (the user's request, build 184).
   **Import contacts (ADIF)** adds the contacts of
   an ADIF file (from another logbook, or another device's OksaSDR log) to
   this log, so worked-before colours and New call count them too;
