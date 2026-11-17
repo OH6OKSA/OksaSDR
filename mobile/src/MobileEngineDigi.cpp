@@ -418,6 +418,7 @@ void MobileEngine::syncDigiAudio()
         // never connected).
         connect(slice, &SliceModel::modeChanged, this, &MobileEngine::syncDigiAudioLater, Qt::UniqueConnection);
         connect(slice, &QObject::destroyed, this, [this] { QTimer::singleShot(0, this, &MobileEngine::syncDigiAudio); });
+        d->ft8->setTag(QStringLiteral("%1 ch%2").arg(slice->letter()).arg(slice->daxChannel()));
         qCInfo(lcMobile) << "digi: decoder on for slice" << slice->letter() << "DAX channel" << slice->daxChannel();
         m_digiDecoders.emplace(id, d);
     }

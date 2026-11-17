@@ -50,6 +50,8 @@ public:
 
     Protocol protocol() const { return m_protocol; }
     void setProtocol(Protocol protocol);
+    // Which decoder this is in the log and FT8_DUMP_DIR's files ("A ch3").
+    void setTag(const QString& tag) { m_tag = tag; }
     double slotSeconds() const;
     static double slotSeconds(Protocol protocol);
 
@@ -98,6 +100,7 @@ private:
     void startDecode(qint64 slotMs);
 
     Protocol m_protocol{Protocol::Ft8};
+    QString m_tag;
     bool m_running{false};
     int m_rxLatencyMs{250};
 

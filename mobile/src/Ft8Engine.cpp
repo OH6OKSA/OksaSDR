@@ -379,13 +379,17 @@ void Ft8Engine::startDecode(qint64 slotMs)
     for (float v : samples) {
         peak = std::max(peak, std::abs(v));
     }
-    qDebug().noquote() << QStringLiteral("ft8: slot %1 covered %2% peak %3 dBFS buffer %4 s")
+    qDebug().noquote() << QStringLiteral("ft8: %5slot %1 covered %2% peak %3 dBFS buffer %4 s")
                              .arg(slotMs % 100000)
                              .arg(100 * covered / std::max(1, count))
                              .arg(peak > 0 ? 20 * std::log10(peak) : -999.0, 0, 'f', 1)
-                             .arg(double(m_buf.size()) / kRate, 0, 'f', 1);
+                             .arg(double(m_buf.size()) / kRate, 0, 'f', 1)
+                             .arg(m_tag.isEmpty() ? QString() : m_tag + QLatin1Char(' '));
     if (qEnvironmentVariableIsSet("FT8_DUMP_DIR")) {
-        QFile f(QStringLiteral("%1/slot-%2.f32").arg(qEnvironmentVariable("FT8_DUMP_DIR")).arg(slotMs));
+        QFile f(QStringLiteral("%1/slot-%2%3.f32")
+                    .arg(qEnvironmentVariable("FT8_DUMP_DIR"))
+                    .arg(slotMs)
+                    .arg(m_tag.isEmpty() ? QString() : QLatin1Char('-') + QString(m_tag).replace(QLatin1Char(' '), QLatin1Char('-'))));
         if (f.open(QIODevice::WriteOnly)) {
             f.write(reinterpret_cast<const char*>(samples.data()), qint64(samples.size() * sizeof(float)));
         }
