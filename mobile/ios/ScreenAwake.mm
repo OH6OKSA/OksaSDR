@@ -37,8 +37,14 @@ void setBackgroundTimeHeld(bool held)
             if (g_reconnectTask == UIBackgroundTaskInvalid) {
                 qCInfo(lcBackground) << "background time for the reconnect not given";
             } else if (app.applicationState == UIApplicationStateBackground) {
-                qCInfo(lcBackground) << "background time held for the reconnect:"
-                                     << qRound(app.backgroundTimeRemaining) << "s";
+                // DBL_MAX while iOS keeps the app running anyway (its audio
+                // session): no limit, said so, not as 2147483647 s.
+                const NSTimeInterval left = app.backgroundTimeRemaining;
+                if (left > 24 * 3600.0) {
+                    qCInfo(lcBackground) << "background time held for the reconnect: no limit from iOS now";
+                } else {
+                    qCInfo(lcBackground) << "background time held for the reconnect:" << qRound(left) << "s";
+                }
             } else {
                 qCInfo(lcBackground) << "background time held for the reconnect (app in front)";
             }

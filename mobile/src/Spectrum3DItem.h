@@ -108,6 +108,14 @@ private:
     // the slow-GPU check measures from here, not from the last frame, so a
     // pause in the data (SmartLink sends in bursts) is not a slow frame.
     qint64 m_pendingSinceMs{0};
+    // Until when (steady-clock ms) late frames are not counted against the
+    // GPU: the app away from the front, or a profile load that keeps the GUI
+    // thread busy (Mohammed A71AT's iPad mini A17 Pro, 2026-11-17: switched
+    // to 2D twice, right after a global profile and a second after going
+    // inactive). Written on the GUI thread, read in synchronize().
+    qint64 m_judgeAfterMs{0};
+    bool m_appActive{true};
+    void holdSlowJudgement();
     // Smoothing state (median of three raw rows, then the temporal blend).
     Row m_rawPrev1{};
     Row m_rawPrev2{};

@@ -2081,6 +2081,8 @@ signals:
     // covering lowMhz..highMhz, which need not equal the pan's range.
     void spectrumFrame(const QVector<float>& binsDbm);
     void waterfallRow(const QVector<float>& bins, double lowMhz, double highMhz);
+    // A profile load reshaping the radio: the GUI thread busy for a while.
+    void radioReshaping();
 
 private:
     void startAudio();

@@ -369,6 +369,16 @@ void MobileEngine::registerMidiFunctions()
             atuPressed();
         }
     }, true);
+    // The Tuner Genius XL's own Tune, as the Amp tab's Tune without its
+    // question (the button is the operator's choice): the tuner keys the
+    // radio itself and ends the cycle; a press while it tunes stops it
+    // (Hanno Vogels DK3HV, build 182: MIDI TUNE was the radio's carrier).
+    reg("tx.tgxlTune", tr("Tuner Genius XL Tune"), transmit, P::Trigger, 0, 1, [this](float) {
+        if (!midiTransmitRefused()) {
+            qCInfo(lcMobile) << "MIDI: Tuner Genius XL Tune";
+            tgxlTune();
+        }
+    }, true);
     // Held: down while the button is held, as the PTT button.
     reg("cw.ptt", tr("PTT (hold)"), transmit, P::Gate, 0, 1, [this](float v) {
         if (v > 0.5f) {

@@ -10,6 +10,7 @@
 
 #include <QDateTime>
 #include <QFile>
+#include <QGuiApplication>
 #include <QLoggingCategory>
 #include <QQuickWindow>
 #include <rhi/qrhi.h>
@@ -194,6 +195,12 @@ Spectrum3DItem::Spectrum3DItem(QQuickItem* parent)
     // Frames while the surface glides between rows or the row span eases.
     m_frameTimer.setInterval(16);
     connect(&m_frameTimer, &QTimer::timeout, this, &Spectrum3DItem::tick);
+    // Away from the front frames wait anyway; back in front, a while more.
+    m_appActive = QGuiApplication::applicationState() == Qt::ApplicationActive;
+    connect(qGuiApp, &QGuiApplication::applicationStateChanged, this, [this](Qt::ApplicationState state) {
+        m_appActive = state == Qt::ApplicationActive;
+        holdSlowJudgement();
+    });
 }
 
 void Spectrum3DItem::setEngine(MobileEngine* engine)
@@ -211,6 +218,7 @@ void Spectrum3DItem::setEngine(MobileEngine* engine)
         connect(m_engine, &MobileEngine::connectionStateChanged, this, &Spectrum3DItem::clearHistory);
         connect(m_engine, &MobileEngine::slicesChanged, this, [this] { update(); });
         connect(m_engine, &MobileEngine::filterChanged, this, [this] { update(); });
+        connect(m_engine, &MobileEngine::radioReshaping, this, &Spectrum3DItem::holdSlowJudgement);
     }
     emit engineChanged();
 }
@@ -354,6 +362,15 @@ void Spectrum3DItem::pushRow(const QVector<float>& tile, double tileLowMhz, doub
     }
 }
 
+void Spectrum3DItem::holdSlowJudgement()
+{
+    constexpr qint64 kQuietMs = 10000;
+    const qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                           std::chrono::steady_clock::now().time_since_epoch())
+                           .count();
+    m_judgeAfterMs = std::max(m_judgeAfterMs, now + kQuietMs);
+}
+
 void Spectrum3DItem::onGpuTooSlow(qint64 frameMs)
 {
     qCWarning(lcSpectrum3D) << "3D view too slow on this GPU (frames" << frameMs
@@ -460,7 +477,12 @@ void Spectrum3DRenderer::synchronize(QQuickRhiItem* rhiItem)
             qCInfo(lcSpectrum3D) << "3D row waited" << waited << "ms, slow frames" << m_slowFrames
                                  << (now < m_warmUpUntilMs ? "(warm-up)" : "");
         }
-        if (now < m_warmUpUntilMs) {
+        // Not judged either while the app is away from the front or for a
+        // while after a profile load or the app's return (holdSlowJudgement):
+        // frames wait for a busy GUI thread then, not for the GPU.
+        if (!item->m_appActive || now < item->m_judgeAfterMs) {
+            m_slowFrames = 0;
+        } else if (now < m_warmUpUntilMs) {
             // still warming up
         } else if (waited > kSlowFrameMs && waited < 30000) {
             ++m_slowFrames;

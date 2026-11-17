@@ -891,6 +891,8 @@ MobileEngine::MobileEngine(QObject* parent)
     startStreamThread(m_audioThread);
 
     connect(&rm, &RadioModel::connectionStateChanged, this, &MobileEngine::onConnectionStateChanged);
+    connect(&rm, &RadioModel::profileLoadStarted, this, [this] { emit radioReshaping(); });
+    connect(&rm, &RadioModel::profileLoadCompleted, this, [this] { emit radioReshaping(); });
     // The radio refused this app as a station (multiFLEX off with another on
     // it, or no station slot left): no retry, which only met the same refusal
     // again, and an answer saying what to do.

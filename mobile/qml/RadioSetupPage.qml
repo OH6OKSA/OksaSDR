@@ -1950,13 +1950,13 @@ Popup {
                             label: qsTr("Transmit from the controller")
                             on: !!midiTab.m.transmit
                             onToggled: (v) => v ? setup.setRisky(qsTr("Transmit from the MIDI controller?"),
-                                                                 qsTr("Its PTT, MOX, TUNE, ATU, CW paddle and F1–F12 macro buttons will key the radio, as the app's own buttons and keys do."),
+                                                                 qsTr("Its PTT, MOX, TUNE, ATU, Tuner Genius XL Tune, CW paddle and F1–F12 macro buttons will key the radio, as the app's own buttons and keys do."),
                                                                  () => Engine.setMidiTransmit(true), qsTr("Allow"))
                                                 : Engine.setMidiTransmit(false)
                         }
                         Label {
                             Layout.fillWidth: true
-                            text: qsTr("Off: the controller's PTT, MOX, TUNE, ATU, CW paddles and F1–F12 macros do nothing, so a stray press does not key the radio. On: they key as the app's own; a transmission the controller started ends when the controller goes. F1–F12 do what the keyboard's F-keys do: the voice keyer in a voice mode, the CW memories in CW, the Digi macros in RTTY and PSK.")
+                            text: qsTr("Off: the controller's PTT, MOX, TUNE, ATU, Tuner Genius XL Tune, CW paddles and F1–F12 macros do nothing, so a stray press does not key the radio. On: they key as the app's own; a transmission the controller started ends when the controller goes. F1–F12 do what the keyboard's F-keys do: the voice keyer in a voice mode, the CW memories in CW, the Digi macros in RTTY and PSK.")
                             color: Theme.textDim
                             font.pixelSize: Theme.px(12)
                             wrapMode: Text.WordWrap
