@@ -5,7 +5,7 @@ HOW TO REVIEW WITHOUT A RADIO
 2. Tap "AetherSDR Demo" (or its "Connect ›"). The app connects to the built-in receive-only demo radio.
 3. The panadapter and waterfall, tuning by touch, the band and mode buttons, the filters and the Controls drawer (DSP, Audio, View, Log and the other tabs) work with it. Transmitting is not possible with the demo radio.
 
-A video of the app operating a real FLEX-6600M (receive, SSB, CW and digital modes): VIDEO_URL
+A video of the app operating a real FLEX-6600M (receive, SSB, CW and digital modes) is attached to this review.
 
 PERMISSIONS AND BACKGROUND MODE
 - Background audio: the app goes on playing the radio's receive audio while the screen is locked or another app is in front, as a radio does.

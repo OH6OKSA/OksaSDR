@@ -1,5 +1,8 @@
 # OksaSDR in the App Store
 
+`mobile/tools/appstore_sync.py` puts these texts into the editable App Store
+version in App Store Connect (without `--apply` it shows the changes only).
+
 The App Store listing's texts (en-US) and the answers App Store Connect asks
 for, kept here so every release uses the same ones (roadmap 98). The
 TestFlight texts stay in `mobile/TESTFLIGHT_WHATS_NEW.txt` and
@@ -78,9 +81,10 @@ the air; if the questionnaire asks about communication between users, answer
 
 1. The GPL question (roadmap 97 b): the AetherSDR maintainers' consent first,
    or the user's decision to go without it.
-2. A public video of the app with a real radio for App Review (`VIDEO_URL`
-   in `review_notes.txt`): the demo video v5 is in a Facebook group the
-   reviewers cannot open.
+2. The review video: the demo video v5 (`~/Videos/oksasdr-tour-v5-720p.mp4`)
+   goes to Apple only, as an App Review attachment
+   (`mobile/tools/appstore_sync.py --apply --attach FILE`), not to a public link
+   (the user, 2026-11-17).
 3. The review contact (name, phone, e-mail) typed in App Store Connect by the
    user; it is not kept here, the repository being public.
 4. The DSA status, the App Privacy answers and the age rating set in App
