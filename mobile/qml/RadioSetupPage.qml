@@ -343,16 +343,16 @@ Popup {
             Label { text: qsTr("Radio Setup"); color: Theme.text; font.pixelSize: Theme.px(22); font.bold: true; Layout.fillWidth: true }
             AppButton { text: qsTr("Close"); focusPolicy: Qt.NoFocus; onClicked: setup.close() }
         }
-        // Ten in a row where each gets 84 px ("Phone/CW" whole), else 5 + 5,
-        // 3 + 3 + 3 and MIDI across on the narrowest.
+        // Eleven in a row where each gets 84 px ("Phone/CW" whole), else
+        // 6 + 5, 4 + 4 + 3 on a phone, 3 + 3 + 3 + 2 on the narrowest.
         GridLayout {
             id: setupTabs
             Layout.fillWidth: true
-            columns: width >= 10 * 84 ? 10 : width >= 5 * 68 ? 5 : 3
+            columns: width >= 11 * 84 ? 11 : width >= 6 * 84 ? 6 : width >= 4 * 68 ? 4 : 3
             columnSpacing: 4
             rowSpacing: 4
             Repeater {
-                model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("RX"), qsTr("Network"), qsTr("XVTR"), qsTr("Amp"), qsTr("USB"), qsTr("MIDI")]
+                model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("RX"), qsTr("Network"), qsTr("XVTR"), qsTr("Amp"), qsTr("USB"), qsTr("MIDI"), qsTr("Logging")]
                 delegate: AppButton {
                     required property int index
                     required property string modelData
@@ -362,7 +362,6 @@ Popup {
                     focusPolicy: Qt.NoFocus
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
-                    Layout.columnSpan: index === 9 && setupTabs.columns === 3 ? 3 : 1
                     onClicked: setup.section = index
                 }
             }
@@ -392,6 +391,8 @@ Popup {
                           ? qsTr("The amplifier is not a setting of the radio: this device reaches it directly, and the address stays on this device.")
                           : setup.section === 9
                           ? qsTr("The MIDI controller is not a setting of the radio: it connects to this device, and its settings stay on this device.")
+                          : setup.section === 10
+                          ? qsTr("Not a setting of the radio: where this device logs each QSO besides its own log, the accounts for it, and contacts to import. They stay on this device.")
                           : qsTr("These are the radio's own settings, as in SmartSDR's Radio Setup: changes are written to the radio.")
                     color: Theme.textDim
                     font.pixelSize: Theme.px(13)
@@ -2142,6 +2143,9 @@ Popup {
                         onAccepted: Engine.midiImport(selectedFile)
                     }
                 }
+
+                // ---- Logging: this device's logbooks and accounts (roadmap 95) ----
+                LoggingSetup {}
             }
         }
     }

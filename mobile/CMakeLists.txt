@@ -206,6 +206,7 @@ qt_add_qml_module(aether-mobile
         qml/ProfileControls.qml
         qml/MemoryControls.qml
         qml/LogControls.qml
+        qml/LoggingSetup.qml
         qml/VoiceButton.qml
         qml/OffsetEditor.qml
         qml/DigiControls.qml

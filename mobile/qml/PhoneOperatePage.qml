@@ -645,6 +645,13 @@ Page {
     LogPage { id: logPage }
     NetworkDialog { id: networkDialog }
     RadioSetupPage { id: radioSetup }
+    Connections {
+        target: Engine
+        function onSetupRequested(section) {
+            radioSetup.section = section
+            radioSetup.open()
+        }
+    }
     SetupSuggestion { onSetupRequested: radioSetup.open() }
     HintsDialog { onClosed: page.forceActiveFocus() }
     FrequencyDialog {

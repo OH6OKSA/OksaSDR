@@ -1924,6 +1924,9 @@ public:
     // A new panadapter (with its own slice, created by the radio's defaults).
     Q_INVOKABLE void addPanadapter();
     Q_INVOKABLE void setAudioOutputId(const QString& id);
+    // Setup at a tab, from a control that is not on the page holding it
+    // (the Log tab's Logbooks…, roadmap 95).
+    Q_INVOKABLE void openSetup(int section) { emit setupRequested(section); }
     Q_INVOKABLE void setAudioInputId(const QString& id);
     bool audioDevicesChoosable() const;
     QVariantList audioOutputs() const;
@@ -1958,6 +1961,7 @@ public:
 signals:
     void fmChanged();
     void audioDevicesChanged();
+    void setupRequested(int section);
     void bandsChanged();
     void keyboardOnPageChanged();
     void connectionStateChanged();
