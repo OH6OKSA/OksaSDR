@@ -973,7 +973,17 @@ Power meter. Two fit side by side, four make 2 × 2.
   follow it).
 - Press and hold for **Make TX slice** and **Close slice**.
 - **+ Slice** and **+ Pan** (bottom right of the waterfall) add a slice or a
-  panadapter.
+  panadapter: **+ Slice** another receiver on the band this panadapter shows,
+  **+ Pan** a panadapter of its own with its own slice, for another band.
+- **Slices on several bands.** The radio hears a slice only on the band its
+  panadapter is on: elsewhere it gives noise, or another slice's audio. So a
+  slice you take to another band than the other slices on its panadapter
+  (**Band**, a typed frequency, a spot, a memory, the FTx tab's bands) gets a
+  panadapter of its own first, keeping its letter, mode and transmit; the
+  other slices stay where they were. A slice left on another band than its
+  panadapter anyway (tuned there by a drag or the knob, or no panadapter
+  free) has an orange outline on its chip; the FTx tab says so while it
+  decodes. Tune it back, or give that band a panadapter (**+ Pan**).
 - Closing the transmit slice hands transmit to the slice that stays, so PTT
   keeps working.
 
@@ -1110,7 +1120,9 @@ stacked trace and sets the levels. They work as on the desktop AetherSDR:
   landscape's shape and the waterfall gets the rest of the height. It keeps
   its history while you are in 2D. If the app stopped while the 3D view was
   on, or the 3D view runs too slowly on the device, the app starts or goes
-  on with the 2D waterfall and says so; turn 3D on again in View.
+  on with the 2D waterfall and says so; turn 3D on again in View. Slow
+  frames while the app is away from the front, or just after a profile
+  load, do not count (thanks Mohammed A71AT).
 
 **Panadapters.** The display shows one panadapter at a time: the one of
 the active slice. Selecting a slice on another panadapter (its chip in the
@@ -2228,7 +2240,11 @@ radio.
   radio's default RTTY mark (2125 Hz as usual), the mark a new RTTY slice
   starts with.
 - **Audio** — the radio's line out and headphone levels and muting, and on
-  a model with a front speaker (an M model) muting that speaker.
+  a model with a front speaker (an M model) muting that speaker. On a Linux
+  computer also **This computer's audio**: the **Speaker** and
+  **Microphone** the app uses there, *System default* (the desktop's own
+  choice) or one of the devices listed; an iPhone, iPad, Mac or Android
+  device routes its audio itself.
 - **RX** — what the radio's receiver is set to, as SmartSDR's Receive and
   Filters pages:
   - **Frequency calibration** — the radio measures a steady carrier of known
@@ -2407,15 +2423,23 @@ radio.
     up / down 1 MHz, zoom in / out, split, band up / down and each band,
     mode next / previous and each mode, filter wider / narrower, slice
     volume, mute, AGC-T, NB, NR, ANF, RF power, CW speed, MOX, TUNE, ATU,
-    PTT (hold), the CW paddles (dit, dah) and the straight key; and under
+    Tuner Genius XL Tune, PTT (hold), the CW paddles (dit, dah) and the
+    straight key; and under
     **Macros** **F1**–**F12** and **Stop (Esc)** (asked by Christoph
     Steinert DM5HF). F1–F12 do what a keyboard's F-keys do: in a voice
     mode they play the voice keyer's recordings (a press while one plays
     stops it), in CW they send the CW memories M1–M12, in RTTY and PSK the
-    Digi tab's macros F1–F8. Stop ends any of them, as Esc.
+    Digi tab's macros F1–F8. Stop ends any of them, as Esc. TUNE is the
+    radio's tune carrier (on, then off with the next press) and ATU the
+    radio's own tuner; **Tuner Genius XL Tune** starts the Tuner Genius XL's
+    own tune cycle, as its Tune on the Amp tab without the question, and a
+    press while it tunes stops it (asked by Hanno Vogels DK3HV). PTT (hold)
+    transmits only while the button is held; MOX stays on until the next
+    press.
   - **Transmit from the controller** is **Off** until turned on (it asks
-    first). While off, the controller's PTT, MOX, TUNE, ATU, CW paddles and
-    F1–F12 do nothing, so a stray press does not key the radio. A transmission
+    first). While off, the controller's PTT, MOX, TUNE, ATU, Tuner Genius XL
+    Tune, CW paddles and F1–F12 do nothing, so a stray press does not key
+    the radio. A transmission
     the controller started ends when the controller goes (switched off or
     out of range). The app's own rules apply: PTT is for voice, as the PTT
     button.
