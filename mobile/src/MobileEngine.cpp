@@ -5285,7 +5285,14 @@ static bool sliceOffPanBand(const RadioModel& rm, const SliceModel* s)
 QVariantList MobileEngine::slices() const
 {
     QVariantList list;
-    for (SliceModel* s : m_session.radioModel().slices()) {
+    // In letter order: a slice made again (a panadapter of its own, roadmap
+    // 92) comes last in the radio's list, so the chips read B A C D on the
+    // ThinkPad's L5 until they were sorted.
+    QList<SliceModel*> ordered = m_session.radioModel().slices();
+    std::stable_sort(ordered.begin(), ordered.end(), [](const SliceModel* a, const SliceModel* b) {
+        return a->letter() == b->letter() ? a->sliceId() < b->sliceId() : a->letter() < b->letter();
+    });
+    for (SliceModel* s : ordered) {
         list.append(QVariantMap{
             {QStringLiteral("offBand"), sliceOffPanBand(m_session.radioModel(), s)},
             {QStringLiteral("id"), s->sliceId()},
