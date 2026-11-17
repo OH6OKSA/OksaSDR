@@ -228,15 +228,21 @@ jobs:
           # The app's QML imports (QtQuick, Controls, Layouts, Dialogs...).
           QML_SOURCES_PATHS: ${{ github.workspace }}/mobile/qml
           EXTRA_QT_PLUGINS: multimedia
-          # The Wayland platform plugin beside xcb (upstream's #1389).
-          EXTRA_PLATFORM_PLUGINS: libqwayland.so
+          # The Wayland platform plugin beside xcb (upstream's #1389), and
+          # offscreen for a start without a display (the start test below).
+          EXTRA_PLATFORM_PLUGINS: libqwayland.so;libqoffscreen.so
         run: |
           set -euo pipefail
           export QMAKE="$QT_ROOT/bin/qmake"
           export LD_LIBRARY_PATH="$PWD/third_party/qtkeychain/lib:$QT_ROOT/lib:${LD_LIBRARY_PATH:-}"
           export LDAI_OUTPUT="OksaSDR-L${{ github.run_number }}-x86_64.AppImage"
+          # libsecret is loaded by qtkeychain at run time (QLibrary), so no
+          # dependency walk finds it; the user's own libsecret does not load
+          # beside the glib bundled here (Arch's: "undefined symbol:
+          # g_task_set_static_name"), so the one built for this glib goes in.
           ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt \
             --library AppDir/usr/lib/libvosk.so \
+            --library /usr/lib/x86_64-linux-gnu/libsecret-1.so.0 \
             --desktop-file AppDir/usr/share/applications/oksasdr.desktop \
             --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/oksasdr.png \
             --output appimage
@@ -247,8 +253,10 @@ jobs:
         run: |
           set -euo pipefail
           fail=0
-          for f in usr/bin/aether-mobile usr/lib/libvosk.so usr/share/oksasdr/vosk/en-us/am/final.mdl \
-                   usr/plugins/platforms/libqxcb.so usr/plugins/multimedia/libffmpegmediaplugin.so \
+          for f in usr/bin/aether-mobile usr/lib/libvosk.so usr/lib/libsecret-1.so.0 \
+                   usr/share/oksasdr/vosk/en-us/am/final.mdl \
+                   usr/plugins/platforms/libqxcb.so usr/plugins/platforms/libqoffscreen.so \
+                   usr/plugins/multimedia/libffmpegmediaplugin.so \
                    usr/plugins/wayland-graphics-integration-client/libqt-plugin-wayland-egl.so; do
             [ -e "AppDir/$f" ] && echo "ok  $f" || { echo "MISSING $f"; fail=1; }
           done
@@ -259,6 +267,7 @@ jobs:
           ls AppDir/usr/lib/ | grep -q '^libqt6keychain' && echo "ok  qtkeychain" \
             || { echo "MISSING libqt6keychain"; fail=1; }
           if LD_LIBRARY_PATH=AppDir/usr/lib ldd AppDir/usr/bin/aether-mobile | grep 'not found'; then fail=1; fi
+          if LD_LIBRARY_PATH=AppDir/usr/lib ldd AppDir/usr/lib/libsecret-1.so.0 | grep 'not found'; then fail=1; fi
           exit $fail
 
       # The app started offscreen for 20 s: still running at the end, its
@@ -269,16 +278,27 @@ jobs:
           image=$(ls OksaSDR-*.AppImage)
           export HOME="$RUNNER_TEMP/home"
           mkdir -p "$HOME"
+          # Only what the AppImage carries: the job's LD_LIBRARY_PATH (the
+          # build's Qt first) left out and the build's Qt moved away meanwhile,
+          # or the app would run on that Qt, its plugins and QML.
+          mv "$QT_ROOT" "$QT_ROOT.away"
           # The step's shell runs with -e: the expected timeout (124) is
           # caught here, not left to end the step.
           rc=0
-          timeout 20 env QT_QPA_PLATFORM=offscreen "./$image" > run.log 2>&1 || rc=$?
+          timeout 20 env -u LD_LIBRARY_PATH -u QT_PLUGIN_PATH -u QML2_IMPORT_PATH -u QML_IMPORT_PATH \
+            QT_QPA_PLATFORM=offscreen "./$image" > run.log 2>&1 || rc=$?
+          mv "$QT_ROOT.away" "$QT_ROOT"
           head -40 run.log
           [ "$rc" = 124 ] || { echo "ERROR: the app exited with $rc within 20 s"; tail -40 run.log; exit 1; }
           if grep -E 'is not installed|failed to load component|QQmlApplicationEngine failed|module .* not found' run.log; then
             echo "ERROR: QML did not load"; exit 1
           fi
           grep -q 'OksaSDR .*(build L' run.log || { echo "ERROR: no start line in the log"; exit 1; }
+          # No Secret Service runs here, so the store says so; "Unknown error"
+          # instead means libsecret itself did not load.
+          if grep 'secure store: no Secret Service ( Unknown error' run.log; then
+            echo "ERROR: libsecret did not load in the AppImage"; exit 1
+          fi
 
       - name: Upload the AppImage
         uses: actions/upload-artifact@v4
