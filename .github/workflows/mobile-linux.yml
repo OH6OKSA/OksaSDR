@@ -269,8 +269,10 @@ jobs:
           image=$(ls OksaSDR-*.AppImage)
           export HOME="$RUNNER_TEMP/home"
           mkdir -p "$HOME"
-          timeout 20 env QT_QPA_PLATFORM=offscreen "./$image" > run.log 2>&1
-          rc=$?
+          # The step's shell runs with -e: the expected timeout (124) is
+          # caught here, not left to end the step.
+          rc=0
+          timeout 20 env QT_QPA_PLATFORM=offscreen "./$image" > run.log 2>&1 || rc=$?
           head -40 run.log
           [ "$rc" = 124 ] || { echo "ERROR: the app exited with $rc within 20 s"; tail -40 run.log; exit 1; }
           if grep -E 'is not installed|failed to load component|QQmlApplicationEngine failed|module .* not found' run.log; then
