@@ -1212,6 +1212,19 @@ MobileEngine::MobileEngine(QObject* parent)
     });
     connect(&rm, &RadioModel::panadapterAdded, this, [this](PanadapterModel* pan) {
         sendPanDimensions(pan->panId());
+        // A slice's "on another band than its panadapter" (roadmap 92) is
+        // judged by the panadapter's middle too: the slice moves first and
+        // the panadapter after it, so its band changing is news for the
+        // slice chips and the FTx tab (the ThinkPad's L4: one slice tuned to
+        // 80 m kept the warning once the panadapter had followed).
+        connect(pan, &PanadapterModel::infoChanged, this,
+                [this, pan, band = std::make_shared<QString>()](double centerMhz, double) {
+                    const QString now = BandSettings::bandForFrequency(centerMhz);
+                    if (now != *band) {
+                        *band = now;
+                        emit slicesChanged();
+                    }
+                });
         // The panadapter asked for a slice going to another band (roadmap
         // 92): its slice, the radio's own or one made here.
         if (m_ownPanMove && m_ownPanMove->newPanId.isEmpty()) {
