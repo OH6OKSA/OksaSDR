@@ -15,6 +15,20 @@
 #include <chrono>
 #include <thread>
 
+// Linux (the desktop build): where the GUI and render threads are when the
+// GUI thread stalls, from their stacks (roadmap 91 f: the ThinkPad's 1-5 s
+// stalls after FT8 decodes, not seen offscreen).
+#if defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
+#define OKSASDR_STALL_STACKS 1
+#include <QFileInfo>
+#include <cerrno>
+#include <csignal>
+#include <cstdlib>
+#include <cxxabi.h>
+#include <execinfo.h>
+#include <pthread.h>
+#endif
+
 Q_LOGGING_CATEGORY(lcStall, "aether.mobile.stall")
 
 namespace AetherSDR::mobile {
@@ -66,6 +80,86 @@ QString context(qint64 now)
              QString::number(eventMs ? now - eventMs : -1),
              QString::number(frameMs ? now - frameMs : -1));
 }
+
+#ifdef OKSASDR_STALL_STACKS
+pthread_t s_guiThread{};
+std::atomic<bool> s_guiThreadKnown{false};
+std::atomic<pthread_t> s_renderThread{0};
+int s_stackSignal = 0;
+void* s_stack[64];
+std::atomic<int> s_stackDepth{-1};
+// A few stalls a run are enough to see where; more would flood the log.
+std::atomic<int> s_stacksLogged{0};
+constexpr int kMaxStackReports = 12;
+
+void onStackSignal(int)
+{
+    const int saved = errno;
+    s_stackDepth.store(backtrace(s_stack, 64));
+    errno = saved;
+}
+
+// "lib.so(_ZN...+0x1c) [0x7f...]" -> "lib.so: Name::function(args)+0x1c".
+QString frameText(const char* raw)
+{
+    const QString s = QString::fromLocal8Bit(raw);
+    const int open = s.indexOf(QLatin1Char('('));
+    const int plus = s.indexOf(QLatin1Char('+'), open);
+    const int close = s.indexOf(QLatin1Char(')'), open);
+    const QString module = QFileInfo(open > 0 ? s.left(open) : s.section(QLatin1Char(' '), 0, 0)).fileName();
+    if (open >= 0 && plus > open + 1 && close > plus) {
+        const QByteArray mangled = s.mid(open + 1, plus - open - 1).toLatin1();
+        int status = 0;
+        char* name = abi::__cxa_demangle(mangled.constData(), nullptr, nullptr, &status);
+        const QString offset = s.mid(plus, close - plus);
+        QString out = module + QStringLiteral(": ")
+            + (status == 0 && name ? QString::fromLatin1(name) : QString::fromLatin1(mangled)) + offset;
+        std::free(name);
+        return out;
+    }
+    // No symbol: the module and its offset (addr2line on the same build).
+    return module + QStringLiteral(" ") + (open >= 0 && close > open ? s.mid(open, close - open + 1) : s);
+}
+
+void logStack(pthread_t thread, const char* which)
+{
+    s_stackDepth = -1;
+    if (pthread_kill(thread, s_stackSignal) != 0) {
+        return;
+    }
+    for (int i = 0; i < 100 && s_stackDepth.load() < 0; ++i) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
+    const int depth = s_stackDepth.load();
+    if (depth <= 0) {
+        qCWarning(lcStall).noquote() << "stall stack" << which << ": none came";
+        return;
+    }
+    char** symbols = backtrace_symbols(s_stack, depth);
+    if (!symbols) {
+        return;
+    }
+    // The first two are the handler and the signal frame.
+    for (int i = 2; i < depth && i < 40; ++i) {
+        qCWarning(lcStall).noquote() << QStringLiteral("stall stack %1 #%2 %3").arg(QLatin1String(which)).arg(i - 2).arg(frameText(symbols[i]));
+    }
+    std::free(symbols);
+}
+
+void logStacks(bool render)
+{
+    if (s_stacksLogged.fetch_add(1) >= kMaxStackReports || !s_guiThreadKnown.load()) {
+        return;
+    }
+    if (!render) {
+        logStack(s_guiThread, "GUI");
+    }
+    const pthread_t renderThread = s_renderThread.load();
+    if (renderThread != 0 && !pthread_equal(renderThread, s_guiThread)) {
+        logStack(renderThread, "render");
+    }
+}
+#endif
 
 void writeNote(const QString& line)
 {
@@ -119,6 +213,11 @@ void run()
             if (!s_stallSinceMs.load()) {
                 s_stallSinceMs = s_mainBeatMs.load();
                 nextReportMs = stallMs;
+#ifdef OKSASDR_STALL_STACKS
+                if (active) {
+                    logStacks(false);
+                }
+#endif
             }
             // At 1, 2, 4, 8 ... s: the log line waits for the GUI thread, the
             // file does not.
@@ -139,6 +238,9 @@ void run()
             qCWarning(lcStall).noquote()
                 << QStringLiteral("no frame drawn for %1 ms while the GUI thread answers: %2")
                        .arg(now - frameMs).arg(context(now));
+#ifdef OKSASDR_STALL_STACKS
+            logStacks(true);
+#endif
         }
         frameGapLogged = frameGap;
     }
@@ -170,6 +272,20 @@ void StallWatch::start()
     }
     s_mainBeatMs = nowMs();
     s_active = qApp->applicationState() == Qt::ApplicationActive;
+#ifdef OKSASDR_STALL_STACKS
+    s_guiThread = pthread_self();
+    s_stackSignal = SIGRTMIN + 5;
+    struct sigaction action{};
+    action.sa_handler = onStackSignal;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = SA_RESTART;
+    if (sigaction(s_stackSignal, &action, nullptr) == 0) {
+        // backtrace() loads libgcc on its first call: not in the handler.
+        void* warm[2];
+        backtrace(warm, 2);
+        s_guiThreadKnown = true;
+    }
+#endif
     s_thread = std::thread(run);
     QObject::connect(qApp, &QCoreApplication::aboutToQuit, qApp, [] { stop(); });
     QObject::connect(qApp, &QGuiApplication::applicationStateChanged, qApp, [](Qt::ApplicationState state) {
@@ -190,6 +306,12 @@ void StallWatch::watch(QQuickWindow* window)
     window->installEventFilter(new EventSpy(window));
     QObject::connect(window, &QQuickWindow::frameSwapped, window, [] { s_frameMs = nowMs(); },
                      Qt::DirectConnection);
+#ifdef OKSASDR_STALL_STACKS
+    // The render thread (the threaded render loop's; the GUI thread with the
+    // basic one): its stack beside the GUI thread's.
+    QObject::connect(window, &QQuickWindow::beforeRendering, window, [] { s_renderThread = pthread_self(); },
+                     Qt::DirectConnection);
+#endif
 }
 
 void StallWatch::setExpectFrames(bool on)

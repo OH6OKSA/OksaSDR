@@ -138,6 +138,12 @@ else()
     if(NOT APPLE)
         # The window's icon (the AppImage's entry and icon: mobile/linux).
         qt_add_resources(aether-mobile "linux_icon" PREFIX "/" BASE linux FILES linux/oksasdr.png)
+        # The app's own function names in a stalled thread's stack
+        # (StallWatch), kept in the dynamic symbols the AppImage's strip
+        # leaves (roadmap 91 f).
+        if(UNIX)
+            target_link_options(aether-mobile PRIVATE -rdynamic)
+        endif()
     endif()
 endif()
 

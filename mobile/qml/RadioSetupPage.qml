@@ -867,6 +867,49 @@ Popup {
                         on: !!setup.d.frontSpeakerMute
                         onToggled: (v) => setup.set("frontSpeakerMute", v)
                     }
+                    // This computer's speaker and microphone (the Linux build;
+                    // a phone or tablet routes them itself). System default
+                    // follows the desktop's own choice.
+                    Heading { visible: Engine.audioDevicesChoosable; text: qsTr("This computer's audio") }
+                    Label {
+                        visible: Engine.audioDevicesChoosable
+                        Layout.fillWidth: true
+                        text: qsTr("Not the radio's: the speaker and microphone this app uses on this computer.")
+                        color: Theme.textDim
+                        font.pixelSize: Theme.px(13)
+                        wrapMode: Text.Wrap
+                    }
+                    Repeater {
+                        model: Engine.audioDevicesChoosable
+                               ? [{ label: qsTr("Speaker"), name: "setupAudioOutput", list: Engine.audioOutputs, out: true },
+                                  { label: qsTr("Microphone"), name: "setupAudioInput", list: Engine.audioInputs, out: false }]
+                               : []
+                        delegate: RowLayout {
+                            id: deviceRow
+                            required property var modelData
+                            Layout.fillWidth: true
+                            spacing: Theme.spacing
+                            Label {
+                                text: deviceRow.modelData.label
+                                color: Theme.text
+                                font.pixelSize: Theme.px(15)
+                                Layout.preferredWidth: Theme.px(110)
+                            }
+                            AppComboBox {
+                                objectName: deviceRow.modelData.name
+                                Accessible.name: deviceRow.modelData.label
+                                Component.onCompleted: contentItem.Accessible.ignored = true
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: Theme.touchTarget
+                                font.pixelSize: Theme.buttonFont
+                                model: deviceRow.modelData.list.map(d => d.name)
+                                currentIndex: deviceRow.modelData.list.findIndex(d => d.current)
+                                onActivated: (i) => deviceRow.modelData.out
+                                                    ? Engine.setAudioOutputId(deviceRow.modelData.list[i].id)
+                                                    : Engine.setAudioInputId(deviceRow.modelData.list[i].id)
+                            }
+                        }
+                    }
                 }
 
                 // ---- RX: calibration, the 10 MHz reference, binaural

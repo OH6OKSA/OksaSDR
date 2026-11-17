@@ -483,6 +483,12 @@ class MobileEngine : public QObject {
     // radio whose slices other programs hold).
     Q_PROPERTY(QString splitMethod READ splitMethod WRITE setSplitMethod NOTIFY slicesChanged)
     Q_PROPERTY(bool canAddPanadapter READ canAddPanadapter NOTIFY slicesChanged)
+    // This computer's speaker and microphone, chosen in Radio Setup › Audio
+    // (the Linux build, roadmap 91 e; phones and tablets route audio
+    // themselves). Each {id, name, current}; id "" is the system default.
+    Q_PROPERTY(bool audioDevicesChoosable READ audioDevicesChoosable CONSTANT)
+    Q_PROPERTY(QVariantList audioOutputs READ audioOutputs NOTIFY audioDevicesChanged)
+    Q_PROPERTY(QVariantList audioInputs READ audioInputs NOTIFY audioDevicesChanged)
     // This client's panadapters. The app shows one; the others still stream.
     Q_PROPERTY(int panCount READ panCount NOTIFY slicesChanged)
     Q_PROPERTY(bool cwMode READ cwMode NOTIFY modeChanged)
@@ -1917,6 +1923,11 @@ public:
     Q_INVOKABLE void makeTxSlice(int sliceId);
     // A new panadapter (with its own slice, created by the radio's defaults).
     Q_INVOKABLE void addPanadapter();
+    Q_INVOKABLE void setAudioOutputId(const QString& id);
+    Q_INVOKABLE void setAudioInputId(const QString& id);
+    bool audioDevicesChoosable() const;
+    QVariantList audioOutputs() const;
+    QVariantList audioInputs() const;
     // Closes this client's panadapters other than the one shown (and the
     // slices on them).
     Q_INVOKABLE void closeOtherPanadapters();
@@ -1946,6 +1957,7 @@ public:
 
 signals:
     void fmChanged();
+    void audioDevicesChanged();
     void bandsChanged();
     void keyboardOnPageChanged();
     void connectionStateChanged();

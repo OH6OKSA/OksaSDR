@@ -104,9 +104,7 @@
 #include <QNetworkProxy>
 #include <QNetworkInterface>
 #include <QTimer>
-#ifdef Q_OS_ANDROID
 #include <QMediaDevices>
-#endif
 
 #include <algorithm>
 #include <cmath>
@@ -705,6 +703,12 @@ MobileEngine::MobileEngine(QObject* parent)
         }
     });
 #endif
+    // The speaker and microphone lists in Radio Setup › Audio (roadmap 91 e).
+    {
+        auto* devices = new QMediaDevices(this);
+        connect(devices, &QMediaDevices::audioInputsChanged, this, &MobileEngine::audioDevicesChanged);
+        connect(devices, &QMediaDevices::audioOutputsChanged, this, &MobileEngine::audioDevicesChanged);
+    }
     m_audioDiagTimer.setInterval(10000);
     connect(&m_audioDiagTimer, &QTimer::timeout, this, [this] {
         if (!m_connected || !m_audio) {
@@ -755,11 +759,34 @@ MobileEngine::MobileEngine(QObject* parent)
         static int samples = 0;
         if (m_connected && ++samples >= 30) {
             samples = 0;
+            // Linux: what the memory is (roadmap 91 g, the ThinkPad's 0.4 to
+            // 1.3 GB in 7 minutes): the app's own heap (anonymous), mapped
+            // files and shared memory (a GPU driver's buffers among them).
+            QString memoryParts;
+#if defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
+            {
+                QFile rollup(QStringLiteral("/proc/self/smaps_rollup"));
+                if (rollup.open(QIODevice::ReadOnly)) {
+                    qint64 anonKb = 0, fileKb = 0, shmemKb = 0;
+                    for (const QByteArray& line : rollup.readAll().split('\n')) {
+                        const QList<QByteArray> f = line.simplified().split(' ');
+                        if (f.size() >= 2) {
+                            if (f[0] == "Pss_Anon:") anonKb = f[1].toLongLong();
+                            else if (f[0] == "Pss_File:") fileKb = f[1].toLongLong();
+                            else if (f[0] == "Pss_Shmem:") shmemKb = f[1].toLongLong();
+                        }
+                    }
+                    memoryParts = QStringLiteral(" (heap %1, files %2, shared %3 MB)")
+                                      .arg(anonKb / 1024).arg(fileKb / 1024).arg(shmemKb / 1024);
+                }
+            }
+#endif
             qCInfo(lcMobile).noquote()
-                << QStringLiteral("performance: CPU %1 % of %2 cores (%3 % of one core), %4 frames/s, memory %5 MB%6")
+                << QStringLiteral("performance: CPU %1 % of %2 cores (%3 % of one core), %4 frames/s, memory %5 MB%6%7")
                        .arg(qRound(m_cpuPercent)).arg(cpuCores())
                        .arg(qRound(m_cpuPercentOfCore)).arg(m_uiFps)
                        .arg(qRound(m_memoryMB))
+                       .arg(memoryParts)
                        .arg(m_busyThreads.isEmpty() ? QString()
                                                     : QStringLiteral("; busiest threads: ") + m_busyThreads.join(QStringLiteral(", ")));
         }
@@ -5580,6 +5607,123 @@ void MobileEngine::closeOtherPanadapters()
     for (const QString& id : std::as_const(closing)) {
         rm.removePanadapter(id);
     }
+}
+
+// ---- This computer's audio devices (the Linux build, roadmap 91 e) ----------
+
+namespace {
+const QString kAudioOutputKey = QStringLiteral("AudioOutputDeviceId");
+const QString kAudioInputKey = QStringLiteral("AudioInputDeviceId");
+
+QVariantList audioDeviceList(const QList<QAudioDevice>& devices, const QAudioDevice& systemDefault,
+                             const QByteArray& saved)
+{
+    QVariantList list;
+    list.append(QVariantMap{{QStringLiteral("id"), QString()},
+                            {QStringLiteral("name"), systemDefault.description().isEmpty()
+                                                         ? MobileEngine::tr("System default")
+                                                         : MobileEngine::tr("System default (%1)").arg(systemDefault.description())},
+                            {QStringLiteral("current"), saved.isEmpty()}});
+    bool found = saved.isEmpty();
+    for (const QAudioDevice& d : devices) {
+        list.append(QVariantMap{{QStringLiteral("id"), QString::fromUtf8(d.id())},
+                                {QStringLiteral("name"), d.description()},
+                                {QStringLiteral("current"), d.id() == saved}});
+        found = found || d.id() == saved;
+    }
+    if (!found) {
+        // The chosen one unplugged: kept, and the system's default used meanwhile.
+        list.append(QVariantMap{{QStringLiteral("id"), QString::fromUtf8(saved)},
+                                {QStringLiteral("name"), MobileEngine::tr("%1 (not connected)").arg(QString::fromUtf8(saved))},
+                                {QStringLiteral("current"), true}});
+    }
+    return list;
+}
+} // namespace
+
+bool MobileEngine::audioDevicesChoosable() const
+{
+#if defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
+    return true;
+#else
+    return false;
+#endif
+}
+
+QVariantList MobileEngine::audioOutputs() const
+{
+    return audioDeviceList(QMediaDevices::audioOutputs(), QMediaDevices::defaultAudioOutput(),
+                           AppSettings::instance().value(kAudioOutputKey, QString()).toByteArray());
+}
+
+QVariantList MobileEngine::audioInputs() const
+{
+    return audioDeviceList(QMediaDevices::audioInputs(), QMediaDevices::defaultAudioInput(),
+                           AppSettings::instance().value(kAudioInputKey, QString()).toByteArray());
+}
+
+void MobileEngine::setAudioOutputId(const QString& id)
+{
+    if (!audioDevicesChoosable()) {
+        return;
+    }
+    QAudioDevice device = QMediaDevices::defaultAudioOutput();
+    AudioDeviceSelection selection = AudioDeviceSelection::Fallback;
+    if (id.isEmpty()) {
+        AppSettings::instance().remove(kAudioOutputKey);
+    } else {
+        bool found = false;
+        for (const QAudioDevice& d : QMediaDevices::audioOutputs()) {
+            if (QString::fromUtf8(d.id()) == id) {
+                device = d;
+                found = true;
+            }
+        }
+        if (!found) {
+            return;
+        }
+        AppSettings::instance().setValue(kAudioOutputKey, id);
+        selection = AudioDeviceSelection::OperatorChoice;
+    }
+    AppSettings::instance().save();
+    qCInfo(lcMobile).noquote() << "audio output:" << (id.isEmpty() ? QStringLiteral("the system default") : device.description());
+    if (m_audio) {
+        QMetaObject::invokeMethod(m_audio, [audio = m_audio, device, selection] { audio->setOutputDevice(device, selection); },
+                                  Qt::QueuedConnection);
+    }
+    emit audioDevicesChanged();
+}
+
+void MobileEngine::setAudioInputId(const QString& id)
+{
+    if (!audioDevicesChoosable()) {
+        return;
+    }
+    QAudioDevice device = QMediaDevices::defaultAudioInput();
+    AudioDeviceSelection selection = AudioDeviceSelection::Fallback;
+    if (id.isEmpty()) {
+        AppSettings::instance().remove(kAudioInputKey);
+    } else {
+        bool found = false;
+        for (const QAudioDevice& d : QMediaDevices::audioInputs()) {
+            if (QString::fromUtf8(d.id()) == id) {
+                device = d;
+                found = true;
+            }
+        }
+        if (!found) {
+            return;
+        }
+        AppSettings::instance().setValue(kAudioInputKey, id);
+        selection = AudioDeviceSelection::OperatorChoice;
+    }
+    AppSettings::instance().save();
+    qCInfo(lcMobile).noquote() << "audio input:" << (id.isEmpty() ? QStringLiteral("the system default") : device.description());
+    if (m_audio) {
+        QMetaObject::invokeMethod(m_audio, [audio = m_audio, device, selection] { audio->setInputDevice(device, selection); },
+                                  Qt::QueuedConnection);
+    }
+    emit audioDevicesChanged();
 }
 
 void MobileEngine::addPanadapter()
