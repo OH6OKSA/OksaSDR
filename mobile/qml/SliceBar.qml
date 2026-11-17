@@ -115,9 +115,22 @@ RowLayout {
                     focusPolicy: Qt.NoFocus
                     onClicked: Engine.selectSlice(modelData.id)
                     // The label is drawn below (no text of its own): named here.
-                    Accessible.name: qsTr("Slice %1, %2 kHz, %3%4").arg(modelData.letter)
+                    Accessible.name: qsTr("Slice %1, %2 kHz, %3%4%5").arg(modelData.letter)
                                      .arg((modelData.frequency * 1000).toFixed(3)).arg(modelData.mode)
                                      .arg(modelData.tx ? qsTr(", the transmit slice") : "")
+                                     .arg(modelData.offBand ? qsTr(", on another band than its panadapter: not received") : "")
+                    // On another band than its panadapter (roadmap 92): an
+                    // outline in the warning colour, no room taken.
+                    Rectangle {
+                        objectName: "sliceOffBand" + chip.modelData.letter
+                        anchors.fill: parent
+                        visible: !!chip.modelData.offBand
+                        color: "transparent"
+                        border.color: Theme.warning
+                        border.width: 2
+                        radius: Theme.radius
+                        z: 3
+                    }
                     Accessible.description: qsTr("Hold for Make TX slice and Close slice")
                     // Under the pressed chip, not at the last pointer position.
                     onPressAndHold: sliceMenu.popup(chip, 0, chip.height)

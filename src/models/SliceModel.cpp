@@ -1782,6 +1782,10 @@ void SliceModel::applyChanges(const SliceDelta& d)
         m_inCapture = *d.inCapture;
         emit inCaptureChanged(m_inCapture);
     }
+    if (d.detached.has_value() && *d.detached != m_detached) {
+        m_detached = *d.detached;
+        emit detachedChanged(m_detached);
+    }
     if (d.txSlice.has_value()) {
         bool tx = *d.txSlice;
         if (tx != m_txSlice) {

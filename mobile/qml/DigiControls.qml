@@ -94,6 +94,38 @@ ColumnLayout {
         }
     }
 
+    // A decoding slice on another band than its panadapter (roadmap 92):
+    // the radio gives it noise or another slice's audio there. The app gives
+    // a slice moved to another band a panadapter of its own; this shows what
+    // was left that way (no panadapter free, tuned there by a drag, another
+    // program).
+    readonly property string offBandSlices: {
+        if (!Engine.digiRunning) return ""
+        const letters = []
+        for (const s of Engine.slices) {
+            if (s.offBand && (s.mode === "DIGU" || s.mode === "DIGL" || s.tx)) letters.push(s.letter)
+        }
+        return letters.join(", ")
+    }
+    Rectangle {
+        objectName: "digiOffBand"
+        Layout.fillWidth: true
+        visible: digi.offBandSlices !== ""
+        implicitHeight: offBandText.implicitHeight + 12
+        radius: 6
+        color: "#7a1a1d"
+        border.color: "#ff5a5f"
+        Label {
+            id: offBandText
+            anchors.fill: parent
+            anchors.margins: 6
+            text: qsTr("Slice %1 is on another band than its panadapter: the radio does not receive it there. Tune it back, or give that band a panadapter of its own (+ Pan).")
+                  .arg(digi.offBandSlices)
+            color: "#ffffff"
+            font.pixelSize: Theme.px(13)
+            wrapMode: Text.WordWrap
+        }
+    }
     // The protocol's dial frequency on each band (DIGU).
     Flow {
         Layout.fillWidth: true

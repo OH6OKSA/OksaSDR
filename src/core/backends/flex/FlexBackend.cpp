@@ -1339,6 +1339,7 @@ void FlexBackend::decodeSliceStatus(int sliceId, const QMap<QString, QString>& k
     // Core state
     carry(kvs, "active", d.active);
     carry(kvs, "tx", d.txSlice);
+    carry(kvs, "detached", d.detached);
     carry(kvs, "rfgain", d.rfGain);
     carry(kvs, "audio_level", d.audioGain);
     carry(kvs, "audio_pan", d.audioPan);

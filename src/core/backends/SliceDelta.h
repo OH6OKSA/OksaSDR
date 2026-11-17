@@ -42,6 +42,10 @@ struct SliceDelta {
     // capture stream. Independent of active, which means selected/focused.
     std::optional<bool>        inCapture;
     std::optional<bool>        txSlice;
+    // FLEX "detached": the slice outside its panadapter. On another band than
+    // the panadapter's it gives noise or another slice's audio (OksaSDR
+    // roadmap 92), so the app shows it and gives the slice a panadapter.
+    std::optional<bool>        detached;
     std::optional<double>      rfGain;
     std::optional<double>      audioGain;
     std::optional<int>         audioPan;

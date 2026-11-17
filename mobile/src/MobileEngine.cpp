@@ -1185,6 +1185,25 @@ MobileEngine::MobileEngine(QObject* parent)
     });
     connect(&rm, &RadioModel::panadapterAdded, this, [this](PanadapterModel* pan) {
         sendPanDimensions(pan->panId());
+        // The panadapter asked for a slice going to another band (roadmap
+        // 92): its slice, the radio's own or one made here.
+        if (m_ownPanMove && m_ownPanMove->newPanId.isEmpty()) {
+            m_ownPanMove->newPanId = pan->panId();
+            QTimer::singleShot(1500, this, [this, gen = m_ownPanGeneration, panId = pan->panId()] {
+                if (!m_ownPanMove || gen != m_ownPanGeneration || m_ownPanMove->arrived) {
+                    return;
+                }
+                RadioModel& r = m_session.radioModel();
+                for (SliceModel* s : r.slices()) {
+                    if (s->panId() == panId) {
+                        ownPanSliceArrived(s);
+                        return;
+                    }
+                }
+                qCInfo(lcMobile) << "own panadapter: the radio put no slice on" << panId << "- making one";
+                r.addSliceOnPan(panId, m_ownPanMove->oldMhz);
+            });
+        }
         // The fresh pan of a slice recovery: put the slice on it.
         if (m_sliceRecoveryPending && m_session.radioModel().slices().isEmpty()) {
             m_sliceRecoveryPending = false;
@@ -4558,6 +4577,11 @@ void MobileEngine::tuneToCentred(double mhz)
     if (!m_slice || mhz <= 0.0) {
         return;
     }
+    if (const QString band = BandSettings::bandForFrequency(mhz);
+        band != BandSettings::bandForFrequency(m_slice->frequency())
+        && moveSliceToOwnPan(band, [this, mhz] { tuneToCentred(mhz); })) {
+        return;
+    }
     if (radeActive() && BandSettings::bandForFrequency(mhz) != BandSettings::bandForFrequency(m_slice->frequency())) {
         stopRadeBeforeLeaving("move to another band");
     }
@@ -4889,6 +4913,113 @@ bool MobileEngine::bandsAvailable() const
     return m_connected && m_session.radioModel().usesFlexCommandPlane();
 }
 
+bool MobileEngine::moveSliceToOwnPan(const QString& targetBand, std::function<void()> retry)
+{
+    RadioModel& rm = m_session.radioModel();
+    // Never under a transmission: the slice is removed and made again.
+    if (!m_slice || m_ownPanMove || !rm.usesFlexCommandPlane() || BandSettings::bandDef(targetBand).lowMhz <= 0.0
+        || radioTransmitting()) {
+        return false;
+    }
+    // This client's other slices on the same panadapter, on another band.
+    QStringList left;
+    for (SliceModel* s : rm.slices()) {
+        if (s != m_slice && s->panId() == m_slice->panId()
+            && BandSettings::bandForFrequency(s->frequency()) != targetBand) {
+            left << s->letter();
+        }
+    }
+    if (left.isEmpty()) {
+        return false;
+    }
+    // The radio's own counts (its "slices=" / "panadapters=" status, its
+    // model's only before that): a 6700 has room for eight, a 6400 for two.
+    if (rm.panadapters().size() >= rm.maxPanadapters()) {
+        qCInfo(lcMobile).noquote() << QStringLiteral("own panadapter: none free for slice %1 to %2 (slices %3 stay on its panadapter)")
+                                          .arg(m_slice->letter(), targetBand, left.join(QStringLiteral(", ")));
+        setLastError(tr("No panadapter is free for slice %1 on %2. On its panadapter with %3 the radio does not receive "
+                        "it there: close a panadapter, or keep these slices on one band.")
+                         .arg(m_slice->letter(), targetBand, left.join(QStringLiteral(", "))));
+        return false;
+    }
+    OwnPanMove move;
+    move.oldId = m_slice->sliceId();
+    move.oldPanId = m_slice->panId();
+    move.letter = m_slice->letter();
+    move.mode = m_slice->mode();
+    move.oldMhz = m_slice->frequency();
+    move.wasTx = m_slice->isTxSlice();
+    move.band = targetBand;
+    move.retry = std::move(retry);
+    m_ownPanMove = move;
+    const quint64 gen = ++m_ownPanGeneration;
+    qCInfo(lcMobile).noquote() << QStringLiteral("own panadapter: slice %1 to %2 would leave %3 on another band on its panadapter: a panadapter of its own first")
+                                      .arg(move.letter, targetBand, left.join(QStringLiteral(", ")));
+    // The slice goes first: the radio gives the new one the lowest free
+    // letter, so the slice keeps its letter (and with every slice in use it
+    // makes the room the new panadapter's slice needs). A panadapter that
+    // does not come puts it back where it was (below).
+    m_ownPanMove->oldRemoved = true;
+    rm.removeSlice(move.oldId);
+    rm.createPanadapter();
+    QTimer::singleShot(8000, this, [this, gen] {
+        if (!m_ownPanMove || gen != m_ownPanGeneration) {
+            return;
+        }
+        const OwnPanMove failed = *m_ownPanMove;
+        m_ownPanMove.reset();
+        qCWarning(lcMobile) << "own panadapter: none came in 8 s for slice" << failed.letter;
+        if (failed.oldRemoved && !failed.arrived) {
+            m_session.radioModel().addSliceOnPan(failed.oldPanId, failed.oldMhz);
+        }
+        setLastError(tr("The radio gave no panadapter for slice %1; it stays on its band.").arg(failed.letter));
+    });
+    return true;
+}
+
+void MobileEngine::ownPanSliceArrived(SliceModel* slice)
+{
+    if (!m_ownPanMove || m_ownPanMove->arrived || !slice) {
+        return;
+    }
+    m_ownPanMove->arrived = true;
+    RadioModel& rm = m_session.radioModel();
+    // As the slice it replaces: its mode and transmit; the action that was
+    // asked (the band, the frequency, the memory) then sets the rest.
+    if (!m_ownPanMove->mode.isEmpty() && slice->mode() != m_ownPanMove->mode) {
+        slice->setMode(m_ownPanMove->mode);
+    }
+    if (m_ownPanMove->wasTx) {
+        slice->setTxSlice(true);
+    }
+    if (!m_ownPanMove->oldRemoved && rm.slice(m_ownPanMove->oldId)) {
+        rm.removeSlice(m_ownPanMove->oldId);
+    }
+    qCInfo(lcMobile).noquote() << QStringLiteral("own panadapter: slice %1 on %2 (was %3 on %4)")
+                                      .arg(slice->letter(), m_ownPanMove->newPanId, m_ownPanMove->letter, m_ownPanMove->oldPanId);
+    selectSlice(slice->sliceId());
+    finishOwnPanMove(slice->sliceId(), 40);
+}
+
+void MobileEngine::finishOwnPanMove(int newId, int triesLeft)
+{
+    if (!m_ownPanMove) {
+        return;
+    }
+    // The action again once the new slice is the active one (its own
+    // panadapter, alone there: no second move).
+    if ((m_slice && m_slice->sliceId() == newId) || triesLeft <= 0) {
+        const std::function<void()> retry = m_ownPanMove->retry;
+        m_ownPanMove.reset();
+        ++m_ownPanGeneration;
+        if (retry) {
+            retry();
+        }
+        return;
+    }
+    QTimer::singleShot(100, this, [this, newId, triesLeft] { finishOwnPanMove(newId, triesLeft - 1); });
+}
+
 void MobileEngine::selectBand(const QString& band)
 {
     RadioModel& rm = m_session.radioModel();
@@ -4898,6 +5029,9 @@ void MobileEngine::selectBand(const QString& band)
     const auto result = XvtrPolicy::resolveBandStackKey(band, transvertersOf(rm), rm.capabilities());
     if (!result.isSupported()) {
         setLastError(result.unsupportedReason);
+        return;
+    }
+    if (moveSliceToOwnPan(band, [this, band] { selectBand(band); })) {
         return;
     }
     stopRadeBeforeLeaving("band change");
@@ -5096,17 +5230,31 @@ void MobileEngine::setTxAntenna(const QString& antenna)
     }
 }
 
+// A slice on another band than its panadapter's middle (roadmap 92): the
+// radio gives it noise or another slice's audio there.
+static bool sliceOffPanBand(const RadioModel& rm, const SliceModel* s)
+{
+    const PanadapterModel* pan = s ? rm.panadapter(s->panId()) : nullptr;
+    if (!pan || pan->centerMhz() <= 0.0) {
+        return false;
+    }
+    const QString band = BandSettings::bandForFrequency(s->frequency());
+    return band != BandSettings::bandForFrequency(pan->centerMhz());
+}
+
 QVariantList MobileEngine::slices() const
 {
     QVariantList list;
     for (SliceModel* s : m_session.radioModel().slices()) {
         list.append(QVariantMap{
+            {QStringLiteral("offBand"), sliceOffPanBand(m_session.radioModel(), s)},
             {QStringLiteral("id"), s->sliceId()},
             {QStringLiteral("letter"), s->letter()},
             {QStringLiteral("frequency"), s->frequency()},
             {QStringLiteral("mode"), s->mode()},
             {QStringLiteral("active"), m_slice == s},
             {QStringLiteral("tx"), s->isTxSlice()},
+            {QStringLiteral("detached"), s->isDetached()},
             {QStringLiteral("panId"), s->panId()},
             {QStringLiteral("filterLow"), s->filterLow()},
             {QStringLiteral("filterHigh"), s->filterHigh()},
@@ -7327,6 +7475,13 @@ void MobileEngine::recallMemory(int index)
         return;
     }
     RadioModel& rm = m_session.radioModel();
+    if (const auto mem = rm.memories().constFind(index); m_slice && mem != rm.memories().constEnd()) {
+        const QString band = BandSettings::bandForFrequency(mem.value().freq);
+        if (band != BandSettings::bandForFrequency(m_slice->frequency())
+            && moveSliceToOwnPan(band, [this, index] { recallMemory(index); })) {
+            return;
+        }
+    }
     qCInfo(lcMobile) << "recall memory" << index;
     // The view centred on the memory's passband once the radio has set it.
     centreWhenSettled();
@@ -9483,6 +9638,24 @@ void MobileEngine::onSliceAdded(SliceModel* slice)
     connect(slice, &SliceModel::modeChanged, this, &MobileEngine::slicesChanged);
     connect(slice, &SliceModel::txSliceChanged, this, &MobileEngine::slicesChanged);
     connect(slice, &SliceModel::letterChanged, this, &MobileEngine::slicesChanged);
+    connect(slice, &SliceModel::detachedChanged, this, [this, slice](bool detached) {
+        qCInfo(lcMobile).noquote() << QStringLiteral("slice %1 %2 its panadapter (%3 MHz, %4)")
+                                          .arg(slice->letter(), detached ? QStringLiteral("outside") : QStringLiteral("inside"))
+                                          .arg(slice->frequency(), 0, 'f', 6)
+                                          .arg(BandSettings::bandForFrequency(slice->frequency()));
+        emit slicesChanged();
+        emit digiChanged();
+    });
+    // The slice a panadapter of its own was asked for (roadmap 92): its pan
+    // is known once its status has come.
+    if (m_ownPanMove) {
+        QTimer::singleShot(300, this, [this, id = slice->sliceId()] {
+            SliceModel* s = m_session.radioModel().slice(id);
+            if (s && m_ownPanMove && !m_ownPanMove->newPanId.isEmpty() && s->panId() == m_ownPanMove->newPanId) {
+                ownPanSliceArrived(s);
+            }
+        });
+    }
     connect(slice, &SliceModel::audioGainChanged, this, &MobileEngine::slicesChanged);
     connect(slice, &SliceModel::audioPanChanged, this, &MobileEngine::slicesChanged);
     connect(slice, &SliceModel::audioMuteChanged, this, &MobileEngine::slicesChanged);

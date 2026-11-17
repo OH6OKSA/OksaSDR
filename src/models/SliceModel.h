@@ -91,6 +91,7 @@ public:
     bool    isActive()   const { return m_active; }
     bool    inCapture()  const { return m_inCapture; }
     bool    isTxSlice()  const { return m_txSlice; }
+    bool    isDetached() const { return m_detached; }
     float   rfGain()     const { return m_rfGain; }
     float   audioGain()  const { return m_externalReceiveAudioReplacement
                                       ? m_externalReceiveAudioGain
@@ -485,6 +486,7 @@ signals:
     void adaptiveActiveChanged(bool on);
     void activeChanged(bool active);
     void inCaptureChanged(bool inCapture);
+    void detachedChanged(bool detached);
     void txSliceChanged(bool tx);
     void audioGainChanged(float gain);
     void audioPanChanged(int pan);
@@ -690,6 +692,7 @@ private:
     bool    m_adaptiveActive{false};     // a confident live fit is applied
     bool    m_active{false};
     bool    m_inCapture{true};
+    bool    m_detached{false};
     bool    m_txSlice{false};
     float   m_rfGain{0.0f};
     float   m_audioGain{50.0f};

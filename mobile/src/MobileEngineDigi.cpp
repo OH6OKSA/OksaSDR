@@ -1318,6 +1318,13 @@ void MobileEngine::digiTune(double mhz)
     if (!m_slice || mhz <= 0.0) {
         return;
     }
+    // Another band than this slice's panadapter's other slices: a
+    // panadapter of its own first (roadmap 92), then this again there.
+    if (const QString band = BandSettings::bandForFrequency(mhz);
+        band != BandSettings::bandForFrequency(m_slice->frequency())
+        && moveSliceToOwnPan(band, [this, mhz] { digiTune(mhz); })) {
+        return;
+    }
     // FT8 / FT4 instead of RADE: RADE ends first (its mute and DIGU / DIGL
     // out of the old band's memory, decoding free to start).
     stopRadeBeforeLeaving("change to FT8 / FT4");

@@ -16,6 +16,7 @@
 #include <QHash>
 
 #include <functional>
+#include <optional>
 #include <QSet>
 #include <QObject>
 #include <QPointer>
@@ -2208,6 +2209,28 @@ private:
     int m_splitRxId{-1};
     int m_splitTxId{-1};
     bool m_splitPending{false};
+    // Roadmap 92: a slice going to another band than the other slices on its
+    // panadapter gets a panadapter of its own first (the radio gives a slice
+    // outside its panadapter's band noise or another slice's audio); the
+    // action then runs again on the new slice.
+    struct OwnPanMove {
+        int oldId{-1};
+        QString oldPanId;
+        QString letter;
+        QString mode;
+        double oldMhz{0.0};
+        bool wasTx{false};
+        QString band;
+        QString newPanId;
+        bool oldRemoved{false};
+        bool arrived{false};
+        std::function<void()> retry;
+    };
+    std::optional<OwnPanMove> m_ownPanMove;
+    quint64 m_ownPanGeneration{0};
+    bool moveSliceToOwnPan(const QString& targetBand, std::function<void()> retry);
+    void ownPanSliceArrived(SliceModel* slice);
+    void finishOwnPanMove(int newId, int triesLeft);
     QList<QMetaObject::Connection> m_rxAudioConnections;
     std::function<void(const QByteArray&, int)> m_rxAudioTestSink;
     QMetaObject::Connection m_rxAudioTestConnection;
