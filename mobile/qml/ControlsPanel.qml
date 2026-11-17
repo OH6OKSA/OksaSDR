@@ -240,7 +240,7 @@ ColumnLayout {
             }
             Label {
                 Layout.fillWidth: true
-                text: qsTr("Auto uses Opus over SmartLink or a VPN, uncompressed on the local network. This connection: %1. A change applies from the next connection.")
+                text: qsTr("Auto uses Opus over SmartLink, a VPN or another network, uncompressed only on the radio's own network. This connection: %1. A change applies from the next connection.")
                       .arg(Engine.audioCodingInUse.length > 0 ? Engine.audioCodingInUse : "–")
                 color: Theme.textDim
                 font.pixelSize: 12

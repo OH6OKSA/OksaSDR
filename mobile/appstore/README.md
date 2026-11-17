@@ -21,8 +21,27 @@ Rules kept in the texts: no other platform's name (guideline 2.3.10: no
 Android here), no third-party trademarks in the name, subtitle or keywords
 (2.3.7; FlexRadio's names only in the description, as compatibility, with the
 trademark line), no "beta" or "TestFlight", and a public privacy policy
-(`mobile/PRIVACY.md`). The screenshots are made by the render tool against the
-real radio (6.9" iPhone 1320 x 2868, 13" iPad 2752 x 2064).
+(`mobile/PRIVACY.md`).
+
+## Screenshots
+
+`mobile/tools/appstore-screenshots.sh RADIO_IP --build N` renders them
+against the real radio (receive only; slice A put back after) with the
+submitted build's number in the status line, into `screenshots/` (not
+committed: made again for each submission):
+
+| 6.9" iPhone, 1320 x 2868 | 13" iPad, 2752 x 2064 |
+|---|---|
+| 1 the main screen on 40 m FT8 | 1 the main screen, DSP and Audio pinned |
+| 2 FT8 decoding, the FTx tab full screen | 2 FT8 decoding, the FTx list pinned |
+| 3 the Log tab with W1AW's lookup | 3 the CW tab |
+| 4 Big buttons | 4 Radio Setup › Transmit |
+| 5 Radio Setup › Transmit | |
+
+Kept out of them: Radio Setup's Radio section (it names the radio and the
+computer), the iPad's Log tab (it shows the render computer's log file path)
+and the 3D view (the render tool draws no 3D without a GPU). The Log shot
+types with the transmit lock on (A and T would tune on the page).
 
 ## App Privacy (App Store Connect › App Privacy)
 
