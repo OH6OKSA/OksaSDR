@@ -1144,7 +1144,10 @@ MobileEngine::MobileEngine(QObject* parent)
     // The radio's name and model for its saved entry, as they arrive.
     connect(&rm, &RadioModel::infoChanged, this, &MobileEngine::noteSavedRadioName);
     connect(this, &MobileEngine::connectionStateChanged, this, refreshBands);
-    connect(&rm, &RadioModel::sliceRemoved, this, [this](int) { applyBeatCancel(); });
+    connect(&rm, &RadioModel::sliceRemoved, this, [this](int id) {
+        applyBeatCancel();
+        m_sliceFt4.remove(id);  // a slice made later with this id starts afresh
+    });
     connect(&rm, &RadioModel::sliceRemoved, this, [this](int id) {
         // The split's TX slice closed (here, another client or the radio):
         // transmit goes back to the RX slice; either side gone ends split.
@@ -1212,6 +1215,12 @@ MobileEngine::MobileEngine(QObject* parent)
     });
     connect(&rm, &RadioModel::panadapterAdded, this, [this](PanadapterModel* pan) {
         sendPanDimensions(pan->panId());
+        // Not the one shown once the new slice has settled: narrow (92).
+        QTimer::singleShot(2500, this, [this] {
+            if (m_pan) {
+                narrowHiddenPans(m_pan->panId());
+            }
+        });
         // A slice's "on another band than its panadapter" (roadmap 92) is
         // judged by the panadapter's middle too: the slice moves first and
         // the panadapter after it, so its band changing is news for the
@@ -5158,8 +5167,10 @@ void MobileEngine::zoom(double factor)
     if (m_pan->bandwidthLimitsKnown() && m_pan->minBandwidthMhz() < m_pan->maxBandwidthMhz()) {
         bandwidth = std::clamp(bandwidth, m_pan->minBandwidthMhz(), m_pan->maxBandwidthMhz());
     }
-    // Centre on the slice so the zoom closes in on what is being heard.
-    const double center = m_slice ? m_slice->frequency() : m_pan->centerMhz();
+    // Centre on the slice's passband so the zoom closes in on what is being
+    // heard: on its carrier a USB / DIGU passband went half off the right
+    // edge at a narrow span (the user's FTx slices on the ThinkPad, L5).
+    const double center = m_slice ? passbandCentreMhz(m_slice->frequency()) : m_pan->centerMhz();
     const bool sent = m_session.radioModel().requestPanCenter(m_pan->panId(), center, bandwidth);
     qCInfo(lcMobile) << "zoom pan" << m_pan->panId() << "bandwidth" << m_pan->bandwidthMhz()
                      << "->" << bandwidth << "sent" << sent;
@@ -9592,6 +9603,10 @@ void MobileEngine::onConnectionStateChanged(bool connected)
         deactivateRade();
         emit radeChanged();
     }
+    if (!connected) {
+        m_sliceFt4.clear();  // slice ids are the radio's, per session
+        m_narrowPans.clear();
+    }
     m_connected = connected;
     if (!connected) {
         setMacroRepeat(false);
@@ -9928,6 +9943,7 @@ void MobileEngine::bindSlice(SliceModel* slice)
     planRegionNow();
     applyBeatCancel();
     emit fmChanged();
+    emit digiChanged();  // the FTx tab's FT8 / FT4 and bands are the active slice's
     if (slice) {
         noteSliceState();
         m_sliceConnections.append(connect(slice, &SliceModel::frequencyChanged, this, &MobileEngine::noteSliceState));
@@ -10030,10 +10046,36 @@ void MobileEngine::bindPan(PanadapterModel* pan)
             QTimer::singleShot(300, this, [this, id] { ensurePanDbmRange(id); });
         }));
         m_panConnections.append(connect(pan, &PanadapterModel::rfGainInfoChanged, this, &MobileEngine::rfGainChanged));
-        sendPanDimensions(pan->panId());
+        // Back to the screen's width if it was sent narrow while hidden.
+        sendPanDimensions(pan->panId(), m_narrowPans.remove(pan->panId()));
+        narrowHiddenPans(pan->panId());
     }
     emit panGeometryChanged();
     emit rfGainChanged();
+}
+
+void MobileEngine::narrowHiddenPans(const QString& shownPanId)
+{
+    // The radio's own width for a new panadapter: its FFT and waterfall rows
+    // a few hundred bytes, the slices on it still decoding from their DAX.
+    constexpr int kHiddenPanPixels = 50;
+    RadioModel& rm = m_session.radioModel();
+    if (!rm.usesFlexCommandPlane() || !rm.hasCommandPlane()) {
+        return;
+    }
+    const quint32 ours = rm.ourClientHandle();
+    for (PanadapterModel* p : rm.panadapters()) {
+        const QString id = p->panId();
+        if (id == shownPanId || m_narrowPans.contains(id) || (ours != 0 && !p->ownedByClient(ours))) {
+            continue;
+        }
+        rm.sendCommand(QStringLiteral("display pan set %1 xpixels=%2 ypixels=%3").arg(id).arg(kHiddenPanPixels).arg(kPanYPixels));
+        m_narrowPans.insert(id);
+        if (m_sentPanId == id) {
+            m_sentPanId.clear();  // shown again: its width is sent again
+        }
+        qCInfo(lcMobile) << "pan" << id << "not shown: sent" << kHiddenPanPixels << "px wide";
+    }
 }
 
 void MobileEngine::setPanPixels(int width, int height)
@@ -10975,13 +11017,17 @@ void MobileEngine::dismissSetupSuggestion()
 namespace {
 const QString kMobileAudioCompressionKey = QStringLiteral("MobileAudioCompression");
 
-// The radio is reached through a VPN: no local network holds its address,
-// and a tunnel interface (iOS utun/ipsec, wg, tun, ppp) carries IPv4. A
-// routed home network without a tunnel is not a VPN.
-bool radioThroughVpn(const QHostAddress& radio)
+// How the radio is reached: on a local network (an address of this device's
+// own networks holds it), through this device's VPN (no local network holds
+// it and a tunnel interface, iOS utun/ipsec, wg, tun, ppp, carries IPv4), or
+// routed (neither: another subnet, a router's site-to-site VPN among them,
+// as the ThinkPad reached the cabin's FLEX over LTE).
+enum class RadioPath { Local, Vpn, Routed };
+
+RadioPath radioPath(const QHostAddress& radio)
 {
     if (radio.protocol() != QAbstractSocket::IPv4Protocol || radio.isLoopback()) {
-        return false;
+        return RadioPath::Local;
     }
     bool tunnel = false;
     for (const QNetworkInterface& iface : QNetworkInterface::allInterfaces()) {
@@ -10999,11 +11045,11 @@ bool radioThroughVpn(const QHostAddress& radio)
             if (tunnelName) {
                 tunnel = true;
             } else if (entry.prefixLength() > 0 && radio.isInSubnet(entry.ip(), entry.prefixLength())) {
-                return false;   // on a local network
+                return RadioPath::Local;
             }
         }
     }
-    return tunnel;
+    return tunnel ? RadioPath::Vpn : RadioPath::Routed;
 }
 } // namespace
 
@@ -11155,11 +11201,19 @@ void MobileEngine::applyAudioCompression(const QHostAddress& radio, bool wan)
     QString core = choice;   // the core's AudioCompression: Auto, Opus or None
     QString why;
     if (choice == QLatin1String("Auto")) {
+        // Uncompressed only on the radio's own network: through a VPN or a
+        // router (another subnet, maybe a slow link: the ThinkPad lost a
+        // third of every stream, FT8 decoding nothing, with four
+        // panadapters, four DAX streams and uncompressed audio) Opus.
+        const RadioPath path = wan ? RadioPath::Local : radioPath(radio);
         if (wan) {
             why = QStringLiteral("SmartLink");
-        } else if (radioThroughVpn(radio)) {
+        } else if (path == RadioPath::Vpn) {
             core = QStringLiteral("Opus");
             why = QStringLiteral("VPN");
+        } else if (path == RadioPath::Routed) {
+            core = QStringLiteral("Opus");
+            why = QStringLiteral("the radio on another network");
         }
     }
     AppSettings::instance().setValue(QStringLiteral("AudioCompression"), core);

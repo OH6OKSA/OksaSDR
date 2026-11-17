@@ -1236,8 +1236,15 @@ public:
 
     bool digiRunning() const;
     void setDigiRunning(bool on);
+    // The active slice's FT8 / FT4 (the FTx tab's buttons and bands); each
+    // slice has its own (roadmap 96), the TX by the TX slice's.
     QString digiProtocol() const;
     void setDigiProtocol(const QString& protocol);
+    QString digiTxProtocol() const;
+    bool digiSliceIsFt4(const SliceModel* slice) const;
+    // FT4 or FT8 chosen per slice id while connected (a slice on a
+    // protocol's dial frequency starts in that protocol).
+    QHash<int, bool> m_sliceFt4;
     int digiTxHz() const { return m_digiTxHz; }
     void setDigiTxHz(int hz);
     int digiTxLevelDb() const { return m_digiTxLevelDb; }
@@ -2119,6 +2126,11 @@ private:
     // radio asks (panDimensionsNeeded: it reset to defaults).
     void sendPanDimensions(const QString& panId, bool force = false);
     QString m_sentPanId;
+    // Panadapters not shown, sent narrow: only one is on the screen, and
+    // each streamed its FFT and waterfall at the screen's width (roadmap 92:
+    // four on the ThinkPad over the cabin's LTE lost a third of every stream).
+    QSet<QString> m_narrowPans;
+    void narrowHiddenPans(const QString& shownPanId);
     int m_sentPanWidth{0};
     qint64 m_sentPanSizeMs{0};
     void setConnectionState(const QString& state);

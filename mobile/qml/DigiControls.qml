@@ -801,8 +801,9 @@ ColumnLayout {
         }
         contentItem: Label {
             id: decodeText
+            // FT4's slots are 7.5 s: its time with the seconds, as WSJT-X's.
             text: "%1 %2 %3 %4 %5  %6".arg(row.slice || " ")
-                                      .arg(row.utc.substring(0, 4))
+                                      .arg(row.protocol === "FT4" ? row.utc : row.utc.substring(0, 4))
                                       .arg(row.snr === "" ? "   " : ((row.snr >= 0 ? "+" : "") + row.snr))
                                       .arg(row.dt === "" ? "   " : row.dt)
                                       .arg(row.freq)

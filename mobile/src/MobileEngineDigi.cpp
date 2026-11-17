@@ -330,7 +330,7 @@ void MobileEngine::syncDigiAudio()
             }
         }
         d->ft8 = std::make_unique<Ft8Engine>();
-        d->ft8->setProtocol(m_ft8->protocol());
+        d->ft8->setProtocol(digiSliceIsFt4(slice) ? Ft8Engine::Protocol::Ft4 : Ft8Engine::Protocol::Ft8);
         d->ft8->setRunning(true);
         d->audio = std::make_unique<DecoderAudioModel>(rm, DecoderAudioModel::Consumer::Rtty);
         connect(d->audio.get(), &DecoderAudioModel::pcmReady, d->ft8.get(), &Ft8Engine::feed);
@@ -338,10 +338,13 @@ void MobileEngine::syncDigiAudio()
         connect(d->ft8.get(), &Ft8Engine::decoded, this, [this, id](const QVector<Ft8Engine::Decode>& decodes, qint64 slotMs) {
             SliceModel* sl = m_session.radioModel().slice(id);
             const QString my = digiMyCall();
-            const qint64 slotLen = qint64(m_ft8->slotSeconds() * 1000);
+            // This slice's own protocol (roadmap 96), not the TX's.
+            const auto dit = m_digiDecoders.find(id);
+            const Ft8Engine* engine = dit != m_digiDecoders.end() && dit->second->ft8 ? dit->second->ft8.get() : m_ft8.get();
+            const qint64 slotLen = qint64(engine->slotSeconds() * 1000);
             const QString utc = QDateTime::fromMSecsSinceEpoch(slotMs, QTimeZone::UTC).toString(QStringLiteral("HHmmss"));
             const QString band = sl ? QsoLog::bandOf(sl->frequency()) : QString();
-            const QString modeKey = digiProtocol();
+            const QString modeKey = engine->protocol() == Ft8Engine::Protocol::Ft4 ? QStringLiteral("FT4") : QStringLiteral("FT8");
             QVariantList list;
             for (const Ft8Engine::Decode& dec : decodes) {
                 const Ft8Engine::Parsed p = Ft8Engine::parse(dec.text);
@@ -362,6 +365,7 @@ void MobileEngine::syncDigiAudio()
                                         {QStringLiteral("sliceId"), id},
                                         {QStringLiteral("slice"), sl ? sl->letter() : QString()},
                                         {QStringLiteral("band"), band},
+                                        {QStringLiteral("protocol"), modeKey},
                                         {QStringLiteral("slotOdd"), (slotMs / slotLen) % 2 == 1},
                                         {QStringLiteral("slotMs"), slotMs}});
             }
@@ -609,6 +613,20 @@ void MobileEngine::bindDigiSlice(SliceModel* slice)
     }
     m_digiSliceConnections.clear();
     m_digiSlice = slice;
+    // The TX in the TX slice's own protocol (roadmap 96).
+    if (slice && m_ft8) {
+        const Ft8Engine::Protocol p = digiSliceIsFt4(slice) ? Ft8Engine::Protocol::Ft4 : Ft8Engine::Protocol::Ft8;
+        if (m_ft8->protocol() != p) {
+            if (m_digiState != QLatin1String("idle")) {
+                digiHalt();
+            }
+            if (m_digiHound && p == Ft8Engine::Protocol::Ft4) {
+                setDigiHound(false);
+            }
+            m_ft8->setProtocol(p);
+            qCInfo(lcMobile).noquote() << "digi: TX in" << digiTxProtocol() << "(slice" << slice->letter() << ")";
+        }
+    }
     if (slice) {
         m_digiSliceConnections.append(connect(slice, &SliceModel::frequencyChanged, this, &MobileEngine::digiChanged));
         m_digiSliceConnections.append(connect(slice, &SliceModel::modeChanged, this, &MobileEngine::digiChanged));
@@ -679,30 +697,90 @@ void MobileEngine::updateDigiSlice()
     bindDigiSlice(tx);
 }
 
+bool MobileEngine::digiSliceIsFt4(const SliceModel* slice) const
+{
+    if (!slice) {
+        return m_ft8 && m_ft8->protocol() == Ft8Engine::Protocol::Ft4;
+    }
+    if (const auto it = m_sliceFt4.constFind(slice->sliceId()); it != m_sliceFt4.cend()) {
+        return it.value();
+    }
+    // On a protocol's dial frequency (within 1 kHz, the nearer one): that
+    // protocol (7.0475 FT4, 7.074 FT8); elsewhere the last one chosen.
+    const double mhz = slice->frequency();
+    double nearest = 0.001;
+    int found = -1;
+    for (const BandFreq& b : kBandFreqs) {
+        if (b.ft8 > 0.0 && std::abs(mhz - b.ft8) < nearest) {
+            nearest = std::abs(mhz - b.ft8);
+            found = 0;
+        }
+        if (b.ft4 > 0.0 && std::abs(mhz - b.ft4) < nearest) {
+            nearest = std::abs(mhz - b.ft4);
+            found = 1;
+        }
+    }
+    if (found >= 0) {
+        return found == 1;
+    }
+    return AppSettings::instance().value(QStringLiteral("MobileDigiProtocol"), QStringLiteral("FT8")).toString()
+        == QLatin1String("FT4");
+}
+
 QString MobileEngine::digiProtocol() const
+{
+    return digiSliceIsFt4(m_slice ? m_slice.data() : digiSlice()) ? QStringLiteral("FT4") : QStringLiteral("FT8");
+}
+
+QString MobileEngine::digiTxProtocol() const
 {
     return m_ft8 && m_ft8->protocol() == Ft8Engine::Protocol::Ft4 ? QStringLiteral("FT4") : QStringLiteral("FT8");
 }
 
+// FT8 / FT4 for the active slice (roadmap 96: FT8 on one slice and FT4 on
+// another at once); the TX follows it when that slice is the TX slice.
 void MobileEngine::setDigiProtocol(const QString& protocol)
 {
-    if (!m_ft8 || protocol == digiProtocol()) {
+    if (!m_ft8) {
         return;
     }
-    digiHalt();
-    if (m_digiHound && protocol == QLatin1String("FT4")) {
-        setDigiHound(false);  // FT8's DXpedition mode only
+    const bool ft4 = protocol == QLatin1String("FT4");
+    SliceModel* target = m_slice ? m_slice.data() : digiSlice();
+    if (target && digiSliceIsFt4(target) == ft4 && m_sliceFt4.contains(target->sliceId())) {
+        return;
     }
-    m_ft8->setProtocol(protocol == QLatin1String("FT4") ? Ft8Engine::Protocol::Ft4 : Ft8Engine::Protocol::Ft8);
+    const Ft8Engine::Protocol p = ft4 ? Ft8Engine::Protocol::Ft4 : Ft8Engine::Protocol::Ft8;
+    if (target) {
+        m_sliceFt4.insert(target->sliceId(), ft4);
+    }
+    if (!target || target == digiSlice()) {
+        digiHalt();
+        if (m_digiHound && ft4) {
+            setDigiHound(false);  // FT8's DXpedition mode only
+        }
+        m_ft8->setProtocol(p);
+    }
     for (auto& [id, d] : m_digiDecoders) {
-        d->ft8->setProtocol(m_ft8->protocol());
-        d->ft8->resetAudio();
+        if (!target || id == target->sliceId()) {
+            d->ft8->setProtocol(p);
+            d->ft8->resetAudio();
+        }
     }
-    AppSettings::instance().setValue(QStringLiteral("MobileDigiProtocol"), digiProtocol());
+    qCInfo(lcMobile).noquote() << "digi:" << protocol << "on slice" << (target ? target->letter() : QStringLiteral("-"));
+    AppSettings::instance().setValue(QStringLiteral("MobileDigiProtocol"), protocol);
     AppSettings::instance().save();
-    m_digiDecodes.clear();
-    emit digiDecodesChanged();
+    // That slice's decodes of the other protocol go.
+    const int before = m_digiDecodes.size();
+    m_digiDecodes.erase(std::remove_if(m_digiDecodes.begin(), m_digiDecodes.end(),
+                                       [target](const QVariant& v) {
+                                           return !target || v.toMap().value(QStringLiteral("sliceId")).toInt() == target->sliceId();
+                                       }),
+                        m_digiDecodes.end());
+    if (m_digiDecodes.size() != before) {
+        emit digiDecodesChanged();
+    }
     emit digiChanged();
+    emit slicesChanged();
 }
 
 void MobileEngine::setPskReporter(bool on)
@@ -795,7 +873,7 @@ void MobileEngine::setDigiHound(bool on)
         return;
     }
     if (on) {
-        if (digiProtocol() != QLatin1String("FT8")) {
+        if (digiTxProtocol() != QLatin1String("FT8")) {
             setLastError(tr("Hound is FT8 only (WSJT-X's FT8 DXpedition mode)."));
             return;
         }
@@ -1393,7 +1471,7 @@ void MobileEngine::digiFindFreeTx()
                        : m_digiCqParity == QLatin1String("odd")  ? 1
                                                                  : -1;
     const int lowest = m_digiHound ? 1000 : 200;
-    const int width = digiProtocol() == QLatin1String("FT4") ? 90 : 50;
+    const int width = digiTxProtocol() == QLatin1String("FT4") ? 90 : 50;
     QVector<int> heard;
     for (const QVariant& v : std::as_const(m_digiDecodes)) {
         const QVariantMap d = v.toMap();
@@ -1435,20 +1513,26 @@ void MobileEngine::digiFindFreeTx()
 
 void MobileEngine::digiZoom()
 {
-    SliceModel* slice = digiSlice();
-    if (!slice || !m_pan) {
+    // The slice shown (a DIGU / DIGL one), else the TX slice, on its own
+    // panadapter: with the TX slice on another panadapter the shown one was
+    // moved to the TX slice's frequency (roadmap 92, several panadapters).
+    SliceModel* slice = m_slice && (m_slice->mode() == QLatin1String("DIGU") || m_slice->mode() == QLatin1String("DIGL"))
+        ? m_slice.data()
+        : digiSlice();
+    PanadapterModel* pan = slice ? m_session.radioModel().panadapter(slice->panId()) : nullptr;
+    if (!slice || !pan) {
         return;
     }
     // 4 kHz around the 0-3 kHz audio band, on its side of the dial.
     const double sign = slice->mode() == QLatin1String("DIGL") ? -1.0 : 1.0;
     double bandwidth = 0.004;
-    if (m_pan->bandwidthLimitsKnown() && m_pan->minBandwidthMhz() < m_pan->maxBandwidthMhz()) {
-        bandwidth = std::clamp(bandwidth, m_pan->minBandwidthMhz(), m_pan->maxBandwidthMhz());
+    if (pan->bandwidthLimitsKnown() && pan->minBandwidthMhz() < pan->maxBandwidthMhz()) {
+        bandwidth = std::clamp(bandwidth, pan->minBandwidthMhz(), pan->maxBandwidthMhz());
     }
-    if (m_pan->bandwidthMhz() > 0.0045) {
-        m_digiPrevPanBw = m_pan->bandwidthMhz();
+    if (pan->bandwidthMhz() > 0.0045) {
+        m_digiPrevPanBw = pan->bandwidthMhz();
     }
-    m_session.radioModel().requestPanCenter(m_pan->panId(), slice->frequency() + sign * 0.0015, bandwidth);
+    m_session.radioModel().requestPanCenter(pan->panId(), slice->frequency() + sign * 0.0015, bandwidth);
 }
 
 void MobileEngine::digiCallCq()
@@ -1864,7 +1948,7 @@ void MobileEngine::digiLogQso()
         qCInfo(lcMobile) << "digi: dry run, not logged:" << m_digiDx;
         return;
     }
-    const bool ft4 = digiProtocol() == QLatin1String("FT4");
+    const bool ft4 = digiTxProtocol() == QLatin1String("FT4");
     // A Hound calls the Fox by its base call; the log gets its full call.
     const QString call = m_digiHound && !m_digiHoundFox.isEmpty() ? m_digiHoundFox : m_digiDx;
     QVariantMap fields{{QStringLiteral("call"), call},
