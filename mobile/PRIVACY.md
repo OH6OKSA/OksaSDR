@@ -134,7 +134,10 @@ on the device.
 
 The microphone is used only to transmit through your radio (voice, RADE
 digital voice) and to record voice keyer messages you choose to record, and
-it is open only while you hold PTT or record. Transmitting from the device requires the radio's mic
+it is open only while you hold PTT or record, while the TX or eSSB tab is
+shown (for its microphone meter; nothing is transmitted), or while you have
+the radio's VOX on with this device's microphone (the audio then streams to
+your radio, whose VOX transmits when you speak). Transmitting from the device requires the radio's mic
 input to be set to this device ("Use this device's microphone"). The audio
 goes only to your radio and is not recorded or stored, except the voice
 keyer messages you record yourself, which stay on the device. iOS and
@@ -219,4 +222,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-11-16 (speech recognition on the device everywhere, SmartLink accounts and favourites, Bluetooth MIDI search on Android; earlier: the Elecraft KPA1500, Bluetooth MIDI controllers, App setups)
+Last updated: 2026-11-18 (the microphone with VOX and for the TX tab's meter; earlier: speech recognition on the device everywhere, SmartLink accounts and favourites, Bluetooth MIDI search on Android; the Elecraft KPA1500, Bluetooth MIDI controllers, App setups)

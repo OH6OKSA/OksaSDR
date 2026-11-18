@@ -611,6 +611,22 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         m_engine.setRfPower(arg.toInt());
         qInfo() << "shot-plan: RF power" << arg.toInt() << "W";
         *delayMs = 1500;
+    } else if (command == QLatin1String("phone")) {
+        // phone: the radio's phone settings (voxOn, voxLevel, voxDelay,
+        // dexpOn ...) and whether VOX holds this device's microphone;
+        // phone KEY VALUE sets one, as the TX tab does.
+        if (args.size() >= 2) {
+            m_engine.setPhone(args.at(0), args.at(1).toInt());
+            *delayMs = 1500;
+        }
+        const QVariantMap phone = m_engine.phone();
+        QStringList parts;
+        for (auto it = phone.cbegin(); it != phone.cend(); ++it) {
+            parts << QStringLiteral("%1=%2").arg(it.key(), it.value().toString());
+        }
+        qInfo().noquote() << "shot-plan: phone" << parts.join(QLatin1Char(' ')) << "| VOX holds the microphone:"
+                          << (m_engine.voxHoldsMicrophone() ? "yes" : "no") << "| transmitting:"
+                          << (m_engine.transmitting() ? "yes" : "no");
     } else if (command == QLatin1String("status")) {
         // OBJECT | K=V K=V: as the radio's status, so a page can be tried
         // with hardware this radio does not have; commands it sends still

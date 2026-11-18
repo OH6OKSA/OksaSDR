@@ -268,12 +268,24 @@ ColumnLayout {
             horizontalAlignment: Text.AlignRight
         }
     }
-    // VOX and DEXP act on the radio's own microphone input only: with this
-    // device's microphone (mic input PC, which opens only while PTT is held)
-    // neither can do anything, so they show only when a radio input is
-    // selected (canUseDeviceMicrophone: the radio's mic, PC available).
-    PhoneLevel { visible: !Engine.cwMode && Engine.canUseDeviceMicrophone; key: "voxLevel"; toggleKey: "voxOn"; title: qsTr("VOX") }
-    PhoneLevel { visible: !Engine.cwMode && Engine.canUseDeviceMicrophone; key: "voxDelay"; title: qsTr("Delay") }
+    // VOX is the radio's own: it keys on what its mic input brings. With the
+    // radio's microphone (canUseDeviceMicrophone: a radio input chosen, PC
+    // available) that is the radio's; with this device's (mic input PC) the
+    // app keeps the microphone streaming while VOX is on (roadmap 19,
+    // Christoph DM5HF). DEXP stays with the radio's own inputs.
+    PhoneLevel { visible: !Engine.cwMode && (Engine.canUseDeviceMicrophone || Engine.usingDeviceMicrophone); key: "voxLevel"; toggleKey: "voxOn"; title: qsTr("VOX") }
+    PhoneLevel { visible: !Engine.cwMode && (Engine.canUseDeviceMicrophone || Engine.usingDeviceMicrophone); key: "voxDelay"; title: qsTr("Delay") }
+    Label {
+        objectName: "voxDeviceNote"
+        visible: !Engine.cwMode && Engine.usingDeviceMicrophone && !!Engine.phone.voxOn
+        Layout.fillWidth: true
+        text: Engine.voxHoldsMicrophone
+              ? qsTr("VOX keeps this device's microphone open and sends it to the radio, whose VOX keys on speech: use a headset, as sound from the speaker would key it too.")
+              : qsTr("In standby (SB) VOX cannot key: the microphone opens once the transmit lock is armed (OA).")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(13)
+        wrapMode: Text.Wrap
+    }
     PhoneLevel { visible: !Engine.cwMode && Engine.canUseDeviceMicrophone; key: "dexpLevel"; toggleKey: "dexpOn"; title: qsTr("DEXP") }
     PhoneLevel {
         visible: ["AM", "SAM", "DSB"].indexOf(Engine.mode) >= 0

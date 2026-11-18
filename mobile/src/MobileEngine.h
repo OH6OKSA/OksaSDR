@@ -220,6 +220,14 @@ class MobileEngine : public QObject {
     Q_PROPERTY(bool audioRouteSelectable READ audioRouteSelectable NOTIFY transmitStateChanged)
     // The radio's own microphone input can be chosen (one besides PC).
     Q_PROPERTY(bool canUseRadioMicrophone READ canUseRadioMicrophone NOTIFY transmitStateChanged)
+    // The radio's mic input is this device (PC) and it can transmit.
+    Q_PROPERTY(bool usingDeviceMicrophone READ usingDeviceMicrophone NOTIFY transmitStateChanged)
+    // VOX with this device's microphone (roadmap 19): the radio's VOX is on
+    // with mic input PC, so the microphone stays open and streams to the
+    // radio, whose VOX keys on it (as SmartSDR's and the desktop's PC mic,
+    // which stream all the time). Closed in CW, in standby (the transmit
+    // lock) and while the app's own recordings use the microphone.
+    Q_PROPERTY(bool voxHoldsMicrophone READ voxHoldsMicrophone NOTIFY txMetersChanged)
     Q_PROPERTY(bool transmitting READ transmitting NOTIFY transmittingChanged)
     Q_PROPERTY(bool nr READ nr WRITE setNr NOTIFY dspChanged)
     Q_PROPERTY(bool nb READ nb WRITE setNb NOTIFY dspChanged)
@@ -1764,7 +1772,8 @@ public:
     // A shown TX tab holds this device's microphone open, so its Mic meter
     // moves before transmitting and the level can be set (as the desktop and
     // SmartSDR, which meter the mic in receive too). Nothing is transmitted:
-    // the radio keys only on PTT. Not while VOX is on (speech would key it).
+    // the radio keys only on PTT. With the radio's VOX on it is VOX that
+    // holds the microphone (voxHoldsMicrophone), and only when VOX may key.
     Q_INVOKABLE void holdMicCheck(QObject* holder, bool on);
     QVariantMap txChain() const;
     Q_INVOKABLE void setTxChain(const QString& key, const QVariant& value);
@@ -1895,6 +1904,8 @@ public:
     void setAudioOnRadio(bool radio);
     bool audioRouteSelectable() const;
     bool canUseRadioMicrophone() const;
+    bool usingDeviceMicrophone() const;
+    bool voxHoldsMicrophone() const { return m_voxMicOpen; }
     // Dev/screenshot runs: leave the radio's mic input alone.
     void setMicDefaultEnabled(bool enabled) { m_micDefaultEnabled = enabled; }
     // Screenshots for public pages: the radio's serial number reads "(hidden)".
@@ -2307,7 +2318,8 @@ private:
     QHash<QString, QString> m_loggedLicenseFeatures;
     QString m_loggedLicenseSubscription;
     QList<QObject*> m_micCheckHolders;   // shown TX tabs
-    bool m_micCheckOpen{false};          // the microphone is open for them
+    bool m_micCheckOpen{false};          // the microphone is held open: for them or for VOX
+    bool m_voxMicOpen{false};            // ... and it is VOX that holds it (roadmap 19)
     std::unique_ptr<QsoLog> m_qsoLog;
 
     // ---- FT8 / FT4 (MobileEngineDigi.cpp) ----

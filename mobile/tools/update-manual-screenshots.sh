@@ -235,7 +235,7 @@ if want "${modes_shots[@]}"; then
         if want mode-fm fm-tx tx-lock; then
             printf 'freq 29.600\nmode FM\nwait 20000\n'
             if want mode-fm; then echo "shot mode-fm"; fi
-            printf 'drawer 2\nwait 1500\nscroll 0\nwait 800\nshot fm-tx\nscroll 550\nwait 800\nshot tx-lock\nclose\n'
+            printf 'drawer 2\nwait 1500\nscroll 0\nwait 800\nshot fm-tx\nscroll 650\nwait 800\nshot tx-lock\nclose\n'
         fi
         if want mode-rtty rtty-panel tab-rtty digi-operating; then
             printf 'freq 14.085\nmode RTTY\nwait 15000\n'

@@ -2597,6 +2597,10 @@ void MobileEngine::wireTransmit()
     connect(&rm.transmitModel(), &TransmitModel::micStateChanged, this, &MobileEngine::profilesChanged);
     connect(&rm.transmitModel(), &TransmitModel::micStateChanged, this, &MobileEngine::updateMicCheck);
     connect(&rm.transmitModel(), &TransmitModel::stateChanged, this, &MobileEngine::updateMicCheck);
+    // VOX on or off, the transmit lock, CW: whether VOX holds the microphone.
+    connect(&rm.transmitModel(), &TransmitModel::phoneStateChanged, this, &MobileEngine::updateMicCheck);
+    connect(this, &MobileEngine::txLockChanged, this, &MobileEngine::updateMicCheck);
+    connect(this, &MobileEngine::modeChanged, this, &MobileEngine::updateMicCheck);
     connect(&rm.equalizerModel(), &EqualizerModel::txStateChanged, this, &MobileEngine::eqChanged);
     connect(&rm.equalizerModel(), &EqualizerModel::rxStateChanged, this, &MobileEngine::eqChanged);
     connect(&rm.meterModel(), &MeterModel::micMetersChanged, this,
@@ -2979,27 +2983,36 @@ void MobileEngine::holdMicCheck(QObject* holder, bool on)
 void MobileEngine::updateMicCheck()
 {
     const TransmitModel& tm = m_session.radioModel().transmitModel();
-    const bool want = !m_micCheckHolders.isEmpty() && m_connected && tm.micSelection() == kDeviceMicSelection
-        && !tm.voxEnable();
-    if (want == m_micCheckOpen) {
+    const bool deviceMic = m_connected && tm.micSelection() == kDeviceMicSelection;
+    // VOX with this device's microphone (roadmap 19): the radio's VOX keys on
+    // what the PC input brings, so the microphone streams while VOX is on;
+    // not in CW (the radio's VOX is for voice), not in standby (the transmit
+    // lock: nothing may key), not without transmit (an RX-only radio).
+    const bool vox = deviceMic && m_caps.canTransmit && tm.voxEnable() && !cwMode() && !txLocked();
+    // The Mic meter's check: never while VOX is on (speech would key it).
+    const bool meter = deviceMic && !m_micCheckHolders.isEmpty() && !tm.voxEnable();
+    const bool want = vox || meter;
+    if (want == m_micCheckOpen && vox == m_voxMicOpen) {
         return;
     }
-    if (want) {
+    if (want && !m_micCheckOpen) {
         if (!ensureMicrophonePermission()) {
-            return;   // asked; the next time the tab shows it opens
+            return;   // asked; the next time the tab shows or VOX goes on it opens
         }
         m_micLevelDbfs = -100.0;
         m_micPeakDbfs = -100.0;
         startDeviceMicrophoneCapture();
         m_micCheckOpen = true;
-        qCInfo(lcMobile) << "mic check: microphone open for the Mic meter";
-    } else {
+    } else if (!want && m_micCheckOpen) {
         m_micCheckOpen = false;
         if (!m_pttHeld && !m_dvkRecordingMic && m_voiceState == QLatin1String("idle")) {
             stopDeviceMicrophoneCapture();
         }
-        qCInfo(lcMobile) << "mic check: microphone closed";
     }
+    m_voxMicOpen = vox;
+    qCInfo(lcMobile) << (vox     ? "mic check: microphone open for VOX (it streams to the radio, whose VOX keys on it)"
+                         : want  ? "mic check: microphone open for the Mic meter"
+                                 : "mic check: microphone closed");
     emit txMetersChanged();
 }
 
@@ -4362,6 +4375,12 @@ void MobileEngine::useDeviceMicrophone()
     if (canUseDeviceMicrophone()) {
         m_session.radioModel().transmitModel().setMicSelection(kDeviceMicSelection);
     }
+}
+
+bool MobileEngine::usingDeviceMicrophone() const
+{
+    return m_connected && m_caps.canTransmit
+        && m_session.radioModel().transmitModel().micSelection() == kDeviceMicSelection;
 }
 
 bool MobileEngine::canUseRadioMicrophone() const
@@ -9714,6 +9733,7 @@ void MobileEngine::onConnectionStateChanged(bool connected)
         m_wanActive = false;
     }
     m_micCheckOpen = false;
+    m_voxMicOpen = false;
     stopDeviceMicrophoneCapture(true);
     setKeepScreenAwake(false);
     stopAudio();

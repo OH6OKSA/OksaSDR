@@ -1334,10 +1334,10 @@ seven.
   transmits on the shifted frequency and sends the tone; receive stays on
   the frequency shown. Then TUNE and the
   ATU (tune, bypass, memories), tune power, RF power, speech processor (PROC
-  NOR/DX/DX+), **VOX** (on/off, level and delay) and **DEXP** (the downward
-  expander, on/off and level) in voice modes — shown only when the radio's
-  own microphone input is selected, as they do nothing with this device's
-  microphone — the AM **carrier** level in
+  NOR/DX/DX+), **VOX** (on/off, level and delay) in voice modes with either
+  microphone, and **DEXP** (the downward expander, on/off and level) with the
+  radio's own microphone input only, as it does nothing with this device's
+  microphone, the AM **carrier** level in
   AM/SAM/DSB, monitor (MON), **Mic level**, microphone choice (when the
   radio's mic input is not this device, **Use this device's microphone**
   sets it and the line beside it says why PTT waits), **DAX**
@@ -1354,10 +1354,23 @@ seven.
   stage for its PC input, so its mic level does nothing to this
   microphone. Choose Mic for the left meter and set it so speech peaks
   near −10 dB: while the TX tab is open the microphone is open and the
-  meter moves in receive too (nothing is sent before PTT; not while VOX is
-  on). Phone microphones often need +10 to +20 dB; a limiter at
+  meter moves in receive too (nothing is transmitted before PTT; with VOX
+  on, VOX holds the microphone instead). Phone microphones often need +10
+  to +20 dB; a limiter at
   −1 dBFS keeps the loudest peaks from clipping. With a microphone on the
   radio it is the radio's mic level (0–100), as SmartSDR's MIC.
+  **VOX with this device's microphone**: VOX is the radio's own, keying on
+  what reaches its mic input. With this device's microphone, while **VOX**
+  is on the app keeps the microphone open and sends it to the radio, which
+  keys when you speak above the **VOX** level and goes back to receive after
+  the **Delay** (as SmartSDR with a computer's headset). Use a headset or
+  earphones with a microphone: the speaker's receive audio would key it
+  too; the line under **Delay** says so while VOX holds the microphone. In
+  standby (**SB**, the transmit lock) the microphone stays closed, so VOX
+  cannot key until the lock is armed. The voice button's listening and the
+  voice keyer's recording send nothing to the radio, so they do not key it;
+  in CW the microphone closes. iOS shows its microphone indicator while it
+  is open. (Christoph DM5HF asked for it.)
   - **Voice keyer** (voice modes) — twelve voice macros F1–F12. Tap one to
     transmit it, tap again to stop; press and hold to record (from this
     device's microphone; recording does not transmit), rename or clear. On a
