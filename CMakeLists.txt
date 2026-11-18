@@ -1220,6 +1220,13 @@ set(CORE_SOURCES
 if(APPLE)
     list(APPEND CORE_SOURCES src/core/VirtualAudioBridge.cpp src/core/MacMicPermission.mm
                              src/core/AppActivity.mm)
+    if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+        # SmartLink's TLS to the radio through Apple's Network framework on
+        # iOS (Apple's current TLS and the certificate pin, instead of Qt's
+        # Secure Transport). The header is listed so AUTOMOC runs on it.
+        list(APPEND CORE_SOURCES src/core/backends/flex/AppleTlsSocket.h
+                                 src/core/backends/flex/AppleTlsSocket.mm)
+    endif()
 elseif(UNIX AND NOT ANDROID)
     # Linux DAX uses PulseAudio pipe modules via pactl (works with PipeWire too).
     # When libpipewire-0.3 dev headers are present we additionally compile a
@@ -2530,6 +2537,9 @@ endif()
 if(APPLE)
     target_link_libraries(aethercore PRIVATE "-framework AVFoundation" "-framework Accelerate" "-framework Foundation") # core: MacNRFilter/VirtualAudioBridge/AppActivity
     target_sources(aethercore PRIVATE src/core/MacNRFilter.cpp)
+    if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+        target_link_libraries(aethercore PRIVATE "-framework Network" "-framework Security") # core: AppleTlsSocket
+    endif()
 endif()
 
 # macOS app bundle

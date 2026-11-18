@@ -13,6 +13,10 @@
 #include <functional>
 #include <atomic>
 
+#if defined(Q_OS_IOS)
+#include "AppleTlsSocket.h"
+#endif
+
 namespace AetherSDR {
 
 // Pinned-cert cache management for the Pinned Certificates settings UI
@@ -108,7 +112,13 @@ private:
 
     void processLine(const QString& line);
 
+#if defined(Q_OS_IOS)
+    // Apple's current TLS through its Network framework, not Qt's Secure
+    // Transport, and the radio's certificate for the pin (OksaSDR roadmap 99).
+    AppleTlsSocket m_socket;
+#else
     QSslSocket m_socket;
+#endif
     void resetSessionState();   // drop everything scoped to one TLS session
 
     QByteArray m_readBuffer;

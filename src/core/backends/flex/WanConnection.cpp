@@ -117,12 +117,24 @@ void forgetAllPinnedCerts()
 WanConnection::WanConnection(QObject* parent)
     : QObject(parent)
 {
-    connect(&m_socket, &QSslSocket::connected,    this, &WanConnection::onTlsConnected);
+#if defined(Q_OS_IOS)
+    connect(&m_socket, &AppleTlsSocket::encrypted,     this, &WanConnection::onTlsConnected);
+    connect(&m_socket, &AppleTlsSocket::disconnected,  this, &WanConnection::onTlsDisconnected);
+    connect(&m_socket, &AppleTlsSocket::readyRead,     this, &WanConnection::onReadyRead);
+    connect(&m_socket, &AppleTlsSocket::errorOccurred, this, &WanConnection::onSocketError);
+#else
+    // encrypted(), not connected(): connected() comes at the TCP connect,
+    // before the handshake, when the session has no cipher and the peer no
+    // certificate yet, so the TOFU check below always found none and was
+    // skipped (OksaSDR's logs on Linux, Android and iOS alike, 2026-11-18).
+    // A write made in between was held until the handshake anyway.
+    connect(&m_socket, &QSslSocket::encrypted,    this, &WanConnection::onTlsConnected);
     connect(&m_socket, &QSslSocket::disconnected, this, &WanConnection::onTlsDisconnected);
     connect(&m_socket, &QSslSocket::readyRead,    this, &WanConnection::onReadyRead);
     connect(&m_socket, &QSslSocket::sslErrors,    this, &WanConnection::onSslErrors);
     connect(&m_socket, &QAbstractSocket::errorOccurred,
             this, &WanConnection::onSocketError);
+#endif
 
     m_heartbeat.setInterval(HEARTBEAT_INTERVAL_MS);
     connect(&m_heartbeat, &QTimer::timeout, this, &WanConnection::onHeartbeat);
@@ -187,6 +199,11 @@ void WanConnection::connectToRadio(const QString& host, quint16 tlsPort,
                                 ? "(no prior cert pin)"
                                 : "(prior cert pin loaded)");
 
+#if defined(Q_OS_IOS)
+    // TLS 1.2-1.3; the radio's self-signed certificate is accepted and its
+    // DER handed back for the TOFU check in onTlsConnected.
+    m_socket.connectToHostEncrypted(host, tlsPort);
+#else
     // Radio uses self-signed certificate — VerifyNone is still required to
     // complete the handshake.  The TOFU fingerprint check in onTlsConnected
     // is what catches MITM; see GHSA-wfx7-w6p8-4jr2.
@@ -195,6 +212,7 @@ void WanConnection::connectToRadio(const QString& host, quint16 tlsPort,
     m_socket.setSslConfiguration(sslConfig);
 
     m_socket.connectToHostEncrypted(host, tlsPort);
+#endif
 }
 
 void WanConnection::disconnectFromRadio()
@@ -244,28 +262,38 @@ quint32 WanConnection::sendCommand(const QString& command, ResponseCallback call
 void WanConnection::onTlsConnected()
 {
     qCDebug(lcSmartLink) << "WanConnection: TLS handshake complete";
-    const QSsl::SslProtocol protocol = m_socket.sessionProtocol();
     const QHostAddress peer = m_socket.peerAddress();
     bool mapped = false;
     peer.toIPv4Address(&mapped);
     const QString path = peer.protocol() == QAbstractSocket::IPv6Protocol && !mapped ? QStringLiteral("IPv6")
                                                                                       : QStringLiteral("IPv4");
-    emit tlsReady(QStringLiteral("TLS %1 %2 over %3")
-                      .arg(protocol == QSsl::TlsV1_3   ? QStringLiteral("1.3")
-                           : protocol == QSsl::TlsV1_2 ? QStringLiteral("1.2")
-                                                       : QString::number(int(protocol)),
-                           m_socket.sessionCipher().name(), path));
+#if defined(Q_OS_IOS)
+    const QString protocolName = m_socket.protocolName();
+    const QString cipherName = m_socket.cipherName();
+    // The SHA-256 of the certificate's DER, as QSslCertificate::digest.
+    const QByteArray certDer = m_socket.peerCertificateDer();
+    const bool noCertificate = certDer.isEmpty();
+    const QByteArray digest = noCertificate ? QByteArray() : QCryptographicHash::hash(certDer, QCryptographicHash::Sha256);
+#else
+    const QSsl::SslProtocol protocol = m_socket.sessionProtocol();
+    const QString protocolName = protocol == QSsl::TlsV1_3   ? QStringLiteral("1.3")
+                                 : protocol == QSsl::TlsV1_2 ? QStringLiteral("1.2")
+                                                             : QString::number(int(protocol));
+    const QString cipherName = m_socket.sessionCipher().name();
+    const QSslCertificate cert = m_socket.peerCertificate();
+    const bool noCertificate = cert.isNull();
+    const QByteArray digest = noCertificate ? QByteArray() : cert.digest(QCryptographicHash::Sha256);
+#endif
+    emit tlsReady(QStringLiteral("TLS %1 %2 over %3").arg(protocolName, cipherName, path));
 
     // TOFU cert-pin check (GHSA-wfx7-w6p8-4jr2 phase 2, enforced).
-    const QSslCertificate cert = m_socket.peerCertificate();
-    if (cert.isNull()) {
+    if (noCertificate) {
         qCWarning(lcSmartLink) << "WanConnection: peer presented no certificate; skipping TOFU check";
         sendWanValidate();
         return;
     }
 
-    const QString fpHex = QString::fromLatin1(
-        cert.digest(QCryptographicHash::Sha256).toHex());
+    const QString fpHex = QString::fromLatin1(digest.toHex());
     if (m_expectedFingerprintHex.isEmpty()) {
         // First-use TOFU pin — silent, matches Phase 1 behaviour.
         storeFingerprint(m_host, fpHex);
