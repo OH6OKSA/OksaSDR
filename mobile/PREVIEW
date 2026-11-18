@@ -1,9 +1,0 @@
-# With this file in the tree, a push builds as a preview: TestFlight's
-# internal group only (What to Test set, no external group, no beta review)
-# and the Android APK as the run artifact only. Removed when the user
-# releases the build to the testers (mobile-release.yml).
-
-Build 185 / Android beta 99: the Network & performance panel's polish loop
-on iOS (roadmap 100), which only a device can test: on the iPad, tap the
-network quality in the top row, keep the details open a minute, close and
-open them again; then the same on an iPhone.
