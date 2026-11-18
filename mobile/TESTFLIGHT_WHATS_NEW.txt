@@ -9,14 +9,10 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Slices on several bands: a slice you take to another band (Band, a typed frequency, a spot, a memory, the FTx bands) gets a panadapter of its own, so the radio hears every band (FT8 on four bands decoded nothing on one slice). A slice left on another band than its panadapter has an orange outline.
-- MIDI: Tuner Genius XL Tune for a controller button, the Amp tab's Tune (thanks Hanno DK3HV).
-- The 3D view no longer switches itself off after a profile load or a moment away (thanks Mohammed A71AT).
-- FT8 on one slice and FT4 on another at once: FT8 / FT4 is chosen per slice.
-- The Log tab's logbooks and accounts moved to Setup > Logging (Logbooks... on the Log tab).
-- Hidden panadapters stream narrow, and Auto audio uses Opus when the radio is on another network: several bands fit a slow link.
+- Tapping the network quality in the top row (the dot, CPU and memory) froze the app on iPhone and iPad and iOS closed it. The details open again (thanks Scott W5SLS).
 
-RECENT (builds 94–182)
+RECENT (builds 94–184)
+- 184: slices on several bands, each with its own panadapter; FT8 on one slice and FT4 on another; logbooks in Setup > Logging; MIDI Tuner Genius XL Tune (thanks Hanno DK3HV).
 - 182: SmartLink back in the background; Log tab > Logging program (WSJT-X UDP) for RUMlogNG, F-keys and Esc on a Mac (thanks Christoph DM5HF).
 - 181: SmartLink steadier from 5G to Wi-Fi, the slice back after a reconnect (thanks Rich N2RY); keys T, Shift+T, A (thanks Christoph DM5HF).
 - 179-180: SmartLink comes back after a network change in seconds; Cancel beside Connecting… (thanks Mohammed A71AT).
@@ -32,7 +28,8 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab: decode, drag the red TX band to a free frequency, answer a CQ at low power and check the log. [TX]
 - The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: slices on two or more bands (+ Slice, then Band on one): each gets its own panadapter, and the FTx tab decodes them all, FT8 on one and FT4 on another. A MIDI button set to Tuner Genius XL Tune.
+- New: tap the network quality in the top row, keep the details open for a minute, close them and open them again.
+- Slices on two or more bands (+ Slice, then Band on one): each gets its own panadapter, and the FTx tab decodes them all, FT8 on one and FT4 on another.
 - AGC panel > Auto on a clear spot, then Follow and Noise line.
 - The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]
 
