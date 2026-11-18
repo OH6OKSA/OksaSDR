@@ -9,9 +9,12 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Sliders move only when you drag them: a tap on one, or a finger scrolling the page across it, no longer changes it (the waterfall speed and the FFT rate could drop to their slowest that way; thanks Rich N2RY). A drag moves the value from where it was. The equaliser's bands move from their handle.
+- VOX with this device's microphone: Controls > TX > VOX now works with the phone's or iPad's own microphone too (it stays open while VOX is on, so use a headset; thanks Christoph DM5HF).
+- FTx: Answer CQ calls each station 2 to 20 times, set under More (thanks Kurt DL5EAG).
+- SmartLink on iPhone and iPad uses Apple's current TLS, and the radio's certificate is now checked on every connection (thanks Mohammed A71AT).
 
-RECENT (builds 94–185)
+RECENT (builds 94–186)
+- 186: sliders move only when you drag them (thanks Rich N2RY).
 - 185: the network details in the top row no longer freeze the app (thanks Scott W5SLS).
 - 184: slices on several bands, each with its own panadapter; FT8 on one slice and FT4 on another; logbooks in Setup > Logging; MIDI Tuner Genius XL Tune (thanks Hanno DK3HV).
 - 182: SmartLink back in the background; Log tab > Logging program (WSJT-X UDP) for RUMlogNG, F-keys and Esc on a Mac (thanks Christoph DM5HF).
@@ -29,7 +32,8 @@ PLEASE TRY
 - FT8 / FT4 on the FTx tab: decode, drag the red TX band to a free frequency, answer a CQ at low power and check the log. [TX]
 - The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
-- New: scroll the Controls tabs (View, TX, Audio) with your finger on the sliders: the values stay. Drag a slider sideways to move it, and tap − / + for one step.
+- New: VOX with a headset on this device: Controls > TX > VOX on, speak, and the radio keys by its VOX level and delay. [TX]
+- New: SmartLink on an iPhone or iPad, also over a mobile network: connect, disconnect and connect again.
 - Slices on two or more bands (+ Slice, then Band on one): each gets its own panadapter, and the FTx tab decodes them all, FT8 on one and FT4 on another.
 - AGC panel > Auto on a clear spot, then Follow and Noise line.
 - The eSSB tab (tube, EVO, reverb) at low power with a second receiver. [TX]

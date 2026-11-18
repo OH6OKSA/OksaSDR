@@ -1,6 +1,11 @@
-**OksaSDR for Android — beta 100.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
+**OksaSDR for Android — beta 101.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
-### New in beta 100
+### New in beta 101
+- **VOX with this device's microphone** (roadmap 19; Christoph Steinert DM5HF): the radio's VOX keys on what reaches its microphone input, and with this device's microphone the app opened it only while PTT was held, so VOX had nothing to key on and Controls › TX showed it only for the radio's own inputs. Now, while **VOX** is on, the app keeps the microphone open and sends it to the radio, which keys when you speak above the **VOX** level and goes back to receive after the **Delay** (as SmartSDR with a computer's headset). Use a headset: the speaker's sound would key it too, as the line under Delay says. In standby (the transmit lock's SB) the microphone stays closed; the voice log's listening and the voice keyer's recording do not key it. Tested on the developer's FLEX at 10 W.
+- **Answer CQ's calls per station, 2 to 20** (roadmap 102; Kurt Hanisch DL5EAG): the FTx settings (**More**) have **Answer CQ calls each station … times** with − / +, 5 by default (it was always 5). The same number limits each later message of an Answer CQ QSO.
+- **The radio's certificate checked on SmartLink**: the certificate pin (trust on first use) was looked at before the TLS handshake had finished, when there was no certificate yet, so it was always skipped; now the first SmartLink connection to a radio remembers its certificate and every later one checks it (a changed certificate asks first).
+
+### Still new from beta 100
 - **Sliders move only when you drag them** (roadmap 101; Rich Yost N2RY): a tap on a slider took the value under the finger, so a finger that only meant to stop or scroll a Controls tab could set the waterfall speed or the FFT rate to their slowest (Rich's waterfall nearly stopped, and the radio kept the setting through a restart). Now a slider moves only by a drag along it, from where it was by the distance the finger travels; a tap changes nothing and a scroll across it leaves it. The equaliser's bands, which run along the page, move from their handle, so a scroll that starts on a band scrolls the page. − / + and a screen reader's steps work as before.
 
 ### Still new from beta 99
