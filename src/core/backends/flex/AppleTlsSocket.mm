@@ -87,8 +87,9 @@ QAbstractSocket::SocketError socketError(nw_error_t error)
 }
 
 // The IANA numbers of the suites a radio is likely to pick, by OpenSSL's
-// names (as QSslCipher gives them on the other platforms).
-QString cipherName(uint16_t suite)
+// names (as QSslCipher gives them on the other platforms). Not cipherName:
+// inside AppleTlsSocket::Impl that name is the socket's own member.
+QString suiteName(uint16_t suite)
 {
     switch (suite) {
     case 0x1301:
@@ -148,7 +149,7 @@ struct AppleTlsSocket::Impl {
                 info.protocol = version == 0x0304   ? QStringLiteral("1.3")
                                 : version == 0x0303 ? QStringLiteral("1.2")
                                                     : QStringLiteral("0x%1").arg(uint(version), 4, 16, QLatin1Char('0'));
-                info.cipher = cipherName(uint16_t(sec_protocol_metadata_get_negotiated_tls_ciphersuite(sec)));
+                info.cipher = suiteName(uint16_t(sec_protocol_metadata_get_negotiated_tls_ciphersuite(sec)));
                 sec_release(sec);
             }
             nw_release(metadata);
@@ -187,7 +188,9 @@ struct AppleTlsSocket::Impl {
                     bytes.append(static_cast<const char*>(buffer), qsizetype(size));
                     return true;
                 });
-                post(shared, id, [bytes](AppleTlsSocket* socket) { socket->handleData(bytes); });
+                // A __block variable cannot go into a lambda: a copy can.
+                const QByteArray received = bytes;
+                post(shared, id, [received](AppleTlsSocket* socket) { socket->handleData(received); });
             }
             if (error) {
                 const QString message = describe(error);
