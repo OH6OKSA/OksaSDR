@@ -1,0 +1,11 @@
+# With this file in the tree, a push builds as a preview: TestFlight's
+# internal group only (What to Test set, no external group, no beta review)
+# and the Android APK as the run artifact only. Removed when the user
+# releases the build to the testers (mobile-release.yml).
+
+Build 186 / Android beta 100: sliders that move only by a drag along them
+(roadmap 101), which needs a finger on a device: on the iPhone and the iPad,
+scroll the View, TX and Audio tabs with a finger on the sliders (the values
+stay), tap the tracks (nothing changes), drag the sliders sideways, − / +,
+and the EQ's bands from the handle (moves) and from the track (scrolls).
+Also the iOS CI's dSYM in the archive (the export's "Upload Symbols Failed").
