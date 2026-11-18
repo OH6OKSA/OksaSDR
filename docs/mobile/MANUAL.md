@@ -238,7 +238,8 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
    back to CQ after each QSO. **CQ to** (FTx settings) directs it: *CQ DX*,
    *CQ NA*, *CQ EU* or your own.
 5. **Answer CQ** answers CQs by itself: the rarest first, five calls a
-   station, then the next. **Auto stops after … min untouched** (FTx
+   station (**Answer CQ calls each station … times** in the FTx settings,
+   2 to 20), then the next. **Auto stops after … min untouched** (FTx
    settings) is how long Answer CQ and Keep CQ go on without a touch on
    the app.
 6. **Halt TX** stops at once. Pick a clear TX frequency by dragging the red
@@ -1786,7 +1787,12 @@ seven.
   order (a new continent, CQ zone, DXCC, then a new call), the strongest
   among equals. It calls that station up to five times; when they answer,
   the QSO runs and is logged as usual, and when they don't, it moves on to
-  another station (one called is left alone for 30 minutes). A CQ to some
+  another station (one called is left alone for 30 minutes). **Answer CQ
+  calls each station … times** (FTx settings, − / +) sets how many calls:
+  2 to 20, 5 by default; a busy DX may need more, a quiet band fewer. The
+  same number limits each later message of its QSO (a report or RR73 sent
+  again while the reply does not come). (Kurt DL5EAG asked for the
+  setting.) A CQ to some
   (`CQ DX`, `CQ EU`) is answered only where you are them, `CQ POTA`, `SOTA`,
   `WWFF`, `IOTA` and `QRP` always, contest CQs (`CQ TEST`, `CQ WW`) never.
   It is on for this session only: **Halt TX**, decoding off, TX moving to

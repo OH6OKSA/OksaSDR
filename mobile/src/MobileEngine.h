@@ -281,13 +281,18 @@ class MobileEngine : public QObject {
     Q_PROPERTY(bool digiAutoCq READ digiAutoCq WRITE setDigiAutoCq NOTIFY digiChanged)
     // Answer CQ (Kurt DL5EAG): while idle, the app answers a CQ heard on the
     // TX slice by itself (one that the Show filter passes, not worked on
-    // this band and mode, the rarest first), 5 calls per station, then
-    // another. On for this session only; Halt TX, the transmit lock and
+    // this band and mode, the rarest first), digiAnswerCalls calls per
+    // station, then another. On for this session only; Halt TX, the transmit lock and
     // the presence limit switch it off.
     Q_PROPERTY(bool digiAutoAnswer READ digiAutoAnswer WRITE setDigiAutoAnswer NOTIFY digiChanged)
     // The presence limit (minutes, 1-60): Answer CQ and Keep CQ start no
     // new QSO after this long without a touch or key on the app.
     Q_PROPERTY(int digiPresenceMin READ digiPresenceMin WRITE setDigiPresenceMin NOTIFY digiChanged)
+    // Answer CQ's calls to one station before it moves on (roadmap 102,
+    // Kurt DL5EAG: "Sometimes 2 calls are enough, other times 20 might be
+    // needed"): 2-20, 5 by default; also how often each later message of an
+    // Answer CQ QSO is sent without the reply it waits for.
+    Q_PROPERTY(int digiAnswerCalls READ digiAnswerCalls WRITE setDigiAnswerCalls NOTIFY digiChanged)
     // Hound (roadmap 10 a): working a DXpedition's Fox in FT8 DXpedition
     // mode, by WSJT-X's rules: calls in the second (odd) slot at 1000-3000
     // Hz, R+report sent by itself on the frequency the Fox called on, the
@@ -1258,6 +1263,8 @@ public:
     void setDigiAutoAnswer(bool on);
     int digiPresenceMin() const { return m_digiPresenceMin; }
     void setDigiPresenceMin(int minutes);
+    int digiAnswerCalls() const { return m_digiAnswerCalls; }
+    void setDigiAnswerCalls(int calls);
     bool digiHound() const { return m_digiHound; }
     void setDigiHound(bool on);
     bool digiHoundAllHz() const { return m_digiHoundAllHz; }
@@ -3029,6 +3036,7 @@ private:
     bool m_digiAutoAnswer{false};
     bool m_digiAutoQso{false};  // the QSO under way is one Answer CQ started
     int m_digiPresenceMin{10};
+    int m_digiAnswerCalls{5};
     qint64 m_operatorMs{0};     // the last touch, click or key on the app
     // Stations Answer CQ called, and when: not called again for a while.
     QHash<QString, qint64> m_digiAutoTried;

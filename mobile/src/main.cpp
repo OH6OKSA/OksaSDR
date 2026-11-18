@@ -2923,9 +2923,17 @@ int main(int argc, char* argv[])
                 if (spec.contains(QStringLiteral("presence"))) {
                     engine.setDigiPresenceMin(1);
                 }
+                // calls=N: Answer CQ's calls per station (roadmap 102),
+                // put back at the end.
+                for (const QString& s : spec) {
+                    if (s.startsWith(QLatin1String("calls="))) {
+                        engine.setDigiAnswerCalls(s.mid(6).toInt());
+                    }
+                }
                 engine.setRfPower(10);
                 engine.setDigiAutoAnswer(true);
-                qInfo() << "autoanswer-test: on, presence limit" << engine.digiPresenceMin() << "min, filter" << engine.digiFilter();
+                qInfo() << "autoanswer-test: on, presence limit" << engine.digiPresenceMin() << "min, calls"
+                        << engine.digiAnswerCalls() << ", filter" << engine.digiFilter();
             }
         });
         // hound,live,fox=D44PX: Hound on the air at 10 W. A decode from the
@@ -3214,11 +3222,13 @@ int main(int argc, char* argv[])
             QTimer::singleShot(8000 + (ft4 ? 33000 : 63000), &app, [&engine] { engine.digiHalt(); });
         }
         const int presenceWas = engine.digiPresenceMin();
-        QTimer::singleShot(8000 + seconds * 1000, &app, [&app, &engine, saved, savedTx, savedBandPower, presenceWas] {
+        const int answerCallsWas = engine.digiAnswerCalls();
+        QTimer::singleShot(8000 + seconds * 1000, &app, [&app, &engine, saved, savedTx, savedBandPower, presenceWas, answerCallsWas] {
             qInfo() << "ft8-test: Answer CQ" << engine.digiAutoAnswer() << "|" << engine.digi().value(QStringLiteral("status")).toString();
             engine.setDigiHound(false);
             engine.digiHalt();
             engine.setDigiPresenceMin(presenceWas);
+            engine.setDigiAnswerCalls(answerCallsWas);
             engine.setDigiRunning(false);
             engine.setDigiProtocol(std::get<3>(*saved));
             engine.digiTune(std::get<0>(*saved));

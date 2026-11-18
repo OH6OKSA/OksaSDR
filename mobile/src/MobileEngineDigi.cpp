@@ -53,8 +53,10 @@ constexpr int kMaxCqCalls = 10;
 constexpr int kHoundCalls = 4;
 constexpr qint64 kHoundLateMs = 3 * 60 * 1000;
 // Answer CQ: calls to one station before it moves on to another (Kurt
-// DL5EAG), and how long a station called is left alone after that.
-constexpr int kAutoAnswerTries = 5;
+// DL5EAG; the operator's choice since roadmap 102, MobileDigiAnswerCalls),
+// and how long a station called is left alone after that.
+constexpr int kAutoAnswerCallsMin = 2;
+constexpr int kAutoAnswerCallsMax = 20;
 constexpr qint64 kAutoRetryMs = 30 * 60 * 1000;
 // How often FT8 / FT4 ask the time server again while running.
 constexpr int kNtpResyncMs = 30 * 60 * 1000;
@@ -117,6 +119,8 @@ void MobileEngine::loadDigiSettings()
     m_pskReporterOn = settings.value(QStringLiteral("MobilePskReporter"), QStringLiteral("0")).toString() == QLatin1String("1");
     m_digiAutoCq = settings.value(QStringLiteral("MobileDigiAutoCq"), QStringLiteral("0")).toString() == QLatin1String("1");
     m_digiPresenceMin = std::clamp(settings.value(QStringLiteral("MobileDigiPresenceMin"), 10).toInt(), 1, 60);
+    m_digiAnswerCalls = std::clamp(settings.value(QStringLiteral("MobileDigiAnswerCalls"), 5).toInt(),
+                                   kAutoAnswerCallsMin, kAutoAnswerCallsMax);
     m_digiCqParity = settings.value(QStringLiteral("MobileDigiCqParity"), QStringLiteral("auto")).toString();
     m_digiCqTargets = settings.value(QStringLiteral("MobileDigiCqTargets"), QStringLiteral("DX,NA,EU"))
                           .toString().split(QLatin1Char(','), Qt::SkipEmptyParts);
@@ -867,6 +871,19 @@ void MobileEngine::setDigiPresenceMin(int minutes)
     emit digiChanged();
 }
 
+void MobileEngine::setDigiAnswerCalls(int calls)
+{
+    calls = std::clamp(calls, kAutoAnswerCallsMin, kAutoAnswerCallsMax);
+    if (calls == m_digiAnswerCalls) {
+        return;
+    }
+    m_digiAnswerCalls = calls;
+    AppSettings::instance().setValue(QStringLiteral("MobileDigiAnswerCalls"), calls);
+    AppSettings::instance().save();
+    qCInfo(lcMobile) << "digi: Answer CQ calls per station" << calls;
+    emit digiChanged();
+}
+
 void MobileEngine::setDigiHound(bool on)
 {
     if (on == m_digiHound) {
@@ -1080,7 +1097,7 @@ void MobileEngine::digiAutoAnswerPick(const QVariantList& decodes)
     digiAnswer(best);
     if (m_digiState == QLatin1String("answer") && m_digiDx == call) {
         m_digiAutoQso = true;
-        setDigiStatus(tr("Answer CQ: calling %1, %2 calls at most").arg(call).arg(kAutoAnswerTries));
+        setDigiStatus(tr("Answer CQ: calling %1, %2 calls at most").arg(call).arg(m_digiAnswerCalls));
     }
 }
 
@@ -1741,7 +1758,7 @@ void MobileEngine::onDigiSlot(qint64 slotMs)
     const bool houndCalling = m_digiHound && m_digiRptRcvd.isEmpty();
     const int limit = m_digiState == QLatin1String("cq") && m_digiDx.isEmpty() ? kMaxCqCalls
                       : houndCalling                                            ? kHoundCalls
-                      : m_digiAutoQso                                           ? kAutoAnswerTries
+                      : m_digiAutoQso                                           ? m_digiAnswerCalls
                                                                                 : kMaxTries;
     if (m_digiTries >= limit) {
         if (m_digiDx.isEmpty()) {

@@ -184,8 +184,8 @@ ColumnLayout {
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiAutoCq = !Engine.digiAutoCq
         }
-        // Answer CQ (Kurt DL5EAG): the app answers CQs by itself, 5 calls
-        // per station, then another; Halt TX ends it.
+        // Answer CQ (Kurt DL5EAG): the app answers CQs by itself, its calls
+        // per station set under More (2-20), then another; Halt TX ends it.
         AppButton {
             objectName: "digiAutoAnswer"
             text: qsTr("Answer CQ")
@@ -437,6 +437,40 @@ ColumnLayout {
             focusPolicy: Qt.NoFocus
             enabled: Engine.digiPresenceMin < 60
             onClicked: Engine.digiPresenceMin = digi.presenceStep(1)
+        }
+    }
+    // Answer CQ's calls to one station before it moves on to another
+    // (roadmap 102, Kurt DL5EAG): 2-20, one at a time.
+    RowLayout {
+        visible: digi.settingsShown
+        Layout.fillWidth: true
+        Label {
+            objectName: "digiAnswerCalls"
+            text: qsTr("Answer CQ calls each station %1 times").arg(Engine.digiAnswerCalls)
+            color: Theme.textDim
+            font.pixelSize: Theme.px(14)
+            Layout.fillWidth: true
+            wrapMode: Text.WordWrap
+        }
+        AppButton {
+            objectName: "digiAnswerCallsDown"
+            text: "−"
+            Accessible.name: qsTr("Fewer calls to each station")
+            Layout.preferredWidth: Theme.touchTarget
+            focusPolicy: Qt.NoFocus
+            enabled: Engine.digiAnswerCalls > 2
+            autoRepeat: true
+            onClicked: Engine.digiAnswerCalls = Engine.digiAnswerCalls - 1
+        }
+        AppButton {
+            objectName: "digiAnswerCallsUp"
+            text: "+"
+            Accessible.name: qsTr("More calls to each station")
+            Layout.preferredWidth: Theme.touchTarget
+            focusPolicy: Qt.NoFocus
+            enabled: Engine.digiAnswerCalls < 20
+            autoRepeat: true
+            onClicked: Engine.digiAnswerCalls = Engine.digiAnswerCalls + 1
         }
     }
     // PSK Reporter: the stations decoded here, reported (off by default).
