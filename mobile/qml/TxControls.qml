@@ -214,7 +214,7 @@ ColumnLayout {
                 onClicked: Engine.procLevel = index
             }
         }
-        Slider {
+        AppSlider {
             Accessible.name: qsTr("Speech processor level")
             Accessible.onIncreaseAction: { increase(); moved() }
             Accessible.onDecreaseAction: { decrease(); moved() }
@@ -315,6 +315,7 @@ ColumnLayout {
     }
     FineSlider {
         id: micSlider
+        objectName: "micLevel"
         accessibleName: qsTr("Mic level")
         Layout.fillWidth: true
         from: Engine.transmitAvailable ? -20 : 0

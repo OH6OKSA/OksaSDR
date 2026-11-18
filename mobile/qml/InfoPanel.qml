@@ -667,7 +667,7 @@ Item {
                                 Engine.setSliceAudio(sliceAudio.sliceId, "pan", v)
                             }
                         }
-                        Slider {
+                        AppSlider {
                             id: panSlider
                             Accessible.name: qsTr("Pan, slice %1").arg(sliceAudio.info.letter)
                             Accessible.onIncreaseAction: { increase(); moved() }

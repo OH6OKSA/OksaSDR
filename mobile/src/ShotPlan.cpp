@@ -12,6 +12,8 @@
 #include <QQmlApplicationEngine>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QPointingDevice>
+#include <QScreen>
 #include <QSet>
 #include <QThreadPool>
 #include <QTimer>
@@ -62,6 +64,37 @@ void nativeMouse(QWindow* w, const QPointF& p, const QPointF& g, Qt::MouseButton
 {
     const qreal dpr = w->devicePixelRatio();
     QWindowSystemInterface::handleMouseEvent(w, p * dpr, g * dpr, state, button, type);
+}
+
+// A finger on a touch screen, as a phone's: Qt Quick delivers it as touch
+// (a Slider's own touch handling, a Flickable's filter), not as the mouse.
+const QPointingDevice* touchScreen()
+{
+    static const QPointingDevice* device = [] {
+        auto* d = new QPointingDevice(QStringLiteral("shot-plan finger"), 4242, QInputDevice::DeviceType::TouchScreen,
+                                      QPointingDevice::PointerType::Finger,
+                                      QInputDevice::Capability::Position | QInputDevice::Capability::Area, 1, 0);
+        QWindowSystemInterface::registerInputDevice(d);
+        return d;
+    }();
+    return device;
+}
+
+void nativeTouch(QWindow* w, const QPointF& p, QEventPoint::State state)
+{
+    const qreal dpr = w->devicePixelRatio();
+    QWindowSystemInterface::TouchPoint point;
+    point.id = 1;
+    point.state = state;
+    point.pressure = state == QEventPoint::State::Released ? 0.0 : 1.0;
+    const QPointF g = w->mapToGlobal(p) * dpr;
+    point.area = QRectF(g - QPointF(2, 2), QSizeF(4, 4));
+    if (const QScreen* screen = w->screen()) {
+        const QRectF s = QRectF(screen->geometry().topLeft() * dpr, screen->geometry().size() * dpr);
+        point.normalPosition = QPointF((g.x() - s.x()) / s.width(), (g.y() - s.y()) / s.height());
+    }
+    QWindowSystemInterface::handleTouchEvent(w, touchScreen(), {point});
+    QWindowSystemInterface::flushWindowSystemEvents();
 }
 
 // On screen: visible, not under an item at opacity 0 (the tablet page's
@@ -888,7 +921,8 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         qInfo().noquote() << "shot-plan: setupget" << shown.join(QLatin1Char(' '));
         *delayMs = 100;
     } else if (command == QLatin1String("tapname") || command == QLatin1String("showname")
-               || command == QLatin1String("holdname") || command == QLatin1String("taptext")) {
+               || command == QLatin1String("holdname") || command == QLatin1String("taptext")
+               || command == QLatin1String("dragname")) {
         // A finger on the named control's middle, through the window system
         // (click only emits its clicked): whatever covers it, a popup's
         // press-outside close included, acts as for a user. showname only
@@ -900,9 +934,19 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         auto shows = [](const QQuickItem* item, const QString& text) {
             return item->property("text").toString().replace(QChar(0x2212), QLatin1Char('-')) == text;
         };
+        // dragname NAME FX,FY DX,DY MS [mouse]: a finger (or the mouse) put
+        // down at FX,FY of the named control (0.5,0.5 its middle), moved
+        // DX,DY window pixels in MS ms and lifted; 0,0 is a tap at that
+        // point (a slider's track, roadmap 101). showname also prints the
+        // control's value when it has one.
         const bool byText = command == QLatin1String("taptext");
+        const bool drag = command == QLatin1String("dragname");
         const QString name = byText ? QString() : arg.section(QLatin1Char('@'), 0, 0);
-        QStringList words = args;
+        QStringList words = drag ? QStringList{arg} : args;
+        const QStringList dragAt = args.value(1).split(QLatin1Char(','));
+        const QStringList dragBy = args.value(2).split(QLatin1Char(','));
+        const int dragMs = std::max(0, args.value(3).toInt());
+        const bool dragMouse = args.value(4) == QLatin1String("mouse");
         // TEXT or NAME, then >X: only right of X (the TX tab, not the TX
         // tag); ~X,Y: of the matches, the one nearest to X,Y (window pixels;
         // a slice's chip among the chips).
@@ -984,7 +1028,62 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         }
         if (window && target && command == QLatin1String("showname")) {
             const QPointF p = target->mapToScene(QPointF(0, 0));
-            qInfo().noquote() << QStringLiteral("shot-plan: show %1 at %2,%3").arg(arg).arg(qRound(p.x())).arg(qRound(p.y()));
+            const QVariant value = target->property("value");
+            qInfo().noquote() << QStringLiteral("shot-plan: show %1 at %2,%3%4").arg(arg).arg(qRound(p.x())).arg(qRound(p.y()))
+                                     .arg(value.isValid() ? QStringLiteral(" value %1").arg(value.toString()) : QString());
+            return;
+        }
+        if (window && target && drag) {
+            const QPointF p = target->mapToScene(QPointF(target->width() * dragAt.value(0, QStringLiteral("0.5")).toDouble(),
+                                                         target->height() * dragAt.value(1, QStringLiteral("0.5")).toDouble()));
+            const QPointF by(dragBy.value(0).toDouble(), dragBy.value(1).toDouble());
+            if (p.x() < 0 || p.y() < 0 || p.x() >= window->width() || p.y() >= window->height()) {
+                qWarning().noquote() << QStringLiteral("shot-plan: %1 is off the window: not dragged").arg(arg);
+                m_failed = true;
+                return;
+            }
+            qInfo().noquote() << QStringLiteral("shot-plan: drag %1 from %2,%3 by %4,%5 in %6 ms (%7), value %8")
+                                     .arg(arg).arg(qRound(p.x())).arg(qRound(p.y())).arg(by.x()).arg(by.y()).arg(dragMs)
+                                     .arg(dragMouse ? QStringLiteral("mouse") : QStringLiteral("finger"))
+                                     .arg(target->property("value").toString());
+            // Steps 16 ms apart, as a display's frames: the page's flick and
+            // the slider's drag see a finger's pace, not one jump.
+            const int steps = std::max(1, dragMs / 16);
+            QPointer<QQuickWindow> w(window);
+            auto at = [w, dragMouse](const QPointF& q, int phase) {
+                if (!w) {
+                    return;
+                }
+                if (dragMouse) {
+                    const QPointF g = w->mapToGlobal(q);
+                    nativeMouse(w, q, g, phase == 2 ? Qt::NoButton : Qt::LeftButton, phase == 1 ? Qt::NoButton : Qt::LeftButton,
+                                phase == 0 ? QEvent::MouseButtonPress : phase == 1 ? QEvent::MouseMove : QEvent::MouseButtonRelease);
+                    QWindowSystemInterface::flushWindowSystemEvents();
+                } else {
+                    nativeTouch(w, q, phase == 0 ? QEventPoint::State::Pressed
+                                      : phase == 1 ? QEventPoint::State::Updated : QEventPoint::State::Released);
+                }
+            };
+            at(p, 0);
+            for (int i = 1; i <= steps; ++i) {
+                const QPointF q = p + by * (qreal(i) / steps);
+                QTimer::singleShot(16 * i, [at, q, i, steps] { at(q, 1); });
+            }
+            QPointer<QQuickItem> t(target);
+            const QString what = arg;
+            QTimer::singleShot(16 * steps + 16, [at, p, by, t, what] {
+                at(p + by, 2);
+                QTimer::singleShot(200, [t, what] {
+                    if (t) {
+                        // Where it is now: moved when the page scrolled.
+                        const QPointF at = t->mapToScene(QPointF(0, 0));
+                        qInfo().noquote() << QStringLiteral("shot-plan: dragged %1, value %2, now at %3,%4")
+                                                 .arg(what, t->property("value").toString())
+                                                 .arg(qRound(at.x())).arg(qRound(at.y()));
+                    }
+                });
+            });
+            *delayMs = std::max(*delayMs, 16 * steps + 600);
             return;
         }
         if (window && target) {

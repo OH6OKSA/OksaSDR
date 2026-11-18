@@ -371,7 +371,7 @@ ColumnLayout {
         Layout.fillWidth: true
         visible: Engine.cwDecoderEnabled
         Label { text: qsTr("Sens"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
-        Slider {
+        AppSlider {
             id: sensSlider
             Accessible.name: qsTr("CW decoder sensitivity")
             Accessible.onIncreaseAction: { increase(); moved() }

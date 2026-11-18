@@ -65,8 +65,9 @@ RowLayout {
         Layout.preferredHeight: Theme.touchTarget
         onStepped: fine.nudge(-1)
     }
-    Slider {
+    AppSlider {
         id: slider
+        objectName: fine.objectName.length > 0 ? fine.objectName + "Track" : ""
         Layout.fillWidth: true
         stepSize: 1
         snapMode: Slider.SnapAlways

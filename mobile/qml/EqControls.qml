@@ -60,7 +60,8 @@ ColumnLayout {
                         color: Theme.text
                         font.pixelSize: Theme.px(12)
                     }
-                    Slider {
+                    AppSlider {
+                        objectName: "eqBand" + band.index
                         Accessible.name: qsTr("%1 band").arg(band.modelData)
                         Accessible.onIncreaseAction: { increase(); moved() }
                         Accessible.onDecreaseAction: { decrease(); moved() }

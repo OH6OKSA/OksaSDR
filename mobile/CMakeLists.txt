@@ -186,6 +186,7 @@ qt_add_qml_module(aether-mobile
         qml/ChooserPopup.qml
         qml/AgcChooser.qml
         qml/RepeatButton.qml
+        qml/AppSlider.qml
         qml/FineSlider.qml
         qml/HintsDialog.qml
         qml/PopupScroll.qml

@@ -871,6 +871,16 @@ speed and pitch, and Radio Setup's levels have **−** and **+** at the ends
 of their slider: drag near the value, then tap − or + for one step at a
 time (hold to keep stepping). The display's own sliders (levels you set by
 eye) and the equaliser's bands have none.
+
+**A slider moves only when you drag it.** Drag along it, starting
+anywhere on it: the value moves from where it was by the distance your
+finger travels. A tap on a slider changes nothing, and a finger that
+scrolls the page across one leaves it as it was (it used to take the value
+under the finger: the waterfall speed or the FFT rate could drop to their
+slowest that way, thanks Rich Yost N2RY). The equaliser's bands run up and
+down along the page, so they move only from their handle: a drag that starts
+elsewhere on a band scrolls the page. With a mouse (a Mac) the same: drag,
+a click does nothing.
 The AGC, volume, filter and meter panels stay open while you set them
 (see [Panels](#2-the-main-screen)).
 

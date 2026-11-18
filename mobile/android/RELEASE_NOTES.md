@@ -1,6 +1,9 @@
-**OksaSDR for Android — beta 99.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
+**OksaSDR for Android — beta 100.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
-### New in beta 99
+### New in beta 100
+- **Sliders move only when you drag them** (roadmap 101; Rich Yost N2RY): a tap on a slider took the value under the finger, so a finger that only meant to stop or scroll a Controls tab could set the waterfall speed or the FFT rate to their slowest (Rich's waterfall nearly stopped, and the radio kept the setting through a restart). Now a slider moves only by a drag along it, from where it was by the distance the finger travels; a tap changes nothing and a scroll across it leaves it. The equaliser's bands, which run along the page, move from their handle, so a scroll that starts on a band scrolls the page. − / + and a screen reader's steps work as before.
+
+### Still new from beta 99
 - **The network details can no longer freeze the app** (roadmap 100): tapping the network quality in the top row (the dot, CPU and memory) froze the app on iPhones and iPads and iOS closed it (thanks Scott Stanford W5SLS); Android did not freeze, but the panel is the same code, so it is built the new way here too: its rows keep one height whatever their figures, and it looks as before.
 - **Receive audio Auto, the hint**: the line under Controls › Audio › **Receive audio** now says it uses Opus over SmartLink, a VPN or another network, uncompressed only on the radio's own network (as beta 98 does).
 

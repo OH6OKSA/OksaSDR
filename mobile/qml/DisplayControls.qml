@@ -366,7 +366,8 @@ ColumnLayout {
         color: Theme.textDim
         font.pixelSize: Theme.px(15)
     }
-    Slider {
+    AppSlider {
+        objectName: "floor3dSlider"
         Accessible.name: qsTr("3D floor")
         Accessible.onIncreaseAction: { increase(); moved() }
         Accessible.onDecreaseAction: { decrease(); moved() }
@@ -407,7 +408,8 @@ ColumnLayout {
         color: Theme.textDim
         font.pixelSize: Theme.px(15)
     }
-    Slider {
+    AppSlider {
+        objectName: "gain3dSlider"
         Accessible.name: qsTr("3D gain")
         Accessible.onIncreaseAction: { increase(); moved() }
         Accessible.onDecreaseAction: { decrease(); moved() }
@@ -433,8 +435,9 @@ ColumnLayout {
             color: Theme.textDim
             font.pixelSize: Theme.px(15)
         }
-        Slider {
+        AppSlider {
             id: psSlider
+            objectName: ps.key + "Slider"
             Accessible.name: ps.title
             // Sent on release; a screen reader's swipe is one step, sent at once.
             Accessible.onIncreaseAction: { increase(); Engine.setPanDisplay(ps.key, Math.round(value)) }
@@ -463,7 +466,8 @@ ColumnLayout {
         }
     }
     Label { text: qsTr("Black level  %1").arg(Engine.wfBlackLevel); color: Theme.textDim; font.pixelSize: Theme.px(15) }
-    Slider {
+    AppSlider {
+        objectName: "blackLevelSlider"
         Accessible.name: qsTr("Black level")
         Accessible.onIncreaseAction: { increase(); moved() }
         Accessible.onDecreaseAction: { decrease(); moved() }
@@ -473,7 +477,8 @@ ColumnLayout {
         onMoved: Engine.wfBlackLevel = Math.round(value)
     }
     Label { text: qsTr("Colour gain  %1").arg(Engine.wfColorGain); color: Theme.textDim; font.pixelSize: Theme.px(15) }
-    Slider {
+    AppSlider {
+        objectName: "colourGainSlider"
         Accessible.name: qsTr("Colour gain")
         Accessible.onIncreaseAction: { increase(); moved() }
         Accessible.onDecreaseAction: { decrease(); moved() }
@@ -500,7 +505,8 @@ ColumnLayout {
         opacity: Engine.traceAutoRange ? 0.5 : 1
         font.pixelSize: Theme.px(15)
     }
-    Slider {
+    AppSlider {
+        objectName: "refLevelSlider"
         Accessible.name: qsTr("Reference level")
         Accessible.onIncreaseAction: { increase(); moved() }
         Accessible.onDecreaseAction: { decrease(); moved() }
@@ -517,7 +523,8 @@ ColumnLayout {
         color: Theme.textDim
         font.pixelSize: Theme.px(15)
     }
-    Slider {
+    AppSlider {
+        objectName: "rangeSlider"
         Accessible.name: qsTr("Range")
         Accessible.onIncreaseAction: { increase(); moved() }
         Accessible.onDecreaseAction: { decrease(); moved() }
