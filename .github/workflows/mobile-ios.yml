@@ -329,8 +329,26 @@ jobs:
           # crash reports (.ips) can be symbolized.
           mkdir -p testflight-symbols
           cp -R "$RUNNER_TEMP/aether-mobile.xcarchive/dSYMs/." testflight-symbols/ 2>/dev/null || true
-          cp "$RUNNER_TEMP/aether-mobile.xcarchive/Products/Applications/aether-mobile.app/aether-mobile" \
-            testflight-symbols/ 2>/dev/null || true
+          shipped="$RUNNER_TEMP/aether-mobile.xcarchive/Products/Applications/aether-mobile.app/aether-mobile"
+          cp "$shipped" testflight-symbols/ 2>/dev/null || true
+          # The archive's binary is stripped and its dSYMs folder came out
+          # empty (build 184: a watchdog .ips named nothing of ours or Qt's,
+          # roadmap 100). The linked binary before the archive's strip has
+          # the same UUID and every function's name, Qt's static code too:
+          # kept as aether-mobile.unstripped for llvm-symbolizer / atos.
+          (
+            set +e
+            want=$(dwarfdump --uuid "$shipped" 2>/dev/null | awk '{print $2}' | head -1)
+            best=""; bestn=0
+            while IFS= read -r f; do
+              [ "$(dwarfdump --uuid "$f" 2>/dev/null | awk '{print $2}' | head -1)" = "$want" ] || continue
+              n=$(nm "$f" 2>/dev/null | wc -l | tr -d ' ')
+              if [ "${n:-0}" -gt "$bestn" ]; then best="$f"; bestn=$n; fi
+            done < <(find build-xcode "$HOME/Library/Developer/Xcode/DerivedData" \
+                       -path '*aether-mobile.app/aether-mobile' -type f 2>/dev/null)
+            echo "symbols: shipped UUID $want, unstripped ${best:-none} ($bestn symbols)"
+            [ -n "$best" ] && cp "$best" testflight-symbols/aether-mobile.unstripped
+          ) || true
           ls -la testflight-symbols
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
@@ -432,8 +450,11 @@ jobs:
           RUN_ID: ${{ github.run_id }}
         run: |
           cutoff=$(date -u -d '2 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          # A build's symbols stay 30 days: testers' crash reports (.ips)
+          # come from builds still installed long after (roadmap 100).
+          symcutoff=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
           gh api --paginate "repos/$REPO/actions/artifacts" \
-            --jq ".artifacts[] | select(.workflow_run.id != $RUN_ID and .created_at < \"$cutoff\") | .id" |
+            --jq ".artifacts[] | select(.workflow_run.id != $RUN_ID and .created_at < \"$cutoff\") | select(.name != \"testflight-symbols\" or .created_at < \"$symcutoff\") | .id" |
           while read -r id; do
             echo "deleting artifact $id"
             gh api -X DELETE "repos/$REPO/actions/artifacts/$id" || echo "could not delete $id"

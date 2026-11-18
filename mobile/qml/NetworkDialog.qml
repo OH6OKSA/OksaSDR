@@ -6,6 +6,13 @@ import AetherMobile
 // Network and performance, as the desktop's diagnostics: quality, link
 // timing, packet integrity per stream, traffic, and the app's CPU and frame
 // rate. Refreshed once a second while open.
+//
+// No size in it follows its text (roadmap 100): on iOS a row layout with
+// labels whose text changed every second and a note wrapped in the column
+// set each other's size without end (Qt Quick's polish loop: the app froze
+// and iOS ended it, Scott W5SLS's iPhone and the developer's iPad). Each row
+// is a fixed height, its value right-aligned over the label; the note has a
+// fixed width; the per-stream rows stay, only their values change.
 Popup {
     id: dialog
     objectName: "networkDialog"
@@ -21,19 +28,57 @@ Popup {
     Timer { interval: 1000; repeat: true; running: dialog.opened; onTriggered: dialog.refresh() }
     background: Rectangle { color: Theme.surface; radius: Theme.radius; border.color: Theme.surfaceRaised }
 
-    component Row2: RowLayout {
+    // The rows' heights come from the font, never from their text.
+    FontMetrics { id: rowFont; font.pixelSize: Theme.px(14); font.bold: true }
+    FontMetrics { id: sectionFont; font.pixelSize: Theme.px(13); font.bold: true }
+
+    // A label and its value on one line: the value at the right in its own
+    // width, the label elided before it.
+    component Row2: Item {
+        id: row
         property string label
         property string value
         property color valueColor: Theme.text
         Layout.fillWidth: true
-        Label { text: parent.label; color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.fillWidth: true }
-        Label { text: parent.value; color: parent.valueColor; font.pixelSize: Theme.px(14); font.bold: true }
+        implicitWidth: 0
+        implicitHeight: Math.ceil(rowFont.height) + 2
+        Label {
+            anchors.left: parent.left
+            anchors.right: valueText.left
+            anchors.rightMargin: Theme.spacing / 2
+            anchors.verticalCenter: parent.verticalCenter
+            text: row.label
+            color: Theme.textDim
+            font.pixelSize: Theme.px(14)
+            elide: Text.ElideRight
+        }
+        Label {
+            id: valueText
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.min(implicitWidth, row.width * 0.7)
+            horizontalAlignment: Text.AlignRight
+            text: row.value
+            color: row.valueColor
+            font.pixelSize: Theme.px(14)
+            font.bold: true
+            elide: Text.ElideLeft
+        }
     }
-    component Section: Label {
-        color: Theme.accent
-        font.pixelSize: Theme.px(13)
-        font.bold: true
-        Layout.topMargin: 6
+    component Section: Item {
+        id: section
+        property string text
+        Layout.fillWidth: true
+        implicitWidth: 0
+        implicitHeight: Math.ceil(sectionFont.height) + 6
+        Label {
+            anchors.left: parent.left
+            anchors.bottom: parent.bottom
+            text: section.text
+            color: Theme.accent
+            font.pixelSize: Theme.px(13)
+            font.bold: true
+        }
     }
 
     // The rows scroll where the window is lower than the dialog (a phone on
@@ -43,7 +88,20 @@ Popup {
         panel: dialog
         rowSpacing: 4
         // Under the title: beside it, the title ran over it on a phone.
-        NetworkBadge { quality: dialog.d.quality || "Off"; rttMs: dialog.d.rttMs || 0 }
+        // In an item of a fixed size: its width changes with the CPU and
+        // memory figures every second.
+        Item {
+            Layout.fillWidth: true
+            implicitWidth: 0
+            implicitHeight: badge.implicitHeight
+            NetworkBadge {
+                id: badge
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                quality: dialog.d.quality || "Off"
+                rttMs: dialog.d.rttMs || 0
+            }
+        }
         Row2 { label: qsTr("Connection"); value: dialog.d.path || "–" }
         Row2 { label: qsTr("Radio"); value: dialog.d.radio || "–" }
 
@@ -67,12 +125,17 @@ Popup {
             label: qsTr("Session lost packets")
             value: (dialog.d.sessionDrops || 0) + " / " + (dialog.d.sessionPackets || 0)
         }
+        // The four stream kinds (audio, FFT, waterfall, meters): the rows
+        // stay, their values change (a model of new objects every second
+        // made the rows anew each time).
         Repeater {
-            model: dialog.d.streams || []
+            model: 4
             delegate: Row2 {
-                required property var modelData
-                label: "   " + modelData.name
-                value: modelData.errors + " / " + modelData.packets
+                required property int index
+                readonly property var stream: (dialog.d.streams || [])[index]
+                visible: stream !== undefined
+                label: "   " + (stream ? stream.name : "")
+                value: stream ? stream.errors + " / " + stream.packets : ""
             }
         }
 
@@ -114,8 +177,11 @@ Popup {
             value: Engine.uiFps + " /s"
             valueColor: Engine.uiFps > 0 && Engine.uiFps < 20 ? Theme.warning : Theme.text
         }
+        // A fixed width (the room beside a scroll bar, shown or not), so the
+        // wrapped note's height never changes the column's width back.
         Label {
-            Layout.fillWidth: true
+            Layout.preferredWidth: Math.max(0, dialog.availableWidth - 14)
+            Layout.maximumWidth: Math.max(0, dialog.availableWidth - 14)
             text: qsTr("App CPU adds up all the app's threads; a thread near 100 % is one core full. %1 shows apps no GPU load: frames drawn per second falling well below the display's rate means the graphics are not keeping up.")
                   .arg(Qt.platform.os === "ios" ? "iOS" : Qt.platform.os === "android" ? "Android" : qsTr("The system"))
             color: Theme.textDim
