@@ -296,14 +296,21 @@ void AppleTlsSocket::connectToHostEncrypted(const QString& host, quint16 port)
         emit errorOccurred(QAbstractSocket::UnknownSocketError);
         return;
     }
+    // Two references, each released by its own holder (as Apple's nwcat
+    // sample): this object's, the one nw_connection_create gave, released in
+    // finishConnection(); and the state handler's, released by the handler
+    // at the cancelled state, the last it sees. Build 188 had only the one,
+    // released by the handler while m_conn still pointed at it: a failed
+    // handshake (the framework cancels on its queue) left finishConnection()
+    // cancelling a freed connection, and the app crashed (Barry N2BJ's
+    // SmartLink, EXC_BAD_ACCESS in nw_connection_cancel_inner).
     m_conn = connection;
     m_state = QAbstractSocket::ConnectingState;
     nw_connection_set_queue(connection, queue);
     // Not retained by the handler (a __block variable is not, without ARC),
-    // so the connection and its handler hold no cycle. The reference
-    // nw_connection_create gave is released by the handler itself at the
-    // cancelled state, the last it sees: never while a handler or a receive
-    // still uses the connection.
+    // so the connection and its handler hold no cycle: the handler's
+    // reference is this nw_retain.
+    nw_retain(connection);
     __block nw_connection_t conn = connection;
     nw_connection_set_state_changed_handler(connection, ^(nw_connection_state_t state, nw_error_t error) {
         switch (state) {
@@ -461,11 +468,13 @@ void AppleTlsSocket::finishConnection()
     ++m_connId;   // whatever the old connection still sends is dropped
     m_state = QAbstractSocket::UnconnectedState;
     if (m_conn) {
-        // Cancelled, not released: its state handler releases it at the
-        // cancelled state (see connectToHostEncrypted).
+        // Cancelled (nothing more if the framework already cancelled it on a
+        // failure), then this object's reference released; the state handler
+        // keeps its own until the cancelled state (see connectToHostEncrypted).
         nw_connection_t connection = (nw_connection_t)m_conn;
         m_conn = nullptr;
         nw_connection_cancel(connection);
+        nw_release(connection);
     }
 }
 

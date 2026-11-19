@@ -9,9 +9,8 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- VOX with this device's microphone: Controls > TX > VOX now works with the phone's or iPad's own microphone too (it stays open while VOX is on, so use a headset; thanks Christoph DM5HF).
-- FTx: Answer CQ calls each station 2 to 20 times, set under More (thanks Kurt DL5EAG).
-- SmartLink on iPhone and iPad uses Apple's current TLS, and the radio's certificate is now checked on every connection (thanks Mohammed A71AT).
+- SmartLink: the app no longer crashes when the radio closes the connection before it is up (a fault in build 188; thanks Barry N2BJ).
+- From build 188: VOX with this device's microphone (Controls > TX > VOX, with a headset; thanks Christoph DM5HF). FTx: Answer CQ calls each station 2 to 20 times, under More (thanks Kurt DL5EAG). SmartLink on iPhone and iPad uses Apple's current TLS and checks the radio's certificate on every connection (thanks Mohammed A71AT).
 
 RECENT (builds 94–186)
 - 186: sliders move only when you drag them (thanks Rich N2RY).

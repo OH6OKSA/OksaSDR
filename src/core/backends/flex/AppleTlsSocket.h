@@ -76,7 +76,7 @@ private:
 
     std::shared_ptr<Shared> m_shared;
     void* m_queue{nullptr};    // dispatch_queue_t
-    void* m_conn{nullptr};     // nw_connection_t of the current connection
+    void* m_conn{nullptr};     // nw_connection_t of the current connection (a reference of its own)
     quint64 m_connId{0};       // events of an older connection are dropped
     QAbstractSocket::SocketState m_state{QAbstractSocket::UnconnectedState};
     QHostAddress m_peer;
