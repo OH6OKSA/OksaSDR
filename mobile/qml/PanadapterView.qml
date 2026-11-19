@@ -1344,11 +1344,40 @@ Rectangle {
         readonly property bool roomy: !Theme.compactHeight
         parent: Overlay.overlay
         width: Math.min(parent.width - 16, 420)
-        // Placed when it opens (mapToItem is not a live binding).
+        // Placed when it opens (mapToItem is not a live binding): beside the
+        // notch, not over it, so the notch and the signals next to it stay in
+        // sight while it is set (roadmap 107, Larry Averbeck W9FLA): on the
+        // side with room, a finger's width from the notch's band; where
+        // neither side has room (a phone upright) at the foot of the pan,
+        // over the waterfall's lower part. Dragged by its title, it stays
+        // where it was put for the rest of the session.
+        property bool userMoved: false
+        property point userPos: Qt.point(0, 0)
         function place() {
+            const room = parent
+            if (userMoved) {
+                x = Math.max(8, Math.min(room.width - width - 8, userPos.x))
+                y = Math.max(8, Math.min(room.height - implicitHeight - 8, userPos.y))
+                return
+            }
             const p = panArea.mapToItem(Overlay.overlay, anchorX, panArea.height * 0.12)
-            x = Math.max(8, Math.min(parent.width - width - 8, p.x - width / 2))
-            y = Math.max(8, Math.min(parent.height - implicitHeight - 8, p.y))
+            const t = tnf
+            const halfBand = t && Engine.panBandwidthMhz > 0
+                ? t.width / 1e6 / Engine.panBandwidthMhz * panArea.width / 2 : 0
+            const gap = halfBand + Theme.touchTarget / 2
+            const right = p.x + gap
+            const left = p.x - gap - width
+            if (right + width <= room.width - 8 && (left < 8 || room.width - p.x >= p.x)) {
+                x = right
+                y = Math.max(8, Math.min(room.height - implicitHeight - 8, p.y))
+            } else if (left >= 8) {
+                x = left
+                y = Math.max(8, Math.min(room.height - implicitHeight - 8, p.y))
+            } else {
+                const foot = panArea.mapToItem(Overlay.overlay, 0, panArea.height)
+                x = Math.max(8, Math.min(room.width - width - 8, p.x - width / 2))
+                y = Math.max(8, Math.min(room.height - implicitHeight - 8, foot.y - implicitHeight - 8))
+            }
         }
         onAboutToShow: place()
         padding: Theme.spacing
@@ -1370,6 +1399,11 @@ Rectangle {
                    : qsTr("Notch %1 MHz").arg(tnfPopup.tnf.freq.toFixed(5))
             panel: tnfPopup
             rowSpacing: Theme.spacing / 2
+            draggable: true
+            onDragged: (x, y) => {
+                tnfPopup.userPos = Qt.point(x, y)
+                tnfPopup.userMoved = true
+            }
             // The radio's global switch: notches only work while it is on.
             extras: AppButton {
                 text: Engine.tnfEnabled ? qsTr("TNF on") : qsTr("TNF off")

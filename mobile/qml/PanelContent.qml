@@ -15,11 +15,17 @@ ColumnLayout {
     // Controls of the panel's own in the title row, between the name and
     // Close (TNF on / off, Whole band).
     property alias extras: header.extras
+    // Dragged by the title row (PanelHeader.draggable), and where to.
+    property alias draggable: header.draggable
+    signal dragged(real x, real y)
     // Between the rows under the title.
     property alias rowSpacing: scroll.spacing
     default property alias content: scroll.content
     spacing: Theme.spacing / 2
-    PanelHeader { id: header }
+    PanelHeader {
+        id: header
+        onDragged: (x, y) => panelContent.dragged(x, y)
+    }
     PopupScroll {
         id: scroll
         Layout.fillWidth: true

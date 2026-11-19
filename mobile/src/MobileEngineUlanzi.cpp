@@ -31,6 +31,7 @@
 #include "SideKeys.h"
 #include "core/AppSettings.h"
 #include "core/MidiControlManager.h"
+#include "models/RadioModel.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -66,6 +67,10 @@ QHash<QString, QString> defaultMap()
 
 #ifdef Q_OS_ANDROID
 QPointer<MobileEngine> s_ulanziEngine;
+// The Java side calls the native ulanziKey only when told the dial is on,
+// and is told so only once that native is registered (an unregistered one
+// would throw UnsatisfiedLinkError in dispatchKeyEvent and close the app).
+bool s_ulanziBridge = false;
 
 // OksaActivity's native ulanziKey(int, int), on Android's UI thread.
 void JNICALL ulanziKeyFromJava(JNIEnv*, jclass, jint linuxKey, jint value)
@@ -83,6 +88,9 @@ void JNICALL ulanziKeyFromJava(JNIEnv*, jclass, jint linuxKey, jint value)
 
 void tellJava(bool on)
 {
+    if (!s_ulanziBridge) {
+        return;
+    }
     QJniObject::callStaticMethod<void>("fi/oh6oksa/oksasdr/OksaActivity", "setUlanziOn", "(Z)V", jboolean(on));
 }
 #endif
@@ -107,8 +115,9 @@ void MobileEngine::setupUlanzi()
         QJniEnvironment env;
         const JNINativeMethod methods[] = {
             {"ulanziKey", "(II)V", reinterpret_cast<void*>(ulanziKeyFromJava)}};
-        if (!env.registerNativeMethods("fi/oh6oksa/oksasdr/OksaActivity", methods, 1)) {
-            qCWarning(lcMobile) << "Ulanzi Dial: the key bridge to Android did not register";
+        s_ulanziBridge = env.registerNativeMethods("fi/oh6oksa/oksasdr/OksaActivity", methods, 1);
+        if (!s_ulanziBridge) {
+            qCWarning(lcMobile) << "Ulanzi Dial: the key bridge to Android did not register; the dial is not read";
         } else if (ulanziOn()) {
             tellJava(true);
         }
@@ -118,6 +127,15 @@ void MobileEngine::setupUlanzi()
         startUlanziKeys([this](int linuxKey, bool pressed) { ulanziKey(linuxKey, pressed ? 1 : 0); });
         setUlanziKeysOn(ulanziOn());
     }
+    // A transmission over: what the dial keyed has ended, so the dial going
+    // later (on iOS any text field taking the keys, on Android the app
+    // leaving the screen) ends nothing it did not start, such as a later
+    // transmission from the screen's PTT or Space.
+    connect(&m_session.radioModel(), &RadioModel::radioTransmittingChanged, this, [this](bool on) {
+        if (!on && m_ulanziHeld.isEmpty()) {
+            m_ulanziKeyed = false;
+        }
+    });
 }
 
 bool MobileEngine::ulanziOn() const
@@ -218,21 +236,29 @@ void MobileEngine::ulanziEvent(const UlanziChordDecoder::Event& event)
         midiAction(id, float(next));
         return;
     }
-    if (m_midiTxFunctions.contains(id) && (event.action == 1 || p->type == MidiParamType::Gate)) {
-        m_ulanziKeyed = true;
-    }
+    // The dial's own transmissions: a transmit function that keyed (its
+    // MIDI action sets m_midiKeyed only when Transmit from the controller
+    // lets it), not one refused.
+    const auto run = [this, &id](float value) {
+        const bool keyedBefore = std::exchange(m_midiKeyed, false);
+        midiAction(id, value);
+        if (m_midiKeyed && m_midiTxFunctions.contains(id)) {
+            m_ulanziKeyed = true;
+        }
+        m_midiKeyed = m_midiKeyed || keyedBefore;
+    };
     if (p->type == MidiParamType::Gate) {
         if (event.action) {
             m_ulanziHeld.insert(id);
         } else {
             m_ulanziHeld.remove(id);
         }
-        midiAction(id, event.action ? 1.0f : 0.0f);
+        run(event.action ? 1.0f : 0.0f);
         return;
     }
     // Triggers and toggles on the press.
     if (event.action == 1) {
-        midiAction(id, 1.0f);
+        run(1.0f);
     }
 }
 

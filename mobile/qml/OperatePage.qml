@@ -526,6 +526,9 @@ Page {
                     controlsDrawer.close()
                     Engine.controlsVisible = true
                 }
+                // Landscape has no Close at the bottom: a × at the top.
+                showCloseButton: !page.portrait
+                onCloseRequested: controlsDrawer.close()
             }
             // Upright: Close, full height and the PTT copy, as on the phone.
             RowLayout {

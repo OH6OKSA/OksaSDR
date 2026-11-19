@@ -9,13 +9,12 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Elecraft KPA1500: the Amp tab shows the fan speed (0-5) with its minimum, and with Control the amplifier on (Radio Setup > Amp), Fan minimum has - / + to set it, also while transmitting; the meters offer Fan too (thanks Rich N2RY).
-- KPA1500 commands show their result at once.
-- Ulanzi Dial: Radio Setup > MIDI > Ulanzi Dial on, then Learn takes its four side keys for any function, PTT or F1-F12 too (thanks Christoph DM5HF).
-- Digital max on the TX tab: a power limit for DIGU, DIGL and RTTY (FT8, PSK, RTTY, RADE); your power comes back when you leave them (thanks Sloan Davis).
-- SmartLink: your own Disconnect is no longer shown as the radio closing the connection, and a connection the iPhone or iPad holds back says why.
+- The notch panel opens beside the notch, not over it, so the signals next to it stay in sight; drag it by its title to put it elsewhere (thanks Larry W9FLA).
+- On an iPad in landscape, × beside Pin Controls closes the controls (thanks Larry W9FLA).
+- Ulanzi Dial: a transmission you start from the screen no longer ends when a text field takes the keys (a fault in build 190).
 
-RECENT (builds 94–189)
+RECENT (builds 94–190)
+- 190: KPA1500 Fan minimum on the Amp tab (thanks Rich N2RY); Ulanzi Dial side keys in Radio Setup > MIDI (thanks Christoph DM5HF); Digital max on the TX tab (thanks Sloan Davis); SmartLink messages after your own Disconnect.
 - 188-189: VOX with this device's microphone (Controls > TX > VOX, with a headset; thanks Christoph DM5HF); FTx Answer CQ calls each station 2 to 20 times, under More (thanks Kurt DL5EAG); SmartLink with Apple's current TLS and the radio's certificate checked (thanks Mohammed A71AT); no crash when the radio ends SmartLink before it is up (thanks Barry N2BJ).
 - 186: sliders move only when you drag them (thanks Rich N2RY).
 - 185: the network details in the top row no longer freeze the app (thanks Scott W5SLS).
@@ -32,7 +31,7 @@ PLEASE TRY
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
 - VOX with a headset on this device: Controls > TX > VOX on, speak, and the radio keys by its VOX level and delay. [TX]
 - SmartLink on an iPhone or iPad, also over a mobile network: connect, disconnect and connect again; the Connect page should show no error after your own Disconnect.
-- New: a KPA1500's Fan minimum (Controls > Amp); a Ulanzi Dial's side keys; Digital max with FT8.
+- New: a notch (press and hold on the display): the panel beside it, and dragged by its title. A KPA1500's Fan minimum (Controls > Amp); a Ulanzi Dial's side keys; Digital max with FT8.
 - Slices on two or more bands (+ Slice, then Band on one): each gets its own panadapter, and the FTx tab decodes them all, FT8 on one and FT4 on another.
 
 REPORTING A PROBLEM

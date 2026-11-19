@@ -19,6 +19,10 @@ ColumnLayout {
     // Pinned side panel: several sections at once, chosen by toggles.
     property bool multiSelect: false
     signal pinRequested()
+    // A tablet's drawer in landscape (roadmap 108, Larry Averbeck W9FLA):
+    // a × beside Pin Controls closes it (upright its Close is at the bottom).
+    property bool showCloseButton: false
+    signal closeRequested()
 
     // name: kept in the settings (pinned sections); button: the short label,
     // so every button can be the same size; title: the section's heading.
@@ -77,11 +81,30 @@ ColumnLayout {
         Engine.pinnedSections = list
     }
 
-    AppButton {
-        visible: panel.showPinButton
-        text: qsTr("Pin Controls")
+    RowLayout {
+        visible: panel.showPinButton || panel.showCloseButton
         Layout.fillWidth: true
-        onClicked: panel.pinRequested()
+        spacing: 4
+        AppButton {
+            visible: panel.showPinButton
+            text: qsTr("Pin Controls")
+            Layout.fillWidth: true
+            onClicked: panel.pinRequested()
+        }
+        // Only a close where there is no Pin Controls: it takes the row.
+        Item {
+            visible: !panel.showPinButton
+            Layout.fillWidth: true
+        }
+        AppButton {
+            objectName: "closeControlsTop"
+            visible: panel.showCloseButton
+            text: "×"
+            font.pixelSize: Theme.buttonFont * 1.3
+            Accessible.name: qsTr("Close controls")
+            Layout.preferredWidth: Theme.touchTarget
+            onClicked: panel.closeRequested()
+        }
     }
 
     // ---- Drawer: one section at a time, chosen from a button grid ----

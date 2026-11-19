@@ -1073,7 +1073,11 @@ Power meter. Two fit side by side, four make 2 × 2.
   outlined in black: filled while TNF is on, hollow while it is off. Tap
   it for the same settings and *Remove*; *TNF on/off* there is the radio's
   switch for all notches — they only work while it is on. Drag a notch
-  along the spectrum (not the waterfall) to move it.
+  along the spectrum (not the waterfall) to move it. The panel opens
+  beside the notch, on the side with room, so the notch and the signals
+  next to it stay in sight while you set it (on a phone upright, at the
+  foot of the display); drag it by its title to put it elsewhere, and it
+  opens there for the rest of the session (thanks Larry Averbeck W9FLA).
 
 ![Notch settings](manual/tnf.jpg)
 
@@ -1273,7 +1277,9 @@ assigned* or *The selected TX antenna cannot transmit on this frequency*).
 **Controls** (top row) opens the controls; on an iPad, *Pin Controls* keeps
 them in the page (at the right in landscape, under the display in portrait),
 with toggle buttons to show several sections at once; *Hide controls* puts
-them back into the drawer. The buttons are all one size, in rows of six:
+them back into the drawer. On a tablet in landscape **×** beside *Pin
+Controls* closes the drawer (upright, *Close* is at its foot; a tap outside
+it closes it too; thanks Larry Averbeck W9FLA). The buttons are all one size, in rows of six:
 **DSP**, **Audio**, **TX**, **eSSB** (this device's microphone
 processing), **CW**, **View**, **Prof** (profiles), **Mem** (memory),
 **Log**, **FTx** (FT8 / FT4), **FreeDV** (RADE digital voice and FreeDV
