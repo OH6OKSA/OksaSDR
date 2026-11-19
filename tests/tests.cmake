@@ -9658,3 +9658,53 @@ add_executable(tune_inhibit_restore_test tests/tune_inhibit_restore_test.cpp)
 target_include_directories(tune_inhibit_restore_test PRIVATE src tests)
 target_link_libraries(tune_inhibit_restore_test PRIVATE aethercore Qt6::Core)
 add_test(NAME tune_inhibit_restore_test COMMAND tune_inhibit_restore_test)
+
+# Elecraft KPA500 / KAT500 (from upstream, OksaSDR roadmap 12).
+add_executable(kpa500_protocol_test tests/kpa500_protocol_test.cpp src/core/Kpa500Protocol.cpp)
+target_include_directories(kpa500_protocol_test PRIVATE src)
+target_link_libraries(kpa500_protocol_test PRIVATE Qt6::Core)
+add_test(NAME kpa500_protocol_test COMMAND kpa500_protocol_test)
+
+# Socket-free injected KPA500 transport: liveness and stale-snapshot recovery.
+add_executable(kpa500_connection_test tests/kpa500_connection_test.cpp
+    src/core/Kpa500Connection.cpp src/core/Kpa500Connection.h
+    src/core/Kpa500Protocol.cpp src/core/Kpa500Maintenance.cpp)
+target_include_directories(kpa500_connection_test PRIVATE src)
+target_link_libraries(kpa500_connection_test PRIVATE Qt6::Core Qt6::Network)
+add_test(NAME kpa500_connection_test COMMAND kpa500_connection_test)
+
+add_executable(kpa500_maintenance_test tests/kpa500_maintenance_test.cpp src/core/Kpa500Maintenance.cpp)
+target_include_directories(kpa500_maintenance_test PRIVATE src)
+target_link_libraries(kpa500_maintenance_test PRIVATE Qt6::Core)
+add_test(NAME kpa500_maintenance_test COMMAND kpa500_maintenance_test)
+
+add_executable(kpa500_fault_history_test tests/kpa500_fault_history_test.cpp src/core/Kpa500FaultHistory.cpp)
+target_include_directories(kpa500_fault_history_test PRIVATE src)
+target_link_libraries(kpa500_fault_history_test PRIVATE Qt6::Core)
+add_test(NAME kpa500_fault_history_test COMMAND kpa500_fault_history_test)
+
+add_executable(kat500_protocol_test tests/kat500_protocol_test.cpp src/core/Kat500Protocol.cpp)
+target_include_directories(kat500_protocol_test PRIVATE src)
+target_link_libraries(kat500_protocol_test PRIVATE Qt6::Core)
+add_test(NAME kat500_protocol_test COMMAND kat500_protocol_test)
+
+add_executable(kat500_maintenance_test tests/kat500_maintenance_test.cpp
+    src/core/Kat500Maintenance.cpp src/core/Kat500Protocol.cpp)
+target_include_directories(kat500_maintenance_test PRIVATE src)
+target_link_libraries(kat500_maintenance_test PRIVATE Qt6::Core)
+target_compile_definitions(kat500_maintenance_test PRIVATE
+    KAT500_FIXTURE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/kat500/utility-1.23.11.9.KAT500Config")
+add_test(NAME kat500_maintenance_test COMMAND kat500_maintenance_test)
+
+# Injected transport and clock; no serial port or network peer is opened.
+add_executable(kat500_model_test tests/kat500_model_test.cpp src/models/Kat500Model.cpp
+    src/models/Kat500Model.h src/core/Kat500Protocol.cpp src/core/Kat500Maintenance.cpp)
+target_include_directories(kat500_model_test PRIVATE src)
+target_link_libraries(kat500_model_test PRIVATE Qt6::Core Qt6::Network Qt6::Test)
+target_compile_definitions(kat500_model_test PRIVATE
+    KAT500_CONFIGURATION_PATH="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/kat500/configuration-readback.json")
+if(TARGET Qt6::SerialPort)
+    target_compile_definitions(kat500_model_test PRIVATE HAVE_SERIALPORT)
+    target_link_libraries(kat500_model_test PRIVATE Qt6::SerialPort)
+endif()
+add_test(NAME kat500_model_test COMMAND kat500_model_test)

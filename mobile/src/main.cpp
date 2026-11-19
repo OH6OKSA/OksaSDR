@@ -332,10 +332,14 @@ int main(int argc, char* argv[])
     // "Unknown hover state" line: noise in the operator's log.
     // Android: Qt's window surface created and destroyed, for the log (the
     // GUI thread stood still in the background, beta 41).
+    // The KPA500's and KAT500's own debug lines (every poll, several a
+    // second) stay out: MobileEngineElecraft.cpp logs what happens.
 #ifdef Q_OS_ANDROID
-    QLoggingCategory::setFilterRules(QStringLiteral("qt.qpa.input.mouse=false\nqt.qpa.window.debug=true"));
+    QLoggingCategory::setFilterRules(QStringLiteral("qt.qpa.input.mouse=false\nqt.qpa.window.debug=true"
+                                                    "\naethersdr.kpa500.debug=false\naether.kat500.debug=false"));
 #else
-    QLoggingCategory::setFilterRules(QStringLiteral("qt.qpa.input.mouse=false"));
+    QLoggingCategory::setFilterRules(QStringLiteral("qt.qpa.input.mouse=false"
+                                                    "\naethersdr.kpa500.debug=false\naether.kat500.debug=false"));
 #endif
     QGuiApplication::setApplicationName(QStringLiteral("AetherSDR-Mobile"));
     QGuiApplication::setOrganizationName(QStringLiteral("AetherSDR"));

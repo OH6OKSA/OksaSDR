@@ -944,14 +944,18 @@ present power), *SWR* (red from 2:1, – below 1 W), *Temp* (0-100 °C, red
 from 70: the RF2K-S goes to standby at 72 °C), *Volts* (40-60 V) and
 *Current* (0-60 A; 0-70 A for a KPA1500; its *Temp* 0-120 °C, red from
 100: it faults at 112 °C), and for a KPA1500 *Fan* (its fans' speed now,
-0 off to 5, *Fan 3 (min 2)* with the minimum set). The meter names them *Amp Power*, *Amp Temp*… where
+0 off to 5, *Fan 3 (min 2)* with the minimum set). A KPA500's on its own
+scales: Power 0-600 W red from 550, Refl 0-100 W, Volts 40-70 V, Current
+0-25 A. The meter names them *Amp Power*, *Amp Temp*… where
 there is room and *Amp* where not (the value's unit and the scale tell
 which). Forget the amplifier, and a meter showing one of them goes back
 to its usual reading. A Power Genius XL the radio reports gives these
 readings too when no RF2K-S or KPA1500 is set up: Power on 0-2000 W red from 1500,
 Current on 0-70 A. A Tuner Genius XL adds **Tuner**: *Power* (the power
 through it, 0-2000 W) and *SWR* (red from 2.5, – below 5 W), so the four
-meters can follow the amplifier and the tuner without the Amp tab open.
+meters can follow the amplifier and the tuner without the Amp tab open. A
+KAT500 (with no Tuner Genius XL) adds **Tuner** *SWR*, the last it
+measured, while the radio transmits.
 While [RADE](#8-controls) runs, receive also offers **SNR** (thanks Scott
 L Stanford), the RADE decoder's own on 0-20 dB, *–* until it is synced;
 a meter showing it goes back to its usual reading when RADE is off and
@@ -2037,7 +2041,8 @@ seven.
   receive settings over the display.
 
 - **Amp** — an RF-KIT **RF2K-S** amplifier, over its own network
-  interface (its REST API), or an Elecraft **KPA1500** (below), once its
+  interface (its REST API), an Elecraft **KPA1500**, or an Elecraft
+  **KPA500** amplifier and **KAT500** tuner (below), once its
   address is set in [Radio Setup › Amp](#9-radio-setup). The tab shows what the amplifier
   reports; with **Control the amplifier** on (Radio Setup › Amp, off until
   you turn it on) it also switches Operate / Standby and the antenna and
@@ -2199,6 +2204,76 @@ seven.
   38400. The amplifier then follows the band and picks its ATU setting
   before you transmit.
 
+  **Elecraft KPA500 and KAT500** (asked by Sergio Landoni LU7YS): both are
+  serial devices, so the app reaches each through a raw TCP serial bridge
+  at the station, one TCP port per device, e.g. a Raspberry Pi Pico W with
+  two RS-232 adapters, or ser2net on a Raspberry Pi (Radio Setup › Amp:
+  each its bridge's address and port). A bridge port takes one program at
+  a time: AetherSDR on a PC and this app take turns (the app lets go of
+  them when it leaves the screen). *Experimental: tested only against
+  simulators so far, not on a real KPA500 or KAT500. No responsibility is
+  taken for any problems using OksaSDR may cause to your equipment;
+  reports from owners are welcome.*
+
+  The **KPA500** shows as the other amplifiers: *Elecraft KPA500* and
+  **OPERATE**, **STANDBY** or **POWER OFF**, the link (*Read from
+  192.168.1.194:2000*), a fault in red (*Amplifier fault: 07*: the
+  amplifier's fault number), **Forward** (0-600 W), **Reflected** (from
+  the forward power and SWR it reports), **SWR**, the PA **Temperature**,
+  the **Fan** minimum, the PA **Voltage** and **Current**, the **Band** and
+  the **Firmware**.
+
+  ![Amp tab with a KPA500](manual/tab-kpa500.jpg)
+
+  With **Control the amplifier** on: **Mode** (*Standby* / *Operate*; the
+  question names the radio's power: the KPA500 gives its 500 W from about
+  30 W, much more drive faults it), **Fan minimum** (− / +, 0 off to 6,
+  at a tap and also while transmitting, as the KPA1500's) and **Clear
+  fault**. A Flex gives the KPA500 no band data, so with Control on its
+  band follows the radio's TX frequency: *Band: Following TX frequency →
+  20m* under the controls; the change goes before you transmit, never
+  while the radio transmits, and shows once the amplifier reads it back.
+  The amplifier stays keyed by its KEY IN cable from the radio.
+
+  The **KAT500** shows its **mode** (*AUTO*, *MANUAL* or *BYPASS*, or
+  *TUNING* while it searches) beside its name, the link, a fault in red
+  (*Tuner fault: No suitable tuning match*), its **SWR** (the last it
+  measured: live on the bar while the radio transmits), the **SWR
+  (last)** and **Bypass SWR** (without its network), the **Antenna** (ANT
+  1-3), the **Network** (*In line* or *Bypassed*), the **Band**, the
+  **Frequency** its memory is set for and the **Firmware**.
+
+  With **Control the tuner** on:
+  - **Mode** — *Auto* (it recalls its stored match for the frequency and
+    tunes by itself when the SWR is high), *Manual* (it keeps the present
+    match and tunes only when asked) or *Bypass* (its network out of line,
+    no tuning).
+  - **Antenna** — *1*, *2* and *3*; one the tuner has not enabled on this
+    band is dim.
+  - **Network** — *In line* or *Bypass* (its bypass relays; in Auto the
+    next tune or recall can put the network back in line).
+  - **Tune** — its full-search tune: a KPA500 in OPERATE is put in
+    STANDBY first (the carrier is never amplified), the radio's own ATU is
+    bypassed (two tuners in line do not tune), the tuner is set to the TX
+    frequency (its memory for it) and starts its search, and the radio
+    sends its TUNE carrier at the TX tab's Tune power, which must be 10-100
+    W (Elecraft: 20 W or more matches best). The button shows *Stop* and
+    the seconds left; the carrier stops once the tuner says it is done,
+    and the result shows (*The tuner tuned (SWR 1.05). Put the KPA500 in
+    OPERATE when you are ready.*), or on a fault (*The tuner: No suitable
+    tuning match.*), if the KPA500 reads OPERATE, when the radio sends
+    more than 110 W, the link drops, on *Stop* or after 30 s (the search
+    is then cancelled). Not in Bypass mode or while the tuner shows a
+    fault.
+  - *Clear fault* — clears the tuner's present fault.
+
+  ![The KAT500's controls](manual/kat500-controls.jpg)
+
+  Each change asks first and none works while the radio transmits (but the
+  KPA500's Fan minimum); the tab shows a change once the device reads it
+  back (*The amplifier has not shown the change in 3 s*, *The tuner did
+  not show the change* if not).
+
   **4O3A Power Genius XL and Tuner Genius XL.** A PGXL or TGXL connected to
   the radio shows on the Amp tab by itself: the radio reports it and relays
   its state, power, SWR and Operate / Standby (over SmartLink too), and
@@ -2303,7 +2378,8 @@ radio.
     REQ input on while it is set active high asks first. On a radio with
     SmartSDR 4.3 or later, **RCA TX1-3 held off during TUNE (the radio's
     own)**: the radio itself keeps the RCA outputs open while it tunes on
-    that band, kept in the radio for every program. It works alongside
+    that band, kept in the radio for every program (SmartSDR 4.3.19 shows
+    the same setting as *Tune Supp* in its TX Band Settings). It works alongside
     *Inhibit during TUNE* above; either alone is enough. It is shown only
     when the radio reports it.
 
@@ -2368,7 +2444,7 @@ radio.
 - **Amp** — not a setting of the radio: the amplifier this device reads
   for the [Amp tab](#8-controls) and the meters, kept on this device.
   First **Manufacturer**: tap **4O3A** (Power Genius XL, Tuner Genius XL,
-  Antenna Genius), **Elecraft** (KPA1500) or **RF-KIT** (RF2K-S) to show
+  Antenna Genius), **Elecraft** (KPA1500, KPA500, KAT500) or **RF-KIT** (RF2K-S) to show
   its devices; tap again to hide them. A maker whose device is set up reads
   *· in use*, always shows and comes first. More makers are planned (SPE).
   **Elecraft KPA1500**: its **Address** (the amplifier's IP address or
@@ -2382,6 +2458,20 @@ radio.
   *Forget the amplifier* removes it, the Amp tab and Control. As for the
   RF2K-S, this device reaches it directly (the same network or your VPN),
   not through the radio and not over SmartLink.
+  **Elecraft KPA500** and **Elecraft KAT500**: each its **Address**, the
+  address and port of its raw TCP serial bridge at the station (e.g.
+  *192.168.1.194:2000* for the amplifier and *:2001* for the tuner; a
+  bridge has no port of its own, so the port is always given), with
+  *Save*; **Read the amplifier** / **Read the tuner** on or off; **Control
+  the amplifier** / **Control the tuner** on or off (off until you turn it
+  on: then nothing that changes the device is ever sent, and the KPA500's
+  band does not follow the radio); the link's state (*Connected: KPA500,
+  firmware 01.54.*); *Forget the amplifier* / *Forget the tuner*. The
+  bridge serves one program at a time: the app reads them while it is on
+  the screen and connected to a radio, and lets go otherwise.
+
+  ![Radio Setup › Amp: the KPA500 and KAT500](manual/setup-elecraft.jpg)
+
   **RF-KIT RF2K-S**: its **Address** (the IP address or host name of the
   amplifier's network port, `:port` after it when not 8080) with *Save*;
   **Read the amplifier** on or off; **Control the amplifier** on or off

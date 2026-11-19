@@ -44,6 +44,8 @@ namespace AetherSDR {
 class AudioEngine;
 class RfkitConnection;
 class Kpa1500Connection;
+class Kpa500Connection;
+class Kat500Model;
 class AntennaGeniusModel;
 class DxClusterClient;
 class FreeDvClient;
@@ -416,6 +418,19 @@ class MobileEngine : public QObject {
     // ("OPERATE" / "STANDBY" / "POWER OFF"), fault (its text and code),
     // firmware. A reading not in yet is absent.
     Q_PROPERTY(QVariantMap kpa READ kpa NOTIFY kpaChanged)
+    // Elecraft's KPA500 and KAT500 over a raw TCP serial bridge
+    // (MobileEngineElecraft.cpp). kpa500: set, model ("KPA500"), device,
+    // address, on, control, state, error, target, pending ("operate",
+    // "standby", "clear", "fan minimum N"), result / resultOk, busy (the
+    // KAT500's tune holds it), bandTracking; once read: fwd, swr, refl (from
+    // the two), temp, volts, amps, band, operate, fault, firmware, fanMin.
+    // kat500: the same first fields, tune ("", "standby", "atu", "frequency",
+    // "search", "carrier", "result"), tuneLeft, tunePower, busy; once read:
+    // firmware, power, mode ("AUTO" / "MANUAL" / "BYPASS"), antenna (1-3),
+    // bypassed, tuning, swr, bypassSwr, band, freq (kHz), ampKey, fault,
+    // antennas (enabled on this band: true / false / null not read).
+    Q_PROPERTY(QVariantMap kpa500 READ kpa500 NOTIFY kpa500Changed)
+    Q_PROPERTY(QVariantMap kat500 READ kat500 NOTIFY kat500Changed)
     // 4O3A's Power Genius XL and Tuner Genius XL, as the radio reports and
     // relays them and as the app reads them directly (MobileEngine4o3a.cpp).
     Q_PROPERTY(QVariantMap pgxl READ pgxl NOTIFY pgxlChanged)
@@ -1427,6 +1442,27 @@ public:
     Q_INVOKABLE void kpaTune();
     Q_INVOKABLE void kpaTuneStop();
     QVariantMap kpa() const;
+    // KPA500: "host:port" of its bridge ("" forgets it); each command
+    // confirmed on the page first; done when read back.
+    Q_INVOKABLE void setKpa500Address(const QString& hostPort);
+    Q_INVOKABLE void setKpa500On(bool on);
+    Q_INVOKABLE void setKpa500Control(bool on);
+    Q_INVOKABLE void kpa500SetOperate(bool operate);
+    Q_INVOKABLE void kpa500ClearFault();
+    Q_INVOKABLE void kpa500SetFanMinimum(int speed);
+    QVariantMap kpa500() const;
+    // KAT500: the same; mode "auto" / "manual" / "bypass"; Tune: its full
+    // search with the radio's TUNE carrier (10-100 W), 30 s at most.
+    Q_INVOKABLE void setKat500Address(const QString& hostPort);
+    Q_INVOKABLE void setKat500On(bool on);
+    Q_INVOKABLE void setKat500Control(bool on);
+    Q_INVOKABLE void kat500SelectAntenna(int antenna);
+    Q_INVOKABLE void kat500SetMode(const QString& mode);
+    Q_INVOKABLE void kat500SetBypass(bool bypassed);
+    Q_INVOKABLE void kat500ClearFault();
+    Q_INVOKABLE void kat500Tune();
+    Q_INVOKABLE void kat500TuneStop();
+    QVariantMap kat500() const;
     // Opens the share sheet with the log as an ADIF file
     // ("OksaSDR-log-<date>.adi"): mail, Files, AirDrop, a logbook app, or
     // TQSL for LoTW. False when there is nothing to share.
@@ -2019,6 +2055,8 @@ signals:
     void hapticsChanged();
     void ampMakersChanged();
     void kpaChanged();
+    void kpa500Changed();
+    void kat500Changed();
     void hintsChanged();
     void hintsRequested();
     void bandPlanRegionChanged();
@@ -2522,6 +2560,63 @@ private:
     QString m_kpaState{QStringLiteral("off")};
     QString m_kpaError;
     int m_kpaLastFault{0};
+    // ---- Elecraft KPA500 and KAT500 (MobileEngineElecraft.cpp) ----
+    void setupElecraft();
+    void updateElecraftLinks();
+    double elecraftTxMhz() const;
+    void updateKpa500TxBand();
+    bool kpa500CommandAllowed(const char* what, bool whileTransmitting = false);
+    void kpa500SendPending(const QString& pending);
+    void checkKpa500Pending();
+    void kpa500CommandDone(const QString& result, bool ok);
+    bool kpa500Operating() const;
+    double kpa500ForwardW() const;
+    void updateKat500State();
+    bool kat500CommandAllowed(const char* what);
+    void kat500Sent(bool accepted, const QString& pending);
+    bool kat500Answering() const;
+    bool radioAtuInLine() const;
+    void kat500TuneAtu();
+    void kat500TuneRecall();
+    void kat500TuneStepDone(bool ok, const QString& message);
+    void startKat500TuneCarrier();
+    void checkKat500Tune();
+    void endKat500Tune(const QString& result, bool ok);
+    Kpa500Connection* m_kpa500{nullptr};
+    Kat500Model* m_kat500{nullptr};
+    QTimer* m_elecraftTxTimer{nullptr};
+    bool m_kpa500Set{false};
+    bool m_kpa500Wanted{false};
+    QString m_kpa500State{QStringLiteral("off")};
+    QString m_kpa500Error;
+    QString m_kpa500Target;
+    QString m_kpa500Pending;
+    QString m_kpa500Result;
+    bool m_kpa500ResultOk{false};
+    QTimer* m_kpa500PendingTimer{nullptr};
+    int m_kpa500LastFault{0};
+    int m_kpa500TxBand{-2};
+    bool m_kpa500TxTransmitting{false};
+    bool m_kat500Set{false};
+    bool m_kat500Wanted{false};
+    QString m_kat500State{QStringLiteral("off")};
+    QString m_kat500Error;
+    QString m_kat500Target;
+    QString m_kat500Pending;
+    QString m_kat500Result;
+    bool m_kat500ResultOk{false};
+    int m_kat500LastFault{0};
+    QString m_kat500Tune;
+    QTimer* m_kat500TuneTimer{nullptr};
+    QElapsedTimer m_kat500TuneClock;
+    QElapsedTimer m_kat500TuneStepClock;
+    int m_kat500TuneKhz{0};
+    bool m_kat500TuneWasOperate{false};
+    bool m_kat500TuneKeyed{false};
+    bool m_kat500TuneEndSeen{false};
+    bool m_kat500TuneSawTuning{false};
+    bool m_kat500TuneOwnsOp{false};
+    int m_kat500TuneLeftShown{-1};
     void syncDigiAudio();
     void onDigiSlot(qint64 slotMs);
     void handleDigiDecodes(const QVariantList& decodes, qint64 slotMs);

@@ -58,6 +58,7 @@ qt_add_executable(aether-mobile
     src/MobileEngineDigitalMax.cpp
     src/MobileEngineAmp.cpp
     src/MobileEngineKpa.cpp
+    src/MobileEngineElecraft.cpp
     src/Kpa1500Reader.cpp
     src/Kpa1500Reader.h
     src/MobileEngine4o3a.cpp
@@ -216,6 +217,7 @@ qt_add_qml_module(aether-mobile
         qml/FreeDvControls.qml
         qml/RttyControls.qml
         qml/AmpControls.qml
+        qml/Kat500Controls.qml
         qml/GeniusControls.qml
         qml/MacrosPanel.qml
         qml/AppScrollBar.qml

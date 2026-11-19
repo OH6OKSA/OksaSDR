@@ -503,6 +503,8 @@ void MobileEngine::kpaTune()
     QString why;
     if (!m_ampTune.isEmpty()) {
         why = tr("The RF2K-S's tune is running.");
+    } else if (!m_kat500Tune.isEmpty()) {
+        why = tr("The KAT500's tune is running.");
     } else if (m_kpa->status().faultCode.value_or(0) != 0) {
         why = tr("The amplifier shows a fault: clear it first.");
     } else if (!tuneAvailable()) {

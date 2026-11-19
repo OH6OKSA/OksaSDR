@@ -9,15 +9,14 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- SmartLink over a mobile network that is IPv6 only (common in the US): the audio, the panadapter and the waterfall now come through too; build 192 connected but stayed silent and empty (thanks Michael Walker).
+- Elecraft KPA500 and KAT500 on the Amp tab (thanks Sergio LU7YS), each through a raw TCP serial bridge (e.g. a Raspberry Pi Pico W) set in Radio Setup > Amp > Elecraft. With Control on: Operate / Standby, fault clear, fan minimum, the band following the radio, and the KAT500's mode, antenna, bypass and Tune (10-100 W). Experimental: tested against stand-ins.
+- SmartSDR 4.3.19's Tune Supp is Radio Setup > Transmit > RCA TX1-3 held off during TUNE here.
 
-RECENT (builds 94–192)
-- 192: the notch panel opens beside the notch, or above or below the display, also in 3D; drag it by its title (thanks Larry W9FLA).
-- 191: the notch panel beside the notch; × beside Pin Controls closes the controls in landscape (thanks Larry W9FLA); Ulanzi Dial fixes.
+RECENT (builds 94–193)
+- 193: SmartLink audio, panadapter and waterfall on IPv6-only mobile networks (thanks Michael Walker).
+- 191-192: the notch panel beside the notch (or above or below the display, also in 3D), dragged by its title; × beside Pin Controls closes the controls in landscape (thanks Larry W9FLA); Ulanzi Dial fixes.
 - 190: KPA1500 Fan minimum on the Amp tab (thanks Rich N2RY); Ulanzi Dial side keys in Radio Setup > MIDI (thanks Christoph DM5HF); Digital max on the TX tab (thanks Sloan Davis); SmartLink messages after your own Disconnect.
-- 188-189: VOX with this device's microphone (Controls > TX > VOX, with a headset; thanks Christoph DM5HF); FTx Answer CQ calls each station 2 to 20 times, under More (thanks Kurt DL5EAG); SmartLink with Apple's current TLS and the radio's certificate checked (thanks Mohammed A71AT); no crash when the radio ends SmartLink before it is up (thanks Barry N2BJ).
-- 186: sliders move only when you drag them (thanks Rich N2RY).
-- 185: the network details in the top row no longer freeze the app (thanks Scott W5SLS).
+- 188-189: VOX with this device's microphone (thanks Christoph DM5HF); Answer CQ calls each station 2-20 times (thanks Kurt DL5EAG); SmartLink with Apple's current TLS (thanks Mohammed A71AT); a SmartLink crash fixed (thanks Barry N2BJ).
 - 184: slices on several bands, each with its own panadapter; FT8 on one slice and FT4 on another; logbooks in Setup > Logging.
 
 PLEASE TRY

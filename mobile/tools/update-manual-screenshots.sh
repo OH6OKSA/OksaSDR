@@ -53,8 +53,9 @@ amp_shots=(tab-amp amp-controls amp-confirm amp-tune setup-amp setup-txband setu
 midi_shots=(setup-midi)
 logging_shots=(setup-logging)
 kpa_shots=(tab-kpa kpa-controls)
+elecraft_shots=(tab-kpa500 kat500-controls setup-elecraft)
 all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${phone_shots[@]}" phone-landscape bandchooser
-           "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" "${logging_shots[@]}" "${kpa_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
+           "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" "${logging_shots[@]}" "${kpa_shots[@]}" "${elecraft_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
     printf '%s\n' "${all_shots[@]}" | sort -u
     exit 0
@@ -341,6 +342,35 @@ if want "${kpa_shots[@]}"; then
     fi
 fi
 
+# The Amp tab with an Elecraft KPA500 and KAT500 against stand-ins
+# (elecraft-mock.py, with readings as while transmitting, each on a raw TCP
+# port of its own as a serial bridge gives them), Control on for both as the
+# user turns it on; nothing is sent that changes them. The app forgets them
+# (and Control with them) after.
+if want "${elecraft_shots[@]}" && [ "$DRY" = 0 ]; then
+    python3 "$ROOT/mobile/tools/elecraft-mock.py" --host 127.0.0.1 --kpa500 12100 --kat500 12101 --keyed \
+        >"$TMP/elecraft-mock.log" 2>&1 </dev/null &
+    elmock=$!
+    sleep 1
+fi
+if want "${elecraft_shots[@]}"; then
+    {
+        printf 'ready\nkpa500 127.0.0.1:12100\nkat500 127.0.0.1:12101\nkpa500 control on\nkat500 control on\nwait 5000\n'
+        if want tab-kpa500; then printf 'drawer 12\nwait 1500\nscroll 0\nwait 800\nshot tab-kpa500\nclose\nwait 600\n'; fi
+        if want kat500-controls; then printf 'drawer 12\nwait 1500\nscroll -14\nwait 800\nshot kat500-controls\nclose\nwait 600\n'; fi
+        if want setup-elecraft; then
+            printf 'popup radioSetup\nwait 800\nclick setupTab7\nwait 1500\nscroll -14\nwait 800\nshot setup-elecraft\nclose\nwait 600\n'
+        fi
+        printf 'kpa500 off\nkat500 off\nwait 1000\n'
+    } | plan elecraft 440x956 "${src[@]}"
+    if [ "$DRY" = 0 ]; then
+        kill "$elmock" 2>/dev/null || true
+        wait "$elmock" 2>/dev/null || true
+        command grep -c -E 'OPERATE|STANDBY|band [0-9]|fan minimum|ANT [0-9]|mode [AMB]|bypass|cleared|tuning' "$TMP/elecraft-mock.log" \
+            | sed 's/^/  Elecraft stand-ins: changes asked: /'
+    fi
+fi
+
 # Radio Setup › MIDI against a stand-in CTR2-MIDI (ctr2-mock, an ALSA virtual
 # MIDI port on this computer), chosen as the user chooses it; nothing is
 # learned and the stand-in sends nothing. The functions shown are this
@@ -488,6 +518,9 @@ jpg tab-amp 440x520+0+436
 jpg tab-genius 440x520+0+436
 jpg tab-kpa 440x520+0+436
 jpg kpa-controls 440x520+0+436
+jpg tab-kpa500 440x520+0+436
+jpg kat500-controls 440x520+0+436
+jpg setup-elecraft 418x825+11+40 330x
 jpg setup-amp 418x700+11+40 330x
 jpg setup-txband 418x700+11+40 330x
 jpg setup-rx 418x825+11+40 330x

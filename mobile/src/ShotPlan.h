@@ -51,6 +51,9 @@ class MobileEngine;
 //   slices                  log every slice (frequency, mode, TX, active) and the power
 //   amp HOST[:PORT]|off     the amplifier's address (Radio Setup › Amp); off forgets it,
 //                           pause / resume its Read the amplifier switch
+//   kpa500 HOST:PORT|off    an Elecraft KPA500's bridge (Radio Setup › Amp); off forgets
+//                           it; "control on|off" its Control; "state" logs Engine.kpa500
+//   kat500 HOST:PORT|off    the KAT500's, the same
 //   appstate STATE          the app's state as the system sets it: active, inactive,
 //                           hidden, suspended (background and back)
 //   netchange               as the system reporting another network (SmartLink's

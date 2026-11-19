@@ -120,7 +120,7 @@ build. The sections below hold the details.
 9. **Digi:** More keyboard modes: Olivia, MFSK … (Planned: the Digi tab)
 10. **FTx:** Fox / Hound and SuperFox: working a DXpedition as a Hound (Michael Whaley AF0F 2026-10-29; Gianluca IK6QOO on FB 2026-11-09). *Pre-analysis 2026-11-09* (WSJT-X 2.7 source, the FT8 DXpedition Mode and SuperFox user guides): Hound only; being a Fox is the DXpedition's side (SuperFox needs an NCDXF key) and is not planned. No upstream code to take (the desktop leaves FT8 to WSJT-X) and no upstream issues. (a) **Classic Hound** (*in build 163, in progress*; still used, e.g. 5R8IC Madagascar "FT8 (f/h)" until 2026-12-20 on NG3K's list): ft8_lib does not decode the Fox's combined message (type 0.1, "K1ABC RR73; W9XYZ <KH1/KH7Z> -12", c28 c28 h10 r5; message.c returns "not handled"), so today the app cannot even show it: ~60 lines in our copy and a test with our own packer. A Hound switch in the FTx controls and the rules WSJT-X enforces: transmit only in the second (odd) period; call at 1000-3000 Hz (moved there if below); decode below 1000 Hz unless all are asked for; after the Fox's report, R+rpt sent automatically on the frequency the Fox called on (300-900 Hz), a repeat 300 Hz off; RR73 (alone or in a combined message) stops and logs; the operator confirms calling again every 2 minutes; directed CQs (CQ EU, ...) honoured; MSHV multi-stream messages read as WSJT-X does. Mobile: no heavier than FT8 today; the radio's TX filter must pass 300 Hz. Nonstandard Hound calls (the user's OH6OKSA): the call goes as "<KH7Z> OH6OKSA", WSJT-X's Fox takes it (lib/decoder.f90) and answers by hash, but does not read the R report "KH7Z <OH6OKSA> R-11" (on the air with C8K 2026-11-10: see build 163). Size: medium, one build; tested by decoding a live Fox at the cabin and a low-power QSO. (b) **SuperFox Hound** (WSJT-X 2.7+, the large DXpeditions): the even period carries one 1512 Hz wide signal from 750 Hz to up to 9 Hounds with a 20-bit one-time password; Hounds call with normal FT8 anywhere at 200-3000 Hz, no frequency moves, only after decoding the SuperFox. The decoder is WSJT-X's (GPLv3, as the app): ~800 lines of Fortran to port to C++ (sfrx_sub, qpc_sync, qpc_decode2, sfox_demod, sfox_remove_tone, sfox_unpack, ...) and ~1100 lines of C (the polar code, usable as is); removing FT8 signals first needs FT8 subtraction, which ft8_lib lacks (later). "Verified": the code checked at https://www.9dx.cc (NCDXF's server; the Fox's call, the time and the code, nothing of the user; no terms found, the guide offers it to receiving software): an option, named on the privacy page; or the code shown for a later check. Test audio: no SuperFox recordings published; WSJT-X's sfoxsim needs gfortran (not on this PC) or our own port of the encoder; no SuperFox DXpedition on NG3K's list now. Size: large, its own build after (a). Both: Hound only on the Fox's announced frequency, never the FT8 sub-bands (a warning when Hound is on on a standard FT8 frequency), and off on a band change.
 11. ~~**Devices:** Radio Setup › Amp by manufacturer~~ *in build 157*: Manufacturer row (4O3A, RF-KIT), each showing only its devices, a maker in use always shown and first
-12. **Devices:** Elecraft KPA500 and KAT500, Sergio LU7YS (Later: amplifiers)
+12. **Devices:** Elecraft KPA500 and KAT500, Sergio LU7YS (*in build 194*, in use from the start)
 13. **Devices:** TGXL SO2R and the Antenna Genius, further steps, Ben Morris (Later)
 14. **Radio:** Memory groups (Later)
 15. **Radio:** ATU tools and per-band TX settings (Later)
@@ -1073,10 +1073,40 @@ Dennis Daniel for the FlexRadio amplifier and tuner):
   Radio Setup › Amp fields for both addresses, stand-ins for both devices
   from Elecraft's command references, manual and pictures: one build of
   its own, tested against the stand-ins, then on Sergio's devices.
+  *Done for build 194 (2026-11-19 night, the user: "Tee build 194, PuJu")*:
+  upstream's Kpa500Protocol / Connection / FaultHistory / Maintenance,
+  Kat500Protocol / Maintenance / Types / Model and their seven tests from
+  upstream/main 8b004e825 (all pass; the no-serial path compiled for iOS
+  and Android); MobileEngineElecraft.cpp (links as the KPA1500's: read
+  while on screen and connected; Control off sends no change and leaves the
+  band alone; the KPA500's Operate / Standby, fault clear, fan minimum 0-6,
+  band following the TX frequency (Kpa500Connection's follow, never while
+  transmitting); the KAT500's antenna (one not enabled on the band refused),
+  mode, bypass, fault clear and Tune as upstream's Kat500TxController:
+  KPA500 to STANDBY, the radio's ATU bypassed, F, T, the TUNE carrier at
+  10-100 W until FT or idle, its result read; 30 s, >110 W, OPERATE, a
+  fault, Stop end it and cancel the search with CT); the meters' Amp
+  readings (KPA500 after RF2K-S and KPA1500; 0-600 W, refl from fwd and
+  SWR) and Tuner SWR (KAT500 without a TGXL); the logged power in OPERATE;
+  Amp tab: AmpControls for the KPA500, Kat500Controls.qml; Radio Setup ›
+  Amp › Elecraft sections; the devices' poll debug kept out of the log.
+  Stand-ins: mobile/tools/elecraft-mock.py (both devices on raw TCP ports,
+  one client each, a control FIFO, --keyed, --nomatch-on). Tested with the
+  FLEX (LAN): read only (nothing changed), Control on, Operate / Standby,
+  fan 2 → 3, ANT 2 / 1, Manual / Auto, bypass on / off, a KPA500 fault 07
+  cleared, the band 20 m → 40 m → 20 m, Tune refused in BYPASS mode; Tune
+  keyed at 10 W on 14.345 (quiet, checked first): tuned (SWR 1.05, the
+  KPA500 put in STANDBY and the radio's ATU bypassed first), no match (and
+  the fault cleared), Stop during the carrier (CT sent); the radio's ATU
+  came back by itself on the next QSY (memories: TUNE_SUCCESSFUL), then
+  14.074 DIGU, 100 W, tune power 10 W as before. Rendered at 1180x820,
+  440x956, 375x667 and 700x753; the KPA1500's pictures unchanged (only the
+  stand-in's numbers differ). Manual (Amp tab, Radio Setup › Amp, meters),
+  pictures tab-kpa500, kat500-controls, setup-elecraft; README.
 
 ## Waiting
 
-- **Request waiting for a pre-analysis (2026-11-19):** SmartSDR v4.3.19's Tune TX Suppression (Tune Supp per band in TX Band Settings, released 2026-11-17) in Radio Setup > TX Band Settings: needs the command name from FlexLib v4.3.19 and a radio on 4.3.19 to test.
+- **Resolved for build 194 (2026-11-19):** SmartSDR v4.3.19's Tune TX Suppression (Tune Supp per band in TX Band Settings) is the radio's own per-band `interlock band N tune_tx_suppress` (upstream #6524), which the app has had since build 158 as Radio Setup › Transmit › TX band settings › **RCA TX1-3 held off during TUNE (the radio's own)**, shown when the radio reports it; the FLEX on 4.3.16 reports it for every band (tune_tx_suppress=0). The manual now names SmartSDR's Tune Supp there.
 - **Upstream (aethersdr/AetherSDR):** no longer pursued (2026-10-22); OksaSDR
   goes its own way and takes upstream changes only when useful.
 - **To verify:** LAN discovery on Android at the radio's own network (on the

@@ -664,6 +664,32 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         }
         qInfo().noquote() << "shot-plan: amp" << arg;
         *delayMs = 500;
+    } else if (command == QLatin1String("kpa500") || command == QLatin1String("kat500")) {
+        // An Elecraft KPA500 / KAT500 (Radio Setup › Amp): its bridge's
+        // HOST:PORT, "off" forgets it, "control on|off" its Control switch,
+        // and "state" logs what the app has of it.
+        const bool kpa = command == QLatin1String("kpa500");
+        if (arg == QLatin1String("control")) {
+            const bool on = args.value(1) == QLatin1String("on");
+            kpa ? m_engine.setKpa500Control(on) : m_engine.setKat500Control(on);
+        } else if (arg == QLatin1String("state")) {
+            const QVariantMap m = kpa ? m_engine.kpa500() : m_engine.kat500();
+            QStringList parts;
+            for (auto it = m.cbegin(); it != m.cend(); ++it) {
+                if (it.key() != QLatin1String("address") && it.key() != QLatin1String("target")) {
+                    parts << it.key() + QLatin1Char('=') + it.value().toString();
+                }
+            }
+            qInfo().noquote() << "shot-plan:" << command << parts.join(QLatin1Char(' '));
+        } else if (kpa) {
+            m_engine.setKpa500Address(arg == QLatin1String("off") ? QString() : arg);
+        } else {
+            m_engine.setKat500Address(arg == QLatin1String("off") ? QString() : arg);
+        }
+        if (arg != QLatin1String("state")) {
+            qInfo().noquote() << "shot-plan:" << command << args.join(QLatin1Char(' '));
+        }
+        *delayMs = 500;
     } else if (command == QLatin1String("voicetext")) {
         // What a speech recogniser heard, as the voice button hands it on
         // (roadmap 79): this build has no recogniser.

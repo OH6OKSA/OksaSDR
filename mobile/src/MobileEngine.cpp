@@ -839,6 +839,7 @@ MobileEngine::MobileEngine(QObject* parent)
     setupLogger32();
     setupAmp();
     setupKpa();
+    setupElecraft();
     setup4o3a();
     m_cty = std::make_unique<CtyDatParser>();
     m_cty->loadFromResource(QStringLiteral(":/cty.dat"));
@@ -3314,6 +3315,9 @@ bool MobileEngine::linkedAmpOperating() const
     if (m_kpaSet && !m_ampSet) {
         return kpaOperating();
     }
+    if (m_kpa500Set && !m_ampSet) {
+        return kpa500Operating();
+    }
     return m_ampStatus.operate && *m_ampStatus.operate == Rfkit::OperateMode::Operate;
 }
 
@@ -3324,6 +3328,9 @@ double MobileEngine::linkedAmpForwardW() const
     }
     if (m_kpaSet && !m_ampSet) {
         return kpaForwardW();
+    }
+    if (m_kpa500Set && !m_ampSet) {
+        return kpa500ForwardW();
     }
     return m_ampStatus.power ? m_ampStatus.power->forward.value : 0.0;
 }
@@ -3402,7 +3409,7 @@ QStringList MobileEngine::meterKindsFor(const QString& side, bool tx) const
     // KPA1500, Rich Yost N2RY), or a Power Genius XL is there (the radio
     // reports it, or the app reads it).
     const RadioModel& rm = m_session.radioModel();
-    if (m_ampSet || m_kpaSet || rm.amplifier().present() || (m_pgxlConn && m_pgxlConn->isConnected())) {
+    if (m_ampSet || m_kpaSet || m_kpa500Set || rm.amplifier().present() || (m_pgxlConn && m_pgxlConn->isConnected())) {
         kinds << QStringLiteral("Amp power") << QStringLiteral("Amp refl") << QStringLiteral("Amp SWR")
               << QStringLiteral("Amp temp") << QStringLiteral("Amp volts") << QStringLiteral("Amp current");
         // A KPA1500's fan speed (0-5), when it is the amplifier the meters
@@ -3411,9 +3418,12 @@ QStringList MobileEngine::meterKindsFor(const QString& side, bool tx) const
             kinds << QStringLiteral("Amp fan");
         }
     }
-    // A Tuner Genius XL's power and SWR, as the RF2K-S's under Amplifier.
+    // A Tuner Genius XL's power and SWR, as the RF2K-S's under Amplifier;
+    // a KAT500's SWR (it reads no watts).
     if (const_cast<RadioModel&>(rm).tunerModel().isPresent()) {
         kinds << QStringLiteral("Tuner power") << QStringLiteral("Tuner SWR");
+    } else if (m_kat500Set) {
+        kinds << QStringLiteral("Tuner SWR");
     }
     return kinds;
 }

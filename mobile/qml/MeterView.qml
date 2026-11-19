@@ -45,14 +45,16 @@ Item {
     readonly property real analogFitWidth: gauge.fitWidth
 
     // The amplifier's readings are offered while one is set up.
-    // An RF2K-S set up in Radio Setup, else a KPA1500 set up there, or else
-    // a PGXL the radio reports.
+    // An RF2K-S set up in Radio Setup, else a KPA1500 set up there, else a
+    // KPA500, or else a PGXL the radio reports.
     readonly property bool kpaAmp: !Engine.amp.set && !!Engine.kpa.set
-    readonly property bool pgxlAmp: !Engine.amp.set && !kpaAmp && !!Engine.pgxl.present
-    readonly property bool ampSet: !!Engine.amp.set || kpaAmp || pgxlAmp
+    readonly property bool kpa500Amp: !Engine.amp.set && !kpaAmp && !!Engine.kpa500.set
+    readonly property bool pgxlAmp: !Engine.amp.set && !kpaAmp && !kpa500Amp && !!Engine.pgxl.present
+    readonly property bool ampSet: !!Engine.amp.set || kpaAmp || kpa500Amp || pgxlAmp
     function ampLive(v) {
         return (pgxlAmp ? !!Engine.pgxl.metersLive
-                : kpaAmp ? Engine.kpa.state === "connected" : Engine.amp.state === "connected") && v !== undefined
+                : kpaAmp ? Engine.kpa.state === "connected"
+                : kpa500Amp ? Engine.kpa500.state === "connected" : Engine.amp.state === "connected") && v !== undefined
     }
     // A PGXL in OPERATE: the radio's power meter shows its output on the
     // desktop's 2 kW scale (in STANDBY the exciter's own, as before).
@@ -71,15 +73,18 @@ Item {
         // 1500 W amplifier, 50 V PA) on the RF2K-S's scales, current to 70 A
         // (the reference's example reads 61 A); temperature 0-120 °C red from
         // 100 (its heat sink is rated 110 °C and faults at 112 °C, the
-        // owner's manual).
-        const amp = kind.indexOf("Amp ") === 0 ? (pgxlAmp ? Engine.pgxl : kpaAmp ? Engine.kpa : Engine.amp) : null
+        // owner's manual). A KPA500 (500 W, its 60 V PA supply) on 0-600 W,
+        // reflected 0-100 W, current to 25 A; no temperature alarm level
+        // known (its own HI TEMP fault guards it).
+        const amp = kind.indexOf("Amp ") === 0 ? (pgxlAmp ? Engine.pgxl : kpaAmp ? Engine.kpa
+                                                  : kpa500Amp ? Engine.kpa500 : Engine.amp) : null
         const fwd = amp && amp.fwd !== undefined ? amp.fwd : 0
         switch (kind) {
         case "Amp power":
-            return { v: fwd, min: 0, max: pgxlAmp ? 2000 : 1600, live: ampLive(amp.fwd),
-                     text: "Amp " + fwd.toFixed(0) + " W", red: 1500 }
+            return { v: fwd, min: 0, max: pgxlAmp ? 2000 : kpa500Amp ? 600 : 1600, live: ampLive(amp.fwd),
+                     text: "Amp " + fwd.toFixed(0) + " W", red: kpa500Amp ? 550 : 1500 }
         case "Amp refl":
-            return { v: amp.refl || 0, min: 0, max: 200, live: ampLive(amp.refl),
+            return { v: amp.refl || 0, min: 0, max: kpa500Amp ? 100 : 200, live: ampLive(amp.refl),
                      text: "Refl " + (amp.refl || 0).toFixed(0) + " W",
                      red: fwd >= 1 ? Math.max(1, Math.round(fwd * 0.111)) : 1e9 }
         case "Amp SWR":
@@ -87,12 +92,12 @@ Item {
                      text: "SWR " + (fwd >= 1 && amp.swr !== undefined ? amp.swr.toFixed(2) : "–"), red: 2 }
         case "Amp temp":
             return { v: amp.temp || 0, min: 0, max: kpaAmp ? 120 : 100, live: ampLive(amp.temp),
-                     text: "Amp " + (amp.temp || 0).toFixed(0) + " °C", red: kpaAmp ? 100 : 70 }
+                     text: "Amp " + (amp.temp || 0).toFixed(0) + " °C", red: kpaAmp ? 100 : kpa500Amp ? 1e9 : 70 }
         case "Amp volts":
-            return { v: amp.volts || 0, min: 40, max: 60, live: ampLive(amp.volts),
+            return { v: amp.volts || 0, min: 40, max: kpa500Amp ? 70 : 60, live: ampLive(amp.volts),
                      text: "Amp " + (amp.volts || 0).toFixed(1) + " V", red: 1e9 }
         case "Amp current":
-            return { v: amp.amps || 0, min: 0, max: pgxlAmp || kpaAmp ? 70 : 60, live: ampLive(amp.amps),
+            return { v: amp.amps || 0, min: 0, max: pgxlAmp || kpaAmp ? 70 : kpa500Amp ? 25 : 60, live: ampLive(amp.amps),
                      text: "Amp " + (amp.amps || 0).toFixed(1) + " A", red: 1e9 }
         // A KPA1500's fans: their speed now, 0 (off) to 5, and the minimum
         // set for them (the Amp tab's Fan minimum).
@@ -105,7 +110,15 @@ Item {
         case "Tuner power":
             return { v: Engine.tgxl.fwd || 0, min: 0, max: 2000, live: !!Engine.tgxl.present,
                      text: "Tuner " + (Engine.tgxl.fwd || 0).toFixed(0) + " W", red: 1500 }
+        // A KAT500 (no Tuner Genius XL): its SWR, the last it measured, while
+        // the radio transmits.
         case "Tuner SWR": {
+            if (!Engine.tgxl.present) {
+                const k = Engine.kat500
+                const live = k.state === "connected" && Engine.radioTransmitting && k.swr !== undefined
+                return { v: live ? Math.max(1, k.swr) : 1, min: 1, max: 3, live: live,
+                         text: "SWR " + (live ? Number(k.swr).toFixed(2) : "–"), red: 2.5 }
+            }
             const on = (Engine.tgxl.fwd || 0) >= 5
             return { v: on ? Math.max(1, Engine.tgxl.swr || 1) : 1, min: 1, max: 3, live: !!Engine.tgxl.present && on,
                      text: "SWR " + (on ? Number(Engine.tgxl.swr || 1).toFixed(2) : "–"), red: 2.5 }
@@ -361,6 +374,7 @@ Item {
                     readonly property var kinds: {
                         meter.ampSet
                         Engine.tgxl.present
+                        Engine.kat500.set
                         Engine.rade
                         return Engine.meterKindsFor(meter.side, section.modelData.tx)
                     }

@@ -1119,6 +1119,13 @@ set(CORE_SOURCES
     src/core/VkampConnection.cpp
     src/core/Kpa1500Protocol.cpp
     src/core/Kpa1500Connection.cpp
+    src/core/Kpa500Protocol.cpp
+    src/core/Kpa500Connection.cpp
+    src/core/Kpa500FaultHistory.cpp
+    src/core/Kpa500Maintenance.cpp
+    src/core/Kat500Protocol.cpp
+    src/core/Kat500Maintenance.cpp
+    src/models/Kat500Model.cpp
     src/core/LpMeterProtocol.cpp
     src/core/LpMeterConnection.cpp
     src/core/FirmwareUploader.cpp

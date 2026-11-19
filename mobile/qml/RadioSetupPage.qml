@@ -1328,7 +1328,7 @@ Popup {
                     spacing: Theme.spacing / 2
                     readonly property var inUse: ({
                         "4o3a": !!(Engine.pgxl.present || Engine.tgxl.present || Engine.ag.ip),
-                        "elecraft": !!Engine.kpa.set,
+                        "elecraft": !!Engine.kpa.set || !!Engine.kpa500.set || !!Engine.kat500.set,
                         "rfkit": !!Engine.amp.set
                     })
                     function shown(maker) { return ampTab.inUse[maker] || Engine.ampMakersShown.indexOf(maker) >= 0 }
@@ -1360,8 +1360,8 @@ Popup {
                     Label {
                         Layout.fillWidth: true
                         text: ampTab.shown("4o3a") || ampTab.shown("elecraft") || ampTab.shown("rfkit")
-                              ? qsTr("4O3A: Power Genius XL, Tuner Genius XL, Antenna Genius. Elecraft: KPA1500. RF-KIT: RF2K-S. More makers to come (SPE).")
-                              : qsTr("Choose your amplifier's, tuner's or antenna switch's maker to set it up. 4O3A: Power Genius XL, Tuner Genius XL, Antenna Genius. Elecraft: KPA1500. RF-KIT: RF2K-S. More makers to come (SPE).")
+                              ? qsTr("4O3A: Power Genius XL, Tuner Genius XL, Antenna Genius. Elecraft: KPA1500, KPA500, KAT500. RF-KIT: RF2K-S. More makers to come (SPE).")
+                              : qsTr("Choose your amplifier's, tuner's or antenna switch's maker to set it up. 4O3A: Power Genius XL, Tuner Genius XL, Antenna Genius. Elecraft: KPA1500, KPA500, KAT500. RF-KIT: RF2K-S. More makers to come (SPE).")
                         color: Theme.textDim
                         font.pixelSize: Theme.px(12)
                         wrapMode: Text.WordWrap
@@ -1437,6 +1437,134 @@ Popup {
                             Label {
                                 Layout.fillWidth: true
                                 text: qsTr("Control off: read only, nothing is sent that changes the amplifier. Control on: the Amp tab also gets Operate / Standby, the antenna (ANT1 / ANT2), the ATU (in line / bypass and Tune) and the fault clear, over the amplifier's one TCP connection (close Elecraft's KPA1500 Utility if it holds it). Each asks you first, none works while the radio transmits, and the tab shows only what the amplifier reads back.")
+                                color: Theme.textDim
+                                font.pixelSize: Theme.px(12)
+                                wrapMode: Text.WordWrap
+                            }
+
+                            // The KPA500 and KAT500: each a serial device, reached
+                            // through a raw TCP serial bridge at the station (a
+                            // Raspberry Pi Pico W or ser2net), one port each
+                            // (MobileEngineElecraft.cpp).
+                            DeviceHeading { text: qsTr("Elecraft KPA500") }
+                            TextSetting {
+                                objectName: "kpa500Address"
+                                label: qsTr("Address  (%1)").arg(Engine.kpa500.address || qsTr("not set"))
+                                current: Engine.kpa500.address || ""
+                                hint: qsTr("bridge:port, e.g. 192.168.1.194:2000")
+                                upper: false
+                                onSaved: (t) => Engine.setKpa500Address(t)
+                            }
+                            OnOff {
+                                visible: !!Engine.kpa500.set
+                                label: qsTr("Read the amplifier")
+                                on: !!Engine.kpa500.on
+                                onToggled: (v) => Engine.setKpa500On(v)
+                            }
+                            OnOff {
+                                objectName: "kpa500Control"
+                                visible: !!Engine.kpa500.set
+                                label: qsTr("Control the amplifier")
+                                on: !!Engine.kpa500.control
+                                onToggled: (v) => Engine.setKpa500Control(v)
+                            }
+                            Label {
+                                objectName: "kpa500SetupState"
+                                visible: !!Engine.kpa500.set
+                                Layout.fillWidth: true
+                                text: {
+                                    const a = Engine.kpa500
+                                    if (!a.on) return qsTr("Off.")
+                                    if (a.state === "connected")
+                                        return qsTr("Connected: KPA500%1.").arg(a.firmware ? qsTr(", firmware %1").arg(a.firmware) : "")
+                                    if (a.state === "failed") return qsTr("Not reached: %1.").arg(a.error)
+                                    if (a.state === "connecting") return a.error ? qsTr("Connecting: %1.").arg(a.error) : qsTr("Connecting…")
+                                    return qsTr("Read while connected to a radio.")
+                                }
+                                color: Engine.kpa500.state === "connected" ? "#00cc66"
+                                     : Engine.kpa500.state === "failed" ? Theme.transmit : Theme.textDim
+                                font.pixelSize: Theme.px(13)
+                                wrapMode: Text.Wrap
+                            }
+                            AppButton {
+                                visible: !!Engine.kpa500.set
+                                text: qsTr("Forget the amplifier")
+                                focusPolicy: Qt.NoFocus
+                                onClicked: Engine.setKpa500Address("")
+                            }
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("The KPA500's serial port on the network: the address and port of a raw TCP serial bridge at the station (a Raspberry Pi Pico W or ser2net, 4800 baud to the amplifier). This device reaches it directly, on the same network or over your VPN when away, not over SmartLink; the bridge takes one program at a time, so AetherSDR on a PC and this app take turns. Once set, Controls gets the amplifier on the Amp tab: power, SWR, temperature, voltage, current, band, Operate / Standby and faults; every meter can show its readings.")
+                                color: Theme.textDim
+                                font.pixelSize: Theme.px(12)
+                                wrapMode: Text.WordWrap
+                            }
+                            Label {
+                                visible: !!Engine.kpa500.set
+                                Layout.fillWidth: true
+                                text: qsTr("Control off: read only, nothing is sent that changes the amplifier. Control on: Operate / Standby, the fault clear and the fan minimum on the Amp tab, and the amplifier's band following the radio's TX frequency (a Flex gives it no band data), never while transmitting. Each asks you first (the fan minimum goes at a tap), and the tab shows only what the amplifier reads back.")
+                                color: Theme.textDim
+                                font.pixelSize: Theme.px(12)
+                                wrapMode: Text.WordWrap
+                            }
+
+                            DeviceHeading { text: qsTr("Elecraft KAT500") }
+                            TextSetting {
+                                objectName: "kat500Address"
+                                label: qsTr("Address  (%1)").arg(Engine.kat500.address || qsTr("not set"))
+                                current: Engine.kat500.address || ""
+                                hint: qsTr("bridge:port, e.g. 192.168.1.194:2001")
+                                upper: false
+                                onSaved: (t) => Engine.setKat500Address(t)
+                            }
+                            OnOff {
+                                visible: !!Engine.kat500.set
+                                label: qsTr("Read the tuner")
+                                on: !!Engine.kat500.on
+                                onToggled: (v) => Engine.setKat500On(v)
+                            }
+                            OnOff {
+                                objectName: "kat500Control"
+                                visible: !!Engine.kat500.set
+                                label: qsTr("Control the tuner")
+                                on: !!Engine.kat500.control
+                                onToggled: (v) => Engine.setKat500Control(v)
+                            }
+                            Label {
+                                objectName: "kat500SetupState"
+                                visible: !!Engine.kat500.set
+                                Layout.fillWidth: true
+                                text: {
+                                    const a = Engine.kat500
+                                    if (!a.on) return qsTr("Off.")
+                                    if (a.state === "connected")
+                                        return qsTr("Connected: KAT500%1.").arg(a.firmware ? qsTr(", firmware %1").arg(a.firmware) : "")
+                                    if (a.state === "failed") return qsTr("Not reached: %1.").arg(a.error)
+                                    if (a.state === "connecting") return a.error ? qsTr("Connecting: %1.").arg(a.error) : qsTr("Connecting…")
+                                    return qsTr("Read while connected to a radio.")
+                                }
+                                color: Engine.kat500.state === "connected" ? "#00cc66"
+                                     : Engine.kat500.state === "failed" ? Theme.transmit : Theme.textDim
+                                font.pixelSize: Theme.px(13)
+                                wrapMode: Text.Wrap
+                            }
+                            AppButton {
+                                visible: !!Engine.kat500.set
+                                text: qsTr("Forget the tuner")
+                                focusPolicy: Qt.NoFocus
+                                onClicked: Engine.setKat500Address("")
+                            }
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("The KAT500's serial port on the network, as the KPA500's: its bridge's address and port. Once set, the Amp tab shows the tuner: its mode, antenna, network in line or bypassed, SWR, band and frequency; every meter can show its SWR.")
+                                color: Theme.textDim
+                                font.pixelSize: Theme.px(12)
+                                wrapMode: Text.WordWrap
+                            }
+                            Label {
+                                visible: !!Engine.kat500.set
+                                Layout.fillWidth: true
+                                text: qsTr("Control off: read only. Control on: the mode (Auto / Manual / Bypass), the antenna (1-3), the network's bypass, the fault clear and Tune: the KPA500 to STANDBY, the radio's own ATU bypassed, the tuner set to the TX frequency, and the radio's TUNE carrier at the TX tab's Tune power (10-100 W, 20 W or more is best) until the tuner is done. Each asks you first, none works while the radio transmits.")
                                 color: Theme.textDim
                                 font.pixelSize: Theme.px(12)
                                 wrapMode: Text.WordWrap

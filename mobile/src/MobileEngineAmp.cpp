@@ -379,6 +379,8 @@ void MobileEngine::ampTune()
     QString why;
     if (!m_ampStatus.operate) {
         why = tr("The amplifier's mode is not read yet.");
+    } else if (!m_kpaTune.isEmpty() || !m_kat500Tune.isEmpty()) {
+        why = tr("Another tune is running.");
     } else if (!tuneAvailable()) {
         why = tr("The radio cannot send a tune carrier now.");
     } else if (watts < kTuneMinWatts || watts > kTuneMaxWatts) {
