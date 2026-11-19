@@ -74,6 +74,9 @@ private:
     void handleFailed(const QString& message, QAbstractSocket::SocketError error);
     void handleCancelled();
     void finishConnection();   // cancel and release the connection, Unconnected
+    // The connection itself, once the address is known: nat64 a sockaddr_in6
+    // to use instead of host (an IPv6-only network), else empty.
+    void startConnection(const QString& host, quint16 port, const QByteArray& nat64);
 
     std::shared_ptr<Shared> m_shared;
     void* m_queue{nullptr};    // dispatch_queue_t

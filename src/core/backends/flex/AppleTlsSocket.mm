@@ -8,8 +8,13 @@
 #include <QTimer>
 
 #include <cerrno>
+#include <cstring>
 #include <mutex>
 #include <utility>
+
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 #import <Foundation/Foundation.h>
 #import <Network/Network.h>
@@ -197,6 +202,37 @@ struct AppleTlsSocket::Impl {
         }, Qt::QueuedConnection);
     }
 
+    // The radio's IPv4 address as this network reaches it: on an IPv6-only
+    // network (a mobile network with NAT64 / 464XLAT) getaddrinfo with
+    // AI_DEFAULT gives the address synthesized from the network's NAT64
+    // prefix, the way Apple's "Supporting IPv6-only Networks" asks for an
+    // IPv4 literal; elsewhere it gives the IPv4 address back and this is
+    // empty. Network framework does not route an IPv4 literal there itself
+    // (Michael Walker's iPhone on mobile data, builds 189-191: "no usable
+    // network path", while Qt's sockets up to build 187 went through).
+    // Runs on the framework's queue: the prefix can take a DNS64 query.
+    static QByteArray nat64Address(const QByteArray& name, const QByteArray& service)
+    {
+        struct addrinfo hints;
+        std::memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_flags = AI_DEFAULT;
+        struct addrinfo* list = nullptr;
+        QByteArray v6;
+        if (getaddrinfo(name.constData(), service.constData(), &hints, &list) == 0) {
+            for (struct addrinfo* a = list; a; a = a->ai_next) {
+                // An IPv6 answer to an IPv4 literal can only be a NAT64 one.
+                if (a->ai_family == AF_INET6 && a->ai_addr && a->ai_addrlen >= sizeof(struct sockaddr_in6)) {
+                    v6 = QByteArray(reinterpret_cast<const char*>(a->ai_addr), int(a->ai_addrlen));
+                    break;
+                }
+            }
+            freeaddrinfo(list);
+        }
+        return v6;
+    }
+
     static ReadyInfo readyInfo(nw_connection_t connection)
     {
         ReadyInfo info;
@@ -306,6 +342,31 @@ void AppleTlsSocket::connectToHostEncrypted(const QString& host, quint16 port)
         m_shared->peerCert.clear();
     }
     const quint64 id = ++m_connId;
+    // An IPv4 address (SmartLink gives the radio's that way): first, on the
+    // framework's queue, how this network reaches it (Impl::nat64Address),
+    // then the connection, back on this thread.
+    if (QHostAddress(host).protocol() == QAbstractSocket::IPv4Protocol) {
+        m_state = QAbstractSocket::ConnectingState;
+        const std::shared_ptr<Shared> shared = m_shared;
+        const QString hostCopy = host;   // a block keeps a reference, not the string
+        const QByteArray name = host.toUtf8();
+        const QByteArray service = QByteArray::number(port);
+        dispatch_async((dispatch_queue_t)m_queue, ^{
+            const QByteArray nat64 = Impl::nat64Address(name, service);
+            Impl::post(shared, id, [hostCopy, port, nat64](AppleTlsSocket* socket) {
+                if (socket->m_state == QAbstractSocket::ConnectingState && !socket->m_conn) {
+                    socket->startConnection(hostCopy, port, nat64);
+                }
+            });
+        });
+        return;
+    }
+    startConnection(host, port, QByteArray());
+}
+
+void AppleTlsSocket::startConnection(const QString& host, quint16 port, const QByteArray& nat64)
+{
+    const quint64 id = m_connId;
     const std::shared_ptr<Shared> shared = m_shared;
     dispatch_queue_t queue = (dispatch_queue_t)m_queue;
 
@@ -347,11 +408,21 @@ void AppleTlsSocket::connectToHostEncrypted(const QString& host, quint16 port)
     nw_parameters_t parameters = nw_parameters_create_secure_tcp(configureTls, NW_PARAMETERS_DEFAULT_CONFIGURATION);
     const QByteArray hostName = host.toUtf8();
     const QByteArray portText = QByteArray::number(port);
-    nw_endpoint_t endpoint = nw_endpoint_create_host(hostName.constData(), portText.constData());
+    nw_endpoint_t endpoint = nullptr;
+    if (nat64.size() >= int(sizeof(struct sockaddr_in6))) {
+        endpoint = nw_endpoint_create_address(reinterpret_cast<const struct sockaddr*>(nat64.constData()));
+        if (endpoint) {
+            qCInfo(lcSmartLink) << "AppleTlsSocket: an IPv6-only network: the radio's address through its NAT64";
+        }
+    }
+    if (!endpoint) {
+        endpoint = nw_endpoint_create_host(hostName.constData(), portText.constData());
+    }
     nw_connection_t connection = nw_connection_create(endpoint, parameters);
     nw_release(endpoint);
     nw_release(parameters);
     if (!connection) {
+        m_state = QAbstractSocket::UnconnectedState;   // Connecting while the address was looked up
         m_error = QStringLiteral("could not create a connection to %1:%2").arg(host).arg(port);
         emit errorOccurred(QAbstractSocket::UnknownSocketError);
         return;

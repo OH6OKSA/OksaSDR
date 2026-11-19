@@ -1,6 +1,9 @@
-**OksaSDR for Android — beta 103.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
+**OksaSDR for Android — beta 104.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
-### New in beta 103
+### New in beta 104
+- **The notch panel off the notch on every screen** (roadmap 107; found on the developer's OnePlus Open in beta 103): where the panel had no room beside the notch (the inner screen with the notch near the middle, the cover screen) it went to the foot of the display, and in the 3D view the notch's handle is there, on the strip under the 3D picture, so it covered the notch. Now it goes beside the notch within the display's own width (not over a pinned side panel), else above or below the display, and only where none of that fits, above or below the notch's handle; 2D and 3D alike.
+
+### Still new from beta 103
 - **The notch panel beside the notch** (roadmap 107; Larry Averbeck W9FLA, whose solar-farm noise needs notches all the time): the panel opened over the notch it sets, covering it and the signals next to it. It now opens beside the notch, on the side with room (on a phone upright, at the foot of the display), and its title drags it anywhere in the window; it then opens there for the rest of the session.
 - **× to close the controls in landscape** (roadmap 108; Larry Averbeck W9FLA): on a tablet in landscape the controls drawer had no Close (only a tap outside it, or Pin Controls); a × now sits beside Pin Controls. Upright, Close stays at its foot.
 - **Ulanzi Dial fixes** (from beta 102): a transmission started from the screen (PTT, Space) no longer ends when the app leaves the screen after the dial had once keyed; and the dial switch can no longer close the app if its key bridge failed to start.

@@ -1075,9 +1075,11 @@ Power meter. Two fit side by side, four make 2 × 2.
   switch for all notches — they only work while it is on. Drag a notch
   along the spectrum (not the waterfall) to move it. The panel opens
   beside the notch, on the side with room, so the notch and the signals
-  next to it stay in sight while you set it (on a phone upright, at the
-  foot of the display); drag it by its title to put it elsewhere, and it
-  opens there for the rest of the session (thanks Larry Averbeck W9FLA).
+  next to it stay in sight while you set it; where neither side has room
+  (a phone upright, a foldable's screens) above or below the display, and
+  in the 3D view never over the notch's handle on the strip under the 3D
+  picture. Drag it by its title to put it elsewhere, and it opens there for
+  the rest of the session (thanks Larry Averbeck W9FLA).
 
 ![Notch settings](manual/tnf.jpg)
 
