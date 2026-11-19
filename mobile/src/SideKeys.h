@@ -26,6 +26,13 @@ void setSideKeysSuspended(bool suspended);
 // Keys GCKeyboard has seen (all of them, not only the side keys), for the
 // keyboard diagnostics in the log.
 int sideKeysSeen();
+// A Ulanzi Dial's side keys (roadmap 83): while on, Control and V, C, Y, Z
+// go to the callback as Linux key codes (UlanziChordDecoder's), pressed or
+// released, and -1 when the keyboard goes or a text field takes the keys
+// (so nothing stays held). iOS only, not the iPad app on a Mac (there Qt
+// has the keys, and Ulanzi Studio can map the dial).
+void startUlanziKeys(std::function<void(int linuxKey, bool pressed)> callback);
+void setUlanziKeysOn(bool on);
 // The iPad app running on a Mac (Apple silicon).
 bool runningAsIosAppOnMac();
 

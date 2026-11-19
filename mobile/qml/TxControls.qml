@@ -187,6 +187,53 @@ ColumnLayout {
         enabled: Engine.transmitAvailable || Engine.canUseDeviceMicrophone || Engine.tuneAvailable
         onMoved: (v) => Engine.rfPower = Math.round(v)
     }
+    // Digital max (roadmap 37): the highest RF power in DIGU, DIGL and RTTY,
+    // in 5s; Off at 0.
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 4
+        Label { text: qsTr("Digital max"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+        AppButton {
+            objectName: "digitalMaxDown"
+            text: "−"
+            enabled: Engine.digitalMax > 0
+            focusPolicy: Qt.NoFocus
+            Accessible.name: qsTr("Lower the digital modes' power limit")
+            Layout.preferredWidth: Theme.touchTarget
+            onClicked: Engine.digitalMax = Math.max(0, Engine.digitalMax - 5)
+        }
+        Label {
+            objectName: "digitalMaxValue"
+            text: Engine.digitalMax > 0 ? (Engine.rfPowerIsPercent ? qsTr("%1 %").arg(Engine.digitalMax) : qsTr("%1 W").arg(Engine.digitalMax))
+                                        : qsTr("Off")
+            color: Theme.text
+            font.pixelSize: Theme.px(15)
+            font.bold: true
+            horizontalAlignment: Text.AlignHCenter
+            Layout.preferredWidth: Theme.touchTarget * 1.4
+            Accessible.role: Accessible.StaticText
+            Accessible.name: qsTr("Digital max %1").arg(text)
+        }
+        AppButton {
+            objectName: "digitalMaxUp"
+            text: "+"
+            enabled: Engine.digitalMax < 100
+            focusPolicy: Qt.NoFocus
+            Accessible.name: qsTr("Raise the digital modes' power limit")
+            Layout.preferredWidth: Theme.touchTarget
+            onClicked: Engine.digitalMax = Math.min(100, Engine.digitalMax + 5)
+        }
+    }
+    Label {
+        objectName: "digitalMaxNote"
+        Layout.fillWidth: true
+        text: Engine.digitalMaxNote.length > 0 ? Engine.digitalMaxNote
+              : Engine.digitalMax > 0 ? qsTr("The highest RF power while the TX slice is in DIGU, DIGL or RTTY (FT8 / FT4, PSK, RTTY, RADE); the power you had comes back when it leaves them.")
+              : qsTr("Off: the digital modes transmit at the RF power above. Set a limit for them with +.")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.WordWrap
+    }
 
     // ---- Speech processor (radio side) ----
     RowLayout {

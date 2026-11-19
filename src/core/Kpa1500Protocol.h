@@ -126,6 +126,11 @@ struct Status {
     std::optional<int>   paAmps;          // ^VI, the PA current in whole amperes
     std::optional<bool>  powerOn;         // ^ON, the main power supplies
     std::optional<QString> firmware;      // ^RV, "nn.nn"
+    // The RF deck's fans: the speed they run at now (^FS, 0 off to 5 all at
+    // the highest), set by the heat sink's temperature but never below the
+    // minimum (^FC, 0-5, the FAN SPEED menu item).
+    std::optional<int>   fanSpeed;        // ^FS
+    std::optional<int>   fanMinimum;      // ^FC
 };
 
 // Folds one decoded message into `status`, returning true if it changed
@@ -164,10 +169,16 @@ QByteArray buildCancelTune();                   // ^FE
 // they are accepted on readback (kMaxAntennaNumber) but never commanded.
 QByteArray buildSelectAntenna(int port);        // ^AN<n>
 QByteArray buildClearFault();                   // ^FLC
+// The fans' minimum speed, 0 (off) to 5 (all fans at the highest), as an
+// absolute value (^FCn; every firmware takes it; ^FC+; / ^FC-; need 02.62).
+// Out of range yields an empty QByteArray.
+QByteArray buildSetFanMinimum(int speed);       // ^FC<n>
 
 inline constexpr int kMinAntenna = 1;
 inline constexpr int kMaxAntenna = 2;
 inline constexpr int kMaxAntennaNumber = 32;
+inline constexpr int kMinFanSpeed = 0;
+inline constexpr int kMaxFanSpeed = 5;
 
 // ── Network keying ───────────────────────────────────────────────────────
 //

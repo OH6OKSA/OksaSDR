@@ -10,6 +10,10 @@ function marks(kind, min, max, red) {
         return [[-121, "1", false], [-109, "3", false], [-97, "5", false], [-85, "7", false],
                 [-73, "9", false], [-53, "+20", true], [-33, "+40", true], [-13, "+60", true]]
     }
+    // A KPA1500's fan speed: its six steps, 0 (off) to 5.
+    if (kind === "Amp fan") {
+        return [[0, "0", false], [1, "1", false], [2, "2", false], [3, "3", false], [4, "4", false], [5, "5", false]]
+    }
     const out = []
     for (let i = 0; i <= 4; ++i) {
         const v = min + (max - min) * i / 4
@@ -29,6 +33,8 @@ function redFrom(kind, red) {
 // telling which reading it is).
 function meterName(kind, narrow) {
     if (kind === "PA temp") return narrow ? "PA" : "PA Temp"
+    // A fan speed has no unit to tell it from the other "Amp" readings.
+    if (kind === "Amp fan") return narrow ? "Fan" : "Amp Fan"
     if (kind.indexOf("Amp ") === 0) return narrow ? "Amp" : "Amp " + ampLabel(kind)
     if (kind === "Tuner power") return narrow ? "Tuner" : "Tuner Power"
     if (kind === "Tuner SWR") return narrow ? "Tuner" : "Tuner SWR"
@@ -38,6 +44,6 @@ function meterName(kind, narrow) {
 // An amplifier reading as the meter chooser names it under "Amplifier".
 function ampLabel(kind) {
     const names = { "Amp power": "Power", "Amp refl": "Refl", "Amp SWR": "SWR",
-                    "Amp temp": "Temp", "Amp volts": "Volts", "Amp current": "Current" }
+                    "Amp temp": "Temp", "Amp volts": "Volts", "Amp current": "Current", "Amp fan": "Fan" }
     return names[kind] || kind
 }

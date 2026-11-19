@@ -94,6 +94,12 @@ Item {
         case "Amp current":
             return { v: amp.amps || 0, min: 0, max: pgxlAmp || kpaAmp ? 70 : 60, live: ampLive(amp.amps),
                      text: "Amp " + (amp.amps || 0).toFixed(1) + " A", red: 1e9 }
+        // A KPA1500's fans: their speed now, 0 (off) to 5, and the minimum
+        // set for them (the Amp tab's Fan minimum).
+        case "Amp fan":
+            return { v: amp.fan || 0, min: 0, max: 5, live: ampLive(amp.fan),
+                     text: "Fan " + (amp.fan !== undefined ? amp.fan : "–")
+                           + (amp.fanMin !== undefined ? " (min " + amp.fanMin + ")" : ""), red: 1e9 }
         // A Tuner Genius XL: the power through it on the desktop applet's
         // 0-2000 W, SWR red from 2.5 (– below 5 W).
         case "Tuner power":

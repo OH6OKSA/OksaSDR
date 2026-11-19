@@ -943,7 +943,8 @@ meter, in receive and in transmit, also offers its readings under
 present power), *SWR* (red from 2:1, – below 1 W), *Temp* (0-100 °C, red
 from 70: the RF2K-S goes to standby at 72 °C), *Volts* (40-60 V) and
 *Current* (0-60 A; 0-70 A for a KPA1500; its *Temp* 0-120 °C, red from
-100: it faults at 112 °C). The meter names them *Amp Power*, *Amp Temp*… where
+100: it faults at 112 °C), and for a KPA1500 *Fan* (its fans' speed now,
+0 off to 5, *Fan 3 (min 2)* with the minimum set). The meter names them *Amp Power*, *Amp Temp*… where
 there is room and *Amp* where not (the value's unit and the scale tell
 which). Forget the amplifier, and a meter showing one of them goes back
 to its usual reading. A Power Genius XL the radio reports gives these
@@ -1333,7 +1334,8 @@ seven.
   or type any) and **Tone**: *CTCSS* on transmit with its tone. The radio
   transmits on the shifted frequency and sends the tone; receive stays on
   the frequency shown. Then TUNE and the
-  ATU (tune, bypass, memories), tune power, RF power, speech processor (PROC
+  ATU (tune, bypass, memories), tune power, RF power, **Digital max** (the
+  highest RF power in the digital modes: below), speech processor (PROC
   NOR/DX/DX+), **VOX** (on/off, level and delay) in voice modes with either
   microphone, and **DEXP** (the downward expander, on/off and level) with the
   radio's own microphone input only, as it does nothing with this device's
@@ -1383,6 +1385,17 @@ seven.
     audio; thanks Christoph Steinert DM5HF). Either way **Listen** plays a recording to you without
     transmitting, so you can check it before naming it. Features that need
     SmartSDR+ appear only when the radio reports the subscription.
+
+  **Digital max** (thanks Sloan Davis, whose Aurora gave 140 W on FT8 with
+  the power left at his SSB setting): − and + set the highest RF power for
+  the digital modes in steps of 5, in the RF power's own unit (W, or % on an
+  Aurora); *Off* by default. When the TX slice goes to DIGU, DIGL or RTTY
+  (FT8 / FT4, PSK, RTTY and RADE, which runs in DIGU / DIGL) with the power
+  above it, the power comes down to it (*RF power 100 → 40 W for the
+  digital mode.*), and goes back to what it was when the slice leaves those
+  modes (*RF power back to 100 W.*), unless you changed it meanwhile. A
+  power raised above the limit in a digital mode comes back down. The limit
+  is this app's: another program transmitting on the radio does not see it.
 - **eSSB** — this device's microphone processing: AetherSDR's client-side
   transmit chain (the desktop's Aetherial TX chain), run on the phone or
   tablet before the audio is sent, in voice modes with this device's
@@ -2109,8 +2122,10 @@ seven.
   right under it with its text and code, e.g. *Amplifier fault:
   Temperature is too high (40)* (the KPA1500 goes to STANDBY on a fault).
   Then **Forward**, **Reflected** and **SWR** as for the RF2K-S, the
-  heat sink **Temperature**, the PA's **Voltage** and **Current**, the
-  **Drive** (the radio's power into it; 0 in STANDBY or while its ATU
+  heat sink **Temperature**, the **Fan** (its fans' speed now, 0 off to
+  5, and the minimum set for them: *3 (min 2)*; the amplifier speeds them
+  up as the heat sink warms, never below the minimum), the PA's
+  **Voltage** and **Current**, the **Drive** (the radio's power into it; 0 in STANDBY or while its ATU
   tunes), the **Band**, the **Antenna** (ANT1 or ANT2), the **Tuner** (*In
   line*, *Bypassed*, *(setting bypassed)* when a tune found the antenna
   good without it, *Tuning…*) and the **Firmware**. The app reads it over
@@ -2145,13 +2160,20 @@ seven.
     antenna.*), when the radio sends more than 55 W, the link drops, on
     *Stop* or after 20 s (the search is then cancelled). Not while the
     amplifier shows a fault.
+  - **Fan minimum** — *−* and *+* step the fans' minimum speed, 0 (off,
+    the amplifier's own setting by temperature) to 5 (all fans at the
+    highest, e.g. for long AM or digital transmissions; thanks Rich Yost
+    N2RY), with the value the amplifier reads back between them. The
+    only control that asks nothing and also works while the radio
+    transmits: it switches no RF, and the amplifier still speeds the fans
+    up as it warms. The same as the amplifier's FAN SPEED menu item.
   - *Clear fault* — clears the amplifier's present fault; a temperature
     fault clears only as it cools (*The fault is still there…*).
 
   ![The KPA1500's controls](manual/kpa-controls.jpg)
 
   Each asks first, as for the RF2K-S, and none works while the radio
-  transmits. The amplifier answers no command, so the tab shows the change
+  transmits (but Fan minimum, above). The amplifier answers no command, so the tab shows the change
   once the amplifier reads it back (*The amplifier has not shown the
   change in 3 s* if it does not). The amplifier stays keyed by its KEY IN
   cable from the radio (TX1 on a FLEX-6400 / 6500, as Elecraft's Flex
@@ -2345,8 +2367,9 @@ radio.
   host name, `:port` after it when not 1500) with *Save*; **Read the
   amplifier** on or off; **Control the amplifier** on or off (off until
   you turn it on: then nothing that changes the amplifier is ever sent;
-  on: the Amp tab's Mode, Antenna, ATU, Tune and Clear fault, each asking
-  first, over the amplifier's one TCP connection); the link's state
+  on: the Amp tab's Mode, Antenna, ATU, Tune, Fan minimum and Clear fault,
+  each but Fan minimum asking first, over the amplifier's one TCP
+  connection); the link's state
   (*Connected: KPA1500, firmware 03.08. Control link connected.*);
   *Forget the amplifier* removes it, the Amp tab and Control. As for the
   RF2K-S, this device reaches it directly (the same network or your VPN),
@@ -2497,7 +2520,31 @@ radio.
     the radio. A transmission
     the controller started ends when the controller goes (switched off or
     out of range). The app's own rules apply: PTT is for voice, as the PTT
-    button.
+    button. The same switch covers the Ulanzi Dial.
+  - **Ulanzi Dial** (the D100H, a Bluetooth keyboard; asked by Christoph
+    Steinert DM5HF): pair it in the device's Bluetooth settings as a
+    keyboard, then turn **Ulanzi Dial** on here. It is then one more
+    controller for **Learn**: tap Learn by a function and press a key of
+    the dial, or turn its knob for the VFO knob or a level (slice volume,
+    AGC-T, RF power, CW speed, a step a detent). Until you learn otherwise
+    the knob tunes by the step and its press is *Step larger*; nothing
+    transmits by default. A key held for **PTT (hold)**, a paddle or the
+    straight key is let go when the dial goes. **Last message** names the
+    dial's control (*Dial Ctrl+V*), and a learn says what it did (*Dial
+    Ctrl+C runs PTT (hold).*, or which function it was taken from).
+    - On **Android** every control reaches the app while it is on the
+      screen: the knob, its press, the three top keys (*Dial ⏮*, *⏯*,
+      *⏭*), the four side keys (*Dial Ctrl+V*, *Ctrl+C*, *Ctrl+Y*,
+      *Ctrl+Z*) and Mode Cycle. The dial is told apart from the phone's own
+      volume buttons, a headset and other keyboards, which keep theirs; the
+      line names it when connected (*Connected: Ulanzi Dial Keyboard.*).
+      Away from the screen the dial's keys are the phone's again.
+    - On an **iPad or iPhone** only the four side keys come (iPadOS keeps
+      the knob and the top keys as the volume and the media keys). While
+      the dial is on, Control is its keys' (not a CW paddle), and
+      Control+V, C, Y or Z from another keyboard counts as the dial too.
+    - On a **Mac** use Ulanzi Studio to give the dial the app's keys
+      (below); the switch is not shown there.
 
   ![Radio Setup › MIDI](manual/setup-midi.jpg)
 
@@ -2583,7 +2630,8 @@ handed them to the app in a form it did not read). If a key sends Space only
 as a short press, choose **Tap on / off** under PTT on the TX tab: the
 first press keys, the next one unkeys. On an iPad or
 iPhone Ulanzi Studio does not run, and the dial's knob stays the
-device's volume.
+device's volume; its side keys work there through Radio Setup › MIDI ›
+**Ulanzi Dial**, as on Android every control of it.
 
 Sliders, switches and lists do not keep the keyboard: after one is used
 (on a tablet's side panel or in the drawer), Space and the arrows work on

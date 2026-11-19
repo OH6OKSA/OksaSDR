@@ -37,6 +37,16 @@ std::function<void(SideKey, bool)> s_callback;
 NSMutableArray<GCKeyboard*>* s_keyboards = nil;
 bool s_suspended = false;
 int s_seen = 0;
+// The Ulanzi Dial's side keys (Control+V / C / Y / Z), as Linux key codes.
+std::function<void(int, bool)> s_ulanziCallback;
+bool s_ulanziOn = false;
+
+void ulanzi(int linuxKey, bool pressed)
+{
+    if (s_ulanziOn && s_ulanziCallback) {
+        s_ulanziCallback(linuxKey, pressed);
+    }
+}
 
 // GCKeyboard reports physical keys, left and right apart; its handlers run
 // on the main queue unless told otherwise.
@@ -57,6 +67,29 @@ void attach(GCKeyboard* keyboard)
     keyboard.keyboardInput.keyChangedHandler = ^(GCKeyboardInput*, GCControllerButtonInput*, GCKeyCode keyCode, BOOL pressed) {
         if (pressed) {
             ++s_seen;
+        }
+        // The dial's side keys first (Linux codes: Ctrl 29 / 97, V 47,
+        // C 46, Y 21, Z 44); Control also goes on as a side key below.
+        if (keyCode == GCKeyCodeKeyV) {
+            ulanzi(47, pressed == YES);
+            return;
+        }
+        if (keyCode == GCKeyCodeKeyC) {
+            ulanzi(46, pressed == YES);
+            return;
+        }
+        if (keyCode == GCKeyCodeKeyY) {
+            ulanzi(21, pressed == YES);
+            return;
+        }
+        if (keyCode == GCKeyCodeKeyZ) {
+            ulanzi(44, pressed == YES);
+            return;
+        }
+        if (keyCode == GCKeyCodeLeftControl) {
+            ulanzi(29, pressed == YES);
+        } else if (keyCode == GCKeyCodeRightControl) {
+            ulanzi(97, pressed == YES);
         }
         SideKey key;
         if (keyCode == GCKeyCodeLeftControl) {
@@ -275,6 +308,10 @@ void setSideKeysSuspended(bool suspended)
         return;
     }
     s_suspended = suspended;
+    // A text field takes the keys: nothing of the dial's stays held.
+    if (suspended) {
+        ulanzi(-1, false);
+    }
     if (!s_keyboards) {
         return;  // none attached (a Mac, or no keyboard yet)
     }
@@ -290,6 +327,19 @@ void setSideKeysSuspended(bool suspended)
 int sideKeysSeen()
 {
     return s_seen;
+}
+
+void startUlanziKeys(std::function<void(int, bool)> callback)
+{
+    s_ulanziCallback = std::move(callback);
+}
+
+void setUlanziKeysOn(bool on)
+{
+    if (!on) {
+        ulanzi(-1, false);
+    }
+    s_ulanziOn = on;
 }
 
 
@@ -324,6 +374,7 @@ void startSideKeys(std::function<void(SideKey key, bool pressed)> callback)
                                                        queue:[NSOperationQueue mainQueue]
                                                   usingBlock:^(NSNotification*) {
         qCInfo(lcKeyboard) << "keyboard: the hardware keyboard disconnected";
+        ulanzi(-1, false);  // a dial's held key let go
     }];
 }
 

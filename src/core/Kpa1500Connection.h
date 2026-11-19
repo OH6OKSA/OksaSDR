@@ -54,6 +54,7 @@ public:
     void setAtuMode(bool inLine);  // ^AMI / ^AMB for the present band and antenna
     void selectAntenna(int port);  // ANT1/ANT2; out of range is a no-op, logged
     void clearFault();
+    void setFanMinimum(int speed);  // 0-5; out of range is a no-op, logged
 
     // ── Network keying ───────────────────────────────────────────────────
     //

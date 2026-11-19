@@ -1983,6 +1983,28 @@ Popup {
                             font.pixelSize: Theme.px(13)
                             wrapMode: Text.WordWrap
                         }
+                        // A Ulanzi Dial (roadmap 83): a Bluetooth keyboard, not
+                        // MIDI, learned below as another controller.
+                        OnOff {
+                            objectName: "ulanziOn"
+                            visible: !midiTab.m.onMac
+                            label: qsTr("Ulanzi Dial")
+                            on: !!midiTab.m.dialOn
+                            onToggled: (v) => Engine.setUlanziOn(v)
+                        }
+                        Label {
+                            objectName: "ulanziAbout"
+                            Layout.fillWidth: true
+                            text: midiTab.m.onMac
+                                  ? qsTr("A Ulanzi Dial on a Mac: map its knob and keys to the app's keys in Ulanzi Studio (the arrows tune, F1–F12, Space for PTT).")
+                                  : (midiTab.m.dialKeys === "side"
+                                     ? qsTr("A Ulanzi Dial (D100H) paired as a Bluetooth keyboard: on, its four side keys are learned below as buttons. Its knob and top keys stay the iPad's volume and media keys. While on, Control is the dial's (no CW paddle), and Control+V, C, Y or Z from any keyboard counts as the dial.")
+                                     : qsTr("A Ulanzi Dial (D100H) paired as a Bluetooth keyboard: on, its knob, press, top and side keys are learned below as a controller's, while the app is on the screen; the phone's own volume buttons keep theirs. Until learned otherwise the knob tunes and its press steps larger."))
+                                  + (midiTab.m.dialDevice ? " " + qsTr("Connected: %1.").arg(midiTab.m.dialDevice) : "")
+                            color: Theme.textDim
+                            font.pixelSize: Theme.px(12)
+                            wrapMode: Text.WordWrap
+                        }
                         OnOff {
                             objectName: "midiAuto"
                             label: qsTr("Connect to it by itself")
@@ -1993,14 +2015,14 @@ Popup {
                             objectName: "midiTransmit"
                             label: qsTr("Transmit from the controller")
                             on: !!midiTab.m.transmit
-                            onToggled: (v) => v ? setup.setRisky(qsTr("Transmit from the MIDI controller?"),
-                                                                 qsTr("Its PTT, MOX, TUNE, ATU, Tuner Genius XL Tune, CW paddle and F1–F12 macro buttons will key the radio, as the app's own buttons and keys do."),
+                            onToggled: (v) => v ? setup.setRisky(qsTr("Transmit from the controller?"),
+                                                                 qsTr("The MIDI controller's and the Ulanzi Dial's PTT, MOX, TUNE, ATU, Tuner Genius XL Tune, CW paddle and F1–F12 macro buttons will key the radio, as the app's own buttons and keys do."),
                                                                  () => Engine.setMidiTransmit(true), qsTr("Allow"))
                                                 : Engine.setMidiTransmit(false)
                         }
                         Label {
                             Layout.fillWidth: true
-                            text: qsTr("Off: the controller's PTT, MOX, TUNE, ATU, Tuner Genius XL Tune, CW paddles and F1–F12 macros do nothing, so a stray press does not key the radio. On: they key as the app's own; a transmission the controller started ends when the controller goes. F1–F12 do what the keyboard's F-keys do: the voice keyer in a voice mode, the CW memories in CW, the Digi macros in RTTY and PSK.")
+                            text: qsTr("Off: the controller's (and the dial's) PTT, MOX, TUNE, ATU, Tuner Genius XL Tune, CW paddles and F1–F12 macros do nothing, so a stray press does not key the radio. On: they key as the app's own; a transmission the controller started ends when the controller goes. F1–F12 do what the keyboard's F-keys do: the voice keyer in a voice mode, the CW memories in CW, the Digi macros in RTTY and PSK.")
                             color: Theme.textDim
                             font.pixelSize: Theme.px(12)
                             wrapMode: Text.WordWrap
@@ -2042,9 +2064,19 @@ Popup {
                         }
                         Label {
                             Layout.fillWidth: true
-                            text: qsTr("Learn, then turn or press the control on the controller. A knob learned for the VFO tunes by the step.")
+                            text: midiTab.m.dialOn ? qsTr("Learn, then turn or press the control on the controller or the Ulanzi Dial. A knob learned for the VFO tunes by the step; the dial's knob also runs a level (volume, AGC-T, RF power, CW speed).")
+                                                   : qsTr("Learn, then turn or press the control on the controller. A knob learned for the VFO tunes by the step.")
                             color: Theme.textDim
                             font.pixelSize: Theme.px(12)
+                            wrapMode: Text.WordWrap
+                        }
+                        Label {
+                            objectName: "ulanziNote"
+                            visible: !!midiTab.m.dialOn && text.length > 0
+                            Layout.fillWidth: true
+                            text: midiTab.m.dialNote || ""
+                            color: Theme.warning
+                            font.pixelSize: Theme.px(13)
                             wrapMode: Text.WordWrap
                         }
                         Repeater {

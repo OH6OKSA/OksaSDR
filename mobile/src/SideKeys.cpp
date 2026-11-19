@@ -23,6 +23,14 @@ int sideKeysSeen()
     return 0;
 }
 
+void startUlanziKeys(std::function<void(int, bool)>)
+{
+}
+
+void setUlanziKeysOn(bool)
+{
+}
+
 bool runningAsIosAppOnMac()
 {
     return false;

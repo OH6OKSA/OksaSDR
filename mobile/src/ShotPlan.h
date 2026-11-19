@@ -24,6 +24,7 @@ class MobileEngine;
 //   close                   close every open popup and the controls drawer
 //   drawer TAB              open the controls drawer on tab TAB
 //   scroll PX               scroll the open controls (or Radio Setup) to PX
+//                           (-PX: that far above the end)
 //   pin I[,J...]            pin these sections in the tablet's panel (the
 //                           operator's choice is put back at the end)
 //   controls visible|hidden show or hide the tablet's controls
@@ -61,6 +62,8 @@ class MobileEngine;
 //                           dxstate logs its state and message, dxoff disconnects it
 //   kpa HOST[:PORT]|off     the KPA1500's address (Radio Setup › Amp › Elecraft); off
 //                           forgets it, pause / resume its Read the amplifier
+//   ulanzi KEY VALUE|on|off a Ulanzi Dial key (a Linux code, 0 release / 1 press /
+//                           2 repeat; -1 the dial gone), or its switch (roadmap 83)
 //   ampstate                log the Amp tab's link state and readings
 //   amptune start|stop      the Amp tab's Tune as confirmed (a tune carrier for the
 //                           amplifier's tuner) / its Stop

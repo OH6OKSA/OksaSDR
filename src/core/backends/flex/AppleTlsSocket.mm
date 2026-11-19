@@ -4,6 +4,7 @@
 #include "core/LogManager.h"
 
 #include <QMetaObject>
+#include <QStringList>
 #include <QTimer>
 
 #include <cerrno>
@@ -57,6 +58,65 @@ QString describe(nw_error_t error)
                                                           : QStringLiteral("domain %1").arg(int(domain));
     const QString code = QStringLiteral("%1 %2").arg(where).arg(nw_error_get_error_code(error));
     return text.isEmpty() ? code : QStringLiteral("%1 (%2)").arg(text, code);
+}
+
+// Why a connection waits, as the framework sees its path: a wait often comes
+// with no error of its own (Michael Walker's iPhone, build 189: "Remote
+// connection: connection failed" while SmartLink and the radio were fine),
+// and the path says whether the system holds it back (this app's mobile data
+// or Local Network switched off in Settings) and over what.
+QString describePath(nw_connection_t connection)
+{
+    nw_path_t path = nw_connection_copy_current_path(connection);
+    if (!path) {
+        return QStringLiteral("no network path yet");
+    }
+    QString text;
+    switch (nw_path_get_status(path)) {
+    case nw_path_status_satisfied:
+        text = QStringLiteral("the network path is up");
+        break;
+    case nw_path_status_satisfiable:
+        text = QStringLiteral("the network path can come up");
+        break;
+    case nw_path_status_unsatisfied:
+        text = QStringLiteral("no usable network path");
+        switch (nw_path_get_unsatisfied_reason(path)) {
+        case nw_path_unsatisfied_reason_cellular_denied:
+            text += QStringLiteral(": mobile data is off for this app (Settings › OksaSDR)");
+            break;
+        case nw_path_unsatisfied_reason_wifi_denied:
+            text += QStringLiteral(": Wi-Fi is off for this app");
+            break;
+        case nw_path_unsatisfied_reason_local_network_denied:
+            text += QStringLiteral(": Local Network is off for this app (Settings › Privacy & Security › Local Network)");
+            break;
+        default:
+            break;
+        }
+        break;
+    default:
+        text = QStringLiteral("no network path");
+        break;
+    }
+    QStringList via;
+    if (nw_path_uses_interface_type(path, nw_interface_type_wifi)) {
+        via << QStringLiteral("Wi-Fi");
+    }
+    if (nw_path_uses_interface_type(path, nw_interface_type_cellular)) {
+        via << QStringLiteral("mobile data");
+    }
+    if (nw_path_uses_interface_type(path, nw_interface_type_wired)) {
+        via << QStringLiteral("wired");
+    }
+    if (nw_path_uses_interface_type(path, nw_interface_type_other)) {
+        via << QStringLiteral("other (a VPN?)");
+    }
+    if (!via.isEmpty()) {
+        text += QStringLiteral(", over ") + via.join(QStringLiteral(", "));
+    }
+    nw_release(path);
+    return text;
 }
 
 QAbstractSocket::SocketError socketError(nw_error_t error)
@@ -328,7 +388,14 @@ void AppleTlsSocket::connectToHostEncrypted(const QString& host, quint16 port)
         case nw_connection_state_failed: {
             // Waiting: no usable path now (no network, refused); QSslSocket
             // fails at once there, and the callers retry, so this does too.
-            const QString message = describe(error);
+            // A wait says what the path is (often its only reason).
+            QString message = error ? describe(error) : QString();
+            if (state == nw_connection_state_waiting) {
+                const QString path = describePath(conn);
+                message = message.isEmpty() ? path : message + QStringLiteral("; ") + path;
+            } else if (message.isEmpty()) {
+                message = describe(error);
+            }
             const QAbstractSocket::SocketError kind = socketError(error);
             Impl::post(shared, id, [message, kind](AppleTlsSocket* socket) { socket->handleFailed(message, kind); });
             nw_connection_cancel(conn);
@@ -439,7 +506,19 @@ void AppleTlsSocket::handleFailed(const QString& message, QAbstractSocket::Socke
     if (m_state == QAbstractSocket::UnconnectedState) {
         return;
     }
-    const bool wasUp = m_state == QAbstractSocket::ConnectedState || m_state == QAbstractSocket::ClosingState;
+    if (m_state == QAbstractSocket::ClosingState) {
+        // Our own close (disconnectFromHost): the radio closing its side in
+        // answer, or the cancel after the final send, is how it ends, not an
+        // error; QSslSocket reports none there either. Builds 188-189 took
+        // it for one, so a Disconnect or a switch to the direct connection
+        // was logged as "The remote host closed the connection" and the app
+        // kept that as its last error (the developer's iPad, 2026-11-19).
+        qCDebug(lcSmartLink).noquote() << "AppleTlsSocket: closed as asked (" << message << ")";
+        finishConnection();
+        emit disconnected();
+        return;
+    }
+    const bool wasUp = m_state == QAbstractSocket::ConnectedState;
     m_error = message;
     qCWarning(lcSmartLink).noquote() << "AppleTlsSocket:" << message;
     finishConnection();

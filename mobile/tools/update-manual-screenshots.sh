@@ -330,7 +330,7 @@ if want "${kpa_shots[@]}"; then
         if want tab-kpa; then printf 'drawer 12\nwait 1500\nscroll 0\nwait 800\nshot tab-kpa\nclose\nwait 600\n'; fi
         if want kpa-controls; then
             printf 'popup radioSetup\nwait 800\nclick setupTab7\nwait 1500\ntapname kpaControlOn\nwait 3000\nclose\nwait 600\n'
-            printf 'drawer 12\nwait 1500\nshowname ampReset\nwait 800\nshot kpa-controls\nclose\nwait 600\n'
+            printf 'drawer 12\nwait 1500\nscroll -14\nwait 800\nshot kpa-controls\nclose\nwait 600\n'
         fi
         printf 'kpa off\nwait 1000\n'
     } | plan kpa 440x956 "${src[@]}"

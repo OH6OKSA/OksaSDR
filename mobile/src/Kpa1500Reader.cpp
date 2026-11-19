@@ -22,12 +22,14 @@ const QStringList& fastQueries()
 }
 
 // One a cycle, in turn: the rest, which changes only now and then (a full
-// round in 5 s at the receive rate).
+// round in 5.5 s at the receive rate). The fans: their speed now (^FS) and
+// its minimum (^FC).
 const QStringList& slowQueries()
 {
     static const QStringList kSlow{QStringLiteral("TM"), QStringLiteral("OS"), QStringLiteral("FL"),
                                    QStringLiteral("BN"), QStringLiteral("AN"), QStringLiteral("AM"),
-                                   QStringLiteral("AI"), QStringLiteral("TP"), QStringLiteral("RV")};
+                                   QStringLiteral("AI"), QStringLiteral("TP"), QStringLiteral("RV"),
+                                   QStringLiteral("FS"), QStringLiteral("FC")};
     return kSlow;
 }
 

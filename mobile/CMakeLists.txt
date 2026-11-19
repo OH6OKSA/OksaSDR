@@ -54,6 +54,8 @@ qt_add_executable(aether-mobile
     src/MobileEngineSetups.cpp
     src/MobileEngineAgcAuto.cpp
     src/MobileEngineMidi.cpp
+    src/MobileEngineUlanzi.cpp
+    src/MobileEngineDigitalMax.cpp
     src/MobileEngineAmp.cpp
     src/MobileEngineKpa.cpp
     src/Kpa1500Reader.cpp

@@ -312,6 +312,16 @@ void Kpa1500Connection::clearFault()
     sendRaw(Kpa1500::buildClearFault());
 }
 
+void Kpa1500Connection::setFanMinimum(int speed)
+{
+    if (speed < Kpa1500::kMinFanSpeed || speed > Kpa1500::kMaxFanSpeed) {
+        qCWarning(lcTuner) << "Kpa1500Connection: fan minimum speed" << speed
+                           << "out of range — ignoring";
+        return;
+    }
+    sendRaw(Kpa1500::buildSetFanMinimum(speed));
+}
+
 void Kpa1500Connection::key()
 {
     if (!m_connected) {

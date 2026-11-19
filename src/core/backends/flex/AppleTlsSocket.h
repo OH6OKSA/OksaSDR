@@ -22,7 +22,8 @@ namespace AetherSDR {
 //
 // Signals as QSslSocket's: encrypted() once the TLS handshake is done (no
 // separate connected()), readyRead(), errorOccurred() (errorString() says
-// what), then disconnected() if the session had been up. All on the thread
+// what), then disconnected() if the session had been up; a close asked for
+// (disconnectFromHost) ends with disconnected() alone. All on the thread
 // the socket lives in; the framework's own queue is internal.
 class AppleTlsSocket : public QObject {
     Q_OBJECT

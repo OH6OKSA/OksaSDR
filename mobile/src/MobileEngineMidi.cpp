@@ -562,7 +562,7 @@ bool MobileEngine::midiTransmitRefused()
     if (AppSettings::instance().value(kMidiTransmitKey, false).toBool()) {
         return false;
     }
-    setLastError(tr("Transmitting from the MIDI controller is off: turn it on in Radio Setup › MIDI."));
+    setLastError(tr("Transmitting from the controller (MIDI or the Ulanzi Dial) is off: turn it on in Radio Setup › MIDI."));
     return true;
 }
 
@@ -595,6 +595,11 @@ QVariantMap MobileEngine::midi() const
                 source = b.sourceDisplayName();
             }
         }
+        // A Ulanzi Dial control learned for it too (MobileEngineUlanzi.cpp).
+        const QString dial = ulanziSource(p.id);
+        if (!dial.isEmpty()) {
+            source = source.isEmpty() ? dial : source + QStringLiteral(" · ") + dial;
+        }
         functions << QVariantMap{{QStringLiteral("id"), p.id},
                                  {QStringLiteral("name"), p.displayName},
                                  {QStringLiteral("category"), p.category},
@@ -617,6 +622,7 @@ QVariantMap MobileEngine::midi() const
     m.insert(QStringLiteral("import"), m_midiImport);
     m.insert(QStringLiteral("vfoPosition"), m_midiVfoPosition);
     m.insert(QStringLiteral("vfoPositionCc"), m_midiVfoPositionCc);
+    ulanziStatus(m);
     return m;
 }
 
@@ -654,6 +660,7 @@ void MobileEngine::midiLearn(const QString& paramId)
 void MobileEngine::midiCancelLearn()
 {
     m_midi->cancelLearn();
+    m_ulanziNote.clear();
     m_midiConflictParam.clear();
     emit midiChanged();
 }
@@ -698,6 +705,11 @@ void MobileEngine::midiConflictLearnAgain()
 void MobileEngine::midiUnbind(const QString& paramId)
 {
     m_midi->removeBinding(paramId);
+    // And the dial's control for it.
+    for (auto it = m_ulanziMap.begin(); it != m_ulanziMap.end();) {
+        it = it.value() == paramId ? m_ulanziMap.erase(it) : std::next(it);
+    }
+    ulanziSave();
     midiSaveBindings();
     qCInfo(lcMobile).noquote() << "MIDI: unbound" << paramId;
     emit midiChanged();
@@ -706,6 +718,9 @@ void MobileEngine::midiUnbind(const QString& paramId)
 void MobileEngine::midiClearAll()
 {
     m_midi->clearBindings();
+    m_ulanziMap.clear();
+    m_ulanziNote.clear();
+    ulanziSave();
     midiSaveBindings();
     qCInfo(lcMobile) << "MIDI: every binding cleared";
     emit midiChanged();

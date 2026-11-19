@@ -7,6 +7,7 @@
 
 #include "core/RfkitProtocol.h"
 #include "core/TxCoordinator.h"
+#include "core/UlanziChordDecoder.h"
 #include "core/backends/flex/SmartLinkClient.h"
 #include "core/backends/flex/WanConnection.h"
 #include "core/backends/RadioCapabilities.h"
@@ -249,8 +250,15 @@ class MobileEngine : public QObject {
     // transmit (TX from MIDI allowed), learning (the function waiting for a
     // control), pairing (Bluetooth pairing offered here), onMac, functions
     // [{id, name, category, source, tx}], import (the last import's result),
-    // vfoPosition (the VFO knob sends a position, not turns) and vfoPositionCc.
+    // vfoPosition (the VFO knob sends a position, not turns) and vfoPositionCc;
+    // the Ulanzi Dial's dialOn, dialKeys ("all" Android, "side" iOS), dialDevice
+    // (Android: the dial connected), dialNote (the last learn's result).
     Q_PROPERTY(QVariantMap midi READ midi NOTIFY midiChanged)
+    // Digital max (roadmap 37, Sloan Davis): the highest RF power (the RF
+    // power control's own W or %) while the TX slice is in DIGU, DIGL or
+    // RTTY; 0 off. digitalMaxNote: what it did last (MobileEngineDigitalMax.cpp).
+    Q_PROPERTY(int digitalMax READ digitalMax WRITE setDigitalMax NOTIFY digitalMaxChanged)
+    Q_PROPERTY(QString digitalMaxNote READ digitalMaxNote NOTIFY digitalMaxChanged)
     // Big buttons (roadmap 55): the operating page covered by a few large
     // controls (tune down / up by the step, the step, PTT); this session only.
     Q_PROPERTY(bool bigButtons READ bigButtons WRITE setBigButtons NOTIFY bigButtonsChanged)
@@ -1409,6 +1417,10 @@ public:
     Q_INVOKABLE void kpaSelectAntenna(int number);
     Q_INVOKABLE void kpaSetAtu(bool inLine);
     Q_INVOKABLE void kpaClearFault();
+    // The fans' minimum speed, 0-5 (roadmap 103, Rich Yost N2RY): the only
+    // command without a question and allowed while transmitting (the fans
+    // only cool; the amplifier still speeds them up by its temperature).
+    Q_INVOKABLE void kpaSetFanMinimum(int speed);
     // The ATU's full-search tune with the radio's TUNE carrier (10-50 W)
     // until the amplifier shows it done, 20 s at most.
     Q_INVOKABLE void kpaTune();
@@ -1552,6 +1564,9 @@ public:
     Q_INVOKABLE void setAgcFollow(bool on);
     QVariantMap midi() const;
     QString midiActivity() const { return m_midiActivity; }
+    int digitalMax() const;
+    void setDigitalMax(int power);
+    QString digitalMaxNote() const { return m_digitalMaxNote; }
     bool bigButtons() const { return m_bigButtons; }
     void setBigButtons(bool on);
     bool showDemoRadio() const;
@@ -1569,6 +1584,13 @@ public:
     Q_INVOKABLE void midiConflictLearnAgain();
     Q_INVOKABLE void midiUnbind(const QString& paramId);
     Q_INVOKABLE void midiClearAll();
+    // A Ulanzi Dial (D100H, a Bluetooth keyboard; roadmap 83, Christoph
+    // Steinert DM5HF) as another controller on Radio Setup › MIDI: on, its
+    // knob and keys are learned for the same functions (MobileEngineUlanzi.cpp).
+    Q_INVOKABLE void setUlanziOn(bool on);
+    // One key of the dial in the Linux code space (UlanziChordDecoder), value
+    // 0 release, 1 press, 2 repeat; -1 = the dial went (released all).
+    void ulanziKey(int linuxKey, int value);
     // A SmartSDR ".map" (Lynovation's files for SmartSDR for iOS / macOS) or
     // the desktop's XML profile; replaces the bindings.
     Q_INVOKABLE void midiImport(const QUrl& url);
@@ -2110,6 +2132,7 @@ signals:
     void agcAutoChanged();
     void noiseFloorEstimateChanged();
     void midiChanged();
+    void digitalMaxChanged();
     void bigButtonsChanged();
     void showDemoRadioChanged();
     void lanRadiosChanged();
@@ -2459,7 +2482,7 @@ private:
     void updateKpaLink();
     bool kpaOperating() const;
     double kpaForwardW() const;
-    bool kpaCommandAllowed(const char* what);
+    bool kpaCommandAllowed(const char* what, bool whileTransmitting = false);
     void kpaSendPending(const QString& pending, const QString& readback);
     void checkKpaPending();
     void kpaCommandDone(const QString& result, bool ok);
@@ -2629,6 +2652,29 @@ private:
     void midiSaveBindings();
     bool midiTransmitRefused();
     void midiEndTransmit(const QString& why);
+    // Digital max (MobileEngineDigitalMax.cpp).
+    void checkDigitalMax();
+    bool txSliceDigital() const;
+    int m_digitalMaxRestore{-1};   // the power before the limit lowered it
+    int m_digitalMaxSetPower{-1};  // the power the limit set (followed as it changes)
+    QString m_digitalMaxNote;
+    // The Ulanzi Dial (MobileEngineUlanzi.cpp).
+    void setupUlanzi();
+    bool ulanziOn() const;
+    void ulanziEvent(const AetherSDR::UlanziChordDecoder::Event& event);
+    bool ulanziLearn(const QString& signature);
+    void ulanziSave();
+    QString ulanziName(const QString& signature) const;
+    QString ulanziSource(const QString& paramId) const;
+    void ulanziStatus(QVariantMap& m) const;
+    AetherSDR::UlanziChordDecoder m_ulanziDecoder;
+    // control signature ("KNOB", "KEY_MUTE", "Ctrl+V" ...) -> MIDI function id
+    QHash<QString, QString> m_ulanziMap;
+    // Held functions (PTT, paddles, the straight key): released when the dial goes.
+    QSet<QString> m_ulanziHeld;
+    bool m_ulanziKeyed{false};     // the dial ran a transmit function
+    QString m_ulanziNote;
+    QString m_ulanziDevice;
     AetherSDR::MidiControlManager* m_midi{nullptr};
     // A learn that caught another function's control (roadmap 73): the
     // bindings before the learn, what it caught, whose it is.

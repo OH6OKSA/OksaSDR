@@ -11,6 +11,9 @@
 // bypass), the fault clear and Tune; each confirmed on the page first, one
 // at a time, never while the radio transmits, and never latched: a command
 // is done when the UDP readback shows it (the amplifier answers no SET).
+// The fans' minimum speed (^FC 0-5, roadmap 103) the same, but with no
+// question and also while transmitting: a fan setting switches no RF, and
+// the amplifier still raises the speed itself as the heat sink warms.
 // Not here: keying the amplifier over the network (^TX); it stays on its KEY
 // IN cable from the radio, as Elecraft's Flex guide wires it.
 //
@@ -258,6 +261,8 @@ void MobileEngine::updateKpaLink()
         m_kpaWanted = want;
         m_kpaError.clear();
         m_kpaPending.clear();
+        m_kpaPendingTimer->stop();
+        m_kpa->setExtraQueries({});
         if (want) {
             m_kpaState = QStringLiteral("connecting");
             qCInfo(lcMobile).noquote() << "amp: reading the KPA1500 at" << target << "(UDP, queries only)";
@@ -337,8 +342,9 @@ void MobileEngine::setKpaControl(bool on)
 }
 
 // One command at a time, only with control on, both links up and the radio
-// in receive. A refusal says why on the Amp tab.
-bool MobileEngine::kpaCommandAllowed(const char* what)
+// in receive (the fans' minimum also while it transmits). A refusal says
+// why on the Amp tab.
+bool MobileEngine::kpaCommandAllowed(const char* what, bool whileTransmitting)
 {
     QString why;
     if (!kpaControlOn()) {
@@ -347,7 +353,7 @@ bool MobileEngine::kpaCommandAllowed(const char* what)
         why = tr("The amplifier is not answering.");
     } else if (!m_kpaCtl->isConnected() || m_kpaLinkState != QLatin1String("connected")) {
         why = tr("The control link is not connected.");
-    } else if (radioTransmitting()) {
+    } else if (radioTransmitting() && !whileTransmitting) {
         why = tr("Not while transmitting: the amplifier must not switch with RF on it.");
     } else if (!m_kpaPending.isEmpty() || !m_kpaTune.isEmpty()) {
         why = tr("Still waiting for the amplifier.");
@@ -367,7 +373,12 @@ void MobileEngine::kpaSendPending(const QString& pending, const QString& readbac
     m_kpaPending = pending;
     m_kpaResult.clear();
     m_kpaPendingTimer->start();
-    // Read back at once, not at its turn in the cycle.
+    // Read back at once, not at its turn in the cycle, and then every cycle
+    // until it shows: the command goes over TCP and the query over UDP, so
+    // the first answer can be the old value (the query got there first;
+    // seen with the stand-in, 2026-11-19), and the round would ask it again
+    // only 5.5 s later.
+    m_kpa->setExtraQueries({readback});
     m_kpa->queryNow(readback);
     emit kpaChanged();
 }
@@ -389,9 +400,16 @@ void MobileEngine::checkKpaPending()
         done = s.atuMode && *s.atuMode == want;
     } else if (m_kpaPending == QLatin1String("clear")) {
         done = s.faultCode && *s.faultCode == 0;
+    } else if (m_kpaPending.startsWith(QLatin1String("fan minimum "))) {
+        done = s.fanMinimum && QStringLiteral("fan minimum %1").arg(*s.fanMinimum) == m_kpaPending;
     }
     if (done) {
         qCInfo(lcMobile).noquote() << "amp: the KPA1500 shows" << m_kpaPending;
+        // A higher minimum can speed the fans up at once: their speed now
+        // read next, not at its turn in the round.
+        if (m_kpaPending.startsWith(QLatin1String("fan"))) {
+            m_kpa->queryNow(QStringLiteral("FS"));
+        }
         kpaCommandDone(m_kpaPending == QLatin1String("clear") ? tr("The amplifier's fault is cleared.") : QString(), true);
     }
 }
@@ -400,6 +418,10 @@ void MobileEngine::kpaCommandDone(const QString& result, bool ok)
 {
     m_kpaPending.clear();
     m_kpaPendingTimer->stop();
+    // A tune keeps its own every-cycle queries (no command goes during one).
+    if (m_kpaTune.isEmpty()) {
+        m_kpa->setExtraQueries({});
+    }
     m_kpaResult = result;
     m_kpaResultOk = ok;
     emit kpaChanged();
@@ -452,6 +474,24 @@ void MobileEngine::kpaClearFault()
     qCInfo(lcMobile) << "amp: asking the KPA1500 to clear its fault";
     m_kpaCtl->clearFault();
     kpaSendPending(QStringLiteral("clear"), QStringLiteral("FL"));
+}
+
+void MobileEngine::kpaSetFanMinimum(int speed)
+{
+    if (!kpaCommandAllowed("the fan minimum", true)) {
+        return;
+    }
+    if (speed < Kpa1500::kMinFanSpeed || speed > Kpa1500::kMaxFanSpeed) {
+        m_kpaResult = tr("The fan's minimum speed is 0 to 5.");
+        m_kpaResultOk = false;
+        emit kpaChanged();
+        return;
+    }
+    // ^FCn, the number itself: every firmware takes it (^FC+; / ^FC-; only
+    // 02.62 and later), and the readback shows the step taken.
+    qCInfo(lcMobile) << "amp: asking the KPA1500 for fan minimum speed" << speed;
+    m_kpaCtl->setFanMinimum(speed);
+    kpaSendPending(QStringLiteral("fan minimum %1").arg(speed), QStringLiteral("FC"));
 }
 
 void MobileEngine::kpaTune()
@@ -772,6 +812,12 @@ QVariantMap MobileEngine::kpa() const
     }
     if (s.firmware) {
         m.insert(QStringLiteral("firmware"), *s.firmware);
+    }
+    if (s.fanSpeed) {
+        m.insert(QStringLiteral("fan"), *s.fanSpeed);
+    }
+    if (s.fanMinimum) {
+        m.insert(QStringLiteral("fanMin"), *s.fanMinimum);
     }
     return m;
 }

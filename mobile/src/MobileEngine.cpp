@@ -589,6 +589,7 @@ MobileEngine::MobileEngine(QObject* parent)
     setupFreeDv();
     setupAgcAuto();
     setupMidi();
+    setupUlanzi();
     // Network changes in the log (Wi-Fi <-> mobile data, offline): a remote
     // session that drops can then be told apart from the network switching
     // under it.
@@ -2582,6 +2583,8 @@ void MobileEngine::wireTransmit()
     });
     connect(&rm.transmitModel(), &TransmitModel::transmittingChanged, this, &MobileEngine::transmittingChanged);
     connect(&rm.transmitModel(), &TransmitModel::rfPowerChanged, this, &MobileEngine::rfPowerChanged);
+    // Digital max (roadmap 37) also holds a power raised in a digital mode.
+    connect(&rm.transmitModel(), &TransmitModel::rfPowerChanged, this, &MobileEngine::checkDigitalMax);
     connect(&rm.transmitModel(), &TransmitModel::txFilterCutoffChanged, this, &MobileEngine::txFilterChanged);
     connect(&rm, &RadioModel::globalProfilesChanged, this, &MobileEngine::profilesChanged);
     connect(&rm, &RadioModel::memoryChanged, this, &MobileEngine::memoriesChanged);
@@ -3386,6 +3389,11 @@ QStringList MobileEngine::meterKindsFor(const QString& side, bool tx) const
     if (m_ampSet || m_kpaSet || rm.amplifier().present() || (m_pgxlConn && m_pgxlConn->isConnected())) {
         kinds << QStringLiteral("Amp power") << QStringLiteral("Amp refl") << QStringLiteral("Amp SWR")
               << QStringLiteral("Amp temp") << QStringLiteral("Amp volts") << QStringLiteral("Amp current");
+        // A KPA1500's fan speed (0-5), when it is the amplifier the meters
+        // read (an RF2K-S set up goes first, MeterView.qml).
+        if (m_kpaSet && !m_ampSet) {
+            kinds << QStringLiteral("Amp fan");
+        }
     }
     // A Tuner Genius XL's power and SWR, as the RF2K-S's under Amplifier.
     if (const_cast<RadioModel&>(rm).tunerModel().isPresent()) {
@@ -9042,6 +9050,10 @@ void MobileEngine::onSideKey(int keyValue, bool pressed)
         return;
     }
     const bool control = key == SideKey::LeftControl || key == SideKey::RightControl;
+    // With the Ulanzi Dial on, Control is its side keys' (roadmap 83).
+    if (control && ulanziOn()) {
+        return;
+    }
     if (cwKeyboardPaddles() != (control ? QLatin1String("ctrl") : QLatin1String("alt"))) {
         return;
     }
@@ -9811,6 +9823,9 @@ void MobileEngine::onSliceAdded(SliceModel* slice)
 {
     // FT8 / FT4 follow the TX slice.
     connect(slice, &SliceModel::txSliceChanged, this, &MobileEngine::updateDigiSlice);
+    // Digital max (roadmap 37): the TX slice into or out of a digital mode.
+    connect(slice, &SliceModel::txSliceChanged, this, &MobileEngine::checkDigitalMax);
+    connect(slice, &SliceModel::modeChanged, this, &MobileEngine::checkDigitalMax);
     // Any audible slice's mode or mute decides whether BC may run.
     connect(slice, &SliceModel::modeChanged, this, &MobileEngine::applyBeatCancel);
     connect(slice, &SliceModel::audioMuteChanged, this, &MobileEngine::applyBeatCancel);

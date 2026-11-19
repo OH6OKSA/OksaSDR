@@ -4,7 +4,7 @@
     mobile/tools/kpa1500-mock.py [--port 1500] [--bind 0.0.0.0]
                                  [--tx-cycle S | --keyed] [--forward W] [--swr X]
                                  [--standby] [--fault HH] [--off] [--atu bypass]
-                                 [--antenna N] [--band BB] [--firmware NN.NN]
+                                 [--antenna N] [--band BB] [--firmware NN.NN] [--fan-min N]
                                  [--silent-after S] [--tune-seconds S] [--no-match] [--no-ft-reply]
                                  [--log FILE]
 
@@ -17,7 +17,8 @@ value: ^PWF (W out), ^PWR (W reflected), ^SW (SWR in tenths), ^PWI (W in),
 ^VI (PA volts in tenths and amps, "^VI513 061;"), ^TM (°C), ^BN (band
 number), ^FL (two hex digits), ^OS (1 OPERATE, 0 STANDBY), ^ON (main
 supplies), ^AN (antenna), ^AM (I / B), ^AI (1 / 0), ^TP (tuning), ^RV
-(firmware). With --tx-cycle S it keys and unkeys every S seconds (forward
+(firmware), ^FC (the fans' minimum speed, 0-5, --fan-min), ^FS (their speed
+now: 2 while keyed, 0 in receive, never below the minimum). With --tx-cycle S it keys and unkeys every S seconds (forward
 up to --forward W at --swr, the drive, current and temperature following);
 --keyed transmits all the time. --off answers only ^ON0; and ^RV, as a
 sleeping amplifier's microcontroller does; --silent-after S stops answering
@@ -29,7 +30,8 @@ and counted in the summary at the end (Ctrl-C, or --log FILE written as it
 goes): with the app's Control off it must stay at 0. The stand-in acts on
 them as the amplifier does: ^OS0 / ^OS1 (OPERATE clears a fault but the
 temperature one), ^AN1 / ^AN2, ^AMI / ^AMB, ^AI0 / ^AI1, ^FLC (clears the
-fault but a temperature one), ^FT (a full-search tune: ^TP1 for
+fault but a temperature one), ^FCn (0-5; ^FC+; / ^FC-; / ^FC/; only with
+--firmware 02.62 or later, as the reference says), ^FT (a full-search tune: ^TP1 for
 --tune-seconds, 3, then done and in line, or with --no-match fault 92 in
 STANDBY), ^FE (cancels it). A tune started over TCP ends with the
 amplifier's "^FT;" on that link, done or cancelled, as the reference says
@@ -46,7 +48,8 @@ import socket
 import sys
 import time
 
-QUERIES = {"PWF", "PWR", "SW", "PWI", "VI", "TM", "BN", "FL", "OS", "ON", "AN", "AM", "AI", "TP", "RV", "TQ"}
+QUERIES = {"PWF", "PWR", "SW", "PWI", "VI", "TM", "BN", "FL", "OS", "ON", "AN", "AM", "AI", "TP", "RV", "TQ",
+           "FC", "FS"}
 THREE = {"BRP", "BRX", "PWD", "PWF", "PWI", "PWR", "RVM", "STA", "STB", "STN", "STS", "VMH"}
 
 
@@ -65,6 +68,7 @@ def main():
     ap.add_argument("--antenna", type=int, default=1)
     ap.add_argument("--band", type=int, default=5)
     ap.add_argument("--firmware", default="03.08")
+    ap.add_argument("--fan-min", type=int, default=1, choices=range(0, 6))
     ap.add_argument("--silent-after", type=float, default=0.0)
     ap.add_argument("--tune-seconds", type=float, default=3.0)
     ap.add_argument("--no-ft-reply", action="store_true")
@@ -83,7 +87,7 @@ def main():
     # What a SET changes, as the amplifier keeps it.
     st = {"operate": not args.standby and args.fault == "00", "antenna": args.antenna,
           "atu": "I" if args.atu == "inline" else "B", "fault": args.fault.upper(), "tune_end": 0.0,
-          "ft_owed": False}
+          "ft_owed": False, "fan_min": args.fan_min, "fan_prev": args.fan_min}
 
     def tune_poll():
         # A running search ends after --tune-seconds: in line and stored, or
@@ -152,6 +156,10 @@ def main():
             return args.firmware
         if cmd == "TQ":
             return "0"
+        if cmd == "FC":
+            return str(st["fan_min"])
+        if cmd == "FS":
+            return str(max(st["fan_min"], 2 if k else 0))
         return None
 
     def act(cmd, arg):
@@ -172,6 +180,21 @@ def main():
             st["tune_end"] = time.monotonic() + args.tune_seconds
         elif cmd == "FE":
             st["tune_end"] = 0.0
+        elif cmd == "FC":
+            new = st["fan_min"]
+            stepped = tuple(int(x) for x in args.firmware.split(".")) >= (2, 62)
+            if arg in ("0", "1", "2", "3", "4", "5"):
+                new = int(arg)
+            elif stepped and arg == "+":
+                new = min(5, new + 1)
+            elif stepped and arg == "-":
+                new = max(0, new - 1)
+            elif stepped and arg == "/":
+                new = st["fan_prev"]
+            if new != st["fan_min"]:
+                st["fan_prev"], st["fan_min"] = st["fan_min"], new
+            say("MOCK fan: minimum %d" % st["fan_min"])
+            return
         say("MOCK state: %s %s ANT%d ATU %s fault %s%s" % (
             via_name(), "OPERATE" if st["operate"] else "STANDBY", st["antenna"], st["atu"], st["fault"],
             " tuning" if st["tune_end"] else ""))

@@ -378,7 +378,10 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                 auto* flick = qvariant_cast<QObject*>(scroll->property("contentItem"));
                 if (item && item->isVisible() && flick) {
                     const qreal room = flick->property("contentHeight").toReal() - item->height();
-                    flick->setProperty("contentY", std::clamp(px, 0.0, std::max(0.0, room)));
+                    // A negative value counts up from the end: "scroll -12"
+                    // is 12 px above the bottom.
+                    const qreal y = px < 0 ? room + px : px;
+                    flick->setProperty("contentY", std::clamp(y, 0.0, std::max(0.0, room)));
                 }
             }
         }
@@ -709,6 +712,17 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             qInfo().noquote() << "shot-plan: voicewav" << arg;
         }
         *delayMs = 3000;
+    } else if (command == QLatin1String("ulanzi")) {
+        // A Ulanzi Dial key as the platforms hand it on (roadmap 83): a
+        // Linux key code and 0 / 1 / 2 (release, press, repeat), "-1" the
+        // dial gone; "on" / "off" its switch.
+        if (arg == QLatin1String("on") || arg == QLatin1String("off")) {
+            m_engine.setUlanziOn(arg == QLatin1String("on"));
+        } else {
+            m_engine.ulanziKey(arg.toInt(), args.value(1, QStringLiteral("0")).toInt());
+        }
+        qInfo().noquote() << "shot-plan: ulanzi" << args.join(QLatin1Char(' ')) << "->" << m_engine.midiActivity();
+        *delayMs = 150;
     } else if (command == QLatin1String("kpa")) {
         // The KPA1500's address (Radio Setup › Amp › Elecraft); "off"
         // forgets it, "pause" / "resume" are its Read the amplifier switch.

@@ -234,10 +234,17 @@ ColumnLayout {
         modal: true
         title: qsTr("Export “%1”?").arg(setupPicker.currentText)
         standardButtons: Dialog.Ok | Dialog.Cancel
-        contentItem: Label {
-            text: qsTr("The file holds the setup's passwords and keys (QRZ.com, logbooks, 4O3A devices) as plain text. Keep it to your own devices.")
-            wrapMode: Text.Wrap
-            color: Theme.text
+        // The text in a layout as the app's other questions (AmpControls'):
+        // a wrapping Label as the contentItem itself set the dialog's
+        // implicitHeight and its own width from each other (a binding loop
+        // logged each time the drawer opened).
+        contentItem: ColumnLayout {
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("The file holds the setup's passwords and keys (QRZ.com, logbooks, 4O3A devices) as plain text. Keep it to your own devices.")
+                wrapMode: Text.Wrap
+                color: Theme.text
+            }
         }
         onAccepted: setups.show(Engine.exportAppSetup(setupPicker.currentText), "")
     }

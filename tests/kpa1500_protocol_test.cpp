@@ -255,6 +255,29 @@ int main()
         report("FL00 clears the fault", s.faultCode && *s.faultCode == 0);
     }
     {
+        // Reference p.27 and p.30: ^FCn the fans' minimum speed and ^FSn
+        // their speed now, n 0 through 5.
+        Status s;
+        applyMessage(Message{"FC", "2"}, s);
+        report("FC2 decodes as fan minimum 2", s.fanMinimum && *s.fanMinimum == 2);
+        applyMessage(Message{"FS", "4"}, s);
+        report("FS4 decodes as fan speed 4", s.fanSpeed && *s.fanSpeed == 4);
+        applyMessage(Message{"FS", "0"}, s);
+        report("FS0 decodes as the fans off", s.fanSpeed && *s.fanSpeed == 0);
+        report("FC6, FC+, FC12 and an empty FC leave the minimum as it was",
+               !applyMessage(Message{"FC", "6"}, s) && !applyMessage(Message{"FC", "+"}, s)
+                   && !applyMessage(Message{"FC", "12"}, s) && !applyMessage(Message{"FC", ""}, s)
+                   && *s.fanMinimum == 2);
+        report("FS-1 and FS9 leave the speed as it was",
+               !applyMessage(Message{"FS", "-1"}, s) && !applyMessage(Message{"FS", "9"}, s)
+                   && *s.fanSpeed == 0);
+        bool parsed = false;
+        MessageParser parser;
+        parser.setMessageCallback([&](const Message& m) { parsed = m.cmd == "FC" && m.arg == "3"; });
+        parser.feed("^FC3;");
+        report("^FC3; parses as command FC with 3", parsed);
+    }
+    {
         // Reference p.52: ^TQn, 0 not keyed, 1-3 keyed.
         Status s;
         applyMessage(Message{"TQ", "0"}, s);
@@ -342,6 +365,11 @@ int main()
                && buildMessage("PWFX").isEmpty() && buildMessage("P1").isEmpty());
     // Reference p.29: "SET format: ^FLC; to clear current fault."
     report("buildClearFault() == ^FLC;", buildClearFault() == "^FLC;");
+    // Reference p.27: "SET/RESPONSE format: ^FCn; where n is 0 through 5".
+    report("buildSetFanMinimum(0) == ^FC0; and (5) == ^FC5;",
+           buildSetFanMinimum(0) == "^FC0;" && buildSetFanMinimum(5) == "^FC5;");
+    report("buildSetFanMinimum refuses anything outside 0-5",
+           buildSetFanMinimum(-1).isEmpty() && buildSetFanMinimum(6).isEmpty());
 
     // ── Keying: the safety-critical half ─────────────────────────────────
     //

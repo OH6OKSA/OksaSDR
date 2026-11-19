@@ -128,6 +128,16 @@ std::optional<bool> decodeKeyState(const QString& arg)
     return *n != 0;
 }
 
+// ^FSn / ^FCn: one digit, 0 (fans off) to 5 (all at the highest).
+std::optional<int> decodeFanSpeed(const QString& arg)
+{
+    const auto n = decodeInt(arg);
+    if (!n || arg.size() != 1 || *n < kMinFanSpeed || *n > kMaxFanSpeed) {
+        return std::nullopt;
+    }
+    return n;
+}
+
 // ^VIvvv iii: the PA supply in tenths of a volt and its current in whole
 // amperes, separated by a space (^VI513 061; is 51.3 V at 61 A).
 bool decodeVoltsAmps(const QString& arg, float& volts, int& amps)
@@ -355,6 +365,12 @@ bool applyMessage(const Message& message, Status& status)
     if (cmd == QLatin1String("TQ")) {
         return assignIfChanged(status.keyed, decodeKeyState(arg));
     }
+    if (cmd == QLatin1String("FS")) {
+        return assignIfChanged(status.fanSpeed, decodeFanSpeed(arg));
+    }
+    if (cmd == QLatin1String("FC")) {
+        return assignIfChanged(status.fanMinimum, decodeFanSpeed(arg));
+    }
     // Unrecognized command — deliberately not an error. The amp answers
     // several queries this integration does not send (and future firmware
     // will add more); dropping them keeps the parser forward-compatible
@@ -452,6 +468,14 @@ QByteArray buildSelectAntenna(int port)
 QByteArray buildClearFault()
 {
     return buildMessage(QStringLiteral("FL"), QStringLiteral("C"));
+}
+
+QByteArray buildSetFanMinimum(int speed)
+{
+    if (speed < kMinFanSpeed || speed > kMaxFanSpeed) {
+        return {};
+    }
+    return buildMessage(QStringLiteral("FC"), QString::number(speed));
 }
 
 QByteArray buildKey(int seconds)
