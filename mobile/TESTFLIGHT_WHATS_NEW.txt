@@ -9,10 +9,10 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- SmartLink on an iPhone or iPad over a mobile network that is IPv6 only (common in the US) connects to the radio again: builds 188-191 could not (thanks Michael Walker).
-- The notch panel opens beside the notch, or above or below the display where there is no room beside it, also in the 3D view; drag it by its title to put it elsewhere (thanks Larry W9FLA).
+- SmartLink over a mobile network that is IPv6 only (common in the US): the audio, the panadapter and the waterfall now come through too; build 192 connected but stayed silent and empty (thanks Michael Walker).
 
-RECENT (builds 94–191)
+RECENT (builds 94–192)
+- 192: the notch panel opens beside the notch, or above or below the display, also in 3D; drag it by its title (thanks Larry W9FLA).
 - 191: the notch panel beside the notch; × beside Pin Controls closes the controls in landscape (thanks Larry W9FLA); Ulanzi Dial fixes.
 - 190: KPA1500 Fan minimum on the Amp tab (thanks Rich N2RY); Ulanzi Dial side keys in Radio Setup > MIDI (thanks Christoph DM5HF); Digital max on the TX tab (thanks Sloan Davis); SmartLink messages after your own Disconnect.
 - 188-189: VOX with this device's microphone (Controls > TX > VOX, with a headset; thanks Christoph DM5HF); FTx Answer CQ calls each station 2 to 20 times, under More (thanks Kurt DL5EAG); SmartLink with Apple's current TLS and the radio's certificate checked (thanks Mohammed A71AT); no crash when the radio ends SmartLink before it is up (thanks Barry N2BJ).

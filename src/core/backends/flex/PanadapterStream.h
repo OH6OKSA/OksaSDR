@@ -69,8 +69,14 @@ public:
     // Rebind to an OS-assigned LAN UDP port after the radio rejects our
     // selected port/IP pair as already registered by another client.
     Q_INVOKABLE bool rebindToEphemeralPort(RadioConnection* conn);
-    // Start for WAN: use explicit radio address and UDP port.
+    // Start for WAN: use explicit radio address and UDP port. An IPv6
+    // radioAddr binds an IPv6 socket (see wanUdpTarget), else IPv4 as before.
     Q_INVOKABLE bool startWan(const QHostAddress& radioAddr, quint16 radioUdpPort);
+    // Where the WAN UDP goes: the radio's public address, except when the TLS
+    // session reached that IPv4 address through the network's NAT64 (an
+    // IPv6-only mobile network, the iOS TLS socket): then the same IPv6
+    // address, as an IPv4 socket has no route there (OksaSDR roadmap 106).
+    static QHostAddress wanUdpTarget(const QHostAddress& publicIp, const QHostAddress& tlsPeer);
 
     // Begin WAN UDP registration: sends "client udp_register handle=0x<handle>"
     // via UDP every 50ms until a valid Flex VITA-49 packet arrives from the

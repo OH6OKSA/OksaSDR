@@ -100,6 +100,40 @@ int main(int argc, char** argv)
     pump(120);
     check(drain(outgoing, expected) == 0, "native confirmation ends rapid sends");
 
+    // An IPv6-only network (OksaSDR roadmap 106): the TLS session reached the
+    // radio's IPv4 address through the NAT64, so the UDP goes there too.
+    const QHostAddress publicIp(QStringLiteral("203.0.113.7"));
+    const QHostAddress nat64(QStringLiteral("64:ff9b::cb00:7107"));
+    check(PanadapterStream::wanUdpTarget(publicIp, nat64) == nat64, "a NAT64 TLS peer takes the UDP along");
+    check(PanadapterStream::wanUdpTarget(publicIp, publicIp) == publicIp, "an IPv4 TLS peer keeps the IPv4 UDP");
+    check(PanadapterStream::wanUdpTarget(publicIp, QHostAddress(QStringLiteral("::ffff:203.0.113.7"))) == publicIp,
+          "a v4-mapped TLS peer keeps the IPv4 UDP");
+    check(PanadapterStream::wanUdpTarget(publicIp, QHostAddress()) == publicIp, "no TLS peer keeps the IPv4 UDP");
+    check(PanadapterStream::wanUdpTarget(publicIp, QHostAddress(QStringLiteral("fe80::1"))) == publicIp,
+          "a link-local TLS peer keeps the IPv4 UDP");
+    QUdpSocket outgoing6;
+    QUdpSocket incoming6;
+    if (outgoing6.bind(QHostAddress::LocalHostIPv6, 0) && incoming6.bind(QHostAddress::LocalHostIPv6, 0)) {
+        const auto metersBefore = stream.categoryStats(PanadapterStream::CatMeter).packets;
+        check(stream.startWan(QHostAddress::LocalHostIPv6, outgoing6.localPort()), "an IPv6 radio address binds");
+        stream.startWanUdpRegister(0xAu);
+        pump(20);
+        check(drain(outgoing6, expected) >= 1, "udp_register reaches the radio's IPv6 address");
+        check(incoming6.writeDatagram(packet, QHostAddress::LocalHostIPv6, stream.localPort()) == packet.size(),
+              "own IPv6 socket delivers a Flex VITA fixture");
+        pump(100);
+        check(WanUdpKeepaliveSocketTestAccess::confirmed(stream), "VITA over IPv6 confirms the registration");
+        check(stream.categoryStats(PanadapterStream::CatMeter).packets > metersBefore, "VITA over IPv6 is dispatched");
+        check(stream.startWan(QHostAddress::LocalHost, outgoing.localPort()), "back to IPv4 rebinds IPv4");
+        stream.startWanUdpRegister(0xAu);
+        pump(20);
+        check(drain(outgoing, expected) >= 1, "udp_register reaches the IPv4 sink again");
+        drain(outgoing6, expected);
+        check(!outgoing6.hasPendingDatagrams(), "nothing more to the IPv6 sink");
+    } else {
+        std::printf("SKIP IPv6 loopback not available\n");
+    }
+
     RadioConnection conn; // cold, never dials
     check(stream.start(&conn), "WAN to LAN binds normally");
     WanUdpKeepaliveSocketTestAccess::timeout(stream);

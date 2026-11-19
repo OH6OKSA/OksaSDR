@@ -7569,8 +7569,15 @@ void RadioModel::registerAsGuiClient(const QString& clientId)
         // UDP port with the radio. start() calls stop() internally if needed. (#561)
         bool streamOk = false;
         if (m_wanConn) {
-            QMetaObject::invokeMethod(m_panStream, [this, &streamOk]() {
-                streamOk = m_panStream->startWan(QHostAddress(m_wanPublicIp), m_wanUdpPort);
+            // The UDP to the address the TLS session reached: on an IPv6-only
+            // network that is the radio's address through the NAT64.
+            const QHostAddress udpTarget =
+                PanadapterStream::wanUdpTarget(QHostAddress(m_wanPublicIp), m_wanConn->radioAddress());
+            if (udpTarget != QHostAddress(m_wanPublicIp)) {
+                qCInfo(lcProtocol) << "RadioModel: WAN UDP through the NAT64 like the TLS session (an IPv6-only network)";
+            }
+            QMetaObject::invokeMethod(m_panStream, [this, &streamOk, udpTarget]() {
+                streamOk = m_panStream->startWan(udpTarget, m_wanUdpPort);
             }, Qt::BlockingQueuedConnection);
         } else {
             QMetaObject::invokeMethod(m_panStream, [this, &streamOk]() {

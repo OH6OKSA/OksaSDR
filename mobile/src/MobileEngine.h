@@ -15,6 +15,7 @@
 #include "models/TxController.h"
 
 #include <QHash>
+#include <QHostAddress>
 
 #include <functional>
 #include <optional>
@@ -3048,6 +3049,7 @@ private:
     // "wan validate" (Mohammed A71AT's iPad on 5G, 2026-11-16).
     bool m_wanValidateRetried{false};
     bool m_testRefuseFirst{false};   // development: the first remote connection refused
+    QHostAddress m_testNat64Prefix;  // development: the radio's TLS through this NAT64 prefix (OKSASDR_TEST_NAT64)
     QString m_smartLinkState{QStringLiteral("signedOut")};
     // SmartLink accounts (roadmap 62, MobileEngineSmartLink.cpp): the list
     // (id, email, label) in AppSettings, each account's refresh token in the

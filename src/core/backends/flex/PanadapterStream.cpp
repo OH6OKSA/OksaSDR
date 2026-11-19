@@ -431,9 +431,14 @@ bool PanadapterStream::startWan(const QHostAddress& radioAddr, quint16 radioUdpP
     resetAudioStreamStats();
 
     // For WAN: bind to any port. The actual UDP registration happens later
-    // in startWanUdpRegister() once the client handle is known.
+    // in startWanUdpRegister() once the client handle is known. A radio
+    // address in IPv6 (its NAT64 address, see wanUdpTarget) needs an IPv6
+    // socket; every other WAN session binds IPv4 as before.
+    bool mappedV4 = false;
+    radioAddr.toIPv4Address(&mappedV4);
+    const bool ipv6 = radioAddr.protocol() == QAbstractSocket::IPv6Protocol && !mappedV4;
     const bool bound = m_wanBindForTest ? m_wanBindForTest()
-                                      : m_socket->bind(QHostAddress::AnyIPv4, 0);
+                                      : m_socket->bind(ipv6 ? QHostAddress::AnyIPv6 : QHostAddress::AnyIPv4, 0);
     m_wanBoundForTest = m_wanBindForTest && bound;
     if (!bound) {
         qCWarning(lcVita49) << "PanadapterStream: WAN — failed to bind UDP socket:"
@@ -458,6 +463,20 @@ bool PanadapterStream::startWan(const QHostAddress& radioAddr, quint16 radioUdpP
 
     m_conn = nullptr;  // no RadioConnection in WAN mode
     return true;
+}
+
+QHostAddress PanadapterStream::wanUdpTarget(const QHostAddress& publicIp, const QHostAddress& tlsPeer)
+{
+    if (publicIp.protocol() != QAbstractSocket::IPv4Protocol
+        || tlsPeer.protocol() != QAbstractSocket::IPv6Protocol) {
+        return publicIp;
+    }
+    bool mappedV4 = false;
+    tlsPeer.toIPv4Address(&mappedV4);
+    if (mappedV4 || tlsPeer.isLoopback() || tlsPeer.isLinkLocal()) {
+        return publicIp;
+    }
+    return tlsPeer;
 }
 
 void PanadapterStream::startWanUdpRegister(quint32 clientHandle)

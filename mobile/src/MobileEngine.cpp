@@ -90,6 +90,7 @@
 #include <QKeyEvent>
 #include <QPointer>
 #include <QHostAddress>
+#include <QtEndian>
 #include <QHostInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -1786,6 +1787,13 @@ void MobileEngine::wireSmartLink()
     // Development tests: the first remote connection refused before the
     // radio answers (to a closed local port), so the retry runs.
     m_testRefuseFirst = qEnvironmentVariableIsSet("OKSASDR_WAN_REFUSE_FIRST");
+    // Development tests: an IPv6-only network (roadmap 106), as iOS meets it:
+    // the radio's TLS session to its IPv4 address through this NAT64 prefix
+    // (OKSASDR_TEST_NAT64=64:ff9b::), as AppleTlsSocket does from getaddrinfo.
+    m_testNat64Prefix = QHostAddress(qEnvironmentVariable("OKSASDR_TEST_NAT64"));
+    if (m_testNat64Prefix.protocol() != QAbstractSocket::IPv6Protocol) {
+        m_testNat64Prefix.clear();
+    }
     // Development tests: Auth0's HTTPS through a local CONNECT proxy that can
     // leave its kept-alive connections dead (OKSASDR_AUTH_PROXY=HOST:PORT).
     if (const QString proxy = qEnvironmentVariable("OKSASDR_AUTH_PROXY"); proxy.contains(QLatin1Char(':'))) {
@@ -1887,7 +1895,15 @@ void MobileEngine::wireSmartLink()
             m_wan.connectToRadio(QStringLiteral("127.0.0.1"), 1, handle);
             return;
         }
-        m_wan.connectToRadio(m_pendingWan.publicIp, static_cast<quint16>(m_pendingWan.publicTlsPort), handle);
+        QString tlsHost = m_pendingWan.publicIp;
+        const QHostAddress v4(m_pendingWan.publicIp);
+        if (!m_testNat64Prefix.isNull() && v4.protocol() == QAbstractSocket::IPv4Protocol) {
+            Q_IPV6ADDR a = m_testNat64Prefix.toIPv6Address();
+            qToBigEndian<quint32>(v4.toIPv4Address(), &a[12]);
+            tlsHost = QHostAddress(a).toString();
+            qCInfo(lcMobile) << "SmartLink: the radio's TLS through the test NAT64 prefix";
+        }
+        m_wan.connectToRadio(tlsHost, static_cast<quint16>(m_pendingWan.publicTlsPort), handle);
     });
     // The mismatch fires before WanConnection::connected, so it is taken from
     // the connection itself; the connect stays paused until answered.
