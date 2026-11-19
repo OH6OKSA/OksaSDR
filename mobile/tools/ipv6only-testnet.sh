@@ -10,9 +10,9 @@
 #   sudo mobile/tools/ipv6only-testnet.sh status
 #
 # After up, as the user: mobile/tools/nat64-test.py and
-# mobile/tools/dns64-test.py, and programs inside the namespace through its
-# tmux server (no sudo):
-#   tmux -L v6only new-window -d 'COMMAND > LOG 2>&1'
+# mobile/tools/dns64-test.py --no-a, and programs inside the namespace through
+# its tmux server and v6only-run.sh (no sudo; the DNS64 for host names):
+#   tmux -L v6only new-window -d 'mobile/tools/v6only-run.sh COMMAND > LOG 2>&1'
 #
 # Changes while up: IPv4 and IPv6 forwarding on, an nft table ip oksa_nat64
 # (masquerade of the NAT64 pool out of $WAN), an nft table ip6 oksa_dns64
@@ -82,7 +82,7 @@ up)
     ip netns exec "$NS" sudo -H -u "$OWNER" env XDG_RUNTIME_DIR=/run/user/"$(id -u "$OWNER")" \
         tmux -L v6only new-session -d -s v6only
     echo "up: namespace $NS (fd64:64::2, IPv6 only), NAT64 $PREFIX on tun nat64 -> $WAN, DNS fd64:64::1:53 -> :$DNSPORT"
-    echo "next, as $OWNER: mobile/tools/nat64-test.py and mobile/tools/dns64-test.py"
+    echo "next, as $OWNER: mobile/tools/nat64-test.py and mobile/tools/dns64-test.py --no-a"
     ;;
 down)
     wan=$WAN; v4=0; v6=0

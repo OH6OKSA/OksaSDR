@@ -5,6 +5,10 @@ queued, waiting on someone, or still to verify follows.
 
 ## Next build
 
+Build 194, chosen 2026-11-19 (the user: "Nämä Pääsisältö 12 ... Pieni tarkistus samaan buildiin Tune Supp"): **12** the Elecraft KPA500 and KAT500 in use from the start (readings with Operate / Standby, Clear Fault, the KAT500's Tune and antenna; Sergio Landoni LU7YS, his Pico W bridge: raw TCP, one port per device), tested on stand-ins first, then on his devices; **Tune Supp** checked: the app has had Radio Setup › TX Band Settings › "RCA TX1-3 held off during TUNE (the radio's own)" since build 158 (tune_tx_suppress, upstream #6524), shown when the radio reports it: see whether the FLEX reports it and whether it is SmartSDR 4.3.19's Tune TX Suppression, then close the waiting item.
+
+Build 193, released 2026-11-19 straight to everyone (PuJu, the user 2026-11-19: "PuJu ja jätä verkko", after the mail check; a64694fa6; iOS run 193 green in 22 min, Linux green, Android skipped by its gate ("Android: unchanged"), so no Android beta and no release to remove; ASC 193 VALID in Hamsauna and TestGroup, beta review APPROVED, external IN_BETA_TESTING; Michael Walker told by mail with the user's "La kun build valmis"; the FB post https://www.facebook.com/groups/1468327561855382/posts/1497473935607411/ with Michael Walker tagged): **106** follow-up, SmartLink's UDP (audio, panadapter, waterfall, TX audio) through the NAT64 like the TLS on an IPv6-only mobile network, tested before the release on the IPv6-only test network built on the dev VM (kept up, the user: "jätä verkko").
+
 Build 192 / Android beta 104, released 2026-11-19 straight to everyone (PuJu, the user 2026-11-19: "PuJu ja kyllä", after the mail check; 647a302aa + 9674447fb (tnf.jpg anew: the pre-push docs check found the UI changed without a picture); iOS run 192 green, AppleTlsSocket.mm's NAT64 path compiled, TestGroup, beta review APPROVED, external IN_BETA_TESTING; Android 129, Linux 16 green; beta 101's release removed, its tag kept; one FB post for builds 191 and 192: https://www.facebook.com/groups/1468327561855382/posts/1497375038950634/ with Michael Walker and Larry Averbeck tagged): **106** fix, SmartLink on an IPv6-only mobile network through its NAT64 (Michael Walker; the user: "toteuta ja vastaa"); **107** follow-up, the notch panel off the notch on every screen and in 3D (found in beta 103 on the OnePlus Open). Build 191 / Android beta 103, released 2026-11-19 straight to everyone (PuJu, the user 2026-11-19, after the mail check; 723bf77ee; Android 128 and Linux 15 green, beta 100's release removed, its tag kept; iOS run 191: the engine built, but the CI's testflight-notes step failed to add the build to TestGroup (HTTP 404, the build not yet in App Store Connect though What to Test had gone in); added to TestGroup and submitted by hand through the ASC API, beta review APPROVED, external IN_BETA_TESTING; no FB post of its own: one post for build 192 / beta 104, which follows at once) (the user, 2026-11-19: "Otetaan 107 ja 108 mukaan"): **107** the notch panel beside the notch, dragged by its title (Larry Averbeck W9FLA); **108** a × beside Pin Controls in the landscape drawer (Larry Averbeck W9FLA); **83** fixes found after build 190's release (the dial's keyed flag; the Android bridge guard).
 
 Build 190 / Android beta 102, released 2026-11-19 straight to everyone (PuJu, the user 2026-11-19: "PuJu suoraan", after the mail check before the push; iOS run 190 and Android 127 green, the iOS engine compiled AppleTlsSocket.mm's new code; TestGroup, beta review APPROVED, external IN_BETA_TESTING; beta 99's release removed, its tag kept; the FB post https://www.facebook.com/groups/1468327561855382/posts/1497282175626587/ with Christoph Steinert tagged, Rich Yost and Sloan Davis named plain: not members, People search "Yost" / "Sloan" 2026-11-19) (the user, 2026-11-19: 103 "otetaan"; 104 from the devlink check the same day): **103** the KPA1500's fan minimum (− / +, also while transmitting) and its speed on the Amp tab and the meters (Rich Yost N2RY), with the readback asked every cycle until a command shows (all KPA1500 commands); **104** iOS: a Disconnect over SmartLink no longer logged and shown as the radio closing the connection; **105** the App setups Export question's binding loop (the user, 2026-11-19: "Binding loop -korjaus"; then "PuJu suoraan"); **106** iOS: a radio connection the system holds back says why (Michael Walker's "connection failed", found in the mail check before the push; the user: "otetaan ja vastaa"); **83** the Ulanzi Dial as a controller on Radio Setup › MIDI (Android every control, iPad and iPhone the side keys) and **37** Digital max (the user: "83 mukaan 37 mukaan"). Android gets 103, 105, 83 and 37.
@@ -1042,6 +1046,33 @@ Dennis Daniel for the FlexRadio amplifier and tuner):
   holds cannot be bridged at the same time), the Amp tab and meters for the
   KPA500 as for the KPA1500, the KAT500 as a tuner section, control off by
   default and asked first.
+  His second answer (mail 2026-11-19 22:33): the bridge exists and works
+  with AetherSDR's Network option: a Raspberry Pi Pico W (MicroPython, two
+  MAX3232 RS-232 modules) on the station Wi-Fi gives raw TCP to the KPA500
+  on port 2000 and the KAT500 on 2001 (one TCP client per port at a time,
+  the TCP client before the Pico's own web panel on 8080); used remotely
+  from the radio club and while travelling (Clear Fault from AetherSDR
+  saved a KPA500 protection trip after high SWR, hundreds of km away). He
+  also offers the Radio Club de los Andes LU8YE's two FLEX-6300s for tests.
+  So the transport is settled (raw TCP, as upstream's Kpa500Connection /
+  Kat500Model connectToHost); one client per port means AetherSDR on his PC
+  and the phone take turns. Asked him (2026-11-19) how the phone reaches the station LAN
+  when travelling (VPN?).
+  *Decision (the user, 2026-11-19: "Sen verran muutosta että tehdään
+  suoraan käyttöön eli ei pelkkiä lukuhommia")*: no read-only first step;
+  the first build gives the KPA500's readings (power, SWR, temperature,
+  voltage, current, status, faults) on the Amp tab and the meters with
+  Operate / Standby and Clear Fault, and the KAT500's status (SWR, antenna,
+  bypass, mode) with Tune and the antenna, behind Control in Radio Setup ›
+  Amp as the other amplifiers (each asked first, none while transmitting,
+  the tab showing only what the device reads back). Size: upstream's core
+  is about 1 700 lines for the KPA500 (Kpa500Connection, Protocol,
+  FaultHistory, Maintenance) and 1 650 for the KAT500 (Kat500Model,
+  Protocol, TxController, Maintenance), with their tests; on our side the
+  engine part as MobileEngineKpa (about 800 lines), Amp tab and meters,
+  Radio Setup › Amp fields for both addresses, stand-ins for both devices
+  from Elecraft's command references, manual and pictures: one build of
+  its own, tested against the stand-ins, then on Sergio's devices.
 
 ## Waiting
 
