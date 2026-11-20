@@ -9,8 +9,11 @@
 
 #include <algorithm>
 #include <array>
+#include <vector>
 
 #include "NoiseFloorTracker.h"
+#include "core/dsp/SpectralEnvelope.h"
+#include "gui/FftTraceDecomb.h"
 #include "gui/WaterfallLevelMap.h"
 
 
@@ -122,6 +125,17 @@ private:
 
     QPointer<MobileEngine> m_engine;
     QVector<float> m_spectrum;
+    // FFT De-comb and FFT Smooth (roadmap 22, the desktop's Display panel):
+    // a shaped copy of m_spectrum for drawing only; m_spectrum stays for the
+    // levels, the noise floor and the peak finding. m_shaped is false when
+    // both are off, and the trace is drawn from m_spectrum as before.
+    void shapeTrace();
+    const QVector<float>& drawnTrace() const { return m_shaped ? m_drawn : m_spectrum; }
+    QVector<float> m_drawn;
+    bool m_shaped{false};
+    AetherSDR::SpectralEnvelope m_decombEnvelope;
+    AetherSDR::DecombScratch m_decombScratch;
+    std::vector<double> m_smoothScratch;
     // The waterfall ring: m_wfHead is the newest row, older rows follow it
     // (wrapping to the top). Rows written since the last frame wait in
     // m_wfDirtyRows for the GPU; m_wfFullUpload sends the whole picture.

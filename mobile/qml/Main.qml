@@ -177,6 +177,12 @@ ApplicationWindow {
         }
     }
 
+    // A newer Android beta (roadmap 111), over whichever page is shown; the
+    // page gets the keyboard back after it (Space PTT on a tablet).
+    UpdateOffer {
+        onClosed: if (pages.item) pages.item.forceActiveFocus()
+    }
+
     Component { id: connectPage; ConnectPage {} }
     Component { id: operatePage; OperatePage {} }
     Component { id: phoneOperatePage; PhoneOperatePage {} }

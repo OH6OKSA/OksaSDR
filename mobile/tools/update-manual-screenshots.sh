@@ -54,7 +54,7 @@ midi_shots=(setup-midi)
 logging_shots=(setup-logging)
 kpa_shots=(tab-kpa kpa-controls)
 elecraft_shots=(tab-kpa500 kpa500-controls kat500-controls setup-elecraft)
-all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${phone_shots[@]}" phone-landscape bandchooser
+all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${phone_shots[@]}" phone-landscape phone-landscape-bs bandchooser
            "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" "${logging_shots[@]}" "${kpa_shots[@]}" "${elecraft_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
     printf '%s\n' "${all_shots[@]}" | sort -u
@@ -222,6 +222,12 @@ fi
 
 if want phone-landscape; then
     printf 'wait %s\nshot phone-landscape\n' "$FILL" | plan phone-landscape 956x440 "${src[@]}" --controls visible
+fi
+# Landscape with B/S hiding the band and step rows (roadmap 110): the
+# waterfall's buttons in the row under it; B/S ▲ there brings the rows back.
+if want phone-landscape-bs; then
+    printf 'wait %s\ntapname tuneRowsButton\nwait 2500\nshot phone-landscape-bs\ntapname tuneRowsButtonBelow\nwait 1000\n' "$FILL" \
+        | plan phone-landscape-bs 852x393 "${src[@]}"
 fi
 if want bandchooser; then
     printf 'wait %s\npopup bandChooser\nshot bandchooser\n' "$FILL" | plan bandchooser 844x390 "${src[@]}"
@@ -485,6 +491,7 @@ jpg phone-portrait
 jpg big-buttons "" 330x
 jpg big-buttons-log "" 330x
 jpg phone-landscape
+jpg phone-landscape-bs
 if [ -f "$TMP/overview.png" ]; then
     cp "$TMP/overview.png" "$TMP/infopanel.png"
     cp "$TMP/overview.png" "$TMP/slicerow.png"

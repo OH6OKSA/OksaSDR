@@ -46,6 +46,7 @@ qt_add_executable(aether-mobile
     src/MobileEngineOnlineLog.cpp
     src/MobileEngineQrzLog.cpp
     src/MobileEnginePota.cpp
+    src/MobileEngineUpdate.cpp
     src/MobileEngineVoiceLog.cpp
     src/MobileEngineSmartLink.cpp
     src/MobileEngineSharedAdif.cpp
@@ -202,6 +203,7 @@ qt_add_qml_module(aether-mobile
         qml/RadioSetupPage.qml
         qml/BigButtonsView.qml
         qml/SetupSuggestion.qml
+        qml/UpdateOffer.qml
         qml/AddressDialog.qml
         qml/Caret.qml
         qml/MeterBadge.qml
@@ -314,6 +316,18 @@ set(AETHER_MOBILE_TEAM_ID "" CACHE STRING "Apple Developer Team ID that signs ae
 set(AETHER_MOBILE_VERSION_CODE "" CACHE STRING "Android versionCode of aether-mobile (empty: the build number)")
 # The build number in the app too (Log, developer link), to tell builds apart.
 target_compile_definitions(aether-mobile PRIVATE AETHER_MOBILE_BUILD_NUMBER="${AETHER_MOBILE_BUILD_NUMBER}")
+# The newer-version check (roadmap 111, MobileEngineUpdate.cpp): the GitHub
+# APK only. TestFlight, the App Store and Google Play update their builds, so
+# a Play build turns it off.
+if(ANDROID)
+    set(_aether_update_check_default ON)
+else()
+    set(_aether_update_check_default OFF)
+endif()
+option(AETHER_MOBILE_UPDATE_CHECK "Check GitHub for a newer Android beta (the GitHub APK; off for a Play build)" ${_aether_update_check_default})
+if(AETHER_MOBILE_UPDATE_CHECK)
+    target_compile_definitions(aether-mobile PRIVATE AETHER_MOBILE_UPDATE_CHECK)
+endif()
 
 if(ANDROID)
     set(_aether_version_code "${AETHER_MOBILE_VERSION_CODE}")

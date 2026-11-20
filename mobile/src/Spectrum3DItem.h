@@ -32,13 +32,16 @@ class Spectrum3DItem : public QQuickRhiItem {
     Q_PROPERTY(int colorGain READ colorGain WRITE setColorGain NOTIFY levelsChanged)
 
 public:
-    // The desktop's geometry and ring (DssRenderer.h); 512 columns instead of
-    // 768 to spare a phone's GPU, the mesh sized so a widened row still
-    // samples every column.
+    // The desktop's geometry and ring (DssRenderer.h). Columns (roadmap 23):
+    // the desktop's 768 on a tablet or computer, 512 on a phone to spare its
+    // GPU; a GPU too slow at 768 steps down to 512 before the view is
+    // switched off. The mesh is sized so a widened row still samples every
+    // column.
     static constexpr int kVisibleRows = 96;
     static constexpr int kTransitionRows = 8;
     static constexpr int kRows = kVisibleRows + kTransitionRows;  // rowFrames[104] in the shaders
-    static constexpr int kCols = 512;
+    static constexpr int kMaxCols = 768;
+    static constexpr int kPhoneCols = 512;
     static constexpr float kBackWidthFrac = 0.60f;
     static constexpr float kDepthSpanFrac = 0.58f;
     static constexpr float kFrontMaxRidgeFrac = 0.46f;
@@ -46,9 +49,7 @@ public:
     static constexpr float kColorSpanDb = 45.0f;
     static constexpr float kZCurve = 0.70f;
     static constexpr float kMaxRowSpanFactor = 1.0f / kBackWidthFrac;
-    static constexpr int kMeshCols = static_cast<int>(kCols * kMaxRowSpanFactor) + 1;
-    static_assert(static_cast<float>(kMeshCols) >= kCols * kMaxRowSpanFactor,
-                  "the mesh must keep at least one column per texel at the widest row");
+    static constexpr int meshColsFor(int cols) { return static_cast<int>(cols * kMaxRowSpanFactor) + 1; }
     static constexpr int kShadowSlots = 8;
 
     explicit Spectrum3DItem(QQuickItem* parent = nullptr);
@@ -70,8 +71,8 @@ signals:
 
 private:
     friend class Spectrum3DRenderer;
-    using Row = std::array<float, kCols>;
-    using Coverage = std::array<quint8, kCols>;
+    using Row = std::array<float, kMaxCols>;
+    using Coverage = std::array<quint8, kMaxCols>;
 
     void onSpectrum(const QVector<float>& binsDbm);
     void onGpuTooSlow(qint64 frameMs);
@@ -84,6 +85,9 @@ private:
     float scrollProgressRows() const;
 
     QPointer<MobileEngine> m_engine;
+    // Columns in use (kMaxCols or kPhoneCols; the rows' first m_cols hold
+    // data). Chosen when the item is made, lowered once by onGpuTooSlow.
+    int m_cols{kPhoneCols};
     double m_floorDbm{-120.0};
     double m_rangeDb{90.0};
     int m_colorGain{70};

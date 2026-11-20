@@ -629,7 +629,7 @@ Rectangle {
         }
         // In a low panadapter (a phone in landscape) it would lie under the
         // zoom / Band and + Slice / + Pan buttons: then between them.
-        readonly property bool besideButtons: y + height > zoomRow.y - 2
+        readonly property bool besideButtons: !panArea.buttonsBelow && y + height > zoomRow.y - 2
         readonly property Item leftRow: Engine.displayButtonsRight ? addRow : zoomRow
         readonly property Item rightRow: Engine.displayButtonsRight ? zoomRow : addRow
         x: besideButtons ? leftRow.x + leftRow.width + 4 : 0
@@ -930,6 +930,7 @@ Rectangle {
     Row {
         id: zoomRow
         readonly property real stepWidth: (panArea.width - 7 * Theme.spacing / 2) / 8
+        visible: !panArea.buttonsBelow
         z: 5
         // By x, not by swapping anchors at run time: a phone that switched
         // kept + Pan over the zoom buttons.
@@ -1006,6 +1007,13 @@ Rectangle {
     property bool bandPicker: false
     // Set by a page whose band row and step buttons B/S hides.
     property bool tuneRowsToggle: false
+    // Set by a page that carries − + Band B/S and + Slice / + Pan in its own
+    // row below (a phone in landscape with B/S off, Evgeny R0ACS): the
+    // waterfall is then free its whole height.
+    property bool buttonsBelow: false
+    // The width of − and + (and the least of + Slice / + Pan), for that row.
+    readonly property real cornerButtonWidth: Math.max(32, zoomRow.stepWidth / 2 - 1)
+    function openBandChooser() { bandChooser.open() }
     Popup {
         id: bandChooser
         objectName: "bandChooser"
@@ -1139,7 +1147,7 @@ Rectangle {
             model: [{ label: qsTr("+ Slice"), pan: false }, { label: qsTr("+ Pan"), pan: true }]
             delegate: AppButton {
                 required property var modelData
-                visible: modelData.pan ? Engine.canAddPanadapter : Engine.canAddSlice
+                visible: !panArea.buttonsBelow && (modelData.pan ? Engine.canAddPanadapter : Engine.canAddSlice)
                 text: modelData.label
                 font.pixelSize: Math.round(Theme.buttonFont * 0.85)
                 leftPadding: 2

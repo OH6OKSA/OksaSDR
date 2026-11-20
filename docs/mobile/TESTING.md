@@ -103,7 +103,9 @@ The Android beta needs no invitation: download it and install it.
    and PTT can transmit (see the [manual](MANUAL.md#13-android)).
 
 You need Android 9 or newer on a 64-bit ARM phone or tablet. A newer beta
-installs over the old one. The number in brackets after the version in the
+installs over the old one; from beta 107 the app tells you when one is out
+(*Android beta N is out*, **Download**), and Controls › View › New versions
+shows the last check. The number in brackets after the version in the
 app's top row is the beta's: (35) for beta 35 (on the iPhone and iPad it is
 the TestFlight build). Report problems the same way as on the iPhone
 (*Log → Share* or *Copy*), and say "Android", your phone model and Android

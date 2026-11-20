@@ -835,6 +835,7 @@ MobileEngine::MobileEngine(QObject* parent)
     setupDigi();
     setupOnlineLog();
     setupParkSpots();
+    setupUpdateCheck();
     setupQrzLog();
     setupSharedAdif();
     setupLogger32();

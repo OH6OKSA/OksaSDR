@@ -156,6 +156,19 @@ class MobileEngine : public QObject {
     Q_PROPERTY(int uiFps READ uiFps NOTIFY performanceChanged)
     // "26.10.1 (54)": app version and TestFlight build, for the header.
     Q_PROPERTY(QString appVersion READ appVersion CONSTANT)
+    // A newer Android beta on GitHub (roadmap 111; MobileEngineUpdate.cpp):
+    // built into the GitHub APK only (TestFlight, the App Store and Play
+    // update theirs). updateCheck is the switch (on by default), ownBeta the
+    // app's beta, updateBeta a newer one found (0: none), updateOffered while
+    // it is not dismissed, updateStatus the last read in a line.
+    Q_PROPERTY(bool updateCheckBuilt READ updateCheckBuilt CONSTANT)
+    Q_PROPERTY(bool updateCheck READ updateCheck WRITE setUpdateCheck NOTIFY updateChanged)
+    Q_PROPERTY(int ownBeta READ ownBeta CONSTANT)
+    Q_PROPERTY(int updateBeta READ updateBeta NOTIFY updateChanged)
+    Q_PROPERTY(bool updateOffered READ updateOffered NOTIFY updateChanged)
+    Q_PROPERTY(QString updateApkUrl READ updateApkUrl NOTIFY updateChanged)
+    Q_PROPERTY(QString updateNotesUrl READ updateNotesUrl NOTIFY updateChanged)
+    Q_PROPERTY(QString updateStatus READ updateStatus NOTIFY updateChanged)
     // The online manual (docs/mobile/MANUAL.md on the fork's GitHub).
     Q_PROPERTY(QString manualUrl READ manualUrl CONSTANT)
     // The operator's callsign (the radio's; {CALL} in CW memories).
@@ -664,6 +677,12 @@ class MobileEngine : public QObject {
     Q_PROPERTY(int spectrum3DFloorDepth READ spectrum3DFloorDepth WRITE setSpectrum3DFloorDepth NOTIFY displayLevelsChanged)
     Q_PROPERTY(int spectrum3DGain READ spectrum3DGain WRITE setSpectrum3DGain NOTIFY displayLevelsChanged)
     Q_PROPERTY(int spectrum3DSmoothing READ spectrum3DSmoothing WRITE setSpectrum3DSmoothing NOTIFY displayLevelsChanged)
+    // FFT Smooth and De-comb (roadmap 22, the desktop's Display panel): the
+    // 2D trace only, display only. Smooth: each point the linear-power mean
+    // of its neighbours within N logical px (0 off); De-comb: an SSB voice's
+    // comb of pitch harmonics up to N Hz apart drawn as its envelope (0 off).
+    Q_PROPERTY(int fftSmoothing READ fftSmoothing WRITE setFftSmoothing NOTIFY displayLevelsChanged)
+    Q_PROPERTY(int fftDecombHz READ fftDecombHz WRITE setFftDecombHz NOTIFY displayLevelsChanged)
     // Each meter's style, remembered: "analog" (arc and needle, also while
     // transmitting), "bar" (one bar) or "two" (two bars, one over the
     // other, each with its own receive and transmit choice: three or four
@@ -967,6 +986,18 @@ public:
     Q_INVOKABLE void showHints();
     Q_INVOKABLE void dismissSetupSuggestion();
     QString appVersion() const;
+    bool updateCheckBuilt() const;
+    bool updateCheck() const;
+    void setUpdateCheck(bool on);
+    int ownBeta() const;
+    int updateBeta() const { return m_updateBeta; }
+    bool updateOffered() const;
+    QString updateApkUrl() const { return m_updateApkUrl; }
+    QString updateNotesUrl() const { return m_updateNotesUrl; }
+    QString updateStatus() const { return m_updateStatus; }
+    Q_INVOKABLE void checkForUpdate();
+    // Later on the offer: not offered again until a newer beta.
+    Q_INVOKABLE void dismissUpdate();
     QString manualUrl() const;
     // Writes the callsign to the radio (`radio callsign`, as SmartSDR's Radio
     // Setup) and keeps the client-side copy in step.
@@ -1716,6 +1747,14 @@ public:
     // desktop's (median of three rows, column pass, 40 % previous row).
     int spectrum3DSmoothing() const { return displayInt("Mobile3DSmoothing", 1); }
     void setSpectrum3DSmoothing(int v) { setDisplayInt("Mobile3DSmoothing", std::clamp(v, 0, 2)); }
+    // The desktop's limits (kFftSmoothingMaxHalfWidthPx, kFftDecombMaxHz;
+    // SpectrumItem.cpp asserts they match).
+    static constexpr int kFftSmoothMaxPx = 16;
+    static constexpr int kFftDecombMaxHz = 600;
+    int fftSmoothing() const { return std::clamp(displayInt("MobileFftSmoothing", 0), 0, kFftSmoothMaxPx); }
+    void setFftSmoothing(int px) { setDisplayInt("MobileFftSmoothing", std::clamp(px, 0, kFftSmoothMaxPx)); }
+    int fftDecombHz() const { return std::clamp(displayInt("MobileFftDecombHz", 0), 0, kFftDecombMaxHz); }
+    void setFftDecombHz(int hz) { setDisplayInt("MobileFftDecombHz", std::clamp(hz, 0, kFftDecombMaxHz)); }
     bool analogMeters() const { return analogLeft() && analogRight(); }
     void setAnalogMeters(bool on) { setMeterAnalog(QStringLiteral("left"), on); setMeterAnalog(QStringLiteral("right"), on); }
     // side "left" / "right" (or their lower bars "left2" / "right2").
@@ -2185,6 +2224,7 @@ signals:
     void voiceHeard(const QString& call, const QString& report);
     void potaSpotChanged();
     void parkSpotsChanged();
+    void updateChanged();
     void profilesChanged();
     void appSetupsChanged();
     void agcAutoChanged();
@@ -2984,6 +3024,14 @@ private:
         qint64 untilMs{0};
     };
     QTimer m_parkSpotTimer;
+    // The newer-version check (roadmap 111).
+    QTimer m_updateTimer;
+    int m_updateBeta{0};
+    QString m_updateApkUrl;
+    QString m_updateNotesUrl;
+    QString m_updateStatus;
+    void setupUpdateCheck();
+    void readLatestRelease(const QByteArray& body);
     QSet<QString> m_parkSpotSent;           // "POTA:<spotId>", "WWFF:<id>"
     QHash<QString, ParkSpot> m_parkSpots;   // by activator call
     QHash<QString, int> m_parkSpotCount;      // program -> activators listed at its last read

@@ -12,7 +12,8 @@ The app collects no personal data. Nothing you do in the app is sent to the
 developer. It connects to a third-party service only when you use a feature
 that needs it (SmartLink, QRZ.com, a DX cluster, POTA, WWFF, PSK Reporter, your
 own Wavelog or Cloudlog logbook, Logger32 on your PC, your amplifier, a time
-server for FT8 / FT4), as listed below.
+server for FT8 / FT4, and on Android GitHub for new versions), as listed
+below.
 
 ## Network use
 
@@ -126,6 +127,13 @@ these services:
   asks for is kept only in this device's secure store (iOS Keychain,
   Android Keystore, the desktop's keyring on Linux) once the device has
   accepted it.
+- **GitHub, for new versions** (the Android app from GitHub only), unless
+  turned off in Controls › View › New versions: at start and about once a
+  day the app reads the latest release from GitHub's public API, to offer a
+  newer beta. GitHub sees your device's address and the name "OksaSDR",
+  nothing else. Download opens the release in your browser. The iPhone,
+  iPad and Mac app does not do this (TestFlight and the App Store update
+  it), nor would a Google Play build.
 - **Developer link** (hidden on the Log page, under a press and hold on its
   title), off unless turned on: for the developer's
   own devices; it sends the app's log, and screenshots when asked, to the
@@ -227,4 +235,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-11-18 (the microphone with VOX and for the TX tab's meter; earlier: speech recognition on the device everywhere, SmartLink accounts and favourites, Bluetooth MIDI search on Android; the Elecraft KPA1500, Bluetooth MIDI controllers, App setups)
+Last updated: 2026-11-20 (Android: GitHub for new versions; earlier: the microphone with VOX and for the TX tab's meter, speech recognition on the device everywhere, SmartLink accounts and favourites, Bluetooth MIDI search on Android; the Elecraft KPA1500, Bluetooth MIDI controllers, App setups)

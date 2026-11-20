@@ -66,7 +66,8 @@ radio interface, with no computer running alongside.
 **Receive**
 - Live panadapter and waterfall, or the 3D stacked trace: the desktop's
   3DSS renderer and shaders, drawn on the GPU (Metal on Apple devices,
-  OpenGL ES on Android). Spectrum,
+  OpenGL ES on Android), with the desktop's 768 frequency columns on a
+  tablet or computer and 512 on a phone (build 196). Spectrum,
   waterfall and 3D levels follow the noise floor as on the desktop. Tap to tune (snapped to the tuning step). Drag inside the
   filter passband to tune, anywhere else to move the view, as on the
   desktop; while tuning, holding the finger at either edge keeps scrolling,
@@ -77,11 +78,15 @@ radio interface, with no computer running alongside.
 - dBm scale on the spectrum: drag it up or down to move the trace, as
   the reference level in SmartSDR and AetherSDR.
 - Waterfall black level and colour gain, the spectrum's reference level
-  and range (or Auto), and the 3D floor, gain and smoothing in the View
-  tab, remembered on the device; plus the radio's own FFT average, FFT
-  frames/s and waterfall speed.
+  and range (or Auto), the desktop's **FFT smooth** and **De-comb** for
+  the 2D trace (build 196: De-comb draws a zoomed-in SSB voice as one
+  outline instead of a comb of its pitch harmonics), and the 3D floor,
+  gain and smoothing in the View tab, remembered on the device; plus the
+  radio's own FFT average, FFT frames/s and waterfall speed.
 - **Band** beside −/+ zooms out to the whole band. View › Zoom buttons
-  puts −/+, Band and B/S at the right for a right hand.
+  puts −/+, Band and B/S at the right for a right hand. In landscape with
+  B/S hiding the band and step rows, these buttons move into the row under
+  the waterfall (build 196).
 - RF gain; the radio's memory channels (recall, save, edit name,
   frequency and mode, delete).
 - **Spots and DX cluster**: the radio's spots (from every program on it)
@@ -168,8 +173,9 @@ radio interface, with no computer running alongside.
   the radio's own ATU bypassed, the tuner's full search with the radio's
   TUNE carrier at 10-100 W, stopped once tuned); each confirmed first and
   none while the radio transmits. Experimental: the KPA500's readings,
-  Operate / Standby and band following used on a tester's amplifier, the
-  rest against simulators; no responsibility is taken for any problems
+  Operate / Standby and band following and both devices' power used on a
+  tester's own, the KAT500's other controls and its tune against
+  simulators; no responsibility is taken for any problems
   using OksaSDR may cause to your equipment.
 - **Keying an amplifier from Radio Setup**, as in SmartSDR, so no other
   program is needed: on Transmit each keying output's delay after PTT
@@ -467,7 +473,8 @@ landscape and Android pictures are taken from the devices.</sub>
   **[the latest release](https://github.com/OH6OKSA/OksaSDR/releases/latest)** and install it
   (Android 9 or newer, 64-bit ARM); the
   [tester guide](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md#android)
-  has the steps.
+  has the steps. From beta 107 the app tells you when a newer beta is out
+  (View › New versions; it asks GitHub once a day).
 - **Build it yourself.** Linux or macOS works for development with the
   built-in demo radio; see [`mobile/README.md`](mobile/README.md):
 

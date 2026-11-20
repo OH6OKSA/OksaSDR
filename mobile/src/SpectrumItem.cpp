@@ -5,6 +5,7 @@
 #include "MobileEngine.h"
 #include "SpectrumPalette.h"
 #include "gui/NoiseFloorEstimator.h"
+#include "gui/FftTraceSmoothing.h"
 
 #include <QDateTime>
 #include <QLoggingCategory>
@@ -40,6 +41,9 @@ constexpr qint64 kLevelLogIntervalMs = 30000;
 constexpr float kNoiseTargetFraction = 0.75f;
 // Trace averaging, the desktop's SMOOTH_ALPHA (share of the new frame).
 constexpr float kTraceAverage = 0.35f;
+static_assert(MobileEngine::kFftSmoothMaxPx == AetherSDR::kFftSmoothingMaxHalfWidthPx,
+              "FFT Smooth's limit as the desktop's");
+static_assert(MobileEngine::kFftDecombMaxHz == AetherSDR::kFftDecombMaxHz, "De-comb's limit as the desktop's");
 // Row interval for the TX waterfall drawn from trace frames.
 constexpr qint64 kTxRowIntervalMs = 100;
 // Waterfall rows dropped after a transmission while the AGC settles.
@@ -325,6 +329,7 @@ void SpectrumItem::onSpectrum(const QVector<float>& binsDbm)
             m_spectrum[i] = kTraceAverage * raw.at(i) + (1.0f - kTraceAverage) * m_spectrum.at(i);
         }
     }
+    shapeTrace();
     if (m_wasTransmitting && !transmitting) {
         m_txEndMs = nowMs;
     }
@@ -584,6 +589,37 @@ WaterfallLevelMap::Params SpectrumItem::waterfallParams(float autoBlack) const
     return p;
 }
 
+void SpectrumItem::shapeTrace()
+{
+    // As the desktop's SpectrumWidget::shapeFftTrace: De-comb, then Smooth,
+    // on the source bins. De-comb's width is in Hz (a voice's comb is a fixed
+    // spacing at any zoom), Smooth's in the trace's logical px, turned into
+    // bins here.
+    const int smoothPx = m_engine ? m_engine->fftSmoothing() : 0;
+    const int decombHz = m_engine ? m_engine->fftDecombHz() : 0;
+    const qsizetype n = m_spectrum.size();
+    const double bandwidthHz = m_frameBandwidthMhz * 1.0e6;
+    m_shaped = false;
+    if ((smoothPx <= 0 && decombHz <= 0) || n < 4 || !(bandwidthHz > 0.0)) {
+        return;
+    }
+    m_drawn = m_spectrum;
+    const std::span<float> bins(m_drawn.data(), static_cast<std::size_t>(n));
+    const double hzPerBin = bandwidthHz / static_cast<double>(n);
+    const double windowPoints = AetherSDR::decombWindowPoints(hzPerBin, decombHz);
+    if (windowPoints > 0.0) {
+        // Without the FFTW planner lock for a new length this frame is drawn
+        // without De-comb; the next one tries again.
+        AetherSDR::decombTrace(bins, windowPoints, m_decombEnvelope, m_decombScratch);
+    }
+    if (smoothPx > 0 && width() >= 2.0) {
+        const double hzPerPx = bandwidthHz / width();
+        const int halfPoints = static_cast<int>(std::lround(smoothPx * hzPerPx / hzPerBin));
+        AetherSDR::smoothFftTraceLinearPower(bins, bins, halfPoints, m_smoothScratch);
+    }
+    m_shaped = true;
+}
+
 void SpectrumItem::followView()
 {
     if (!m_engine || m_waterfall.isNull() || m_engine->panBandwidthMhz() <= 0.0) {
@@ -802,12 +838,13 @@ void SpectrumItem::drawTrace(QPainter* painter, qreal w, qreal specH) const
         painter->drawLine(QPointF(0, y), QPointF(w, y));
     }
 
-    if (m_spectrum.size() > 1) {
+    const QVector<float>& trace = drawnTrace();
+    if (trace.size() > 1) {
         QPainterPath path;
-        const qsizetype n = m_spectrum.size();
+        const qsizetype n = trace.size();
         for (qsizetype i = 0; i < n; ++i) {
             const qreal x = w * i / (n - 1);
-            const float norm = (m_spectrum.at(i) - m_traceBottom) / (m_traceTop - m_traceBottom);
+            const float norm = (trace.at(i) - m_traceBottom) / (m_traceTop - m_traceBottom);
             const qreal y = specH * (1.0 - std::clamp(norm, 0.0f, 1.0f));
             if (i == 0) {
                 path.moveTo(x, y);
@@ -1083,7 +1120,8 @@ QSGNode* SpectrumItem::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData*)
                 node->grid[i - 1]->setRect(QRectF(0, specH * i / kGridLines, w, 1));
             }
             node->centre->setRect(QRectF(0, specH, w, 1));
-            const qsizetype n = m_spectrum.size() > 1 ? m_spectrum.size() : 0;
+            const QVector<float>& trace = drawnTrace();
+            const qsizetype n = trace.size() > 1 ? trace.size() : 0;
             QSGGeometry* fill = node->fill->geometry();
             QSGGeometry* line = node->line->geometry();
             fill->allocate(static_cast<int>(2 * n));
@@ -1091,7 +1129,7 @@ QSGNode* SpectrumItem::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData*)
             if (n > 0) {
                 QVarLengthArray<QPointF, 2048> points(n);
                 for (qsizetype i = 0; i < n; ++i) {
-                    const float norm = (m_spectrum.at(i) - m_traceBottom) / (m_traceTop - m_traceBottom);
+                    const float norm = (trace.at(i) - m_traceBottom) / (m_traceTop - m_traceBottom);
                     points[i] = QPointF(w * i / (n - 1), specH * (1.0 - std::clamp(norm, 0.0f, 1.0f)));
                 }
                 // Fill: a strip from the trace down to the bottom, each

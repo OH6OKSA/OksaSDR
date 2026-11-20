@@ -35,6 +35,9 @@ Page {
     // flow along the lines, wrapping only where the room ends; the two-row
     // phone header left half of each row empty there.
     readonly property bool flowHeader: !landscape && width >= 480
+    // Landscape with B/S off: the waterfall's corner buttons sit in the
+    // step row below it (Evgeny R0ACS).
+    readonly property bool panButtonsBelow: landscape && !Engine.tuneRowsShown
     // CW paddles on a phone: dit at the left edge and dah at the right, the
     // Controls button between (portrait) or the step buttons (landscape), so
     // each thumb keys its own paddle. The halves share this state.
@@ -319,9 +322,11 @@ Page {
             }
 
             PanadapterView {
+                id: pan
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 rfLabelWidth: sliceBar.rightMeterWidth
+                buttonsBelow: page.panButtonsBelow
                 // The band row is left out there, or hidden by B/S: Band
                 // picks the bands.
                 bandPicker: (page.landscape && Theme.tightHeight) || !Engine.tuneRowsShown
@@ -372,10 +377,85 @@ Page {
                     }
                 }
                 // With the steps hidden the controls button and PTT stay at
-                // the right, where the thumb finds them.
-                Item {
+                // the right, where the thumb finds them. In landscape the
+                // waterfall's corner buttons come down into the room the
+                // steps left (Evgeny R0ACS): − + Band B/S on the zoom
+                // buttons' side, + Slice / + Pan on the other, mirrored by
+                // View › Zoom buttons as on the waterfall.
+                RowLayout {
                     visible: !Engine.tuneRowsShown
                     Layout.fillWidth: true
+                    spacing: 2
+                    layoutDirection: Engine.displayButtonsRight ? Qt.RightToLeft : Qt.LeftToRight
+                    Repeater {
+                        model: page.panButtonsBelow
+                               ? (Engine.displayButtonsRight
+                                  ? [{ label: "+", factor: 0.5 }, { label: "−", factor: 2.0 }]
+                                  : [{ label: "−", factor: 2.0 }, { label: "+", factor: 0.5 }])
+                               : []
+                        delegate: AppButton {
+                            required property var modelData
+                            objectName: modelData.factor > 1 ? "zoomOutButtonBelow" : "zoomInButtonBelow"
+                            text: modelData.label
+                            Accessible.name: modelData.factor > 1 ? qsTr("Zoom out") : qsTr("Zoom in")
+                            font.pixelSize: Math.round(Theme.buttonFont * 1.3)
+                            padding: 0
+                            focusPolicy: Qt.NoFocus
+                            Layout.preferredWidth: pan.cornerButtonWidth
+                            Layout.preferredHeight: Theme.touchTarget
+                            onClicked: Engine.zoom(modelData.factor)
+                        }
+                    }
+                    AppButton {
+                        objectName: "bandZoomButtonBelow"
+                        visible: page.panButtonsBelow
+                        text: qsTr("Band")
+                        checked: !!Engine.panDisplay.bandZoom
+                        font.pixelSize: Math.round(Theme.buttonFont * 0.85)
+                        leftPadding: 8
+                        rightPadding: 8
+                        focusPolicy: Qt.NoFocus
+                        Layout.preferredHeight: Theme.touchTarget
+                        onClicked: pan.openBandChooser()
+                    }
+                    AppButton {
+                        objectName: "tuneRowsButtonBelow"
+                        visible: page.panButtonsBelow
+                        text: qsTr("B/S ▲")
+                        Accessible.name: qsTr("Band row and step buttons")
+                        Accessible.description: qsTr("Hidden; tap to show them")
+                        font.pixelSize: Math.round(Theme.buttonFont * 0.85)
+                        leftPadding: 8
+                        rightPadding: 8
+                        focusPolicy: Qt.NoFocus
+                        Layout.preferredHeight: Theme.touchTarget
+                        onClicked: Engine.tuneRowsShown = true
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Theme.radius
+                            color: "transparent"
+                            border.color: Theme.warning
+                            border.width: 2
+                        }
+                    }
+                    Item { Layout.fillWidth: true }
+                    Repeater {
+                        model: page.panButtonsBelow
+                               ? [{ label: qsTr("+ Slice"), pan: false }, { label: qsTr("+ Pan"), pan: true }]
+                               : []
+                        delegate: AppButton {
+                            required property var modelData
+                            visible: modelData.pan ? Engine.canAddPanadapter : Engine.canAddSlice
+                            text: modelData.label
+                            font.pixelSize: Math.round(Theme.buttonFont * 0.85)
+                            leftPadding: 2
+                            rightPadding: 2
+                            focusPolicy: Qt.NoFocus
+                            Layout.preferredWidth: Math.max(pan.cornerButtonWidth, implicitContentWidth + 6)
+                            Layout.preferredHeight: Theme.touchTarget
+                            onClicked: modelData.pan ? Engine.addPanadapter() : Engine.addSlice()
+                        }
+                    }
                 }
                 // Landscape: the macros, the controls button and PTT end
                 // this row, so the low screen keeps its height for the

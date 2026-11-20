@@ -191,6 +191,46 @@ ColumnLayout {
             onClicked: Engine.showHints()
         }
     }
+    // New Android betas from GitHub (roadmap 111): only in the GitHub APK
+    // (TestFlight, the App Store and Play update theirs).
+    RowLayout {
+        visible: Engine.updateCheckBuilt
+        Layout.fillWidth: true
+        Label {
+            text: qsTr("New versions")
+            color: Theme.textDim
+            font.pixelSize: Theme.px(15)
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+        }
+        AppButton {
+            objectName: "updateCheckOn"
+            text: Engine.updateCheck ? qsTr("On") : qsTr("Off")
+            checked: Engine.updateCheck
+            Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.updateCheck = !Engine.updateCheck
+        }
+    }
+    Label {
+        visible: Engine.updateCheckBuilt
+        Layout.fillWidth: true
+        text: (Engine.updateCheck
+               ? qsTr("Asks GitHub once a day whether a newer beta is out (GitHub sees this device's address). ")
+               : qsTr("Off: no new beta is looked for. "))
+              + Engine.updateStatus
+        color: Theme.textDim
+        font.pixelSize: Theme.px(13)
+        wrapMode: Text.Wrap
+    }
+    AppButton {
+        objectName: "updateDownload"
+        visible: Engine.updateCheckBuilt && Engine.updateBeta > 0
+        text: qsTr("Download beta %1").arg(Engine.updateBeta)
+        Layout.fillWidth: true
+        focusPolicy: Qt.NoFocus
+        onClicked: Qt.openUrlExternally(Engine.updateApkUrl)
+    }
     // Spots on the display (the radio's, from every client) and this app's
     // DX cluster connection, whose spots go to the radio.
     RowLayout {
@@ -565,5 +605,43 @@ ColumnLayout {
         from: 20; to: 150; stepSize: 5
         value: Engine.traceRangeDb
         onMoved: Engine.traceRangeDb = Math.round(value)
+    }
+    // The desktop's FFT Smooth and De-comb (roadmap 22): the 2D trace only,
+    // so hidden with 3D on. Smooth evens the noise across frequency (linear
+    // power, the floor not pulled down); De-comb draws a zoomed-in SSB
+    // voice's comb of pitch harmonics as one outline. 0 is Off.
+    Label {
+        visible: !Engine.spectrum3D
+        text: Engine.fftSmoothing > 0 ? qsTr("FFT smooth  %1 px").arg(Engine.fftSmoothing) : qsTr("FFT smooth  Off")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(15)
+    }
+    AppSlider {
+        objectName: "fftSmoothSlider"
+        Accessible.name: qsTr("FFT smooth")
+        Accessible.onIncreaseAction: { increase(); moved() }
+        Accessible.onDecreaseAction: { decrease(); moved() }
+        visible: !Engine.spectrum3D
+        Layout.fillWidth: true
+        from: 0; to: 16; stepSize: 1
+        value: Engine.fftSmoothing
+        onMoved: Engine.fftSmoothing = Math.round(value)
+    }
+    Label {
+        visible: !Engine.spectrum3D
+        text: Engine.fftDecombHz > 0 ? qsTr("De-comb  %1 Hz").arg(Engine.fftDecombHz) : qsTr("De-comb  Off")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(15)
+    }
+    AppSlider {
+        objectName: "fftDecombSlider"
+        Accessible.name: qsTr("De-comb")
+        Accessible.onIncreaseAction: { increase(); moved() }
+        Accessible.onDecreaseAction: { decrease(); moved() }
+        visible: !Engine.spectrum3D
+        Layout.fillWidth: true
+        from: 0; to: 600; stepSize: 10
+        value: Engine.fftDecombHz
+        onMoved: Engine.fftDecombHz = Math.round(value)
     }
 }

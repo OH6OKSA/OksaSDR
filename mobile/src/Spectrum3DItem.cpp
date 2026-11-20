@@ -11,6 +11,7 @@
 #include <QDateTime>
 #include <QFile>
 #include <QGuiApplication>
+#include <QScreen>
 #include <QLoggingCategory>
 #include <QQuickWindow>
 #include <rhi/qrhi.h>
@@ -28,7 +29,7 @@ Q_LOGGING_CATEGORY(lcSpectrum3D, "aether.mobile.spectrum3d")
 
 namespace {
 
-using Row = std::array<float, Spectrum3DItem::kCols>;
+using Row = std::array<float, Spectrum3DItem::kMaxCols>;
 
 // Temporal blend (share of the new row): the desktop's kTemporalAlpha, and
 // the light setting's.
@@ -50,8 +51,16 @@ constexpr int kRowFramesOffset = kShadowMetaOffset + 4;
 constexpr int kUboFloats = kRowFramesOffset + Spectrum3DItem::kRows * 4;
 static_assert(kUboFloats == 96 + Spectrum3DItem::kRows * 4, "dss_mesh uniform block layout");
 static_assert(Spectrum3DItem::kRows == 104, "dss_mesh declares rowFrames[104]");
+static_assert(static_cast<float>(Spectrum3DItem::meshColsFor(Spectrum3DItem::kPhoneCols))
+                      >= Spectrum3DItem::kPhoneCols * Spectrum3DItem::kMaxRowSpanFactor
+                  && static_cast<float>(Spectrum3DItem::meshColsFor(Spectrum3DItem::kMaxCols))
+                      >= Spectrum3DItem::kMaxCols * Spectrum3DItem::kMaxRowSpanFactor,
+              "the mesh must keep at least one column per texel at the widest row");
 // Two triangles per column, two crossfade layers (fill and ribbon alike).
-constexpr int kVerticesPerRow = (Spectrum3DItem::kMeshCols - 1) * 6 * 2;
+constexpr int verticesPerRow(int meshCols)
+{
+    return (meshCols - 1) * 6 * 2;
+}
 const QColor kBackground(QStringLiteral("#0b0f14"));
 
 QShader loadShader(const QString& path)
@@ -73,17 +82,18 @@ bool sameFrame(double c1, double b1, double c2, double b2)
     return near(c1, c2) && near(b1, b2);
 }
 
-// Peak of each column's bins (DssRenderer's resampledRawRow).
-Row resampled(const QVector<float>& bins, float fallback)
+// Peak of each column's bins (DssRenderer's resampledRawRow), the first
+// `cols` columns.
+Row resampled(const QVector<float>& bins, float fallback, int cols)
 {
     Row row;
+    row.fill(fallback);
     const int n = static_cast<int>(bins.size());
     if (n <= 0) {
-        row.fill(fallback);
         return row;
     }
-    const double step = static_cast<double>(n) / Spectrum3DItem::kCols;
-    for (int c = 0; c < Spectrum3DItem::kCols; ++c) {
+    const double step = static_cast<double>(n) / cols;
+    for (int c = 0; c < cols; ++c) {
         const int i0 = std::clamp(static_cast<int>(std::floor(c * step)), 0, n - 1);
         const int i1 = std::clamp(static_cast<int>(std::ceil((c + 1) * step)), i0 + 1, n);
         float peak = std::isfinite(bins[i0]) ? bins[i0] : fallback;
@@ -102,7 +112,7 @@ Row resampled(const QVector<float>& bins, float fallback)
 // previous row when it shows the same frequencies. Level 1 keeps only a light
 // blend, so narrow dips (gaps in a voice's spectrum) stay visible; level 0
 // draws the rows raw, as live as the 2D trace.
-Row smoothRow(const Row& raw, Row& prev1, Row& prev2, int& histCount, const Row* previous, int level)
+Row smoothRow(const Row& raw, Row& prev1, Row& prev2, int& histCount, const Row* previous, int level, int cols)
 {
     if (level <= 0) {
         histCount = 0;
@@ -112,7 +122,7 @@ Row smoothRow(const Row& raw, Row& prev1, Row& prev2, int& histCount, const Row*
         histCount = 0;
         Row blended = raw;
         if (previous) {
-            for (int c = 0; c < Spectrum3DItem::kCols; ++c) {
+            for (int c = 0; c < cols; ++c) {
                 blended[c] = kLightTemporalAlpha * raw[c] + (1.0f - kLightTemporalAlpha) * (*previous)[c];
             }
         }
@@ -120,7 +130,7 @@ Row smoothRow(const Row& raw, Row& prev1, Row& prev2, int& histCount, const Row*
     }
     Row row = raw;
     if (histCount >= 2) {
-        for (int c = 0; c < Spectrum3DItem::kCols; ++c) {
+        for (int c = 0; c < cols; ++c) {
             row[c] = median3(raw[c], prev1[c], prev2[c]);
         }
     }
@@ -128,12 +138,11 @@ Row smoothRow(const Row& raw, Row& prev1, Row& prev2, int& histCount, const Row*
     prev1 = raw;
     histCount = std::min(histCount + 1, 2);
     Row smoothed = row;
-    for (int c = 0; c < Spectrum3DItem::kCols; ++c) {
-        smoothed[c] = 0.25f * row[std::max(0, c - 1)] + 0.5f * row[c]
-            + 0.25f * row[std::min(Spectrum3DItem::kCols - 1, c + 1)];
+    for (int c = 0; c < cols; ++c) {
+        smoothed[c] = 0.25f * row[std::max(0, c - 1)] + 0.5f * row[c] + 0.25f * row[std::min(cols - 1, c + 1)];
     }
     if (previous) {
-        for (int c = 0; c < Spectrum3DItem::kCols; ++c) {
+        for (int c = 0; c < cols; ++c) {
             smoothed[c] = kTemporalAlpha * smoothed[c] + (1.0f - kTemporalAlpha) * (*previous)[c];
         }
     }
@@ -144,14 +153,28 @@ Row smoothRow(const Row& raw, Row& prev1, Row& prev2, int& histCount, const Row*
 
 class Spectrum3DRenderer : public QQuickRhiItemRenderer {
 public:
+    // The item's columns at creation, so the first resources are made at
+    // that size (initialize comes before the first synchronize).
+    explicit Spectrum3DRenderer(int cols)
+        : m_cols(cols)
+    {
+    }
     void initialize(QRhiCommandBuffer* cb) override;
     void synchronize(QQuickRhiItem* item) override;
     void render(QRhiCommandBuffer* cb) override;
 
 private:
     void writeTextureRow(const Spectrum3DItem* item, int ring);
+    // The buffers, textures and pipelines for m_cols columns (from
+    // initialize, and from render when the item's columns changed).
+    void buildResources();
+    void releaseResources();
 
     QRhi* m_rhi{nullptr};
+    // The item's columns as last synchronized, and those the GPU resources
+    // were made for.
+    int m_cols;
+    int m_builtCols{0};
     std::unique_ptr<QRhiBuffer> m_fillVbuf;
     std::unique_ptr<QRhiBuffer> m_lineVbuf;
     std::unique_ptr<QRhiBuffer> m_ubuf;
@@ -191,6 +214,24 @@ Spectrum3DItem::Spectrum3DItem(QQuickItem* parent)
     : QQuickRhiItem(parent)
 {
     setAlphaBlending(false);
+    // 768 columns where the view can be wide: a screen whose shorter side is
+    // 600 logical px or more (iPads, Macs, computers, Android tablets and a
+    // foldable's inner screen); 512 on a phone. AETHER_3D_COLS (development:
+    // 512 or 768) overrides, for the render tool's phone-sized windows.
+    const QScreen* screen = QGuiApplication::primaryScreen();
+    const QSize screenSize = screen ? screen->size() : QSize();
+    m_cols = std::min(screenSize.width(), screenSize.height()) >= 600 ? kMaxCols : kPhoneCols;
+    const int forced = qEnvironmentVariableIntValue("AETHER_3D_COLS");
+    if (forced == kMaxCols || forced == kPhoneCols) {
+        m_cols = forced;
+    }
+    qCInfo(lcSpectrum3D) << "3D view:" << m_cols << "columns, screen" << screenSize.width() << "x"
+                         << screenSize.height() << (forced == m_cols ? "(AETHER_3D_COLS)" : "");
+    // AETHER_3D_SLOW_AFTER_MS (development): report the GPU too slow once
+    // after that long, to test the step down without a slow GPU.
+    if (const int slowAfter = qEnvironmentVariableIntValue("AETHER_3D_SLOW_AFTER_MS"); slowAfter > 0) {
+        QTimer::singleShot(slowAfter, this, [this] { onGpuTooSlow(0); });
+    }
     m_rowClock.start();
     // Frames while the surface glides between rows or the row span eases.
     m_frameTimer.setInterval(16);
@@ -291,7 +332,7 @@ void Spectrum3DItem::pushRow(const QVector<float>& tile, double tileLowMhz, doub
     if (m_fft.isEmpty() || m_fftBandwidthMhz <= 0.0) {
         return;
     }
-    const Row raw = resampled(m_fft, -200.0f);
+    const Row raw = resampled(m_fft, -200.0f, m_cols);
     const bool continues = m_count > 0
         && sameFrame(m_rowCenterMhz[m_head], m_rowBandwidthMhz[m_head], m_fftCenterMhz, m_fftBandwidthMhz);
     if (m_count > 0 && !continues) {
@@ -300,8 +341,8 @@ void Spectrum3DItem::pushRow(const QVector<float>& tile, double tileLowMhz, doub
         m_rawHistCount = 0;
     }
     const int level = m_engine ? m_engine->spectrum3DSmoothing() : 1;
-    const Row smoothed =
-        smoothRow(raw, m_rawPrev1, m_rawPrev2, m_rawHistCount, continues ? &m_rows[m_head] : nullptr, level);
+    const Row smoothed = smoothRow(raw, m_rawPrev1, m_rawPrev2, m_rawHistCount,
+                                   continues ? &m_rows[m_head] : nullptr, level, m_cols);
     const int previousRing = m_head;
     m_head = (m_head - 1 + kRows) % kRows;
     m_rows[m_head] = smoothed;
@@ -328,9 +369,9 @@ void Spectrum3DItem::pushRow(const QVector<float>& tile, double tileLowMhz, doub
             m_supplementalHistCount = 0;
         }
         const QVector<float> asVector(calibrated.begin(), calibrated.end());
-        m_supplemental[m_head] = smoothRow(resampled(asVector, -200.0f), m_supplementalPrev1, m_supplementalPrev2,
-                                           m_supplementalHistCount,
-                                           tileContinues ? &m_supplemental[previousRing] : nullptr, level);
+        m_supplemental[m_head] = smoothRow(resampled(asVector, -200.0f, m_cols), m_supplementalPrev1,
+                                           m_supplementalPrev2, m_supplementalHistCount,
+                                           tileContinues ? &m_supplemental[previousRing] : nullptr, level, m_cols);
         m_supplementalCoverage[m_head].fill(1);
         m_supplementalCenterMhz[m_head] = center;
         m_supplementalBandwidthMhz[m_head] = bandwidth;
@@ -373,6 +414,15 @@ void Spectrum3DItem::holdSlowJudgement()
 
 void Spectrum3DItem::onGpuTooSlow(qint64 frameMs)
 {
+    if (m_cols > kPhoneCols) {
+        // First the phone's 512 columns, the 3D view kept (for this run).
+        qCWarning(lcSpectrum3D) << "3D view too slow at" << m_cols << "columns (frames" << frameMs
+                                << "ms behind the data): 512 columns";
+        m_cols = kPhoneCols;
+        clearHistory();
+        holdSlowJudgement();
+        return;
+    }
     qCWarning(lcSpectrum3D) << "3D view too slow on this GPU (frames" << frameMs
                             << "ms behind the data): switching to the 2D waterfall";
     if (m_engine) {
@@ -411,12 +461,12 @@ void Spectrum3DItem::tick()
 
 QQuickRhiItemRenderer* Spectrum3DItem::createRenderer()
 {
-    return new Spectrum3DRenderer;
+    return new Spectrum3DRenderer(m_cols);
 }
 
 void Spectrum3DRenderer::writeTextureRow(const Spectrum3DItem* item, int ring)
 {
-    constexpr int cols = Spectrum3DItem::kCols;
+    const int cols = m_cols;
     const auto& row = item->m_rows[ring];
     const auto& tile = item->m_supplemental[ring];
     const auto& tileCoverage = item->m_supplementalCoverage[ring];
@@ -443,7 +493,16 @@ void Spectrum3DRenderer::synchronize(QQuickRhiItem* rhiItem)
 {
     auto* item = static_cast<Spectrum3DItem*>(rhiItem);
     constexpr int rows = Spectrum3DItem::kRows;
-    constexpr int cols = Spectrum3DItem::kCols;
+    if (item->m_cols != m_cols) {
+        // Stepped down (onGpuTooSlow): every row anew at the new width, and
+        // the slow check starts over, warming up again.
+        m_cols = item->m_cols;
+        m_uploadedGeneration = ~0ull;
+        m_reportedSlow = false;
+        m_slowFrames = 0;
+        m_lastFrameMs = 0;
+    }
+    const int cols = m_cols;
     if (m_texHalf.size() != rows * cols * 4) {
         m_texHalf = QVector<qfloat16>(rows * cols * 4, qfloat16(-200.0f));
         m_texFloat = QVector<float>(rows * cols * 4, -200.0f);
@@ -567,7 +626,7 @@ void Spectrum3DRenderer::synchronize(QQuickRhiItem* rhiItem)
         static_cast<float>(px.width()),
         static_cast<float>(px.height()),
         rowSpan,
-        static_cast<float>(Spectrum3DItem::kMeshCols),
+        static_cast<float>(Spectrum3DItem::meshColsFor(cols)),
         0.0f, 0.0f,  // std140 hole before bgFill
         static_cast<float>(kBackground.redF()),
         static_cast<float>(kBackground.greenF()),
@@ -655,33 +714,48 @@ void Spectrum3DRenderer::synchronize(QQuickRhiItem* rhiItem)
     }
 }
 
+void Spectrum3DRenderer::releaseResources()
+{
+    m_fillPipeline.reset();
+    m_linePipeline.reset();
+    m_srb.reset();
+    m_heightSampler.reset();
+    m_paletteSampler.reset();
+    m_paletteTex.reset();
+    m_heightTex.reset();
+    m_ubuf.reset();
+    m_lineVbuf.reset();
+    m_fillVbuf.reset();
+    m_builtCols = 0;
+    m_meshUploaded = false;
+    m_uploadAll = true;
+    m_paletteDirty = true;
+}
+
 void Spectrum3DRenderer::initialize(QRhiCommandBuffer*)
 {
     if (m_rhi != rhi()) {
         // New graphics context: everything made with the old one goes.
-        m_fillPipeline.reset();
-        m_linePipeline.reset();
-        m_srb.reset();
-        m_heightSampler.reset();
-        m_paletteSampler.reset();
-        m_paletteTex.reset();
-        m_heightTex.reset();
-        m_ubuf.reset();
-        m_lineVbuf.reset();
-        m_fillVbuf.reset();
+        releaseResources();
         m_rhi = rhi();
-        m_meshUploaded = false;
-        m_uploadAll = true;
-        m_paletteDirty = true;
         qCInfo(lcSpectrum3D) << "GPU 3D view on" << m_rhi->backendName();
     }
-    if (m_fillPipeline && m_rpDesc == renderTarget()->renderPassDescriptor()) {
+    if (m_fillPipeline && m_rpDesc == renderTarget()->renderPassDescriptor() && m_builtCols == m_cols) {
         return;
     }
     m_rpDesc = renderTarget()->renderPassDescriptor();
+    buildResources();
+}
 
+void Spectrum3DRenderer::buildResources()
+{
+    if (m_fillVbuf && m_builtCols != m_cols) {
+        // The columns changed (a step down to 512): the mesh and the height
+        // texture are made again at the new size.
+        releaseResources();
+    }
     if (!m_fillVbuf) {
-        constexpr int vertices = Spectrum3DItem::kVisibleRows * kVerticesPerRow;
+        const int vertices = Spectrum3DItem::kVisibleRows * verticesPerRow(Spectrum3DItem::meshColsFor(m_cols));
         m_fillVbuf.reset(m_rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, vertices * 3 * sizeof(float)));
         m_lineVbuf.reset(m_rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, vertices * 3 * sizeof(float)));
         m_ubuf.reset(m_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, kUboFloats * sizeof(float)));
@@ -691,7 +765,7 @@ void Spectrum3DRenderer::initialize(QRhiCommandBuffer*)
         // Half floats when the GPU takes them (every Apple GPU), else floats.
         m_halfFloat = m_rhi->isTextureFormatSupported(QRhiTexture::RGBA16F);
         m_heightTex.reset(m_rhi->newTexture(m_halfFloat ? QRhiTexture::RGBA16F : QRhiTexture::RGBA32F,
-                                            QSize(Spectrum3DItem::kCols, Spectrum3DItem::kRows)));
+                                            QSize(m_cols, Spectrum3DItem::kRows)));
         m_heightTex->create();
         m_paletteTex.reset(m_rhi->newTexture(QRhiTexture::RGBA8, QSize(256, 1)));
         m_paletteTex->create();
@@ -713,6 +787,7 @@ void Spectrum3DRenderer::initialize(QRhiCommandBuffer*)
                                                       m_paletteSampler.get()),
         });
         m_srb->create();
+        m_builtCols = m_cols;
     }
 
     const QShader vs = loadShader(QStringLiteral(":/shaders/dss_mesh.vert.qsb"));
@@ -748,18 +823,22 @@ void Spectrum3DRenderer::initialize(QRhiCommandBuffer*)
     // separate identical program misbehaves there); Metal gets its own.
     m_linePipeline = m_rhi->backend() == QRhi::OpenGLES2 ? nullptr : makePipeline();
     qCInfo(lcSpectrum3D) << "3D pipelines ready" << (m_fillPipeline != nullptr) << (m_linePipeline != nullptr)
-                         << (m_halfFloat ? "RGBA16F" : "RGBA32F");
+                         << (m_halfFloat ? "RGBA16F" : "RGBA32F") << m_builtCols << "columns";
 }
 
 void Spectrum3DRenderer::render(QRhiCommandBuffer* cb)
 {
+    if (m_rhi && m_rpDesc && m_fillPipeline && m_builtCols != m_cols) {
+        buildResources();
+    }
     if (!m_fillPipeline) {
         cb->beginPass(renderTarget(), kBackground, {1.0f, 0});
         cb->endPass();
         return;
     }
     constexpr int rows = Spectrum3DItem::kRows;
-    constexpr int cols = Spectrum3DItem::kCols;
+    const int cols = m_builtCols;
+    const int rowVertices = verticesPerRow(Spectrum3DItem::meshColsFor(cols));
     QRhiResourceUpdateBatch* u = m_rhi->nextResourceUpdateBatch();
 
     if (!m_meshUploaded) {
@@ -767,11 +846,11 @@ void Spectrum3DRenderer::render(QRhiCommandBuffer* cb)
         // rows first so nearer curtains cover them; per column two triangles
         // for each crossfade layer, fill and ribbon tagged by edge.
         constexpr int meshRows = Spectrum3DItem::kVisibleRows;
-        constexpr int meshCols = Spectrum3DItem::kMeshCols;
+        const int meshCols = Spectrum3DItem::meshColsFor(cols);
         QVector<float> fill;
         QVector<float> line;
-        fill.reserve(meshRows * kVerticesPerRow * 3);
-        line.reserve(meshRows * kVerticesPerRow * 3);
+        fill.reserve(meshRows * rowVertices * 3);
+        line.reserve(meshRows * rowVertices * 3);
         const auto add = [](QVector<float>& v, float uu, float vv, float edge) { v << uu << vv << edge; };
         for (int rr = meshRows - 1; rr >= 0; --rr) {
             const float v = static_cast<float>(rr) / meshRows;
@@ -850,14 +929,14 @@ void Spectrum3DRenderer::render(QRhiCommandBuffer* cb)
         cb->setViewport(viewport);
         const QRhiCommandBuffer::VertexInput fillInput(m_fillVbuf.get(), 0);
         cb->setVertexInput(0, 1, &fillInput);
-        cb->draw(drawnRows * kVerticesPerRow, 1, skipped * kVerticesPerRow, 0);
+        cb->draw(drawnRows * rowVertices, 1, skipped * rowVertices, 0);
         // Ridge ribbons over the curtains.
         cb->setGraphicsPipeline(m_linePipeline ? m_linePipeline.get() : m_fillPipeline.get());
         cb->setShaderResources(m_srb.get());
         cb->setViewport(viewport);
         const QRhiCommandBuffer::VertexInput lineInput(m_lineVbuf.get(), 0);
         cb->setVertexInput(0, 1, &lineInput);
-        cb->draw(drawnRows * kVerticesPerRow, 1, skipped * kVerticesPerRow, 0);
+        cb->draw(drawnRows * rowVertices, 1, skipped * rowVertices, 0);
     }
     cb->endPass();
 }

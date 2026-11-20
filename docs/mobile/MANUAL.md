@@ -591,7 +591,12 @@ band* (the band zoom) and *Close* at the top. **B/S** (bands / steps) beside it 
 band buttons and the step buttons on any device, so the waterfall gets
 their height; Band then opens the bands the same way, and B/S brings the
 rows back (also *View › Bands and steps*; remembered). While they are
-hidden, B/S has an amber frame and reads **B/S ▲**.
+hidden, B/S has an amber frame and reads **B/S ▲**. In landscape the
+waterfall's buttons (− / +, Band, B/S ▲, + Slice and + Pan) then move into
+the row under it, which the step buttons left empty, and the whole
+waterfall shows (thanks Evgeny R0ACS); B/S ▲ there brings the rows back.
+
+![Landscape with B/S hiding the band and step rows: the waterfall's buttons in the row under it](manual/phone-landscape-bs.jpg)
 
 ![The bands from the Band button in a low landscape window](manual/bandchooser.jpg)
 
@@ -1028,7 +1033,7 @@ Power meter. Two fit side by side, four make 2 × 2.
   outside one), it goes back to the slice's band, or else the nearest one.
   With the band buttons hidden (B/S, or a very low landscape screen) it opens
   the bands instead.
-- **B/S** (bands / steps) hides the band buttons and the step buttons, or brings them back; while they are hidden it has an amber frame and reads *B/S ▲*.
+- **B/S** (bands / steps) hides the band buttons and the step buttons, or brings them back; while they are hidden it has an amber frame and reads *B/S ▲*, and in landscape these buttons move into the empty row under the waterfall.
 - The **frequency scale** runs along the top of the waterfall.
 - The **dBm scale** at the left: drag it up or down to move the trace (the
   reference level; this turns the spectrum's *Auto* off, View gives it
@@ -1123,6 +1128,17 @@ stacked trace and sets the levels. They work as on the desktop AetherSDR:
   (a lightning crash does not lift it), falls quickly, and re-locks after a
   retune or zoom. **Range** is the height of the scale, in Auto too; with
   Auto off, **Reference** is the top. The trace is lightly averaged.
+- **FFT smooth** and **De-comb** (the desktop's, for the 2D trace only, so
+  hidden in 3D; both *Off* by default) — **FFT smooth** evens the trace
+  across frequency: each point becomes the average of its neighbours up
+  to 1-16 pixels either side, taken in power so the noise floor stays
+  where it is. **De-comb** is for a zoomed-in SSB voice, which the trace
+  draws as a comb of the speaker's pitch harmonics 100-250 Hz apart: it
+  draws the voice as one smooth outline over their peaks instead, for
+  combs up to the width set (10-600 Hz; about 150-300 Hz for voices) and
+  leaves the noise beside it as it was. A steep signal edge rounds over
+  about half the width. Both shape only the drawing: the levels, the noise
+  floor, tuning to a peak and the waterfall use the trace as it comes.
 - **Waterfall** — *Auto* puts black at the noise floor; **Black level**
   moves it (50 = at the noise, higher shows more of it). **Colour gain**
   sets how many dB the colours span, so the same signal looks the same on
@@ -1143,7 +1159,10 @@ stacked trace and sets the levels. They work as on the desktop AetherSDR:
   wider waterfall data reaches, and the slices' passbands and carriers are
   shaded into the surface in perspective. Its height is the spectrum's
   Range; **3D floor** sets how far under the noise its zero sits and
-  **3D gain** how far down the colours reach. In portrait the 3D keeps
+  **3D gain** how far down the colours reach. On an iPad, a Mac, a
+  computer or an Android tablet the surface has the desktop's 768
+  frequency columns, on a phone 512 to spare its graphics; where the 768
+  run too slowly it goes to 512 first and stays in 3D. In portrait the 3D keeps
   landscape's shape and the waterfall gets the rest of the height. It keeps
   its history while you are in 2D. If the app stopped while the 3D view was
   on, or the 3D view runs too slowly on the device, the app starts or goes
@@ -1480,8 +1499,9 @@ seven.
   throughout; an iPhone with Display Zoom set to *Larger Text* gets the
   whole app, scaled to its screen),
   **Spots** (shown or hidden) and the **DX cluster**,
-  2D waterfall or 3D, waterfall levels, spectrum range, 3D floor, smoothing
-  and gain.
+  2D waterfall or 3D, waterfall levels, spectrum range, FFT smooth and
+  De-comb, 3D floor, smoothing and gain, and on Android **New versions**
+  (see [Android](#13-android)).
   - **Spot filters** — which spots show: *All*, *CW*, *Phone* or *Digital*
     (by the spot's mode, else its comment or the band plan, as on the
     desktop), and *Any age* or only those from the last 5, 15 or 30
@@ -2230,9 +2250,9 @@ seven.
   each its bridge's address and port). A bridge port takes one program at
   a time: AetherSDR on a PC and this app take turns (the app lets go of
   them when it leaves the screen). *Experimental: the KPA500's readings,
-  Operate / Standby and band following have been used on Sergio's own
-  amplifier; the power, the KAT500's controls and its tune so far only
-  against simulators. No responsibility is taken for any problems using
+  Operate / Standby and band following and the power of both have been
+  used on Sergio's own devices; the KAT500's other controls and its tune
+  so far only against simulators. No responsibility is taken for any problems using
   OksaSDR may cause to your equipment; reports from owners are welcome.*
 
   The **KPA500** shows as the other amplifiers: *Elecraft KPA500* and
@@ -2822,6 +2842,14 @@ Android.
 [the latest release](https://github.com/OH6OKSA/OksaSDR/releases/latest) on the phone, open
 it, and allow installing from your browser or file manager when Android
 asks. A newer beta installs over the old one and keeps your settings.
+
+**New versions.** The app asks GitHub about once a day (and at start)
+whether a newer beta is out. When one is, it says *Android beta N is out*:
+**Download** opens the APK in the browser (open it to install over this
+one), **What's new** the release page, **Later** asks no more about that
+beta. **Controls → View → New versions** shows the last check and
+*Download beta N*, and turns the check off (GitHub then sees nothing from
+the app). On the iPhone, iPad and Mac TestFlight updates the app.
 Android 9 or newer, 64-bit ARM (practically every phone and tablet from the
 last years). The Android itself must be 64-bit: some tablets with a 64-bit
 processor run a 32-bit Android (e.g. the Galaxy Tab A 10.1 of 2019, SM-T510),
