@@ -88,6 +88,9 @@ radio interface, with no computer running alongside.
   as callsigns on the display, tap to tune; the app's own DX cluster
   connection sends its spots to the radio, as the desktop does; a status
   line says whether it is connected, to which server and as whom.
+  **Park spots** (build 195): the POTA and WWFF activators on the air now,
+  from pota.app and wwff.co once a minute, to the radio the same way; a
+  tap tunes to one and the Log tab's call button fills Their park too.
 - **RTTY, received and sent**, on the Controls **Digi** tab: in the radio's
   RTTY mode (lower sideband, the standard) or as AFSK in DIGL or DIGU, the
   decoder following the sideband (on the upper sideband the mark is the
@@ -157,14 +160,17 @@ radio interface, with no computer running alongside.
   forward power, SWR, temperature, voltage, current, band and fan minimum,
   and the KAT500's mode, antenna, network in line or bypassed, SWR, band
   and frequency; every meter can show their readings. With Control on
-  (off by default): the KPA500's Operate / Standby, fault clear, fan
+  (off by default): **Power** On / Off for both (build 195; the KPA500's
+  On wakes it while it is off and silent, its rear power switch on), the
+  KPA500's Operate / Standby, fault clear, fan
   minimum and its band following the radio's TX frequency; the KAT500's
   mode, antenna, bypass, fault clear and **Tune** (the KPA500 in STANDBY,
   the radio's own ATU bypassed, the tuner's full search with the radio's
   TUNE carrier at 10-100 W, stopped once tuned); each confirmed first and
-  none while the radio transmits. Experimental: tested only against
-  simulators so far; no responsibility is taken for any problems using
-  OksaSDR may cause to your equipment.
+  none while the radio transmits. Experimental: the KPA500's readings,
+  Operate / Standby and band following used on a tester's amplifier, the
+  rest against simulators; no responsibility is taken for any problems
+  using OksaSDR may cause to your equipment.
 - **Keying an amplifier from Radio Setup**, as in SmartSDR, so no other
   program is needed: on Transmit each keying output's delay after PTT
   (RCA TX1-TX3, ACC TX), the TX REQ inputs' polarity, the TX band
@@ -422,6 +428,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | Log tab, ADIF export and import, QRZ.com lookup | ✅ In use by testers |
 | Log › voice entry (build 172, Android Vosk beta 92) | 🧪 The phonetics reader checked with 41 cases (--voice-selftest); Android's Vosk recogniser with synthesized spelled calls here (clean 20/20, noisy 19/20); iOS Speech worked on a tester's iPhone; Vosk on an Android phone to verify |
 | Log › editing and deleting a contact (build 172) | 🧪 Edited and deleted on a copy of a log here: the other records byte for byte as before |
+| View › Park spots, POTA and WWFF (build 195) | 🧪 The live pota.app and wwff.co lists on the FLEX-6600M: spots on the radio, a tap tuned (20 m CW, DIGU) and filled the Log tab's call and Their park; a cluster-style spot's park from the lists |
 | Log › Self-spot to POTA (build 171) | 🧪 Tested against a stand-in for pota.app's spot endpoint on this PC (the JSON, the app's User-Agent, the two-park choice, 30 s between spots); not yet posted to pota.app |
 | Log › Spot to the DX cluster (build 170) | 🧪 Tested against a DX Spider stand-in on this PC (echoed, refused, not seen back, not connected); not yet posted to a public cluster |
 | Several slices and panadapters, multiFLEX | ✅ Supported |

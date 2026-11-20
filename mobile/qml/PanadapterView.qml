@@ -1655,8 +1655,15 @@ Rectangle {
     // the tuning-step grid.
     TapHandler {
         id: panTap
+        // Whether the press was on a spot tag, a notch or another slice, as
+        // they lay then: a spot's own tap tunes first and the view can follow
+        // the slice before this tap is seen, moving the tag from under the
+        // finger, which retuned to the tapped point (2 kHz off, a spot near
+        // the view's edge in DIGU, 2026-11-20).
+        property bool pressOnOverlay: false
+        onPressedChanged: if (pressed) pressOnOverlay = panArea.overlayHit(point.position.x, point.position.y)
         onTapped: (eventPoint) => {
-            if (Engine.panBandwidthMhz > 0
+            if (Engine.panBandwidthMhz > 0 && !pressOnOverlay
                     && !panArea.overlayHit(eventPoint.position.x, eventPoint.position.y)) {
                 if (panArea.digiPick) {
                     // In another DIGU / DIGL slice's passband: FT8 / FT4

@@ -1060,12 +1060,13 @@ Power meter. Two fit side by side, four make 2 × 2.
   waits while you transmit and goes on after.
 - In CW, decoded text runs along the top of the waterfall.
 - **Spots** — callsigns along the top of the spectrum at their frequency:
-  the spots the radio holds, from this app's DX cluster connection and
-  from any other program on the radio. Tap one to tune to it (the mode
-  follows the spot, as on the desktop, and the view centres on the
-  filter). Close ones stack in up to four
-  rows; zoom in to see more. In View, *Spots* shows or hides them, and
-  *DX cluster* connects the app to a cluster of your choice.
+  the spots the radio holds, from this app's DX cluster connection, its
+  POTA and WWFF park spots and any other program on the radio. Tap one to
+  tune to it (the mode follows the spot, as on the desktop, and the view
+  centres on the filter). Close ones stack in up to four
+  rows; zoom in to see more. In View, *Spots* shows or hides them,
+  *DX cluster* connects the app to a cluster of your choice and *Park
+  spots* brings in the POTA and WWFF activators.
 - **Notches (TNF)** — **press and hold** on the display where a notch
   should go, or tap *+ TNF* in Controls → DSP for one in the middle of the
   passband: the notch panel opens for the new notch, drawn on the display
@@ -1503,6 +1504,23 @@ seven.
     the refusals go on, and the app gets on by itself once the cluster lets
     the old login go. To get on at once, give this device its own SSID in
     the callsign, e.g. *OH6OKSA-2*.
+  - **Park spots** (asked by Robin Bishop G5OUT) — **POTA** and **WWFF**
+    each bring in the activators on the air now, from pota.app and
+    wwff.co, read once a minute while a radio is connected. Like the
+    cluster's, the spots go to the radio (POTA's yellow, WWFF's green),
+    with the park's reference, name and mode as the comment, and go when
+    the activation's spot runs out (POTA's own time, WWFF's after 30
+    minutes). Tap one to tune to it; the Log tab then offers the call,
+    and its button also fills **Their park** (POTA or WWFF with the
+    reference). A cluster spot of an activator the lists hold gives the
+    park the same way. The line under the buttons tells how many each
+    list holds now and when it was read (*Listed now (07:12 UTC): POTA 15,
+    WWFF 2.*), or why a list could not be read. Both lists are public and
+    want no account; switched off, the spots already on the radio stay
+    until they run out. SOTA is not there: its spot interface wants its
+    approval first.
+
+    ![View › Park spots](manual/park-spots.jpg)
 - **Prof** (profiles) — the radio's global, TX and mic profiles: load, save,
   delete, as in SmartSDR. Under them, **App setups** (thanks Larry
   Averbeck W9FLA) do the same for this app's own settings: type a name in
@@ -1537,7 +1555,8 @@ seven.
 
 - **Log** — quick QSO logging into a log on this device (an ADIF file,
   `oksasdr-log.adi`). Type the **callsign**, or tap the call of the spot
-  you tuned to last; **×** in the field clears it (thanks Christoph
+  you tuned to last (with a POTA or WWFF activator's park in **Their
+  park**, from View › Park spots); **×** in the field clears it (thanks Christoph
   Steinert DM5HF). Or spell it by voice with **🎤** beside it (asked by
   Michael Walker): hold the button, spell the call with the ITU / NATO
   alphabet (*Victor Alpha Three Mike Whiskey*, *niner* for 9, *stroke
@@ -2210,10 +2229,11 @@ seven.
   two RS-232 adapters, or ser2net on a Raspberry Pi (Radio Setup › Amp:
   each its bridge's address and port). A bridge port takes one program at
   a time: AetherSDR on a PC and this app take turns (the app lets go of
-  them when it leaves the screen). *Experimental: tested only against
-  simulators so far, not on a real KPA500 or KAT500. No responsibility is
-  taken for any problems using OksaSDR may cause to your equipment;
-  reports from owners are welcome.*
+  them when it leaves the screen). *Experimental: the KPA500's readings,
+  Operate / Standby and band following have been used on Sergio's own
+  amplifier; the power, the KAT500's controls and its tune so far only
+  against simulators. No responsibility is taken for any problems using
+  OksaSDR may cause to your equipment; reports from owners are welcome.*
 
   The **KPA500** shows as the other amplifiers: *Elecraft KPA500* and
   **OPERATE**, **STANDBY** or **POWER OFF**, the link (*Read from
@@ -2225,7 +2245,16 @@ seven.
 
   ![Amp tab with a KPA500](manual/tab-kpa500.jpg)
 
-  With **Control the amplifier** on: **Mode** (*Standby* / *Operate*; the
+  With **Control the amplifier** on: **Power** (*On* / *Off*, as the
+  amplifier's own power button and AetherSDR's ON / OFF; thanks Sergio
+  Landoni LU7YS): *Off* while it answers as on; *On* also while it is
+  silent, as a KPA500 is when off, with the same wake signal the desktop
+  sends; its rear power switch must stay on for that. Off, the link line
+  says *Link to … open, but the amplifier does not answer: it is off
+  (Power › On below wakes it), or the bridge is not connected to it*; the
+  wake shows *Waking the amplifier…* and its readings come once it
+  answers, within 15 s (else the result names the rear switch and the
+  bridge). **Mode** (*Standby* / *Operate*; the
   question names the radio's power: the KPA500 gives its 500 W from about
   30 W, much more drive faults it), **Fan minimum** (− / +, 0 off to 6,
   at a tap and also while transmitting, as the KPA1500's) and **Clear
@@ -2235,15 +2264,23 @@ seven.
   while the radio transmits, and shows once the amplifier reads it back.
   The amplifier stays keyed by its KEY IN cable from the radio.
 
+  ![The KPA500's controls](manual/kpa500-controls.jpg)
+
   The **KAT500** shows its **mode** (*AUTO*, *MANUAL* or *BYPASS*, or
   *TUNING* while it searches) beside its name, the link, a fault in red
   (*Tuner fault: No suitable tuning match*), its **SWR** (the last it
   measured: live on the bar while the radio transmits), the **SWR
   (last)** and **Bypass SWR** (without its network), the **Antenna** (ANT
   1-3), the **Network** (*In line* or *Bypassed*), the **Band**, the
-  **Frequency** its memory is set for and the **Firmware**.
+  **Frequency** its memory is set for and the **Firmware**. A tuner
+  turned off (with its own button, or from a program) answers only who it
+  is: its badge then says **OFF** and the tab *The tuner is off* with how
+  to turn it on, instead of readings.
 
   With **Control the tuner** on:
+  - **Power** — *On* / *Off*, as the tuner's own power button and
+    AetherSDR's ON / OFF (thanks Sergio Landoni LU7YS); off, it is the
+    only control that works.
   - **Mode** — *Auto* (it recalls its stored match for the frequency and
     tunes by itself when the SWR is high), *Manual* (it keeps the present
     match and tunes only when asked) or *Bypass* (its network out of line,

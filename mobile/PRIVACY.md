@@ -10,7 +10,7 @@ through the App Store, TestFlight and as the Android beta from
 
 The app collects no personal data. Nothing you do in the app is sent to the
 developer. It connects to a third-party service only when you use a feature
-that needs it (SmartLink, QRZ.com, a DX cluster, POTA, PSK Reporter, your
+that needs it (SmartLink, QRZ.com, a DX cluster, POTA, WWFF, PSK Reporter, your
 own Wavelog or Cloudlog logbook, Logger32 on your PC, your amplifier, a time
 server for FT8 / FT4), as listed below.
 
@@ -54,6 +54,11 @@ these services:
   reference, the frequency, the mode and the comment shown to you) is sent
   to api.pota.app, which publishes it on pota.app. Nothing is sent
   otherwise.
+- **POTA and WWFF park spots (pota.app, wwff.co)**, only if you turn on
+  *POTA* or *WWFF* under Park spots on the View tab (off by default): the
+  app reads their public lists of activators once a minute while a radio
+  is connected. Only the request goes out (the app's name and version);
+  no callsign or other data of yours is sent.
 - **PSK Reporter**, only if you turn on *Report to PSK Reporter* on the
   FTx tab (off by default): the callsigns, locators, frequencies, SNR and
   times of the FT8 / FT4 stations this device decodes are sent to

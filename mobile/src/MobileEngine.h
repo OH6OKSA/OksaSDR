@@ -67,6 +67,7 @@ struct CallsignInfo;
 struct PcmFrame;
 struct RadioInfo;
 struct SpectrumDecodeScale;
+struct SpotData;
 }
 
 namespace AetherSDR::mobile {
@@ -372,6 +373,10 @@ class MobileEngine : public QObject {
     Q_PROPERTY(int qsoCount READ qsoCount NOTIFY qsoLogChanged)
     Q_PROPERTY(QVariantMap callLookup READ callLookup NOTIFY callLookupChanged)
     Q_PROPERTY(QString lastSpotCall READ lastSpotCall NOTIFY lastSpotCallChanged)
+    // The park of the spot tuned to last (POTA / WWFF and its reference, or
+    // empty), for the Log tab's Their park (roadmap 109).
+    Q_PROPERTY(QString lastSpotSig READ lastSpotSig NOTIFY lastSpotCallChanged)
+    Q_PROPERTY(QString lastSpotRef READ lastSpotRef NOTIFY lastSpotCallChanged)
     Q_PROPERTY(QString qrzUser READ qrzUser NOTIFY qrzChanged)
     // The sign-in check after Save: the text, and "checking", "ok", "failed"
     // (refused), "unreachable" (QRZ.com did not answer) or "" (not checked
@@ -481,6 +486,9 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QString myRef READ myRef WRITE setMyRef NOTIFY myParkChanged)
     Q_PROPERTY(QString potaSpotStatus READ potaSpotStatus NOTIFY potaSpotChanged)
     Q_PROPERTY(bool potaSpotOk READ potaSpotOk NOTIFY potaSpotChanged)
+    // POTA and WWFF activators' spots to the radio, read every minute
+    // (roadmap 109): {pota, wwff (switched on), status, ok}.
+    Q_PROPERTY(QVariantMap parkSpots READ parkSpots NOTIFY parkSpotsChanged)
     // Logging by voice (roadmap 79): idle, listening or recognizing, and
     // what the last listen gave (or why it could not).
     Q_PROPERTY(QString voiceInputState READ voiceInputState NOTIFY voiceInputChanged)
@@ -1248,6 +1256,8 @@ public:
     int qsoCount() const;
     QVariantMap callLookup() const { return m_callLookup; }
     QString lastSpotCall() const { return m_lastSpotCall; }
+    QString lastSpotSig() const { return m_lastSpotSig; }
+    QString lastSpotRef() const { return m_lastSpotRef; }
     QString qrzUser() const;
     QString qrzStatus() const;
     QString qrzStatusKind() const;
@@ -1450,6 +1460,9 @@ public:
     Q_INVOKABLE void kpa500SetOperate(bool operate);
     Q_INVOKABLE void kpa500ClearFault();
     Q_INVOKABLE void kpa500SetFanMinimum(int speed);
+    // Its power as its own power button: Off (^ON0;), On (the wake, a lone
+    // P) also while it is silent, as it is off.
+    Q_INVOKABLE void kpa500SetPower(bool on);
     QVariantMap kpa500() const;
     // KAT500: the same; mode "auto" / "manual" / "bypass"; Tune: its full
     // search with the radio's TUNE carrier (10-100 W), 30 s at most.
@@ -1460,6 +1473,8 @@ public:
     Q_INVOKABLE void kat500SetMode(const QString& mode);
     Q_INVOKABLE void kat500SetBypass(bool bypassed);
     Q_INVOKABLE void kat500ClearFault();
+    // Its power (PS1 / PS0), the one command that works with the tuner off.
+    Q_INVOKABLE void kat500SetPower(bool on);
     Q_INVOKABLE void kat500Tune();
     Q_INVOKABLE void kat500TuneStop();
     QVariantMap kat500() const;
@@ -1550,6 +1565,9 @@ public:
     bool potaSpotOk() const;
     Q_INVOKABLE QVariantMap potaSpotInfo() const;
     Q_INVOKABLE bool sendPotaSpot(const QString& park, const QString& comment);
+    QVariantMap parkSpots() const;
+    // program: "POTA" or "WWFF".
+    Q_INVOKABLE void setParkSpots(const QString& program, bool on);
     QString voiceInputState() const { return m_speechState; }
     QString voiceInputStatus() const { return m_speechStatus; }
     bool voiceInputOffered() const;
@@ -2166,6 +2184,7 @@ signals:
     // A call heard by the voice button, for the log fields (not logged).
     void voiceHeard(const QString& call, const QString& report);
     void potaSpotChanged();
+    void parkSpotsChanged();
     void profilesChanged();
     void appSetupsChanged();
     void agcAutoChanged();
@@ -2524,6 +2543,9 @@ private:
     bool kpaCommandAllowed(const char* what, bool whileTransmitting = false);
     void kpaSendPending(const QString& pending, const QString& readback);
     void checkKpaPending();
+    bool kpaShows(const QString& what) const;
+    QString kpaReadsFor(const QString& what) const;
+    void checkKpaLate();
     void kpaCommandDone(const QString& result, bool ok);
     void checkKpaTune();
     void startKpaTuneCarrier();
@@ -2544,6 +2566,10 @@ private:
     QString m_kpaResult;
     bool m_kpaResultOk{false};
     QTimer* m_kpaPendingTimer{nullptr};
+    // A command the wait gave up on, watched on for the log (late or never).
+    QString m_kpaLate;
+    QElapsedTimer m_kpaLateClock;
+    QTimer* m_kpaLateTimer{nullptr};
     QString m_kpaTune;
     QTimer* m_kpaTuneTimer{nullptr};
     QElapsedTimer m_kpaTuneClock;
@@ -2572,7 +2598,7 @@ private:
     bool kpa500Operating() const;
     double kpa500ForwardW() const;
     void updateKat500State();
-    bool kat500CommandAllowed(const char* what);
+    bool kat500CommandAllowed(const char* what, bool offOk = false);
     void kat500Sent(bool accepted, const QString& pending);
     bool kat500Answering() const;
     bool radioAtuInLine() const;
@@ -2609,6 +2635,9 @@ private:
     QString m_kat500Tune;
     QTimer* m_kat500TuneTimer{nullptr};
     QElapsedTimer m_kat500TuneClock;
+    // Since the tuner last stopped answering: a tuner that is off is read
+    // only every 5 s, so a short gap is not yet "stopped answering".
+    QElapsedTimer m_kat500Quiet;
     QElapsedTimer m_kat500TuneStepClock;
     int m_kat500TuneKhz{0};
     bool m_kat500TuneWasOperate{false};
@@ -2875,6 +2904,8 @@ private:
     QString m_qrzStatusKind;             // "checking", "ok", "failed", "unreachable" or ""
     QVariantMap m_callLookup;
     QString m_lastSpotCall;
+    QString m_lastSpotSig;
+    QString m_lastSpotRef;
     void applyCallInfo(const CallsignInfo& info);
     void pttToggleLimitReached();
     void txArmTick();
@@ -2944,6 +2975,27 @@ private:
     bool m_potaSpotOk{false};
     bool m_potaSpotBusy{false};
     QElapsedTimer m_potaSpotClock;
+    // The park programs' spots (roadmap 109): read every minute while on and
+    // connected; each spot once to the radio; an activator's park kept by
+    // call for a tap on any spot of theirs (the cluster's too).
+    struct ParkSpot {
+        QString sig;
+        QString ref;
+        qint64 untilMs{0};
+    };
+    QTimer m_parkSpotTimer;
+    QSet<QString> m_parkSpotSent;           // "POTA:<spotId>", "WWFF:<id>"
+    QHash<QString, ParkSpot> m_parkSpots;   // by activator call
+    QHash<QString, int> m_parkSpotCount;      // program -> activators listed at its last read
+    QHash<QString, QString> m_parkSpotFailed; // program -> why its last read failed
+    QDateTime m_parkSpotReadUtc;
+    void setupParkSpots();
+    void updateParkSpotPolling();
+    void pollParkSpots(const QString& only = {});
+    void readParkSpots(const QString& program, const QByteArray& body);
+    bool queueRadioSpot(const QString& call, double freqMhz, const QString& source, const QString& spotter,
+                        const QString& comment, int lifetimeSec, QString color);
+    void noteSpotCall(const SpotData& spot);
     QString m_speechState{QStringLiteral("idle")};
     QString m_speechStatus;
     bool m_speechRecording{false};

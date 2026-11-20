@@ -834,6 +834,7 @@ MobileEngine::MobileEngine(QObject* parent)
 #endif
     setupDigi();
     setupOnlineLog();
+    setupParkSpots();
     setupQrzLog();
     setupSharedAdif();
     setupLogger32();
@@ -8039,43 +8040,17 @@ void MobileEngine::setupDxCluster()
             setDxSpotStatus(tr("Spotted on the cluster: %1 on %2 kHz.")
                                 .arg(spot.dxCall).arg(spot.freqMhz * 1000.0, 0, 'f', 1));
         }
-        RadioModel& rm = m_session.radioModel();
-        if (!m_connected || spot.dxCall.trimmed().isEmpty() || spot.freqMhz <= 0.0) {
-            return;
-        }
         AppSettings& settings = AppSettings::instance();
         int lifetime = spot.lifetimeSec > 0 ? spot.lifetimeSec
                                             : settings.value(QStringLiteral("DxClusterSpotLifetimeSec"), 0).toInt();
         if (lifetime <= 0) {
             lifetime = settings.value(QStringLiteral("DxClusterSpotLifetime"), 30).toInt() * 60;
         }
-        const qint64 now = QDateTime::currentMSecsSinceEpoch();
-        const auto seen = m_dxSeen.constFind(spot.dxCall);
-        if (seen != m_dxSeen.constEnd() && std::abs(seen->first - spot.freqMhz) < 0.001
-            && now - seen->second <= qint64(lifetime) * 1000) {
-            return;
-        }
-        m_dxSeen.insert(spot.dxCall, {spot.freqMhz, now});
-        QString color = spot.color.isEmpty()
+        const QString color = spot.color.isEmpty()
             ? settings.value(QStringLiteral("DxClusterSpotColor"), QStringLiteral("#D2B48C")).toString()
             : spot.color;
-        if (color.length() == 7) {
-            color = QStringLiteral("#FF") + color.mid(1);
-        }
-        const QString freq = QString::number(spot.freqMhz, 'f', 6);
-        // trigger_action=none: a tap on the spot never retunes or changes
-        // the mode of another client's slice (the desktop's #1846).
-        QString cmd = QStringLiteral("spot add callsign=%1 rx_freq=%2 tx_freq=%2 source=DXCluster "
-                                     "spotter_callsign=%3 trigger_action=none lifetime_seconds=%4")
-                          .arg(QString(spot.dxCall).replace(QLatin1Char(' '), QChar(0x7f)), freq,
-                               spot.spotterCall)
-                          .arg(lifetime);
-        if (!spot.comment.isEmpty()) {
-            cmd += QStringLiteral(" comment=") + QString(spot.comment).replace(QLatin1Char(' '), QChar(0x7f));
-        }
-        cmd += QStringLiteral(" color=") + color;
-        m_dxQueue.append(cmd);
-        Q_UNUSED(rm);
+        queueRadioSpot(spot.dxCall, spot.freqMhz, QStringLiteral("DXCluster"), spot.spotterCall, spot.comment,
+                       lifetime, color);
     });
     // A spot the cluster refuses is answered with a line of its own (DX
     // Spider: "Error - ...", "Sorry, ...").
@@ -8178,6 +8153,16 @@ void MobileEngine::spotTest(const QString& action)
                 rm.sendCommand(QStringLiteral("spot remove %1").arg(s.index));
             }
         }
+    } else if (action == QLatin1String("clearparks")) {
+        // The park programs' spots a test put on the radio (roadmap 109).
+        int n = 0;
+        for (const SpotData& s : rm.spotModel().spots()) {
+            if (s.source == QLatin1String("POTA") || s.source == QLatin1String("WWFF")) {
+                rm.sendCommand(QStringLiteral("spot remove %1").arg(s.index));
+                ++n;
+            }
+        }
+        qCInfo(lcMobile) << "spot test: removed" << n << "POTA / WWFF spots";
     }
 }
 
@@ -8429,9 +8414,76 @@ void MobileEngine::disconnectDxCluster()
 {
     m_dxWanted = false;
     m_dxState = QStringLiteral("off");
-    m_dxQueue.clear();
+    // The cluster's spots not yet sent; the park programs' stay queued.
+    m_dxQueue.removeIf([](const QString& cmd) { return cmd.contains(QLatin1String(" source=DXCluster ")); });
     m_dx->disconnect();
     emit dxClusterChanged();
+}
+
+// A spot to the radio's list, as the desktop's queueSpotCmd: once a lifetime
+// for a call on the same frequency (from any source, the desktop's
+// isDuplicateSpot), sent a few a second (RbnRateLimit).
+bool MobileEngine::queueRadioSpot(const QString& call, double freqMhz, const QString& source, const QString& spotter,
+                                  const QString& comment, int lifetimeSec, QString color)
+{
+    if (!m_connected || call.trimmed().isEmpty() || freqMhz <= 0.0) {
+        return false;
+    }
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    const auto seen = m_dxSeen.constFind(call);
+    if (seen != m_dxSeen.constEnd() && std::abs(seen->first - freqMhz) < 0.001
+        && now - seen->second <= qint64(lifetimeSec) * 1000) {
+        return false;
+    }
+    m_dxSeen.insert(call, {freqMhz, now});
+    if (color.length() == 7) {
+        color = QStringLiteral("#FF") + color.mid(1);
+    }
+    const QString freq = QString::number(freqMhz, 'f', 6);
+    // trigger_action=none: a tap on the spot never retunes or changes
+    // the mode of another client's slice (the desktop's #1846).
+    QString cmd = QStringLiteral("spot add callsign=%1 rx_freq=%2 tx_freq=%2 source=%3 "
+                                 "spotter_callsign=%4 trigger_action=none lifetime_seconds=%5")
+                      .arg(QString(call).replace(QLatin1Char(' '), QChar(0x7f)), freq, source,
+                           QString(spotter).replace(QLatin1Char(' '), QChar(0x7f)))
+                      .arg(lifetimeSec);
+    if (!comment.isEmpty()) {
+        cmd += QStringLiteral(" comment=") + QString(comment).replace(QLatin1Char(' '), QChar(0x7f));
+    }
+    cmd += QStringLiteral(" color=") + color;
+    m_dxQueue.append(cmd);
+    return true;
+}
+
+// The call tuned to, for the Log tab, with the activator's park when a park
+// program has spotted them (roadmap 109): from the spot itself (a POTA or
+// WWFF spot's comment starts with its reference), else from the programs'
+// latest spots by call, so a cluster spot of a park activator gives it too.
+void MobileEngine::noteSpotCall(const SpotData& spot)
+{
+    static const QRegularExpression refRe(QStringLiteral("^[A-Z0-9]{1,6}-[0-9]{4,5}$"));
+    QString sig;
+    QString ref;
+    const QString first = spot.comment.section(QLatin1Char(' '), 0, 0).toUpper();
+    if ((spot.source == QLatin1String("POTA") || spot.source == QLatin1String("WWFF")) && refRe.match(first).hasMatch()) {
+        sig = spot.source;
+        ref = first;
+    } else {
+        const auto park = m_parkSpots.constFind(spot.callsign.trimmed().toUpper());
+        if (park != m_parkSpots.constEnd() && park->untilMs > QDateTime::currentMSecsSinceEpoch()) {
+            sig = park->sig;
+            ref = park->ref;
+        }
+    }
+    if (m_lastSpotCall != spot.callsign || m_lastSpotSig != sig || m_lastSpotRef != ref) {
+        m_lastSpotCall = spot.callsign;
+        m_lastSpotSig = sig;
+        m_lastSpotRef = ref;
+        if (!sig.isEmpty()) {
+            qCInfo(lcMobile).noquote() << "spot:" << spot.callsign << "is at" << sig << ref;
+        }
+        emit lastSpotCallChanged();
+    }
 }
 
 void MobileEngine::tuneToSpot(int index)
@@ -8459,10 +8511,7 @@ void MobileEngine::tuneToSpot(int index)
         const double carrier = psk().value(QStringLiteral("carrierHz")).toDouble();
         setPsk(QStringLiteral("carrier"), carrier);
         qCInfo(lcMobile) << "tune to PSK spot" << spot.callsign << spot.rxFreqMhz << "carrier" << carrier << "Hz";
-        if (m_lastSpotCall != spot.callsign) {
-            m_lastSpotCall = spot.callsign;
-            emit lastSpotCallChanged();
-        }
+        noteSpotCall(spot);
         tuneTo(spot.rxFreqMhz - carrier / 1e6);
         centreWhenSettled();
         const double spotMhz = spot.rxFreqMhz;
@@ -8492,10 +8541,7 @@ void MobileEngine::tuneToSpot(int index)
         }
     }
     qCInfo(lcMobile) << "tune to spot" << spot.callsign << spot.rxFreqMhz;
-    if (m_lastSpotCall != spot.callsign) {
-        m_lastSpotCall = spot.callsign;
-        emit lastSpotCallChanged();
-    }
+    noteSpotCall(spot);
     if (rttyOnDigital) {
         tuneToRtty(spot.rxFreqMhz, true);
     } else {
@@ -9759,9 +9805,11 @@ void MobileEngine::onConnectionStateChanged(bool connected)
         updateCwDecoder();
         updateRttyDecoder();
         updateMicCheck();
+        updateParkSpotPolling();
         return;
     }
     stopTransmit(QStringLiteral("radio disconnected"));
+    updateParkSpotPolling();
     updateCwDecoder();
     updateRttyDecoder();
     if (m_wanActive && !m_wanUserDisconnect) {

@@ -53,6 +53,10 @@ const QString kKat500OnKey = QStringLiteral("MobileAmpKat500On");
 const QString kKat500ControlKey = QStringLiteral("MobileAmpKat500Control");
 // A KPA500 command is done when the readback shows it, or not seen in this long.
 constexpr int kKpa500CommandWaitMs = 3000;
+// Its power: off it is silent and asked only every 5 s (Kpa500Connection's
+// power check), so On is seen once a check after the wake and the boot gets
+// ^ON1, and Off by ^ON0 or by the silence through two checks.
+constexpr int kKpa500PowerWaitMs = 15000;
 constexpr int kKat500TuneSeconds = 30;
 // The KAT500's autotune power range (Elecraft: 10 to 100 W).
 constexpr int kKat500TuneMinWatts = 10;
@@ -62,6 +66,9 @@ constexpr int kKat500TuneKeyWaitMs = 3000;
 constexpr int kKat500StandbyWaitMs = 5000;
 // A step of the tune not answered in this long ends it.
 constexpr int kKat500StepWaitMs = 6000;
+// A gap in the tuner's answers this long before "stopped answering" (see
+// updateKat500State).
+constexpr int kKat500QuietMs = 3000;
 
 bool settingOn(const QString& key)
 {
@@ -143,7 +150,9 @@ void MobileEngine::setupElecraft()
         } else {
             m_kpa500State = QStringLiteral("connecting");
             m_kpa500Error = tr("the amplifier does not answer (off, or its bridge not connected to it)");
-            if (!m_kpa500Pending.isEmpty()) {
+            // After Off the silence is what is expected; the wait decides it
+            // (kKpa500PowerWaitMs). After On the wake is still under way.
+            if (!m_kpa500Pending.isEmpty() && !m_kpa500Pending.startsWith(QLatin1String("power "))) {
                 kpa500CommandDone(tr("The amplifier stopped answering before it showed the change: it may or may not have done it."), false);
             }
             qCInfo(lcMobile) << "amp: the KPA500 stopped answering";
@@ -198,9 +207,20 @@ void MobileEngine::setupElecraft()
         if (m_kpa500Pending.isEmpty()) {
             return;
         }
-        qCInfo(lcMobile).noquote() << "amp: the KPA500 has not shown" << m_kpa500Pending << "in" << kKpa500CommandWaitMs / 1000 << "s";
+        const bool answersOn = m_kpa500->isResponding() && m_kpa500->lastStatus().powerOn == true;
+        if (m_kpa500Pending == QLatin1String("power off") && !answersOn) {
+            qCInfo(lcMobile) << "amp: the KPA500 is silent after power off, as it is when off";
+            kpa500CommandDone(tr("The amplifier is silent after Off, as the KPA500 is when it is off."), true);
+            return;
+        }
+        qCInfo(lcMobile).noquote() << "amp: the KPA500 has not shown" << m_kpa500Pending << "in"
+                                   << m_kpa500PendingTimer->interval() / 1000 << "s";
         kpa500CommandDone(m_kpa500Pending == QLatin1String("clear")
                               ? tr("The fault is still there: deal with its cause first (a temperature fault clears only as the amplifier cools).")
+                          : m_kpa500Pending == QLatin1String("power on")
+                              ? tr("The amplifier has not answered in 15 s: the wake needs its rear power switch on and the bridge connected to it.")
+                          : m_kpa500Pending == QLatin1String("power off")
+                              ? tr("The amplifier still answers as on: it did not take Off.")
                               : tr("The amplifier has not shown the change in 3 s: it may not have taken it (a fault, or its front panel in a menu)."),
                           false);
     });
@@ -489,7 +509,7 @@ void MobileEngine::kpa500SendPending(const QString& pending)
 {
     m_kpa500Pending = pending;
     m_kpa500Result.clear();
-    m_kpa500PendingTimer->start();
+    m_kpa500PendingTimer->start(pending.startsWith(QLatin1String("power ")) ? kKpa500PowerWaitMs : kKpa500CommandWaitMs);
     emit kpa500Changed();
 }
 
@@ -506,6 +526,8 @@ void MobileEngine::checkKpa500Pending()
         done = s.faultCode && *s.faultCode == 0;
     } else if (m_kpa500Pending.startsWith(QLatin1String("fan minimum "))) {
         done = s.fanMinSpeed && QStringLiteral("fan minimum %1").arg(*s.fanMinSpeed) == m_kpa500Pending;
+    } else if (m_kpa500Pending.startsWith(QLatin1String("power "))) {
+        done = s.powerOn && *s.powerOn == (m_kpa500Pending == QLatin1String("power on"));
     }
     if (done) {
         qCInfo(lcMobile).noquote() << "amp: the KPA500 shows" << m_kpa500Pending;
@@ -558,6 +580,44 @@ void MobileEngine::kpa500SetFanMinimum(int speed)
     kpa500SendPending(QStringLiteral("fan minimum %1").arg(speed));
 }
 
+// The power as its own power button: Off (^ON0;) while it answers as on, On
+// (the bootloader's wake, a lone P) also while it is silent, as it is off.
+// Not while transmitting, as the desktop's Kpa500Connection::setPower.
+void MobileEngine::kpa500SetPower(bool on)
+{
+    const char* what = on ? "power on" : "power off";
+    const Kpa500::Status& s = m_kpa500->lastStatus();
+    const bool answersOn = m_kpa500->isResponding() && s.powerOn == true;
+    QString why;
+    if (!settingOn(kKpa500ControlKey)) {
+        why = tr("Control is off (Radio Setup › Amp).");
+    } else if (!m_kpa500Wanted || !m_kpa500->isConnected()) {
+        why = tr("The link to the amplifier's bridge is not up.");
+    } else if (!on && !answersOn) {
+        why = tr("The amplifier is not answering as on.");
+    } else if (radioTransmitting() || (m_kpa500->isResponding() && s.forwardPowerW.value_or(0.0f) > 0.0f)) {
+        why = tr("Not while transmitting: the amplifier must not switch with RF on it.");
+    } else if (!m_kpa500Pending.isEmpty() || !m_kat500Tune.isEmpty()) {
+        why = tr("Still waiting for the amplifier.");
+    }
+    if (!why.isEmpty()) {
+        qCInfo(lcMobile).noquote() << "amp: not sending" << what << "to the KPA500 -" << why;
+        m_kpa500Result = why;
+        m_kpa500ResultOk = false;
+        emit kpa500Changed();
+        return;
+    }
+    if (on && answersOn) {
+        return;
+    }
+    // The connection refuses power while it thinks the radio transmits; its
+    // TX state follows the radio's every 500 ms, so bring it up to date.
+    updateKpa500TxBand();
+    qCInfo(lcMobile) << "amp: asking the KPA500 for" << what;
+    m_kpa500->setPower(on);
+    kpa500SendPending(QString::fromLatin1(what));
+}
+
 bool MobileEngine::kpa500Operating() const
 {
     const Kpa500::Status& s = m_kpa500->lastStatus();
@@ -587,11 +647,16 @@ QVariantMap MobileEngine::kpa500() const
                   {QStringLiteral("target"), m_kpa500Target},
                   // The KAT500's tune holds the amplifier (STANDBY for it).
                   {QStringLiteral("busy"), !m_kat500Tune.isEmpty()},
-                  {QStringLiteral("bandTracking"), m_kpa500Wanted ? m_kpa500->bandTrackingText() : QString()}};
+                  {QStringLiteral("bandTracking"), m_kpa500Wanted ? m_kpa500->bandTrackingText() : QString()},
+                  // The bridge's TCP link up: off, the amplifier is silent on it.
+                  {QStringLiteral("linkUp"), m_kpa500Wanted && m_kpa500->isConnected()}};
     if (!m_kpa500->isResponding()) {
         return m;
     }
     const Kpa500::Status& s = m_kpa500->lastStatus();
+    if (s.powerOn) {
+        m.insert(QStringLiteral("power"), *s.powerOn);
+    }
     // A reading not in yet is left out (the page shows "–"), never 0.
     if (s.forwardPowerW) {
         m.insert(QStringLiteral("fwd"), *s.forwardPowerW);
@@ -644,9 +709,23 @@ void MobileEngine::updateKat500State()
     if (m_kat500->isConnected() && m_kat500->isDetected() && m_kat500->isResponding()) {
         state = QStringLiteral("connected");
         m_kat500Error.clear();
+        m_kat500Quiet.invalidate();
     } else if (m_kat500->isConnected() || m_kat500->isConnecting()) {
         if (state == QLatin1String("connected")) {
-            m_kat500Error = tr("the tuner does not answer (off, or its bridge not connected to it)");
+            // Off (PS0), the tuner is asked only every 5 s, and a slow bridge
+            // (a Pico W on Wi-Fi) can put its answer just past the model's 5 s
+            // freshness: 3 s more before it counts as stopped (Sergio's log
+            // of build 194 flipped between the two every few seconds).
+            if (m_kat500->isConnected() && m_kat500->isDetected()) {
+                if (!m_kat500Quiet.isValid()) {
+                    m_kat500Quiet.start();
+                }
+                if (m_kat500Quiet.elapsed() < kKat500QuietMs) {
+                    return;
+                }
+            }
+            m_kat500Quiet.invalidate();
+            m_kat500Error = tr("the tuner does not answer (its bridge not connected to it, or the tuner unplugged)");
             qCInfo(lcMobile) << "amp: the KAT500 stopped answering";
         }
         state = QStringLiteral("connecting");
@@ -704,20 +783,22 @@ void MobileEngine::setKat500Control(bool on)
     emit kat500Changed();
 }
 
-bool MobileEngine::kat500CommandAllowed(const char* what)
+bool MobileEngine::kat500CommandAllowed(const char* what, bool offOk)
 {
     QString why;
     if (!settingOn(kKat500ControlKey)) {
         why = tr("Control is off (Radio Setup › Amp).");
     } else if (m_kat500State != QLatin1String("connected")) {
         why = tr("The tuner is not answering.");
-    } else if (m_kat500->status().powerOn != true) {
-        why = tr("The tuner is off.");
+    } else if (!m_kat500->status().powerOn) {
+        why = tr("The tuner's power is not read yet.");
+    } else if (!offOk && !*m_kat500->status().powerOn) {
+        why = tr("The tuner is off: Power › On turns it on.");
     } else if (radioTransmitting()) {
         why = tr("Not while transmitting: the tuner must not switch with RF on it.");
     } else if (!m_kat500Pending.isEmpty() || !m_kat500Tune.isEmpty() || m_kat500->operationBusy()) {
         why = tr("Still waiting for the tuner.");
-    } else {
+    } else if (!offOk) {
         why = m_kat500->unavailableReason(true);
     }
     if (why.isEmpty()) {
@@ -791,6 +872,30 @@ void MobileEngine::kat500ClearFault()
         return;
     }
     kat500Sent(m_kat500->clearFault(), QStringLiteral("the fault cleared"));
+}
+
+void MobileEngine::kat500SetPower(bool on)
+{
+    // Off, the tuner answers only its identity and power; its readings and
+    // every other command come back once it is on. The tuner itself
+    // refuses a power change while transmitting, as this does before it.
+    if (!kat500CommandAllowed(on ? "power on" : "power off", true)) {
+        return;
+    }
+    if (m_kat500->status().powerOn == on) {
+        return;
+    }
+    const QString pending = on ? QStringLiteral("power on") : QStringLiteral("power off");
+    if (!m_kat500->setPower(on)) {
+        // Refused before it went: an earlier answer still awaited (the
+        // model's reasons all assume the tuner on, so not those).
+        m_kat500Result = tr("The tuner cannot take that now (an earlier answer still awaited): try again in a moment.");
+        m_kat500ResultOk = false;
+        qCInfo(lcMobile).noquote() << "amp: the KAT500 did not take" << pending << "- an earlier answer awaited";
+        emit kat500Changed();
+        return;
+    }
+    kat500Sent(true, pending);
 }
 
 // ---- KAT500 Tune ----
@@ -1121,6 +1226,11 @@ QVariantMap MobileEngine::kat500() const
     }
     if (s.powerOn) {
         m.insert(QStringLiteral("power"), *s.powerOn);
+    }
+    // Off (PS0) it answers only its identity and power: what it read before
+    // it was turned off is not shown (nor on the meters) as if it were now.
+    if (s.powerOn == false) {
+        return m;
     }
     if (s.mode) {
         m.insert(QStringLiteral("mode"), kat500ModeName(*s.mode));

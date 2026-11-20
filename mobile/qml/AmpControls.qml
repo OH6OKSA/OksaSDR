@@ -19,7 +19,8 @@ import AetherMobile
 // and the amplifier still speeds the fans up as it warms. With a:
 // Engine.kpa500 an Elecraft KPA500 (MobileEngineElecraft.cpp: no antennas,
 // ATU or tune of its own; fan minimum 0-6; with Control its band follows the
-// radio's TX frequency). The tab shows once an amplifier is set up.
+// radio's TX frequency; its power On / Off as its own power button, On also
+// while it is silent, as it is off). The tab shows once an amplifier is set up.
 ColumnLayout {
     id: ampTab
     spacing: Theme.spacing / 2
@@ -40,6 +41,10 @@ ColumnLayout {
     // A KPA1500's or KPA500's fan minimum: the same, but also while transmitting.
     readonly property bool canFan: (kpa && control && reading && !a.pending && a.link === "connected" && !a.tune)
                                    || (kpa500 && control && reading && !a.pending && !a.busy)
+    // A KPA500's power: over the bridge's link also while the amplifier is
+    // silent (off it answers nothing; On wakes it), never while transmitting.
+    readonly property bool poweredOn: reading && a.power === true
+    readonly property bool canPower: kpa500 && control && !!a.linkUp && !transmitting && !a.pending && !a.busy
     // The tune carrier for the amplifier's tuner is on, or STANDBY is
     // being asked for it.
     readonly property bool tuneRunning: !!a.tune
@@ -144,6 +149,9 @@ ColumnLayout {
                      : ampTab.kpa && !ampTab.control ? qsTr("Read from %1 every half second, read only.").arg(a.target)
                      : qsTr("Read from %1, every half second.").arg(a.target)
             if (a.state === "failed") return qsTr("%1 not reached: %2. Trying again…").arg(a.target).arg(a.error)
+            if (a.state === "connecting" && a.linkUp)
+                return ampTab.control ? qsTr("Link to %1 open, but the amplifier does not answer: it is off (Power › On below wakes it), or the bridge is not connected to it.").arg(a.target)
+                                      : qsTr("Link to %1 open, but the amplifier does not answer: it is off, or the bridge is not connected to it.").arg(a.target)
             if (a.state === "connecting") return qsTr("Connecting to %1…").arg(a.target)
             return qsTr("Read while connected to a radio.")
         }
@@ -256,6 +264,31 @@ ColumnLayout {
         visible: ampTab.control
         spacing: Theme.spacing / 2
 
+        // A KPA500's power as a pair, as its own power button: On dark while
+        // it answers as on, Off while it answers as off (^ON0) just before it
+        // goes silent; each asks first.
+        RowLayout {
+            visible: ampTab.kpa500
+            Layout.fillWidth: true
+            spacing: 4
+            Label { text: qsTr("Power"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+            AppButton {
+                objectName: "ampPowerOn"
+                text: qsTr("On")
+                checked: ampTab.poweredOn
+                enabled: ampTab.canPower && !ampTab.poweredOn
+                Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                onClicked: confirm.ask("poweron", 0)
+            }
+            AppButton {
+                objectName: "ampPowerOff"
+                text: qsTr("Off")
+                checked: ampTab.reading && ampTab.a.power === false
+                enabled: ampTab.canPower && ampTab.poweredOn
+                Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                onClicked: confirm.ask("poweroff", 0)
+            }
+        }
         // Operate / Standby as a pair, the amplifier's present mode the dark
         // one; the other asks first.
         RowLayout {
@@ -439,6 +472,8 @@ ColumnLayout {
                          : ampTab.a.tuner === "TUNING" ? qsTr("The amplifier is tuning…")
                          : qsTr("Carrier on at %1 W: press Tune on the amplifier's screen (VNC).").arg(Engine.tunePower))
                     : ampTab.a.tune === "standby" ? qsTr("Asking the amplifier for STANDBY…")
+                    : ampTab.a.pending === "power on" ? qsTr("Waking the amplifier: it answers once it has started…")
+                    : ampTab.a.pending === "power off" ? qsTr("Turning the amplifier off…")
                     : ampTab.a.pending ? qsTr("Asking the amplifier…")
                     : ampTab.kpa500 && ampTab.a.busy ? qsTr("The KAT500's tune holds the amplifier in STANDBY…")
                     : ampTab.kpa && ampTab.a.link === "connecting" ? qsTr("Control link: connecting…")
@@ -460,9 +495,9 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.topMargin: Theme.spacing / 2
         text: ampTab.control && ampTab.kpa500
-              ? qsTr("Each change asks you first and none works while the radio transmits; the tab shows only what the amplifier reads back. Its band follows the radio's TX frequency (a Flex gives the KPA500 no band data), never while transmitting. The fan minimum changes at a tap, also while transmitting.")
+              ? qsTr("Each change asks you first and none works while the radio transmits; the tab shows only what the amplifier reads back. Power turns the amplifier on or off as its own power button does (On needs its rear power switch on). Its band follows the radio's TX frequency (a Flex gives the KPA500 no band data), never while transmitting. The fan minimum changes at a tap, also while transmitting.")
               : ampTab.kpa500
-              ? qsTr("Read only: nothing is sent that changes the amplifier, and its band does not follow the radio. Control in Radio Setup › Amp adds Operate / Standby, the band following the radio, the fan minimum and the fault clear.")
+              ? qsTr("Read only: nothing is sent that changes the amplifier, and its band does not follow the radio. Control in Radio Setup › Amp adds the power, Operate / Standby, the band following the radio, the fan minimum and the fault clear.")
               : ampTab.control && ampTab.kpa
               ? qsTr("Each change asks you first and none works while the radio transmits; the tab shows only what the amplifier reads back. Tune starts the ATU's full search and sends the carrier it needs. The fan minimum changes at a tap, also while transmitting; the amplifier still speeds the fans up as it warms.")
               : ampTab.control
@@ -494,7 +529,9 @@ ColumnLayout {
         modal: true
         padding: Theme.spacing
         background: Rectangle { color: Theme.surface; radius: Theme.radius; border.color: Theme.accent; border.width: 2 }
-        readonly property bool stillPossible: ampTab.canCommand
+        readonly property bool stillPossible: action === "poweron" ? ampTab.canPower && !ampTab.poweredOn
+                                            : action === "poweroff" ? ampTab.canPower && ampTab.poweredOn
+                                            : ampTab.canCommand
         onStillPossibleChanged: if (!stillPossible && opened) close()
         // "antenna 1" for an internal one, the external one by its label.
         readonly property string activeAntenna: {
@@ -509,7 +546,9 @@ ColumnLayout {
             Label {
                 objectName: "ampConfirmTitle"
                 Layout.fillWidth: true
-                text: confirm.action === "operate" ? qsTr("Put the amplifier in OPERATE?")
+                text: confirm.action === "poweron" ? qsTr("Turn the KPA500 on?")
+                    : confirm.action === "poweroff" ? qsTr("Turn the KPA500 off?")
+                    : confirm.action === "operate" ? qsTr("Put the amplifier in OPERATE?")
                     : confirm.action === "standby" ? qsTr("Put the amplifier in STANDBY?")
                     : confirm.action === "antenna" ? qsTr("Switch the amplifier to %1?").arg(confirm.askedAntenna)
                     : confirm.action === "atuIn" ? qsTr("Put the amplifier's ATU in line?")
@@ -524,7 +563,11 @@ ColumnLayout {
             }
             Label {
                 Layout.fillWidth: true
-                text: confirm.action === "operate" && ampTab.kpa500
+                text: confirm.action === "poweron"
+                      ? qsTr("The amplifier starts as with its own power button; its rear power switch must be on. Its readings and controls come once it answers, in a few seconds.")
+                    : confirm.action === "poweroff"
+                      ? qsTr("The amplifier turns off as with its own power button and answers nothing until it is turned on again (On here wakes it while its rear power switch is on).")
+                    : confirm.action === "operate" && ampTab.kpa500
                       ? qsTr("The next transmission goes through the amplifier. The KPA500 gives its 500 W from about 30 W; much more drive faults it: the radio's power is now %1.").arg(Engine.rfPower + (Engine.rfPowerIsPercent ? " %" : " W"))
                         + (!Engine.rfPowerIsPercent && Engine.rfPower > 40 ? " " + qsTr("Lower it first.") : "")
                         + (ampTab.a.bandTracking ? " " + qsTr("Band: %1").arg(ampTab.a.bandTracking) : "")
@@ -564,7 +607,9 @@ ColumnLayout {
                 }
                 AppButton {
                     objectName: "ampConfirmYes"
-                    text: confirm.action === "operate" ? qsTr("Operate")
+                    text: confirm.action === "poweron" ? qsTr("On")
+                        : confirm.action === "poweroff" ? qsTr("Off")
+                        : confirm.action === "operate" ? qsTr("Operate")
                         : confirm.action === "standby" ? qsTr("Standby")
                         : confirm.action === "antenna" ? (ampTab.kpa ? confirm.askedAntenna : qsTr("Antenna %1").arg(confirm.antenna))
                         : confirm.action === "atuIn" ? qsTr("In line")
@@ -579,7 +624,8 @@ ColumnLayout {
                         const n = confirm.antenna
                         confirm.close()
                         if (ampTab.kpa500) {
-                            if (what === "operate" || what === "standby") Engine.kpa500SetOperate(what === "operate")
+                            if (what === "poweron" || what === "poweroff") Engine.kpa500SetPower(what === "poweron")
+                            else if (what === "operate" || what === "standby") Engine.kpa500SetOperate(what === "operate")
                             else if (what === "reset") Engine.kpa500ClearFault()
                         } else if (ampTab.kpa) {
                             if (what === "operate" || what === "standby") Engine.kpaSetOperate(what === "operate")

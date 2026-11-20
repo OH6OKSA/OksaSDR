@@ -12,15 +12,24 @@ every query those send, take every SET the app sends, and answer no SET
 
     elecraft-mock.py [--kpa500 2000] [--kat500 2001] [--host 0.0.0.0]
                      [--tune-ms 3000] [--nomatch-on N] [--keyed]
+                     [--delay-ms N] [--kat-off] [--kpa-off]
+
+--delay-ms answers each command 0..N ms late, as a slow bridge (a Pico W
+on Wi-Fi) can. --kat-off / --kpa-off start a device off, as with its own
+power button: the KAT500 then answers only I, RV, SN and PS, the KPA500
+nothing until a lone P (its bootloader's wake) turns it on.
 
 Commands on stdin (one a line), for tests:
     kpa fault NN | kpa clear | kpa tx WATTS SWR | kpa rx | kpa off | kpa on
-    kat fault N | kat nomatch | kat match | kat swr X.XX
+    kpa rear off | kpa rear on (its rear power switch: off, a P wakes nothing)
+    kat fault N | kat nomatch | kat match | kat swr X.XX | kat off | kat on
+    kat mute | kat unmute (the bridge up, the tuner silent: unplugged)
     status
 """
 
 import argparse
 import asyncio
+import random
 import sys
 import time
 
@@ -44,22 +53,26 @@ class Kpa500:
         self.fault = 0
         self.fan = 2
         self.speaker = 1
+        self.rear = 1     # the rear power switch: off, the wake is not heard
 
     def handle(self, frame: str):
         """frame without the terminating ';' ("^OS1", "^WS", "", "P")."""
         if frame == "":
             return ";"
         if frame == "P":
+            if not self.rear:
+                log("kpa500: P not heard (rear power switch off)")
+                return None
             self.power = 1
             log("kpa500: woken (P)")
             return None
         if not frame.startswith("^"):
             return None
         cmd, arg = frame[1:3], frame[3:]
+        if not self.power:
+            return None  # off: silent; only its bootloader hears a lone P
         if frame.startswith("^RVM"):
             return "^RVM01.54;"
-        if not self.power and cmd != "ON":
-            return None  # off: silent
         if cmd == "OS":
             if arg == "":
                 return "^OS%d;" % self.operate
@@ -131,6 +144,10 @@ class Kpa500:
             self.amps = 150
         elif words[:1] == ["rx"]:
             self.fwd, self.swr, self.amps = 0, 0, 5
+        elif words[:1] == ["rear"]:
+            self.rear = 1 if words[1:2] == ["on"] else 0
+            if not self.rear:
+                self.power, self.operate = 0, 0
         elif words[:1] == ["off"]:
             self.power, self.operate = 0, 0
         elif words[:1] == ["on"]:
@@ -161,6 +178,7 @@ class Kat500:
         self.l = 0x0F
         self.enabled = {1: 1, 2: 1, 3: 0}
         self.nomatch = False
+        self.muted = False
         self.writer = None
         self.tune_task = None
 
@@ -194,6 +212,8 @@ class Kat500:
 
     def handle(self, frame: str):
         f = frame
+        if self.muted:
+            return None
         if f == "":
             return ";"
         if f == "I":
@@ -206,6 +226,8 @@ class Kat500:
             if f == "PS":
                 return "PS%d;" % self.power
             if f in ("PS0", "PS1"):
+                if self.power != int(f[2]):
+                    log("kat500: power", "on" if f == "PS1" else "off")
                 self.power = int(f[2])
             return None
         if not self.power:
@@ -309,10 +331,15 @@ class Kat500:
             self.nomatch = False
         elif words[:1] == ["swr"]:
             self.swr = float(words[1])
+        elif words[:1] in (["mute"], ["unmute"]):
+            self.muted = words[0] == "mute"
+        elif words[:1] in (["off"], ["on"]):
+            # Its power button: off it answers only I, RV, SN and PS.
+            self.power = 1 if words[0] == "on" else 0
         log("kat500:", {k: v for k, v in vars(self).items() if k not in ("writer", "tune_task")})
 
 
-async def serve(device, host, port):
+async def serve(device, host, port, delay_ms=0):
     busy = {"writer": None}
 
     async def client(reader, writer):
@@ -344,6 +371,9 @@ async def serve(device, host, port):
                     frame, buf = buf[:i].decode(errors="replace").strip(), buf[i + 1:]
                     reply = device.handle(frame)
                     if reply:
+                        if delay_ms:
+                            await writer.drain()
+                            await asyncio.sleep(random.uniform(0, delay_ms) / 1000)
                         writer.write(reply.encode())
                 await writer.drain()
         except (ConnectionResetError, BrokenPipeError):
@@ -368,13 +398,21 @@ async def main():
     ap.add_argument("--tune-ms", type=int, default=3000)
     ap.add_argument("--nomatch-on", type=int, default=0, help="the Nth tune (1-based) finds no match")
     ap.add_argument("--keyed", action="store_true", help="readings as while transmitting (pictures)")
+    ap.add_argument("--delay-ms", type=int, default=0, help="answer each command 0..N ms late (a slow bridge)")
+    ap.add_argument("--kat-off", action="store_true", help="the KAT500 starts off (its power button)")
+    ap.add_argument("--kpa-off", action="store_true", help="the KPA500 starts off (silent until a P wakes it)")
     args = ap.parse_args()
     kpa = Kpa500()
     kat = Kat500(args.tune_ms, args.nomatch_on)
     if args.keyed:
         kpa.operate, kpa.fwd, kpa.swr, kpa.amps, kpa.volts, kpa.temp = 1, 480, 12, 152, 571, 46
         kat.swr = 1.15
-    servers = [await serve(kpa, args.host, args.kpa500), await serve(kat, args.host, args.kat500)]
+    if args.kat_off:
+        kat.power = 0
+    if args.kpa_off:
+        kpa.power = 0
+    servers = [await serve(kpa, args.host, args.kpa500, args.delay_ms),
+               await serve(kat, args.host, args.kat500, args.delay_ms)]
     loop = asyncio.get_event_loop()
     reader = asyncio.StreamReader()
     try:

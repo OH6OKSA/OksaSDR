@@ -55,6 +55,8 @@ const QString kKpaOnKey = QStringLiteral("MobileAmpKpaOn");
 const QString kKpaControlKey = QStringLiteral("MobileAmpKpaControl");
 // A command is done when the readback shows it, or not seen in this long.
 constexpr int kKpaCommandWaitMs = 3000;
+// A command not shown in the wait is watched this much longer, for the log.
+constexpr qint64 kKpaLateWatchMs = 30000;
 constexpr int kKpaTuneSeconds = 20;
 // The manual's full-search tune drive: 10 to 50 W; past 55 W read from the
 // radio the carrier is not one to tune with.
@@ -132,6 +134,7 @@ void MobileEngine::setupKpa()
             }
         }
         checkKpaPending();
+        checkKpaLate();
         checkKpaTune();
         emit kpaChanged();
     });
@@ -208,11 +211,27 @@ void MobileEngine::setupKpa()
         if (m_kpaPending.isEmpty()) {
             return;
         }
-        qCInfo(lcMobile).noquote() << "amp: the KPA1500 has not shown" << m_kpaPending << "in" << kKpaCommandWaitMs / 1000 << "s";
+        qCInfo(lcMobile).noquote() << "amp: the KPA1500 has not shown" << m_kpaPending << "in" << kKpaCommandWaitMs / 1000
+                                   << "s (" + kpaReadsFor(m_kpaPending) + ")";
+        m_kpaLate = m_kpaPending;
+        m_kpaLateClock.start();
+        m_kpaLateTimer->start();
         kpaCommandDone(m_kpaPending == QLatin1String("clear")
                            ? tr("The fault is still there: a temperature fault clears only as the amplifier cools; deal with the cause first.")
                            : tr("The amplifier has not shown the change in 3 s: it may not have taken it (a fault, or its front panel in a menu)."),
                        false);
+    });
+    // The readings report only changes: the end of the late watch by a timer.
+    m_kpaLateTimer = new QTimer(this);
+    m_kpaLateTimer->setSingleShot(true);
+    m_kpaLateTimer->setInterval(int(kKpaLateWatchMs));
+    connect(m_kpaLateTimer, &QTimer::timeout, this, [this] {
+        if (m_kpaLate.isEmpty()) {
+            return;
+        }
+        qCInfo(lcMobile).noquote() << "amp: the KPA1500 still does not show" << m_kpaLate
+                                   << (kKpaLateWatchMs + kKpaCommandWaitMs) / 1000 << "s after the command (" + kpaReadsFor(m_kpaLate) + ")";
+        m_kpaLate.clear();
     });
     m_kpaTuneTimer = new QTimer(this);
     m_kpaTuneTimer->setInterval(250);
@@ -371,6 +390,8 @@ bool MobileEngine::kpaCommandAllowed(const char* what, bool whileTransmitting)
 void MobileEngine::kpaSendPending(const QString& pending, const QString& readback)
 {
     m_kpaPending = pending;
+    m_kpaLate.clear();
+    m_kpaLateTimer->stop();
     m_kpaResult.clear();
     m_kpaPendingTimer->start();
     // Read back at once, not at its turn in the cycle, and then every cycle
@@ -383,27 +404,74 @@ void MobileEngine::kpaSendPending(const QString& pending, const QString& readbac
     emit kpaChanged();
 }
 
+// Whether the readings show a command's change.
+bool MobileEngine::kpaShows(const QString& what) const
+{
+    const Kpa1500::Status& s = m_kpa->status();
+    if (what == QLatin1String("operate") || what == QLatin1String("standby")) {
+        return s.operate && *s.operate == (what == QLatin1String("operate"));
+    }
+    if (what.startsWith(QLatin1String("ANT"))) {
+        return s.antenna && QStringLiteral("ANT%1").arg(*s.antenna) == what;
+    }
+    if (what == QLatin1String("atu in") || what == QLatin1String("atu bypass")) {
+        const Kpa1500::AtuMode want = what == QLatin1String("atu in") ? Kpa1500::AtuMode::Inline : Kpa1500::AtuMode::Bypass;
+        return s.atuMode && *s.atuMode == want;
+    }
+    if (what == QLatin1String("clear")) {
+        return s.faultCode && *s.faultCode == 0;
+    }
+    if (what.startsWith(QLatin1String("fan minimum "))) {
+        return s.fanMinimum && QStringLiteral("fan minimum %1").arg(*s.fanMinimum) == what;
+    }
+    return false;
+}
+
+// What the readings say of a command's subject, for the log when it has not
+// shown in time: "reads STANDBY", "no OS reading yet".
+QString MobileEngine::kpaReadsFor(const QString& what) const
+{
+    const Kpa1500::Status& s = m_kpa->status();
+    QString reads;
+    if (what == QLatin1String("operate") || what == QLatin1String("standby")) {
+        reads = s.operate ? (*s.operate ? QStringLiteral("reads OPERATE") : QStringLiteral("reads STANDBY")) : QStringLiteral("no OS reading yet");
+    } else if (what.startsWith(QLatin1String("ANT"))) {
+        reads = s.antenna ? QStringLiteral("reads ANT%1").arg(*s.antenna) : QStringLiteral("no AN reading yet");
+    } else if (what == QLatin1String("atu in") || what == QLatin1String("atu bypass")) {
+        reads = s.atuMode ? (*s.atuMode == Kpa1500::AtuMode::Inline ? QStringLiteral("reads ATU in line") : QStringLiteral("reads ATU bypassed"))
+                          : QStringLiteral("no AM reading yet");
+    } else if (what == QLatin1String("clear")) {
+        reads = s.faultCode ? QStringLiteral("reads fault %1").arg(*s.faultCode, 2, 16, QLatin1Char('0')) : QStringLiteral("no FL reading yet");
+    } else if (what.startsWith(QLatin1String("fan minimum "))) {
+        reads = s.fanMinimum ? QStringLiteral("reads fan minimum %1").arg(*s.fanMinimum) : QStringLiteral("no FC reading yet");
+    }
+    return reads + (m_kpa->answering() ? QStringLiteral(", answering") : QStringLiteral(", not answering"));
+}
+
+// A command not shown within the wait (Rich Yost N2RY's build 190 log: an
+// OPERATE after a tune at 12:02 not read back in 3 s, the readings still
+// answering): whether it shows later, and when, or still not after 30 s.
+void MobileEngine::checkKpaLate()
+{
+    if (m_kpaLate.isEmpty()) {
+        return;
+    }
+    if (m_kpa->answering() && kpaShows(m_kpaLate)) {
+        qCInfo(lcMobile).noquote() << "amp: the KPA1500 shows" << m_kpaLate << "after"
+                                   << QString::number(m_kpaLateClock.elapsed() / 1000.0 + kKpaCommandWaitMs / 1000, 'f', 1)
+                                   << "s, later than the wait";
+        m_kpaLate.clear();
+        m_kpaLateTimer->stop();
+    }
+}
+
 // A command is done when the readback shows it.
 void MobileEngine::checkKpaPending()
 {
     if (m_kpaPending.isEmpty() || !m_kpa->answering()) {
         return;
     }
-    const Kpa1500::Status& s = m_kpa->status();
-    bool done = false;
-    if (m_kpaPending == QLatin1String("operate") || m_kpaPending == QLatin1String("standby")) {
-        done = s.operate && *s.operate == (m_kpaPending == QLatin1String("operate"));
-    } else if (m_kpaPending.startsWith(QLatin1String("ANT"))) {
-        done = s.antenna && QStringLiteral("ANT%1").arg(*s.antenna) == m_kpaPending;
-    } else if (m_kpaPending == QLatin1String("atu in") || m_kpaPending == QLatin1String("atu bypass")) {
-        const Kpa1500::AtuMode want = m_kpaPending == QLatin1String("atu in") ? Kpa1500::AtuMode::Inline : Kpa1500::AtuMode::Bypass;
-        done = s.atuMode && *s.atuMode == want;
-    } else if (m_kpaPending == QLatin1String("clear")) {
-        done = s.faultCode && *s.faultCode == 0;
-    } else if (m_kpaPending.startsWith(QLatin1String("fan minimum "))) {
-        done = s.fanMinimum && QStringLiteral("fan minimum %1").arg(*s.fanMinimum) == m_kpaPending;
-    }
-    if (done) {
+    if (kpaShows(m_kpaPending)) {
         qCInfo(lcMobile).noquote() << "amp: the KPA1500 shows" << m_kpaPending;
         // A higher minimum can speed the fans up at once: their speed now
         // read next, not at its turn in the round.

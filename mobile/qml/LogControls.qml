@@ -108,11 +108,19 @@ ColumnLayout {
             Layout.preferredHeight: callField.height
         }
         AppButton {
+            objectName: "logSpotCall"
             visible: Engine.lastSpotCall.length > 0 && callField.text.toUpperCase() !== Engine.lastSpotCall
             text: Engine.lastSpotCall
             focusPolicy: Qt.NoFocus
             Layout.preferredWidth: Math.max(implicitWidth + 12, 76)
-            onClicked: callField.text = Engine.lastSpotCall
+            // A POTA / WWFF activator's park with the call (roadmap 109).
+            onClicked: {
+                callField.text = Engine.lastSpotCall
+                if (Engine.lastSpotSig.length > 0) {
+                    theirSig.value = Engine.lastSpotSig
+                    theirRef.text = Engine.lastSpotRef
+                }
+            }
         }
     }
     // What the voice button heard, or why it did not listen (roadmap 79).

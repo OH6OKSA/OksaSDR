@@ -6,7 +6,7 @@
                                  [--standby] [--fault HH] [--off] [--atu bypass]
                                  [--antenna N] [--band BB] [--firmware NN.NN] [--fan-min N]
                                  [--silent-after S] [--tune-seconds S] [--no-match] [--no-ft-reply]
-                                 [--log FILE]
+                                 [--operate-delay S] [--log FILE]
 
 Answers the KPA1500 Programming Reference V3's command set as the amplifier
 does, on its UDP server and its TCP server on the same port (the reference:
@@ -38,6 +38,8 @@ amplifier's "^FT;" on that link, done or cancelled, as the reference says
 ("When the tune completes or is cancelled, the KPA1500 responds with
 ^FT;"); --no-ft-reply leaves it out (only ^TP tells). A short search
 (--tune-seconds 0.3) is over between two of the app's ^TP readings.
+--operate-delay S puts ^OS1 into effect S seconds late (a negative S: never),
+as Rich Yost N2RY's amplifier once did after a tune (build 190's log).
 """
 
 import argparse
@@ -73,6 +75,7 @@ def main():
     ap.add_argument("--tune-seconds", type=float, default=3.0)
     ap.add_argument("--no-ft-reply", action="store_true")
     ap.add_argument("--no-match", action="store_true")
+    ap.add_argument("--operate-delay", type=float, default=0.0)
     ap.add_argument("--log")
     args = ap.parse_args()
 
@@ -87,9 +90,16 @@ def main():
     # What a SET changes, as the amplifier keeps it.
     st = {"operate": not args.standby and args.fault == "00", "antenna": args.antenna,
           "atu": "I" if args.atu == "inline" else "B", "fault": args.fault.upper(), "tune_end": 0.0,
-          "ft_owed": False, "fan_min": args.fan_min, "fan_prev": args.fan_min}
+          "ft_owed": False, "fan_min": args.fan_min, "fan_prev": args.fan_min, "operate_at": 0.0}
 
     def tune_poll():
+        # A late OPERATE (--operate-delay) comes into effect.
+        if st["operate_at"] and time.monotonic() >= st["operate_at"]:
+            st["operate_at"] = 0.0
+            st["operate"] = True
+            if st["fault"] != "40":
+                st["fault"] = "00"
+            say("MOCK OPERATE now (late)")
         # A running search ends after --tune-seconds: in line and stored, or
         # no match (fault 92, STANDBY).
         if st["tune_end"] and time.monotonic() >= st["tune_end"]:
@@ -164,6 +174,14 @@ def main():
 
     def act(cmd, arg):
         if cmd == "OS" and arg in ("0", "1"):
+            st["operate_at"] = 0.0
+            if arg == "1" and args.operate_delay != 0:
+                if args.operate_delay > 0:
+                    st["operate_at"] = time.monotonic() + args.operate_delay
+                    say("MOCK OPERATE in %.1f s" % args.operate_delay)
+                else:
+                    say("MOCK OPERATE not taken")
+                return
             st["operate"] = arg == "1"
             if st["operate"] and st["fault"] != "40":
                 st["fault"] = "00"

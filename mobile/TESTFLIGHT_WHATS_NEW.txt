@@ -9,15 +9,16 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Elecraft KPA500 and KAT500 on the Amp tab (thanks Sergio LU7YS), each through a raw TCP serial bridge (e.g. a Raspberry Pi Pico W) set in Radio Setup > Amp > Elecraft. With Control on: Operate / Standby, fault clear, fan minimum, the band following the radio, and the KAT500's mode, antenna, bypass and Tune (10-100 W). Experimental: tested against stand-ins.
-- SmartSDR 4.3.19's Tune Supp is Radio Setup > Transmit > RCA TX1-3 held off during TUNE here.
+- POTA and WWFF spots on the display (thanks Robin G5OUT): Controls > View > Park spots. Tap an activator to tune; the call button on the Log tab then fills Their park too.
+- Power On / Off for the Elecraft KPA500 and KAT500 on the Amp tab with Control on (thanks Sergio LU7YS); a KAT500 that is off now says so.
+- A spot tapped near the display's edge no longer tunes twice; the log tells when a KPA1500 shows OPERATE late (thanks Rich N2RY).
 
-RECENT (builds 94–193)
+RECENT (builds 94–194)
+- 194: Elecraft KPA500 and KAT500 on the Amp tab through a raw TCP serial bridge (thanks Sergio LU7YS); Tune Supp is Radio Setup > Transmit > RCA TX1-3 held off during TUNE.
 - 193: SmartLink audio, panadapter and waterfall on IPv6-only mobile networks (thanks Michael Walker).
 - 191-192: the notch panel beside the notch (or above or below the display, also in 3D), dragged by its title; × beside Pin Controls closes the controls in landscape (thanks Larry W9FLA); Ulanzi Dial fixes.
 - 190: KPA1500 Fan minimum on the Amp tab (thanks Rich N2RY); Ulanzi Dial side keys in Radio Setup > MIDI (thanks Christoph DM5HF); Digital max on the TX tab (thanks Sloan Davis); SmartLink messages after your own Disconnect.
 - 188-189: VOX with this device's microphone (thanks Christoph DM5HF); Answer CQ calls each station 2-20 times (thanks Kurt DL5EAG); SmartLink with Apple's current TLS (thanks Mohammed A71AT); a SmartLink crash fixed (thanks Barry N2BJ).
-- 184: slices on several bands, each with its own panadapter; FT8 on one slice and FT4 on another; logbooks in Setup > Logging.
 
 PLEASE TRY
 - Receive on a few bands with zoom, Band and the 3D view.
@@ -29,8 +30,8 @@ PLEASE TRY
 - The FreeDV tab: pick a RADE station (14.236 MHz is busy), listen, and Report to FreeDV Reporter. [TX]
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
 - VOX with a headset on this device: Controls > TX > VOX on, speak, and the radio keys by its VOX level and delay. [TX]
-- SmartLink on an iPhone or iPad over mobile data as well as Wi-Fi: connect, disconnect and connect again; the Connect page should show no error after your own Disconnect.
-- New: a notch (press and hold on the display): the panel beside it, and dragged by its title. A KPA1500's Fan minimum (Controls > Amp); a Ulanzi Dial's side keys; Digital max with FT8.
+- SmartLink over mobile data as well as Wi-Fi: connect, disconnect and connect again; no error should show after your own Disconnect.
+- New: Controls > View > Park spots: turn on POTA or WWFF, tap an activator on the display, then its call on the Log tab. A KPA500's or KAT500's Power (Controls > Amp, Control on).
 - Slices on two or more bands (+ Slice, then Band on one): each gets its own panadapter, and the FTx tab decodes them all, FT8 on one and FT4 on another.
 
 REPORTING A PROBLEM

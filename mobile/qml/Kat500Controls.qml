@@ -7,9 +7,10 @@ import AetherMobile
 // raw TCP serial bridge: its mode, antenna, bypass, SWR (the last it
 // measured), band and frequency, as the tuner reports them; with Control on
 // (Radio Setup › Amp) its mode (Auto / Manual / Bypass), antenna (1-3), the
-// network's bypass, the fault clear and Tune (its full search with the
-// radio's TUNE carrier, the KPA500 in STANDBY), each confirmed first, none
-// while the radio transmits, and shown only as the tuner reads it back.
+// network's bypass, the fault clear, Tune (its full search with the
+// radio's TUNE carrier, the KPA500 in STANDBY) and its power (off, it
+// answers only its identity and power), each confirmed first, none while
+// the radio transmits, and shown only as the tuner reads it back.
 ColumnLayout {
     id: kat
     spacing: Theme.spacing / 2
@@ -22,6 +23,8 @@ ColumnLayout {
     // A command can go: control on, the tuner read and on, the radio in
     // receive, nothing else waiting for the tuner.
     readonly property bool canCommand: control && reading && !transmitting && !t.pending && !tuneRunning && !t.busy && t.power === true
+    // Power, also while the tuner is off (as its own power button).
+    readonly property bool canPower: control && reading && !transmitting && !t.pending && !tuneRunning && !t.busy && t.power !== undefined
     function num(v, digits, unit) {
         return v === undefined ? "–" : Number(v).toFixed(digits) + (unit ? " " + unit : "")
     }
@@ -66,7 +69,7 @@ ColumnLayout {
         }
         Rectangle {
             objectName: "katState"
-            visible: kat.reading && (kat.t.mode !== undefined || !!kat.t.tuning)
+            visible: kat.reading && (kat.t.power === false || kat.t.mode !== undefined || !!kat.t.tuning)
             Accessible.role: Accessible.StaticText
             Accessible.name: qsTr("Tuner %1").arg(stateText.text)
             radius: 4
@@ -98,6 +101,19 @@ ColumnLayout {
         }
         color: kat.t.state === "failed" ? Theme.transmit : Theme.textDim
         font.pixelSize: Theme.px(13)
+        wrapMode: Text.Wrap
+    }
+    // Off (PS0) the tuner tells nothing more: say so, not only dashes.
+    Label {
+        objectName: "katOff"
+        Layout.fillWidth: true
+        visible: kat.reading && kat.t.power === false
+        text: kat.control
+              ? qsTr("The tuner is off. Power › On below turns it on; its readings come once it is on.")
+              : qsTr("The tuner is off. Turn it on with its own power button, or turn on Control the tuner in Radio Setup › Amp to turn it on from here.")
+        color: Theme.warning
+        font.pixelSize: Theme.px(15)
+        font.bold: true
         wrapMode: Text.Wrap
     }
     Label {
@@ -149,6 +165,25 @@ ColumnLayout {
         visible: kat.control
         spacing: Theme.spacing / 2
 
+        Row3 {
+            label: qsTr("Power")
+            AppButton {
+                objectName: "katPowerOn"
+                text: qsTr("On")
+                checked: kat.t.power === true
+                enabled: kat.canPower
+                Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                onClicked: if (!checked) confirm.ask("poweron", "", 0)
+            }
+            AppButton {
+                objectName: "katPowerOff"
+                text: qsTr("Off")
+                checked: kat.t.power === false
+                enabled: kat.canPower
+                Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                onClicked: if (!checked) confirm.ask("poweroff", "", 0)
+            }
+        }
         Row3 {
             label: qsTr("Mode")
             Repeater {
@@ -256,8 +291,8 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.topMargin: Theme.spacing / 2
         text: kat.control
-              ? qsTr("Each change asks you first and none works while the radio transmits; the tab shows only what the tuner reads back. Tune puts a KPA500 in STANDBY, bypasses the radio's own ATU, sets the tuner to the TX frequency and sends the carrier its search needs, 30 s at most.")
-              : qsTr("Read only: nothing is sent that changes the tuner. Control in Radio Setup › Amp adds the mode, the antenna, the bypass, Tune and the fault clear.")
+              ? qsTr("Each change asks you first and none works while the radio transmits; the tab shows only what the tuner reads back. Power turns the tuner on or off as its own power button does. Tune puts a KPA500 in STANDBY, bypasses the radio's own ATU, sets the tuner to the TX frequency and sends the carrier its search needs, 30 s at most.")
+              : qsTr("Read only: nothing is sent that changes the tuner. Control in Radio Setup › Amp adds the power, the mode, the antenna, the bypass, Tune and the fault clear.")
         color: Theme.textDim
         font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
@@ -282,7 +317,7 @@ ColumnLayout {
         modal: true
         padding: Theme.spacing
         background: Rectangle { color: Theme.surface; radius: Theme.radius; border.color: Theme.accent; border.width: 2 }
-        readonly property bool stillPossible: kat.canCommand
+        readonly property bool stillPossible: action === "poweron" || action === "poweroff" ? kat.canPower : kat.canCommand
         onStillPossibleChanged: if (!stillPossible && opened) close()
         readonly property bool kpaOperate: !!Engine.kpa500.set && Engine.kpa500.operate === "OPERATE"
 
@@ -296,6 +331,8 @@ ColumnLayout {
                     : confirm.action === "bypass" ? qsTr("Bypass the tuner's network?")
                     : confirm.action === "inline" ? qsTr("Put the tuner's network in line?")
                     : confirm.action === "tune" ? qsTr("Tune the KAT500?")
+                    : confirm.action === "poweron" ? qsTr("Turn the KAT500 on?")
+                    : confirm.action === "poweroff" ? qsTr("Turn the KAT500 off?")
                     : qsTr("Clear the tuner's fault?")
                 color: Theme.text
                 font.pixelSize: Theme.px(18)
@@ -321,6 +358,10 @@ ColumnLayout {
                         + (Engine.hasTuner ? qsTr("The radio's own ATU is bypassed. ") : "")
                         + qsTr("The tuner is set to the TX frequency and starts its full search, and the radio transmits a TUNE carrier at %1 W until the tuner is done, for up to 30 s.").arg(Engine.tunePower)
                         + (Engine.tunePower < 20 ? " " + qsTr("20 W or more matches best (Tune power on the TX tab).") : "")
+                    : confirm.action === "poweron"
+                      ? qsTr("The tuner starts as with its own power button. Its readings and controls come once it reports that it is on.")
+                    : confirm.action === "poweroff"
+                      ? qsTr("The tuner stops matching the antenna until it is turned on again, and tells nothing but its power meanwhile. Check the antenna before you transmit.")
                     : qsTr("Clears the KAT500's present fault (%1). Deal with the cause first.").arg(kat.t.fault || "–")
                 color: Theme.textDim
                 font.pixelSize: Theme.px(15)
@@ -341,6 +382,8 @@ ColumnLayout {
                         : confirm.action === "bypass" ? qsTr("Bypass")
                         : confirm.action === "inline" ? qsTr("In line")
                         : confirm.action === "tune" ? qsTr("Tune")
+                        : confirm.action === "poweron" ? qsTr("On")
+                        : confirm.action === "poweroff" ? qsTr("Off")
                         : qsTr("Clear")
                     checked: true
                     Layout.fillWidth: true
@@ -353,6 +396,7 @@ ColumnLayout {
                         else if (what === "antenna") Engine.kat500SelectAntenna(n)
                         else if (what === "bypass" || what === "inline") Engine.kat500SetBypass(what === "bypass")
                         else if (what === "tune") Engine.kat500Tune()
+                        else if (what === "poweron" || what === "poweroff") Engine.kat500SetPower(what === "poweron")
                         else Engine.kat500ClearFault()
                     }
                 }

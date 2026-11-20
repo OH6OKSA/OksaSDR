@@ -316,6 +316,39 @@ ColumnLayout {
         font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
+    // POTA and WWFF activators' spots, read every minute (roadmap 109).
+    RowLayout {
+        Layout.fillWidth: true
+        Label { text: qsTr("Park spots"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+        Repeater {
+            model: ["POTA", "WWFF"]
+            delegate: AppButton {
+                required property string modelData
+                objectName: "parkSpots" + modelData
+                text: modelData
+                checked: modelData === "POTA" ? !!Engine.parkSpots.pota : !!Engine.parkSpots.wwff
+                Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                focusPolicy: Qt.NoFocus
+                onClicked: Engine.setParkSpots(modelData, !checked)
+            }
+        }
+    }
+    Label {
+        objectName: "parkSpotsStatus"
+        Layout.fillWidth: true
+        visible: text.length > 0
+        text: Engine.parkSpots.status || ""
+        color: Engine.parkSpots.ok ? Theme.textDim : Theme.transmit
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.WordWrap
+    }
+    Label {
+        Layout.fillWidth: true
+        text: qsTr("Activators from pota.app and wwff.co, read every minute, go to the radio like the cluster's spots. Tap one to tune to it; the Log tab then offers their call with their park.")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.WordWrap
+    }
     // 2D waterfall or the 3D stacked trace.
     RowLayout {
         Layout.fillWidth: true
