@@ -15,6 +15,7 @@
 // OKSASDR_UPDATE_URL for GitHub's address (a stand-in answer).
 
 #include "MobileEngine.h"
+#include "MobileWorkspace.h"
 
 #include "core/AppSettings.h"
 
@@ -51,6 +52,11 @@ QUrl latestReleaseUrl()
     return QUrl(dev.isEmpty() ? QStringLiteral("https://api.github.com/repos/OH6OKSA/OksaSDR/releases/latest") : dev);
 }
 } // namespace
+
+QObject* MobileEngine::workspace() const
+{
+    return m_workspace;
+}
 
 bool MobileEngine::updateCheckBuilt() const
 {

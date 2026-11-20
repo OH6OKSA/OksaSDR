@@ -2,6 +2,7 @@
 
 #include "LogBuffer.h"
 #include "MobileEngine.h"
+#include "ShotPlan.h"
 
 #include "core/AppSettings.h"
 
@@ -251,9 +252,84 @@ void DevLink::handle(const QJsonObject& command)
             }
         }
         reply({{QStringLiteral("ok"), true}});
+    } else if (cmd == QLatin1String("plan")) {
+        runPlan(command);
+    } else if (cmd == QLatin1String("planstop")) {
+        if (m_plan) {
+            m_plan->stop();
+        }
+        reply({{QStringLiteral("ok"), true}, {QStringLiteral("running"), !m_plan.isNull()}});
     } else {
         fail(QStringLiteral("unknown or not allowed: ") + cmd);
     }
+}
+
+namespace {
+// What a developer-link plan may do: look, tap, drag, read, tune and change
+// the view, as the link's own commands (screenshot, tune, mode, band, zoom,
+// drawer). Not: PTT or the TX slice and power, amplifiers and tuners, the
+// radio's setup, status put in by hand, logging or spotting, connections.
+// The engine blocks transmitting while a plan runs too, so a tap on PTT or
+// TUNE keys nothing.
+const QStringList kPlanCommands{
+    QStringLiteral("ready"), QStringLiteral("wait"), QStringLiteral("shot"), QStringLiteral("popup"),
+    QStringLiteral("close"), QStringLiteral("drawer"), QStringLiteral("scroll"), QStringLiteral("pin"),
+    QStringLiteral("controls"), QStringLiteral("tap"), QStringLiteral("tapmhz"), QStringLiteral("holdmhz"),
+    QStringLiteral("hold"), QStringLiteral("freq"), QStringLiteral("span"), QStringLiteral("mode"),
+    QStringLiteral("slices"), QStringLiteral("tapname"), QStringLiteral("showname"), QStringLiteral("holdname"),
+    QStringLiteral("taptext"), QStringLiteral("dragname"), QStringLiteral("a11y"), QStringLiteral("a11ypress"),
+    QStringLiteral("a11yinc"), QStringLiteral("a11ydec"), QStringLiteral("focus"), QStringLiteral("focussweep"),
+    QStringLiteral("keys"), QStringLiteral("layoutitems"), QStringLiteral("agcstate"), QStringLiteral("tnfs"),
+    QStringLiteral("where"), QStringLiteral("setupget"),
+};
+} // namespace
+
+void DevLink::runPlan(const QJsonObject& command)
+{
+    const QJsonValue id = command.value(QStringLiteral("id"));
+    auto reply = [this, &id](QJsonObject r) {
+        r.insert(QStringLiteral("t"), QStringLiteral("reply"));
+        r.insert(QStringLiteral("cmd"), QStringLiteral("plan"));
+        r.insert(QStringLiteral("id"), id);
+        send(r);
+    };
+    if (!m_qml || !m_engine) {
+        reply({{QStringLiteral("error"), QStringLiteral("no window")}});
+        return;
+    }
+    if (m_plan) {
+        reply({{QStringLiteral("error"), QStringLiteral("a plan is running (planstop ends it)")}});
+        return;
+    }
+    QStringList lines;
+    const QJsonValue given = command.value(QStringLiteral("lines"));
+    if (given.isArray()) {
+        for (const QJsonValue& v : given.toArray()) {
+            lines << v.toString();
+        }
+    } else {
+        lines = given.toString().split(QLatin1Char('\n'));
+    }
+    m_engine->setTransmitBlocked(true);
+    m_plan = new ShotPlan(*m_qml, *m_engine, lines, kPlanCommands, this);
+    connect(m_plan, &ShotPlan::shotTaken, this, [this](const QString& name, const QImage& image) {
+        sendImage(image, QStringLiteral("plan:") + name);
+    });
+    connect(m_plan, &ShotPlan::finished, this, [this, id](bool failed) {
+        if (m_engine) {
+            m_engine->setTransmitBlocked(false);
+        }
+        send({{QStringLiteral("t"), QStringLiteral("reply")}, {QStringLiteral("cmd"), QStringLiteral("plan")},
+              {QStringLiteral("id"), id}, {QStringLiteral("done"), true}, {QStringLiteral("failed"), failed}});
+        // Gone at once for the next plan, deleted after this signal.
+        if (ShotPlan* done = m_plan) {
+            m_plan = nullptr;
+            done->deleteLater();
+        }
+    });
+    qInfo().noquote() << "devlink: plan of" << lines.size() << "lines, transmitting blocked";
+    reply({{QStringLiteral("ok"), true}, {QStringLiteral("lines"), static_cast<int>(lines.size())}});
+    m_plan->start();
 }
 
 QJsonObject DevLink::state() const
@@ -307,8 +383,12 @@ void DevLink::screenshot(const QJsonValue& id)
         fail(QStringLiteral("grab refused (window not exposed?)"));
         return;
     }
-    connect(grab.data(), &QQuickItemGrabResult::ready, this, [this, grab, id] {
-        QImage image = grab->image();
+    connect(grab.data(), &QQuickItemGrabResult::ready, this, [this, grab, id] { sendImage(grab->image(), id); });
+}
+
+void DevLink::sendImage(QImage image, const QJsonValue& id)
+{
+    {
         if (image.width() > kShotMaxWidth) {
             image = image.scaledToWidth(kShotMaxWidth, Qt::SmoothTransformation);
         }
@@ -323,7 +403,7 @@ void DevLink::screenshot(const QJsonValue& id)
               {QStringLiteral("height"), image.height()},
               {QStringLiteral("format"), jpeg ? QStringLiteral("jpeg") : QStringLiteral("png")},
               {QStringLiteral("jpeg"), QString::fromLatin1(bytes.toBase64())}});
-    });
+    }
 }
 
 } // namespace AetherSDR::mobile

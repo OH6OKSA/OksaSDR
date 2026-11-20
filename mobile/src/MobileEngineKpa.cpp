@@ -613,6 +613,10 @@ void MobileEngine::kpaTune()
 
 void MobileEngine::startKpaTuneCarrier()
 {
+    if (m_txBlocked) {
+        endKpaTune(tr("Transmit is locked."), false, 0);
+        return;
+    }
     const int watts = tunePower();
     if (radioTransmitting() || !tuneAvailable()) {
         endKpaTune(tr("The radio cannot send a tune carrier now."), false, 0);

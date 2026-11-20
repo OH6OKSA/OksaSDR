@@ -6,11 +6,18 @@
   devlink.py send '{"cmd":"screenshot"}'   send one command, print the reply
                                   (add "device":"android" or "ios74" to pick
                                   one of several linked devices)
+  devlink.py plan FILE [--device D]   run a test plan (the render tool's
+                                  shot-plan lines) on the device; its results
+                                  come as "shot-plan:" lines in devlink.log,
+                                  its shots as DIR/plan-TAG-NAME.jpg
 
 The app connects out (Log page > Developer link > this PC's address). A
 local control port (127.0.0.1:47101) forwards commands from `send`. The app
 only accepts receive/display commands: screenshot, state, set (allow-listed
-properties), tune, mode, band, zoom, drawer. It cannot be made to transmit.
+properties), tune, mode, band, zoom, drawer, and plan / planstop (a plan's
+lines limited to looking, tapping, dragging, reading, tuning and the view;
+the app blocks every transmission while a plan runs, so a tap on PTT, TUNE
+or CQ keys nothing). It cannot be made to transmit.
 """
 import argparse
 import asyncio
@@ -65,9 +72,14 @@ class Link:
                     self.apps[writer] = f"{system}{msg.get('build', '')}"
                     self.note(f"hello {json.dumps(msg, ensure_ascii=False)}", self.apps[writer])
                 elif kind == "reply":
+                    plan_shot = str(msg.get("id", "")).startswith("plan:")
                     if "jpeg" in msg:
                         ext = "png" if msg.get("format") == "png" else "jpg"
-                        name = datetime.datetime.now().strftime(f"shot-{tag}-%H%M%S.{ext}")
+                        if plan_shot:
+                            safe = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in msg["id"][5:])
+                            name = f"plan-{tag}-{safe}.{ext}"
+                        else:
+                            name = datetime.datetime.now().strftime(f"shot-{tag}-%H%M%S.{ext}")
                         path = os.path.join(self.out, name)
                         with open(path, "wb") as f:
                             f.write(base64.b64decode(msg.pop("jpeg")))
@@ -75,6 +87,12 @@ class Link:
                             f.write(open(path, "rb").read())
                         msg["path"] = path
                     msg["device"] = tag
+                    if plan_shot:
+                        self.note(f"plan shot {msg['path']}", tag)
+                        continue
+                    if msg.get("cmd") == "plan" and msg.get("done"):
+                        self.note("plan done" + (" (with failures)" if msg.get("failed") else ""), tag)
+                        continue
                     fut = self.waiting.pop(msg.get("id"), None)
                     if fut and not fut.done():
                         fut.set_result(msg)
@@ -146,9 +164,18 @@ def main():
     s.add_argument("--out", required=True)
     c = sub.add_parser("send")
     c.add_argument("json")
+    pl = sub.add_parser("plan")
+    pl.add_argument("file")
+    pl.add_argument("--device")
     a = p.parse_args()
     if a.what == "serve":
         asyncio.run(serve(a.out))
+    elif a.what == "plan":
+        with open(a.file, encoding="utf-8") as f:
+            cmd = {"cmd": "plan", "lines": f.read().splitlines()}
+        if a.device:
+            cmd["device"] = a.device
+        asyncio.run(send(json.dumps(cmd)))
     else:
         asyncio.run(send(a.json))
 

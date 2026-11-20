@@ -17,6 +17,7 @@
 // An exported file carries them in the file, so the Prof tab says so first.
 
 #include "MobileEngine.h"
+#include "MobileWorkspace.h"
 
 #include "SecureStore.h"
 #include "ShareText.h"
@@ -189,6 +190,10 @@ QString MobileEngine::activeAppSetup() const
 
 QVariantMap MobileEngine::saveAppSetup(const QString& requested)
 {
+    // The own layouts' last change may still wait for its write.
+    if (m_workspace) {
+        m_workspace->flush();
+    }
     const QString name = cleanName(requested);
     if (name.isEmpty()) {
         return failed(tr("Give the setup a name."));
@@ -288,6 +293,9 @@ QVariantMap MobileEngine::applyAppSetup(const QString& name)
     }
 
     // What the app holds in memory from the settings, read again.
+    if (m_workspace) {
+        m_workspace->reload();
+    }
     loadDigiSettings();
     loadFreeDvSettings();
     m_onlineLogKey = loadSecret(QStringLiteral("onlinelog_key"));

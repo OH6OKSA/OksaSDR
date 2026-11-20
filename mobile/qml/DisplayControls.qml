@@ -30,6 +30,69 @@ ColumnLayout {
         wrapMode: Text.WordWrap
     }
 
+    // Own layouts (roadmap 113, Larry Averbeck W9FLA): the screen's parts
+    // where the operator puts them, the desktop's Workspace Canvas. On the
+    // tablet page (iPad, Mac, Android tablets); a phone keeps its own.
+    readonly property QtObject ws: Engine.workspace
+    Label {
+        visible: !Theme.phoneLayout
+        text: qsTr("Layout")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(16)
+    }
+    Flow {
+        visible: !Theme.phoneLayout
+        Layout.fillWidth: true
+        spacing: Theme.spacing / 2
+        AppButton {
+            objectName: "layoutClassic"
+            text: qsTr("Classic")
+            checked: !ws.canvas
+            focusPolicy: Qt.NoFocus
+            onClicked: ws.canvas = false
+        }
+        Repeater {
+            model: ws.layouts
+            delegate: AppButton {
+                required property var modelData
+                objectName: "layout:" + modelData.id
+                text: modelData.label
+                checked: ws.canvas && ws.active === modelData.id
+                focusPolicy: Qt.NoFocus
+                onClicked: {
+                    ws.active = modelData.id
+                    ws.canvas = true
+                }
+            }
+        }
+    }
+    RowLayout {
+        visible: !Theme.phoneLayout
+        Layout.fillWidth: true
+        AppButton {
+            objectName: "layoutEdit"
+            text: ws.canvas ? qsTr("Edit") : qsTr("Edit a copy")
+            Layout.fillWidth: true
+            focusPolicy: Qt.NoFocus
+            onClicked: ws.requestEdit(false)
+        }
+        AppButton {
+            objectName: "layoutNew"
+            text: qsTr("New")
+            Layout.fillWidth: true
+            focusPolicy: Qt.NoFocus
+            onClicked: ws.requestEdit(true)
+        }
+    }
+    Label {
+        visible: !Theme.phoneLayout
+        Layout.fillWidth: true
+        text: qsTr("Arrange the screen yourself: in Edit drag a part to move it, tap it and drag its corners or edges to resize it, × hides it and + Add brings it back. Each layout keeps landscape and portrait apart; Classic stays as it is.")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.WordWrap
+    }
+
     // Band plan strip along the bottom of the spectrum.
     Label { text: qsTr("Band plan"); color: Theme.textDim; font.pixelSize: Theme.px(16) }
     Flow {

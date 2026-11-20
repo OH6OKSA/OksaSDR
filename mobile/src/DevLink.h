@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QImage>
 #include <QObject>
 #include <QPointer>
 #include <QTcpSocket>
@@ -13,6 +14,7 @@ class QQmlEngine;
 namespace AetherSDR::mobile {
 
 class MobileEngine;
+class ShotPlan;
 
 // Developer link, off unless the user turns it on (Log page): the app
 // connects out to a developer PC (host:47100, e.g. over the user's own VPN)
@@ -55,9 +57,15 @@ private:
     QJsonObject state() const;
     // Replies asynchronously (grabToImage): grabWindow did not return on iOS/Metal.
     void screenshot(const QJsonValue& id);
+    // A grabbed or saved picture sent home as a screenshot reply.
+    void sendImage(QImage image, const QJsonValue& id);
+    // "plan": a test plan run on this device (ShotPlan, receive and display
+    // commands only, transmitting blocked while it runs).
+    void runPlan(const QJsonObject& command);
     void sendLogLine(const QString& line);
 
     QPointer<MobileEngine> m_engine;
+    QPointer<ShotPlan> m_plan;
     QQmlApplicationEngine* m_qml{nullptr};
     QTcpSocket m_socket;
     QTimer m_retry;

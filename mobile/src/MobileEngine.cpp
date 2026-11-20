@@ -1,4 +1,5 @@
 #include "MobileEngine.h"
+#include "MobileWorkspace.h"
 
 #ifdef HAVE_MIDI
 #include "core/MidiControlManager.h"
@@ -836,6 +837,13 @@ MobileEngine::MobileEngine(QObject* parent)
     setupOnlineLog();
     setupParkSpots();
     setupUpdateCheck();
+    // The own layouts (roadmap 113), written now when the app leaves the front.
+    m_workspace = new MobileWorkspace(this);
+    connect(qApp, &QGuiApplication::applicationStateChanged, m_workspace, [this](Qt::ApplicationState state) {
+        if (state != Qt::ApplicationActive) {
+            m_workspace->flush();
+        }
+    });
     setupQrzLog();
     setupSharedAdif();
     setupLogger32();
@@ -4505,6 +4513,13 @@ void MobileEngine::setPtt(bool down, const QString& reason)
     }
     if (!m_digiKeying) {
         noteOperator();
+    }
+    // A developer-link test plan: nothing keys, FT8 / FT4 and the text
+    // modes included, and no hold arms.
+    if (m_txBlocked) {
+        qCInfo(lcMobile) << "transmit blocked: refused" << (reason.isEmpty() ? QStringLiteral("PTT") : reason)
+                         << "(developer link test)";
+        return;
     }
     // Transmit lock in standby: a press held for a second arms (the Space
     // key; the PTT button arms the same way itself). FT8 / FT4 are refused
@@ -8676,6 +8691,9 @@ void MobileEngine::setTxLock(bool on)
 
 bool MobileEngine::txLocked() const
 {
+    if (m_txBlocked) {
+        return true;
+    }
     if (!txLock()) {
         return txArmAtStart() && !m_txStartArmed;
     }
@@ -8713,6 +8731,11 @@ int MobileEngine::txArmedSeconds() const
 void MobileEngine::armTransmit()
 {
     m_txArmHold.stop();
+    if (m_txBlocked) {
+        // A developer-link test plan: its taps and holds arm nothing.
+        qCInfo(lcMobile) << "transmit blocked: arming refused (developer link test)";
+        return;
+    }
     if (!txLock()) {
         // Arm once after start: armed for the rest of this run.
         if (txArmAtStart() && !m_txStartArmed) {
@@ -8765,7 +8788,7 @@ void MobileEngine::armHold(bool down)
         m_txArmHold.stop();
         return;
     }
-    if (!txLocked() || m_txArmHold.isActive()) {
+    if (!txLocked() || m_txArmHold.isActive() || m_txBlocked) {
         return;
     }
     m_txArmHold.setSingleShot(true);
@@ -8786,9 +8809,27 @@ void MobileEngine::standbyTransmit()
     emit txLockChanged();
 }
 
+void MobileEngine::setTransmitBlocked(bool on)
+{
+    if (on == m_txBlocked) {
+        return;
+    }
+    if (on) {
+        // Whatever was keyed ends first.
+        stopTransmit(QStringLiteral("transmit blocked (developer link test)"));
+    }
+    m_txBlocked = on;
+    qCInfo(lcMobile) << "transmit" << (on ? "blocked (developer link test)" : "block lifted");
+    emit txLockChanged();
+}
+
 // A transmission refused in standby, with the way to arm in the notice.
 bool MobileEngine::txLockRefuses(const char* what)
 {
+    if (m_txBlocked) {
+        qCInfo(lcMobile) << "transmit blocked: refused" << what << "(developer link test)";
+        return true;
+    }
     if (!txLocked()) {
         return false;
     }

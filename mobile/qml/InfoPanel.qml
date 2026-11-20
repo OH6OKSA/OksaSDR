@@ -79,9 +79,17 @@ Item {
         if (Engine.cwMode) out.push({ text: "QSK", on: Engine.cwBreakIn })
         return out
     }
+    // AGC-T set automatically (roadmap 112, Tommy Pierson W6TPR: his
+    // Aurora shows AGC-A then): the radio's own Auto AGC-T, or the app's
+    // Follow while it actually follows (not while it waits for a
+    // measurement, transmits or measures). The one-off Auto measurement
+    // leaves a fixed AGC-T, so the mode's letter stays; FM has no AGC.
+    readonly property bool agcThresholdAuto: (!!Engine.agcAuto.radioOn || !!Engine.agcAuto.following)
+                                             && !Engine.agcAuto.noAgc
     readonly property string agcText: {
         const m = Engine.agcMode.toLowerCase()
-        return m === "off" ? "AGC-OFF" : "AGC-" + m.charAt(0).toUpperCase()
+        if (m === "off") return "AGC-OFF"
+        return agcThresholdAuto ? "AGC-A" : "AGC-" + m.charAt(0).toUpperCase()
     }
 
     implicitWidth: lines.implicitWidth
@@ -228,7 +236,9 @@ Item {
             Hit {
                 visible: info.showCore
                 text: info.agcText
-                accessibleName: qsTr("AGC %1").arg(Engine.agcMode)
+                accessibleName: info.agcThresholdAuto && Engine.agcMode.toLowerCase() !== "off"
+                                ? qsTr("AGC %1, AGC-T automatic").arg(Engine.agcMode)
+                                : qsTr("AGC %1").arg(Engine.agcMode)
                 color: info.rxColor
                 fontPx: info.fontPx
                 rowH: info.rowH

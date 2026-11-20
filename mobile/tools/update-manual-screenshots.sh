@@ -54,7 +54,8 @@ midi_shots=(setup-midi)
 logging_shots=(setup-logging)
 kpa_shots=(tab-kpa kpa-controls)
 elecraft_shots=(tab-kpa500 kpa500-controls kat500-controls setup-elecraft)
-all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${phone_shots[@]}" phone-landscape phone-landscape-bs bandchooser
+layout_shots=(layout-edit layout-own)
+all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${layout_shots[@]}" "${phone_shots[@]}" phone-landscape phone-landscape-bs bandchooser
            "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" "${logging_shots[@]}" "${kpa_shots[@]}" "${elecraft_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
     printf '%s\n' "${all_shots[@]}" | sort -u
@@ -181,6 +182,25 @@ fi
 
 if want ipad-portrait; then
     printf 'wait %s\nshot ipad-portrait\n' "$FILL" | plan ipad-portrait 1024x1366 "${src[@]}" --controls visible
+fi
+
+# An own layout (roadmap 113): View > Layout > Edit a copy of Classic, PTT
+# narrower, the steps in the corner beside it, the display taller; the
+# editor with the steps selected, then the layout in use. The blocks are
+# chosen through the screen reader (a tap on a title can land on the
+# arrange bar), and the layout is deleted at the end (Classic again).
+if want "${layout_shots[@]}"; then
+    {
+        echo "wait $FILL"
+        printf 'pin 5\nshowname layoutEdit\ntapname layoutEdit\nwait 2000\na11y on\n'
+        printf 'a11ypress PTT block\ndragname edit:ptt:e 0.5,0.5 -427,0 700\nwait 400\n'
+        printf 'a11ypress Steps block\ndragname edit:steps:e 0.5,0.5 -544,0 800\nwait 400\n'
+        printf 'dragname edit:steps 0.5,0.5 544,69 800\nwait 400\ndragname edit:steps:s 0.5,0.5 0,28 500\nwait 400\n'
+        printf 'a11ypress Display block\ndragname edit:display:s 0.5,0.5 0,69 600\nwait 400\n'
+        printf 'a11ypress Steps block\nwait 600\nlayoutitems land\nshot layout-edit\n'
+        printf 'tapname layoutDone\nwait 1500\nshot layout-own\n'
+        printf 'showname layoutEdit\ntapname layoutEdit\nwait 1500\ntapname layoutDelete\nwait 800\ntapname layoutDeleteYes\nwait 1500\nlayoutitems land\n'
+    } | plan layouts 1366x1024 "${src[@]}" --controls visible
 fi
 
 if want "${phone_shots[@]}"; then
@@ -487,6 +507,8 @@ fi
 
 jpg connect "" 900x
 jpg overview "" 1100x
+jpg layout-edit "" 1100x
+jpg layout-own "" 1100x
 jpg phone-portrait
 jpg big-buttons "" 330x
 jpg big-buttons-log "" 330x

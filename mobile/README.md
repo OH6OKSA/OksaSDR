@@ -155,3 +155,17 @@ The app connects out to port 47100 (allow it in the PC's firewall). It
 accepts only receive and display commands (screenshot, state, set on an
 allow-list, tune, mode, band, zoom, drawer); nothing on the link can key
 the transmitter.
+
+A test plan of the render tool's shot-plan lines (see `src/ShotPlan.h`)
+runs on the device itself, for what needs a real touch screen or screen
+reader:
+
+    mobile/tools/devlink.py plan my-test.plan [--device ios197]
+
+Its results arrive as `shot-plan:` lines in `devlink.log` and its shots as
+`plan-DEVICE-NAME.jpg` (nothing is saved on the device); `{"cmd":"planstop"}`
+ends it after the line it is on (a `wait` included). Only looking,
+tapping, dragging, reading, tuning and view commands are accepted (PTT,
+power, amplifiers, the radio's setup and the rest are refused), and the
+app blocks every transmission while a plan runs: a tap on PTT, TUNE or CQ
+keys nothing, and no hold arms the transmit lock.

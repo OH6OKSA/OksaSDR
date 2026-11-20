@@ -632,6 +632,71 @@ a swipe up or down on a slider moves it one step, sent at once.
 Tuning with the screen reader, and dialogs and panels that keep the
 screen reader inside them, are still to come.
 
+### Own layouts
+
+On an iPad, a Mac, an Android tablet or a foldable's inner screen (any
+window with the tablet layout) you can arrange the main screen yourself:
+move its parts, size them, hide what you do not use, and keep several
+layouts (thanks Larry Averbeck W9FLA, after the desktop AetherSDR's
+Workspace Canvas). A phone keeps its own screen.
+
+![An own layout: the PTT narrower, the step buttons beside it, the display taller](manual/layout-own.jpg)
+
+**Controls → View → Layout** lists **Classic** (the screen described
+above, always there and never changed) and your own layouts; tap one to
+use it. **New** makes a layout from Classic's arrangement and opens it in
+the editor. **Edit** edits the layout in use; with Classic in use it reads
+**Edit a copy** and makes a new layout to edit. In a window narrow enough
+to put Setup and the rest behind **⋯**, **⋯ → Edit layout** does the same.
+
+The screen is made of blocks: *Frequency*, *Mode*, *Step size*, *Info
+line*, *Bands*, *Slices and meters*, *Display*, *Steps*, *Controls*,
+*Macros* and *PTT*.
+
+![Editing a layout: the Steps block selected, with its handles and the arrange bar](manual/layout-edit.jpg)
+
+In the editor:
+
+- **Drag a block** by any part to move it. Its edges snap to the window's
+  edges and to the other blocks' edges and centres (a thin line shows
+  which). The frame is orange while it moves and red where it would cover
+  another block; it never drops there, but stays at the last free place.
+- **Tap a block** to select it: handles show at its corners and edges;
+  drag one to size it. A block stops at the size its content still fits
+  (the frequency's digits, the buttons, the meters, the display's least
+  height), at the window's edge and at another block.
+- The band and step buttons arrange themselves to the block's shape: a
+  row, a few rows or a column (the steps keep their − / + pairs).
+- **×** on a block hides it; **+ Add** in the top row brings a hidden
+  block back.
+- The **arrange bar** beside the selected block moves it (**← ↑ ↓ →**)
+  and sizes it (**W− W+ H− H+**) by 8 points a press, repeating while
+  held: exact steps, and handy with a mouse or a trackpad.
+- **Undo** takes back the last change (up to 50), **Reset** puts
+  Classic's arrangement back, **Delete** deletes the layout (the screen
+  goes back to Classic), and a tap on the name at the left (*Layout:
+  Layout 1*) renames it. **Done** ends editing.
+
+While you edit, the blocks show a picture of their content and nothing in
+them acts: a stray touch never tunes or transmits, and Space on a
+keyboard is not PTT until **Done**. With the *Controls* block in the
+layout the controls are part of the screen and the top row's **Controls**
+button goes; hide the block and **Controls** opens them as a drawer again.
+
+Each layout keeps landscape and portrait apart: turn the device and edit
+the other. Layouts are remembered, and **App setups** (Prof tab) save them
+with the app's other settings. The blocks keep their share of the window,
+so a layout follows a smaller window (Split View, Stage Manager); a block
+that comes out under its least size shows its content as best it can
+(the buttons in more rows, say).
+
+**With a screen reader** (VoiceOver, TalkBack) each block in the editor
+reads as *Steps block* with its place and size (*left 0, top 792, 964 by
+55*); a double tap selects it, and the arrange bar's buttons read *Move
+Steps left*, *Steps wider* and so on. Each press says where the block is
+now, or why it did not move: *at the edge*, *its content would not fit*,
+*another block is there*.
+
 ### Big buttons
 
 **View › Big buttons** (or **⋯** → *Big buttons* on a phone) covers the
@@ -768,7 +833,7 @@ is a touch target with its choices behind it:
 | **ANT1** (blue) | Receive antenna | Choose the RX antenna |
 | **ANT1** (red) | Transmit antenna | Choose the TX antenna |
 | **2.7K** | Receive filter width | Filters and DSP |
-| **AGC-M** | AGC mode | AGC mode, AGC threshold and RF gain |
+| **AGC-M** | AGC mode: F, M, S (fast, medium, slow) or OFF; **AGC-A** while AGC-T is set automatically, by the radio's own Auto AGC-T or by Follow (in the AGC panel, below) as it follows the noise (thanks Tommy W6TPR) | AGC mode, AGC threshold and RF gain |
 | Speaker | Audio on (blue) / muted (red), with this slice's volume beside it (0–100; a new slice starts at 50) | Every slice's volume (AF gain), Mute and pan (left–right, read as C, L n or R n; it snaps to centre near the middle, and double-tap centres) |
 | Lock | Tuning lock open / locked | Lock or unlock tuning (flashes when a tune is refused) |
 | Dot | Record: hollow, red and blinking while recording | Record this slice's receive audio in the radio (tap again to stop) |
@@ -849,7 +914,11 @@ display's noise estimate over about 5 kHz either side of the passband,
 which leaves signals out: an AM carrier, FT8's tones and a CW signal
 alike), and when it has moved enough for a change of 3 dB or more for
 10 s, AGC-T moves by that much over the measured gain: lower noise, a
-higher AGC-T. The note under it says what it follows, or why it waits:
+higher AGC-T. While it follows, the info panel reads **AGC-A** (the
+screen reader adds *AGC-T automatic*); while it waits, the AGC mode's
+letter shows, as after a one-off Auto measurement, which leaves AGC-T
+fixed where it set it. The note under it says what it follows, or why it
+waits:
 
 - *Follows once Auto has measured this band and mode*: measure with Auto
   first (each band and mode group: voice, CW, data).
@@ -859,7 +928,8 @@ higher AGC-T. The note under it says what it follows, or why it waits:
 - *AGC is off*: AGC-T is a fixed gain then and is left alone.
 - *Held while transmitting*: never while you transmit (also a TUNE or an
   FT8 period) and 2 s after.
-- With the radio's own Auto on, the radio follows by itself.
+- With the radio's own Auto on, the radio follows by itself (the info
+  panel reads AGC-A then too).
 
 Moving the slider by hand lets the band and mode's measured value go, so
 nothing follows there until Auto measures again. Follow stays on or off
@@ -1486,7 +1556,9 @@ seven.
     decoder keeps listening with the app in the background: `[away 20:55]`
     and `[back 21:12]` mark what came while you were away. A callsign the decoder hears after *DE*, or twice, is
     offered above the memories (*Call*) and on the Log tab (*Heard in CW*).
-- **View** — **Big buttons** (see [Big buttons](#big-buttons)), **Band plan** (the strip at the foot of the spectrum: *Off*,
+- **View** — **Big buttons** (see [Big buttons](#big-buttons)), **Layout**
+  (tablets: Classic and your own layouts, Edit, New; see
+  [Own layouts](#own-layouts)), **Band plan** (the strip at the foot of the spectrum: *Off*,
   *ARRL (US)*, *IARU Region 1 / 2 / 3*, *RAC (Canada)* or *SSA
   (Sweden)*), **Band plan lock (mode)** (see
   [Band plan lock](#band-plan-lock)), **Felt taps (phones)** (on / off, see
@@ -1548,7 +1620,8 @@ seven.
   pick a setup in the list to switch to it at once. A setup holds the
   display, meters, panels, DSP, audio and the TX chain, macros and CW
   memories, the logbooks, the devices and the radio list, with their
-  passwords and keys; the voice keyer's recordings stay on the device.
+  passwords and keys, and your [own layouts](#own-layouts); the voice
+  keyer's recordings stay on the device.
   Settings a setup did not have go back to their defaults. What reads its
   setting only at start (the amplifier, the 4O3A devices, the DX cluster,
   the developer link) follows at the next start, and the line under the
@@ -2796,6 +2869,9 @@ the spot comments) F1–F12, ⌘1–⌘0 and Esc still do what they do on the
 page, so a pile-up can be worked from the log (asked by Christoph
 Steinert DM5HF); letters, digits and Space type there, as do T and A. The
 CW tab's text and the Digi tab's *Text to send* take them the same way.
+
+While you edit an [own layout](#own-layouts) the keys do nothing on the
+page (Space is not PTT); **Done** gives them back.
 
 **Apple Pencil** drags tune ten times finer, for zero-beating.
 

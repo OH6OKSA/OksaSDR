@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QElapsedTimer>
+#include <QImage>
 #include <QObject>
 #include <QStringList>
 
@@ -131,7 +132,21 @@ class ShotPlan : public QObject {
 public:
     ShotPlan(QQmlApplicationEngine& qml, MobileEngine& engine, const QString& planFile, const QString& outDir,
              QObject* parent = nullptr);
+    // A plan from the developer link (DevLink "plan"): these lines, run in
+    // the app as it is (no quit at the end: finished() instead), and only
+    // the commands in `allowed` (the rest refused, logged).
+    ShotPlan(QQmlApplicationEngine& qml, MobileEngine& engine, const QStringList& lines,
+             const QStringList& allowed, QObject* parent = nullptr);
     void start();
+    // Stops at the next line (the developer link's "planstop").
+    void stop() { m_next = static_cast<int>(m_lines.size()); }
+
+signals:
+    void finished(bool failed);
+    // A plan's "shot" over the developer link: the picture, grabbed as the
+    // link's own screenshot is (grabWindow does not return on iOS / Metal),
+    // for the link to send home; nothing is written on the device.
+    void shotTaken(const QString& name, const QImage& image);
 
 private:
     void step();
@@ -148,6 +163,9 @@ private:
     int m_next{0};
     int m_readyTries{0};
     bool m_failed{false};
+    // Run from a file by --shot-plan: the app quits at the end.
+    bool m_quitAtEnd{true};
+    QStringList m_allowed;
     // Conditional lines ("? cmd" runs when the last wait succeeded, "! cmd"
     // when it did not) and the waits that poll (waittx, waitcall, waitover).
     bool m_condition{true};

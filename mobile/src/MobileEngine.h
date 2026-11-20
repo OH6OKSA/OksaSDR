@@ -162,6 +162,9 @@ class MobileEngine : public QObject {
     // app's beta, updateBeta a newer one found (0: none), updateOffered while
     // it is not dismissed, updateStatus the last read in a line.
     Q_PROPERTY(bool updateCheckBuilt READ updateCheckBuilt CONSTANT)
+    // The operator's own layouts of the tablet page (roadmap 113;
+    // MobileWorkspace, the desktop's Workspace Canvas model).
+    Q_PROPERTY(QObject* workspace READ workspace CONSTANT)
     Q_PROPERTY(bool updateCheck READ updateCheck WRITE setUpdateCheck NOTIFY updateChanged)
     Q_PROPERTY(int ownBeta READ ownBeta CONSTANT)
     Q_PROPERTY(int updateBeta READ updateBeta NOTIFY updateChanged)
@@ -844,6 +847,10 @@ public:
     void setTxArmAtStart(bool on);
     // The lock on and not armed: transmitting is refused.
     bool txLocked() const;
+    // Nothing transmits while on, and no hold arms it (the developer link's
+    // test plans: the link must not be able to key the radio).
+    void setTransmitBlocked(bool on);
+    bool transmitBlocked() const { return m_txBlocked; }
     // Armed: the seconds left (0 in standby or with the lock off).
     int txArmedSeconds() const;
     // Arms at once (a held TUNE or CQ), or after a second held (PTT, KEY,
@@ -987,6 +994,7 @@ public:
     Q_INVOKABLE void dismissSetupSuggestion();
     QString appVersion() const;
     bool updateCheckBuilt() const;
+    QObject* workspace() const;
     bool updateCheck() const;
     void setUpdateCheck(bool on);
     int ownBeta() const;
@@ -2907,6 +2915,10 @@ private:
     double localFloorDbm() const;
     void agcFollowTick();
     QTimer m_agcFollowTimer;
+    // Follow is on and not held (FM, AGC off, the radio's Auto, measuring,
+    // transmitting, no measurement yet): AGC-T moves with the noise.
+    bool m_agcFollowing{false};
+    void setAgcFollowing(bool following);
     QString m_agcFollowKey;
     QString m_agcFollowNote;
     double m_agcFollowFloor{0.0};   // the smoothed floor at the slice, dBm
@@ -2989,6 +3001,7 @@ private:
     QTimer m_txArmTick;
     bool m_txStartArmed{false};  // txArmAtStart: armed once in this run
     bool txLockRefuses(const char* what);
+    bool m_txBlocked{false};
     // DX cluster: its spots go to the radio ("spot add", as the desktop),
     // deduplicated per call within 1 kHz and sent at most RbnRateLimit a
     // second; the radio shows them to every client and brings them back
@@ -3026,6 +3039,7 @@ private:
     QTimer m_parkSpotTimer;
     // The newer-version check (roadmap 111).
     QTimer m_updateTimer;
+    class MobileWorkspace* m_workspace{nullptr};
     int m_updateBeta{0};
     QString m_updateApkUrl;
     QString m_updateNotesUrl;

@@ -7,6 +7,30 @@ Page {
     id: page
     focus: true
 
+    // ── Own layouts (roadmap 113, Larry Averbeck W9FLA) ─────────────────
+    // The operator's arrangement of the blocks below (LayoutCanvas), the
+    // desktop's Workspace Canvas on a touch screen; Classic (the grid) when
+    // none is in use or the layout has none for this orientation yet.
+    readonly property QtObject ws: Engine.workspace
+    readonly property string orientation: portrait ? "port" : "land"
+    property bool layoutEditing: false
+    // Classic on screen for a moment, to be measured into a new arrangement.
+    property bool measuringClassic: false
+    readonly property bool canvasOn: ws.canvas && !measuringClassic && (ws.revision, ws.hasArrangement(orientation))
+    readonly property bool canvasControls: canvasOn && blockControls.shown
+    readonly property var blockTitles: ({
+        frequency: qsTr("Frequency"), mode: qsTr("Mode"), stepsize: qsTr("Step size"), info: qsTr("Info line"), bands: qsTr("Bands"),
+        slices: qsTr("Slices and meters"), display: qsTr("Display"), steps: qsTr("Steps"),
+        controls: qsTr("Controls"), macros: qsTr("Macros"), ptt: qsTr("PTT")
+    })
+    readonly property var closedBlocks: {
+        const out = []
+        for (const it of canvasArea.items) {
+            if (it.closed) out.push({ block: it.block, title: blockTitles[it.block] || it.block })
+        }
+        return out
+    }
+
     // Hardware keyboard (Magic Keyboard): arrows tune by step (Shift x10),
     // +/- zoom, F opens direct entry, F1-F12 send the CW memories, Esc stops
     // CW text. Space is hold-to-talk: press keys,
@@ -24,7 +48,7 @@ Page {
     Keys.onReleased: (event) => { if (operateKeys.release(event)) event.accepted = true }
     // The engine keys Space PTT from GameController (iOS) only while the
     // page has the keyboard.
-    Binding { target: Engine; property: "keyboardOnPage"; value: page.activeFocus }
+    Binding { target: Engine; property: "keyboardOnPage"; value: page.activeFocus && !page.layoutEditing }
     onActiveFocusChanged: operateKeys.pageFocusChanged(activeFocus)
     background: Rectangle { color: Theme.background }
 
@@ -162,7 +186,11 @@ Page {
 
     header: ToolBar {
         background: Rectangle { color: Theme.surface }
+        // Two rows, one shown: a Pane sizes to its content only with one.
+        contentHeight: Math.max(headerRow.implicitHeight, editHeaderRow.implicitHeight)
         RowLayout {
+            id: headerRow
+            visible: !page.layoutEditing
             anchors.fill: parent
             anchors.leftMargin: Theme.spacing
             anchors.rightMargin: Theme.spacing
@@ -189,11 +217,13 @@ Page {
             }
             TopButton {
                 // Pinned panel: hide it. Hidden: open it as a drawer over the
-                // waterfall.
-                text: page.panelPinned ? qsTr("Hide controls") : qsTr("Controls")
+                // waterfall. An own layout with its Controls block shows them
+                // there; without one, the drawer.
+                visible: !page.canvasControls
+                text: page.panelPinned && !page.canvasOn ? qsTr("Hide controls") : qsTr("Controls")
                 focusPolicy: Qt.NoFocus
                 onClicked: {
-                    if (page.panelPinned) {
+                    if (page.panelPinned && !page.canvasOn) {
                         Engine.controlsVisible = false
                     } else {
                         controlsDrawer.open()
@@ -239,14 +269,195 @@ Page {
                     MenuItem { text: qsTr("Manual"); onTriggered: Qt.openUrlExternally(Engine.manualUrl) }
                     MenuItem { text: qsTr("Log"); onTriggered: logPage.open() }
                     MenuItem { text: qsTr("Big buttons"); onTriggered: Engine.bigButtons = true }
+                    MenuItem { text: qsTr("Edit layout"); onTriggered: page.startEditing(false) }
                     MenuItem { text: qsTr("Disconnect"); onTriggered: Engine.disconnectRadio() }
                 }
             }
         }
+        // Editing an own layout: its name (tap to rename), + Add for a
+        // hidden block, Undo, Reset (to Classic's arrangement), Delete, Done.
+        RowLayout {
+            id: editHeaderRow
+            visible: page.layoutEditing
+            anchors.fill: parent
+            anchors.leftMargin: Theme.spacing
+            anchors.rightMargin: Theme.spacing
+            Label {
+                objectName: "layoutName"
+                text: qsTr("Layout: %1").arg(page.ws.activeLabel)
+                color: Theme.text
+                font.pixelSize: 18
+                font.bold: true
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+                Accessible.role: Accessible.Button
+                Accessible.name: qsTr("Rename layout %1").arg(page.ws.activeLabel)
+                Accessible.onPressAction: renameDialog.open()
+                TapHandler { onTapped: renameDialog.open() }
+            }
+            TopButton {
+                id: addBlockButton
+                objectName: "layoutAdd"
+                text: qsTr("+ Add")
+                Accessible.name: qsTr("Add a hidden block")
+                enabled: page.closedBlocks.length > 0
+                focusPolicy: Qt.NoFocus
+                onClicked: addMenu.popup(addBlockButton, 0, addBlockButton.height)
+                Menu {
+                    id: addMenu
+                    modal: true
+                    dim: false
+                    Instantiator {
+                        model: page.closedBlocks
+                        delegate: MenuItem {
+                            required property var modelData
+                            objectName: "layoutAdd:" + modelData.block
+                            text: modelData.title
+                            onTriggered: page.showBlock(modelData.block)
+                        }
+                        onObjectAdded: (index, object) => addMenu.insertItem(index, object)
+                        onObjectRemoved: (index, object) => addMenu.removeItem(object)
+                    }
+                }
+            }
+            TopButton {
+                objectName: "layoutUndo"
+                text: qsTr("Undo")
+                Accessible.name: qsTr("Undo the last change")
+                enabled: page.ws.canUndo
+                focusPolicy: Qt.NoFocus
+                onClicked: page.ws.undo()
+            }
+            TopButton {
+                objectName: "layoutReset"
+                text: qsTr("Reset")
+                Accessible.name: qsTr("Reset to Classic's arrangement")
+                focusPolicy: Qt.NoFocus
+                onClicked: page.measureClassic(false)
+            }
+            TopButton {
+                objectName: "layoutDelete"
+                text: qsTr("Delete")
+                Accessible.name: qsTr("Delete layout")
+                focusPolicy: Qt.NoFocus
+                onClicked: deleteLayoutDialog.open()
+            }
+            TopButton {
+                objectName: "layoutDone"
+                text: qsTr("Done")
+                Accessible.name: qsTr("Done editing the layout")
+                focusPolicy: Qt.NoFocus
+                onClicked: page.stopEditing()
+            }
+        }
+    }
+
+    // ── Own layouts: editing ───────────────────────────────────────────
+    function startEditing(newLayout) {
+        controlsDrawer.close()
+        macrosPanel.close()
+        Engine.setPtt(false, "layout editing")
+        Engine.setCwKey(false, "layout editing")
+        if (newLayout || !ws.canvas) {
+            measureClassic(true)
+        } else if (!canvasOn) {
+            // An own layout without this orientation yet: Classic's
+            // arrangement to start from.
+            measureClassic(false)
+        } else {
+            layoutEditing = true
+        }
+    }
+    // + Add's choice: the menu closed first (a screen reader's press leaves
+    // it open where a tap closes it, and the block shown changes the menu's
+    // list, which takes the item away), then the block shown again.
+    function showBlock(block) {
+        addMenu.close()
+        ws.checkpoint()
+        ws.setClosed(orientation, block, false)
+    }
+    function stopEditing() {
+        addMenu.close()
+        layoutEditing = false
+        ws.flush()
+        page.forceActiveFocus()
+    }
+    // Classic shown for a frame and measured into blocks: a new layout, or
+    // this orientation of the active one (its first edit, or Reset).
+    function measureClassic(newLayout) {
+        seedTimer.newLayout = newLayout
+        measuringClassic = true
+        seedTimer.restart()
+    }
+    Timer {
+        id: seedTimer
+        property bool newLayout: false
+        interval: 80
+        onTriggered: {
+            const blocks = page.classicBlocks()
+            if (newLayout) {
+                page.ws.createLayout(page.orientation, blocks)
+            } else {
+                page.ws.checkpoint()
+                page.ws.seed(page.orientation, blocks)
+            }
+            page.measuringClassic = false
+            page.layoutEditing = true
+        }
+    }
+    onOrientationChanged: if (layoutEditing) stopEditing()
+    Connections {
+        target: page.ws
+        function onEditRequested(newLayout) { page.startEditing(newLayout) }
+    }
+    // Where Classic shows a part, in fractions of the page's area (the
+    // grid's, which the canvas takes too); null when it is not shown.
+    function classicRect(item) {
+        if (!item || !item.visible || item.width <= 0 || item.height <= 0 || grid.width <= 0 || grid.height <= 0) {
+            return null
+        }
+        const p = item.mapToItem(grid, 0, 0)
+        return { x: p.x / grid.width, y: p.y / grid.height, w: item.width / grid.width, h: item.height / grid.height }
+    }
+    function unionRect(a, b) {
+        if (!a) return b
+        if (!b) return a
+        const x = Math.min(a.x, b.x)
+        const y = Math.min(a.y, b.y)
+        return { x: x, y: y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y }
+    }
+    function classicBlocks() {
+        const list = []
+        const add = (block, r) => {
+            const item = { block: block, closed: !r }
+            if (r) Object.assign(item, r)
+            list.push(item)
+        }
+        add("frequency", classicRect(freqLabel))
+        add("mode", classicRect(classicMode))
+        add("stepsize", classicRect(classicStep))
+        add("info", classicRect(page.infoUnder ? infoUnderPanel : infoBeside))
+        add("bands", classicRect(bandRow))
+        add("slices", classicRect(sliceBar))
+        add("display", classicRect(panSlot))
+        add("steps", classicRect(stepRow))
+        add("controls", page.panelPinned ? classicRect(controlsSlot) : null)
+        // With PTT hidden (FT8 / FT4 running) its row is not shown: where
+        // it would be, under the display.
+        const pttH = page.pttHeight / Math.max(1, grid.height)
+        const rowY = 1 - pttH
+        const leftW = page.leftWidth / Math.max(1, grid.width)
+        const macrosW = Math.max(110, macrosButton.implicitWidth) / Math.max(1, grid.width)
+        add("macros", classicRect(macrosSlot)
+                      || (macrosPanel.available ? { x: 0, y: rowY, w: macrosW, h: pttH } : null))
+        add("ptt", classicRect(pttSlot) || { x: macrosPanel.available ? macrosW + 0.005 : 0, y: rowY,
+                                             w: leftW - (macrosPanel.available ? macrosW + 0.005 : 0), h: pttH })
+        return list
     }
 
     GridLayout {
         id: grid
+        visible: !page.canvasOn
         anchors.fill: parent
         // Off under Big buttons, so no tap there reaches it.
         enabled: !Engine.bigButtons
@@ -274,6 +485,7 @@ Page {
             spacing: page.compact ? Theme.spacing / 2 : Theme.spacing
 
             RowLayout {
+                id: freqRow
                 spacing: page.compact ? Theme.spacing : 2 * Theme.spacing
                 TextMetrics {
                     id: freqMetrics
@@ -287,6 +499,7 @@ Page {
                     }
                 }
                 Label {
+                    id: freqLabel
                     text: page.formatMhz(Engine.frequencyMhz)
                     color: Theme.text
                     font.pixelSize: Math.round((page.compact ? 40 : 56) * page.infoScale)
@@ -303,9 +516,11 @@ Page {
                     id: modeColumn
                     spacing: 0
                     ModeButton {
+                        id: classicMode
                         fontSize: page.compact ? 24 : 32
                     }
                     StepButton {
+                        id: classicStep
                         fontSize: page.compact ? 13 : 16
                     }
                 }
@@ -314,6 +529,7 @@ Page {
                 // Clipped at its room should the fit be off by a pixel or
                 // two (rounding): a row wider than the column widened the page.
                 InfoPanel {
+                    id: infoBeside
                     visible: !page.infoUnder
                     showStep: false
                     fontScale: page.infoScale
@@ -326,6 +542,7 @@ Page {
             // Clipped rather than widening the page if even one line runs
             // out of room.
             InfoPanel {
+                id: infoUnderPanel
                 visible: page.infoUnder
                 showStep: false
                 singleLine: true
@@ -337,6 +554,7 @@ Page {
             // Band stack (Flex): one row, buttons share the width. Each band
             // comes back to its last frequency and mode.
             RowLayout {
+                id: bandRow
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
                 visible: Engine.bandsAvailable && Engine.tuneRowsShown
@@ -364,23 +582,20 @@ Page {
                 compact: page.compact
             }
 
-            PanadapterView {
+            // The display (panView, portaled: one instance, here or in an
+            // own layout's Display block).
+            Item {
+                id: panSlot
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                rfLabelWidth: sliceBar.rightMeterWidth
                 // Close under the slice row: the meters at its top corners
                 // sit right below the buttons.
                 Layout.topMargin: -Math.round(Theme.spacing / 2)
-                // A swipe in the open drawer must not tune.
-                covers: [controlsDrawer.background]
-                // B/S hides the band row and the step buttons: Band then
-                // picks the bands.
-                bandPicker: !Engine.tuneRowsShown
-                tuneRowsToggle: true
             }
 
             // Step buttons: land on round frequencies (tuneByHz).
             RowLayout {
+                id: stepRow
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
                 visible: Engine.tuneRowsShown
@@ -423,9 +638,10 @@ Page {
             Layout.preferredHeight: page.portrait ? page.height * 0.42 : -1
             spacing: Theme.spacing
 
-            // Pinned panel: section toggles; the chosen sections stack below.
-            ControlsPanel {
-                multiSelect: true
+            // Pinned panel: section toggles; the chosen sections stack below
+            // (pinnedControls, portaled as the display).
+            Item {
+                id: controlsSlot
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
@@ -447,25 +663,215 @@ Page {
             Layout.fillHeight: false
             Layout.preferredHeight: page.pttHeight
             spacing: Theme.spacing / 2
-            AppButton {
-                objectName: "macrosButton"
+            // Macros and PTT (portaled as the display).
+            Item {
+                id: macrosSlot
                 visible: macrosPanel.available
-                text: Engine.macroRepeatSlot.length > 0 ? "↻ " + Engine.macroRepeatSlot : qsTr("Macros")
-                warn: Engine.macroRepeatSlot.length > 0
-                font.pixelSize: 17
-                checked: macrosPanel.opened
-                focusPolicy: Qt.NoFocus
-                Layout.preferredWidth: Math.max(110, implicitWidth)
+                Layout.preferredWidth: Math.max(110, macrosButton.implicitWidth)
                 Layout.fillHeight: true
-                onClicked: macrosPanel.opened ? macrosPanel.close() : macrosPanel.open()
             }
-            PttButton {
-                id: ptt
+            Item {
+                id: pttSlot
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                fontPx: 32
             }
         }
+    }
+
+    // ── Own layout: the blocks (roadmap 113) ───────────────────────────
+    LayoutCanvas {
+        id: canvasArea
+        objectName: "layoutCanvas"
+        anchors.fill: parent
+        anchors.leftMargin: grid.anchors.leftMargin
+        anchors.rightMargin: grid.anchors.rightMargin
+        anchors.topMargin: grid.anchors.topMargin
+        anchors.bottomMargin: grid.anchors.bottomMargin
+        visible: page.canvasOn
+        enabled: !Engine.bigButtons
+        ws: page.ws
+        orientation: page.orientation
+        editing: page.layoutEditing
+
+        CanvasBlock {
+            id: blockFreq
+            block: "frequency"
+            canvas: canvasArea
+            title: page.blockTitles.frequency
+            minW: 160
+            minH: 36
+            fits: (w, h) => freqBlock.fits(w, h)
+            FrequencyBlock {
+                id: freqBlock
+                anchors.fill: parent
+                formatMhz: page.formatMhz
+                onTapped: freqDialog.open()
+            }
+        }
+        CanvasBlock {
+            id: blockMode
+            block: "mode"
+            canvas: canvasArea
+            title: page.blockTitles.mode
+            minW: 60
+            minH: 26
+            fits: (w, h) => modeBlock.fits(w, h)
+            ModeBlock {
+                id: modeBlock
+                anchors.fill: parent
+            }
+        }
+        CanvasBlock {
+            id: blockStepSize
+            block: "stepsize"
+            canvas: canvasArea
+            title: page.blockTitles.stepsize
+            minW: 90
+            minH: 26
+            fits: (w, h) => stepSizeBlock.fits(w, h)
+            StepSizeBlock {
+                id: stepSizeBlock
+                anchors.fill: parent
+            }
+        }
+        CanvasBlock {
+            id: blockInfo
+            block: "info"
+            canvas: canvasArea
+            title: page.blockTitles.info
+            minW: 160
+            minH: 30
+            fits: (w, h) => infoBlock.fits(w, h)
+            InfoBlock {
+                id: infoBlock
+                anchors.fill: parent
+            }
+        }
+        CanvasBlock {
+            id: blockBands
+            block: "bands"
+            canvas: canvasArea
+            title: page.blockTitles.bands
+            minW: 48
+            minH: 34
+            fits: (w, h) => bandsBlock.fits(w, h)
+            ButtonGridBlock {
+                id: bandsBlock
+                kind: "bands"
+                anchors.fill: parent
+            }
+        }
+        CanvasBlock {
+            id: blockSlices
+            block: "slices"
+            canvas: canvasArea
+            title: page.blockTitles.slices
+            minW: 320
+            minH: 48
+            fits: (w, h) => w >= 320 && h >= Math.min(blockSliceBar.implicitHeight, 120) * 0.9
+            SliceBar {
+                id: blockSliceBar
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                compact: width < 1100
+            }
+        }
+        CanvasBlock {
+            id: blockDisplay
+            block: "display"
+            canvas: canvasArea
+            title: page.blockTitles.display
+            // Its own corner buttons (− + Band, + Slice + Pan) side by side
+            // with room between, and the spectrum over the waterfall: at
+            // 240 x 120 the two button rows met.
+            minW: 300
+            minH: 160
+        }
+        CanvasBlock {
+            id: blockSteps
+            block: "steps"
+            canvas: canvasArea
+            title: page.blockTitles.steps
+            minW: 44
+            minH: 34
+            fits: (w, h) => stepsBlock.fits(w, h)
+            ButtonGridBlock {
+                id: stepsBlock
+                kind: "steps"
+                anchors.fill: parent
+            }
+        }
+        CanvasBlock {
+            id: blockControls
+            block: "controls"
+            canvas: canvasArea
+            title: page.blockTitles.controls
+            minW: 300
+            minH: 200
+        }
+        CanvasBlock {
+            id: blockMacros
+            block: "macros"
+            canvas: canvasArea
+            title: page.blockTitles.macros
+            minW: 80
+            minH: 36
+        }
+        CanvasBlock {
+            id: blockPtt
+            block: "ptt"
+            canvas: canvasArea
+            title: page.blockTitles.ptt
+            minW: 100
+            minH: 40
+        }
+    }
+
+    // ── The parts that are one instance in either arrangement ──────────
+    // The display, the pinned controls, Macros and PTT keep their state
+    // (the waterfall, a held PTT) and their cost once: in Classic's cell
+    // or in the own layout's block.
+    PanadapterView {
+        id: panView
+        parent: page.canvasOn ? blockDisplay.contentArea : panSlot
+        anchors.fill: parent
+        rfLabelWidth: sliceBar.rightMeterWidth
+        // A swipe in the open drawer must not tune.
+        covers: [controlsDrawer.background]
+        // B/S hides the band row and the step buttons: Band then picks the
+        // bands. In an own layout B/S is not there (the layout decides
+        // what shows) and Band picks when the Bands block is hidden.
+        bandPicker: page.canvasOn ? !blockBands.shown : !Engine.tuneRowsShown
+        tuneRowsToggle: !page.canvasOn
+    }
+    ControlsPanel {
+        id: pinnedControls
+        parent: page.canvasOn ? blockControls.contentArea : controlsSlot
+        anchors.fill: parent
+        multiSelect: true
+    }
+    AppButton {
+        id: macrosButton
+        objectName: "macrosButton"
+        parent: page.canvasOn ? blockMacros.contentArea : macrosSlot
+        anchors.fill: parent
+        visible: macrosPanel.available
+        text: Engine.macroRepeatSlot.length > 0 ? "↻ " + Engine.macroRepeatSlot : qsTr("Macros")
+        warn: Engine.macroRepeatSlot.length > 0
+        font.pixelSize: 17
+        checked: macrosPanel.opened
+        focusPolicy: Qt.NoFocus
+        onClicked: macrosPanel.opened ? macrosPanel.close() : macrosPanel.open()
+    }
+    PttButton {
+        id: ptt
+        objectName: "pagePtt"
+        parent: page.canvasOn ? blockPtt.contentArea : pttSlot
+        anchors.fill: parent
+        // FT8 / FT4 running hides it (Classic hides its whole row).
+        visible: !(page.canvasOn && digiHidden)
+        fontPx: 32
     }
 
     // The mode's macros over the display, above the PTT row (Tyler Akerman
@@ -473,8 +879,8 @@ Page {
     // closes it.
     MacrosPanel {
         id: macrosPanel
-        anchorItem: pttRow
-        maxWidth: Math.min(page.leftWidth, 720)
+        anchorItem: page.canvasOn ? blockMacros : pttRow
+        maxWidth: Math.min(page.canvasOn ? canvasArea.width : page.leftWidth, 720)
     }
 
     // With the panel hidden, controls slide in from the right over the
@@ -520,8 +926,9 @@ Page {
             ControlsPanel {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                // Pinning would not show where the panel does not fit.
-                showPinButton: page.pinFits
+                // Pinning would not show where the panel does not fit, nor in
+                // an own layout (its Controls block is the pinned panel).
+                showPinButton: page.pinFits && !page.canvasOn
                 onPinRequested: {
                     controlsDrawer.close()
                     Engine.controlsVisible = true
@@ -599,6 +1006,104 @@ Page {
                 macrosPanel.close()
             }
             page.forceActiveFocus()
+        }
+    }
+    // Own layouts: a name of the operator's, and deleting one (the app's
+    // own buttons, as SetupSuggestion: Qt's standard ones came in the
+    // system's language and light).
+    Dialog {
+        id: renameDialog
+        objectName: "renameLayout"
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        modal: true
+        width: Math.min(400, page.width - 48)
+        padding: Theme.spacing
+        background: Rectangle { color: Theme.surface; radius: Theme.radius; border.color: Theme.accent; border.width: 2 }
+        onAboutToShow: nameField.text = page.ws.activeLabel
+        onOpened: {
+            nameField.forceActiveFocus()
+            nameField.selectAll()
+        }
+        function done(ok) {
+            if (ok) page.ws.rename(page.ws.active, nameField.text)
+            close()
+        }
+        contentItem: ColumnLayout {
+            spacing: Theme.spacing
+            Label {
+                text: qsTr("Rename layout")
+                color: Theme.text
+                font.pixelSize: Theme.px(20)
+                font.bold: true
+            }
+            TextField {
+                id: nameField
+                objectName: "layoutNameField"
+                Layout.fillWidth: true
+                selectByMouse: true
+                onAccepted: renameDialog.done(true)
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                AppButton {
+                    text: qsTr("Cancel")
+                    Layout.fillWidth: true
+                    onClicked: renameDialog.done(false)
+                }
+                AppButton {
+                    objectName: "layoutRenameOk"
+                    text: qsTr("Rename")
+                    Layout.fillWidth: true
+                    onClicked: renameDialog.done(true)
+                }
+            }
+        }
+    }
+    Dialog {
+        id: deleteLayoutDialog
+        objectName: "deleteLayout"
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        modal: true
+        width: Math.min(420, page.width - 48)
+        padding: Theme.spacing
+        background: Rectangle { color: Theme.surface; radius: Theme.radius; border.color: Theme.accent; border.width: 2 }
+        contentItem: ColumnLayout {
+            spacing: Theme.spacing
+            Label {
+                text: qsTr("Delete layout")
+                color: Theme.text
+                font.pixelSize: Theme.px(20)
+                font.bold: true
+            }
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Delete %1? The screen goes back to Classic.").arg(page.ws.activeLabel)
+                color: Theme.textDim
+                font.pixelSize: Theme.px(15)
+                wrapMode: Text.Wrap
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                AppButton {
+                    text: qsTr("Cancel")
+                    Layout.fillWidth: true
+                    onClicked: deleteLayoutDialog.close()
+                }
+                AppButton {
+                    objectName: "layoutDeleteYes"
+                    text: qsTr("Delete")
+                    warn: true
+                    Layout.fillWidth: true
+                    onClicked: {
+                        deleteLayoutDialog.close()
+                        page.ws.remove(page.ws.active)
+                        page.ws.canvas = false
+                        page.stopEditing()
+                    }
+                }
+            }
         }
     }
     LogPage { id: logPage }

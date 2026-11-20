@@ -47,6 +47,13 @@ qt_add_executable(aether-mobile
     src/MobileEngineQrzLog.cpp
     src/MobileEnginePota.cpp
     src/MobileEngineUpdate.cpp
+    src/MobileWorkspace.cpp
+    src/MobileWorkspace.h
+    # The desktop's Workspace Canvas model (RFC #4887), widget-free: the own
+    # layouts' rules and stored form (roadmap 113).
+    ${CMAKE_SOURCE_DIR}/src/gui/workspace/WorkspaceGeometry.cpp
+    ${CMAKE_SOURCE_DIR}/src/gui/workspace/CanvasInteraction.cpp
+    ${CMAKE_SOURCE_DIR}/src/gui/workspace/WorkspaceDocument.cpp
     src/MobileEngineVoiceLog.cpp
     src/MobileEngineSmartLink.cpp
     src/MobileEngineSharedAdif.cpp
@@ -204,6 +211,13 @@ qt_add_qml_module(aether-mobile
         qml/BigButtonsView.qml
         qml/SetupSuggestion.qml
         qml/UpdateOffer.qml
+        qml/LayoutCanvas.qml
+        qml/CanvasBlock.qml
+        qml/FrequencyBlock.qml
+        qml/StepSizeBlock.qml
+        qml/ModeBlock.qml
+        qml/InfoBlock.qml
+        qml/ButtonGridBlock.qml
         qml/AddressDialog.qml
         qml/Caret.qml
         qml/MeterBadge.qml

@@ -1,6 +1,7 @@
 #include "ShotPlan.h"
 
 #include "MobileEngine.h"
+#include "MobileWorkspace.h"
 
 #include <QAccessible>
 #include <QCoreApplication>
@@ -11,6 +12,7 @@
 #include <QRegularExpression>
 #include <QQmlApplicationEngine>
 #include <QQuickItem>
+#include <QQuickItemGrabResult>
 #include <QQuickWindow>
 #include <QPointingDevice>
 #include <QScreen>
@@ -26,6 +28,26 @@
 namespace AetherSDR::mobile {
 
 namespace {
+
+// The accessibility events, announcements logged for a plan (a11y on).
+QAccessible::UpdateHandler s_previousA11yHandler = nullptr;
+void logA11yUpdate(QAccessibleEvent* event)
+{
+    if (event->type() == QAccessible::Announcement) {
+        qInfo().noquote() << "shot-plan: a11y said" << static_cast<QAccessibleAnnouncementEvent*>(event)->message();
+    }
+    if (s_previousA11yHandler) {
+        s_previousA11yHandler(event);
+        return;
+    }
+    // With no handler before this one Qt gives each event to the platform's
+    // screen reader bridge (VoiceOver, TalkBack), and an installed handler
+    // takes that place: hand it on the same way, or on a device (a plan over
+    // the developer link) the screen reader would hear nothing more.
+    QAccessible::installUpdateHandler(nullptr);
+    QAccessible::updateAccessibility(event);
+    QAccessible::installUpdateHandler(logA11yUpdate);
+}
 
 // Every object under the window: the QObject children and the visual items
 // with their QObject children (a popup's content is not a QObject child of its
@@ -163,6 +185,22 @@ ShotPlan::ShotPlan(QQmlApplicationEngine& qml, MobileEngine& engine, const QStri
     QDir().mkpath(m_outDir);
 }
 
+ShotPlan::ShotPlan(QQmlApplicationEngine& qml, MobileEngine& engine, const QStringList& lines,
+                   const QStringList& allowed, QObject* parent)
+    : QObject(parent)
+    , m_qml(qml)
+    , m_engine(engine)
+    , m_quitAtEnd(false)
+    , m_allowed(allowed)
+{
+    for (const QString& raw : lines) {
+        const QString line = raw.trimmed();
+        if (!line.isEmpty() && !line.startsWith(QLatin1Char('#'))) {
+            m_lines << line;
+        }
+    }
+}
+
 void ShotPlan::start()
 {
     QTimer::singleShot(0, this, &ShotPlan::step);
@@ -176,7 +214,11 @@ void ShotPlan::step()
         }
         qInfo() << "shot-plan: done" << (m_failed ? "(with failures)" : "");
         QThreadPool::globalInstance()->waitForDone(); // record's last frames
-        QCoreApplication::exit(m_failed ? 2 : 0);
+        if (m_quitAtEnd) {
+            QCoreApplication::exit(m_failed ? 2 : 0);
+        } else {
+            emit finished(m_failed);
+        }
         return;
     }
     const QString line = m_lines.at(m_next++);
@@ -194,7 +236,12 @@ void ShotPlan::step()
         qInfo().noquote() << QStringLiteral("shot-plan: at %1 %2").arg(m_recordClock.elapsed()).arg(line);
     }
     int delayMs = kSettleMs;
-    run(command, words, &delayMs);
+    if (!m_allowed.isEmpty() && !m_allowed.contains(command)) {
+        qWarning().noquote() << "shot-plan: not allowed here:" << line;
+        m_failed = true;
+    } else {
+        run(command, words, &delayMs);
+    }
     QTimer::singleShot(delayMs, this, &ShotPlan::step);
 }
 
@@ -326,6 +373,22 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
     auto* window = m_qml.rootObjects().isEmpty() ? nullptr : qobject_cast<QQuickWindow*>(m_qml.rootObjects().constFirst());
     if (command == QLatin1String("wait")) {
         *delayMs = std::max(0, arg.toInt());
+    } else if (command == QLatin1String("shot") && !m_quitAtEnd) {
+        // Over the developer link: grabbed asynchronously, sent, not saved.
+        QSharedPointer<QQuickItemGrabResult> grab;
+        if (window && window->contentItem()) {
+            grab = window->contentItem()->grabToImage();
+        }
+        if (!grab) {
+            qWarning() << "shot-plan: shot" << arg << "FAILED (window not exposed?)";
+            m_failed = true;
+        } else {
+            connect(grab.data(), &QQuickItemGrabResult::ready, this, [this, grab, arg] {
+                qInfo() << "shot-plan: shot" << arg << "taken";
+                emit shotTaken(arg, grab->image());
+            });
+        }
+        *delayMs = 400;
     } else if (command == QLatin1String("shot")) {
         const QString path = QDir(m_outDir).filePath(arg + QStringLiteral(".png"));
         const bool saved = window && window->grabWindow().save(path);
@@ -1204,6 +1267,13 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         const QString name = args.join(QLatin1Char(' '));
         if (name == QLatin1String("on")) {
             QAccessible::setActive(true);
+            // What a screen reader would say on its own (an announcement:
+            // the layout editor's steps), in the log for the plan to read.
+            static bool installed = false;
+            if (!installed) {
+                installed = true;
+                s_previousA11yHandler = QAccessible::installUpdateHandler(logA11yUpdate);
+            }
             *delayMs = 1000;
             return;
         }
@@ -1548,14 +1618,20 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                 *delayMs = 500;
                 return;
             }
-            static const QRegularExpression named(QStringLiteral("^<(F([1-9]|1[0-2])|Esc|Enter|Cmd-([0-9])|Shift-([A-Z]))>$"));
+            // <Left> <Right> <Up> <Down>: the arrows (the page tunes by them).
+            static const QRegularExpression named(QStringLiteral("^<(F([1-9]|1[0-2])|Esc|Enter|Left|Right|Up|Down|Cmd-([0-9])|Shift-([A-Z]))>$"));
             if (const QRegularExpressionMatch m = named.match(keys); m.hasMatch()) {
                 const bool cmd = !m.captured(3).isEmpty();
                 const bool shift = !m.captured(4).isEmpty();
                 const int key = cmd ? Qt::Key_0 + m.captured(3).toInt()
                                 : shift ? int(m.captured(4).at(0).unicode())
                                 : m.captured(1) == QLatin1String("Esc") ? Qt::Key_Escape
-                                : m.captured(1) == QLatin1String("Enter") ? Qt::Key_Return : Qt::Key_F1 + m.captured(2).toInt() - 1;
+                                : m.captured(1) == QLatin1String("Enter") ? Qt::Key_Return
+                                : m.captured(1) == QLatin1String("Left") ? Qt::Key_Left
+                                : m.captured(1) == QLatin1String("Right") ? Qt::Key_Right
+                                : m.captured(1) == QLatin1String("Up") ? Qt::Key_Up
+                                : m.captured(1) == QLatin1String("Down") ? Qt::Key_Down
+                                : Qt::Key_F1 + m.captured(2).toInt() - 1;
                 const Qt::KeyboardModifiers mods = cmd ? Qt::ControlModifier : shift ? Qt::ShiftModifier : Qt::NoModifier;
                 QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyPress, key, mods);
                 QWindowSystemInterface::handleKeyEvent(window, QEvent::KeyRelease, key, mods);
@@ -1563,6 +1639,25 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                 QQuickItem* item = window->activeFocusItem();
                 qInfo().noquote() << "shot-plan: key" << keys << "->" << (item ? QString::fromLatin1(item->metaObject()->className()) : QStringLiteral("none"));
                 *delayMs = 500;
+                return;
+            }
+            // Text only into a text field. A <name> this verb does not know,
+            // or text with the page holding the keyboard, would reach the
+            // page's letter keys: T keys TUNE, A the ATU (2026-11-20 an
+            // unknown "<Right>" typed its t and keyed a tune carrier).
+            if (keys.startsWith(QLatin1Char('<')) && keys.endsWith(QLatin1Char('>'))) {
+                qWarning().noquote() << "shot-plan: keys: unknown key" << keys << "- nothing sent";
+                m_failed = true;
+                *delayMs = 100;
+                return;
+            }
+            if (QQuickItem* focus = window->activeFocusItem();
+                !focus || !(focus->inherits("QQuickTextInput") || focus->inherits("QQuickTextEdit"))) {
+                qWarning().noquote() << "shot-plan: keys: no text field has the keyboard ("
+                                     << (focus ? QString::fromLatin1(focus->metaObject()->className()) : QStringLiteral("none"))
+                                     << ") - nothing typed (the page's letter keys would act: T tune, A ATU)";
+                m_failed = true;
+                *delayMs = 100;
                 return;
             }
             keys.replace(QLatin1String("\\b"), QString(QChar(0x08)));
@@ -1751,6 +1846,42 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             m_recordTimer->start(1000 / std::clamp(arg.toInt(), 1, 60));
             qInfo() << "shot-plan: record" << arg << "fps into" << dir;
         }
+    } else if (command == QLatin1String("mute")) {
+        // mute on|off: this app's slice audio. A plan run mutes it at the
+        // connect ("change nothing on the radio"); an audio test unmutes it
+        // to hear the receive audio (the sink's monitor), then mutes again.
+        m_engine.setMuted(arg != QLatin1String("off"));
+        qInfo().noquote() << "shot-plan: mute" << (m_engine.muted() ? "on" : "off");
+        *delayMs = 800;
+    } else if (command == QLatin1String("layoutitems")) {
+        // layoutitems [land|port]: the own layout's blocks in canvas pixels
+        // (roadmap 113), to check a gesture's result by numbers.
+        const QString orientation = arg.isEmpty() ? QStringLiteral("land") : arg;
+        QSizeF canvas;
+        for (QObject* root : m_qml.rootObjects()) {
+            for (QObject* o : findNamed(root, QStringLiteral("layoutCanvas"))) {
+                if (auto* item = qobject_cast<QQuickItem*>(o)) {
+                    canvas = item->size();
+                }
+            }
+        }
+        auto* ws = qobject_cast<MobileWorkspace*>(m_engine.workspace());
+        if (ws) {
+            qInfo().noquote() << "shot-plan: layout" << ws->activeLabel() << orientation << "canvas"
+                              << canvas.width() << "x" << canvas.height();
+            for (const QVariant& v : ws->items(orientation)) {
+                const QVariantMap m = v.toMap();
+                const auto px = [&](const char* k, double size) {
+                    return QString::number(std::lround(m.value(QLatin1String(k)).toDouble() * size));
+                };
+                qInfo().noquote() << "shot-plan: block" << m.value(QStringLiteral("block")).toString()
+                                  << "x" << px("x", canvas.width()) << "y" << px("y", canvas.height())
+                                  << "w" << px("w", canvas.width()) << "h" << px("h", canvas.height())
+                                  << (m.value(QStringLiteral("closed")).toBool() ? "closed" : "")
+                                  << "z" << m.value(QStringLiteral("z")).toInt();
+            }
+        }
+        *delayMs = 100;
     } else if (command == QLatin1String("where")) {
         // Where things are, for a plan's coordinates: every visible control
         // showing TEXT (or named NAME with @NAME), | between them.

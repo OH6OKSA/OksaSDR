@@ -117,6 +117,15 @@ radio interface, with no computer running alongside.
   larger), and PTT across the bottom; Space or a Bluetooth PTT button keys there too. **Log** beside
   Step logs a contact in big type (the call, the reports with − / +).
   Hold Exit to leave.
+- **Own layouts** (iPad, Mac, Android tablet; View › Layout, thanks Larry
+  W9FLA): arrange the main screen yourself, after the desktop's Workspace
+  Canvas. Drag its blocks (frequency, mode, step, info line, bands, slices
+  and meters, display, steps, controls, macros, PTT) to move them, size
+  them by their handles, hide what you do not use; edges snap to each
+  other, a block stops where its content would no longer fit, and none
+  drops on another. Several layouts, landscape and portrait apart, Undo,
+  Reset, and an arrange bar with exact steps that the screen reader speaks.
+  Classic stays as it is.
 - **MIDI controllers** (iPhone, iPad, Mac, Android): Radio Setup › MIDI takes a
   controller such as Lynovation's CTR2-MIDI over Bluetooth (paired there
   on an iPhone or iPad, found by the app's own search on Android) or USB,
@@ -194,7 +203,8 @@ radio interface, with no computer running alongside.
 - **Auto AGC-T**: the radio's own on Early Access radios; on every other
   radio the app finds the AGC knee on a clear spot and keeps it per band
   and mode group, and **Follow** keeps AGC-T on the noise as it rises and
-  falls (as Thetis's Auto AGC).
+  falls (as Thetis's Auto AGC). The info line reads **AGC-A** while AGC-T
+  is set automatically.
 - **Noise floor line** (the AGC panel's Noise line, or View): the noise
   floor as a dashed line with its dBm, 2D and 3D.
 - **App setups** (Prof tab): the app's own settings saved under a name,
@@ -446,6 +456,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | Transmit lock (SB / OA) | ✅ Checked on the FLEX without transmitting (build 141); the countdown back to SB and Hold to arm at start checked in build 151 |
 | RTTY decoding and sending | ✅ Contest stations decoded live (build 141); DIGL / DIGU decoded live (IT9EJW, SV1EKI); sent at 10 W and decoded by RBN skimmers across Europe (OE9GHV 33 dB, GM0UDL 27 dB) |
 | Big buttons (build 164) | 🧪 Checked on the FLEX by the user's path (View › Big buttons, − / + and held −, Step, Space reaching PTT, held Exit) and rendered on phones and tablets both ways; Step's halves and the shorter Exit hold (build 170) the same way; in-car use to hear about |
+| Own layouts (build 197) | 🧪 Tested in the development build against the FLEX: every block's move and resize by finger and mouse to its limits (content fit, edges, other blocks), the four corners, shared edges, landscape and portrait, rotation, Split View and foldable sizes, larger text, two slices, FT8, restart and App setups, Undo / Reset / Delete, the controls in the blocks acting on the radio, and the screen reader's names, actions and announcements; on real touch screens, VoiceOver and TalkBack to verify (preview) |
 | MIDI controllers (build 164) | 🧪 Tested against a stand-in CTR2-MIDI (an ALSA virtual port) on the FLEX: Learn, the VFO knob, a SmartSDR map imported, PTT held and ended when the controller went (USB, 1 W, no audio); pairing and the CTR2 itself to verify (Hanno DK3HV); F1–F12 and Stop (build 170) learned on the stand-in, F7 sending CW memory 7 at 5 W and Stop ending it |
 | RF-KIT RF2K-S amplifier | ✅ Readings checked on a real RF2K-S (Sebastian Schu DG5CST, build 148). 🧪 Control (Operate / Standby, antenna, error reset) tested against a stand-in of its REST API: confirmations, a refusal (409), no answer, a lost link, never while transmitting (checked keyed on the FLEX); to verify on a real RF2K-S. 🧪 Tune's carrier (build 150) keyed on the FLEX at 5 W against the stand-in: STANDBY first, kept with the app in the background, off once tuned, after 20 s, on Stop, with the amplifier in OPERATE, on a lost link, and the radio unkeying by itself when the app was killed |
 | Elecraft KPA1500 amplifier (build 168) | 🧪 Tested against a stand-in of its UDP and TCP servers (the Programming Reference V3's replies, acting on its commands) with the FLEX connected: readings on the Amp tab and the meters, a fault, the supplies off, silence and back, the logged power in OPERATE (USB, 5 W, no audio); Control: Operate, ANT2, ATU bypass, a fault cleared and a temperature fault not, Tune keyed at 10 W on 14.345 (tuned, no match, Stop, 5 W refused), the TCP connection held by another program; nothing sent with Control off; on a real KPA1500 (Rich Yost N2RY, builds 169-170) the readings, Tune and its end; Tune in STANDBY (build 171) tested on the stand-in with the FLEX at 10 W; the fan minimum (build 190) on the stand-in, also while transmitting (USB, 5 W, no audio) |

@@ -335,6 +335,7 @@ QVariantMap MobileEngine::agcAuto() const
             {QStringLiteral("remembered"), remembered},
             {QStringLiteral("noAgc"), noAgc},
             {QStringLiteral("follow"), agcFollowOn()},
+            {QStringLiteral("following"), agcFollowOn() && m_agcFollowing},
             {QStringLiteral("followNote"), agcFollowOn() ? m_agcFollowNote : QString()},
             {QStringLiteral("note"), note}};
 }
@@ -466,6 +467,7 @@ void MobileEngine::agcFollowTick()
 {
     if (!agcFollowOn()) {
         m_agcFollowTimer.stop();
+        setAgcFollowing(false);
         return;
     }
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
@@ -509,8 +511,11 @@ void MobileEngine::agcFollowTick()
     if (!hold.isEmpty()) {
         m_agcFollowTicks = 0;
         setNote(hold.trimmed());
+        setAgcFollowing(false);
         return;
     }
+    // Held by nothing: AGC-T follows the noise now (the info line's AGC-A).
+    setAgcFollowing(true);
     const double floorNow = localFloorDbm();
     if (!std::isfinite(floorNow)) {
         return;
@@ -543,6 +548,14 @@ void MobileEngine::agcFollowTick()
     }
     setNote(tr("Following the noise: %1 dBm at the slice (measured %2 at %3 dBm).")
                 .arg(qRound(m_agcFollowFloor)).arg(measured).arg(qRound(measuredFloor)));
+}
+
+void MobileEngine::setAgcFollowing(bool following)
+{
+    if (following != m_agcFollowing) {
+        m_agcFollowing = following;
+        emit agcAutoChanged();
+    }
 }
 
 } // namespace AetherSDR::mobile

@@ -137,7 +137,9 @@ these services:
 - **Developer link** (hidden on the Log page, under a press and hold on its
   title), off unless turned on: for the developer's
   own devices; it sends the app's log, and screenshots when asked, to the
-  address set there.
+  address set there, and runs the test plans sent from there (taps,
+  drags and readings of the screen; the app blocks transmitting while one
+  runs, and keeps none of its screenshots).
 
 The app contains no analytics, advertising, tracking or crash-reporting SDKs,
 and it makes no other internet connections. FT8 / FT4 decoding and RADE run
@@ -181,7 +183,8 @@ library the app includes also contains camera functions.
 
 The app keeps its settings in its own storage on your device. These are the
 last radio address you entered, mic gain and similar operating preferences,
-and an identifier the radio uses to recognise this client. They never leave
+your own screen layouts (where each part of the screen goes), and an
+identifier the radio uses to recognise this client. They never leave
 your device, except as part of the normal connection to your radio.
 
 - **Your QSO log** (the Log tab and FT8 / FT4 contacts) is an ADIF file on

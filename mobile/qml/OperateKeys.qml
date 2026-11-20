@@ -25,6 +25,8 @@ Item {
 
 
     function press(event) {
+        // While an own layout is edited nothing tunes or keys (roadmap 113).
+        if (page && page.layoutEditing) return false
         // Any key ends a repeating macro (an F-key then starts its own).
         if (!event.isAutoRepeat) Engine.cancelMacroRepeat("a key")
         if (paddles.handlePress(event)) {

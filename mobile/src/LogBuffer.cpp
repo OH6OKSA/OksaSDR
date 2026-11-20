@@ -210,6 +210,11 @@ bool worthKeeping(const QMessageLogContext& context, QtMsgType type, const QStri
     if (type == QtWarningMsg || type == QtCriticalMsg || type == QtFatalMsg) {
         return true;
     }
+    // A test plan's results (ShotPlan, also run over the developer link):
+    // only test runs write them.
+    if (message.startsWith(QLatin1String("shot-plan:"))) {
+        return true;
+    }
     const QLatin1StringView category(context.category ? context.category : "");
     // The app's own categories, including aether.mobile.spectrum3d and
     // aether.mobile.audiosession.

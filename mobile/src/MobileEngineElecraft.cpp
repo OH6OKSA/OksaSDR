@@ -1048,6 +1048,10 @@ void MobileEngine::kat500TuneStepDone(bool ok, const QString& message)
 
 void MobileEngine::startKat500TuneCarrier()
 {
+    if (m_txBlocked) {
+        endKat500Tune(tr("Transmit is locked."), false);
+        return;
+    }
     if (radioTransmitting() || !tuneAvailable()) {
         endKat500Tune(tr("The radio cannot send a tune carrier now."), false);
         return;
