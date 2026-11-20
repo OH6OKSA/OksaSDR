@@ -1,0 +1,15 @@
+# With this file in the tree, a push builds as a preview: TestFlight's
+# internal group only (What to Test set, no external group, no beta review)
+# and the Android APK as the run artifact only. Removed when the user
+# releases the build to the testers (mobile-release.yml).
+
+Build 197 / Android beta 108: own layouts (roadmap 113, Larry W9FLA) and
+AGC-A (112, Tommy W6TPR), which need real touch screens and screen readers.
+On the iPad (and the OnePlus Open's inner screen): View > Layout > Edit a
+copy; move and size every block with a finger, the corners and limits, a
+block dropped on another, × and + Add, Undo, Reset, rename, Delete; rotate
+(portrait apart), Split View; with the Magic Keyboard's trackpad too, and
+Space PTT back after Done. VoiceOver (TalkBack on Android): the blocks'
+names, a double tap selecting, the arrange bar and what it says. AGC panel:
+Auto, then Follow: AGC-A. The same steps can run from the PC over the
+developer link (devlink.py plan), transmitting blocked while they run.
