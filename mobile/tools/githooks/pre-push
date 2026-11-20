@@ -3,6 +3,10 @@
 # with the app (mobile/tools/docs-check.py). Installed with
 #   git config core.hooksPath mobile/tools/githooks
 # OKSA_DOCS_CHECK=skip git push ... bypasses it (say why in the commits).
+# And Classic must stay as it is: when the pushed commits change mobile/qml or
+# mobile/src, the pushed commit's UI needs an approved classic-check.sh run
+# (~/.cache/oksasdr-baselines/ok-<its qml and src trees>). OKSA_CLASSIC_CHECK=
+# skip bypasses that one (say why in the commits).
 set -euo pipefail
 
 [ "${OKSA_DOCS_CHECK:-}" = "skip" ] && exit 0
@@ -19,5 +23,16 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     [ "$base" = "$zero" ] && base=""
     echo "pre-push: $remote_ref"
     python3 "$root/mobile/tools/docs-check.py" ${base:+--base "$base"} --head "$local_sha" || status=1
+    if [ "${OKSA_CLASSIC_CHECK:-}" != "skip" ] \
+        && [ -n "$(git diff --name-only ${base:+"$base"} "$local_sha" -- mobile/qml mobile/src)" ]; then
+        key="$(git rev-parse "$local_sha:mobile/qml")-$(git rev-parse "$local_sha:mobile/src")"
+        if [ -f "$HOME/.cache/oksasdr-baselines/ok-$key" ]; then
+            echo "pre-push: Classic checked: $(command grep '^approved' "$HOME/.cache/oksasdr-baselines/ok-$key" | head -1)"
+        else
+            echo "pre-push: the UI changed and Classic is not checked against the last release:" >&2
+            echo "  mobile/tools/classic-check.sh, look at the masks, then --approve \"...\"" >&2
+            status=1
+        fi
+    fi
 done
 exit $status

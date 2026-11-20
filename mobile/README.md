@@ -77,7 +77,16 @@ Android releases) is checked and partly published automatically:
   phone numbers or serial numbers. A rule that does not apply is waived
   with a commit trailer that says why, e.g. `Manual: unchanged (internal
   fix)` (also `Screenshots:`, `Roadmap:`, `Notes:`).
-- The pre-push hook runs the check for mobile/** and android/** branches.
+- `mobile/tools/classic-check.sh` keeps Classic, the screen every user has,
+  as it is while options are added: it sweeps the last release's page
+  (the newest `android-beta-N` tag, built once and kept in
+  `~/.cache/oksasdr-baselines`) and the tree's against the radio at every
+  window size, compares the layouts (`layout-diff.py`) and makes a
+  difference mask of each size (only the live display may differ). After
+  looking, `--approve "what differs and why"` records the verdict.
+- The pre-push hook runs the docs check for mobile/** and android/**
+  branches, and refuses a push whose commits change `mobile/qml` or
+  `mobile/src` until classic-check has been approved for that exact UI.
   Turn it on once per clone: `git config core.hooksPath mobile/tools/githooks`.
 - `.github/workflows/mobile-docs.yml` runs the same check on GitHub for
   every push; a red mark there names the stale doc.
