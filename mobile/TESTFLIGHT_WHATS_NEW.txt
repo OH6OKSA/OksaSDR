@@ -9,20 +9,18 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- A PTT key of your own: Controls > TX > PTT key > Learn, then press the button (a handset's side key, a Bluetooth button or a foot switch that acts as a keyboard). Held, it keys PTT; Clear forgets it (thanks Rob VA3MET).
-- A held F-key (or ⌘ + digit) starts its CW memory, voice macro or Digi macro once, no longer again and again while held.
-- Mac: if the Mac stops handing the app its keys, the app asks for them back when it comes to the front and at a click in its window (thanks Chris DM5HF).
-- The shared ADIF file follows the Log tab: a contact you edit or delete there is changed or deleted in the file too (thanks Chris DM5HF).
-- Theme Auto: Controls > View > Theme > Auto follows the device's Light / Dark appearance and switches with it. In Dark the status bar's clock and battery are now light on the dark page, also with the device in Light. The layout editor's block names are readable in Light.
+- PTT key: Controls > TX > PTT key > Learn, then press a button that acts as a keyboard (a side key, a Bluetooth button, a foot switch). Held, it keys PTT (thanks Rob VA3MET).
+- A held F-key (or ⌘ + digit) starts its macro once, not again and again.
+- Mac: the app asks for the keys back when it comes to the front or is clicked, if the Mac stopped sending them (thanks Chris DM5HF).
+- The shared ADIF file follows the Log tab's edits and deletions (thanks Chris DM5HF).
+- Controls > View > Theme > Auto follows the device's Light / Dark appearance. Dark's status bar is now light on the dark page. The layout editor's names readable in Light.
 
 RECENT (builds 94–199)
 - 199: Light theme, Controls > View > Theme > Light; the display stays dark (thanks Larry W9FLA).
 - 198: own layouts: Meter 1, Meter 2 and Slices as blocks, the slices in one line (thanks Larry W9FLA); Hide controls in a layout; the drawer's × beside the buttons.
 - 197: own layouts of the iPad and Mac screen, View > Layout (thanks Larry W9FLA); AGC-A in the info line (thanks Tommy W6TPR).
 - 196: FFT smooth and De-comb (View > Spectrum); 3D with 768 columns on an iPad or a Mac; with B/S in landscape the waterfall's buttons go under it (thanks Evgeny R0ACS).
-- 195: POTA and WWFF spots, Controls > View > Park spots (thanks Robin G5OUT); KPA500 and KAT500 Power On / Off, now confirmed on real devices (thanks Sergio LU7YS).
-- 194: Elecraft KPA500 and KAT500 on the Amp tab through a raw TCP serial bridge (thanks Sergio LU7YS).
-- 193: SmartLink audio, panadapter and waterfall on IPv6-only mobile networks (thanks Michael Walker).
+- 195: POTA and WWFF spots, Controls > View > Park spots (thanks Robin G5OUT); Elecraft KPA500 and KAT500 on the Amp tab, Power On / Off too (thanks Sergio LU7YS).
 
 PLEASE TRY
 - Receive on a few bands with zoom, Band and the 3D view.
