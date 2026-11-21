@@ -23,6 +23,14 @@ ColumnLayout {
     // a × beside Pin Controls closes it (upright its Close is at the bottom).
     property bool showCloseButton: false
     signal closeRequested()
+    // With no Pin Controls the × sits beside the section buttons' first row
+    // instead of in a row of its own (an Android foldable's inner screen in
+    // landscape, the user 2026-11-21: "rivi jää muuten kokonaan tyhjäksi").
+    // The drawer is that much wider then (closeColumn), so the buttons keep
+    // their width and rows and every label still fits.
+    readonly property bool closeInGrid: showCloseButton && !showPinButton && !multiSelect
+    readonly property real closeColumn: Theme.touchTarget + 4
+    readonly property real gridWidth: panel.width - (closeInGrid ? closeColumn : 0)
 
     // name: kept in the settings (pinned sections); button: the short label,
     // so every button can be the same size; title: the section's heading.
@@ -48,11 +56,11 @@ ColumnLayout {
     // Amp tab rows of seven (7 + 6) where the widest label still fits at
     // 12 px, else 5 + 5 + 3 (a low side drawer, 667 x 375, cut "FreeDV").
     readonly property int buttonColumns: {
-        if (panel.width >= 700) return sections.length
+        if (panel.gridWidth >= 700) return sections.length
         if (sections.length <= 12) return 6
         // The label at 12 px and the buttons' 2 + 2 px padding.
         const need = widestButton * 12 / Theme.buttonFont + 4
-        return (panel.width - 6 * 4) / 7 >= need ? 7 : 5
+        return (panel.gridWidth - 6 * 4) / 7 >= need ? 7 : 5
     }
     // The widest label at the buttons' type size: where six to a row are
     // narrower (a side drawer, 698 x 668 cut "FreeDV"), every section
@@ -71,7 +79,7 @@ ColumnLayout {
     // the type follows it, not the button's own width, which the type's
     // implicit width feeds back into while the grid changes (the Amp tab
     // coming or going looped).
-    readonly property real buttonCellWidth: (panel.width - (buttonColumns - 1) * 4) / buttonColumns
+    readonly property real buttonCellWidth: (panel.gridWidth - (buttonColumns - 1) * 4) / buttonColumns
     readonly property int sectionButtonFont: buttonFont(buttonCellWidth)
 
     function toggleSection(name) {
@@ -83,19 +91,17 @@ ColumnLayout {
     }
 
     RowLayout {
-        visible: panel.showPinButton || panel.showCloseButton
+        // Pin Controls, with the × beside it; without Pin Controls the ×
+        // is at the end of the section buttons (closeInGrid).
+        visible: panel.showPinButton
         Layout.fillWidth: true
         spacing: 4
         AppButton {
+            objectName: "pinControls"
             visible: panel.showPinButton
             text: qsTr("Pin Controls")
             Layout.fillWidth: true
             onClicked: panel.pinRequested()
-        }
-        // Only a close where there is no Pin Controls: it takes the row.
-        Item {
-            visible: !panel.showPinButton
-            Layout.fillWidth: true
         }
         AppButton {
             objectName: "closeControlsTop"
@@ -118,9 +124,23 @@ ColumnLayout {
         visible: !panel.multiSelect
         Layout.fillWidth: true
         implicitHeight: tabGrid.implicitHeight
+        AppButton {
+            objectName: "closeControlsGrid"
+            visible: panel.closeInGrid
+            anchors.right: parent.right
+            anchors.top: parent.top
+            width: Theme.touchTarget
+            height: 40
+            padding: 0
+            text: "×"
+            font.pixelSize: Theme.buttonFont * 1.3
+            focusPolicy: Qt.NoFocus
+            Accessible.name: qsTr("Close controls")
+            onClicked: panel.closeRequested()
+        }
         GridLayout {
             id: tabGrid
-            width: parent.width
+            width: panel.gridWidth
             columns: panel.buttonColumns
             columnSpacing: 4
             rowSpacing: 4

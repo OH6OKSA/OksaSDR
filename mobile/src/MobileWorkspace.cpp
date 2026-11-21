@@ -3,15 +3,20 @@
 #include "core/AppSettings.h"
 #include "gui/workspace/CanvasInteraction.h"
 
+#include <QJsonDocument>
 #include <QLoggingCategory>
 
 #include <algorithm>
+#include <cmath>
 
 Q_DECLARE_LOGGING_CATEGORY(lcMobile)
 
 namespace AetherSDR::mobile {
 
 const QString MobileWorkspace::kSettingsKey = QStringLiteral("MobileWorkspace");
+namespace {
+const QString kFillKey = QStringLiteral("MobileWorkspaceFill");
+}
 
 namespace {
 // The desktop's debounce: a drag coalesces into one write.
@@ -75,6 +80,7 @@ MobileWorkspace::~MobileWorkspace()
 
 void MobileWorkspace::load()
 {
+    m_fill = QJsonDocument::fromJson(AppSettings::instance().value(kFillKey, QString()).toString().toUtf8()).object();
     const QString stored = AppSettings::instance().value(kSettingsKey, QString()).toString();
     if (stored.isEmpty()) {
         return;
@@ -104,6 +110,7 @@ void MobileWorkspace::flush()
     }
     m_dirty = false;
     AppSettings::instance().setValue(kSettingsKey, QString::fromUtf8(m_doc.toStoredJson()));
+    AppSettings::instance().setValue(kFillKey, QString::fromUtf8(QJsonDocument(m_fill).toJson(QJsonDocument::Compact)));
     AppSettings::instance().save();
 }
 
@@ -113,6 +120,7 @@ void MobileWorkspace::reload()
     m_dirty = false;
     m_undo.clear();
     m_doc = WorkspaceDocument();
+    m_fill = QJsonObject();
     load();
     ++m_revision;
     emit changed();
@@ -321,6 +329,11 @@ void MobileWorkspace::remove(const QString& id)
         return;
     }
     checkpoint();
+    for (const QString& k : m_fill.keys()) {
+        if (k.startsWith(id + QLatin1Char('|'))) {
+            m_fill.remove(k);
+        }
+    }
     if (m_doc.workspaces.size() == 1) {
         // The document's last workspace cannot go (it would describe no
         // shell): an empty document is Classic.
@@ -417,6 +430,238 @@ void MobileWorkspace::raise(const QString& orientation, const QString& block)
         }
     }
     top->z = static_cast<int>(s->items.size()) - 1;
+    touch();
+}
+
+QString MobileWorkspace::fillKey(const QString& orientation, const QString& block) const
+{
+    return m_doc.activeWorkspace + QLatin1Char('|') + surfaceId(orientation) + QLatin1Char('|') + block;
+}
+
+namespace {
+QJsonObject rectJson(const NormRect& r)
+{
+    return {{QStringLiteral("x"), r.x}, {QStringLiteral("y"), r.y}, {QStringLiteral("w"), r.w}, {QStringLiteral("h"), r.h}};
+}
+NormRect rectOf(const QJsonObject& o)
+{
+    NormRect r;
+    r.x = o.value(QStringLiteral("x")).toDouble();
+    r.y = o.value(QStringLiteral("y")).toDouble();
+    r.w = o.value(QStringLiteral("w")).toDouble();
+    r.h = o.value(QStringLiteral("h")).toDouble();
+    return r;
+}
+bool sameRect(const NormRect& a, const NormRect& b)
+{
+    return std::abs(a.x - b.x) < 1e-6 && std::abs(a.y - b.y) < 1e-6 && std::abs(a.w - b.w) < 1e-6
+        && std::abs(a.h - b.h) < 1e-6;
+}
+} // namespace
+
+QStringList MobileWorkspace::hideAndFill(const QString& orientation, const QString& block, double gapX, double gapY)
+{
+    WorkspaceSurface* s = surface(orientation, false);
+    CanvasItem* hidden = item(orientation, block);
+    if (!s || !hidden || hidden->closed) {
+        return {};
+    }
+    const NormRect c = hidden->rect;
+    const QString displayId = itemId(orientation, QStringLiteral("display"));
+    // The four ways the room can be taken: by the blocks on one side of
+    // the hidden one, growing toward it (Right: the blocks left of it grow
+    // right; Down: the blocks above grow down...).
+    enum Dir { Right, Left, Down, Up };
+    const auto horizontal = [](Dir d) { return d == Right || d == Left; };
+    // Beside the hidden block on the side that grows in `d`, within the gap.
+    const auto beside = [&](Dir d, const NormRect& b) {
+        switch (d) {
+        case Right: return b.right() <= c.x + 1e-9 && c.x - b.right() <= gapX;
+        case Left: return b.x >= c.right() - 1e-9 && b.x - c.right() <= gapX;
+        case Down: return b.bottom() <= c.y + 1e-9 && c.y - b.bottom() <= gapY;
+        case Up: return b.y >= c.bottom() - 1e-9 && b.y - c.bottom() <= gapY;
+        }
+        return false;
+    };
+    // Within the hidden block's span across `d`: growing it stays in the
+    // hidden block's room, so it covers nothing else.
+    const auto within = [&](Dir d, const NormRect& b) {
+        return horizontal(d) ? (b.y >= c.y - gapY && b.bottom() <= c.bottom() + gapY)
+                             : (b.x >= c.x - gapX && b.right() <= c.right() + gapX);
+    };
+    // Further from the hidden block than `a` on that side, in a's lane.
+    const auto behind = [&](Dir d, const NormRect& a, const NormRect& b) {
+        const bool lane = horizontal(d) ? (b.y < a.bottom() && b.bottom() > a.y) : (b.x < a.right() && b.right() > a.x);
+        switch (d) {
+        case Right: return lane && b.right() <= a.x + 1e-9;
+        case Left: return lane && b.x >= a.right() - 1e-9;
+        case Down: return lane && b.bottom() <= a.y + 1e-9;
+        case Up: return lane && b.y >= a.bottom() - 1e-9;
+        }
+        return false;
+    };
+    struct Plan {
+        Dir dir = Right;
+        QList<CanvasItem*> adjacent;
+        double cover = 0.0;
+        bool display = false; // the display is in one of its lanes
+    };
+    QList<Plan> plans;
+    for (const Dir d : {Right, Left, Down, Up}) {
+        Plan p;
+        p.dir = d;
+        for (CanvasItem& it : s->items) {
+            if (&it != hidden && !it.closed && beside(d, it.rect) && within(d, it.rect)) {
+                p.adjacent << &it;
+                p.cover += horizontal(d) ? it.rect.h : it.rect.w;
+            }
+        }
+        if (p.adjacent.isEmpty()) {
+            continue;
+        }
+        for (CanvasItem* a : std::as_const(p.adjacent)) {
+            if (a->id == displayId) {
+                p.display = true;
+            }
+            for (const CanvasItem& b : std::as_const(s->items)) {
+                if (b.id == displayId && !b.closed && behind(d, a->rect, b.rect)) {
+                    p.display = true;
+                }
+            }
+        }
+        plans << p;
+    }
+    // Classic's way first: the side where the display takes the room; else
+    // the side whose blocks cover the hidden block's edge most.
+    const Plan* best = nullptr;
+    for (const Plan& p : std::as_const(plans)) {
+        if (!best || (p.display && !best->display) || (p.display == best->display && p.cover > best->cover + 1e-9)) {
+            best = &p;
+        }
+    }
+    QHash<CanvasItem*, NormRect> after;
+    if (best) {
+        const Dir d = best->dir;
+        // How far a block next to the hidden one moves or grows to its far edge.
+        const auto reach = [&](const NormRect& a) {
+            switch (d) {
+            case Right: return c.right() - a.right();
+            case Left: return a.x - c.x;
+            case Down: return c.bottom() - a.bottom();
+            case Up: return a.y - c.y;
+            }
+            return 0.0;
+        };
+        const auto grow = [&](NormRect r, double by) {
+            switch (d) {
+            case Right: r.w += by; break;
+            case Left: r.x -= by; r.w += by; break;
+            case Down: r.h += by; break;
+            case Up: r.y -= by; r.h += by; break;
+            }
+            return r;
+        };
+        const auto shift = [&](NormRect r, double by) {
+            switch (d) {
+            case Right: r.x += by; break;
+            case Left: r.x -= by; break;
+            case Down: r.y += by; break;
+            case Up: r.y -= by; break;
+            }
+            return r;
+        };
+        for (CanvasItem* a : best->adjacent) {
+            const double by = reach(a->rect);
+            // The display behind it in its lane takes the room (as in
+            // Classic), and the blocks between move along; only when each
+            // of those lies within the hidden block's span.
+            CanvasItem* display = nullptr;
+            QList<CanvasItem*> between;
+            for (CanvasItem& b : s->items) {
+                if (&b == a || &b == hidden || b.closed || !behind(d, a->rect, b.rect)) {
+                    continue;
+                }
+                if (b.id == displayId) {
+                    display = &b;
+                }
+            }
+            if (display && a->id != displayId) {
+                bool fits = true;
+                between << a;
+                for (CanvasItem& b : s->items) {
+                    if (&b == a || &b == display || &b == hidden || b.closed) {
+                        continue;
+                    }
+                    if (behind(d, a->rect, b.rect) && !behind(d, display->rect, b.rect)) {
+                        between << &b;
+                        fits = fits && within(d, b.rect);
+                    }
+                }
+                if (fits) {
+                    for (CanvasItem* m : std::as_const(between)) {
+                        if (!after.contains(m)) {
+                            after.insert(m, shift(m->rect, by));
+                        }
+                    }
+                    if (!after.contains(display)) {
+                        after.insert(display, grow(display->rect, by));
+                    }
+                    continue;
+                }
+            }
+            if (!after.contains(a)) {
+                after.insert(a, grow(a->rect, by));
+            }
+        }
+    }
+    QJsonObject record;
+    QStringList changed;
+    const int prefix = itemId(orientation, QString()).size();
+    for (auto it = after.constBegin(); it != after.constEnd(); ++it) {
+        const NormRect before = it.key()->rect;
+        const NormRect now = clampToBounds(it.value());
+        it.key()->rect = now;
+        record.insert(it.key()->id.mid(prefix),
+                      QJsonObject{{QStringLiteral("before"), rectJson(before)}, {QStringLiteral("after"), rectJson(now)}});
+        changed << it.key()->id.mid(prefix);
+    }
+    changed.sort();
+    hidden->closed = true;
+    if (record.isEmpty()) {
+        m_fill.remove(fillKey(orientation, block));
+    } else {
+        m_fill.insert(fillKey(orientation, block), record);
+    }
+    qCInfo(lcMobile).noquote() << "layouts:" << block << "hidden,"
+                               << (changed.isEmpty() ? QStringLiteral("nothing grown")
+                                                     : QStringLiteral("grown or moved: ") + changed.join(QLatin1Char(' ')));
+    touch();
+    return changed;
+}
+
+void MobileWorkspace::showAndRestore(const QString& orientation, const QString& block)
+{
+    CanvasItem* shown = item(orientation, block);
+    if (!shown) {
+        return;
+    }
+    const QString key = fillKey(orientation, block);
+    const QJsonObject record = m_fill.value(key).toObject();
+    QStringList restored;
+    for (auto r = record.constBegin(); r != record.constEnd(); ++r) {
+        CanvasItem* it = item(orientation, r.key());
+        const QJsonObject o = r.value().toObject();
+        // Only one still as it was grown: one edited since keeps its size.
+        if (it && sameRect(it->rect, rectOf(o.value(QStringLiteral("after")).toObject()))) {
+            it->rect = rectOf(o.value(QStringLiteral("before")).toObject());
+            restored << r.key();
+        }
+    }
+    m_fill.remove(key);
+    shown->closed = false;
+    raise(orientation, block);
+    qCInfo(lcMobile).noquote() << "layouts:" << block << "shown," << (restored.isEmpty() ? QStringLiteral("nothing restored")
+                                                                                        : QStringLiteral("restored: ") + restored.join(QLatin1Char(' ')));
     touch();
 }
 

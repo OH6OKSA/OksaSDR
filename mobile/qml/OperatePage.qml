@@ -216,17 +216,22 @@ Page {
                 font.pixelSize: 13
             }
             TopButton {
-                // Pinned panel: hide it. Hidden: open it as a drawer over the
-                // waterfall. An own layout with its Controls block shows them
-                // there; without one, the drawer.
-                visible: !page.canvasControls
-                text: page.panelPinned && !page.canvasOn ? qsTr("Hide controls") : qsTr("Controls")
+                // Pinned controls (Classic's panel, or an own layout's
+                // Controls block): hide them. Hidden: open them as a drawer
+                // over the waterfall; its Pin Controls brings them back
+                // (roadmap 114: an own layout works as Classic does).
+                id: controlsTopButton
+                objectName: "topControls"
+                readonly property bool pinnedShown: page.canvasOn ? page.canvasControls : page.panelPinned
+                text: pinnedShown ? qsTr("Hide controls") : qsTr("Controls")
                 focusPolicy: Qt.NoFocus
                 onClicked: {
-                    if (page.panelPinned && !page.canvasOn) {
-                        Engine.controlsVisible = false
-                    } else {
+                    if (!pinnedShown) {
                         controlsDrawer.open()
+                    } else if (page.canvasOn) {
+                        page.hideControlsBlock()
+                    } else {
+                        Engine.controlsVisible = false
                     }
                 }
             }
@@ -368,13 +373,38 @@ Page {
             layoutEditing = true
         }
     }
+    // The top row's Hide controls in an own layout (roadmap 114): the
+    // Controls block hidden and the blocks beside it grown into its room
+    // (24 px of gap at most), as Classic's display takes the panel's width.
+    function hideControlsBlock() {
+        ws.hideAndFill(orientation, "controls", 24 / Math.max(1, canvasArea.width), 24 / Math.max(1, canvasArea.height))
+        ws.flush()
+    }
+    // The drawer's Pin Controls in an own layout: the block back where it
+    // was. Where that place is taken now (or the block was never placed,
+    // Classic's controls being a drawer when the layout was made), never
+    // over another block: the editor opens with it selected to place it.
+    function pinControlsBlock() {
+        const it = canvasArea.itemFor("controls")
+        if (!it) return
+        const rect = { x: it.x, y: it.y, w: it.w, h: it.h }
+        // The blocks grown for it go back first (unless edited since).
+        ws.showAndRestore(orientation, "controls")
+        if (canvasArea.overlapsAny("controls", rect)) {
+            startEditing(false)
+            blockControls.select()
+        } else {
+            ws.flush()
+        }
+    }
     // + Add's choice: the menu closed first (a screen reader's press leaves
     // it open where a tap closes it, and the block shown changes the menu's
     // list, which takes the item away), then the block shown again.
     function showBlock(block) {
         addMenu.close()
         ws.checkpoint()
-        ws.setClosed(orientation, block, false)
+        // Hidden by Hide controls: the blocks grown for it go back too.
+        ws.showAndRestore(orientation, block)
     }
     function stopEditing() {
         addMenu.close()
@@ -892,7 +922,11 @@ Page {
         edge: page.portrait ? Qt.BottomEdge : Qt.RightEdge
         // At least 320 pt beside the display: a narrow window's 40 % cut the
         // panel's buttons short.
-        width: page.portrait ? page.width : Math.min(Math.max(page.width * 0.4, 320 * Theme.bigScale), 460 * Theme.bigScale)
+        // In landscape with no Pin Controls the × sits beside the section
+        // buttons (ControlsPanel.closeInGrid): the drawer is that much wider.
+        width: page.portrait ? page.width
+                             : Math.min(Math.max(page.width * 0.4, 320 * Theme.bigScale), 460 * Theme.bigScale)
+                               + (drawerPanel.closeInGrid ? drawerPanel.closeColumn : 0)
         // Landscape: ends above the page's PTT row, which stays usable, so
         // the drawer needs no PTT of its own. Portrait (from the bottom)
         // covers it and carries a copy.
@@ -924,14 +958,21 @@ Page {
             anchors.bottomMargin: Theme.spacing + Math.max(0, 12 - controlsDrawer.SafeArea.margins.bottom)
             spacing: Theme.spacing
             ControlsPanel {
+                id: drawerPanel
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 // Pinning would not show where the panel does not fit, nor in
                 // an own layout (its Controls block is the pinned panel).
-                showPinButton: page.pinFits && !page.canvasOn
+                // Pinning would not show where Classic's panel does not fit;
+                // in an own layout it brings the Controls block back.
+                showPinButton: page.canvasOn ? !page.canvasControls : page.pinFits
                 onPinRequested: {
                     controlsDrawer.close()
-                    Engine.controlsVisible = true
+                    if (page.canvasOn) {
+                        page.pinControlsBlock()
+                    } else {
+                        Engine.controlsVisible = true
+                    }
                 }
                 // Landscape has no Close at the bottom: a × at the top.
                 showCloseButton: !page.portrait

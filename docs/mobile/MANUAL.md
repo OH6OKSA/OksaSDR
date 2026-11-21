@@ -679,9 +679,16 @@ In the editor:
 
 While you edit, the blocks show a picture of their content and nothing in
 them acts: a stray touch never tunes or transmits, and Space on a
-keyboard is not PTT until **Done**. With the *Controls* block in the
-layout the controls are part of the screen and the top row's **Controls**
-button goes; hide the block and **Controls** opens them as a drawer again.
+keyboard is not PTT until **Done**.
+
+**Hide controls** in the top row works in a layout as in Classic: the
+*Controls* block goes and the blocks beside it take its room (with the
+controls at the right, the rows beside them widen; with them under the
+display, the display grows and the steps move down under it). **Controls**
+then opens them as a drawer, and its **Pin Controls** brings the block back
+with the others as they were. A block you changed in the editor meanwhile
+keeps your size; if the controls' place is taken, the editor opens with
+them selected so you can place them. Each orientation keeps its own.
 
 Each layout keeps landscape and portrait apart: turn the device and edit
 the other. Layouts are remembered, and **App setups** (Prof tab) save them
@@ -1375,7 +1382,10 @@ them in the page (at the right in landscape, under the display in portrait),
 with toggle buttons to show several sections at once; *Hide controls* puts
 them back into the drawer. On a tablet in landscape **×** beside *Pin
 Controls* closes the drawer (upright, *Close* is at its foot; a tap outside
-it closes it too; thanks Larry Averbeck W9FLA). The buttons are all one size, in rows of six:
+it closes it too; thanks Larry Averbeck W9FLA). Where the window has no
+room to pin them (a foldable's inner screen, Split View), the **×** sits
+at the end of the first row of buttons and the drawer is a little wider,
+so no row is spent on it. The buttons are all one size, in rows of six:
 **DSP**, **Audio**, **TX**, **eSSB** (this device's microphone
 processing), **CW**, **View**, **Prof** (profiles), **Mem** (memory),
 **Log**, **FTx** (FT8 / FT4), **FreeDV** (RADE digital voice and FreeDV

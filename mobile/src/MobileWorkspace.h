@@ -20,6 +20,7 @@
 
 #include "gui/workspace/WorkspaceDocument.h"
 
+#include <QJsonObject>
 #include <QObject>
 #include <QStringList>
 #include <QTimer>
@@ -86,6 +87,21 @@ public:
     Q_INVOKABLE void setClosed(const QString& orientation, const QString& block, bool closed);
     // On top of the others (the block being moved).
     Q_INVOKABLE void raise(const QString& orientation, const QString& block);
+    // The top row's Hide controls in an own layout (roadmap 114): `block`
+    // hidden and the blocks beside it grown into its room, as Classic's
+    // display takes the hidden panel's width. The side is the one whose
+    // neighbours cover the block's edge most, among the window edges the
+    // block lies on (a column at the right: the blocks left of it grow
+    // right; a row at the bottom: the blocks above grow down). A neighbour
+    // grows only when it lies within the block's span (gapX / gapY: the
+    // most room between it and the block, in fractions), so nothing grows
+    // over a third block. What grew is remembered (stored with the layouts)
+    // for showAndRestore. Returns the blocks grown.
+    Q_INVOKABLE QStringList hideAndFill(const QString& orientation, const QString& block, double gapX, double gapY);
+    // Pin Controls / + Add: `block` shown again, and the blocks grown for it
+    // back to their size when still as they were grown (one edited since
+    // keeps its new size). The page then checks the block's place is free.
+    Q_INVOKABLE void showAndRestore(const QString& orientation, const QString& block);
     // Written now when changed (the app leaving the front, an App setup
     // being saved).
     Q_INVOKABLE void flush();
@@ -109,6 +125,7 @@ private:
     CanvasItem* item(const QString& orientation, const QString& block);
     void touch();
     void load();
+    QString fillKey(const QString& orientation, const QString& block) const;
 
     WorkspaceDocument m_doc;
     QList<QByteArray> m_undo;
@@ -117,6 +134,9 @@ private:
     // Changed since written: a flush with nothing changed writes nothing,
     // so it never puts an old layout over one an App setup brought.
     bool m_dirty{false};
+    // What hideAndFill grew, per layout, orientation and hidden block: each
+    // neighbour's rect before and after (kFillKey in the settings).
+    QJsonObject m_fill;
 };
 
 } // namespace AetherSDR::mobile
