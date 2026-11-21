@@ -1866,7 +1866,11 @@ seven.
   and *Save*; from then on every QSO you log goes to the program as WSJT-X
   sends one (its QSO Logged and Logged ADIF messages over UDP), FT8 / FT4
   logs too. In RUMlogNG: *Preferences › UDP › WSJT-X*, the same *Data
-  port*, **Save QSOs to logbook** on, and *Switch PTT* off. UDP brings no
+  port*, **Save QSOs to logbook** on, and *Switch PTT* off. The WSJT-X
+  port must be RUMlog's only use of it: where its N1MM or Flex / ADIF
+  receiving also uses 2237, give WSJT-X a port of its own, e.g. *Data
+  port* 2238 and `127.0.0.1:2238` here (found by Christoph DM5HF; on a
+  shared port only one of RUMlog's receivers gets each QSO). UDP brings no
   answer back, so *Save* cannot check that the program listens: log one
   QSO and look in the program; the line under the field says when the
   last one went. A QSO that does not arrive (the computer off, away from
