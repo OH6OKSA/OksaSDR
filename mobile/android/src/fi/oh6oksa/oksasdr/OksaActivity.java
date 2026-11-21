@@ -164,10 +164,10 @@ public class OksaActivity extends QtActivity {
     // key reaches apps as a key (often a vendor code, or one Android cannot
     // name, with its scan code) or as a broadcast push-to-talk apps listen
     // for. Both are written to the app's log, so one press and Log > Send to
-    // the developer tell which; nothing is keyed by them in this step. Keys
-    // from a full keyboard are the app's own (Space PTT, the arrows, the
-    // F-keys), so from one only a key Android cannot name is logged; any other
-    // device's (the handset's buttons, a remote, a Bluetooth PTT button) are.
+    // the developer tell which; nothing is keyed by them in this step. A full
+    // keyboard's typing keys are the app's own (Space PTT, the arrows, the
+    // F-keys) and are not logged; every other key is, from any device (the
+    // handset's buttons, a remote, a Bluetooth PTT button).
     private static volatile boolean keyLogOn = false;
     private static native void keyLog(String line);
     private static final int KEY_LINES_MAX = 40;
@@ -189,7 +189,7 @@ public class OksaActivity extends QtActivity {
     public static void setKeyLogOn(boolean on) {
         keyLogOn = on;
         if (on) {
-            note("key log: on (keys from devices other than a full keyboard, and keys Android cannot name); " + pttState);
+            note("key log: on (every key but a keyboard's typing keys); " + pttState);
         }
     }
 
@@ -227,6 +227,36 @@ public class OksaActivity extends QtActivity {
                              device.getProductId(), where);
     }
 
+    // A full keyboard's typing keys (letters, digits, punctuation, Space,
+    // Tab, Enter, the arrows and editing keys, modifiers, F1-F12, Esc): the
+    // app's own or typed text, never logged. Anything else from a keyboard
+    // is: the volume, media, camera and headset keys and vendor codes, as a
+    // handset may report its buttons, the PTT key among them, as a full
+    // keyboard (the emulator's hardware keys come so).
+    private static boolean typingKey(int code) {
+        if ((code >= KeyEvent.KEYCODE_0 && code <= KeyEvent.KEYCODE_9)
+            || (code >= KeyEvent.KEYCODE_A && code <= KeyEvent.KEYCODE_Z)
+            || (code >= KeyEvent.KEYCODE_F1 && code <= KeyEvent.KEYCODE_F12)
+            || (code >= KeyEvent.KEYCODE_NUMPAD_0 && code <= KeyEvent.KEYCODE_NUMPAD_RIGHT_PAREN)
+            || (code >= KeyEvent.KEYCODE_DPAD_UP && code <= KeyEvent.KEYCODE_DPAD_CENTER)
+            || (code >= KeyEvent.KEYCODE_COMMA && code <= KeyEvent.KEYCODE_SPACE)
+            || (code >= KeyEvent.KEYCODE_ENTER && code <= KeyEvent.KEYCODE_AT)
+            || (code >= KeyEvent.KEYCODE_ESCAPE && code <= KeyEvent.KEYCODE_INSERT)) {
+            return true;
+        }
+        switch (code) {
+            case KeyEvent.KEYCODE_STAR:
+            case KeyEvent.KEYCODE_POUND:
+            case KeyEvent.KEYCODE_PLUS:
+            case KeyEvent.KEYCODE_PAGE_UP:
+            case KeyEvent.KEYCODE_PAGE_DOWN:
+            case KeyEvent.KEYCODE_NUM_LOCK:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     private static void logKey(KeyEvent event) {
         int action = event.getAction();
         if ((action != KeyEvent.ACTION_DOWN && action != KeyEvent.ACTION_UP) || event.getRepeatCount() > 0) {
@@ -235,7 +265,7 @@ public class OksaActivity extends QtActivity {
         InputDevice device = event.getDevice();
         int code = event.getKeyCode();
         boolean keyboard = device != null && device.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC;
-        if (keyboard && code != KeyEvent.KEYCODE_UNKNOWN) {
+        if (keyboard && typingKey(code)) {
             return;
         }
         if (!takeLine()) {
