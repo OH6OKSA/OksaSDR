@@ -218,6 +218,9 @@ qt_add_qml_module(aether-mobile
         qml/ModeBlock.qml
         qml/InfoBlock.qml
         qml/ButtonGridBlock.qml
+        qml/SliceChip.qml
+        qml/SlicesBlock.qml
+        qml/MeterBlock.qml
         qml/AddressDialog.qml
         qml/Caret.qml
         qml/MeterBadge.qml

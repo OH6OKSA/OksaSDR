@@ -650,8 +650,16 @@ the editor. **Edit** edits the layout in use; with Classic in use it reads
 to put Setup and the rest behind **⋯**, **⋯ → Edit layout** does the same.
 
 The screen is made of blocks: *Frequency*, *Mode*, *Step size*, *Info
-line*, *Bands*, *Slices and meters*, *Display*, *Steps*, *Controls*,
-*Macros* and *PTT*.
+line*, *Bands*, *Meter 1*, *Slices*, *Meter 2*, *Display*, *Steps*,
+*Controls*, *Macros* and *PTT* (thanks Larry Averbeck W9FLA for the meters
+and slices apart). *Slices* shows the slices in one line where its width
+allows, else in as many rows as its height holds, else in one line you
+scroll sideways; it never draws outside its block. A meter's face grows
+with its block (a large S meter needs only a large block) and follows the
+meter style set in View, as on Classic; a tap chooses what it shows.
+Layouts made with build 197 had the meters and the slices in one block:
+the first time such a layout shows, it is split into the three at the
+places they had.
 
 ![Editing a layout: the Steps block selected, with its handles and the arrange bar](manual/layout-edit.jpg)
 

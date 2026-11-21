@@ -1817,8 +1817,22 @@ public:
     }
     // Development (render tool `status`): a status line as if the radio
     // had sent it, for hardware not at hand (a USB cable).
-    void injectStatusForTest(const QString& object, const QMap<QString, QString>& kvs)
+    // A value "$OWN" stands for this app's client handle (a slice of its own,
+    // e.g. more slices than the radio has free, for the Slices block's rows).
+    void injectStatusForTest(const QString& object, QMap<QString, QString> kvs)
     {
+        // This app's handle as its own panadapter carries it.
+        QString own;
+        if (m_slice) {
+            if (const PanadapterModel* pan = m_session.radioModel().panadapter(m_slice->panId())) {
+                own = pan->clientHandle();
+            }
+        }
+        for (auto it = kvs.begin(); it != kvs.end(); ++it) {
+            if (it.value() == QLatin1String("$OWN")) {
+                it.value() = own;
+            }
+        }
         m_session.radioModel().handleStatusForTest(object, kvs);
     }
     // Development (render tool `record`): the RX audio as the speaker gets

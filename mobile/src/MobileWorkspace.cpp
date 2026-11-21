@@ -570,22 +570,29 @@ QStringList MobileWorkspace::hideAndFill(const QString& orientation, const QStri
             }
             return r;
         };
+        // The block in a lane that takes the room, as Classic's layout
+        // stretches it: the display, else the slice chips (the slice row's
+        // meters stay at its ends), else the block next to the hidden one.
+        const QStringList stretch{displayId, itemId(orientation, QStringLiteral("slices"))};
         for (CanvasItem* a : best->adjacent) {
             const double by = reach(a->rect);
-            // The display behind it in its lane takes the room (as in
-            // Classic), and the blocks between move along; only when each
-            // of those lies within the hidden block's span.
+            // The stretching block behind it in its lane takes the room, and
+            // the blocks between move along; only when each of those lies
+            // within the hidden block's span.
             CanvasItem* display = nullptr;
             QList<CanvasItem*> between;
             for (CanvasItem& b : s->items) {
-                if (&b == a || &b == hidden || b.closed || !behind(d, a->rect, b.rect)) {
+                if (&b == a || &b == hidden || b.closed || !behind(d, a->rect, b.rect) || !stretch.contains(b.id)) {
                     continue;
                 }
-                if (b.id == displayId) {
+                if (!display || stretch.indexOf(b.id) < stretch.indexOf(display->id)) {
                     display = &b;
                 }
             }
-            if (display && a->id != displayId) {
+            if (stretch.contains(a->id) && (!display || stretch.indexOf(a->id) <= stretch.indexOf(display->id))) {
+                display = nullptr; // a stretches itself
+            }
+            if (display) {
                 bool fits = true;
                 between << a;
                 for (CanvasItem& b : s->items) {
@@ -637,6 +644,41 @@ QStringList MobileWorkspace::hideAndFill(const QString& orientation, const QStri
                                                      : QStringLiteral("grown or moved: ") + changed.join(QLatin1Char(' ')));
     touch();
     return changed;
+}
+
+void MobileWorkspace::splitBlock(const QString& orientation, const QString& block, const QVariantList& parts)
+{
+    WorkspaceSurface* s = surface(orientation, false);
+    CanvasItem* old = item(orientation, block);
+    if (!s || !old) {
+        return;
+    }
+    const bool closed = old->closed;
+    QStringList made;
+    for (const QVariant& v : parts) {
+        const QVariantMap m = v.toMap();
+        const QString name = m.value(QStringLiteral("block")).toString();
+        const NormRect r = clampToBounds(rectFrom(m));
+        if (name.isEmpty() || !r.isValid()) {
+            continue;
+        }
+        if (name == block) {
+            item(orientation, block)->rect = r;
+        } else if (!item(orientation, name)) {
+            CanvasItem it;
+            it.id = itemId(orientation, name);
+            it.contentType = name;
+            it.rect = r;
+            it.closed = closed;
+            it.z = static_cast<int>(s->items.size());
+            s->items.append(it);
+        } else {
+            continue;
+        }
+        made << name;
+    }
+    qCInfo(lcMobile).noquote() << "layouts:" << block << "split into" << made.join(QLatin1Char(' ')) << "(" << surfaceId(orientation) << ")";
+    touch();
 }
 
 void MobileWorkspace::showAndRestore(const QString& orientation, const QString& block)

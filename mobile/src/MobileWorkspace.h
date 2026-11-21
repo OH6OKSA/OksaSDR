@@ -102,6 +102,12 @@ public:
     // back to their size when still as they were grown (one edited since
     // keeps its new size). The page then checks the block's place is free.
     Q_INVOKABLE void showAndRestore(const QString& orientation, const QString& block);
+    // An older build's block split into several where its parts were
+    // (roadmap 117: build 197's "slices", the slice row with its meters,
+    // into meter1, slices and meter2): parts are {block, x, y, w, h}; the
+    // block itself takes its part's rect, the new ones its closed state,
+    // stacked above the others. Not an editing step (no Undo).
+    Q_INVOKABLE void splitBlock(const QString& orientation, const QString& block, const QVariantList& parts);
     // Written now when changed (the app leaving the front, an App setup
     // being saved).
     Q_INVOKABLE void flush();

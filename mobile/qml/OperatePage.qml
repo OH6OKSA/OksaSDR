@@ -20,7 +20,8 @@ Page {
     readonly property bool canvasControls: canvasOn && blockControls.shown
     readonly property var blockTitles: ({
         frequency: qsTr("Frequency"), mode: qsTr("Mode"), stepsize: qsTr("Step size"), info: qsTr("Info line"), bands: qsTr("Bands"),
-        slices: qsTr("Slices and meters"), display: qsTr("Display"), steps: qsTr("Steps"),
+        slices: qsTr("Slices"), meter1: qsTr("Meter 1"), meter2: qsTr("Meter 2"),
+        display: qsTr("Display"), steps: qsTr("Steps"),
         controls: qsTr("Controls"), macros: qsTr("Macros"), ptt: qsTr("PTT")
     })
     readonly property var closedBlocks: {
@@ -435,7 +436,12 @@ Page {
             page.layoutEditing = true
         }
     }
-    onOrientationChanged: if (layoutEditing) stopEditing()
+    onOrientationChanged: {
+        if (layoutEditing) stopEditing()
+        // Each orientation is a surface of its own: build 197's slice row
+        // is split there too when first shown.
+        Qt.callLater(migrateSlices)
+    }
     Connections {
         target: page.ws
         function onEditRequested(newLayout) { page.startEditing(newLayout) }
@@ -468,7 +474,13 @@ Page {
         add("stepsize", classicRect(classicStep))
         add("info", classicRect(page.infoUnder ? infoUnderPanel : infoBeside))
         add("bands", classicRect(bandRow))
-        add("slices", classicRect(sliceBar))
+        // The slice row as three blocks (roadmap 117): its meters where they
+        // are, the chips' column the row's full height.
+        const row = classicRect(sliceBar)
+        const chipsRect = classicRect(sliceBar.chipAreaItem)
+        add("meter1", classicRect(sliceBar.leftMeterItem))
+        add("slices", chipsRect && row ? { x: chipsRect.x, y: row.y, w: chipsRect.w, h: row.h } : chipsRect)
+        add("meter2", classicRect(sliceBar.rightMeterItem))
         add("display", classicRect(panSlot))
         add("steps", classicRect(stepRow))
         add("controls", page.panelPinned ? classicRect(controlsSlot) : null)
@@ -796,15 +808,40 @@ Page {
             block: "slices"
             canvas: canvasArea
             title: page.blockTitles.slices
-            minW: 320
-            minH: 48
-            fits: (w, h) => w >= 320 && h >= Math.min(blockSliceBar.implicitHeight, 120) * 0.9
-            SliceBar {
-                id: blockSliceBar
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                compact: width < 1100
+            minW: 96
+            minH: 34
+            fits: (w, h) => slicesBlock.fits(w, h)
+            SlicesBlock {
+                id: slicesBlock
+                anchors.fill: parent
+            }
+        }
+        CanvasBlock {
+            id: blockMeter1
+            block: "meter1"
+            canvas: canvasArea
+            title: page.blockTitles.meter1
+            minW: 80
+            minH: 40
+            fits: (w, h) => meter1Block.fits(w, h)
+            MeterBlock {
+                id: meter1Block
+                side: "left"
+                anchors.fill: parent
+            }
+        }
+        CanvasBlock {
+            id: blockMeter2
+            block: "meter2"
+            canvas: canvasArea
+            title: page.blockTitles.meter2
+            minW: 80
+            minH: 40
+            fits: (w, h) => meter2Block.fits(w, h)
+            MeterBlock {
+                id: meter2Block
+                side: "right"
+                anchors.fill: parent
             }
         }
         CanvasBlock {
@@ -856,6 +893,70 @@ Page {
             minW: 100
             minH: 40
         }
+    }
+
+    // ── Build 197's layouts: the slice row split into three (117) ───────
+    // A surface with the old "Slices and meters" block (Classic's slice row
+    // with its meters) gets Meter 1, Slices and Meter 2 where the meters and
+    // the chips were in it: measured on an unseen slice row of the block's
+    // size (shown at opacity 0: a hidden one does not lay out), not guessed.
+    Loader {
+        id: sliceProbe
+        property real probeWidth: 0
+        property real probeHeight: 0
+        active: false
+        sourceComponent: Item {
+            width: sliceProbe.probeWidth
+            height: sliceProbe.probeHeight
+            opacity: 0
+            enabled: false
+            property alias bar: probeBar
+            SliceBar {
+                id: probeBar
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                compact: width < 1100
+            }
+        }
+    }
+    function migrateSlices() {
+        if (!canvasOn || sliceMigrate.running || canvasArea.width <= 0 || canvasArea.height <= 0) return
+        const old = canvasArea.itemFor("slices")
+        if (!old || canvasArea.itemFor("meter1") || canvasArea.itemFor("meter2")) return
+        sliceProbe.probeWidth = old.w * canvasArea.width
+        sliceProbe.probeHeight = old.h * canvasArea.height
+        sliceProbe.active = true
+        sliceMigrate.restart()
+    }
+    Timer {
+        id: sliceMigrate
+        interval: 150
+        onTriggered: {
+            const host = sliceProbe.item
+            const old = canvasArea.itemFor("slices")
+            if (host && old && page.canvasOn) {
+                const cw = canvasArea.width
+                const ch = canvasArea.height
+                const part = (block, it, fullHeight) => {
+                    // The chips' column takes the row's height: only its width counts.
+                    if (!it || !it.visible || it.width <= 0 || (!fullHeight && it.height <= 0)) return null
+                    const p = it.mapToItem(host, 0, 0)
+                    return { block: block, x: old.x + p.x / cw, y: fullHeight ? old.y : old.y + p.y / ch,
+                             w: it.width / cw, h: fullHeight ? old.h : it.height / ch }
+                }
+                const parts = [part("meter1", host.bar.leftMeterItem, false),
+                               part("slices", host.bar.chipAreaItem, true),
+                               part("meter2", host.bar.rightMeterItem, false)].filter(p => p !== null)
+                if (parts.length > 0) page.ws.splitBlock(page.orientation, "slices", parts)
+            }
+            sliceProbe.active = false
+        }
+    }
+    onCanvasOnChanged: Qt.callLater(migrateSlices)
+    Connections {
+        target: page.ws
+        function onChanged() { Qt.callLater(page.migrateSlices) }
     }
 
     // ── The parts that are one instance in either arrangement ──────────
@@ -1164,7 +1265,10 @@ Page {
         id: freqDialog
         onClosed: page.forceActiveFocus()
     }
-    Component.onCompleted: page.forceActiveFocus()
+    Component.onCompleted: {
+        page.forceActiveFocus()
+        Qt.callLater(page.migrateSlices)
+    }
     // A layout switch (rotation, Split View, fold/unfold) destroys this page;
     // a held PTT must not outlive its button.
     Component.onDestruction: {

@@ -119,8 +119,8 @@ radio interface, with no computer running alongside.
   Hold Exit to leave.
 - **Own layouts** (iPad, Mac, Android tablet; View › Layout, thanks Larry
   W9FLA): arrange the main screen yourself, after the desktop's Workspace
-  Canvas. Drag its blocks (frequency, mode, step, info line, bands, slices
-  and meters, display, steps, controls, macros, PTT) to move them, size
+  Canvas. Drag its blocks (frequency, mode, step, info line, bands, meter 1,
+  slices, meter 2, display, steps, controls, macros, PTT) to move them, size
   them by their handles, hide what you do not use; edges snap to each
   other, a block stops where its content would no longer fit, and none
   drops on another. Several layouts, landscape and portrait apart, Undo,
