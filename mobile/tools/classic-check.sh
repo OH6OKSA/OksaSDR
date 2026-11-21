@@ -96,7 +96,19 @@ if [ ! -f "$basedir/done" ] || [ -n "$sizes" ]; then
 fi
 
 echo "classic-check: building this tree"
+# The build copies the QML into build-mobile by date, not by content: after
+# the base's files (written now) were built, this tree's put back with their
+# older dates were not copied again, and the "tree" sweep showed the base
+# (found 2026-11-21 with build 199's light theme). Every file dated now, so
+# the build takes this tree's QML whatever was built before.
+command find mobile/qml -type f -exec touch {} +
 build
+# And proven: every QML file the build holds is this tree's.
+for f in mobile/qml/*.qml; do
+    copy="build-mobile/mobile/AetherMobile/qml/$(basename "$f")"
+    [ -f "$copy" ] && ! cmp -s "$f" "$copy" \
+        && { echo "classic-check: the build holds another $(basename "$f") than this tree" >&2; exit 1; }
+done
 dirty=""
 git diff --quiet HEAD -- mobile/qml mobile/src || dirty=1
 out="$store/check-${key:0:12}${dirty:+-dirty}"
