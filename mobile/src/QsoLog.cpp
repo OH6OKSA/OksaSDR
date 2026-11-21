@@ -236,6 +236,114 @@ bool sameContact(const QVariantMap& a, const QVariantMap& b)
 
 } // namespace
 
+// A record's span in ADIF bytes replaced (or, with an empty replacement,
+// removed with its line break): the newest record that is the contact. Loose
+// (the shared ADIF file, roadmap 123, which another program may have saved
+// in its own way): the call, date, band and mode, the time by its hours and
+// minutes, the frequency not compared; and only the fields the edit changed
+// are changed in the file's record, so what the other program keeps there
+// (its own fields, the QSL states, the seconds of the time) stays.
+bool QsoLog::replaceInAdif(const QByteArray& data, const QVariantMap& match, const QVariantMap& replacement, bool loose,
+                           QByteArray* result)
+{
+    const auto same = [loose](const QVariantMap& a, const QVariantMap& b) {
+        if (!loose) {
+            return sameContact(a, b);
+        }
+        for (const char* k : {"CALL", "QSO_DATE", "BAND", "MODE"}) {
+            const QString key = QLatin1String(k);
+            if (a.value(key).toString().trimmed().compare(b.value(key).toString().trimmed(), Qt::CaseInsensitive) != 0) {
+                return false;
+            }
+        }
+        return a.value(QStringLiteral("TIME_ON")).toString().trimmed().left(4)
+               == b.value(QStringLiteral("TIME_ON")).toString().trimmed().left(4);
+    };
+    // Each record's bytes, from its first tag to the end of its <EOR>, as
+    // parseAdifEach reads them.
+    struct Span {
+        qsizetype start;
+        qsizetype end;
+    };
+    Span found{-1, -1};
+    QVariantMap foundRecord;
+    qsizetype i = 0;
+    const qsizetype eoh = data.indexOf("<EOH>") >= 0 ? data.indexOf("<EOH>") : data.indexOf("<eoh>");
+    if (eoh >= 0) {
+        i = eoh + 5;
+    }
+    qsizetype start = -1;
+    QVariantMap current;
+    while (i < data.size()) {
+        const qsizetype lt = data.indexOf('<', i);
+        if (lt < 0) {
+            break;
+        }
+        const qsizetype gt = data.indexOf('>', lt);
+        if (gt < 0) {
+            break;
+        }
+        const QByteArray tag = data.mid(lt + 1, gt - lt - 1);
+        if (start < 0) {
+            start = lt;
+        }
+        i = gt + 1;
+        if (tag.compare("EOR", Qt::CaseInsensitive) == 0) {
+            if (!current.isEmpty() && same(current, match)) {
+                found = {start, i};  // the newest one wins
+                foundRecord = current;
+            }
+            current = QVariantMap();
+            start = -1;
+            continue;
+        }
+        const QList<QByteArray> parts = tag.split(':');
+        if (parts.size() < 2) {
+            continue;
+        }
+        bool ok = false;
+        const int len = parts.at(1).toInt(&ok);
+        if (!ok || len < 0 || i + len > data.size()) {
+            continue;
+        }
+        current.insert(QString::fromLatin1(parts.at(0)).toUpper(), QString::fromUtf8(data.mid(i, len)));
+        i += len;
+    }
+    if (found.start < 0) {
+        return false;
+    }
+    QByteArray out = data.left(found.start);
+    qsizetype rest = found.end;
+    if (replacement.isEmpty()) {
+        // The deleted record's line break goes with it.
+        while (rest < data.size() && (data.at(rest) == '\r' || data.at(rest) == '\n')) {
+            ++rest;
+        }
+    } else if (loose) {
+        QVariantMap merged = foundRecord;
+        QStringList keys = match.keys() + replacement.keys();
+        keys.removeDuplicates();
+        for (const QString& k : std::as_const(keys)) {
+            const QString was = match.value(k).toString();
+            const QString now = replacement.value(k).toString();
+            if (was == now) {
+                continue;
+            }
+            if (now.isEmpty()) {
+                merged.remove(k);
+            } else {
+                merged.insert(k, now);
+            }
+        }
+        out += adifRecord(merged).toUtf8();
+    } else {
+        out += adifRecord(replacement).toUtf8();
+    }
+    out += data.mid(rest);
+    *result = out;
+    return true;
+}
+
 bool QsoLog::replaceRecord(const QVariantMap& match, const QVariantMap& replacement)
 {
     {
@@ -246,68 +354,10 @@ bool QsoLog::replaceRecord(const QVariantMap& match, const QVariantMap& replacem
         }
         const QByteArray data = in.readAll();
         in.close();
-        // Each record's bytes, from its first tag to the end of its <EOR>,
-        // as parseAdifEach reads them.
-        struct Span {
-            qsizetype start;
-            qsizetype end;
-        };
-        Span found{-1, -1};
-        qsizetype i = 0;
-        const qsizetype eoh = data.indexOf("<EOH>") >= 0 ? data.indexOf("<EOH>") : data.indexOf("<eoh>");
-        if (eoh >= 0) {
-            i = eoh + 5;
-        }
-        qsizetype start = -1;
-        QVariantMap current;
-        while (i < data.size()) {
-            const qsizetype lt = data.indexOf('<', i);
-            if (lt < 0) {
-                break;
-            }
-            const qsizetype gt = data.indexOf('>', lt);
-            if (gt < 0) {
-                break;
-            }
-            const QByteArray tag = data.mid(lt + 1, gt - lt - 1);
-            if (start < 0) {
-                start = lt;
-            }
-            i = gt + 1;
-            if (tag.compare("EOR", Qt::CaseInsensitive) == 0) {
-                if (!current.isEmpty() && sameContact(current, match)) {
-                    found = {start, i};  // the newest one wins
-                }
-                current = QVariantMap();
-                start = -1;
-                continue;
-            }
-            const QList<QByteArray> parts = tag.split(':');
-            if (parts.size() < 2) {
-                continue;
-            }
-            bool ok = false;
-            const int len = parts.at(1).toInt(&ok);
-            if (!ok || len < 0 || i + len > data.size()) {
-                continue;
-            }
-            current.insert(QString::fromLatin1(parts.at(0)).toUpper(), QString::fromUtf8(data.mid(i, len)));
-            i += len;
-        }
-        if (found.start < 0) {
+        QByteArray out;
+        if (!replaceInAdif(data, match, replacement, false, &out)) {
             return false;
         }
-        QByteArray out = data.left(found.start);
-        qsizetype rest = found.end;
-        if (replacement.isEmpty()) {
-            // The deleted record's line break goes with it.
-            while (rest < data.size() && (data.at(rest) == '\r' || data.at(rest) == '\n')) {
-                ++rest;
-            }
-        } else {
-            out += adifRecord(replacement).toUtf8();
-        }
-        out += data.mid(rest);
         QSaveFile save(m_path);
         if (!save.open(QIODevice::WriteOnly) || save.write(out) != out.size() || !save.commit()) {
             return false;

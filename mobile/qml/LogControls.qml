@@ -735,8 +735,8 @@ ColumnLayout {
         }
     }
     // A logged contact edited or deleted (roadmap 78, Christoph Steinert
-    // DM5HF): the app's own log; the logbooks it went to are named, as an
-    // edit here does not change them.
+    // DM5HF): the app's own log and the shared ADIF file (123); the online
+    // logbooks it went to are named, as an edit here does not change them.
     Dialog {
         id: qsoEdit
         objectName: "logEditDialog"
@@ -813,6 +813,15 @@ ColumnLayout {
                     EditField { id: editTheir; objectName: "logEditTheirPark"; Accessible.name: qsTr("Their park reference"); inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText }
                     EditLabel { text: qsTr("My park") }
                     EditField { id: editMine; objectName: "logEditMyPark"; Accessible.name: qsTr("My park reference"); inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText }
+                }
+                // The shared ADIF file follows an edit or a deletion (123).
+                Label {
+                    Layout.fillWidth: true
+                    visible: !!Engine.sharedAdif.set
+                    text: qsTr("The shared ADIF file %1 follows: the contact is changed or deleted there too.").arg(Engine.sharedAdif.name || "")
+                    color: Theme.textDim
+                    font.pixelSize: Theme.px(13)
+                    wrapMode: Text.Wrap
                 }
                 Label {
                     Layout.fillWidth: true

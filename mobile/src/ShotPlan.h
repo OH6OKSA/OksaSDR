@@ -98,6 +98,9 @@ class MobileEngine;
 //   loggerudpstate          log its status line
 //   pskfeed [+-HZ] TEXT     TEXT as a PSK signal at the decoder's carrier (HZ off it)
 //   logqso K=V | K=V ...    log a QSO with those fields (call, rstSent, rstRcvd, timeOn, comment)
+//   qsoedit CALL | k=v ...  the newest contact with CALL edited as the Log tab's dialog does
+//                           (comment=, rstRcvd=, name=, time=HH:MM; _ for a space)
+//   qsodelete CALL          the newest contact with CALL deleted (the dialog's Delete)
 //   psk [KEY=VALUE]         setPsk (carrier=HZ, afc=true|false), or log the PSK state
 //   focus                   log where the keyboard is (keyboardOnPage, active item)
 //   keys TEXT               type TEXT through the window ("\\b": Backspace as a
@@ -105,6 +108,11 @@ class MobileEngine;
 //                           <F1>..<F12>, <Esc>, <Enter>, <Cmd-0>..<Cmd-9>, <Shift-A>..<Shift-Z>
 //                           alone: that key
 //                           <Mac-F1>..<Mac-F12>: an F-key as a Mac hands it to an iPad app
+//   scheme light|dark|none  the device's appearance as Qt reports it (Theme Auto)
+//   txblock on|off          every transmission refused (as in a link plan), logged
+//   keyhold <Fn> MS [go]    that F-key held MS ms: the press, its auto-repeat every
+//                           50 ms, the release (the PTT key, F-key repeats); go: the
+//                           next steps run while it is held
 //   focussweep              give the keyboard to every control in view that takes it
 //                           on a press (no press): each must hand it back to the page
 //   focusaudit FX,FY        tap every text field in view, then FX,FY: each must

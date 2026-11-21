@@ -83,6 +83,7 @@
 #include "models/BandDefs.h"
 
 #include <QGuiApplication>
+#include <QWindow>
 #include <QInputMethodQueryEvent>
 #include <QQuickItem>
 #include <QQuickWindow>
@@ -415,6 +416,49 @@ public:
 // always reach the field, so the timer ran on): any release anywhere, and a
 // double click, stop it, and a press soon after a release arms nothing.
 void offerMacTextEntry(QObject* obj);
+// The Mac's lost key routing repaired at once (roadmap 122; Christoph
+// Steinert DM5HF's Mac, builds 197 and 199: the Ulanzi D100 and the
+// keyboard's Space dead some of the time, macOS beeping at each key; Pentti
+// Pärnänen OH6PP's MacBook, build 146). The app's window not the key window,
+// or no first responder: UIKit hands the keys to no one. Repaired before only
+// when a text field took focus; now also when the app comes to the front and
+// on any press on its window, at most once a second, each repair logged
+// with the routing before and after.
+void repairMacKeyRouting(const char* why)
+{
+    static QElapsedTimer last;
+    if (last.isValid() && last.elapsed() < 1000) {
+        return;
+    }
+    last.start();
+    if (!macKeyRoutingLost()) {
+        return;
+    }
+    QWindow* window = QGuiApplication::focusWindow();
+    if (!window && !QGuiApplication::topLevelWindows().isEmpty()) {
+        window = QGuiApplication::topLevelWindows().constFirst();
+    }
+    qCInfo(lcMobile).noquote() << "keyboard: no key routing on the Mac (" << why << "):" << macKeyRouting()
+                               << "- activating the window";
+    if (window) {
+        window->requestActivate();
+    }
+    QTimer::singleShot(0, qApp, [] { qCInfo(lcMobile).noquote() << "keyboard: key routing now:" << macKeyRouting(); });
+}
+
+class MacRoutingOnPress : public QObject {
+public:
+    explicit MacRoutingOnPress(QObject* parent) : QObject(parent) {}
+    bool eventFilter(QObject* receiver, QEvent* event) override
+    {
+        if ((event->type() == QEvent::MouseButtonPress || event->type() == QEvent::TouchBegin)
+            && receiver->isWindowType()) {
+            repairMacKeyRouting("a press");
+        }
+        return false;
+    }
+};
+
 class MacTextHold : public QObject {
 public:
     explicit MacTextHold(QObject* parent) : QObject(parent)
@@ -592,9 +636,15 @@ MobileEngine::MobileEngine(QObject* parent)
     setupAgcAuto();
     setupMidi();
     setupUlanzi();
-    if (theme() == QLatin1String("light")) {
-        applyColorScheme();
-    }
+    setupPttKey();
+    applyColorScheme();
+    // Auto follows the device switching its appearance (125).
+    connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, [this](Qt::ColorScheme scheme) {
+        if (theme() == QLatin1String("auto")) {
+            qCInfo(lcMobile).noquote() << "theme auto: the device is" << (scheme == Qt::ColorScheme::Light ? "light" : "dark");
+            emit themeChanged();
+        }
+    });
     // Android: keys and push-to-talk broadcasts the app does not use, in the
     // log (roadmap 119); nothing elsewhere.
     startKeyLog();
@@ -1410,6 +1460,17 @@ MobileEngine::MobileEngine(QObject* parent)
             startMacKeyDiagnostics();
             qCInfo(lcMobile) << "keyboard: text fields take the key presses directly (no input method); "
                                 "a field pressed and held opens a text box";
+        }
+        // The repair on activation and presses (122); on a desktop with
+        // AETHER_MAC_ROUTING_TEST set too, its routing then reported lost,
+        // to test the path.
+        if (runningAsIosAppOnMac() || qEnvironmentVariableIsSet("AETHER_MAC_ROUTING_TEST")) {
+            qApp->installEventFilter(new MacRoutingOnPress(this));
+            connect(qGuiApp, &QGuiApplication::applicationStateChanged, this, [](Qt::ApplicationState state) {
+                if (state == Qt::ApplicationActive) {
+                    repairMacKeyRouting("the app came to the front");
+                }
+            });
         }
         auto textItem = std::make_shared<QPointer<QObject>>();
         auto seenAtFocus = std::make_shared<int>(0);
@@ -7656,6 +7717,8 @@ bool MobileEngine::editQso(const QVariantMap& original, const QVariantMap& chang
     qCInfo(lcMobile).noquote() << QStringLiteral("QSO edited: %1 %2 %3 (was %4 %5 %6)")
                                       .arg(call, date, time, original.value(QStringLiteral("CALL")).toString(),
                                            original.value(QStringLiteral("QSO_DATE")).toString(), original.value(QStringLiteral("TIME_ON")).toString());
+    // The shared ADIF file follows (roadmap 123).
+    sharedAdifChange(original, r);
     emit qsoLogChanged();
     return true;
 }
@@ -7673,6 +7736,8 @@ bool MobileEngine::deleteQso(const QVariantMap& original)
     qCInfo(lcMobile).noquote() << QStringLiteral("QSO deleted: %1 %2 %3")
                                       .arg(original.value(QStringLiteral("CALL")).toString(),
                                            original.value(QStringLiteral("QSO_DATE")).toString(), original.value(QStringLiteral("TIME_ON")).toString());
+    // The shared ADIF file follows (roadmap 123).
+    sharedAdifChange(original, {});
     emit qsoLogChanged();
     return true;
 }
@@ -7687,9 +7752,6 @@ QStringList MobileEngine::qsoLogbooks() const
     }
     if (!m_qrzLogKey.isEmpty()) {
         out << tr("the QRZ.com logbook");
-    }
-    if (!m_sharedAdifUrl.isEmpty()) {
-        out << tr("the shared ADIF file");
     }
     if (!logger32Host().isEmpty()) {
         out << tr("Logger32");
@@ -8618,14 +8680,38 @@ void MobileEngine::setButtonStyle(const QString& style)
 
 QString MobileEngine::theme() const
 {
-    return AppSettings::instance().value(QStringLiteral("MobileTheme")).toString() == QLatin1String("light")
-               ? QStringLiteral("light")
-               : QStringLiteral("dark");
+    const QString v = AppSettings::instance().value(QStringLiteral("MobileTheme")).toString();
+    return v == QLatin1String("light") || v == QLatin1String("auto") ? v : QStringLiteral("dark");
+}
+
+void MobileEngine::setTestSystemScheme(int scheme)
+{
+    m_testSystemScheme = scheme;
+    if (theme() == QLatin1String("auto")) {
+        emit themeChanged();
+    }
+}
+
+// The page light: Light, or Auto with the device in its light appearance
+// (roadmap 125). In Auto the app asks for no scheme, so Qt reports the
+// system's.
+bool MobileEngine::lightTheme() const
+{
+    const QString t = theme();
+    if (t == QLatin1String("auto")) {
+        // The render tool's stand-in for the device's appearance (a desktop
+        // without a platform theme reports none).
+        if (m_testSystemScheme != 0) {
+            return m_testSystemScheme == 1;
+        }
+        return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Light;
+    }
+    return t == QLatin1String("light");
 }
 
 void MobileEngine::setTheme(const QString& theme)
 {
-    const QString value = theme == QLatin1String("light") ? QStringLiteral("light") : QStringLiteral("dark");
+    const QString value = theme == QLatin1String("light") || theme == QLatin1String("auto") ? theme : QStringLiteral("dark");
     if (value != this->theme()) {
         AppSettings::instance().setValue(QStringLiteral("MobileTheme"), value);
         AppSettings::instance().save();
@@ -8635,14 +8721,17 @@ void MobileEngine::setTheme(const QString& theme)
     }
 }
 
-// The system's own parts for the theme (roadmap 118): on a light page the
-// status bar's clock and battery dark (iOS sets the window's interface style
-// from it) and the controls' unset palette roles light. Dark asks for
-// nothing, as before the light theme: the system's own setting, as always.
+// The system's own parts for the theme: the status bar's clock and battery
+// and the controls' unset palette roles. Light asks for the light scheme
+// (118), Dark for the dark one (124: before, Dark asked nothing, and with the
+// device in its light appearance the status bar was dark on the dark page),
+// Auto for none, so the device's own appearance rules (125).
 void MobileEngine::applyColorScheme()
 {
-    QGuiApplication::styleHints()->setColorScheme(theme() == QLatin1String("light") ? Qt::ColorScheme::Light
-                                                                                     : Qt::ColorScheme::Unknown);
+    const QString t = theme();
+    QGuiApplication::styleHints()->setColorScheme(t == QLatin1String("light")  ? Qt::ColorScheme::Light
+                                                  : t == QLatin1String("auto") ? Qt::ColorScheme::Unknown
+                                                                               : Qt::ColorScheme::Dark);
 }
 
 namespace {
@@ -10516,6 +10605,13 @@ bool MobileEngine::operateKey(int key, int modifiers, bool autoRepeat)
                                        : cwMode() ? QStringLiteral("-> CW memory")
                                        : textModeActive() ? QStringLiteral("-> Digi macro") : QStringLiteral("-> voice keyer"))
                                    << "from" << (focus ? QString::fromLatin1(focus->metaObject()->className()) : QStringLiteral("none"));
+    }
+    // A held key's auto-repeat is taken and does nothing (roadmap 120): it
+    // started the voice keyer's slot again and again (Rob Metallo VA3MET's
+    // F400, whose PTT key is F2: one long press sent 32 playback starts), and
+    // would queue a CW memory or a Digi macro the same way.
+    if (autoRepeat) {
+        return true;
     }
     if (key == Qt::Key_Escape) {
         stopCwx();

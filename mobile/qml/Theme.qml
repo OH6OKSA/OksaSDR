@@ -11,7 +11,7 @@ QtObject {
     // below is the one the app had before the light theme, so a dark screen
     // stays pixel for pixel the same (classic-check). Light is the operator's
     // choice for daylight and tired eyes (Larry Averbeck W9FLA).
-    readonly property bool light: Engine.theme === "light"
+    readonly property bool light: Engine.lightTheme
     // The display (spectrum, waterfall, 3D and what is drawn on them) stays
     // dark in both, as a radio's screen: the waterfall's palette is made on
     // black, and its overlays keep one set of colours. Items on the display

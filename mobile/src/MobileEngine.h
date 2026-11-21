@@ -70,6 +70,8 @@ struct SpectrumDecodeScale;
 struct SpotData;
 }
 
+class QKeyEvent;
+
 namespace AetherSDR::mobile {
 
 class NtpClock;
@@ -92,9 +94,12 @@ class MobileEngine : public QObject {
     // from build 78), "classic" (light, dark when on, as before) or "light"
     // (dark, light when on).
     Q_PROPERTY(QString buttonStyle READ buttonStyle WRITE setButtonStyle NOTIFY buttonStyleChanged)
-    // The page's colours (roadmap 118): "dark" (the default, Classic as it
-    // has always been) or "light"; the display stays dark in both.
+    // The page's colours (roadmap 118, 125): "dark" (the default, Classic as
+    // it has always been), "light" or "auto" (the device's appearance); the
+    // display stays dark in all.
     Q_PROPERTY(QString theme READ theme WRITE setTheme NOTIFY themeChanged)
+    // The page light now (Light, or Auto with the device light).
+    Q_PROPERTY(bool lightTheme READ lightTheme NOTIFY themeChanged)
     // Text size: "system" follows the system's text size (iOS Dynamic Type,
     // Android's font scale), or "100" / "115" / "130" percent. textScale is
     // the factor every text size in the theme is multiplied by, held to
@@ -106,6 +111,13 @@ class MobileEngine : public QObject {
     // PTT as a switch (tap on, tap off) instead of hold-to-talk; remembered.
     // A latched transmission stops by itself after kPttToggleLimitS.
     Q_PROPERTY(bool pttToggle READ pttToggle WRITE setPttToggle NOTIFY pttToggleChanged)
+    // A learned PTT key (roadmap 121): any key a button sends, held = PTT;
+    // 0 = none (Space stays PTT either way). Learning takes the next key.
+    Q_PROPERTY(int pttKey READ pttKey NOTIFY pttKeyChanged)
+    Q_PROPERTY(QString pttKeyName READ pttKeyName NOTIFY pttKeyChanged)
+    Q_PROPERTY(bool pttKeyLearning READ pttKeyLearning NOTIFY pttKeyChanged)
+    // The tablet page's own-layout editor is open: the PTT key keys nothing.
+    Q_PROPERTY(bool layoutEditing READ layoutEditing WRITE setLayoutEditing NOTIFY layoutEditingChanged)
     Q_PROPERTY(bool pttLatched READ pttLatched NOTIFY pttToggleChanged)
     // Transmit lock (Larry Averbeck: a mistaken touch on PTT or the CW
     // paddles keyed the radio). On, nothing transmits in standby (SB);
@@ -835,6 +847,9 @@ public:
     void setBandPlan(const QString& name);
     QString buttonStyle() const;
     QString theme() const;
+    bool lightTheme() const;
+    // The render tool: the device's appearance as 1 light, 2 dark, 0 Qt's own.
+    void setTestSystemScheme(int scheme);
     QString textSize() const;
     void setTextSize(const QString& size);
     double textScale() const;
@@ -846,6 +861,16 @@ public:
     bool pttLatched() const { return m_pttLatched; }
     // Toggle-mode PTT: keys when not transmitting, unkeys when it is.
     Q_INVOKABLE void togglePtt();
+    int pttKey() const;
+    QString pttKeyName() const;
+    bool pttKeyLearning() const;
+    Q_INVOKABLE void learnPttKey();
+    Q_INVOKABLE void cancelPttKeyLearn();
+    Q_INVOKABLE void clearPttKey();
+    bool layoutEditing() const { return m_layoutEditing; }
+    void setLayoutEditing(bool editing);
+    // The learned key's press or release (PttKeyFilter, every window): true = taken.
+    bool pttKeyEvent(QKeyEvent* event);
     bool txLock() const;
     void setTxLock(bool on);
     bool txArmAtStart() const;
@@ -2148,6 +2173,8 @@ signals:
     void themeChanged();
     void textScaleChanged();
     void pttToggleChanged();
+    void pttKeyChanged();
+    void layoutEditingChanged();
     void txLockChanged();
     void audioCompressionChanged();
     void networkChanged();
@@ -2526,6 +2553,8 @@ private:
     // ---- The shared ADIF file (MobileEngineSharedAdif.cpp) ----
     void setupSharedAdif();
     void sharedAdifQueue(const QString& adif);
+    // A deletion or an edit for the shared ADIF file too (123).
+    void sharedAdifChange(const QVariantMap& original, const QVariantMap& replacement);
     void sharedAdifFlush();
     QString m_sharedAdifUrl;  // a file URL, or Android's content:// URI
     QStringList m_sharedPending;
@@ -2854,6 +2883,9 @@ private:
     // The Ulanzi Dial (MobileEngineUlanzi.cpp).
     void setupUlanzi();
     void applyColorScheme();
+    // The learned PTT key (MobileEnginePttKey.cpp).
+    void setupPttKey();
+    void releasePttKey(const QString& why);
     bool ulanziOn() const;
     void ulanziEvent(const AetherSDR::UlanziChordDecoder::Event& event);
     bool ulanziLearn(const QString& signature);
@@ -3189,6 +3221,12 @@ private:
     double m_paTempC{0.0};
     double m_supplyVolts{0.0};
     bool m_pttHeld{false};
+    int m_pttKey{0};
+    quint32 m_pttKeyScan{0};
+    bool m_pttKeyLearning{false};
+    bool m_pttKeyHeld{false};
+    bool m_layoutEditing{false};
+    int m_testSystemScheme{0};
     // Receive playback silent while the microphone is keyed (duckReceive).
     bool m_rxDucked{false};
     bool m_micPermissionRequested{false};

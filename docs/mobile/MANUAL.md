@@ -715,15 +715,22 @@ now, or why it did not move: *at the edge*, *its content would not fit*,
 ### Light theme
 
 **Controls › View › Theme**: *Dark* (the default, as the app has always
-looked) or *Light*, a light page for daylight and tired eyes (asked by
-Larry Averbeck W9FLA). It switches at once and is remembered, also in App
+looked), *Light*, a light page for daylight and tired eyes (asked by
+Larry Averbeck W9FLA), or *Auto*: Light while the device's own appearance
+is light and Dark while it is dark (iOS and iPadOS Dark Mode, the Mac's,
+Android's dark theme), switching when the device switches, by hand or on
+its schedule (since build 200). It switches at once and is remembered, also in App
 setups. In Light the frequency, the info panel, the meters (a light face
 with a dark scale and needle), the slice chips, the buttons, the controls,
 the dialogs, Radio Setup, the Connect page and Big buttons are light, and
 their text reads at 4.5:1 or more; the display (spectrum, waterfall, 3D and
 what is drawn on them) stays dark, as a radio's screen, since the
-waterfall's colours are made on black. On an iPhone or iPad the status
-bar's clock and battery turn dark on the light page.
+waterfall's colours are made on black. On an iPhone, iPad or Android
+phone the status bar's clock and battery turn dark on the light page, and
+light on the dark page, also with the device in its light appearance
+(since build 200; before, Dark left them to the device, so they could be
+dark on the dark page). In Light the [layout editor](#own-layouts)'s block
+names sit on a light band.
 
 ![Light theme](manual/theme-light.jpg)
 
@@ -1481,7 +1488,7 @@ seven.
   (on: the radio sends the audio of a digital-mode program on a computer
   instead of the microphone; left on after FT8, the microphone goes
   nowhere), **PTT**
-  (*Hold to talk* or *Tap on / off*), **Split** (*Second slice* or
+  (*Hold to talk* or *Tap on / off*), **PTT key** (see below), **Split** (*Second slice* or
   *XIT*, [6](#6-split)) and the transmit filter (low and high cut). On a FLEX-8000 or Aurora, **APD** *Off* / *On*: adaptive
   pre-distortion, where the radio measures its own transmission and
   pre-distorts it so the amplifier's IMD falls; the line under it says
@@ -1763,10 +1770,11 @@ seven.
   ten are listed, and a tap on one opens it to **edit** or **delete**
   (thanks Christoph): the call, date and time (UTC), frequency, mode,
   reports, name, comment and the parks, then *Save*, or *Delete* and
-  *Delete it*. It changes this device's log; a contact that already went
-  to Wavelog / Cloudlog, the QRZ.com logbook, the shared ADIF file,
-  Logger32 or the logging program is not changed there (the dialog names the ones set up), so
-  change it there too. A new call drops the old call's looked-up name and
+  *Delete it*. It changes this device's log and the shared ADIF file (if
+  one is chosen, since build 200); a contact that already went to Wavelog /
+  Cloudlog, the QRZ.com logbook, Logger32 or the logging program is not
+  changed there (the dialog names the ones set up), so change it there
+  too. A new call drops the old call's looked-up name and
   QTH and takes the new call's country. **Spot** beside it (asked by Christoph
   Steinert DM5HF) sends the call to the DX cluster the app is logged in to
   (Controls › View › DX cluster), at the slice frequency. It asks first,
@@ -1837,10 +1845,18 @@ seven.
   iCloud Drive, Google Drive, OneDrive, Dropbox or Nextcloud (export one
   from the program, or *Share the log* there) and **Choose…** it. Its QSOs
   count as worked before (read at each start and with **Read now**), and
-  every QSO you log is added to its end for the program to import; the app
-  only adds, never changes what is in the file, and never makes a new one
+  every QSO you log is added to its end for the program to import. A
+  contact you edit or delete in the Log tab is changed or deleted in the
+  file too (since build 200, thanks Christoph Steinert DM5HF): the app
+  finds it by the call, date, band, mode and the time's hours and minutes,
+  as another program may have saved it its own way, and writes the file
+  back with only the fields you changed changed in that record (what the
+  other program keeps there, such as its own fields and QSL states, stays);
+  a contact not in the file leaves the file as it was (the Log tab says
+  so). The app never makes a new file
   in its place: when the file is away (a cloud file not yet on the device),
-  the QSOs wait and the QSOs of its last read still count. **Change** picks
+  the QSOs, edits and deletions wait in their order and the QSOs of its
+  last read still count. **Change** picks
   another file, **Remove** forgets it (the file stays).
   **Logger32**: with your PC's address (e.g. `192.168.1.10`, or
   `192.168.1.10:52001` for another port than Logger32's 52001), *Save*
@@ -2878,7 +2894,7 @@ Bluetooth keyboard on a phone, or Android's DeX):
 | T | TUNE on / off (the TX tab's Tune power) |
 | Shift + T | TUNE with the radio's two-tone test signal on / off; the radio's own tune mode is put back afterwards |
 | A | An ATU tune cycle (the ATU button bypasses the ATU when it is tuned on this frequency; A always tunes) |
-| F1–F12 | CW memories (CW modes), the Digi tab's macros (F1–F8, RTTY and PSK) or voice macros (voice modes) |
+| F1–F12 | CW memories (CW modes), the Digi tab's macros (F1–F8, RTTY and PSK) or voice macros (voice modes); a held key starts it once (since build 200; before, the key's repeat started it again and again) |
 | ⌘1–⌘9, ⌘0 | As F1–F10, for a keyboard without F-keys (an iPad's Magic Keyboard); Ctrl with the digit on Android and a PC keyboard (not while Ctrl keys the CW paddles) |
 | Esc | Stop CW text, RTTY or PSK text, or a voice macro |
 | Scroll | Tune; ⌘- or Ctrl-scroll zooms |
@@ -2886,13 +2902,27 @@ Bluetooth keyboard on a phone, or Android's DeX):
 T, Shift + T and A transmit, so the transmit lock (TX tab › Lock) holds
 them as it holds PTT and TUNE.
 
+**PTT key** (Controls › TX, since build 200; thanks Rob Metallo VA3MET):
+any key a button sends can be PTT, for a handset's side PTT key, a
+Bluetooth button or a foot switch that acts as a keyboard. Tap **Learn**,
+then press the button: its key shows beside *PTT key* (Esc cancels).
+Held, it keys PTT as Space does, and lets go when released; with PTT *Tap
+on / off* a press keys and the next unkeys. The key no longer does what it
+did before (a rugged phone's PTT key that sends F2 no longer plays voice
+macro 2), and Space stays PTT too. **Clear** forgets it. PTT is let go
+when the app leaves the front, and the key keys nothing while an own
+layout is edited. The transmit lock holds it as it holds PTT.
+
 **A Ulanzi dial on a Mac** (thanks Christoph Steinert DM5HF): with Ulanzi
 Studio running on the Mac, give the knob and keys key combinations there,
 and the dial drives the app through the keys above: the knob ← and →
 (tuning), the keys for example F1, F2 and F3 (the voice keyer), Esc
 (stop), T (TUNE), A (the ATU) and Space (PTT). F1–F12 and Esc from a
 Mac's keyboard or Ulanzi Studio work since build 182 (before, the Mac
-handed them to the app in a form it did not read). If a key sends Space only
+handed them to the app in a form it did not read). If the Mac stops
+handing the app its keys (the log then says *no key routing on the Mac*),
+the app asks for them back when it comes to the front and at a click in
+its window (since build 200). If a key sends Space only
 as a short press, choose **Tap on / off** under PTT on the TX tab: the
 first press keys, the next one unkeys. On an iPad or
 iPhone Ulanzi Studio does not run, and the dial's knob stays the

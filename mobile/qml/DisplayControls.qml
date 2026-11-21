@@ -189,16 +189,17 @@ ColumnLayout {
             onClicked: Engine.displayButtonsRight = true
         }
     }
-    // Theme (roadmap 118, Larry Averbeck W9FLA): the page dark (as it has
-    // always been) or light, for daylight and tired eyes; the display stays
-    // dark in both. Switched at once and remembered.
+    // Theme (roadmap 118, Larry Averbeck W9FLA; 125): the page dark (as it
+    // has always been), light for daylight and tired eyes, or Auto as the
+    // device's appearance; the display stays dark in all. Switched at once
+    // and remembered.
     RowLayout {
         Layout.fillWidth: true
         Label { text: qsTr("Theme"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
         AppButton {
             objectName: "themeDark"
             text: qsTr("Dark")
-            checked: !Theme.light
+            checked: Engine.theme === "dark"
             Layout.preferredWidth: Theme.buttonWidth
             focusPolicy: Qt.NoFocus
             onClicked: Engine.theme = "dark"
@@ -206,10 +207,19 @@ ColumnLayout {
         AppButton {
             objectName: "themeLight"
             text: qsTr("Light")
-            checked: Theme.light
+            checked: Engine.theme === "light"
             Layout.preferredWidth: Theme.buttonWidth
             focusPolicy: Qt.NoFocus
             onClicked: Engine.theme = "light"
+        }
+        // The device's own appearance, switching with it (roadmap 125).
+        AppButton {
+            objectName: "themeAuto"
+            text: qsTr("Auto")
+            checked: Engine.theme === "auto"
+            Layout.preferredWidth: Theme.buttonWidth
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.theme = "auto"
         }
     }
     // Text size: the system's (iOS Dynamic Type, Android's font scale) or a

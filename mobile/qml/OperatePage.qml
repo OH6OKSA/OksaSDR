@@ -50,6 +50,8 @@ Page {
     // The engine keys Space PTT from GameController (iOS) only while the
     // page has the keyboard.
     Binding { target: Engine; property: "keyboardOnPage"; value: page.activeFocus && !page.layoutEditing }
+    // While a layout is edited the learned PTT key keys nothing either (121).
+    Binding { target: Engine; property: "layoutEditing"; value: page.layoutEditing }
     onActiveFocusChanged: operateKeys.pageFocusChanged(activeFocus)
     background: Rectangle { color: Theme.background }
 

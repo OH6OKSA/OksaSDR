@@ -199,7 +199,8 @@ Item {
             anchors.right: parent.right
             anchors.top: parent.top
             height: Math.min(30, parent.height)
-            color: Qt.rgba(0, 0, 0, 0.55)
+            // Light: a light band under the dark title (roadmap 126).
+            color: Theme.light ? Qt.rgba(1, 1, 1, 0.85) : Qt.rgba(0, 0, 0, 0.55)
             radius: 4
             Label {
                 objectName: "edit:" + cb.block + ":select"

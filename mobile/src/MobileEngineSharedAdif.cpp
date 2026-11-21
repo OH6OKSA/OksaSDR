@@ -179,6 +179,52 @@ bool appendToShared(const QString& url, const QString& records, QString* error)
     return true;
 }
 
+// A deletion or an edit in the file (roadmap 123): the whole file read, the
+// record that is the contact (QsoLog::replaceInAdif, loosely: another program
+// may have saved it its own way) removed or replaced, and the whole file
+// written back through the same writers. *found false: the contact is not in
+// the file, nothing written. From a worker; one writer at a time.
+bool changeInShared(const QString& url, const QVariantMap& original, const QVariantMap& replacement, bool* found,
+                    QString* error)
+{
+    QMutexLocker lock(&sharedFileMutex());
+    const QString path = sharedPath(url);
+    QByteArray data;
+    {
+        QFile in(path);
+        if (!in.open(QIODevice::ReadOnly)) {
+            *error = in.errorString();
+            return false;
+        }
+        data = in.readAll();
+    }
+    QByteArray out;
+    *found = QsoLog::replaceInAdif(data, original, replacement, true, &out);
+    if (!*found) {
+        return true;
+    }
+#ifdef Q_OS_ANDROID
+    if (!QUrl(url).isLocalFile()) {
+        if (writeContent(url, out, "wt") || writeContent(url, out, "w")) {
+            return true;
+        }
+        *error = QCoreApplication::translate("MobileEngine", "the file could not be written");
+        return false;
+    }
+#endif
+    // The file in place (never a new one: see appendToShared).
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::ExistingOnly)) {
+        *error = file.errorString();
+        return false;
+    }
+    if (file.write(out) != out.size()) {
+        *error = file.errorString();
+        return false;
+    }
+    return true;
+}
+
 QString displayName(const QString& url)
 {
     const QUrl u(url);
@@ -376,14 +422,97 @@ void MobileEngine::sharedAdifQueue(const QString& adif)
     sharedAdifFlush();
 }
 
+// A deletion or an edit of a logged contact, for the file too (roadmap 123,
+// Christoph Steinert DM5HF: a contact deleted in the log stayed in the shared
+// file): queued with the appends, in their order, kept over a restart.
+// Encoded in one line: \x01, DEL or EDIT, then the original record and the
+// new one, \x1f between.
+void MobileEngine::sharedAdifChange(const QVariantMap& original, const QVariantMap& replacement)
+{
+    if (m_sharedAdifUrl.isEmpty() || !m_sharedWritable) {
+        return;
+    }
+    QString op = QStringLiteral("\x01") + (replacement.isEmpty() ? QStringLiteral("DEL") : QStringLiteral("EDIT"))
+                 + QLatin1Char('\x1f') + QsoLog::adifRecord(original).trimmed();
+    if (!replacement.isEmpty()) {
+        op += QLatin1Char('\x1f') + QsoLog::adifRecord(replacement).trimmed();
+    }
+    m_sharedPending.append(op);
+    AppSettings::instance().setValue(QStringLiteral("MobileSharedAdifPending"), m_sharedPending.join(QLatin1Char('\n')));
+    AppSettings::instance().save();
+    sharedAdifFlush();
+}
+
 void MobileEngine::sharedAdifFlush()
 {
     if (m_sharedWriting || m_sharedPending.isEmpty() || m_sharedAdifUrl.isEmpty() || !m_sharedWritable) {
         return;
     }
     m_sharedWriting = true;
-    const QStringList batch = m_sharedPending;
     const QString url = m_sharedAdifUrl;
+    // A deletion or an edit at the head: that one alone.
+    if (m_sharedPending.constFirst().startsWith(QLatin1Char('\x01'))) {
+        const QString op = m_sharedPending.constFirst();
+        const QStringList parts = op.mid(1).split(QLatin1Char('\x1f'));
+        const bool del = parts.value(0) == QLatin1String("DEL");
+        const QList<QVariantMap> orig = QsoLog::parseAdif(parts.value(1));
+        const QList<QVariantMap> repl = del ? QList<QVariantMap>() : QsoLog::parseAdif(parts.value(2));
+        if (orig.isEmpty() || (!del && repl.isEmpty())) {
+            m_sharedPending.removeFirst();  // unreadable: dropped, logged
+            qCWarning(lcMobile) << "shared ADIF: a change that could not be read was dropped";
+            m_sharedWriting = false;
+            sharedAdifFlush();
+            return;
+        }
+        const QVariantMap original = orig.constFirst();
+        const QVariantMap replacement = del ? QVariantMap() : repl.constFirst();
+        QThread* worker = QThread::create([this, op, url, original, replacement, del] {
+            bool found = false;
+            QString error;
+            const bool ok = changeInShared(url, original, replacement, &found, &error);
+            QMetaObject::invokeMethod(this, [this, op, url, original, del, ok, found, error] {
+                m_sharedWriting = false;
+                if (url != m_sharedAdifUrl) {
+                    return;
+                }
+                const QString what = QStringLiteral("%1 %2 %3").arg(original.value(QStringLiteral("CALL")).toString(),
+                                                                      original.value(QStringLiteral("QSO_DATE")).toString(),
+                                                                      original.value(QStringLiteral("TIME_ON")).toString());
+                if (ok) {
+                    m_sharedPending.removeOne(op);
+                    AppSettings::instance().setValue(QStringLiteral("MobileSharedAdifPending"), m_sharedPending.join(QLatin1Char('\n')));
+                    AppSettings::instance().save();
+                    m_sharedStatusKind = found ? QStringLiteral("ok") : QStringLiteral("failed");
+                    m_sharedStatus = !found ? tr("%1 is not in the file, so nothing was changed there.").arg(what)
+                                     : del  ? tr("%1 deleted from the file too.").arg(what)
+                                            : tr("%1 changed in the file too.").arg(what);
+                    qCInfo(lcMobile).noquote() << "shared ADIF:" << (del ? "delete" : "edit") << what
+                                               << (found ? "done" : "not in the file");
+                    if (found) {
+                        sharedAdifRead();  // the file's worked-before entries as it is now
+                    }
+                    sharedAdifFlush();
+                } else {
+                    // Kept: tried again with the next QSO, start or Read now.
+                    m_sharedStatusKind = QStringLiteral("failed");
+                    m_sharedStatus = tr("The file could not be changed (%1): %2 wait").arg(error).arg(m_sharedPending.size());
+                    qCWarning(lcMobile).noquote() << "shared ADIF:" << m_sharedStatus;
+                }
+                emit sharedAdifChanged();
+            }, Qt::QueuedConnection);
+        });
+        connect(worker, &QThread::finished, worker, &QObject::deleteLater);
+        worker->start();
+        return;
+    }
+    // The appends up to the next change, in one write.
+    QStringList batch;
+    for (const QString& r : std::as_const(m_sharedPending)) {
+        if (r.startsWith(QLatin1Char('\x01'))) {
+            break;
+        }
+        batch.append(r);
+    }
     QThread* worker = QThread::create([this, batch, url] {
         QString error;
         const bool ok = appendToShared(url, batch.join(QLatin1Char('\n')) + QLatin1Char('\n'), &error);

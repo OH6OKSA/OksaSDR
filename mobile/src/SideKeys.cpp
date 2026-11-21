@@ -58,14 +58,16 @@ void startMacKeyDiagnostics()
 {
 }
 
+// A desktop test of the repair's path (roadmap 122): with
+// AETHER_MAC_ROUTING_TEST set the routing reads as lost.
 QString macKeyRouting()
 {
-    return {};
+    return qEnvironmentVariableIsSet("AETHER_MAC_ROUTING_TEST") ? QStringLiteral("test: no first responder") : QString();
 }
 
 bool macKeyRoutingLost()
 {
-    return false;
+    return qEnvironmentVariableIsSet("AETHER_MAC_ROUTING_TEST");
 }
 
 } // namespace AetherSDR::mobile

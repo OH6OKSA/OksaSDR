@@ -18,6 +18,7 @@
 #include <QScreen>
 #include <QSet>
 #include <QThreadPool>
+#include <QStyleHints>
 #include <QTimer>
 #include <qpa/qwindowsysteminterface.h>
 
@@ -1581,6 +1582,48 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                           << "known" << q.value(QStringLiteral("known")).toInt() << q.value(QStringLiteral("readStatusKind")).toString()
                           << q.value(QStringLiteral("readStatus")).toString();
         *delayMs = 100;
+    } else if (command == QLatin1String("qsoedit") || command == QLatin1String("qsodelete")) {
+        // The newest logged contact with CALL edited (fields as the Log
+        // tab's edit dialog sends them: comment=, rstRcvd=, name=, time=...)
+        // or deleted, through the dialog's own calls (roadmap 123: the
+        // shared ADIF file follows).
+        const QString line = args.join(QLatin1Char(' '));
+        const QString call = line.section(QLatin1Char('|'), 0, 0).trimmed().toUpper();
+        QVariantMap original;
+        for (const QVariant& v : m_engine.recentQsos()) {
+            const QVariantMap r = v.toMap();
+            if (r.value(QStringLiteral("CALL")).toString().compare(call, Qt::CaseInsensitive) == 0) {
+                original = r;
+                break;
+            }
+        }
+        bool ok = false;
+        if (original.isEmpty()) {
+            qWarning().noquote() << "shot-plan:" << command << call << "- no such contact in the log";
+        } else if (command == QLatin1String("qsodelete")) {
+            ok = m_engine.deleteQso(original);
+        } else {
+            const QString date = original.value(QStringLiteral("QSO_DATE")).toString();
+            const QString time = original.value(QStringLiteral("TIME_ON")).toString();
+            QVariantMap changes{{QStringLiteral("call"), call},
+                                {QStringLiteral("date"), date.left(4) + QLatin1Char('-') + date.mid(4, 2) + QLatin1Char('-') + date.mid(6, 2)},
+                                {QStringLiteral("time"), time.left(2) + QLatin1Char(':') + time.mid(2, 2)},
+                                {QStringLiteral("freq"), original.value(QStringLiteral("FREQ")).toString()},
+                                {QStringLiteral("rstSent"), original.value(QStringLiteral("RST_SENT")).toString()},
+                                {QStringLiteral("rstRcvd"), original.value(QStringLiteral("RST_RCVD")).toString()},
+                                {QStringLiteral("name"), original.value(QStringLiteral("NAME")).toString()},
+                                {QStringLiteral("comment"), original.value(QStringLiteral("COMMENT")).toString()}};
+            const QStringList pairs = line.section(QLatin1Char('|'), 1).split(QLatin1Char(' '), Qt::SkipEmptyParts);
+            for (const QString& kv : pairs) {
+                changes.insert(kv.section(QLatin1Char('='), 0, 0), kv.section(QLatin1Char('='), 1).replace(QLatin1Char('_'), QLatin1Char(' ')));
+            }
+            ok = m_engine.editQso(original, changes);
+        }
+        qInfo().noquote() << "shot-plan:" << command << call << (ok ? "done" : "refused") << m_engine.property("lastError").toString();
+        if (!ok) {
+            m_failed = true;
+        }
+        *delayMs = 1500;
     } else if (command == QLatin1String("shared")) {
         // The shared ADIF file: "file=PATH" chooses it, "now" reads it,
         // "insert=CALL" adds a test record, "remove" forgets it; then its state.
@@ -1599,6 +1642,54 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                           << "pending" << f.value(QStringLiteral("pending")).toInt() << "reading" << f.value(QStringLiteral("reading")).toBool()
                           << f.value(QStringLiteral("statusKind")).toString() << f.value(QStringLiteral("status")).toString();
         *delayMs = 100;
+    } else if (command == QLatin1String("scheme")) {
+        // The device's appearance switching (Theme Auto, roadmap 125), as the
+        // system would report it (a desktop without a platform theme reports
+        // none; on a device Qt's colorSchemeChanged does it).
+        m_engine.setTestSystemScheme(arg == QLatin1String("light") ? 1 : arg == QLatin1String("dark") ? 2 : 0);
+        qInfo().noquote() << "shot-plan: scheme" << arg << "-> light page" << m_engine.lightTheme();
+        *delayMs = 600;
+    } else if (command == QLatin1String("txblock")) {
+        // Every transmission refused, as during a developer-link plan: keys
+        // and macros can be tested on the radio with nothing on air.
+        m_engine.setTransmitBlocked(arg == QLatin1String("on"));
+        *delayMs = 200;
+    } else if (command == QLatin1String("keyhold")) {
+        // <F1>..<F12> held MS ms as a hardware keyboard sends it: the press,
+        // its auto-repeat every 50 ms, the release (roadmap 120's repeat and
+        // 121's learned PTT key).
+        static const QRegularExpression fk(QStringLiteral("^<F([1-9]|1[0-2])>$"));
+        const QRegularExpressionMatch m = fk.match(args.value(0));
+        const int ms = std::max(60, args.value(1, QStringLiteral("500")).toInt());
+        if (window && m.hasMatch()) {
+            const int key = Qt::Key_F1 + m.captured(1).toInt() - 1;
+            QPointer<QQuickWindow> w = window;
+            QWindowSystemInterface::handleKeyEvent(w, QEvent::KeyPress, key, Qt::NoModifier);
+            QWindowSystemInterface::flushWindowSystemEvents();
+            for (int t = 50; t < ms; t += 50) {
+                QTimer::singleShot(t, this, [w, key] {
+                    if (w) {
+                        QWindowSystemInterface::handleKeyEvent(w, QEvent::KeyPress, key, Qt::NoModifier, QString(), true);
+                        QWindowSystemInterface::flushWindowSystemEvents();
+                    }
+                });
+            }
+            QTimer::singleShot(ms, this, [w, key] {
+                if (w) {
+                    QWindowSystemInterface::handleKeyEvent(w, QEvent::KeyRelease, key, Qt::NoModifier);
+                    QWindowSystemInterface::flushWindowSystemEvents();
+                }
+            });
+            // "go": the plan goes on while the key is held (an app state
+            // change in the middle of a hold).
+            const bool go = args.value(2) == QLatin1String("go");
+            qInfo().noquote() << "shot-plan: keyhold" << args.value(0) << ms << "ms" << (go ? "(going on)" : "");
+            *delayMs = go ? 100 : ms + 400;
+        } else {
+            qWarning().noquote() << "shot-plan: keyhold: give <F1>..<F12> and MS -" << args.join(QLatin1Char(' '));
+            m_failed = true;
+            *delayMs = 100;
+        }
     } else if (command == QLatin1String("keys")) {
         // Keys through the window as a hardware keyboard sends them; "\\b"
         // is Backspace as an iPad app on a Mac gets it from UIKit (key 8,

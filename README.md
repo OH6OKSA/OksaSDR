@@ -128,7 +128,8 @@ radio interface, with no computer running alongside.
   Classic stays as it is.
 - **Light theme** (View › Theme, thanks Larry W9FLA): a light page for
   daylight and tired eyes, text at 4.5:1 or more; the display stays dark as
-  a radio's screen. Dark stays the default.
+  a radio's screen. Dark stays the default; **Auto** follows the device's
+  own appearance and switches with it.
 - **MIDI controllers** (iPhone, iPad, Mac, Android): Radio Setup › MIDI takes a
   controller such as Lynovation's CTR2-MIDI over Bluetooth (paired there
   on an iPhone or iPad, found by the app's own search on Android) or USB,
@@ -345,7 +346,8 @@ radio interface, with no computer running alongside.
   colours know every QSO in it, in every mode. The **QRZ.com Logbook** both
   ways (each QSO sent, its QSOs read back), and a **shared ADIF file** in
   iCloud Drive, Google Drive or OneDrive for a desktop logger without a
-  cloud connection (read for worked before, each QSO added to it).
+  cloud connection (read for worked before, each QSO added to it, an
+  edit or deletion in the Log tab made there too).
 - **PSK Reporter**: report the stations you decode, as WSJT-X does (off by
   default).
 - **Transverters** set up in Radio Setup (XVTR).
@@ -368,7 +370,9 @@ radio interface, with no computer running alongside.
 - Apple Pencil drags tune 10× finer, for zero-beating.
 - Magic Keyboard and trackpad: arrows tune, Space is PTT, +/− zoom, F opens
   frequency entry, scroll tunes and ⌘-scroll zooms; a slider, switch or
-  list used on the page never keeps the keyboard from them.
+  list used on the page never keeps the keyboard from them. Any key a
+  button sends can be learned as PTT (TX › PTT key: a handset's side key, a
+  Bluetooth button or a foot switch, thanks Rob VA3MET).
 - Safe-area aware: notch, Dynamic Island and the home indicator.
 - VoiceOver and TalkBack: every control has a spoken name; a double tap
   acts and a swipe moves a slider one step.
@@ -460,6 +464,9 @@ landscape and Android pictures are taken from the devices.</sub>
 | RTTY decoding and sending | ✅ Contest stations decoded live (build 141); DIGL / DIGU decoded live (IT9EJW, SV1EKI); sent at 10 W and decoded by RBN skimmers across Europe (OE9GHV 33 dB, GM0UDL 27 dB) |
 | Big buttons (build 164) | 🧪 Checked on the FLEX by the user's path (View › Big buttons, − / + and held −, Step, Space reaching PTT, held Exit) and rendered on phones and tablets both ways; Step's halves and the shorter Exit hold (build 170) the same way; in-car use to hear about |
 | Own layouts (build 197) | 🧪 Tested in the development build against the FLEX: every block's move and resize by finger and mouse to its limits (content fit, edges, other blocks), the four corners, shared edges, landscape and portrait, rotation, Split View and foldable sizes, larger text, two slices, FT8, restart and App setups, Undo / Reset / Delete, the controls in the blocks acting on the radio, and the screen reader's names, actions and announcements; on real touch screens, VoiceOver and TalkBack to verify (preview) |
+| PTT key, held F-keys (build 200) | 🧪 On the FLEX at 5 W: a learned F2 held keyed and its release unkeyed, Tap on / off latched and let go, the app leaving the front let go, nothing keyed while a layout was edited, Clear gave F2 back to the voice keyer, the transmit lock (SB) kept a short press off the air; F1 / F2 held 2 s (40 repeats) started a CW memory, a voice macro and an RTTY macro once each |
+| Shared ADIF file: edits and deletions (build 200) | 🧪 A file written by another program (lower-case tags, six-digit times, its own fields and QSL states) here: edits changed only the fields edited in that record (its own fields, QSL states and seconds kept; UTF-8 lengths right), a deletion removed only that record, a contact not in the file left it as it was, a deletion made while the file was away waited over a restart and was done when it came back |
+| Theme Auto (build 200) | 🧪 Rendered against the FLEX with the device's appearance stood in both ways (the page switching with it); on devices with the preview |
 | Light theme (build 199) | 🧪 Rendered in the development build against the FLEX in both themes: the operating page at phone and tablet sizes, all twelve Controls tabs, the choosers (band, mode, AGC, filter, meter), Radio Setup, the stations, Macros, Big buttons, the layout editor and the Connect page; the light colours' contrast computed (text 4.5:1 or more); Dark checked unchanged at all sizes (classic-check); the status bar on a device to verify (preview) |
 | MIDI controllers (build 164) | 🧪 Tested against a stand-in CTR2-MIDI (an ALSA virtual port) on the FLEX: Learn, the VFO knob, a SmartSDR map imported, PTT held and ended when the controller went (USB, 1 W, no audio); pairing and the CTR2 itself to verify (Hanno DK3HV); F1–F12 and Stop (build 170) learned on the stand-in, F7 sending CW memory 7 at 5 W and Stop ending it |
 | RF-KIT RF2K-S amplifier | ✅ Readings checked on a real RF2K-S (Sebastian Schu DG5CST, build 148). 🧪 Control (Operate / Standby, antenna, error reset) tested against a stand-in of its REST API: confirmations, a refusal (409), no answer, a lost link, never while transmitting (checked keyed on the FLEX); to verify on a real RF2K-S. 🧪 Tune's carrier (build 150) keyed on the FLEX at 5 W against the stand-in: STANDBY first, kept with the app in the background, off once tuned, after 20 s, on Stop, with the amplifier in OPERATE, on a lost link, and the radio unkeying by itself when the app was killed |

@@ -81,6 +81,10 @@ public:
     // was, then copied to the mirror and read back. False when no record
     // matches or the file cannot be written.
     bool replaceRecord(const QVariantMap& match, const QVariantMap& replacement);
+    // The same on ADIF bytes, for another file (the shared ADIF file,
+    // roadmap 123: loose = the time by hours and minutes, no frequency).
+    static bool replaceInAdif(const QByteArray& data, const QVariantMap& match, const QVariantMap& replacement,
+                              bool loose, QByteArray* result);
     bool appendAll(const QList<QVariantMap>& records);
     // The file part, from any thread (one writer at a time): appends ADIF
     // text (records, each ending in <EOR>) to the file at path and copies
