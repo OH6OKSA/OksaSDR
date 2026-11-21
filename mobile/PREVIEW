@@ -1,0 +1,13 @@
+# With this file in the tree, a push builds as a preview: TestFlight's
+# internal group only (What to Test set, no external group, no beta review)
+# and the Android APK as the run artifact only. Removed when the user
+# releases the build to the testers (mobile-release.yml).
+
+Build 199 / Android beta 110: the light theme (roadmap 118, Larry W9FLA) and
+Android's key and push-to-talk broadcast log (119, Rob VA3MET's UNIWA F400),
+which need devices. On the iPad: Controls > View > Theme > Light: the status
+bar's clock and battery dark on the light page, every panel and dialog
+readable, back to Dark unchanged; VoiceOver names unchanged. On Android (the
+emulator with this APK, then the OnePlus): the light page and the status and
+navigation bars; the log's "key log: on", a volume key's line, and each push-
+to-talk broadcast sent with adb; Space PTT and the Ulanzi dial as before.
