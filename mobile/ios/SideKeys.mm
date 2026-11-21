@@ -289,6 +289,11 @@ bool macKeyRoutingLost()
     return true;
 }
 
+// Android only (roadmap 119).
+void startKeyLog()
+{
+}
+
 bool runningAsIosAppOnMac()
 {
     if (@available(iOS 14.0, *)) {

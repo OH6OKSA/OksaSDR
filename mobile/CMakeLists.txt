@@ -124,7 +124,7 @@ if(IOS)
     endif()
 elseif(ANDROID)
     target_sources(aether-mobile PRIVATE android/AndroidJni.h android/ScreenAwake.cpp android/SecureStore.cpp
-                                         src/AudioSession.cpp android/ShareText.cpp src/SideKeys.cpp
+                                         src/AudioSession.cpp android/ShareText.cpp src/SideKeys.cpp android/KeyLog.cpp
                                          android/Haptics.cpp android/TextScale.cpp src/DeviceId.cpp
                                          android/MidiPairing.cpp android/VoiceInput.cpp
                                          src/VoskSpeech.h src/VoskSpeech.cpp)

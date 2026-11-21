@@ -1,7 +1,11 @@
 package fi.oh6oksa.oksasdr;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.hardware.input.InputManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.system.ErrnoException;
 import android.system.Os;
@@ -10,6 +14,7 @@ import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityManager;
 
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -44,6 +49,20 @@ public class OksaActivity extends QtActivity {
         if (input != null) {
             input.registerInputDeviceListener(dialWatch, null);
         }
+        IntentFilter ptt = new IntentFilter();
+        for (String action : PTT_ACTIONS) {
+            ptt.addAction(action);
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= 33) {
+                registerReceiver(pttWatch, ptt, Context.RECEIVER_EXPORTED);
+            } else {
+                registerReceiver(pttWatch, ptt);
+            }
+            pttState = "listening for " + PTT_ACTIONS.length + " push-to-talk broadcasts";
+        } catch (RuntimeException e) {
+            pttState = "push-to-talk broadcasts not listened for: " + e;
+        }
     }
 
     @Override
@@ -51,6 +70,11 @@ public class OksaActivity extends QtActivity {
         InputManager input = (InputManager) getSystemService(Context.INPUT_SERVICE);
         if (input != null) {
             input.unregisterInputDeviceListener(dialWatch);
+        }
+        try {
+            unregisterReceiver(pttWatch);
+        } catch (IllegalArgumentException e) {
+            // never registered
         }
         super.onDestroy();
     }
@@ -131,8 +155,119 @@ public class OksaActivity extends QtActivity {
                 return true;
             }
         }
+        logKey(event);
         return super.dispatchKeyEvent(event);
     }
+
+    // The key log (roadmap 119, Rob Metallo VA3MET's UNIWA F400, whose side
+    // PTT key works with Zello and other push-to-talk apps): a handset's PTT
+    // key reaches apps as a key (often a vendor code, or one Android cannot
+    // name, with its scan code) or as a broadcast push-to-talk apps listen
+    // for. Both are written to the app's log, so one press and Log > Send to
+    // the developer tell which; nothing is keyed by them in this step. Keys
+    // from a full keyboard are the app's own (Space PTT, the arrows, the
+    // F-keys), so from one only a key Android cannot name is logged; any other
+    // device's (the handset's buttons, a remote, a Bluetooth PTT button) are.
+    private static volatile boolean keyLogOn = false;
+    private static native void keyLog(String line);
+    private static final int KEY_LINES_MAX = 40;
+    private static int keyLines = 0;
+    private static String pttState = "push-to-talk broadcasts not listened for";
+
+    // Zello's, which handset makers send for it (support.zello.com, hardware
+    // partner integration), and the handsets' own in public documents:
+    // RugGear's and other MediaTek handsets', Sonim's, Zebra's.
+    private static final String[] PTT_ACTIONS = {
+        "com.zello.ptt.down", "com.zello.ptt.up",
+        "com.zello.intent.buttonExtra1.down", "com.zello.intent.buttonExtra1.up",
+        "android.intent.action.PTT.down", "android.intent.action.PTT.up",
+        "com.sonim.intent.action.PTT_KEY_DOWN", "com.sonim.intent.action.PTT_KEY_UP",
+        "com.symbol.button.L2",
+    };
+
+    // From C++ once its native keyLog is registered (android/KeyLog.cpp).
+    public static void setKeyLogOn(boolean on) {
+        keyLogOn = on;
+        if (on) {
+            note("key log: on (keys from devices other than a full keyboard, and keys Android cannot name); " + pttState);
+        }
+    }
+
+    private static void note(String line) {
+        if (keyLogOn) {
+            try {
+                keyLog(line);
+                return;
+            } catch (UnsatisfiedLinkError e) {
+                keyLogOn = false;
+            }
+        }
+        Log.i(TAG, line);
+    }
+
+    // The first lines of a run only: a held or chattering key fills no log.
+    private static boolean takeLine() {
+        if (keyLines < KEY_LINES_MAX) {
+            ++keyLines;
+            return true;
+        }
+        if (keyLines == KEY_LINES_MAX) {
+            ++keyLines;
+            note("key log: " + KEY_LINES_MAX + " lines, no more in this run");
+        }
+        return false;
+    }
+
+    private static String describe(InputDevice device) {
+        if (device == null) {
+            return "no device";
+        }
+        String where = Build.VERSION.SDK_INT >= 29 ? (device.isExternal() ? " external" : " built-in") : "";
+        return String.format(Locale.ROOT, "\"%s\" %04x:%04x%s", device.getName(), device.getVendorId(),
+                             device.getProductId(), where);
+    }
+
+    private static void logKey(KeyEvent event) {
+        int action = event.getAction();
+        if ((action != KeyEvent.ACTION_DOWN && action != KeyEvent.ACTION_UP) || event.getRepeatCount() > 0) {
+            return;
+        }
+        InputDevice device = event.getDevice();
+        int code = event.getKeyCode();
+        boolean keyboard = device != null && device.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC;
+        if (keyboard && code != KeyEvent.KEYCODE_UNKNOWN) {
+            return;
+        }
+        if (!takeLine()) {
+            return;
+        }
+        note(String.format(Locale.ROOT, "key %s: %s (%d) scan %d from %s",
+                           action == KeyEvent.ACTION_DOWN ? "down" : "up", KeyEvent.keyCodeToString(code), code,
+                           event.getScanCode(), describe(device)));
+    }
+
+    private final BroadcastReceiver pttWatch = new BroadcastReceiver() {
+        // Bundle.get: the extras' types are the sender's, unknown here.
+        @SuppressWarnings("deprecation")
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (!takeLine()) {
+                return;
+            }
+            StringBuilder line = new StringBuilder("ptt broadcast: ").append(intent.getAction());
+            Bundle extras = intent.getExtras();
+            if (extras != null) {
+                for (String key : extras.keySet()) {
+                    line.append(' ').append(key).append('=').append(String.valueOf(extras.get(key)));
+                    if (line.length() > 300) {
+                        line.append(" ...");
+                        break;
+                    }
+                }
+            }
+            note(line.toString());
+        }
+    };
 
     // The dial gone (off, out of range): what it held is let go.
     private final InputManager.InputDeviceListener dialWatch = new InputManager.InputDeviceListener() {

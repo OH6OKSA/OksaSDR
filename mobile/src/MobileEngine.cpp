@@ -592,6 +592,9 @@ MobileEngine::MobileEngine(QObject* parent)
     setupAgcAuto();
     setupMidi();
     setupUlanzi();
+    // Android: keys and push-to-talk broadcasts the app does not use, in the
+    // log (roadmap 119); nothing elsewhere.
+    startKeyLog();
     // Network changes in the log (Wi-Fi <-> mobile data, offline): a remote
     // session that drops can then be told apart from the network switching
     // under it.

@@ -31,6 +31,12 @@ void setUlanziKeysOn(bool)
 {
 }
 
+#ifndef Q_OS_ANDROID
+void startKeyLog()
+{
+}
+#endif
+
 bool runningAsIosAppOnMac()
 {
     return false;

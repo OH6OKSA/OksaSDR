@@ -33,6 +33,12 @@ int sideKeysSeen();
 // has the keys, and Ulanzi Studio can map the dial).
 void startUlanziKeys(std::function<void(int linuxKey, bool pressed)> callback);
 void setUlanziKeysOn(bool on);
+// Android only (roadmap 119): the keys the app does not use (a handset's
+// own buttons, a remote, a push-to-talk button; from a full keyboard only a
+// key Android cannot name) and the push-to-talk broadcasts handsets send,
+// written to the app's log, so a handset's PTT key can be read from a
+// tester's log. Nothing is keyed by them. Call once; empty elsewhere.
+void startKeyLog();
 // The iPad app running on a Mac (Apple silicon).
 bool runningAsIosAppOnMac();
 
