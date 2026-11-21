@@ -24,7 +24,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: 6
-        color: "#ffffff"
+        color: Theme.light ? "#000000" : "#ffffff"
         opacity: tap.pressed ? 0.15 : 0
     }
     Row {

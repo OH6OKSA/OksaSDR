@@ -61,7 +61,7 @@ ColumnLayout {
                     line += " · " + qsTr("last: %1").arg(r.callsign)
                 return line
             }
-            color: Engine.radeStatus.synced ? "#00cc66" : Theme.textDim
+            color: Engine.radeStatus.synced ? Theme.good : Theme.textDim
             font.pixelSize: Theme.px(12)
             wrapMode: Text.WordWrap
         }
@@ -99,7 +99,7 @@ ColumnLayout {
         Layout.fillWidth: true
         visible: text.length > 0
         text: Engine.freedvStatus
-        color: Engine.freedvLive ? "#00cc66" : Theme.textDim
+        color: Engine.freedvLive ? Theme.good : Theme.textDim
         font.pixelSize: Theme.px(13)
         wrapMode: Text.WordWrap
     }

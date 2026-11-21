@@ -280,7 +280,7 @@ ColumnLayout {
                     : kat.t.result || ""
                 color: kat.t.tune === "carrier" ? Theme.warning
                      : kat.t.pending || kat.tuneRunning || kat.transmitting ? Theme.textDim
-                     : kat.t.resultOk ? "#00cc66" : Theme.transmit
+                     : kat.t.resultOk ? Theme.good : Theme.transmit
                 font.pixelSize: Theme.px(13)
                 wrapMode: Text.Wrap
             }

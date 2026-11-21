@@ -92,6 +92,9 @@ class MobileEngine : public QObject {
     // from build 78), "classic" (light, dark when on, as before) or "light"
     // (dark, light when on).
     Q_PROPERTY(QString buttonStyle READ buttonStyle WRITE setButtonStyle NOTIFY buttonStyleChanged)
+    // The page's colours (roadmap 118): "dark" (the default, Classic as it
+    // has always been) or "light"; the display stays dark in both.
+    Q_PROPERTY(QString theme READ theme WRITE setTheme NOTIFY themeChanged)
     // Text size: "system" follows the system's text size (iOS Dynamic Type,
     // Android's font scale), or "100" / "115" / "130" percent. textScale is
     // the factor every text size in the theme is multiplied by, held to
@@ -831,11 +834,13 @@ public:
     QString bandPlan() const;
     void setBandPlan(const QString& name);
     QString buttonStyle() const;
+    QString theme() const;
     QString textSize() const;
     void setTextSize(const QString& size);
     double textScale() const;
     double systemTextScaleValue() const { return m_systemTextScale; }
     void setButtonStyle(const QString& style);
+    void setTheme(const QString& theme);
     bool pttToggle() const;
     void setPttToggle(bool on);
     bool pttLatched() const { return m_pttLatched; }
@@ -2140,6 +2145,7 @@ signals:
     void hintsRequested();
     void bandPlanRegionChanged();
     void buttonStyleChanged();
+    void themeChanged();
     void textScaleChanged();
     void pttToggleChanged();
     void txLockChanged();
@@ -2847,6 +2853,7 @@ private:
     QString m_digitalMaxNote;
     // The Ulanzi Dial (MobileEngineUlanzi.cpp).
     void setupUlanzi();
+    void applyColorScheme();
     bool ulanziOn() const;
     void ulanziEvent(const AetherSDR::UlanziChordDecoder::Event& event);
     bool ulanziLearn(const QString& signature);

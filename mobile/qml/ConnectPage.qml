@@ -663,7 +663,7 @@ Page {
                                     : modelData.state === "fail" ? qsTr("Fails")
                                     : modelData.state === "warn" ? qsTr("Note")
                                     : modelData.state === "running" ? "…" : qsTr("Info")
-                                color: modelData.state === "ok" ? "#00cc66"
+                                color: modelData.state === "ok" ? Theme.good
                                      : modelData.state === "fail" ? Theme.transmit
                                      : modelData.state === "warn" ? Theme.warning : Theme.textDim
                                 font.pixelSize: Theme.px(15)

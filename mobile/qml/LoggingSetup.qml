@@ -119,7 +119,7 @@ ColumnLayout {
         Layout.fillWidth: true
         visible: Engine.qrzStatus.length > 0
         text: Engine.qrzStatus
-        color: Engine.qrzStatusKind === "ok" ? "#00cc66"
+        color: Engine.qrzStatusKind === "ok" ? Theme.good
              : Engine.qrzStatusKind === "failed" ? Theme.transmit
              : Engine.qrzStatusKind === "unreachable" ? Theme.warning : Theme.textDim
         font.pixelSize: Theme.px(13)
@@ -189,7 +189,7 @@ ColumnLayout {
         text: (Engine.onlineLog.status || "")
               + (Engine.onlineLog.pending > 0 && (Engine.onlineLog.status || "").indexOf("wait") < 0
                  ? "  (" + qsTr("%1 waiting").arg(Engine.onlineLog.pending) + ")" : "")
-        color: Engine.onlineLog.statusKind === "ok" ? "#00cc66"
+        color: Engine.onlineLog.statusKind === "ok" ? Theme.good
              : Engine.onlineLog.statusKind === "failed" ? Theme.transmit : Theme.textDim
         font.pixelSize: Theme.px(13)
         wrapMode: Text.WordWrap
@@ -229,7 +229,7 @@ ColumnLayout {
             objectName: "onlineLogReadStatus"
             Layout.fillWidth: true
             text: Engine.onlineLog.readStatus || ""
-            color: Engine.onlineLog.readStatusKind === "ok" ? "#00cc66"
+            color: Engine.onlineLog.readStatusKind === "ok" ? Theme.good
                  : Engine.onlineLog.readStatusKind === "failed" ? Theme.transmit : Theme.textDim
             font.pixelSize: Theme.px(13)
             wrapMode: Text.WordWrap
@@ -287,7 +287,7 @@ ColumnLayout {
         text: (Engine.qrzLog.status || "")
               + (Engine.qrzLog.pending > 0 && (Engine.qrzLog.status || "").indexOf("wait") < 0
                  ? "  (" + qsTr("%1 waiting").arg(Engine.qrzLog.pending) + ")" : "")
-        color: Engine.qrzLog.statusKind === "ok" ? "#00cc66"
+        color: Engine.qrzLog.statusKind === "ok" ? Theme.good
              : Engine.qrzLog.statusKind === "failed" ? Theme.transmit : Theme.textDim
         font.pixelSize: Theme.px(13)
         wrapMode: Text.WordWrap
@@ -325,7 +325,7 @@ ColumnLayout {
             objectName: "qrzLogReadStatus"
             Layout.fillWidth: true
             text: Engine.qrzLog.readStatus || ""
-            color: Engine.qrzLog.readStatusKind === "ok" ? "#00cc66"
+            color: Engine.qrzLog.readStatusKind === "ok" ? Theme.good
                  : Engine.qrzLog.readStatusKind === "failed" ? Theme.transmit : Theme.textDim
             font.pixelSize: Theme.px(13)
             wrapMode: Text.WordWrap
@@ -382,7 +382,7 @@ ColumnLayout {
             text: (Engine.sharedAdif.status || "")
                   + (Engine.sharedAdif.pending > 0 && (Engine.sharedAdif.status || "").indexOf("wait") < 0
                      ? "  (" + qsTr("%1 waiting").arg(Engine.sharedAdif.pending) + ")" : "")
-            color: Engine.sharedAdif.statusKind === "ok" ? "#00cc66"
+            color: Engine.sharedAdif.statusKind === "ok" ? Theme.good
                  : Engine.sharedAdif.statusKind === "failed" ? Theme.transmit : Theme.textDim
             font.pixelSize: Theme.px(13)
             wrapMode: Text.WordWrap
@@ -446,7 +446,7 @@ ColumnLayout {
         text: (Engine.logger32.status || "")
               + (Engine.logger32.pending > 0 && (Engine.logger32.status || "").indexOf("wait") < 0
                  ? "  (" + qsTr("%1 waiting").arg(Engine.logger32.pending) + ")" : "")
-        color: Engine.logger32.statusKind === "ok" ? "#00cc66"
+        color: Engine.logger32.statusKind === "ok" ? Theme.good
              : Engine.logger32.statusKind === "failed" ? Theme.transmit : Theme.textDim
         font.pixelSize: Theme.px(13)
         wrapMode: Text.WordWrap
@@ -491,7 +491,7 @@ ColumnLayout {
         Layout.fillWidth: true
         visible: text.length > 0
         text: Engine.loggerUdp.status || ""
-        color: Engine.loggerUdp.statusKind === "ok" ? "#00cc66"
+        color: Engine.loggerUdp.statusKind === "ok" ? Theme.good
              : Engine.loggerUdp.statusKind === "failed" ? Theme.transmit : Theme.textDim
         font.pixelSize: Theme.px(13)
         wrapMode: Text.WordWrap

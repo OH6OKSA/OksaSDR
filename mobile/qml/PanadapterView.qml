@@ -33,7 +33,7 @@ Rectangle {
         }
     }
     containmentMask: CoverMask { owner: panArea }
-    color: Theme.surface
+    color: Theme.dark.surface
     radius: Theme.radius
     clip: true
 
@@ -394,17 +394,17 @@ Rectangle {
                 width: 2
                 y: Engine.spectrum3D ? panArea.height * spectrum.spectrumFraction : 0
                 height: parent.height - y
-                color: Theme.textDim
+                color: Theme.dark.textDim
                 opacity: 0.8
             }
             Label {
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: 4
                 text: modelData.letter + (modelData.tx ? " TX" : "")
-                color: Theme.text
+                color: Theme.dark.text
                 font.pixelSize: 13
                 font.bold: true
-                background: Rectangle { color: Theme.surfaceRaised; radius: 4; opacity: 0.9 }
+                background: Rectangle { color: Theme.dark.surfaceRaised; radius: 4; opacity: 0.9 }
                 padding: 3
             }
             TapHandler { onTapped: Engine.selectSlice(modelData.id) }
@@ -429,7 +429,7 @@ Rectangle {
             readonly property real pxPerMhz: panArea.width / Engine.panBandwidthMhz
             readonly property real cx: (modelData.freq - Engine.panCenterMhz) * pxPerMhz + panArea.width / 2
             readonly property real bandWidth: Math.max(3, modelData.width / 1e6 * pxPerMhz)
-            readonly property color tint: modelData.permanent ? "#3fb950" : Theme.warning
+            readonly property color tint: modelData.permanent ? "#3fb950" : Theme.dark.warning
             readonly property real bandTop: Engine.spectrum3D ? panArea.height * spectrum.spectrumFraction : 0
             visible: cx + bandWidth / 2 >= 0 && cx - bandWidth / 2 <= panArea.width
             // A finger's width to tap, however narrow the notch.
@@ -719,7 +719,7 @@ Rectangle {
             wrapMode: Text.NoWrap
             maximumLineCount: 2
             clip: true
-            color: idle.length > 0 ? Theme.textDim : "white"
+            color: idle.length > 0 ? Theme.dark.textDim : "white"
             font.family: "monospace"
             font.pixelSize: 15
             verticalAlignment: Text.AlignTop
@@ -803,7 +803,7 @@ Rectangle {
             }
             return 100
         }
-        Rectangle { anchors.fill: parent; color: Theme.surface; opacity: scaleDrag.pressed ? 0.85 : 0.55 }
+        Rectangle { anchors.fill: parent; color: Theme.dark.surface; opacity: scaleDrag.pressed ? 0.85 : 0.55 }
         Repeater {
             // Bounded: a non-finite scale (no data yet) must never spin here.
             model: {
@@ -823,7 +823,7 @@ Rectangle {
                 y: (scaleStrip.topDbm - modelData) / scaleStrip.range * scaleStrip.height - height / 2
                 visible: y > 0 && y < scaleStrip.height - height
                 text: modelData
-                color: Theme.textDim
+                color: Theme.dark.textDim
                 font.pixelSize: 11
             }
         }
@@ -883,7 +883,7 @@ Rectangle {
             width: 44
             height: 4
             radius: 2
-            color: Theme.text
+            color: Theme.dark.text
             opacity: dividerDrag.pressed ? 0.9 : 0.4
         }
         MouseArea {
@@ -919,7 +919,7 @@ Rectangle {
         anchors.right: parent.right
         height: 2
         y: Math.round(dividerDrag.target * parent.height) - 1
-        color: Theme.accent
+        color: Theme.dark.accent
     }
 
     // Zoom out / in, bottom left of the waterfall as in AetherSDR. Together
@@ -996,7 +996,7 @@ Rectangle {
                 visible: !Engine.tuneRowsShown
                 radius: Theme.radius
                 color: "transparent"
-                border.color: Theme.warning
+                border.color: Theme.dark.warning
                 border.width: 2
             }
         }
@@ -1090,7 +1090,7 @@ Rectangle {
         width: panArea.rfLabelWidth > 0 ? Math.max(rfText.implicitWidth * 0.6 + 12, panArea.rfLabelWidth * 0.5) : rfText.implicitWidth + 16
         height: Math.max(rfText.implicitHeight + 8, Math.round(Theme.touchTarget * 0.7))
         radius: 4
-        color: rfArea.pressed ? Theme.surfaceRaised : Theme.surface
+        color: rfArea.pressed ? Theme.dark.surfaceRaised : Theme.dark.surface
         opacity: 0.9
         Text {
             id: rfText
@@ -1100,7 +1100,7 @@ Rectangle {
             fontSizeMode: Text.HorizontalFit
             minimumPixelSize: 9
             text: qsTr("RF GAIN %1%2 dB").arg(Engine.rfGain > 0 ? "+" : "").arg(Engine.rfGain)
-            color: Engine.rfGain > 0 ? "#3fb6ff" : Engine.rfGain < 0 ? Theme.warning : Theme.text
+            color: Engine.rfGain > 0 ? "#3fb6ff" : Engine.rfGain < 0 ? Theme.dark.warning : Theme.dark.text
             font.pixelSize: Theme.buttonFont
             font.bold: true
         }
@@ -1238,8 +1238,8 @@ Rectangle {
         width: Math.min(parent.width - 24, 460)
         height: noSliceColumn.implicitHeight + 2 * Theme.spacing
         radius: Theme.radius
-        color: Theme.surface
-        border.color: Theme.warning
+        color: Theme.dark.surface
+        border.color: Theme.dark.warning
         ColumnLayout {
             id: noSliceColumn
             anchors.fill: parent
@@ -1248,14 +1248,14 @@ Rectangle {
             Label {
                 Layout.fillWidth: true
                 text: qsTr("No slice")
-                color: Theme.warning
+                color: Theme.dark.warning
                 font.pixelSize: Math.round(Theme.buttonFont * 1.2)
                 font.bold: true
             }
             Label {
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
-                color: Theme.text
+                color: Theme.dark.text
                 text: Engine.lastError.length > 0 ? Engine.lastError
                       : qsTr("The radio has not given this app a slice yet, so it cannot tune.")
             }

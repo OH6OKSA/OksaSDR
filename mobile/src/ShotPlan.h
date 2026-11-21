@@ -84,6 +84,8 @@ class MobileEngine;
 //   setup KEY=VALUE         a Radio Setup value, as the page sets it (e.g.
 //                           showTxInWaterfall=0; put it back after)
 //   size WxH                resize the window (a phone turning: WxH swapped)
+//   theme dark|light        the page's theme (Controls › View › Theme; remembered:
+//                           put dark back at the end)
 //   tnfs                    log the notches the radio has and the frequency
 //   txchain                 log this device's microphone processing (ESSB)
 //   rtty [spots]            log the RTTY decoder: mode, mark, shift, SNR, text

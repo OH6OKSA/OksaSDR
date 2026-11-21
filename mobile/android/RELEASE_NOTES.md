@@ -1,6 +1,10 @@
-**OksaSDR for Android — beta 109.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
+**OksaSDR for Android — beta 110.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code.
 
-### New in beta 109
+### New in beta 110
+- **Light theme** (roadmap 118; Larry Averbeck W9FLA, "for my old eyes"): Controls › View › **Theme** has *Dark* (the default, as the app has always looked) and *Light*, a light page for daylight: the frequency, the info line, the meters (a light face with a dark scale and needle), the slices, the buttons, the controls, the dialogs, Radio Setup, the Connect page and Big buttons turn light, their text at 4.5:1 or more; the display (spectrum, waterfall, 3D and what is drawn on them) stays dark, as a radio's screen. Switched at once, remembered, and kept in App setups.
+- **A handset's own keys in the log** (roadmap 119; Rob Metallo VA3MET, whose UNIWA F400's side PTT key works with Zello): the app's log now notes the keys it does not use (a handset's buttons, a remote, a Bluetooth PTT button) and the push-to-talk messages handsets send for apps such as Zello. Press such a key once and send Log › Send to the developer: the log tells what the key sends, so it can become PTT in a later beta. Nothing is keyed by these keys yet.
+
+### Still new from beta 109
 - **Meter 1, Meter 2 and Slices as blocks of their own** (roadmap 117; Larry Averbeck W9FLA): in an own layout the slice row is three blocks; a meter's face grows with its block and follows View's meter style, a tap chooses what it shows. Layouts made with beta 108 are split for you the first time they show, at the places the meters and slices had.
 - **The slices in one line, never under the display** (roadmap 116; Larry Averbeck W9FLA, who saw the third and later slices run under the display): the Slices block shows them in one line where its width allows, else in rows, else in one line to scroll sideways, always inside the block.
 - **Hide controls in an own layout** (roadmap 114): the top row's Hide controls works as in Classic: the Controls block goes and the display and the rows beside it take its room; Controls opens the drawer and its Pin Controls brings the block back with the others as they were.

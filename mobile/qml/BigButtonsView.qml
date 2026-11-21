@@ -541,12 +541,12 @@ Rectangle {
         height: resultText.implicitHeight + Theme.spacing
         radius: height / 2
         color: Theme.surface
-        border.color: "#00cc66"
+        border.color: Theme.good
         Label {
             id: resultText
             anchors.centerIn: parent
             text: big.logResult
-            color: "#00cc66"
+            color: Theme.good
             font.pixelSize: Theme.px(18)
             font.bold: true
         }

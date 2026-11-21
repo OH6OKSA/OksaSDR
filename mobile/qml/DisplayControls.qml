@@ -189,6 +189,29 @@ ColumnLayout {
             onClicked: Engine.displayButtonsRight = true
         }
     }
+    // Theme (roadmap 118, Larry Averbeck W9FLA): the page dark (as it has
+    // always been) or light, for daylight and tired eyes; the display stays
+    // dark in both. Switched at once and remembered.
+    RowLayout {
+        Layout.fillWidth: true
+        Label { text: qsTr("Theme"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+        AppButton {
+            objectName: "themeDark"
+            text: qsTr("Dark")
+            checked: !Theme.light
+            Layout.preferredWidth: Theme.buttonWidth
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.theme = "dark"
+        }
+        AppButton {
+            objectName: "themeLight"
+            text: qsTr("Light")
+            checked: Theme.light
+            Layout.preferredWidth: Theme.buttonWidth
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.theme = "light"
+        }
+    }
     // Text size: the system's (iOS Dynamic Type, Android's font scale) or a
     // fixed one; every text in the app follows (Theme.textScale), held to
     // 88-135 % so the layouts still fit.
@@ -364,7 +387,7 @@ ColumnLayout {
         Layout.fillWidth: true
         visible: Engine.connectionState === "connected" || Engine.dxClusterStatusKind === "failed"
         text: Engine.dxClusterStatus
-        color: Engine.dxClusterStatusKind === "ok" ? "#00cc66"
+        color: Engine.dxClusterStatusKind === "ok" ? Theme.good
              : Engine.dxClusterStatusKind === "failed" ? Theme.transmit : Theme.textDim
         font.pixelSize: Theme.px(13)
         wrapMode: Text.WordWrap

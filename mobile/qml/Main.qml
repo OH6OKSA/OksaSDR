@@ -18,10 +18,10 @@ ApplicationWindow {
     // everywhere, the app's blue left of a slider's handle on a dark track.
     palette.dark: Theme.accent
     palette.midlight: Theme.surfaceRaised
-    palette.light: "#2d3947"
+    palette.light: Theme.light ? "#c3ccd6" : "#2d3947"
     palette.window: Theme.surface
     palette.windowText: Theme.text
-    palette.base: "#05080b"
+    palette.base: Theme.light ? "#ffffff" : "#05080b"
     palette.text: Theme.text
     palette.placeholderText: Theme.textDim
 

@@ -959,7 +959,7 @@ Popup {
                         Label {
                             Layout.fillWidth: true
                             text: rx.calWords[setup.d.calState || ""] || ""
-                            color: setup.d.calState === "done" ? "#00cc66"
+                            color: setup.d.calState === "done" ? Theme.good
                                  : setup.d.calState === "error" || setup.d.calState === "timeout" ? Theme.transmit : Theme.textDim
                             font.pixelSize: Theme.px(13)
                             wrapMode: Text.Wrap
@@ -1001,7 +1001,7 @@ Popup {
                             : (setup.d.oscSetting === "auto" && st !== "auto" ? qsTr("Auto → %1").arg(rx.oscLabel(st)) : rx.oscLabel(st))
                               + (setup.d.oscLocked ? qsTr(", locked") : qsTr(", not locked"))
                               + (st === "external" && !setup.d.extPresent ? qsTr(" (no signal found)") : "")
-                        color: st.length === 0 ? Theme.textDim : setup.d.oscLocked ? "#00cc66" : Theme.transmit
+                        color: st.length === 0 ? Theme.textDim : setup.d.oscLocked ? Theme.good : Theme.transmit
                         font.pixelSize: Theme.px(13)
                         wrapMode: Text.Wrap
                     }
@@ -1416,7 +1416,7 @@ Popup {
                                     return qsTr("Read while connected to a radio.")
                                 }
                                 color: Engine.kpa.state === "connected"
-                                       ? (Engine.kpa.control && Engine.kpa.link === "failed" ? Theme.warning : "#00cc66")
+                                       ? (Engine.kpa.control && Engine.kpa.link === "failed" ? Theme.warning : Theme.good)
                                      : Engine.kpa.state === "failed" ? Theme.transmit : Theme.textDim
                                 font.pixelSize: Theme.px(13)
                                 wrapMode: Text.Wrap
@@ -1481,7 +1481,7 @@ Popup {
                                     if (a.state === "connecting") return a.error ? qsTr("Connecting: %1.").arg(a.error) : qsTr("Connecting…")
                                     return qsTr("Read while connected to a radio.")
                                 }
-                                color: Engine.kpa500.state === "connected" ? "#00cc66"
+                                color: Engine.kpa500.state === "connected" ? Theme.good
                                      : Engine.kpa500.state === "failed" ? Theme.transmit : Theme.textDim
                                 font.pixelSize: Theme.px(13)
                                 wrapMode: Text.Wrap
@@ -1543,7 +1543,7 @@ Popup {
                                     if (a.state === "connecting") return a.error ? qsTr("Connecting: %1.").arg(a.error) : qsTr("Connecting…")
                                     return qsTr("Read while connected to a radio.")
                                 }
-                                color: Engine.kat500.state === "connected" ? "#00cc66"
+                                color: Engine.kat500.state === "connected" ? Theme.good
                                      : Engine.kat500.state === "failed" ? Theme.transmit : Theme.textDim
                                 font.pixelSize: Theme.px(13)
                                 wrapMode: Text.Wrap
@@ -1611,7 +1611,7 @@ Popup {
                                     if (a.state === "connecting") return qsTr("Connecting…")
                                     return qsTr("Read while connected to a radio.")
                                 }
-                                color: Engine.amp.state === "connected" ? "#00cc66"
+                                color: Engine.amp.state === "connected" ? Theme.good
                                      : Engine.amp.state === "failed" ? Theme.transmit : Theme.textDim
                                 font.pixelSize: Theme.px(13)
                                 wrapMode: Text.Wrap
@@ -1674,7 +1674,7 @@ Popup {
                                             : d.connecting ? qsTr("Connecting to %1…").arg(d.ip)
                                             : d.linkError ? qsTr("Through the radio only: %1 not reached directly (%2). Standby / Operate, power and SWR work through the radio (over SmartLink too); the supply, temperatures, fan and relays need the station's network or a VPN.").arg(d.ip || "–").arg(d.linkError)
                                             : qsTr("Through the radio.")
-                                        color: d.direct ? "#00cc66" : d.authBlocked ? Theme.transmit : Theme.textDim
+                                        color: d.direct ? Theme.good : d.authBlocked ? Theme.transmit : Theme.textDim
                                         font.pixelSize: Theme.px(13)
                                         wrapMode: Text.Wrap
                                     }
@@ -1747,7 +1747,7 @@ Popup {
                                         : parent.a.connecting ? qsTr("Connecting to %1…").arg(parent.a.ip)
                                         : parent.a.linkError ? qsTr("%1 not reached (%2): it needs the station's network or a VPN.").arg(parent.a.ip).arg(parent.a.linkError)
                                         : qsTr("At %1 while connected to a radio.").arg(parent.a.ip)
-                                    color: parent.a.direct ? "#00cc66" : parent.a.authBlocked ? Theme.transmit : Theme.textDim
+                                    color: parent.a.direct ? Theme.good : parent.a.authBlocked ? Theme.transmit : Theme.textDim
                                     font.pixelSize: Theme.px(13)
                                     wrapMode: Text.Wrap
                                 }

@@ -6,35 +6,63 @@ import AetherMobile
 // follows the window (rotation, Split View, Stage Manager, folding devices)
 // without per-device rules. Main.qml feeds in the window size.
 QtObject {
-    readonly property color background: "#0f1419"
-    readonly property color surface: "#1a222b"
-    readonly property color surfaceRaised: "#243040"
-    readonly property color text: "#e6edf3"
-    readonly property color textDim: "#8b98a5"
-    readonly property color accent: "#3fb6ff"
-    readonly property color transmit: "#e5484d"
+    // ---- Dark or light (Controls › View › Theme, roadmap 118) ----
+    // Dark is the default and Classic as it has always been: every dark value
+    // below is the one the app had before the light theme, so a dark screen
+    // stays pixel for pixel the same (classic-check). Light is the operator's
+    // choice for daylight and tired eyes (Larry Averbeck W9FLA).
+    readonly property bool light: Engine.theme === "light"
+    // The display (spectrum, waterfall, 3D and what is drawn on them) stays
+    // dark in both, as a radio's screen: the waterfall's palette is made on
+    // black, and its overlays keep one set of colours. Items on the display
+    // take these; the page around it takes the tokens below.
+    readonly property QtObject dark: QtObject {
+        readonly property color background: "#0f1419"
+        readonly property color surface: "#1a222b"
+        readonly property color surfaceRaised: "#243040"
+        readonly property color text: "#e6edf3"
+        readonly property color textDim: "#8b98a5"
+        readonly property color accent: "#3fb6ff"
+        readonly property color transmit: "#e5484d"
+        readonly property color warning: "#f5a524"
+    }
+
+    // Light: text 4.5:1 or more (WCAG AA) on the page, the panels, the raised
+    // rows and the buttons, the accent, red, amber and green as text too
+    // (computed: the dim text 5.4-7.2, the accent 5.3-7.1, the others 5.0 or
+    // more).
+    readonly property color background: light ? "#eef1f4" : dark.background
+    readonly property color surface: light ? "#ffffff" : dark.surface
+    readonly property color surfaceRaised: light ? "#d9e0e8" : dark.surfaceRaised
+    readonly property color text: light ? "#10161c" : dark.text
+    readonly property color textDim: light ? "#4c5966" : dark.textDim
+    readonly property color accent: light ? "#0958a8" : dark.accent
+    readonly property color transmit: light ? "#b3202a" : dark.transmit
+    // "OK" in the status lines (a connection, a sent QSO, a locked GPS).
+    readonly property color good: light ? "#086b34" : "#00cc66"
     // Small white-text tags (TX, the slice letter): a shade darker than the
     // transmit red and the slice blue, for 4.5:1 against white (the
     // usability review: 3.9 and 4.1).
     readonly property color transmitTag: "#cf3a3f"
     readonly property color sliceTag: "#2a72c2"
     readonly property color pttReady: "#7a1f22"
-    readonly property color warning: "#f5a524"
+    readonly property color warning: light ? "#8a4d00" : dark.warning
     readonly property color passband: "#ffd75e"
 
     // ---- Buttons (Engine.buttonStyle, remembered) ----
     // classic: light buttons, dark when on; light: dark buttons, light when
     // on; lit: dark buttons, blue when on.
     readonly property string buttonStyle: Engine.buttonStyle
-    readonly property bool darkButtons: buttonStyle !== "classic"
-    readonly property color buttonFace: darkButtons ? "#2d3947" : "#e0e0e0"
-    readonly property color buttonFaceDown: darkButtons ? "#3d4b5c" : "#bdbdbd"
-    readonly property color buttonText: darkButtons ? "#e6edf3" : "#1a1a1a"
-    readonly property color buttonFaceOn: buttonStyle === "light" ? "#f2f4f7" : buttonStyle === "lit" ? "#1c70c8" : "#353637"
-    readonly property color buttonFaceOnDown: buttonStyle === "light" ? "#cfd5dc" : buttonStyle === "lit" ? "#1a66b3" : "#4a4b4c"
-    readonly property color buttonTextOn: buttonStyle === "light" ? "#10161c" : "#ffffff"
+    // The light theme has its own: light grey buttons, blue when on.
+    readonly property bool darkButtons: !light && buttonStyle !== "classic"
+    readonly property color buttonFace: light ? "#dde3ea" : darkButtons ? "#2d3947" : "#e0e0e0"
+    readonly property color buttonFaceDown: light ? "#c3ccd6" : darkButtons ? "#3d4b5c" : "#bdbdbd"
+    readonly property color buttonText: light ? "#10161c" : darkButtons ? "#e6edf3" : "#1a1a1a"
+    readonly property color buttonFaceOn: light ? "#1c70c8" : buttonStyle === "light" ? "#f2f4f7" : buttonStyle === "lit" ? "#1c70c8" : "#353637"
+    readonly property color buttonFaceOnDown: light ? "#1a66b3" : buttonStyle === "light" ? "#cfd5dc" : buttonStyle === "lit" ? "#1a66b3" : "#4a4b4c"
+    readonly property color buttonTextOn: light ? "#ffffff" : buttonStyle === "light" ? "#10161c" : "#ffffff"
     // Secondary text on a button face (e.g. a memory's mode).
-    readonly property color buttonTextDim: darkButtons ? "#7fc3ff" : "#2a5c8a"
+    readonly property color buttonTextDim: light ? "#1f4f80" : darkButtons ? "#7fc3ff" : "#2a5c8a"
 
     // ---- Window (set by Main.qml) ----
     property real windowWidth: 1366

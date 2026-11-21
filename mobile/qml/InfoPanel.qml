@@ -53,8 +53,8 @@ Item {
     // screen did).
     property real iconW: Math.round(Theme.touchTarget * 0.82)
     // Off flags and idle icons: 5:1 on the header (#6b7785 was 3.5:1).
-    readonly property color dim: "#84919e"
-    readonly property color rxColor: "#3fb6ff"
+    readonly property color dim: Theme.light ? Theme.textDim : "#84919e"
+    readonly property color rxColor: Theme.light ? Theme.accent : "#3fb6ff"
 
     function stepLabel(hz) {
         return hz >= 1000 ? (hz / 1000).toFixed(hz % 1000 ? 1 : 0) + " kHz" : hz + " Hz"
@@ -117,7 +117,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             radius: 6
-            color: "#ffffff"
+            color: Theme.light ? "#000000" : "#ffffff"
             opacity: area.pressed ? 0.15 : 0
         }
         Text {
@@ -472,7 +472,7 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: 6
-                    color: "#ffffff"
+                    color: Theme.light ? "#000000" : "#ffffff"
                     opacity: flagArea.pressed ? 0.15 : 0
                 }
                 Row {

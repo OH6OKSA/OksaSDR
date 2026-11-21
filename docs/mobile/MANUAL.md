@@ -712,6 +712,21 @@ Steps left*, *Steps wider* and so on. Each press says where the block is
 now, or why it did not move: *at the edge*, *its content would not fit*,
 *another block is there*.
 
+### Light theme
+
+**Controls › View › Theme**: *Dark* (the default, as the app has always
+looked) or *Light*, a light page for daylight and tired eyes (asked by
+Larry Averbeck W9FLA). It switches at once and is remembered, also in App
+setups. In Light the frequency, the info panel, the meters (a light face
+with a dark scale and needle), the slice chips, the buttons, the controls,
+the dialogs, Radio Setup, the Connect page and Big buttons are light, and
+their text reads at 4.5:1 or more; the display (spectrum, waterfall, 3D and
+what is drawn on them) stays dark, as a radio's screen, since the
+waterfall's colours are made on black. On an iPhone or iPad the status
+bar's clock and battery turn dark on the light page.
+
+![Light theme](manual/theme-light.jpg)
+
 ### Big buttons
 
 **View › Big buttons** (or **⋯** → *Big buttons* on a phone) covers the
@@ -1580,7 +1595,8 @@ seven.
   *ARRL (US)*, *IARU Region 1 / 2 / 3*, *RAC (Canada)* or *SSA
   (Sweden)*), **Band plan lock (mode)** (see
   [Band plan lock](#band-plan-lock)), **Felt taps (phones)** (on / off, see
-  *Felt taps* above), **Hints** (*Show again*, see *Hints* above), **Text size** (*System* follows the system's text size —
+  *Felt taps* above), **Hints** (*Show again*, see *Hints* above), **Theme**
+  (*Dark* or *Light*, see [Light theme](#light-theme)), **Text size** (*System* follows the system's text size —
   iOS Settings › Display & Brightness › Text Size, Android's font size —
   or a fixed *100 % / 115 % / 130 %*; the panels', dialogs' and setup
   pages' text grows, the operating screen's dense controls and the

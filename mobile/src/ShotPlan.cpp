@@ -489,6 +489,11 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
     } else if (command == QLatin1String("preview-tx")) {
         m_engine.setProperty("previewTx", arg == QLatin1String("on"));
         *delayMs = 1200;
+    } else if (command == QLatin1String("theme")) {
+        // Dark or light (roadmap 118), as Controls › View › Theme sets it;
+        // remembered, so a plan that sets light puts dark back at its end.
+        m_engine.setTheme(arg);
+        *delayMs = 600;
     } else if (command == QLatin1String("meter-style")) {
         const QStringList styles = arg.split(QLatin1Char(','));
         if (styles.size() == 2) {

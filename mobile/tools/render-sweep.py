@@ -2,7 +2,7 @@
 """Every window size in one run, on one connection to the radio.
 
     mobile/tools/render-sweep.py OUT_DIR [--radio IP] [--font PX] [--sizes WxH,...]
-                                 [--panels PLAN --panel-sizes WxH,...]
+                                 [--panels PLAN --panel-sizes WxH,...] [--theme light]
 
 One app run connects once and resizes its window through the sizes (the
 shot plan's `size`), where one run per size took a connection, a filled
@@ -16,6 +16,9 @@ pictures are OUT_DIR/WxH-digu.png and WxH-usb.png.
 --panels PLAN runs that shot plan (the panel audit: popups, drawer tabs)
 at each of --panel-sizes in the same run, its pictures named WxH-NAME.png;
 its first `wait` (the display filling) is left out after the first size.
+
+--theme light sweeps the light theme (roadmap 118) and puts dark back at
+the end (the theme is remembered).
 
 A resized window is laid out as a phone turning or a foldable opening; a
 few sizes are worth a fresh start too (one run per size) before a release.
@@ -44,6 +47,7 @@ def main() -> int:
     ap.add_argument("--panels", help="a shot plan to run at each panel size")
     ap.add_argument("--panel-sizes", default="390x844,667x375,1366x1024")
     ap.add_argument("--root", default=str(ROOT), help="the checkout whose build-mobile/ to run")
+    ap.add_argument("--theme", choices=("dark", "light"), default="dark")
     args = ap.parse_args()
     root = Path(args.root)
     app = root / "build-mobile/mobile/aether-mobile"
@@ -54,7 +58,7 @@ def main() -> int:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     sizes = [s for s in args.sizes.split(",") if s]
-    plan = ["wait 9000"]
+    plan = ["wait 9000"] + ([f"theme {args.theme}", "wait 1000"] if args.theme != "dark" else [])
     for state, mode in (("digu", None), ("usb", "USB")):
         if mode:
             plan += [f"mode {mode}", "wait 2500"]
@@ -69,6 +73,8 @@ def main() -> int:
         for size in [s for s in args.panel_sizes.split(",") if s]:
             plan += [f"size {size}", "wait 3000"]
             plan += [f"shot {size}-{l.split(None, 1)[1]}" if l.startswith("shot ") else l for l in steps]
+    if args.theme != "dark":
+        plan += ["theme dark", "wait 600"]
     plan_file = out / "sweep.plan"
     plan_file.write_text("\n".join(plan) + "\n")
 

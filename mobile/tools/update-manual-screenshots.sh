@@ -55,7 +55,8 @@ logging_shots=(setup-logging)
 kpa_shots=(tab-kpa kpa-controls)
 elecraft_shots=(tab-kpa500 kpa500-controls kat500-controls setup-elecraft)
 layout_shots=(layout-edit layout-own)
-all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${layout_shots[@]}" "${phone_shots[@]}" phone-landscape phone-landscape-bs bandchooser
+theme_shots=(theme-light)
+all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${layout_shots[@]}" "${theme_shots[@]}" "${phone_shots[@]}" phone-landscape phone-landscape-bs bandchooser
            "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" "${logging_shots[@]}" "${kpa_shots[@]}" "${elecraft_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
     printf '%s\n' "${all_shots[@]}" | sort -u
@@ -201,6 +202,15 @@ if want "${layout_shots[@]}"; then
         printf 'tapname layoutDone\nwait 1500\nshot layout-own\n'
         printf 'showname layoutEdit\ntapname layoutEdit\nwait 1500\ntapname layoutDelete\nwait 800\ntapname layoutDeleteYes\nwait 1500\nlayoutitems land\n'
     } | plan layouts 1366x1024 "${src[@]}" --controls visible
+fi
+
+# The light theme (roadmap 118): the iPad's page with the View tab's Theme
+# row in view; dark put back (the theme is remembered).
+if want "${theme_shots[@]}"; then
+    {
+        echo "wait $FILL"
+        printf 'pin 5\ntheme light\nwait 1500\nshowname themeLight\nwait 800\nshot theme-light\ntheme dark\nwait 800\n'
+    } | plan theme 1366x1024 "${src[@]}" --controls visible
 fi
 
 if want "${phone_shots[@]}"; then
@@ -509,6 +519,7 @@ jpg connect "" 900x
 jpg overview "" 1100x
 jpg layout-edit "" 1100x
 jpg layout-own "" 1100x
+jpg theme-light "" 1100x
 jpg phone-portrait
 jpg big-buttons "" 330x
 jpg big-buttons-log "" 330x

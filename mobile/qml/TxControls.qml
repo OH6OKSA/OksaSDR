@@ -583,7 +583,7 @@ ColumnLayout {
         // learn from (the desktop's Active / Avail indicators).
         text: Engine.apd.equalizerActive ? qsTr("APD active: correcting the transmission on this band and power.")
                                          : qsTr("APD ready: it learns from the next transmission.")
-        color: Engine.apd.equalizerActive ? "#00cc66" : Theme.textDim
+        color: Engine.apd.equalizerActive ? Theme.good : Theme.textDim
         font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }

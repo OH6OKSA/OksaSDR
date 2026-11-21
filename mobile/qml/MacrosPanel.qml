@@ -216,7 +216,7 @@ Popup {
                     return flat.length > 0 ? flat.slice(-2 * columns)
                         : (decodedBox.text ? qsTr("%1: nothing decoded yet").arg(Engine.textMode) : qsTr("CW: nothing decoded yet"))
                 }
-                color: decodedBox.stream.length > 0 ? "#ffffff" : Theme.textDim
+                color: decodedBox.stream.length > 0 ? "#ffffff" : Theme.dark.textDim
                 font.family: "monospace"
                 font.pixelSize: 15
                 wrapMode: Text.WrapAnywhere

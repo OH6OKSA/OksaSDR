@@ -484,7 +484,7 @@ ColumnLayout {
                 color: ampTab.a.tune === "carrier" ? Theme.warning
                      : ampTab.kpa && ampTab.a.link === "failed" ? Theme.transmit
                      : ampTab.a.pending || ampTab.transmitting || (ampTab.kpa && ampTab.a.link === "connecting") ? Theme.textDim
-                     : ampTab.a.resultOk ? "#00cc66" : Theme.transmit
+                     : ampTab.a.resultOk ? Theme.good : Theme.transmit
                 font.pixelSize: Theme.px(13)
                 wrapMode: Text.Wrap
             }

@@ -592,6 +592,9 @@ MobileEngine::MobileEngine(QObject* parent)
     setupAgcAuto();
     setupMidi();
     setupUlanzi();
+    if (theme() == QLatin1String("light")) {
+        applyColorScheme();
+    }
     // Android: keys and push-to-talk broadcasts the app does not use, in the
     // log (roadmap 119); nothing elsewhere.
     startKeyLog();
@@ -8611,6 +8614,35 @@ void MobileEngine::setButtonStyle(const QString& style)
         AppSettings::instance().save();
         emit buttonStyleChanged();
     }
+}
+
+QString MobileEngine::theme() const
+{
+    return AppSettings::instance().value(QStringLiteral("MobileTheme")).toString() == QLatin1String("light")
+               ? QStringLiteral("light")
+               : QStringLiteral("dark");
+}
+
+void MobileEngine::setTheme(const QString& theme)
+{
+    const QString value = theme == QLatin1String("light") ? QStringLiteral("light") : QStringLiteral("dark");
+    if (value != this->theme()) {
+        AppSettings::instance().setValue(QStringLiteral("MobileTheme"), value);
+        AppSettings::instance().save();
+        qCInfo(lcMobile).noquote() << "theme" << value;
+        applyColorScheme();
+        emit themeChanged();
+    }
+}
+
+// The system's own parts for the theme (roadmap 118): on a light page the
+// status bar's clock and battery dark (iOS sets the window's interface style
+// from it) and the controls' unset palette roles light. Dark asks for
+// nothing, as before the light theme: the system's own setting, as always.
+void MobileEngine::applyColorScheme()
+{
+    QGuiApplication::styleHints()->setColorScheme(theme() == QLatin1String("light") ? Qt::ColorScheme::Light
+                                                                                     : Qt::ColorScheme::Unknown);
 }
 
 namespace {

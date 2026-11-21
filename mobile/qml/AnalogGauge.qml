@@ -66,6 +66,11 @@ Item {
     onMinChanged: face.requestPaint()
     onMaxChanged: face.requestPaint()
     onRedChanged: face.requestPaint()
+    // The face's ink follows the theme (roadmap 118): dark on a light face.
+    readonly property bool lightFace: Theme.light
+    onLightFaceChanged: face.requestPaint()
+    readonly property color ink: lightFace ? "#1a2430" : "#e6edf3"
+    readonly property color redInk: lightFace ? "#b3202a" : "#ff5a5f"
 
     // Scale marks: [value, label, red?]
     readonly property var marks: MeterMarks.marks(kind, min, max, red)
@@ -105,7 +110,7 @@ Item {
 
             // Outer scale: thin white line, red past the alarm point.
             ctx.lineWidth = 2
-            ctx.strokeStyle = "#e6edf3"
+            ctx.strokeStyle = gauge.ink
             ctx.beginPath(); ctx.arc(cx, cy, radius, start, Math.min(redAngle, end), false); ctx.stroke()
             if (redAngle < end) {
                 ctx.strokeStyle = "#e5484d"
@@ -127,7 +132,7 @@ Item {
             ctx.font = "bold " + fontPx + "px sans-serif"
             for (const m of gauge.marks) {
                 const a = angleOf(m[0]), c = Math.cos(a), s = Math.sin(a)
-                const col = m[2] ? "#ff5a5f" : "#e6edf3"
+                const col = m[2] ? gauge.redInk : gauge.ink
                 ctx.strokeStyle = col
                 ctx.lineWidth = 1.5
                 ctx.beginPath()
@@ -141,7 +146,7 @@ Item {
             ctx.font = fontPx + "px sans-serif"
             for (const m of (gauge.roomy ? gauge.innerMarks : [])) {
                 const a = angleOf(m[0]), c = Math.cos(a), s = Math.sin(a)
-                ctx.fillStyle = m[2] ? "#ff5a5f" : "#c8d3de"
+                ctx.fillStyle = m[2] ? gauge.redInk : (gauge.lightFace ? "#3b4754" : "#c8d3de")
                 ctx.fillText(m[1], cx + c * (inner - fontPx * 1.3), cy + s * (inner - fontPx * 1.3))
             }
 
@@ -163,7 +168,7 @@ Item {
         width: gauge.radius + 3
         height: Math.max(1.5, 1.6 * gauge.unit)
         antialiasing: true
-        color: gauge.live ? "#ffffff" : "#8b98a5"
+        color: gauge.live ? (gauge.lightFace ? "#10161c" : "#ffffff") : "#8b98a5"
         transformOrigin: Item.Left
         rotation: gauge.angleOf(gauge.shown) * 180 / Math.PI
     }
@@ -175,7 +180,7 @@ Item {
         width: gauge.radius + 3
         height: Math.max(1, 1.0 * gauge.unit)
         antialiasing: true
-        color: "#f0b429"
+        color: gauge.lightFace ? "#c77c00" : "#f0b429"
         opacity: 0.8
         transformOrigin: Item.Left
         rotation: gauge.angleOf(Math.max(gauge.min, Math.min(gauge.max, gauge.peak))) * 180 / Math.PI
@@ -228,7 +233,7 @@ Item {
         Accessible.ignored: true
         x: 2; y: 0
         text: gauge.kind === "S" && gauge.live ? gauge.parts[0] : gauge.shortName
-        color: "#3fb6ff"
+        color: gauge.lightFace ? Theme.accent : "#3fb6ff"
         font.pixelSize: gauge.headerFont
         font.bold: true
     }

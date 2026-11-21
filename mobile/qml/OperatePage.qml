@@ -1046,7 +1046,8 @@ Page {
         }
         background: Rectangle {
             color: Theme.surface
-            opacity: 0.96
+            // Light: opaque, as the page's dark text showed through.
+            opacity: Theme.light ? 1 : 0.96
             radius: Theme.radius
         }
 

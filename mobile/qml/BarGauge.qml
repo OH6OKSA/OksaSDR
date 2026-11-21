@@ -51,6 +51,9 @@ Item {
     onHeightChanged: track.requestPaint()
     onMarksChanged: track.requestPaint()
     onLiveChanged: track.requestPaint()
+    // The track's colours follow the theme (roadmap 118).
+    readonly property bool lightFace: Theme.light
+    onLightFaceChanged: track.requestPaint()
     Canvas {
         id: track
         anchors.fill: parent
@@ -60,12 +63,12 @@ Item {
             const w = width
             ctx.reset()
             const top = gauge.barY, bh = gauge.barHeight
-            ctx.fillStyle = "#1f2a36"
+            ctx.fillStyle = gauge.lightFace ? "#d9e0e8" : "#1f2a36"
             ctx.fillRect(0, top, w, bh)
             // The red zone, dim under the fill.
             const rx = gauge.xOf(gauge.redFrom)
             if (rx < w) {
-                ctx.fillStyle = "#4a1f24"
+                ctx.fillStyle = gauge.lightFace ? "#f4d0d2" : "#4a1f24"
                 ctx.fillRect(rx, top, w - rx, bh)
             }
             // Ticks under the bar, labels under the ticks: first and last
@@ -78,7 +81,7 @@ Item {
             const drawn = []
             for (const i of order) {
                 const x = gauge.xOf(m[i][0])
-                const col = m[i][2] ? "#ff5a5f" : "#e6edf3"
+                const col = m[i][2] ? (gauge.lightFace ? "#b3202a" : "#ff5a5f") : (gauge.lightFace ? "#1a2430" : "#e6edf3")
                 ctx.fillStyle = col
                 ctx.fillRect(Math.max(0, Math.min(w - 1.5, x - 0.75)), ticksY, 1.5, gauge.tickLength)
                 if (!gauge.labels) continue
@@ -117,7 +120,7 @@ Item {
         y: gauge.barY - 2
         x: Math.max(0, Math.min(gauge.width - width, gauge.xOf(gauge.peak) - width / 2))
         radius: 1
-        color: "#f0b429"
+        color: gauge.lightFace ? "#c77c00" : "#f0b429"
     }
 
     // Header: the S unit or the meter's name (left, blue), the value alone
@@ -144,7 +147,7 @@ Item {
         height: gauge.headerHeight
         verticalAlignment: Text.AlignVCenter
         text: gauge.kind === "S" && gauge.live ? gauge.parts[0] : gauge.shortName
-        color: "#3fb6ff"
+        color: gauge.lightFace ? Theme.accent : "#3fb6ff"
         font.pixelSize: gauge.headerFont
         font.bold: true
     }

@@ -17,7 +17,7 @@ Row {
     Accessible.role: Accessible.Button
     Accessible.name: badge.rttMs > 0 ? qsTr("Network %1, %2 ms").arg(badge.quality).arg(badge.rttMs)
                                      : qsTr("Network %1").arg(badge.quality)
-    readonly property color dotColor: quality === "Excellent" || quality === "Very Good" ? "#00cc66"
+    readonly property color dotColor: quality === "Excellent" || quality === "Very Good" ? (Theme.light ? Theme.good : "#00cc66")
                                     : quality === "Good" ? "#00b4d8"
                                     : quality === "Fair" ? "#cc9900"
                                     : quality === "Poor" ? "#cc3333" : "#8aa8c0"
@@ -40,7 +40,7 @@ Row {
         anchors.verticalCenter: parent.verticalCenter
         visible: badge.rttMs > 0
         text: badge.rttMs + " ms"
-        color: "#8aa8c0"
+        color: Theme.light ? Theme.textDim : "#8aa8c0"
         font.pixelSize: 12
     }
     // The app's CPU (share of all cores, as the desktop's status bar).
@@ -49,7 +49,7 @@ Row {
         anchors.verticalCenter: parent.verticalCenter
         leftPadding: 6
         text: "CPU " + Math.round(Engine.cpuPercent) + " %"
-        color: Engine.cpuPercent >= 80 ? "#cc3333" : Engine.cpuPercent >= 50 ? "#cc9900" : "#8aa8c0"
+        color: Engine.cpuPercent >= 80 ? (Theme.light ? Theme.transmit : "#cc3333") : Engine.cpuPercent >= 50 ? (Theme.light ? Theme.warning : "#cc9900") : (Theme.light ? Theme.textDim : "#8aa8c0")
         font.pixelSize: 12
     }
     // The app's memory (phones: the number alone, beside the CPU).
@@ -58,7 +58,7 @@ Row {
         anchors.verticalCenter: parent.verticalCenter
         visible: Engine.memoryMB > 0
         text: (badge.compact ? "" : "RAM ") + Math.round(Engine.memoryMB) + " MB"
-        color: "#8aa8c0"
+        color: Theme.light ? Theme.textDim : "#8aa8c0"
         font.pixelSize: 12
     }
 }

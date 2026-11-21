@@ -9,11 +9,10 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Own layouts: Meter 1, Meter 2 and Slices are blocks of their own; a meter grows with its block. Slices shows in one line, or rows, or scrolls; never under the display. Build 197 layouts are split for you (thanks Larry W9FLA).
-- Hide controls in the top row works in a layout too: the display and the rows take the room, as in Classic.
-- Where Pin Controls does not fit, the drawer's × sits beside the buttons, not in an empty row.
+- Light theme: Controls > View > Theme > Light, a light page for daylight and tired eyes; the display stays dark. Dark stays the default (thanks Larry W9FLA).
 
-RECENT (builds 94–197)
+RECENT (builds 94–198)
+- 198: own layouts: Meter 1, Meter 2 and Slices as blocks, the slices in one line (thanks Larry W9FLA); Hide controls in a layout; the drawer's × beside the buttons.
 - 197: own layouts of the iPad and Mac screen, View > Layout (thanks Larry W9FLA); AGC-A in the info line (thanks Tommy W6TPR).
 - 196: FFT smooth and De-comb (View > Spectrum); 3D with 768 columns on an iPad or a Mac; with B/S in landscape the waterfall's buttons go under it (thanks Evgeny R0ACS).
 - 195: POTA and WWFF spots, Controls > View > Park spots (thanks Robin G5OUT); KPA500 and KAT500 Power On / Off, now confirmed on real devices (thanks Sergio LU7YS).
