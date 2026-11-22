@@ -64,6 +64,46 @@ ApplicationWindow {
         anchors.centerIn: parent
     }
 
+    // The on-screen keyboard's Done (roadmap 142, Robin Bishop G5OUT): an
+    // iPhone's keyboard has no key to put it away, and Return in some fields
+    // acts (the Log tab's call logs the contact). At the top, clear of the
+    // keyboard; it lets go of the field, and the page takes the keys again
+    // (Space PTT on a tablet's keyboard). A tap outside the field does the
+    // same (TextFocusRelease).
+    // A popup of its own, above the controls drawer and Setup: a press on
+    // it is not a press outside them (which closed the drawer).
+    Popup {
+        id: keyboardDonePopup
+        readonly property bool touchOs: Qt.platform.os === "ios" || Qt.platform.os === "android"
+        readonly property bool wanted: (touchOs && Qt.inputMethod.visible) || Engine.testKeyboard
+        parent: Overlay.overlay
+        z: 1000
+        modal: false
+        dim: false
+        focus: false
+        closePolicy: Popup.NoAutoClose
+        padding: 0
+        background: null
+        x: Math.round((window.width - width) / 2)
+        y: pages.SafeArea.margins.top + 4
+        onWantedChanged: wanted ? open() : close()
+        contentItem: AppButton {
+            objectName: "keyboardDone"
+            leftPadding: 16
+            rightPadding: 16
+            text: qsTr("⌄ Done")
+            Accessible.name: qsTr("Hide the keyboard")
+            focusPolicy: Qt.NoFocus
+            onClicked: {
+                if (window.activeFocusItem)
+                    window.activeFocusItem.focus = false
+                Qt.inputMethod.hide()
+                if (Engine.testKeyboard)
+                    Engine.testKeyboardOff()
+            }
+        }
+    }
+
     // A SmartLink radio presented a different TLS certificate than the one
     // pinned for it on first use. The connect waits for the operator.
     Dialog {

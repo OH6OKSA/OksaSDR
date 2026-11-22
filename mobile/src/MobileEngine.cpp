@@ -325,6 +325,10 @@ public:
         }
         if (!field->contains(field->mapFromScene(press->points().first().scenePosition()))) {
             field->setFocus(false);
+            // And the on-screen keyboard goes (roadmap 142, Robin Bishop
+            // G5OUT's iPhone: an iPhone's keyboard has no key to hide it,
+            // and Return in the Log tab's call logs the contact).
+            QGuiApplication::inputMethod()->hide();
         }
         return false;
     }
@@ -8254,6 +8258,14 @@ void MobileEngine::setupDxCluster()
             }
             return;
         }
+        // Spotted from (View › From, roadmap 136): a spot given far away
+        // (a VK spotter's, with From on Europe) does not go onto the radio
+        // at all, not only off this display; this station's own spot does.
+        if (!spotFromOk(spot.spotterCall)
+            && stripCallSsid(spot.spotterCall) != stripCallSsid(dxCallsign())) {
+            ++m_dxSpotsFarAway;
+            return;
+        }
         const QString color = spot.color.isEmpty()
             ? settings.value(QStringLiteral("DxClusterSpotColor"), QStringLiteral("#D2B48C")).toString()
             : spot.color;
@@ -8451,6 +8463,11 @@ void MobileEngine::setDxSpotStatus(const QString& status)
         m_dxSpotStatus = status;
         emit dxSpotStatusChanged();
     }
+}
+
+QString MobileEngine::stripCallSsid(const QString& call)
+{
+    return call.section(QLatin1Char('-'), 0, 0).trimmed().toUpper();
 }
 
 QString MobileEngine::dxCallsign() const

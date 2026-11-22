@@ -105,6 +105,9 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QString theme READ theme WRITE setTheme NOTIFY themeChanged)
     // The page light now (Light, or Auto with the device light).
     Q_PROPERTY(bool lightTheme READ lightTheme NOTIFY themeChanged)
+    // The render tool's stand-in for the on-screen keyboard (roadmap 142's
+    // Done key shows while one is up; a desktop has none).
+    Q_PROPERTY(bool testKeyboard READ testKeyboard NOTIFY testKeyboardChanged)
     // Text size: "system" follows the system's text size (iOS Dynamic Type,
     // Android's font scale), or "100" / "115" / "130" percent. textScale is
     // the factor every text size in the theme is multiplied by, held to
@@ -1658,6 +1661,10 @@ public:
     Q_INVOKABLE void setSpotAlertSetting(const QString& key, const QVariant& value);
     QVariantMap spotAlert() const;
     QVariantMap spotFeeds() const;
+    bool testKeyboard() const { return m_testKeyboard; }
+    void setTestKeyboard(bool on) { if (on != m_testKeyboard) { m_testKeyboard = on; emit testKeyboardChanged(); } }
+    // The stand-in keyboard put away by Done, as the real one is.
+    Q_INVOKABLE void testKeyboardOff() { setTestKeyboard(false); }
     // key: rbn, psk, heardMe.
     Q_INVOKABLE void setSpotFeed(const QString& key, bool on);
     QVariantList heardMe() const;
@@ -2238,6 +2245,7 @@ signals:
     void spotAlertSettingsChanged();
     void spotAlertChanged();
     void spotFeedsChanged();
+    void testKeyboardChanged();
     void heardMeChanged();
     // A spot's Tune (roadmap 137): the Controls tab for the spot's mode
     // (FTx, Digi, CW) by its section name; open: the alert's Tune opens a
@@ -2972,6 +2980,8 @@ private:
     bool feedSpotAllowed(QHash<QString, qint64>& seen, QHash<QString, QList<qint64>>& bandAdds,
                          const QString& call, double mhz, const QString& spotter, qint64 windowMs, int perBand);
     QHash<QString, qint64> m_rbnSeen;
+    quint64 m_dxSpotsFarAway{0};
+    static QString stripCallSsid(const QString& call);
     QHash<QString, QList<qint64>> m_rbnBandAdds;
     QVariantMap ownPlace() const;
     QVariantMap m_spotAlert;
@@ -2996,6 +3006,7 @@ private:
     void noteHeard(const HeardReport& report);
     void seedHeardMe();
     qint64 m_pskQueryMs{0};
+    bool m_testKeyboard{false};
     MiniMqtt* m_pskMqtt{nullptr};
     QHash<QString, qint64> m_pskSeen;
     QHash<QString, QList<qint64>> m_pskBandAdds;

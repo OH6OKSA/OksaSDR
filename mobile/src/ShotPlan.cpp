@@ -1665,6 +1665,11 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         m_engine.setTestSystemScheme(arg == QLatin1String("light") ? 1 : arg == QLatin1String("dark") ? 2 : 0);
         qInfo().noquote() << "shot-plan: scheme" << arg << "-> light page" << m_engine.lightTheme();
         *delayMs = 600;
+    } else if (command == QLatin1String("keyboard")) {
+        // keyboard on|off: as if the on-screen keyboard were up (roadmap
+        // 142's Done key), for the pictures.
+        m_engine.setTestKeyboard(arg == QLatin1String("on"));
+        *delayMs = 400;
     } else if (command == QLatin1String("txblock")) {
         // Every transmission refused, as during a developer-link plan: keys
         // and macros can be tested on the radio with nothing on air.
