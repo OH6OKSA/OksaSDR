@@ -1775,7 +1775,9 @@ seven.
   (thanks Christoph): the call, date and time (UTC), frequency, mode,
   reports, name, comment and the parks, then *Save*, or *Delete* and
   *Delete it*. It changes this device's log and the shared ADIF file (if
-  one is chosen, since build 200); a contact that already went to Wavelog /
+  one is chosen, since build 200); the dialog closes at once and *Saving
+  the change…* shows under the list until the file is written (a large
+  log no longer holds the screen, since build 201); a contact that already went to Wavelog /
   Cloudlog, the QRZ.com logbook, Logger32 or the logging program is not
   changed there (the dialog names the ones set up), so change it there
   too. A new call drops the old call's looked-up name and
@@ -1807,7 +1809,11 @@ seven.
   skipped. A logbook kept on a computer comes over first: export it as
   ADIF there and put the file where the device sees it (Drive, iCloud,
   mail, a USB cable to Downloads); in the picker, the menu or Browse
-  leads to those places. A big logbook (tens of thousands of contacts, tested with
+  leads to those places. On Android the button opens Android's own file
+  picker, which offers Google Drive, OneDrive, Dropbox and the phone's
+  storage alike (before build 201 a file from a cloud drive could not be
+  chosen there; the same for **Choose…** below, an app setup's
+  **Import** and a MIDI map's). A big logbook (tens of thousands of contacts, tested with
   120 000) imports in a few seconds while the display goes on, and the log
   is read in the background at start (worked-before colours follow when
   it is in); the line under the button says
@@ -2849,6 +2855,7 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 | You see | Why | What to do |
 |---|---|---|
 | **No slice** (frequency 0.000.000) | The radio did not give the app a slice. The app first retries once on a fresh panadapter; if it still fails, the radio's slices may all be in use by other programs | **Stations…** shows them; close a slice there or disconnect it, then **Try again** |
+| *The radio did not give this app a panadapter* | The radio's panadapters are all in use by your other devices or programs (each device shows one, but empty ones left by closed slices held theirs before build 201) | On the other device: **Close N other pans**, or close a panadapter in SmartSDR; then connect again |
 | *No slice transmits* | No slice has transmit | Press and hold a slice → **Make TX slice** |
 | *Interlock / did not accept the transmit request* | The radio refused to transmit; its reason is shown | Check TX antenna, band, other clients |
 | A band button opens another band | The radio's band stack (in its global profile) holds that frequency | Tune the band where you want it and save the profile |
