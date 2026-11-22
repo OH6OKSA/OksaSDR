@@ -83,6 +83,7 @@ void MobileEngine::setSpotFrom(const QString& from)
     AppSettings::instance().setValue(kFromKey, v);
     AppSettings::instance().save();
     qCInfo(lcMobile).noquote() << "spots: spotted from" << v;
+    applyRbnToCluster();   // the cluster's skimmer filter follows (136)
     emit spotsChanged();
     emit spotAlertSettingsChanged();
 }
@@ -177,35 +178,42 @@ bool MobileEngine::watchMatch(const QString& call) const
     return false;
 }
 
-void MobileEngine::checkSpotAlert(const SpotData& s)
+// Why a spot would alert (the watch list, a needed DXCC), empty if not;
+// also asked before a busy feed's spot is dropped (roadmap 136).
+QString MobileEngine::spotAlertReason(const QString& rawCall, double mhz, const QString& spotter)
 {
-    if (!m_connected || !spotAlertsActive() || s.callsign.isEmpty() || s.rxFreqMhz <= 0.0) {
-        return;
+    if (!m_connected || !spotAlertsActive() || rawCall.isEmpty() || mhz <= 0.0) {
+        return {};
     }
-    const QString call = s.callsign.trimmed().toUpper();
-    if (call == baseCall(dxCallsign())) {
-        return;
+    const QString call = rawCall.trimmed().toUpper();
+    if (call == baseCall(dxCallsign()) || !spotFromOk(spotter)) {
+        return {};
     }
-    if (!spotFromOk(s.spotterCallsign)) {
-        return;
-    }
-    const QString band = QsoLog::bandOf(s.rxFreqMhz);
-    QString why;
+    const QString band = QsoLog::bandOf(mhz);
     if (watchMatch(call)) {
-        why = tr("on your watch list");
+        return tr("on your watch list");
     }
     const QString dxcc = AppSettings::instance().value(kDxccKey, QStringLiteral("off")).toString();
-    if (why.isEmpty() && dxcc != QLatin1String("off")) {
+    if (dxcc != QLatin1String("off")) {
         const int level = digiNewDxcc(call, true, band);
         if (level == 2) {
-            why = tr("a new DXCC");
-        } else if (level == 1 && dxcc == QLatin1String("band")) {
-            why = tr("a new DXCC on %1").arg(band);
+            return tr("a new DXCC");
+        }
+        if (level == 1 && dxcc == QLatin1String("band")) {
+            return tr("a new DXCC on %1").arg(band);
         }
     }
+    return {};
+}
+
+void MobileEngine::checkSpotAlert(const SpotData& s)
+{
+    const QString why = spotAlertReason(s.callsign, s.rxFreqMhz, s.spotterCallsign);
     if (why.isEmpty()) {
         return;
     }
+    const QString call = s.callsign.trimmed().toUpper();
+    const QString band = QsoLog::bandOf(s.rxFreqMhz);
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
     const QString key = call + QLatin1Char('|') + band;
     const auto seen = m_spotAlertSeen.constFind(key);

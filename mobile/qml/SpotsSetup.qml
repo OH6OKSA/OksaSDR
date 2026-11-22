@@ -13,6 +13,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         AppButton {
+            objectName: "dxClusterToggle"
             readonly property string state: Engine.dxCluster.state || "off"
             text: state === "off" ? qsTr("DX cluster") : state === "connected" ? qsTr("DX cluster ✓") : qsTr("Connecting…")
             checked: state !== "off"
@@ -65,6 +66,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         TextField {
+            objectName: "dxClusterCallsign"
             Accessible.name: qsTr("DX cluster callsign")
             Layout.fillWidth: true
             placeholderText: qsTr("Callsign (the radio's if empty)")
@@ -118,6 +120,54 @@ ColumnLayout {
     Label {
         Layout.fillWidth: true
         text: qsTr("Activators from pota.app and wwff.co, read every minute, go to the radio like the cluster's spots. Tap one to tune to it; the Log tab then offers their call with their park.")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.WordWrap
+    }
+    // ---- RBN and PSK Reporter, Heard me (roadmap 136) ----
+    Label { text: qsTr("RBN and PSK Reporter"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.topMargin: Theme.spacing }
+    Repeater {
+        model: [{ key: "rbn", label: qsTr("RBN skimmer spots") },
+                { key: "psk", label: qsTr("PSK Reporter spots") },
+                { key: "heardMe", label: qsTr("Heard me") }]
+        delegate: RowLayout {
+            required property var modelData
+            Layout.fillWidth: true
+            Label {
+                Layout.fillWidth: true
+                text: parent.modelData.label
+                color: Theme.text
+                font.pixelSize: Theme.px(15)
+                wrapMode: Text.WordWrap
+            }
+            AppButton {
+                objectName: "spotFeed_" + parent.modelData.key
+                text: checked ? qsTr("On") : qsTr("Off")
+                checked: !!Engine.spotFeeds[parent.modelData.key]
+                Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                focusPolicy: Qt.NoFocus
+                onClicked: Engine.setSpotFeed(parent.modelData.key, !checked)
+            }
+        }
+    }
+    Label {
+        objectName: "spotFeedsStatus"
+        Layout.fillWidth: true
+        readonly property var f: Engine.spotFeeds
+        visible: text.length > 0
+        text: [f.rbn ? (f.clusterOn ? qsTr("RBN: through the DX cluster, %1 skimmer spots so far.").arg(f.rbnSpots)
+                                     : qsTr("RBN: comes through the DX cluster, which is off.")) : "",
+               (f.psk || f.heardMe) ? (f.pskState === "connected" ? qsTr("PSK Reporter: live, %1 reports so far.").arg(f.pskReports)
+                                       : f.pskState === "off" ? qsTr("PSK Reporter: starts with the radio.")
+                                       : qsTr("PSK Reporter: connecting…") + (f.pskError ? " (" + f.pskError + ")" : "")) : ""]
+              .filter(t => t.length > 0).join(" ")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.WordWrap
+    }
+    Label {
+        Layout.fillWidth: true
+        text: qsTr("RBN: the Reverse Beacon Network's CW, RTTY and PSK skimmers, through your DX cluster (DX Spider; as RBN asks), from skimmers near you (View › From: your country, else your continent). PSK Reporter: digital stations heard by receivers in your country, live. Heard me: who hears your CQ, by band, from both. All go to the radio like the cluster's spots.")
         color: Theme.textDim
         font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap

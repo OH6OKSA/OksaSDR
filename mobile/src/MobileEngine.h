@@ -77,6 +77,7 @@ namespace AetherSDR::mobile {
 
 class NtpClock;
 class Kpa1500Reader;
+class MiniMqtt;
 
 class QsoLog;
 
@@ -522,6 +523,10 @@ class MobileEngine : public QObject {
     // more} (empty: none).
     Q_PROPERTY(QVariantMap spotAlertSettings READ spotAlertSettings NOTIFY spotAlertSettingsChanged)
     Q_PROPERTY(QVariantMap spotAlert READ spotAlert NOTIFY spotAlertChanged)
+    // Roadmap 136: RBN through the DX cluster, PSK Reporter's live feed and
+    // Heard me (by band: who heard this station in the last half hour).
+    Q_PROPERTY(QVariantMap spotFeeds READ spotFeeds NOTIFY spotFeedsChanged)
+    Q_PROPERTY(QVariantList heardMe READ heardMe NOTIFY heardMeChanged)
     Q_PROPERTY(int spotMaxAgeMin READ spotMaxAgeMin WRITE setSpotMaxAgeMin NOTIFY spotsChanged)
     // DX cluster: {host, port, callsign (the radio's when not set),
     // callsignFromRadio, autoConnect, state off/connecting/connected, error}.
@@ -1652,6 +1657,11 @@ public:
     QVariantMap spotAlertSettings() const;
     Q_INVOKABLE void setSpotAlertSetting(const QString& key, const QVariant& value);
     QVariantMap spotAlert() const;
+    QVariantMap spotFeeds() const;
+    // key: rbn, psk, heardMe.
+    Q_INVOKABLE void setSpotFeed(const QString& key, bool on);
+    QVariantList heardMe() const;
+    Q_INVOKABLE void clearHeardMe();
     Q_INVOKABLE void dismissSpotAlert();
     Q_INVOKABLE void dismissAllSpotAlerts();
     Q_INVOKABLE void tuneSpotAlert();
@@ -2227,6 +2237,8 @@ signals:
     void qsoLogBusyChanged();
     void spotAlertSettingsChanged();
     void spotAlertChanged();
+    void spotFeedsChanged();
+    void heardMeChanged();
     // A spot's Tune (roadmap 137): the Controls tab for the spot's mode
     // (FTx, Digi, CW) by its section name; open: the alert's Tune opens a
     // closed drawer, a tap on a spot label only switches a shown one.
@@ -2954,8 +2966,44 @@ private:
     bool spotFromOk(const QString& spotter) const;
     bool spotAlertsActive() const;
     bool watchMatch(const QString& call) const;
+    QString spotAlertReason(const QString& call, double mhz, const QString& spotter);
+    // Roadmap 136: a busy feed's spot onto the radio or not (once a call and
+    // band in the window, a band's cap; an alert's always).
+    bool feedSpotAllowed(QHash<QString, qint64>& seen, QHash<QString, QList<qint64>>& bandAdds,
+                         const QString& call, double mhz, const QString& spotter, qint64 windowMs, int perBand);
+    QHash<QString, qint64> m_rbnSeen;
+    QHash<QString, QList<qint64>> m_rbnBandAdds;
     QVariantMap ownPlace() const;
     QVariantMap m_spotAlert;
+    // Roadmap 136 (MobileEngineSpotFeeds.cpp).
+    struct HeardReport {
+        QString receiver;
+        QString grid;
+        QString mode;
+        QString band;
+        QString source;
+        int snr{-999};
+        double km{-1.0};
+        qint64 ms{0};
+    };
+    void setupSpotFeeds();
+    void applyRbnToCluster();
+    void updatePskFeed();
+    void onPskReport(const QString& topic, const QByteArray& payload);
+    bool noteRbnSpot(const QString& dxCall, double freqMhz, const QString& spotter, const QString& comment);
+    int myAdifDxcc() const;
+    double distanceTo(const QString& grid, const QString& call) const;
+    void noteHeard(const HeardReport& report);
+    void seedHeardMe();
+    qint64 m_pskQueryMs{0};
+    MiniMqtt* m_pskMqtt{nullptr};
+    QHash<QString, qint64> m_pskSeen;
+    QHash<QString, QList<qint64>> m_pskBandAdds;
+    QList<HeardReport> m_heard;
+    QTimer m_heardTimer;
+    QTimer m_heardPrune;
+    quint64 m_rbnSpotsIn{0};
+    quint64 m_pskSpotsIn{0};
     QList<QVariantMap> m_spotAlertQueue;
     QHash<QString, qint64> m_spotAlertSeen;
     QSoundEffect* m_alertSound{nullptr};

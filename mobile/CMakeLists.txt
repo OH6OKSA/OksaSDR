@@ -66,6 +66,10 @@ qt_add_executable(aether-mobile
     src/MobileEnginePttKey.cpp
     src/MobileEnginePicker.cpp
     src/MobileEngineSpotAlerts.cpp
+    src/MobileEngineSpotFeeds.cpp
+    src/MiniMqtt.cpp
+    src/MiniMqtt.h
+    src/AdifDxcc.h
     src/LocalNotify.h
     src/LocalNotify.cpp
     src/MobileEngineDigitalMax.cpp

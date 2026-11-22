@@ -16,10 +16,16 @@ ColumnLayout {
     // cluster's), POTA, WWFF, Other (SmartSDR's, another program's). The
     // sources this device reads are set in Setup › Spots (Spot sources…).
     Label { text: qsTr("Spots shown"); color: Theme.textDim; font.pixelSize: Theme.px(16) }
-    RowLayout {
+    // Six sources since 136 (RBN, PSK Reporter): one row where they fit,
+    // else two of three.
+    GridLayout {
         Layout.fillWidth: true
+        columns: width >= 6 * 64 ? 6 : 3
+        columnSpacing: Theme.spacing / 2
+        rowSpacing: Theme.spacing / 2
         Repeater {
-            model: [{ key: "cluster", label: qsTr("Cluster") }, { key: "pota", label: "POTA" },
+            model: [{ key: "cluster", label: qsTr("Cluster") }, { key: "rbn", label: "RBN" },
+                    { key: "psk", label: "PSKR" }, { key: "pota", label: "POTA" },
                     { key: "wwff", label: "WWFF" }, { key: "other", label: qsTr("Other") }]
             delegate: AppButton {
                 id: spotsShowButton
@@ -88,6 +94,8 @@ ColumnLayout {
             if (shown.indexOf("cluster") >= 0 && !(c.cluster > 0) && Engine.dxCluster.state !== "connected") out.push(qsTr("Cluster"))
             if (shown.indexOf("pota") >= 0 && !(c.pota > 0) && !Engine.parkSpots.pota) out.push("POTA")
             if (shown.indexOf("wwff") >= 0 && !(c.wwff > 0) && !Engine.parkSpots.wwff) out.push("WWFF")
+            if (shown.indexOf("rbn") >= 0 && !(c.rbn > 0) && !(Engine.spotFeeds.rbn && Engine.dxCluster.state === "connected")) out.push("RBN")
+            if (shown.indexOf("psk") >= 0 && !(c.psk > 0) && !Engine.spotFeeds.psk) out.push("PSKR")
             return out
         }
         visible: missing.length > 0
@@ -100,7 +108,7 @@ ColumnLayout {
     Label {
         objectName: "spotsShownHint"
         Layout.fillWidth: true
-        text: qsTr("Spots are the radio's, from every program on it. Cluster: a DX cluster's. Other: the rest, such as RBN / CW Skimmer, WSJT-X and FreeDV Reporter from the desktop AetherSDR, N1MM+, Log4OM or SpotCollector.")
+        text: qsTr("Spots are the radio's, from every program on it. Cluster: a DX cluster's. RBN: the Reverse Beacon Network's skimmers. PSKR: PSK Reporter's digital reports. Other: the rest, such as WSJT-X and FreeDV Reporter from the desktop AetherSDR, N1MM+, Log4OM or SpotCollector.")
         color: Theme.textDim
         font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
@@ -173,10 +181,46 @@ ColumnLayout {
         Layout.fillWidth: true
         // What this device reads, all three (the user: the button said only
         // the cluster's state).
-        text: qsTr("Spot sources: DX cluster %1 · POTA %2 · WWFF %3…")
+        text: qsTr("Spot sources: Cluster %1 · RBN %2 · PSKR %3 · POTA %4 · WWFF %5…")
               .arg(Engine.dxCluster.state === "connected" ? "✓" : (Engine.dxCluster.state === "connecting" ? "…" : "–"))
+              .arg(Engine.spotFeeds.rbn ? "✓" : "–").arg(Engine.spotFeeds.psk ? "✓" : "–")
               .arg(Engine.parkSpots.pota ? "✓" : "–").arg(Engine.parkSpots.wwff ? "✓" : "–")
         focusPolicy: Qt.NoFocus
         onClicked: Engine.openSetup(12)
+    }
+
+    // ---- Heard me (roadmap 136): who heard this station, by band ----
+    Label {
+        text: qsTr("Heard me (last 30 min)")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(16)
+        Layout.topMargin: Theme.spacing
+    }
+    Repeater {
+        model: Engine.heardMe
+        delegate: Label {
+            required property var modelData
+            objectName: "heardMe_" + modelData.band
+            Layout.fillWidth: true
+            // 20m FT8: 34 heard you · farthest VK3XX 15800 km · best +5 dB (OH1XX) · 2 min ago
+            text: qsTr("%1 %2: %3 heard you").arg(modelData.band).arg(modelData.modes).arg(modelData.count)
+                  + (modelData.farKm > 0 ? qsTr(" · farthest %1 %2 km").arg(modelData.farCall).arg(modelData.farKm) : "")
+                  + (modelData.bestSnr > -999 ? qsTr(" · best %1 dB (%2)").arg(modelData.bestSnr > 0 ? "+" + modelData.bestSnr : modelData.bestSnr).arg(modelData.bestCall) : "")
+                  + (modelData.agoMin > 0 ? qsTr(" · %1 min ago").arg(modelData.agoMin) : qsTr(" · now"))
+            color: Theme.text
+            font.pixelSize: Theme.px(14)
+            wrapMode: Text.WordWrap
+        }
+    }
+    Label {
+        objectName: "heardMeNone"
+        Layout.fillWidth: true
+        visible: Engine.heardMe.length === 0
+        text: Engine.spotFeeds.heardMe
+              ? qsTr("Nobody yet: call CQ (CW, RTTY, FT8 or FT4) and the stations that hear you show here, from RBN's skimmers and PSK Reporter.")
+              : qsTr("Off: turn on Heard me in Spot sources… below.")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.WordWrap
     }
 }

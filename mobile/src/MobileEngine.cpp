@@ -1,4 +1,5 @@
 #include "MobileEngine.h"
+#include "MiniMqtt.h"
 #include "MobileWorkspace.h"
 
 #ifdef HAVE_MIDI
@@ -639,6 +640,7 @@ MobileEngine::MobileEngine(QObject* parent)
     setupPttKey();
     setupDocumentPicker();
     setupSpotAlerts();
+    setupSpotFeeds();
     // Roadmap 134: the spot rows left the View tab for a Spots tab; a pinned
     // View brings the Spots tab beside it once, so a tablet's pinned panel
     // keeps showing them.
@@ -8242,6 +8244,16 @@ void MobileEngine::setupDxCluster()
         if (lifetime <= 0) {
             lifetime = settings.value(QStringLiteral("DxClusterSpotLifetime"), 30).toInt() * 60;
         }
+        // A skimmer's (spotter CALL-#): the Reverse Beacon Network's, through
+        // the cluster (roadmap 136); this station's own call goes to Heard
+        // me, not onto the radio.
+        if (spot.spotterCall.trimmed().endsWith(QLatin1String("-#"))) {
+            if (!noteRbnSpot(spot.dxCall, spot.freqMhz, spot.spotterCall, spot.comment)) {
+                queueRadioSpot(spot.dxCall, spot.freqMhz, QStringLiteral("RBN"), spot.spotterCall, spot.comment,
+                               std::min(lifetime, 600), QStringLiteral("#8FBCDB"));
+            }
+            return;
+        }
         const QString color = spot.color.isEmpty()
             ? settings.value(QStringLiteral("DxClusterSpotColor"), QStringLiteral("#D2B48C")).toString()
             : spot.color;
@@ -8494,8 +8506,8 @@ QVariantList MobileEngine::spots() const
 // app's and the desktop's DX cluster send DXCluster, the park spots POTA
 // and WWFF; anything else (SmartSDR's, another program's) is "other".
 namespace {
-const QStringList kSpotSources = {QStringLiteral("cluster"), QStringLiteral("pota"), QStringLiteral("wwff"),
-                                  QStringLiteral("other")};
+const QStringList kSpotSources = {QStringLiteral("cluster"), QStringLiteral("rbn"), QStringLiteral("psk"),
+                                  QStringLiteral("pota"), QStringLiteral("wwff"), QStringLiteral("other")};
 const QString kSpotSourcesKey = QStringLiteral("MobileSpotSources");
 } // namespace
 
@@ -8503,6 +8515,14 @@ QString MobileEngine::spotSourceKind(const QString& source)
 {
     if (source.compare(QLatin1String("DXCluster"), Qt::CaseInsensitive) == 0) {
         return QStringLiteral("cluster");
+    }
+    // Roadmap 136: skimmer spots (this app's through the cluster, the
+    // desktop's straight from RBN) and PSK Reporter's.
+    if (source.compare(QLatin1String("RBN"), Qt::CaseInsensitive) == 0) {
+        return QStringLiteral("rbn");
+    }
+    if (source.compare(QLatin1String("PSKReporter"), Qt::CaseInsensitive) == 0) {
+        return QStringLiteral("psk");
     }
     if (source.compare(QLatin1String("POTA"), Qt::CaseInsensitive) == 0) {
         return QStringLiteral("pota");
@@ -8555,8 +8575,8 @@ void MobileEngine::setSpotSourceShown(const QString& source, bool shown)
 
 QVariantMap MobileEngine::spotCounts() const
 {
-    QVariantMap counts{{QStringLiteral("cluster"), 0}, {QStringLiteral("pota"), 0}, {QStringLiteral("wwff"), 0},
-                       {QStringLiteral("other"), 0}};
+    QVariantMap counts{{QStringLiteral("cluster"), 0}, {QStringLiteral("rbn"), 0}, {QStringLiteral("psk"), 0},
+                       {QStringLiteral("pota"), 0}, {QStringLiteral("wwff"), 0}, {QStringLiteral("other"), 0}};
     if (!m_connected) {
         return counts;
     }
@@ -8726,6 +8746,15 @@ bool MobileEngine::queueRadioSpot(const QString& call, double freqMhz, const QSt
 {
     if (!m_connected || call.trimmed().isEmpty() || freqMhz <= 0.0) {
         return false;
+    }
+    // Already on the radio from anywhere (this app's other source, the
+    // user's other devices, SmartSDR, another program): the same call
+    // within 1 kHz is not added again (roadmap 136, the user: "ettei
+    // turhaan tuoda samoja spotteja monesta paikasta").
+    for (const SpotData& s : m_session.radioModel().spotModel().spots()) {
+        if (std::abs(s.rxFreqMhz - freqMhz) < 0.001 && s.callsign.compare(call.trimmed(), Qt::CaseInsensitive) == 0) {
+            return false;
+        }
     }
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
     const auto seen = m_dxSeen.constFind(call);
@@ -10181,6 +10210,9 @@ void MobileEngine::onConnectionStateChanged(bool connected)
     emit memoriesChanged();
     emit tnfsChanged();
     if (!connected) {
+        if (m_pskMqtt) {
+            m_pskMqtt->stop();
+        }
         stopVoicePreview();
         releasePaddles();
         if (m_iambicKeyer) {
@@ -10225,6 +10257,9 @@ void MobileEngine::onConnectionStateChanged(bool connected)
         setKeepScreenAwake(true);
         watchHeadsetLink();
         setConnectionState(QStringLiteral("connected"));
+        // PSK Reporter's feed (roadmap 136) once the radio's status has
+        // brought its callsign.
+        QTimer::singleShot(4000, this, [this] { updatePskFeed(); });
         noteSavedRadioName();
         selectActiveSlice();
         // A slice RADE left muted when the app last went away.
