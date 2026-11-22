@@ -1606,7 +1606,7 @@ seven.
     decoder keeps listening with the app in the background: `[away 20:55]`
     and `[back 21:12]` mark what came while you were away. A callsign the decoder hears after *DE*, or twice, is
     offered above the memories (*Call*) and on the Log tab (*Heard in CW*).
-- **View** — what is used while operating (since build 201; the settings
+- **View** — what is used while operating (since build 202; the settings
   changed seldom moved to [Radio Setup](#9-radio-setup), one button each):
   **Big buttons** (see [Big buttons](#big-buttons)), **Layout** (tablets:
   Classic and your own layouts, Edit, New; see [Own layouts](#own-layouts)),
@@ -1631,7 +1631,7 @@ seven.
   - **Spot filters** — which spots show: *All*, *CW*, *Phone* or *Digital*
     (by the spot's mode, else its comment or the band plan, as on the
     desktop), and *Any age* or only those from the last 5, 15 or 30
-    minutes. **From** (since build 201): *Anywhere*, your continent (*EU*)
+    minutes. **From** (since build 202): *Anywhere*, your continent (*EU*)
     or your country (*OH*, by the radio's callsign): only spots given by a
     spotter there, since a station spotted near you is one you can hear;
     a spotter whose place is not known passes. It holds for the alerts
@@ -1760,7 +1760,7 @@ seven.
   *Delete it*. It changes this device's log and the shared ADIF file (if
   one is chosen, since build 200); the dialog closes at once and *Saving
   the change…* shows under the list until the file is written (a large
-  log no longer holds the screen, since build 201); a contact that already went to Wavelog /
+  log no longer holds the screen, since build 202); a contact that already went to Wavelog /
   Cloudlog, the QRZ.com logbook, Logger32 or the logging program is not
   changed there (the dialog names the ones set up), so change it there
   too. A new call drops the old call's looked-up name and
@@ -1776,7 +1776,7 @@ seven.
   the cluster may hide your own spots). Without the cluster connected
   Spot is dimmed, and a tap says where to turn it on. Spot only stations
   you hear. **Share the log
-  (ADIF)**, in Setup › Logging since build 201 (**Logbooks…** below opens
+  (ADIF)**, in Setup › Logging since build 202 (**Logbooks…** below opens
   it), opens the share sheet with the whole log as an `.adi` file: mail
   it, save it to Files or Drive, AirDrop it, or open it in your logbook
   program or TQSL for LoTW; the log file's place is under it. Under the recent contacts a line says where
@@ -1795,7 +1795,7 @@ seven.
   mail, a USB cable to Downloads); in the picker, the menu or Browse
   leads to those places. On Android the button opens Android's own file
   picker, which offers Google Drive, OneDrive, Dropbox and the phone's
-  storage alike (before build 201 a file from a cloud drive could not be
+  storage alike (before build 202 a file from a cloud drive could not be
   chosen there; the same for **Choose…** below, an app setup's
   **Import** and a MIDI map's). A big logbook (tens of thousands of contacts, tested with
   120 000) imports in a few seconds while the display goes on, and the log
@@ -2507,7 +2507,7 @@ seven.
 radio's own settings — the ones a radio needs on first use, as in SmartSDR's
 and the desktop AetherSDR's Radio Setup; every change to those is written to
 the radio. It also holds this device's own settings that are changed
-seldom: Logging, MIDI, the amplifiers' addresses, and since build 201
+seldom: Logging, MIDI, the amplifiers' addresses, and since build 202
 **App**, **Spots**, **FTx** and the first parts of **Transmit** (the PTT
 key) and **Phone/CW** (the keying), moved there from the Controls tabs so
 the tabs keep what is used while operating (the user's request). Each of
@@ -2751,7 +2751,7 @@ tab holds.
   Cloudlog, the QRZ.com Logbook, the shared ADIF file, Logger32 and the
   logging program, as described under [Controls › Log](#8-controls)), and
   at the top **Share the log (ADIF)** with the log file's place (from the
-  Log tab since build 201). The Log tab's **Logbooks…** opens this tab.
+  Log tab since build 202). The Log tab's **Logbooks…** opens this tab.
 
   ![Setup › Logging](manual/setup-logging.jpg)
 - **MIDI** — not a setting of the radio: a MIDI controller as a VFO knob
@@ -2843,7 +2843,7 @@ tab holds.
 
   ![Radio Setup › MIDI](manual/setup-midi.jpg)
 - **App** — not a setting of the radio: how this app looks and behaves on
-  this device (from the View tab since build 201; its **Theme, text size,
+  this device (from the View tab since build 202; its **Theme, text size,
   band plan…** opens this tab): **Theme** (*Dark*, *Light* or *Auto*, see
   [Light theme](#light-theme)), **Text size** (*System* follows the system's text size —
   iOS Settings › Display & Brightness › Text Size, Android's font size —
@@ -2901,7 +2901,7 @@ tab holds.
 
     ![Setup › Spots › Park spots](manual/park-spots.jpg)
 
-  - **Spot alerts** (since build 201; the user's idea) — **Watch list**:
+  - **Spot alerts** (since build 202; the user's idea) — **Watch list**:
     calls you hunt, separated by commas, `*` for any characters
     (*VK9XY, 3Y0\**; a pattern is the whole call: *3Y0\** is 3Y0J, not
     K3Y0X). **Needed DXCC**: *Off*, *On the band* (a DXCC not yet in the
@@ -2922,7 +2922,7 @@ tab holds.
 
   ![Radio Setup › Spots](manual/setup-spots.jpg)
 - **FTx** — not a setting of the radio: FT8 / FT4 in this app (from the
-  FTx tab since build 201; the FTx tab's settings button opens this tab):
+  FTx tab since build 202; the FTx tab's settings button opens this tab):
   **Auto stops after … min untouched** (the presence limit), **Answer CQ
   calls each station … times** and **Report to PSK Reporter**, as
   described under [Controls › FTx](#8-controls).
@@ -2944,7 +2944,7 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 | You see | Why | What to do |
 |---|---|---|
 | **No slice** (frequency 0.000.000) | The radio did not give the app a slice. The app first retries once on a fresh panadapter; if it still fails, the radio's slices may all be in use by other programs | **Stations…** shows them; close a slice there or disconnect it, then **Try again** |
-| *The radio did not give this app a panadapter* | The radio's panadapters are all in use by your other devices or programs (each device shows one, but empty ones left by closed slices held theirs before build 201) | On the other device: **Close N other pans**, or close a panadapter in SmartSDR; then connect again |
+| *The radio did not give this app a panadapter* | The radio's panadapters are all in use by your other devices or programs (each device shows one, but empty ones left by closed slices held theirs before build 202) | On the other device: **Close N other pans**, or close a panadapter in SmartSDR; then connect again |
 | *No slice transmits* | No slice has transmit | Press and hold a slice → **Make TX slice** |
 | *Interlock / did not accept the transmit request* | The radio refused to transmit; its reason is shown | Check TX antenna, band, other clients |
 | A band button opens another band | The radio's band stack (in its global profile) holds that frequency | Tune the band where you want it and save the profile |
@@ -3003,7 +3003,7 @@ T, Shift + T and A transmit, so the transmit lock (TX tab › Lock) holds
 them as it holds PTT and TUNE.
 
 **PTT key** (Setup › Transmit, this device's part: the TX tab's **PTT
-key…** opens it; since build 200, in the TX tab until build 201; thanks Rob Metallo VA3MET):
+key…** opens it; since build 200, in the TX tab before build 202; thanks Rob Metallo VA3MET):
 any key a button sends can be PTT, for a handset's side PTT key, a
 Bluetooth button or a foot switch that acts as a keyboard. Tap **Learn**,
 then press the button: its key shows beside *PTT key* (Esc cancels).
