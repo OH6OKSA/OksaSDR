@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.input.InputManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.system.ErrnoException;
@@ -45,6 +46,7 @@ public class OksaActivity extends QtActivity {
             manager.addTouchExplorationStateChangeListener(OksaActivity::follow);
         }
         super.onCreate(savedInstanceState);
+        current = this;
         InputManager input = (InputManager) getSystemService(Context.INPUT_SERVICE);
         if (input != null) {
             input.registerInputDeviceListener(dialWatch, null);
@@ -76,7 +78,61 @@ public class OksaActivity extends QtActivity {
         } catch (IllegalArgumentException e) {
             // never registered
         }
+        if (current == this) {
+            current = null;
+        }
         super.onDestroy();
+    }
+
+    // A file to open from any provider (roadmap 129): Android's own picker.
+    // Qt 6.12's QML FileDialog keeps only the phone's own storage's files
+    // (its content: URLs count as local), so a Google Drive, OneDrive,
+    // Dropbox or Nextcloud file chosen there was dropped. The URL goes back
+    // to C++ as it is; read, write and a lasting grant are offered, so the
+    // shared ADIF file can take its grant as before.
+    private static final int PICK_DOCUMENT = 0x129;
+    private static volatile OksaActivity current;
+    private static int pickPurpose = 0;
+    private static native void documentPicked(int purpose, String uri);
+
+    public static boolean pickDocument(int purpose) {
+        final OksaActivity activity = current;
+        if (activity == null) {
+            return false;
+        }
+        activity.runOnUiThread(() -> {
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("*/*");
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                            | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+            pickPurpose = purpose;
+            try {
+                activity.startActivityForResult(intent, PICK_DOCUMENT);
+            } catch (RuntimeException e) {
+                Log.w(TAG, "file picker: " + e);
+                picked(purpose, "");
+            }
+        });
+        return true;
+    }
+
+    private static void picked(int purpose, String uri) {
+        try {
+            documentPicked(purpose, uri);
+        } catch (UnsatisfiedLinkError e) {
+            Log.w(TAG, "file picker: no bridge to C++: " + e);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == PICK_DOCUMENT) {
+            Uri uri = resultCode == RESULT_OK && data != null ? data.getData() : null;
+            picked(pickPurpose, uri != null ? uri.toString() : "");
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     // A Ulanzi Dial (D100H, roadmap 83): a Bluetooth keyboard whose knob

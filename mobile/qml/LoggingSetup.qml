@@ -15,6 +15,36 @@ ColumnLayout {
     property var defaults: Engine.qsoDefaults()
     onVisibleChanged: if (visible) defaults = Engine.qsoDefaults()
 
+    // Android's picker answers every copy of this page: only the one that
+    // asked takes the file.
+    property string picking: ""
+    function pick(purpose, dialog) {
+        if (Engine.pickDocument(purpose)) {
+            picking = purpose
+        } else {
+            dialog.open()
+        }
+    }
+    function importFrom(url) {
+        importResult.text = qsTr("Importing…")
+        Engine.importAdif(url)
+    }
+    // Android's own picker (roadmap 129: QML's FileDialog there dropped a
+    // file from Google Drive, OneDrive and the like) answers here, as the
+    // dialogs below do elsewhere.
+    Connections {
+        target: Engine
+        function onDocumentPicked(purpose, url) {
+            if (purpose !== loggingSetup.picking) return
+            loggingSetup.picking = ""
+            if (purpose === "adifImport") {
+                loggingSetup.importFrom(url)
+            } else if (purpose === "sharedAdif") {
+                Engine.setSharedAdif(url)
+            }
+        }
+    }
+
     // Contacts from another logbook (or another device's OksaSDR log): an
     // ADIF file; contacts already in the log are skipped.
     AppButton {
@@ -23,7 +53,8 @@ ColumnLayout {
         Layout.preferredHeight: Theme.touchTarget
         text: qsTr("Import contacts (ADIF)")
         focusPolicy: Qt.NoFocus
-        onClicked: importDialog.open()
+        // Android: its own picker, which can give a Drive file (129).
+        onClicked: loggingSetup.pick("adifImport", importDialog)
     }
     Label {
         id: importResult
@@ -43,10 +74,7 @@ ColumnLayout {
         // (Kurt DL5EAG). The import tells an ADIF file by its contents.
         nameFilters: Qt.platform.os === "android" ? []
                      : [qsTr("ADIF files (*.adi *.adif *.ADI)"), qsTr("All files (*)")]
-        onAccepted: {
-            importResult.text = qsTr("Importing…")
-            Engine.importAdif(selectedFile)
-        }
+        onAccepted: loggingSetup.importFrom(selectedFile)
     }
     Connections {
         target: Engine
@@ -363,7 +391,7 @@ ColumnLayout {
             objectName: "sharedAdifPick"
             text: Engine.sharedAdif.set === true ? qsTr("Change") : qsTr("Choose…")
             focusPolicy: Qt.NoFocus
-            onClicked: sharedDialog.open()
+            onClicked: loggingSetup.pick("sharedAdif", sharedDialog)
         }
         AppButton {
             objectName: "sharedAdifRemove"

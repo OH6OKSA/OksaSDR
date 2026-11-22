@@ -64,6 +64,7 @@ qt_add_executable(aether-mobile
     src/MobileEngineMidi.cpp
     src/MobileEngineUlanzi.cpp
     src/MobileEnginePttKey.cpp
+    src/MobileEnginePicker.cpp
     src/MobileEngineDigitalMax.cpp
     src/MobileEngineAmp.cpp
     src/MobileEngineKpa.cpp

@@ -2163,7 +2163,11 @@ Popup {
                                 text: qsTr("Import a map…")
                                 focusPolicy: Qt.NoFocus
                                 Layout.fillWidth: true
-                                onClicked: midiImportDialog.open()
+                                // Android: its own picker, which can give a Drive file (129).
+                                onClicked: {
+                                    midiImportDialog.picking = Engine.pickDocument("midiImport")
+                                    if (!midiImportDialog.picking) midiImportDialog.open()
+                                }
                             }
                             AppButton {
                                 objectName: "midiClearAll"
@@ -2301,6 +2305,16 @@ Popup {
                         nameFilters: Qt.platform.os === "ios" || Qt.platform.os === "android" ? []
                                      : [qsTr("MIDI maps (*.map *.xml)"), qsTr("All files (*)")]
                         onAccepted: Engine.midiImport(selectedFile)
+                        // Android's own picker asked instead (129).
+                        property bool picking: false
+                    }
+                    Connections {
+                        target: Engine
+                        function onDocumentPicked(purpose, url) {
+                            if (purpose !== "midiImport" || !midiImportDialog.picking) return
+                            midiImportDialog.picking = false
+                            Engine.midiImport(url)
+                        }
                     }
                 }
 

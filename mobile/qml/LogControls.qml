@@ -524,6 +524,16 @@ ColumnLayout {
             onClicked: Engine.openSetup(10)
         }
     }
+    // An edit or deletion being written (roadmap 130): the list follows
+    // when it is done, and no contact opens meanwhile.
+    Label {
+        objectName: "logSaving"
+        visible: Engine.qsoLogBusy
+        Layout.fillWidth: true
+        text: qsTr("Saving the change…")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(13)
+    }
     // A tap on a contact opens it to edit or delete (roadmap 78).
     Repeater {
         model: Engine.recentQsos.slice(0, 10)
@@ -544,8 +554,11 @@ ColumnLayout {
             bottomPadding: 4
             Accessible.role: Accessible.Button
             Accessible.name: qsTr("Edit %1").arg(modelData.CALL)
-            Accessible.onPressAction: qsoEdit.ask(modelData)
-            TapHandler { onTapped: qsoEdit.ask(modelData) }
+            Accessible.onPressAction: if (!Engine.qsoLogBusy) qsoEdit.ask(modelData)
+            TapHandler {
+                enabled: !Engine.qsoLogBusy
+                onTapped: qsoEdit.ask(modelData)
+            }
         }
     }
 

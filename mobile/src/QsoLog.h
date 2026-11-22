@@ -78,9 +78,15 @@ public:
     // whose CALL, QSO_DATE, TIME_ON, BAND, MODE and FREQ equal match's is
     // replaced by replacement, or removed when replacement is empty. The
     // file is written anew in one safe write, every other record as it
-    // was, then copied to the mirror and read back. False when no record
-    // matches or the file cannot be written.
-    bool replaceRecord(const QVariantMap& match, const QVariantMap& replacement);
+    // was, then copied to the mirror; from any thread (roadmap 130: with
+    // the read back that followed, a 17937-contact log held the GUI thread
+    // for 3.5 s). False when no record matches or the file cannot be
+    // written.
+    static bool replaceInFile(const QString& path, const QString& mirror, const QVariantMap& match,
+                              const QVariantMap& replacement, bool* mirrorOk);
+    // The same change in the log in memory, once replaceInFile is done:
+    // the newest entry and recent record that are the contact.
+    void applyReplace(const QVariantMap& match, const QVariantMap& replacement, bool mirrorOk);
     // The same on ADIF bytes, for another file (the shared ADIF file,
     // roadmap 123: loose = the time by hours and minutes, no frequency).
     static bool replaceInAdif(const QByteArray& data, const QVariantMap& match, const QVariantMap& replacement,

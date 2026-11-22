@@ -344,31 +344,59 @@ bool QsoLog::replaceInAdif(const QByteArray& data, const QVariantMap& match, con
     return true;
 }
 
-bool QsoLog::replaceRecord(const QVariantMap& match, const QVariantMap& replacement)
+bool QsoLog::replaceInFile(const QString& path, const QString& mirror, const QVariantMap& match,
+                           const QVariantMap& replacement, bool* mirrorOk)
 {
-    {
-        QMutexLocker lock(&fileMutex());
-        QFile in(m_path);
-        if (!in.open(QIODevice::ReadOnly)) {
-            return false;
-        }
-        const QByteArray data = in.readAll();
-        in.close();
-        QByteArray out;
-        if (!replaceInAdif(data, match, replacement, false, &out)) {
-            return false;
-        }
-        QSaveFile save(m_path);
-        if (!save.open(QIODevice::WriteOnly) || save.write(out) != out.size() || !save.commit()) {
-            return false;
-        }
-        m_mirrorOk = copyMirror(m_path, m_mirrorPath);
+    QMutexLocker lock(&fileMutex());
+    QFile in(path);
+    if (!in.open(QIODevice::ReadOnly)) {
+        return false;
     }
-    // Read back whole: worked before and the list from the file as it is.
-    Loaded loaded = read(m_path);
-    m_entries = std::move(loaded.entries);
-    m_recent = std::move(loaded.recent);
+    const QByteArray data = in.readAll();
+    in.close();
+    QByteArray out;
+    if (!replaceInAdif(data, match, replacement, false, &out)) {
+        return false;
+    }
+    QSaveFile save(path);
+    if (!save.open(QIODevice::WriteOnly) || save.write(out) != out.size() || !save.commit()) {
+        return false;
+    }
+    const bool copied = copyMirror(path, mirror);
+    if (mirrorOk) {
+        *mirrorOk = copied;
+    }
     return true;
+}
+
+void QsoLog::applyReplace(const QVariantMap& match, const QVariantMap& replacement, bool mirrorOk)
+{
+    // No read back of the whole file (814 ms for 17937 contacts on a phone),
+    // and no race with a contact logged meanwhile: the file's change made
+    // here too, as replaceInAdif made it there (the newest that matches).
+    const QsoEntry old = entryOf(match);
+    for (qsizetype i = m_entries.size() - 1; i >= 0; --i) {
+        const QsoEntry& e = m_entries.at(i);
+        if (e.call == old.call && e.date == old.date && e.time == old.time && e.band == old.band && e.mode == old.mode) {
+            if (replacement.isEmpty()) {
+                m_entries.removeAt(i);
+            } else {
+                m_entries[i] = entryOf(replacement);
+            }
+            break;
+        }
+    }
+    for (qsizetype i = m_recent.size() - 1; i >= 0; --i) {
+        if (sameContact(m_recent.at(i), match)) {
+            if (replacement.isEmpty()) {
+                m_recent.removeAt(i);
+            } else {
+                m_recent[i] = replacement;
+            }
+            break;
+        }
+    }
+    m_mirrorOk = mirrorOk;
 }
 
 void QsoLog::addWritten(const QList<QsoEntry>& entries, const QList<QVariantMap>& newest, bool mirrorOk)

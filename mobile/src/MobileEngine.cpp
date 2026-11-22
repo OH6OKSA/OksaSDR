@@ -637,6 +637,7 @@ MobileEngine::MobileEngine(QObject* parent)
     setupMidi();
     setupUlanzi();
     setupPttKey();
+    setupDocumentPicker();
     applyColorScheme();
     // Auto follows the device switching its appearance (125).
     connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, [this](Qt::ColorScheme scheme) {
@@ -1280,8 +1281,18 @@ MobileEngine::MobileEngine(QObject* parent)
             setLastError(tr("The radio allows %1 slices.").arg(limit));
         }
     });
+    // A panadapter refused (roadmap 127 b): at the start the app then has
+    // nothing to show, so say why and what helps, as for a slice. The
+    // user's Android phone showed only "allows 4" while his iPad held all
+    // four (three empty ones left by closed slices).
     connect(&rm, &RadioModel::panadapterLimitReached, this, [this](int limit, const QString&) {
-        setLastError(tr("The radio allows %1 panadapters.").arg(limit));
+        if (m_session.radioModel().panadapters().isEmpty()) {
+            setLastError(tr("The radio did not give this app a panadapter. Its %1 panadapters may all be "
+                            "in use by other programs or your other devices (SmartSDR, another OksaSDR): "
+                            "close one there, then connect again.").arg(limit));
+        } else {
+            setLastError(tr("The radio allows %1 panadapters, and all are in use (here or by other programs).").arg(limit));
+        }
     });
     connect(&rm, &RadioModel::panadapterAdded, this, [this](PanadapterModel* pan) {
         sendPanDimensions(pan->panId());
@@ -7741,16 +7752,7 @@ bool MobileEngine::editQso(const QVariantMap& original, const QVariantMap& chang
         qCInfo(lcMobile).noquote() << "edited (dry run):" << QsoLog::adifRecord(r);
         return true;
     }
-    if (!m_qsoLog->replaceRecord(original, r)) {
-        setLastError(tr("Not saved: the contact was not found in the log file, or the file could not be written."));
-        return false;
-    }
-    qCInfo(lcMobile).noquote() << QStringLiteral("QSO edited: %1 %2 %3 (was %4 %5 %6)")
-                                      .arg(call, date, time, original.value(QStringLiteral("CALL")).toString(),
-                                           original.value(QStringLiteral("QSO_DATE")).toString(), original.value(QStringLiteral("TIME_ON")).toString());
-    // The shared ADIF file follows (roadmap 123).
-    sharedAdifChange(original, r);
-    emit qsoLogChanged();
+    changeQsoLog(original, r);
     return true;
 }
 
@@ -7760,17 +7762,65 @@ bool MobileEngine::deleteQso(const QVariantMap& original)
         qCInfo(lcMobile).noquote() << "deleted (dry run):" << QsoLog::adifRecord(original);
         return true;
     }
-    if (!m_qsoLog->replaceRecord(original, {})) {
-        setLastError(tr("Not deleted: the contact was not found in the log file, or the file could not be written."));
-        return false;
-    }
-    qCInfo(lcMobile).noquote() << QStringLiteral("QSO deleted: %1 %2 %3")
-                                      .arg(original.value(QStringLiteral("CALL")).toString(),
-                                           original.value(QStringLiteral("QSO_DATE")).toString(), original.value(QStringLiteral("TIME_ON")).toString());
-    // The shared ADIF file follows (roadmap 123).
-    sharedAdifChange(original, {});
-    emit qsoLogChanged();
+    changeQsoLog(original, {});
     return true;
+}
+
+// A contact's edit or deletion written on a worker (roadmap 130): the whole
+// log is read and written again, and on the GUI thread that, with the read
+// back after it, held the screen for 3.5 s in the user's 17937-contact log.
+// The dialog closes at once; the log in memory, the list and the shared
+// ADIF file follow when the file is written, and the Log tab opens no
+// contact meanwhile (qsoLogBusy). A failure is said as before.
+void MobileEngine::changeQsoLog(const QVariantMap& original, const QVariantMap& replacement)
+{
+    const QString path = m_qsoLog->path();
+    const QString mirror = m_qsoLog->mirrorPath();
+    ++m_qsoChanges;
+    emit qsoLogBusyChanged();
+    QThread* worker = QThread::create([this, path, mirror, original, replacement] {
+        QElapsedTimer timer;
+        timer.start();
+        bool mirrorOk = false;
+        const bool ok = QsoLog::replaceInFile(path, mirror, original, replacement, &mirrorOk);
+        const qint64 ms = timer.elapsed();
+        QMetaObject::invokeMethod(this, [this, ok, mirrorOk, original, replacement, ms] {
+            --m_qsoChanges;
+            const bool del = replacement.isEmpty();
+            if (!ok) {
+                setLastError(del ? tr("Not deleted: the contact was not found in the log file, or the file could not be written.")
+                                 : tr("Not saved: the contact was not found in the log file, or the file could not be written."));
+                qCWarning(lcMobile).noquote() << (del ? "QSO not deleted:" : "QSO not edited:")
+                                              << original.value(QStringLiteral("CALL")).toString() << "(not found or not written)";
+                emit qsoLogBusyChanged();
+                return;
+            }
+            m_qsoLog->applyReplace(original, replacement, mirrorOk);
+            const QString was = QStringLiteral("%1 %2 %3").arg(original.value(QStringLiteral("CALL")).toString(),
+                                                               original.value(QStringLiteral("QSO_DATE")).toString(),
+                                                               original.value(QStringLiteral("TIME_ON")).toString());
+            if (del) {
+                qCInfo(lcMobile).noquote() << QStringLiteral("QSO deleted: %1 (written in %2 ms)").arg(was).arg(ms);
+            } else {
+                qCInfo(lcMobile).noquote() << QStringLiteral("QSO edited: %1 %2 %3 (was %4; written in %5 ms)")
+                                                  .arg(replacement.value(QStringLiteral("CALL")).toString(),
+                                                       replacement.value(QStringLiteral("QSO_DATE")).toString(),
+                                                       replacement.value(QStringLiteral("TIME_ON")).toString(), was)
+                                                  .arg(ms);
+            }
+            // The shared ADIF file follows (roadmap 123).
+            sharedAdifChange(original, replacement);
+            emit qsoLogChanged();
+            emit qsoLogBusyChanged();
+        }, Qt::QueuedConnection);
+    });
+    connect(worker, &QThread::finished, worker, &QObject::deleteLater);
+    worker->start();
+}
+
+bool MobileEngine::qsoLogBusy() const
+{
+    return m_qsoChanges > 0;
 }
 
 // Where a logged contact may also have gone: the logbooks set up here,

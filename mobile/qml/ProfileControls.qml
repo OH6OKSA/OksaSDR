@@ -180,7 +180,11 @@ ColumnLayout {
                 text: qsTr("Import")
                 focusPolicy: Qt.NoFocus
                 Layout.fillWidth: true
-                onClicked: importSetup.open()
+                // Android: its own picker, which can give a Drive file (129).
+                onClicked: {
+                    profiles.picking = Engine.pickDocument("appSetup")
+                    if (!profiles.picking) importSetup.open()
+                }
             }
             AppButton {
                 objectName: "appSetupDelete"
@@ -220,9 +224,21 @@ ColumnLayout {
         // Android without a filter, as the ADIF import (Kurt DL5EAG).
         nameFilters: Qt.platform.os === "android" ? []
                      : [qsTr("OksaSDR setups (*.json)"), qsTr("All files (*)")]
-        onAccepted: {
-            const r = Engine.importAppSetup(selectedFile)
-            setups.show(r, qsTr("Imported “%1”: pick it above to use it.").arg(r.name))
+        onAccepted: profiles.importSetupFrom(selectedFile)
+    }
+    function importSetupFrom(url) {
+        const r = Engine.importAppSetup(url)
+        setups.show(r, qsTr("Imported “%1”: pick it above to use it.").arg(r.name))
+    }
+    // Android's picker answers every copy of this tab: only the one that
+    // asked takes the file.
+    property bool picking: false
+    Connections {
+        target: Engine
+        function onDocumentPicked(purpose, url) {
+            if (purpose !== "appSetup" || !profiles.picking) return
+            profiles.picking = false
+            profiles.importSetupFrom(url)
         }
     }
 

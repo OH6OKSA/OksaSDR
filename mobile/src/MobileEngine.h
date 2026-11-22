@@ -402,6 +402,8 @@ class MobileEngine : public QObject {
     // Dial frequencies of the protocol on each band: band, mhz.
     Q_PROPERTY(QVariantList digiFrequencies READ digiFrequencies NOTIFY digiChanged)
     Q_PROPERTY(int qsoCount READ qsoCount NOTIFY qsoLogChanged)
+    // An edit or deletion being written (roadmap 130).
+    Q_PROPERTY(bool qsoLogBusy READ qsoLogBusy NOTIFY qsoLogBusyChanged)
     Q_PROPERTY(QVariantMap callLookup READ callLookup NOTIFY callLookupChanged)
     Q_PROPERTY(QString lastSpotCall READ lastSpotCall NOTIFY lastSpotCallChanged)
     // The park of the spot tuned to last (POTA / WWFF and its reference, or
@@ -871,6 +873,10 @@ public:
     void setLayoutEditing(bool editing);
     // The learned key's press or release (PttKeyFilter, every window): true = taken.
     bool pttKeyEvent(QKeyEvent* event);
+    // A file to open through Android's own picker (roadmap 129): true when it
+    // opened (documentPicked follows), false where QML's FileDialog serves.
+    Q_INVOKABLE bool pickDocument(const QString& purpose);
+    void documentPickedNative(int purpose, const QString& uri);
     bool txLock() const;
     void setTxLock(bool on);
     bool txArmAtStart() const;
@@ -1323,6 +1329,7 @@ public:
     QVariantList memories() const;
     QVariantList recentQsos() const;
     int qsoCount() const;
+    bool qsoLogBusy() const;
     QVariantMap callLookup() const { return m_callLookup; }
     QString lastSpotCall() const { return m_lastSpotCall; }
     QString lastSpotSig() const { return m_lastSpotSig; }
@@ -2174,6 +2181,8 @@ signals:
     void textScaleChanged();
     void pttToggleChanged();
     void pttKeyChanged();
+    void documentPicked(const QString& purpose, const QUrl& url);
+    void qsoLogBusyChanged();
     void layoutEditingChanged();
     void txLockChanged();
     void audioCompressionChanged();
@@ -2890,6 +2899,7 @@ private:
     void applyColorScheme();
     // The learned PTT key (MobileEnginePttKey.cpp).
     void setupPttKey();
+    void setupDocumentPicker();
     void releasePttKey(const QString& why);
     bool ulanziOn() const;
     void ulanziEvent(const AetherSDR::UlanziChordDecoder::Event& event);
@@ -3408,6 +3418,9 @@ private:
     // back when the slice leaves DIGU / DIGL for voice.
     double m_digiPrevPanBw{0.0};
     bool m_importing{false};
+    // Edits and deletions of the log being written on workers (130).
+    int m_qsoChanges{0};
+    void changeQsoLog(const QVariantMap& original, const QVariantMap& replacement);
     // The decodes' median DT, smoothed: far from 0 means this device's
     // clock is off (FT8 needs it within about a second).
     double m_digiClockOffset{0.0};
