@@ -659,6 +659,7 @@ ColumnLayout {
             delegate: AppButton {
                 id: slotButton
                 required property var modelData
+                objectName: "dvkSlot_" + modelData.id
                 readonly property bool active: Engine.dvkActiveId === modelData.id && Engine.dvkState !== "idle"
                 text: "F" + modelData.id + "  " + modelData.name
                       + (modelData.seconds > 0 ? "  " + modelData.seconds.toFixed(1) + " s" : "")

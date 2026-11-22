@@ -41,6 +41,8 @@ ColumnLayout {
         { name: "ESSB", button: qsTr("eSSB"), title: qsTr("eSSB"), component: essbSection },
         { name: "CW", button: qsTr("CW"), title: qsTr("CW"), component: cwSection },
         { name: "View", button: qsTr("View"), title: qsTr("View"), component: viewSection },
+        // Roadmap 134: spots on a tab of their own (until build 203 on View).
+        { name: "Spots", button: qsTr("Spots"), title: qsTr("Spots"), component: spotsSection },
         { name: "Profiles", button: qsTr("Prof"), title: qsTr("Profiles"), component: profileSection },
         { name: "Memory", button: qsTr("Mem"), title: qsTr("Memory"), component: memorySection },
         { name: "Log", button: qsTr("Log"), title: qsTr("Log"), component: logSection },
@@ -407,6 +409,7 @@ ColumnLayout {
     Component { id: essbSection; EssbControls {} }
     Component { id: cwSection; CwControls {} }
     Component { id: viewSection; DisplayControls {} }
+    Component { id: spotsSection; SpotsControls {} }
     Component { id: profileSection; ProfileControls {} }
     Component { id: memorySection; MemoryControls {} }
     Component { id: logSection; LogControls {} }

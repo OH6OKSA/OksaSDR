@@ -193,7 +193,7 @@ fi
 if want "${layout_shots[@]}"; then
     {
         echo "wait $FILL"
-        printf 'pin 5\nshowname layoutEdit\ntapname layoutEdit\nwait 2000\na11y on\n'
+        printf 'pin View\nshowname layoutEdit\ntapname layoutEdit\nwait 2000\na11y on\n'
         printf 'a11ypress PTT block\ndragname edit:ptt:e 0.5,0.5 -427,0 700\nwait 400\n'
         printf 'a11ypress Steps block\ndragname edit:steps:e 0.5,0.5 -544,0 800\nwait 400\n'
         printf 'dragname edit:steps 0.5,0.5 544,69 800\nwait 400\ndragname edit:steps:s 0.5,0.5 0,28 500\nwait 400\n'
@@ -212,7 +212,7 @@ fi
 if want "${theme_shots[@]}"; then
     {
         echo "wait $FILL"
-        if want theme-light; then printf 'pin 5\ntheme light\nwait 1500\nshot theme-light\ntheme dark\nwait 800\n'; fi
+        if want theme-light; then printf 'pin View\ntheme light\nwait 1500\nshot theme-light\ntheme dark\nwait 800\n'; fi
         if want setup-app setup-spots setup-spot-alerts setup-ftx setup-phonecw setup-transmit; then printf 'popup radioSetup\nwait 800\n'; fi
         if want setup-app; then printf 'click setupTab11\nwait 1500\nshot setup-app\n'; fi
         if want setup-spots setup-spot-alerts; then printf 'click setupTab12\nwait 1500\n'; fi
@@ -238,7 +238,7 @@ if want "${phone_shots[@]}"; then
         echo "wait $FILL"
         if want phone-portrait; then echo "shot phone-portrait"; fi
         if want phone-menu; then printf 'tap 0.93,0.03\nshot phone-menu\nclose\n'; fi
-        if want memory-edit; then printf 'drawer 7\npopup memoryEditDialog\nshot memory-edit\nclose\n'; fi
+        if want memory-edit; then printf 'drawer Memory\npopup memoryEditDialog\nshot memory-edit\nclose\n'; fi
         popup_shot log-page logPage
         for i in "${!tabs[@]}"; do
             # The Digi tab's picture comes from the modes run (RTTY on).
@@ -249,7 +249,7 @@ if want "${phone_shots[@]}"; then
         # call typed (W1AW, ARRL's station: a public lookup), cancelled;
         # held Exit leaves.
         if want big-buttons big-buttons-log; then
-            printf 'drawer 5\ntapname bigButtonsOpen\nwait 1500\n'
+            printf 'drawer View\ntapname bigButtonsOpen\nwait 1500\n'
             if want big-buttons; then printf 'shot big-buttons\n'; fi
             if want big-buttons-log; then
                 printf 'tapname bigLog\nwait 800\nkeys W1AW\nwait 2500\nshot big-buttons-log\ntapname bigLogCancel\nwait 800\n'
@@ -261,12 +261,12 @@ if want "${phone_shots[@]}"; then
         # starts), the line with what the lists hold now, then off again and
         # the spots they put on the radio taken off.
         if want park-spots; then
-            printf 'drawer 5\nshowname openSpotsSetup\ntapname openSpotsSetup\nwait 1500\nshowname parkSpotsPOTA\ntapname parkSpotsPOTA\ntapname parkSpotsWWFF\nwait 5000\n'
+            printf 'drawer View\nshowname openSpotsSetup\ntapname openSpotsSetup\nwait 1500\nshowname parkSpotsPOTA\ntapname parkSpotsPOTA\ntapname parkSpotsWWFF\nwait 5000\n'
             printf 'showname parkSpotsStatus\nshot park-spots\ntapname parkSpotsPOTA\ntapname parkSpotsWWFF\nspottest clearparks\nwait 1500\nclose\nwait 600\n'
         fi
         # Hound on (it starts decoding), then off and decoding off again.
         if want ft8-hound; then
-            printf 'drawer 9\ntapname digiHound\nwait 2500\nshot ft8-hound\ntapname digiHoundOff\nwait 800\ntapname digiDecode\nwait 1500\n'
+            printf 'drawer Digi\ntapname digiHound\nwait 2500\nshot ft8-hound\ntapname digiHoundOff\nwait 800\ntapname digiDecode\nwait 1500\n'
         fi
     } | plan phone 440x956 "${src[@]}"
 fi
@@ -300,13 +300,13 @@ if want "${modes_shots[@]}"; then
         if want mode-fm fm-tx tx-lock; then
             printf 'freq 29.600\nmode FM\nwait 20000\n'
             if want mode-fm; then echo "shot mode-fm"; fi
-            printf 'drawer 2\nwait 1500\nscroll 0\nwait 800\nshot fm-tx\nscroll 650\nwait 800\nshot tx-lock\nclose\n'
+            printf 'drawer TX\nwait 1500\nscroll 0\nwait 800\nshot fm-tx\nscroll 650\nwait 800\nshot tx-lock\nclose\n'
         fi
         if want mode-rtty rtty-panel tab-rtty digi-operating; then
             printf 'freq 14.085\nmode RTTY\nwait 15000\n'
             echo "rttyfeed CQ CQ DE OH2XYZ OH2XYZ OH2XYZ PSE K"
             printf 'wait 8000\nshot mode-rtty\npopup rttyPanel\nwait 1500\nshot rtty-panel\nclose\n'
-            printf 'drawer 11\nwait 1500\nscroll 0\nwait 800\nshot tab-rtty\nscroll 200\nwait 800\nshot digi-operating\nclose\n'
+            printf 'drawer RTTY\nwait 1500\nscroll 0\nwait 800\nshot tab-rtty\nscroll 200\nwait 800\nshot digi-operating\nclose\n'
         fi
         if want mode-psk; then
             printf 'textmode PSK31\nwait 2000\nfreq 14.0695\nwait 15000\ntextclear\n'
@@ -346,7 +346,7 @@ if want "${amp_shots[@]}"; then
         # The radio's own USB cables, as they are (only shown, nothing set).
         if want setup-usb; then printf 'click setupTab8\nwait 2000\nshot setup-usb\n'; fi
         printf 'close\nwait 600\n'
-        if want tab-amp amp-controls amp-confirm amp-tune; then printf 'drawer 12\nwait 1500\nscroll 0\nwait 800\n'; fi
+        if want tab-amp amp-controls amp-confirm amp-tune; then printf 'drawer Amp\nwait 1500\nscroll 0\nwait 800\n'; fi
         if want tab-amp; then printf 'shot tab-amp\n'; fi
         if want amp-controls amp-confirm amp-tune; then printf 'showname ampReset\nwait 800\n'; fi
         if want amp-controls; then printf 'shot amp-controls\n'; fi
@@ -392,10 +392,10 @@ fi
 if want "${kpa_shots[@]}"; then
     {
         printf 'ready\nkpa %s:1500\nwait 4000\n' "${klan:-127.0.0.1}"
-        if want tab-kpa; then printf 'drawer 12\nwait 1500\nscroll 0\nwait 800\nshot tab-kpa\nclose\nwait 600\n'; fi
+        if want tab-kpa; then printf 'drawer Amp\nwait 1500\nscroll 0\nwait 800\nshot tab-kpa\nclose\nwait 600\n'; fi
         if want kpa-controls; then
             printf 'popup radioSetup\nwait 800\nclick setupTab7\nwait 1500\ntapname kpaControlOn\nwait 3000\nclose\nwait 600\n'
-            printf 'drawer 12\nwait 1500\nscroll -14\nwait 800\nshot kpa-controls\nclose\nwait 600\n'
+            printf 'drawer Amp\nwait 1500\nscroll -14\nwait 800\nshot kpa-controls\nclose\nwait 600\n'
         fi
         printf 'kpa off\nwait 1000\n'
     } | plan kpa 440x956 "${src[@]}"
@@ -420,11 +420,11 @@ fi
 if want "${elecraft_shots[@]}"; then
     {
         printf 'ready\nkpa500 127.0.0.1:12100\nkat500 127.0.0.1:12101\nkpa500 control on\nkat500 control on\nwait 5000\n'
-        if want tab-kpa500; then printf 'drawer 12\nwait 1500\nscroll 0\nwait 800\nshot tab-kpa500\nclose\nwait 600\n'; fi
+        if want tab-kpa500; then printf 'drawer Amp\nwait 1500\nscroll 0\nwait 800\nshot tab-kpa500\nclose\nwait 600\n'; fi
         # The KPA500's Power and Mode in the middle; the KAT500's controls
         # from its Power row down.
-        if want kpa500-controls; then printf 'drawer 12\nwait 1500\nscroll 0\nwait 500\nshowname ampOperateButton\nwait 800\nshot kpa500-controls\nclose\nwait 600\n'; fi
-        if want kat500-controls; then printf 'drawer 12\nwait 1500\nscroll -60\nwait 800\nshot kat500-controls\nclose\nwait 600\n'; fi
+        if want kpa500-controls; then printf 'drawer Amp\nwait 1500\nscroll 0\nwait 500\nshowname ampOperateButton\nwait 800\nshot kpa500-controls\nclose\nwait 600\n'; fi
+        if want kat500-controls; then printf 'drawer Amp\nwait 1500\nscroll -60\nwait 800\nshot kat500-controls\nclose\nwait 600\n'; fi
         if want setup-elecraft; then
             printf 'popup radioSetup\nwait 800\nclick setupTab7\nwait 1500\nscroll -14\nwait 800\nshot setup-elecraft\nclose\nwait 600\n'
         fi
@@ -487,7 +487,7 @@ wait 2000
 %s
 %s
 wait 4000
-drawer 12
+drawer Amp
 wait 2500
 scroll 0
 wait 800
@@ -518,7 +518,7 @@ if want macros; then
 fi
 # The Prof tab's App setups (roadmap 17), scrolled to them; nothing saved.
 if want app-setups; then
-    printf 'ready\ndrawer 6\nwait 1500\nscroll 2000\nwait 1000\nshot app-setups\nclose\nwait 600\n' \
+    printf 'ready\ndrawer Profiles\nwait 1500\nscroll 2000\nwait 1000\nshot app-setups\nclose\nwait 600\n' \
         | plan app-setups 440x956 "${src[@]}"
 fi
 # The tests end their runs: RADE on 10 s after the start, the picture at

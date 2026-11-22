@@ -73,7 +73,7 @@ echo "  slice A was $A_FREQ $A_MODE"
 # call field. On the page A runs the ATU and T tunes, so the transmit lock is
 # on while it types (the lock holds them as it holds PTT) and off again
 # before the picture (locked, PTT reads "SB hold to arm").
-LOG_SHOT='drawer 2\nwait 800\ntapname txLockOn\nwait 800\ndrawer 8\nwait 1500\ntapname logCall\nwait 600\nkeys W1AW\nwait 3500\ndrawer 2\nwait 800\ntapname txLockOff\nwait 800\ndrawer 8\nwait 1500\nshot %s\ntapname logCallClear\nwait 800\n'
+LOG_SHOT='drawer TX\nwait 800\ntapname txLockOn\nwait 800\ndrawer Log\nwait 1500\ntapname logCall\nwait 600\nkeys W1AW\nwait 3500\ndrawer TX\nwait 800\ntapname txLockOff\nwait 800\ndrawer Log\nwait 1500\nshot %s\ntapname logCallClear\nwait 800\n'
 # Radio Setup on its Transmit section (the Radio section names the radio and
 # this computer).
 SETUP_SHOT='popup radioSetup\nwait 800\nclick setupTab1\nwait 1500\nshot %s\nclose\n'
@@ -84,8 +84,8 @@ SETUP_SHOT='popup radioSetup\nwait 800\nclick setupTab1\nwait 1500\nshot %s\nclo
 # to the list at its end
 # ("pin": "drawer" would open the drawer over the pinned panel; the plan puts
 # the pinned sections back at its end).
-FTX_PHONE='wait 9000\ndrawer 9\nwait 1000\ntapname digiScrollList\ntapname fullControls\nwait 45000\nshot %s\ntapname fullControls\ntapname digiScrollTab\nwait 800\n'
-FTX_PAD='wait 9000\npin 9\nwait 46000\nscroll 99999\nwait 1200\nshot %s\nscroll 0\nwait 800\n'
+FTX_PHONE='wait 9000\ndrawer Digi\nwait 1000\ntapname digiScrollList\ntapname fullControls\nwait 45000\nshot %s\ntapname fullControls\ntapname digiScrollTab\nwait 800\n'
+FTX_PAD='wait 9000\npin Digi\nwait 46000\nscroll 99999\nwait 1200\nshot %s\nscroll 0\nwait 800\n'
 
 # iPhone: the main screen, the Log tab, Big buttons, Radio Setup.
 if [ "$ONLY" != ipad ]; then
@@ -93,7 +93,7 @@ if [ "$ONLY" != ipad ]; then
     printf 'wait 8000\nslice A\nmode %s\nfreq %s\nwait %s\n' "$MODE" "$FREQ" "$FILL"
     printf 'shot iphone-1-operate\n'
     printf "$LOG_SHOT" iphone-3-log
-    printf 'drawer 5\ntapname bigButtonsOpen\nwait 1500\nshot iphone-4-bigbuttons\nholdname bigExit\nwait 1200\n'
+    printf 'drawer View\ntapname bigButtonsOpen\nwait 1500\nshot iphone-4-bigbuttons\nholdname bigExit\nwait 1200\n'
     printf "$SETUP_SHOT" iphone-5-setup
     printf 'disconnect\n'
 } | run iphone 440x956 3
@@ -106,9 +106,9 @@ if [ "$ONLY" != iphone ]; then
 # Radio Setup.
 # (Its Log tab would show this computer's log file path.)
 {
-    printf 'wait 8000\nslice A\nmode %s\nfreq %s\npin 0,1\nwait %s\n' "$MODE" "$FREQ" "$FILL"
+    printf 'wait 8000\nslice A\nmode %s\nfreq %s\npin DSP,Audio\nwait %s\n' "$MODE" "$FREQ" "$FILL"
     printf 'shot ipad-1-operate\n'
-    printf 'pin 4\nwait 1500\nshot ipad-3-cw\n'
+    printf 'pin CW\nwait 1500\nshot ipad-3-cw\n'
     printf "$SETUP_SHOT" ipad-4-setup
     printf 'disconnect\n'
 } | run ipad 1376x1032 2 --controls visible

@@ -198,6 +198,7 @@ qt_add_qml_module(aether-mobile
         qml/SlicePowerPopup.qml
         qml/CwControls.qml
         qml/DisplayControls.qml
+        qml/SpotsControls.qml
         qml/ModeButton.qml
         qml/FilterChooser.qml
         qml/ChooserPopup.qml

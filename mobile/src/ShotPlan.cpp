@@ -156,8 +156,21 @@ QList<QObject*> findNamed(QObject* root, const QString& name)
 // The tablet panel's sections, by the drawer's tab order.
 const QStringList kSections{QStringLiteral("DSP"),      QStringLiteral("Audio"),  QStringLiteral("TX"),
                             QStringLiteral("ESSB"),     QStringLiteral("CW"),     QStringLiteral("View"),
-                            QStringLiteral("Profiles"), QStringLiteral("Memory"), QStringLiteral("Log"),
-                            QStringLiteral("Digi"),     QStringLiteral("FreeDV")};
+                            QStringLiteral("Spots"),    QStringLiteral("Profiles"), QStringLiteral("Memory"),
+                            QStringLiteral("Log"),      QStringLiteral("Digi"),   QStringLiteral("FreeDV"),
+                            QStringLiteral("RTTY"),     QStringLiteral("Amp")};
+
+// A section by its number in the drawer's order or by its name (drawer Spots,
+// pin View,Spots), so plans keep working when a tab is added (roadmap 134).
+int sectionIndex(const QString& arg)
+{
+    bool ok = false;
+    const int n = arg.toInt(&ok);
+    if (ok) {
+        return n;
+    }
+    return static_cast<int>(kSections.indexOf(arg));
+}
 
 // Time a command's effect needs before the next one (open animations).
 constexpr int kSettleMs = 900;
@@ -428,7 +441,7 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                 QMetaObject::invokeMethod(drawer, "open");
             }
             for (QObject* tabs : root->findChildren<QObject*>(QStringLiteral("controlsTabs"))) {
-                tabs->setProperty("currentIndex", arg.toInt());
+                tabs->setProperty("currentIndex", sectionIndex(arg));
             }
         }
         *delayMs = 1200;
@@ -452,7 +465,7 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
     } else if (command == QLatin1String("pin")) {
         QStringList pinned;
         for (const QString& index : arg.split(QLatin1Char(','), Qt::SkipEmptyParts)) {
-            if (const QString name = kSections.value(index.toInt()); !name.isEmpty()) {
+            if (const QString name = kSections.value(sectionIndex(index)); !name.isEmpty()) {
                 pinned << name;
             }
         }

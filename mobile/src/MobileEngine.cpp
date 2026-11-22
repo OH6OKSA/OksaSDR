@@ -639,6 +639,19 @@ MobileEngine::MobileEngine(QObject* parent)
     setupPttKey();
     setupDocumentPicker();
     setupSpotAlerts();
+    // Roadmap 134: the spot rows left the View tab for a Spots tab; a pinned
+    // View brings the Spots tab beside it once, so a tablet's pinned panel
+    // keeps showing them.
+    if (AppSettings::instance().value(QStringLiteral("MobileSpotsTabMigrated")).toString() != QLatin1String("True")) {
+        QStringList pinned = pinnedSections();
+        if (pinned.contains(QStringLiteral("View")) && !pinned.contains(QStringLiteral("Spots"))) {
+            pinned.insert(pinned.indexOf(QStringLiteral("View")) + 1, QStringLiteral("Spots"));
+            AppSettings::instance().setValue(QStringLiteral("MobilePinnedSections"), pinned.join(QLatin1Char(',')));
+            qCInfo(lcMobile).noquote() << "pinned sections: Spots beside View (the spots moved to a tab of their own)";
+        }
+        AppSettings::instance().setValue(QStringLiteral("MobileSpotsTabMigrated"), QStringLiteral("True"));
+        AppSettings::instance().save();
+    }
     applyColorScheme();
     // Auto follows the device switching its appearance (125).
     connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, [this](Qt::ColorScheme scheme) {
