@@ -397,7 +397,7 @@ ColumnLayout {
     }
     Label {
         Layout.fillWidth: true
-        text: qsTr("For a logging program without a cloud connection (Log4OM, N1MM, DXKeeper, MacLoggerDX…): put an ADIF file in iCloud Drive, Google Drive, OneDrive, Dropbox or Nextcloud (export one from the program, or share this app's log there) and choose it here. Its QSOs count as worked before, read at each start and with Read now, and every QSO you log is added to its end for the program to import. The app only adds to the file, never changes what is in it.")
+        text: qsTr("For a logging program without a cloud connection (Log4OM, N1MM, DXKeeper, MacLoggerDX…): put an ADIF file in iCloud Drive, Google Drive, OneDrive, Dropbox or Nextcloud (export one from the program, or share this app's log there) and choose it here. Its QSOs count as worked before, read at each start and with Read now, and every QSO you log is added to its end for the program to import. A contact you edit or delete in the Log tab is changed or deleted there too; the rest of the file stays as it is.")
         color: Theme.textDim
         font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
