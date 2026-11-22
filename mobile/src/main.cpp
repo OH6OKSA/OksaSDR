@@ -891,7 +891,7 @@ int main(int argc, char* argv[])
         }
         if (parser.isSet(reconnectTestOption)) {
             // Disconnect at 8 s and connect again at 11 s (screenshot later).
-            QTimer::singleShot(8000, &engine, [&engine] { engine.disconnectRadio(); });
+            QTimer::singleShot(8000, &engine, [&engine] { engine.disconnectRadio(QStringLiteral("the reconnect test")); });
             QTimer::singleShot(11000, &engine, [&engine, address] { engine.connectToAddress(address); });
         }
     }

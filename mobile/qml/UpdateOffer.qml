@@ -28,7 +28,8 @@ Dialog {
         spacing: Theme.spacing
         Label {
             Layout.fillWidth: true
-            text: qsTr("Android beta %1 is out").arg(Engine.updateBeta)
+            text: Engine.updateSameBeta ? qsTr("A newer build of Android beta %1").arg(Engine.updateBeta)
+                                        : qsTr("Android beta %1 is out").arg(Engine.updateBeta)
             color: Theme.text
             font.pixelSize: Theme.px(20)
             font.bold: true
@@ -36,7 +37,10 @@ Dialog {
         }
         Label {
             Layout.fillWidth: true
-            text: qsTr("This is beta %1. Download the new APK and open it: Android installs it over this one, and your settings stay.").arg(Engine.ownBeta)
+            // Roadmap 133: a preview's APK has the coming release's number.
+            text: Engine.updateSameBeta
+                  ? qsTr("This is an earlier build of beta %1 (a preview). Download the released APK and open it: Android installs it over this one, and your settings stay.").arg(Engine.ownBeta)
+                  : qsTr("This is beta %1. Download the new APK and open it: Android installs it over this one, and your settings stay.").arg(Engine.ownBeta)
             color: Theme.textDim
             font.pixelSize: Theme.px(15)
             wrapMode: Text.Wrap

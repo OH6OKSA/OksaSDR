@@ -204,7 +204,8 @@ ColumnLayout {
     AppButton {
         objectName: "updateDownload"
         visible: Engine.updateCheckBuilt && Engine.updateBeta > 0
-        text: qsTr("Download beta %1").arg(Engine.updateBeta)
+        text: Engine.updateSameBeta ? qsTr("Download the released beta %1").arg(Engine.updateBeta)
+                                    : qsTr("Download beta %1").arg(Engine.updateBeta)
         Layout.fillWidth: true
         focusPolicy: Qt.NoFocus
         onClicked: Qt.openUrlExternally(Engine.updateApkUrl)

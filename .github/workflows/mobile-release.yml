@@ -61,6 +61,9 @@ jobs:
           sha=$(jq -r .headSha <<<"$run")
           gh run download "$id" --name "OksaSDR-android-$RUN_NUMBER" --dir apk
           mv "apk/OksaSDR-android-$RUN_NUMBER.apk" "$ASSET"
+          # The build in the notes, unseen on the page: the app's update check
+          # offers a newer build of the same beta number (roadmap 133).
+          { cat mobile/android/RELEASE_NOTES.md; printf '\n<!-- android_run: %s -->\n' "$RUN_NUMBER"; } > notes.md
           gh release create "$TAG" "$ASSET" --latest --target "$sha" --title "$TITLE" \
-            --notes-file mobile/android/RELEASE_NOTES.md
+            --notes-file notes.md
           echo "Published $TAG with $ASSET from run $RUN_NUMBER (${sha::8})." >> "$GITHUB_STEP_SUMMARY"

@@ -259,7 +259,7 @@ Page {
             TopButton {
                 visible: !page.narrowTop
                 text: qsTr("Disconnect")
-                onClicked: Engine.disconnectRadio()
+                onClicked: Engine.disconnectRadio("the Disconnect button")
             }
             TopButton {
                 id: moreButton
@@ -278,7 +278,7 @@ Page {
                     MenuItem { text: qsTr("Log"); onTriggered: logPage.open() }
                     MenuItem { text: qsTr("Big buttons"); onTriggered: Engine.bigButtons = true }
                     MenuItem { text: qsTr("Edit layout"); onTriggered: page.startEditing(false) }
-                    MenuItem { text: qsTr("Disconnect"); onTriggered: Engine.disconnectRadio() }
+                    MenuItem { text: qsTr("Disconnect"); onTriggered: Engine.disconnectRadio("the ⋯ menu's Disconnect") }
                 }
             }
         }

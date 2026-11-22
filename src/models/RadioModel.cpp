@@ -8452,6 +8452,9 @@ void RadioModel::startNetworkMonitor()
             qCDebug(lcProtocol) << "RadioModel:" << missThreshold
                                 << "consecutive pings unanswered — forcing disconnect"
                                 << "(state:" << static_cast<int>(m_netState) << ")";
+            // Why the link goes, for a client that logs a session's end
+            // (OksaSDR's roadmap 138); nothing else listens.
+            emit linkLost(QStringLiteral("no answer from the radio to %1 pings").arg(missThreshold));
             forceDisconnect();
             return;
         }

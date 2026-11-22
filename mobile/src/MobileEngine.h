@@ -88,6 +88,9 @@ class MobileEngine : public QObject {
     Q_PROPERTY(AetherSDR::mobile::RadioListModel* radios READ radios CONSTANT)
     Q_PROPERTY(QString connectionState READ connectionState NOTIFY connectionStateChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
+    // Why the last session with the radio ended, when it was not the
+    // operator's Disconnect (roadmap 138); empty after a connect.
+    Q_PROPERTY(QString disconnectCause READ disconnectCause NOTIFY disconnectCauseChanged)
     // Band plan strip at the bottom of the spectrum, as the desktop's:
     // which plan ("" = off) and the plans bundled with the app.
     Q_PROPERTY(QString bandPlan READ bandPlan WRITE setBandPlan NOTIFY bandPlanChanged)
@@ -184,6 +187,9 @@ class MobileEngine : public QObject {
     Q_PROPERTY(bool updateCheck READ updateCheck WRITE setUpdateCheck NOTIFY updateChanged)
     Q_PROPERTY(int ownBeta READ ownBeta CONSTANT)
     Q_PROPERTY(int updateBeta READ updateBeta NOTIFY updateChanged)
+    // The offer is a newer build of this same beta number (a preview's APK
+    // with the released one out, roadmap 133).
+    Q_PROPERTY(bool updateSameBeta READ updateSameBeta NOTIFY updateChanged)
     Q_PROPERTY(bool updateOffered READ updateOffered NOTIFY updateChanged)
     Q_PROPERTY(QString updateApkUrl READ updateApkUrl NOTIFY updateChanged)
     Q_PROPERTY(QString updateNotesUrl READ updateNotesUrl NOTIFY updateChanged)
@@ -862,6 +868,7 @@ public:
     RadioListModel* radios() { return &m_radios; }
     QString connectionState() const { return m_connectionState; }
     QString lastError() const { return m_lastError; }
+    QString disconnectCause() const { return m_disconnectCause; }
     QString callsign() const;
     QString bandPlan() const;
     void setBandPlan(const QString& name);
@@ -1052,7 +1059,9 @@ public:
     bool updateCheck() const;
     void setUpdateCheck(bool on);
     int ownBeta() const;
+    int ownRun() const;
     int updateBeta() const { return m_updateBeta; }
+    bool updateSameBeta() const { return m_updateSameBeta; }
     bool updateOffered() const;
     QString updateApkUrl() const { return m_updateApkUrl; }
     QString updateNotesUrl() const { return m_updateNotesUrl; }
@@ -2084,7 +2093,9 @@ public:
     Q_INVOKABLE void answerCertificate(bool accept);
     // Development aid (--demo): connect once the simulator entry appears.
     void connectToDemoWhenListed();
-    Q_INVOKABLE void disconnectRadio();
+    // why: what asked for it (the Disconnect button, the ⋯ menu, ...), logged
+    // as the session's end (roadmap 138).
+    Q_INVOKABLE void disconnectRadio(const QString& why = QString());
     // Hold-to-talk: true keys through the local TxController, false releases
     // that same input. Every disconnect or loss of foreground also releases.
     // `reason` names the release in the log ("released", "touch cancelled").
@@ -2196,6 +2207,7 @@ signals:
     void keyboardOnPageChanged();
     void connectionStateChanged();
     void lastErrorChanged();
+    void disconnectCauseChanged();
     void callsignChanged();
     void bandPlanChanged();
     void hapticsChanged();
@@ -3153,6 +3165,7 @@ private:
     QTimer m_updateTimer;
     class MobileWorkspace* m_workspace{nullptr};
     int m_updateBeta{0};
+    bool m_updateSameBeta{false};
     QString m_updateApkUrl;
     QString m_updateNotesUrl;
     QString m_updateStatus;
@@ -3502,6 +3515,14 @@ private:
     QPointer<PanadapterModel> m_pan;
     QString m_connectionState{QStringLiteral("idle")};
     QString m_lastError;
+    // Roadmap 138: the cause of the coming disconnect, set by whoever asks
+    // for it; the link's last error and when it came, for a drop no one asked
+    // for; what the connect page shows after an unasked end.
+    QString m_disconnectWhy;
+    QString m_lastLinkError;
+    QElapsedTimer m_lastLinkErrorAge;
+    QString m_disconnectCause;
+    void noteSessionEnd();
     QString m_radioName;
     // The saved radio's address this connection was made to, to learn what
     // the radio calls itself (empty for SmartLink and the radios found on

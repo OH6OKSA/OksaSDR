@@ -1057,7 +1057,16 @@ MobileEngine::MobileEngine(QObject* parent)
         qCInfo(lcMobile) << "multiFLEX off and" << clients.size() << "other station(s) on the radio: asking";
         openStationConflict(false, r.nickname().isEmpty() ? r.model() : r.nickname(), clients);
     });
+    // A drop no one asked for: the last thing the link said, for the
+    // session's end (roadmap 138).
+    connect(&rm, &RadioModel::linkLost, this, [this](const QString& why) {
+        qCWarning(lcMobile).noquote() << "link lost:" << why;
+        m_lastLinkError = why;
+        m_lastLinkErrorAge.start();
+    });
     connect(&rm, &RadioModel::connectionError, this, [this](const QString& msg) {
+        m_lastLinkError = msg;
+        m_lastLinkErrorAge.start();
         // iOS refuses connections into the home network while the app has no
         // Local Network permission, and the socket only says the host is
         // unreachable (Larry Maleszewski, build 84: "Host unreachable" to
@@ -1564,6 +1573,7 @@ MobileEngine::~MobileEngine()
     if (m_discovery) {
         m_discovery->stop();
     }
+    m_disconnectWhy = QStringLiteral("the app closing");
     m_session.radioModel().disconnectFromRadio();
     AudioEngine* audio = m_audio;
     QMetaObject::invokeMethod(audio, [audio] {
@@ -1708,8 +1718,12 @@ void MobileEngine::connectToDemoWhenListed()
     });
 }
 
-void MobileEngine::disconnectRadio()
+void MobileEngine::disconnectRadio(const QString& why)
 {
+    // Who asked, logged as the session's end (roadmap 138: Rob VA3MET's
+    // "crashes" were orderly disconnects with nothing in the log saying who).
+    m_disconnectWhy = why.isEmpty() ? QStringLiteral("the operator's Disconnect") : why;
+    qCInfo(lcMobile).noquote() << "disconnect asked:" << m_disconnectWhy;
     // Still looking up a host name: nothing is connected yet.
     if (m_hostLookupId >= 0) {
         QHostInfo::abortHostLookup(m_hostLookupId);
@@ -1926,6 +1940,7 @@ void MobileEngine::wireSmartLink()
             // froze (Rich Yost N2RY, build 180, 5G to Wi-Fi). Made again over
             // the new network, as a dropped session is.
             qCInfo(lcMobile) << "SmartLink: the session is on the network that went; connecting again";
+            m_disconnectWhy = QStringLiteral("the app: the device's network changed, connecting again over the new one");
             m_session.radioModel().disconnectFromRadio();
         }
     });
@@ -2009,6 +2024,8 @@ void MobileEngine::wireSmartLink()
         m_wanValidateRetried = false;
     });
     connect(&m_wan, &WanConnection::errorOccurred, this, [this](const QString& message) {
+        m_lastLinkError = QStringLiteral("SmartLink: ") + message;
+        m_lastLinkErrorAge.start();
         // Closed before the radio's version: the radio (or something on the
         // way) refused the session itself (Mohammed A71AT, 2026-11-16, his
         // iPad on 5G only).
@@ -8825,6 +8842,36 @@ void MobileEngine::tuneToSpot(int index)
     }
 }
 
+// Roadmap 138: every session's end in the log with its cause. Asked for (the
+// operator's Disconnect, the app's own reconnect after a network change, the
+// app closing): who asked. Not asked: the link's last error if one came in
+// the last seconds, else the radio (or the way to it) closed the link; that
+// one is also shown on the connect page.
+void MobileEngine::noteSessionEnd()
+{
+    QString cause;
+    bool asked = false;
+    if (!m_disconnectWhy.isEmpty()) {
+        cause = m_disconnectWhy;
+        asked = true;
+    } else if (!m_lastLinkError.isEmpty() && m_lastLinkErrorAge.isValid() && m_lastLinkErrorAge.elapsed() < 20000) {
+        cause = m_lastLinkError;
+    } else {
+        cause = m_session.radioModel().isWan() ? QStringLiteral("the radio or SmartLink closed the connection")
+                                               : QStringLiteral("the radio closed the connection");
+    }
+    qCInfo(lcMobile).noquote() << "disconnect:" << cause << (asked ? "(asked)" : "(not asked)")
+                               << (m_session.radioModel().isWan() ? "over SmartLink" : "on the network")
+                               << "app state" << int(QGuiApplication::applicationState());
+    m_disconnectWhy.clear();
+    m_lastLinkError.clear();
+    const QString shown = asked ? QString() : cause;
+    if (shown != m_disconnectCause) {
+        m_disconnectCause = shown;
+        emit disconnectCauseChanged();
+    }
+}
+
 QString MobileEngine::textSize() const
 {
     const QString v = AppSettings::instance().value(QStringLiteral("MobileTextSize"), QStringLiteral("system")).toString();
@@ -10052,6 +10099,16 @@ void MobileEngine::setFilterWidth(int widthHz)
 
 void MobileEngine::onConnectionStateChanged(bool connected)
 {
+    if (!connected && m_connected) {
+        noteSessionEnd();
+    } else if (connected) {
+        m_disconnectWhy.clear();
+        m_lastLinkError.clear();
+        if (!m_disconnectCause.isEmpty()) {
+            m_disconnectCause.clear();
+            emit disconnectCauseChanged();
+        }
+    }
     if (!connected && radeActive()) {
         deactivateRade();
         emit radeChanged();

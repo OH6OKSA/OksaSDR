@@ -78,6 +78,21 @@ int MobileEngine::ownBeta() const
     return ok ? n : 0;
 }
 
+// This APK's versionCode, the CI run that built it (roadmap 133); 0 where
+// unknown (a desktop build, which only checks with OKSASDR_UPDATE_CHECK).
+int MobileEngine::ownRun() const
+{
+    const int dev = qEnvironmentVariableIntValue("OKSASDR_UPDATE_OWN_RUN");
+    if (dev > 0) {
+        return dev;
+    }
+#if defined(AETHER_MOBILE_ANDROID_RUN)
+    return AETHER_MOBILE_ANDROID_RUN;
+#else
+    return 0;
+#endif
+}
+
 bool MobileEngine::updateCheck() const
 {
     return AppSettings::instance().value(kUpdateCheckKey, QStringLiteral("True")).toString() == QLatin1String("True");
@@ -194,19 +209,36 @@ void MobileEngine::readLatestRelease(const QByteArray& body)
     }
     const QString page = release.value(QStringLiteral("html_url")).toString();
     const int own = ownBeta();
+    // The release's build: the CI writes "android_run: N" (an HTML comment,
+    // unseen on the page) into its notes from beta 113 on (roadmap 133). A
+    // preview's APK has the beta number of the release that follows it, so
+    // only the run tells the released build is newer.
+    static const QRegularExpression runRe(QStringLiteral("android_run:\\s*(\\d+)"));
+    const QRegularExpressionMatch rm = runRe.match(release.value(QStringLiteral("body")).toString());
+    const int latestRun = rm.hasMatch() ? rm.captured(1).toInt() : 0;
+    const int myRun = ownRun();
     qCInfo(lcMobile).noquote() << "update check: latest Android beta" << latest << ", this is beta" << own
+                               << QStringLiteral("(run %1, this run %2)").arg(latestRun).arg(myRun)
                                << (apk.isEmpty() ? "(no APK listed)" : "");
-    if (latest > own && own > 0 && !apk.isEmpty()) {
+    const bool newerBeta = latest > own && own > 0;
+    const bool newerBuild = latest == own && own > 0 && latestRun > 0 && myRun > 0 && latestRun > myRun;
+    if ((newerBeta || newerBuild) && !apk.isEmpty()) {
         m_updateBeta = latest;
+        m_updateSameBeta = newerBuild;
         m_updateApkUrl = apk;
         m_updateNotesUrl = page;
-        m_updateStatus = tr("Beta %1 is out (this is beta %2); checked %3.").arg(latest).arg(own).arg(checked);
+        m_updateStatus = newerBuild
+                             ? tr("A newer build of beta %1 is out (this one is an earlier build); checked %2.").arg(latest).arg(checked)
+                             : tr("Beta %1 is out (this is beta %2); checked %3.").arg(latest).arg(own).arg(checked);
     } else {
         m_updateBeta = 0;
+        m_updateSameBeta = false;
         m_updateApkUrl.clear();
         m_updateNotesUrl.clear();
         m_updateStatus = tr("Beta %1 is the newest; checked %2.").arg(own).arg(checked);
     }
+    qCInfo(lcMobile).noquote() << "update check:"
+                               << (m_updateBeta == 0 ? "nothing to offer" : m_updateSameBeta ? "offered, a newer build of this beta" : "offered, a newer beta");
     emit updateChanged();
 }
 

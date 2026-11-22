@@ -1140,6 +1140,8 @@ signals:
     void rawSliceModeListsChanged();
     void metersChanged();
     void connectionError(const QString& msg);
+    // The keepalive gave up on the radio: the link is about to be closed.
+    void linkLost(const QString& why);
     void radioWakeProgress(const QString& message, bool active);
     void radioWakeFailed(const QString& message);
     // Radio CONFIGURATION advice that does not end the session. See

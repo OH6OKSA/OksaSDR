@@ -117,7 +117,7 @@ Page {
                     MenuItem { text: qsTr("Manual"); onTriggered: Qt.openUrlExternally(Engine.manualUrl) }
                     MenuItem { text: qsTr("Log"); onTriggered: logPage.open() }
                     MenuItem { text: qsTr("Big buttons"); onTriggered: Engine.bigButtons = true }
-                    MenuItem { text: qsTr("Disconnect"); onTriggered: Engine.disconnectRadio() }
+                    MenuItem { text: qsTr("Disconnect"); onTriggered: Engine.disconnectRadio("the ⋯ menu's Disconnect") }
                 }
             }
         }

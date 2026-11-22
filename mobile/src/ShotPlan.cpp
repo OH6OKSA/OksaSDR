@@ -1016,7 +1016,7 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         *delayMs = 300;
     } else if (command == QLatin1String("disconnect")) {
         // As the top row's Disconnect: back to the Connect page.
-        m_engine.disconnectRadio();
+        m_engine.disconnectRadio(QStringLiteral("a shot plan's disconnect"));
         *delayMs = 2000;
     } else if (command == QLatin1String("smartlink")) {
         // As a tap on the Connect page's SmartLink radio I.

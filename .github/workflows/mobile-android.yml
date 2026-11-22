@@ -379,7 +379,10 @@ jobs:
         run: |
           set -euo pipefail
           mv OksaSDR-android-${{ github.run_number }}.apk "${{ steps.want.outputs.asset }}"
+          # The build in the notes, unseen on the page: the app's update check
+          # offers a newer build of the same beta number (roadmap 133).
+          { cat mobile/android/RELEASE_NOTES.md; printf '\n<!-- android_run: %s -->\n' "${{ github.run_number }}"; } > notes.md
           gh release create "${{ steps.want.outputs.tag }}" "${{ steps.want.outputs.asset }}" \
             --latest --target "$GITHUB_SHA" --title "${{ steps.want.outputs.title }}" \
-            --notes-file mobile/android/RELEASE_NOTES.md
+            --notes-file notes.md
           echo "Published ${{ steps.want.outputs.tag }} with ${{ steps.want.outputs.asset }}." >> "$GITHUB_STEP_SUMMARY"

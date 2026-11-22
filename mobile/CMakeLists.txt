@@ -365,6 +365,10 @@ if(ANDROID)
     if(NOT _aether_version_code)
         set(_aether_version_code "${AETHER_MOBILE_BUILD_NUMBER}")
     endif()
+    # The versionCode (the CI run) in the app too: the update check offers a
+    # newer build of the same beta number (roadmap 133: a preview's APK and
+    # the released one are both "beta N").
+    target_compile_definitions(aether-mobile PRIVATE AETHER_MOBILE_ANDROID_RUN=${_aether_version_code})
     # Manifest (package fi.oh6oksa.oksasdr, permissions) and later Java glue.
     set_target_properties(aether-mobile PROPERTIES
         QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android"

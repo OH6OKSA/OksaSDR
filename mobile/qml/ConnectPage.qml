@@ -109,11 +109,21 @@ Page {
             // retry) that does not come through no longer holds the page.
             RowLayout {
                 Layout.fillWidth: true
-                visible: Engine.connectionState !== "idle" || Engine.lastError.length > 0
+                // Roadmap 138: a session that ended without the operator's
+                // Disconnect says why (the radio, SmartLink, the network).
+                readonly property string ended: Engine.disconnectCause.length > 0
+                                                ? qsTr("The connection ended: %1.").arg(Engine.disconnectCause) : ""
+                visible: Engine.connectionState !== "idle" || Engine.lastError.length > 0 || ended.length > 0
                 spacing: 12
                 Label {
+                    objectName: "connectStatus"
                     Layout.fillWidth: true
-                    text: Engine.connectionState === "connecting" ? qsTr("Connecting…") : Engine.lastError
+                    text: Engine.connectionState === "connecting"
+                          ? (parent.ended.length > 0 ? qsTr("Connecting again… (%1)").arg(Engine.disconnectCause) : qsTr("Connecting…"))
+                          // The link's own error for a session that was up: said
+                          // as its end ("The connection ended: ...").
+                          : Engine.lastError.length > 0 && Engine.lastError !== Engine.disconnectCause ? Engine.lastError
+                          : parent.ended.length > 0 ? parent.ended : Engine.lastError
                     color: Engine.connectionState === "connecting" ? Theme.textDim : Theme.warning
                     font.pixelSize: Theme.px(17)
                     wrapMode: Text.Wrap
@@ -123,7 +133,7 @@ Page {
                     visible: Engine.connectionState === "connecting"
                     text: qsTr("Cancel")
                     focusPolicy: Qt.NoFocus
-                    onClicked: Engine.disconnectRadio()
+                    onClicked: Engine.disconnectRadio("Cancel on the connect page")
                 }
             }
             // The connection doctor: what blocks the connection, step by step
