@@ -290,6 +290,24 @@ Popup {
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
                     Layout.preferredHeight: Theme.touchTarget
+                    // Roadmap 139: a hold edits here, as on the CW, Digi and
+                    // TX tabs (without it Qt took the hold as a tap and sent
+                    // the macro: Rob VA3MET's F400).
+                    onPressAndHold: {
+                        console.info("macros: hold to edit", macros.kind, index + 1)
+                        if (macros.kind === "cw") {
+                            panelCwEditor.index = index
+                            panelCwEditor.text = modelData
+                            panelCwEditor.open()
+                        } else if (macros.kind === "text") {
+                            panelTextEditor.index = index
+                            panelTextEditor.label = modelData.label
+                            panelTextEditor.text = modelData.text
+                            panelTextEditor.open()
+                        } else if (macros.kind === "voice") {
+                            panelDvkMenu.openFor(modelData)
+                        }
+                    }
                     onClicked: {
                         if (macros.kind === "cw") {
                             Engine.sendCwMemory(index)
@@ -302,7 +320,7 @@ Popup {
                         } else if (modelData.seconds > 0 || Engine.dvkState === "playback") {
                             Engine.dvkPlay(modelData.id)
                         } else {
-                            macros.notice = qsTr("F%1 is empty: record it on the TX tab (press and hold it there).").arg(modelData.id)
+                            macros.notice = qsTr("F%1 is empty: press and hold it to record.").arg(modelData.id)
                             noticeTimer.restart()
                         }
                     }
@@ -313,12 +331,16 @@ Popup {
         Label {
             Layout.fillWidth: true
             text: macros.notice.length > 0 ? macros.notice
-                : macros.kind === "cw" ? qsTr("Edit a memory on the CW tab: press and hold it.")
-                : macros.kind === "text" ? qsTr("Edit a macro on the Digi tab: press and hold it.")
-                : qsTr("Record or rename a slot on the TX tab: press and hold it.")
+                : macros.kind === "voice" ? qsTr("Tap plays; press and hold to record or rename.")
+                : qsTr("Tap sends; press and hold to edit.")
             color: macros.notice.length > 0 ? Theme.warning : Theme.textDim
             font.pixelSize: 12
             wrapMode: Text.Wrap
         }
     }
+
+    // The editors a hold opens (roadmap 139), the same as the tabs'.
+    CwMemoryEditor { id: panelCwEditor; objectName: "panelCwEditor" }
+    TextMacroEditor { id: panelTextEditor; objectName: "panelTextEditor" }
+    DvkSlotMenu { id: panelDvkMenu; objectName: "panelDvkMenu" }
 }

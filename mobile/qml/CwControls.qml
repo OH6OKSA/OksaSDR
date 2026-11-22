@@ -342,49 +342,8 @@ ColumnLayout {
     }
 
     // Edits one memory.
-    Dialog {
+    CwMemoryEditor {
         id: memoryEditor
         objectName: "memoryEditor"
-        property int index: 0
-        property alias text: memoryField.text
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        width: Math.min(420, parent ? parent.width - 24 : 400)
-        modal: true
-        padding: Theme.spacing
-        background: Rectangle { color: Theme.surface; radius: Theme.radius; border.color: Theme.surfaceRaised }
-        onOpened: memoryField.forceActiveFocus()
-        contentItem: ColumnLayout {
-            spacing: Theme.spacing
-            Label {
-                text: qsTr("Memory M%1   ({CALL} = your callsign, {HIS} = the call being worked)").arg(memoryEditor.index + 1)
-                color: Theme.textDim
-                font.pixelSize: Theme.px(14)
-                // From the popup's fixed width: wrapped, not past its edge.
-                Layout.preferredWidth: memoryEditor.width - 2 * memoryEditor.padding
-                wrapMode: Text.WordWrap
-            }
-            TextField {
-                id: memoryField
-                Accessible.name: qsTr("Memory M%1 text").arg(memoryEditor.index + 1)
-                Layout.fillWidth: true
-                font.pixelSize: Theme.px(17)
-                inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
-                onAccepted: save.clicked()
-            }
-            RowLayout {
-                Layout.fillWidth: true
-                AppButton { text: qsTr("Cancel"); Layout.fillWidth: true; onClicked: memoryEditor.close() }
-                AppButton {
-                    id: save
-                    text: qsTr("Save")
-                    Layout.fillWidth: true
-                    onClicked: {
-                        Engine.setCwMemory(memoryEditor.index, memoryField.text)
-                        memoryEditor.close()
-                    }
-                }
-            }
-        }
     }
 }

@@ -199,6 +199,9 @@ qt_add_qml_module(aether-mobile
         qml/CwControls.qml
         qml/DisplayControls.qml
         qml/SpotsControls.qml
+        qml/CwMemoryEditor.qml
+        qml/TextMacroEditor.qml
+        qml/DvkSlotMenu.qml
         qml/ModeButton.qml
         qml/FilterChooser.qml
         qml/ChooserPopup.qml
