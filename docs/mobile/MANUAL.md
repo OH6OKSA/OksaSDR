@@ -81,8 +81,8 @@ silent may have its slice muted: tap the speaker on the info panel.
 **CW**
 - **The mode** CW, and **Break-in** on (Controls → CW): with it off the key
   does not put the radio on the air.
-- **Key**: the big button is a straight key; *Paddles* (Controls → CW →
-  Key) gives dit and dah. Speed and pitch are on the CW tab, and the
+- **Key**: the big button is a straight key; *Paddles* (Setup › Phone/CW,
+  the CW tab's **Keying…**) gives dit and dah. Speed and pitch are on the CW tab, and the
   memories M1–M12 send `{CALL}` from the radio's callsign.
 
 **FT8 / FT4**
@@ -180,7 +180,8 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
 2. Key with the big button (a straight key) or choose **Paddles**: dit and
    dah take PTT's place (on a phone at the two edges, one per thumb);
    **Iambic** A or B, **Swap** for dah on the left. A hardware keyboard or
-   a USB paddle adapter keys with Ctrl, Alt or [ ] (the CW tab says which).
+   a USB paddle adapter keys with Ctrl, Alt or [ ]. All of these are in
+   Setup › Phone/CW (the CW tab's **Keying…** opens it).
 3. **Memories** M1-M12 send text through the radio at the set speed
    (`{CALL}` is your callsign, `{HIS}` the call in the Log tab); on a
    keyboard F1-F12 (⌘1-⌘0 without F-keys), Esc stops. **Live** sends
@@ -238,14 +239,14 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
    back to CQ after each QSO. **CQ to** (FTx settings) directs it: *CQ DX*,
    *CQ NA*, *CQ EU* or your own.
 5. **Answer CQ** answers CQs by itself: the rarest first, five calls a
-   station (**Answer CQ calls each station … times** in the FTx settings,
-   2 to 20), then the next. **Auto stops after … min untouched** (FTx
-   settings) is how long Answer CQ and Keep CQ go on without a touch on
+   station (**Answer CQ calls each station … times** in Setup › FTx,
+   2 to 20), then the next. **Auto stops after … min untouched** (Setup ›
+   FTx) is how long Answer CQ and Keep CQ go on without a touch on
    the app.
 6. **Halt TX** stops at once. Pick a clear TX frequency by dragging the red
    TX band on the display or with **Free**; **TX level** sets the drive
-   (0 dB = the TX tab's power); **Report to PSK Reporter** shows where you
-   are heard.
+   (0 dB = the TX tab's power); **Report to PSK Reporter** (Setup › FTx)
+   shows where you are heard.
 7. FT4 the same with **FT4**. PTT is hidden while decoding (the app keys
    the radio itself); voice PTT does not key in DIGU / DIGL. Details:
    [FTx](#8-controls).
@@ -387,9 +388,9 @@ passband, so the slice stays put and the decoder is moved to the signal.
 
 For everyday operating the band plan can choose the mode: turn on **Band
 plan lock** in the mode chooser (tap the mode by the frequency) or in
-Controls → View. While it is on, **PLAN** shows by the mode (under it on
+Setup › App (the View tab's **Theme, text size, band plan…**). While it is on, **PLAN** shows by the mode (under it on
 a phone); a tap on PLAN turns the lock off. It uses the band plan chosen
-in Controls → View (*ARRL (US)*, *IARU Region 1* …; with the strip *Off*,
+in Setup › App (*ARRL (US)*, *IARU Region 1* …; with the strip *Off*,
 the one last chosen), on HF (below 30 MHz).
 
 - Tuning into another part of the plan sets its mode: **CW** in a CW
@@ -612,13 +613,13 @@ whenever they scroll.
 if that shows), four short cards show the gestures nothing on screen
 shows: the hold for a notch, the dBm scale and divider drags, the slice
 and SPLIT holds, the frequency tap and the memory holds. **Next** steps
-through them, **Skip** closes them; they show once. **Controls → View →
+through them, **Skip** closes them; they show once. **Setup › App →
 Hints → Show again** brings them back.
 
 **Felt taps.** On an iPhone or an Android phone, PTT's press and release,
 the step buttons and − / + are felt as a light tap, as the phone's own
 controls give, and a slider's drag as ticks (each step on a short scale,
-else each tenth and the ends). **Controls → View → Felt taps** turns them
+else each tenth and the ends). **Setup › App → Felt taps** turns them
 off in this app; when on, they follow the phone's own setting (iPhone:
 *Settings › Sounds & Haptics › System Haptics*; Android: touch feedback
 under the vibration settings). iPads and Macs have none.
@@ -714,7 +715,8 @@ now, or why it did not move: *at the edge*, *its content would not fit*,
 
 ### Light theme
 
-**Controls › View › Theme**: *Dark* (the default, as the app has always
+**Setup › App › Theme** (the View tab's **Theme, text size, band plan…**
+opens it; in Controls › View until build 200): *Dark* (the default, as the app has always
 looked), *Light*, a light page for daylight and tired eyes (asked by
 Larry Averbeck W9FLA), or *Auto*: Light while the device's own appearance
 is light and Dark while it is dark (iOS and iPadOS Dark Mode, the Mac's,
@@ -1341,16 +1343,17 @@ the value types it); SPLIT again (or XIT off there) ends it.
   next press transmits. **Standby** beside the line in the TX tab locks it
   again at once.
 - **KEY** — in CW modes the same button is a straight key, or **paddles**
-  (Controls → CW → Key: *Paddles*): dit and dah side by side in its
+  (Setup › Phone/CW → Key: *Paddles*; the CW tab's **Keying…** opens it):
+  dit and dah side by side in its
   place, each its own touch, so holding both gives iambic squeeze. On a
   phone they sit at the two edges, one for each thumb: dit at the left,
   Controls between, dah at the right (in landscape the step buttons are
   between). The app
   times the elements itself, sends them to the radio and plays the
-  sidetone in step. **Iambic** in the CW tab sets **A** or **B** (B adds
-  one more element after a squeeze) and **Swap ⇄** (dah on the left); they
-  are the radio's settings, also in [Radio Setup](#9-radio-setup) →
-  Phone/CW. **Paddles on a keyboard** picks which two keys of a hardware
+  sidetone in step. **Iambic** **A** or **B** (B adds one more element
+  after a squeeze) and **Swap paddles** (dah on the left) are the radio's
+  settings, in [Radio Setup](#9-radio-setup) → Phone/CW under *CW keyer*.
+  **Paddles on a keyboard** (Setup › Phone/CW, this device's part) picks which two keys of a hardware
   keyboard are the paddles, the left one dit and the right one dah:
   left and right **Ctrl** (the default; what USB paddle adapters such as
   Vail and VBand send), left and right **Alt ⌥** (Option; for keyboards with no right
@@ -1492,7 +1495,8 @@ seven.
   (on: the radio sends the audio of a digital-mode program on a computer
   instead of the microphone; left on after FT8, the microphone goes
   nowhere), **PTT**
-  (*Hold to talk* or *Tap on / off*), **PTT key** (see below), **Split** (*Second slice* or
+  (*Hold to talk* or *Tap on / off*), **PTT key…** (names the learned key and opens Setup › Transmit, see
+  [the PTT key](#11-keyboard-and-apple-pencil)), **Split** (*Second slice* or
   *XIT*, [6](#6-split)) and the transmit filter (low and high cut). On a FLEX-8000 or Aurora, **APD** *Off* / *On*: adaptive
   pre-distortion, where the radio measures its own transmission and
   pre-distorts it so the amplifier's IMD falls; the line under it says
@@ -1582,9 +1586,11 @@ seven.
   - **CW text** — type and *Send*; with **Live** on, each letter goes as you
     type it (Return sends a space). *Stop*, or Esc, clears what is still
     queued.
-  - **Key** — *Straight key* or *Paddles*; with paddles, **Iambic** A / B and
-    **Swap ⇄**, and **Paddles on a keyboard** (see
-    [KEY](#7-transmitting-ptt-key-and-tune)).
+  - **Keying…** — names the key (*Keying: paddles…* or *straight key…*)
+    and opens Setup › Phone/CW, where this device's **Key** (*Straight key*
+    or *Paddles*) and **Paddles on a keyboard** are, above the radio's
+    Iambic A / B and Swap paddles (see [KEY](#7-transmitting-ptt-key-and-tune);
+    in the CW tab until build 200).
   - Speed, pitch, **Sidetone** (*On* and its level 0–100: the radio's CW
     sidetone, on this device too, apart from the receive volume),
     **Break-in** (QSK), the **Decoder** and **Autotune**:
@@ -1600,64 +1606,30 @@ seven.
     decoder keeps listening with the app in the background: `[away 20:55]`
     and `[back 21:12]` mark what came while you were away. A callsign the decoder hears after *DE*, or twice, is
     offered above the memories (*Call*) and on the Log tab (*Heard in CW*).
-- **View** — **Big buttons** (see [Big buttons](#big-buttons)), **Layout**
-  (tablets: Classic and your own layouts, Edit, New; see
-  [Own layouts](#own-layouts)), **Band plan** (the strip at the foot of the spectrum: *Off*,
-  *ARRL (US)*, *IARU Region 1 / 2 / 3*, *RAC (Canada)* or *SSA
-  (Sweden)*), **Band plan lock (mode)** (see
-  [Band plan lock](#band-plan-lock)), **Felt taps (phones)** (on / off, see
-  *Felt taps* above), **Hints** (*Show again*, see *Hints* above), **Theme**
-  (*Dark* or *Light*, see [Light theme](#light-theme)), **Text size** (*System* follows the system's text size —
-  iOS Settings › Display & Brightness › Text Size, Android's font size —
-  or a fixed *100 % / 115 % / 130 %*; the panels', dialogs' and setup
-  pages' text grows, the operating screen's dense controls and the
-  buttons keep their size so they still fit; the app stops at 135 %;
-  a 13" iPad, a Mac window or an external display shows larger type
-  throughout; an iPhone with Display Zoom set to *Larger Text* gets the
-  whole app, scaled to its screen),
-  **Spots** (shown or hidden) and the **DX cluster**,
-  2D waterfall or 3D, waterfall levels, spectrum range, FFT smooth and
-  De-comb, 3D floor, smoothing and gain, and on Android **New versions**
-  (see [Android](#13-android)).
+- **View** — what is used while operating (since build 201; the settings
+  changed seldom moved to [Radio Setup](#9-radio-setup), one button each):
+  **Big buttons** (see [Big buttons](#big-buttons)), **Layout** (tablets:
+  Classic and your own layouts, Edit, New; see [Own layouts](#own-layouts)),
+  **Bands and steps** (shown or hidden, and *1 Hz – 1 kHz* or *STEP ×1 ×10
+  ×100*), **Theme, text size, band plan…** (opens Setup › App: Theme,
+  Text size, Zoom buttons, Band plan and its lock, Felt taps, Hints and on
+  Android New versions), **Spots shown**, 2D waterfall or 3D, waterfall
+  levels, spectrum range, FFT smooth and De-comb, 3D floor, smoothing and
+  gain.
+  - **Spots shown** — every spot is the radio's: whatever any program on
+    it puts there (this device's cluster and park spots, SmartSDR's, your
+    other devices'). Pick which the display shows by where they came from:
+    **Cluster** (a DX cluster's), **POTA**, **WWFF** and **Other**
+    (SmartSDR's, another program's); none picked shows none. Before build
+    201 one *Shown / Hidden* switch did this, and spots showed with this
+    device's cluster off because another device had put them on the radio.
   - **Spot filters** — which spots show: *All*, *CW*, *Phone* or *Digital*
     (by the spot's mode, else its comment or the band plan, as on the
     desktop), and *Any age* or only those from the last 5, 15 or 30
     minutes.
-  - **DX cluster** — tap to connect, again to disconnect. Set the server and
-    port (default dxc.nc7j.com 7300) and the callsign it logs in with (the
-    radio's own when left empty); **Auto** connects whenever the radio
-    does. Its spots go to the radio, so SmartSDR and every other program
-    on it show them too; they expire after 30 minutes. The line under the
-    button tells whether it is on: green *Connected to … as …* with the
-    spots so far and the latest one's time (UTC), *Connecting…*, or red
-    with the reason when it could not connect. The same callsign from two
-    devices: a cluster lets one on at a time, and each knocks the other
-    off; the app then waits longer between tries and says so. Give each
-    device its own SSID in the callsign, e.g. *OH6OKSA-2*. Right after
-    this device moves to another network (Wi-Fi to the mobile network or
-    back) the cluster may still hold its login from the network before
-    and refuse the new one, for many minutes on some clusters (each
-    network change leaving another old login): the line says so as long as
-    the refusals go on, and the app gets on by itself once the cluster lets
-    the old login go. To get on at once, give this device its own SSID in
-    the callsign, e.g. *OH6OKSA-2*.
-  - **Park spots** (asked by Robin Bishop G5OUT) — **POTA** and **WWFF**
-    each bring in the activators on the air now, from pota.app and
-    wwff.co, read once a minute while a radio is connected. Like the
-    cluster's, the spots go to the radio (POTA's yellow, WWFF's green),
-    with the park's reference, name and mode as the comment, and go when
-    the activation's spot runs out (POTA's own time, WWFF's after 30
-    minutes). Tap one to tune to it; the Log tab then offers the call,
-    and its button also fills **Their park** (POTA or WWFF with the
-    reference). A cluster spot of an activator the lists hold gives the
-    park the same way. The line under the buttons tells how many each
-    list holds now and when it was read (*Listed now (07:12 UTC): POTA 15,
-    WWFF 2.*), or why a list could not be read. Both lists are public and
-    want no account; switched off, the spots already on the radio stay
-    until they run out. SOTA is not there: its spot interface wants its
-    approval first.
-
-    ![View › Park spots](manual/park-spots.jpg)
+  - **Spot sources…** — opens Setup › Spots: the DX cluster this device
+    logs in to and the park spots it reads (✓ while the cluster is
+    connected).
 - **Prof** (profiles) — the radio's global, TX and mic profiles: load, save,
   delete, as in SmartSDR. Under them, **App setups** (thanks Larry
   Averbeck W9FLA) do the same for this app's own settings: type a name in
@@ -1694,7 +1666,7 @@ seven.
 - **Log** — quick QSO logging into a log on this device (an ADIF file,
   `oksasdr-log.adi`). Type the **callsign**, or tap the call of the spot
   you tuned to last (with a POTA or WWFF activator's park in **Their
-  park**, from View › Park spots); **×** in the field clears it (thanks Christoph
+  park**, from Setup › Spots › Park spots); **×** in the field clears it (thanks Christoph
   Steinert DM5HF). Or spell it by voice with **🎤** beside it (asked by
   Michael Walker): hold the button, spell the call with the ITU / NATO
   alphabet (*Victor Alpha Three Mike Whiskey*, *niner* for 9, *stroke
@@ -1783,7 +1755,7 @@ seven.
   too. A new call drops the old call's looked-up name and
   QTH and takes the new call's country. **Spot** beside it (asked by Christoph
   Steinert DM5HF) sends the call to the DX cluster the app is logged in to
-  (Controls › View › DX cluster), at the slice frequency. It asks first,
+  (Setup › Spots, the View tab's **Spot sources…**), at the slice frequency. It asks first,
   as a spot is a public post under your call, and shows the exact line
   (*DX 14154.0 K1ABC SSB*); the remark is the mode, with their park first
   when one is set (*POTA US-1234 SSB*), and can be changed (30
@@ -1793,9 +1765,10 @@ seven.
   the cluster may hide your own spots). Without the cluster connected
   Spot is dimmed, and a tap says where to turn it on. Spot only stations
   you hear. **Share the log
-  (ADIF)** opens the share sheet with the whole log as an `.adi` file: mail
+  (ADIF)**, in Setup › Logging since build 201 (**Logbooks…** below opens
+  it), opens the share sheet with the whole log as an `.adi` file: mail
   it, save it to Files or Drive, AirDrop it, or open it in your logbook
-  program or TQSL for LoTW. Under the recent contacts a line says where
+  program or TQSL for LoTW; the log file's place is under it. Under the recent contacts a line says where
   each QSO also goes (*Each QSO also to: QRZ.com Logbook, Wavelog /
   Cloudlog*), and **Logbooks…** opens **Setup › Logging**, where the rest of
   this section lives: the ADIF import, the station and the QRZ.com
@@ -1944,9 +1917,11 @@ seven.
   before; *List only* keeps the main buttons at the top (Decode, the
   bands, the slot bar, CQ, Keep CQ, Answer CQ, Halt TX, the QSO's state
   and Show) and scrolls only the decode list under them, with its own
-  scroll bar. The rest (DXpedition, CQ slot, the presence limit, PSK
-  Reporter, the time line, TX Hz and TX level, the
-  colours) folds under **More**. Where the drawer is lower than about
+  scroll bar. The rest (DXpedition, CQ slot, the time line, TX Hz and TX
+  level, the colours, and the button to Setup › FTx) folds under
+  **More**. That button names the settings it opens: *Auto stops 10 min ·
+  5 calls · PSK Reporter off…* (the presence limit, Answer CQ's calls to
+  a station and PSK Reporter, in the FTx tab until build 200). Where the drawer is lower than about
   520 px (a phone on its side, the drawer at half height), the whole tab
   scrolls anyway. (Michael Whaley's request.)
 
@@ -2002,7 +1977,7 @@ seven.
   among equals. It calls that station up to five times; when they answer,
   the QSO runs and is logged as usual, and when they don't, it moves on to
   another station (one called is left alone for 30 minutes). **Answer CQ
-  calls each station … times** (FTx settings, − / +) sets how many calls:
+  calls each station … times** (Setup › FTx, − / +) sets how many calls:
   2 to 20, 5 by default; a busy DX may need more, a quiet band fewer. The
   same number limits each later message of its QSO (a report or RR73 sent
   again while the reply does not come). (Kurt DL5EAG asked for the
@@ -2012,8 +1987,8 @@ seven.
   It is on for this session only: **Halt TX**, decoding off, TX moving to
   another slice or the transmit lock going back to SB switch it off.
   (Kurt DL5EAG's request.)
-  **Auto stops after … min untouched** (the presence limit, with the
-  CQ slot setting; 1 to 60 minutes, 10 by default) is how long Answer CQ
+  **Auto stops after … min untouched** (the presence limit, in Setup ›
+  FTx; 1 to 60 minutes, 10 by default) is how long Answer CQ
   and Keep CQ go on without a touch, a click or a key on the app: after
   that Answer CQ switches off and Keep CQ ends after its QSO, so the app
   never runs a station unattended for long. While either runs, the state
@@ -2039,7 +2014,7 @@ seven.
   the first one, and while you call CQ, it sits on your own TX tone; both labels sit on solid grounds over the
   waterfall.
 
-  **Report to PSK Reporter** (off by default) sends the stations this
+  **Report to PSK Reporter** (Setup › FTx, off by default) sends the stations this
   device decodes, with their locators, frequency and SNR, to
   pskreporter.info under your callsign and grid (set the grid on the Log
   tab if the radio has no GPS), as WSJT-X does: each station at most once
@@ -2519,8 +2494,16 @@ seven.
 
 **Setup** in the top row (on an iPhone: **⋯** → *Radio Setup*) holds the
 radio's own settings — the ones a radio needs on first use, as in SmartSDR's
-and the desktop AetherSDR's Radio Setup. Every change is written to the
-radio.
+and the desktop AetherSDR's Radio Setup; every change to those is written to
+the radio. It also holds this device's own settings that are changed
+seldom: Logging, MIDI, the amplifiers' addresses, and since build 201
+**App**, **Spots**, **FTx** and the first parts of **Transmit** (the PTT
+key) and **Phone/CW** (the keying), moved there from the Controls tabs so
+the tabs keep what is used while operating (the user's request). Each of
+those tabs has one button to its place here (*Logbooks…*, *Keying…*,
+*PTT key…*, *Theme, text size, band plan…*, *Spot sources…*, and the FTx
+tab's settings button). The line under the tabs says whose settings each
+tab holds.
 
 ![Radio Setup](manual/setup.jpg)
 
@@ -2539,7 +2522,9 @@ radio.
   altitude, frequency error and UTC. **Restart the radio…** restarts it
   after asking: every station loses the radio for about a minute; over
   SmartLink, connect again by hand.
-- **Transmit** — maximum power, TX delay, transmit timeout (0 = off) and the
+- **Transmit** — first this device's **PTT key** (*Learn* / *Clear*, see
+  [the PTT key](#11-keyboard-and-apple-pencil); not used in CW), then the
+  radio's: maximum power, TX delay, transmit timeout (0 = off) and the
   TUNE signal (single or two tone). On a FLEX-8000 or Aurora, **APD**: the
   sampler port for each TX antenna that has a choice (*INTERNAL*, sampled
   inside the radio, or *RX_A*, *RX_B*, *XVTA*, *XVTB* for a coupled sample
@@ -2577,8 +2562,12 @@ radio.
     *Inhibit during TUNE* above; either alone is enough. It is shown only
     when the radio reports it.
 
+  ![Radio Setup › Transmit: the PTT key first](manual/setup-transmit.jpg)
   ![Radio Setup › Transmit: the TX band settings](manual/setup-txband.jpg)
-- **Phone/CW** — microphone bias and boost (the radio's own microphone
+- **Phone/CW** — first this device's CW keying: **Key** (*Straight key* or
+  *Paddles*) and **Paddles on a keyboard** (*Off*, *Ctrl*, *Alt ⌥*, *[ ]*,
+  see [KEY](#7-transmitting-ptt-key-and-tune)); then the radio's:
+  microphone bias and boost (the radio's own microphone
   inputs; this device's microphone gain is the TX tab's Mic level), and
   **Mic level meter in receive too**; the CW keyer's break-in delay,
   iambic mode (off, A, B) and swapped paddles, the **CW sideband** (*CWU*,
@@ -2586,6 +2575,8 @@ radio.
   (CW memories and typed CW at the radio's keyer speed). **RTTY**: the
   radio's default RTTY mark (2125 Hz as usual), the mark a new RTTY slice
   starts with.
+
+  ![Radio Setup › Phone/CW: the keying first](manual/setup-phonecw.jpg)
 - **Audio** — the radio's line out and headphone levels and muting, and on
   a model with a front speaker (an M model) muting that speaker. On a Linux
   computer also **This computer's audio**: the **Speaker** and
@@ -2747,8 +2738,9 @@ radio.
   QSO besides its own log, the accounts for it, and contacts to import
   (the ADIF import, the station and the QRZ.com account, Wavelog /
   Cloudlog, the QRZ.com Logbook, the shared ADIF file, Logger32 and the
-  logging program, as described under [Controls › Log](#8-controls)). The Log tab's
-  **Logbooks…** opens this tab.
+  logging program, as described under [Controls › Log](#8-controls)), and
+  at the top **Share the log (ADIF)** with the log file's place (from the
+  Log tab since build 201). The Log tab's **Logbooks…** opens this tab.
 
   ![Setup › Logging](manual/setup-logging.jpg)
 - **MIDI** — not a setting of the radio: a MIDI controller as a VFO knob
@@ -2839,6 +2831,73 @@ radio.
       (below); the switch is not shown there.
 
   ![Radio Setup › MIDI](manual/setup-midi.jpg)
+- **App** — not a setting of the radio: how this app looks and behaves on
+  this device (from the View tab since build 201; its **Theme, text size,
+  band plan…** opens this tab): **Theme** (*Dark*, *Light* or *Auto*, see
+  [Light theme](#light-theme)), **Text size** (*System* follows the system's text size —
+  iOS Settings › Display & Brightness › Text Size, Android's font size —
+  or a fixed *100 % / 115 % / 130 %*; the panels', dialogs' and setup
+  pages' text grows, the operating screen's dense controls and the
+  buttons keep their size so they still fit; the app stops at 135 %;
+  a 13" iPad, a Mac window or an external display shows larger type
+  throughout; an iPhone with Display Zoom set to *Larger Text* gets the
+  whole app, scaled to its screen)), **Zoom
+  buttons** (*Left* or *Right*: the display's corner buttons), **Band plan**
+  (the strip at the foot of the spectrum: *Off*, *ARRL (US)*, *IARU Region
+  1 / 2 / 3*, *RAC (Canada)* or *SSA (Sweden)*), **Band plan lock (mode)**
+  (see [Band plan lock](#band-plan-lock)), **Felt taps (phones)** (see
+  *Felt taps*), **Hints** (*Show again*) and on Android **New versions**
+  (see [Android](#13-android)).
+
+  ![Radio Setup › App](manual/setup-app.jpg)
+- **Spots** — where this device reads spots from and puts them on the
+  radio, so every program on it shows them (from the View tab since build
+  201; its **Spot sources…** opens this tab). What the display shows is
+  chosen in the View tab (*Spots shown*).
+  - **DX cluster** — tap to connect, again to disconnect. Set the server and
+    port (default dxc.nc7j.com 7300) and the callsign it logs in with (the
+    radio's own when left empty); **Auto** connects whenever the radio
+    does. Its spots go to the radio, so SmartSDR and every other program
+    on it show them too; they expire after 30 minutes. The line under the
+    button tells whether it is on: green *Connected to … as …* with the
+    spots so far and the latest one's time (UTC), *Connecting…*, or red
+    with the reason when it could not connect. The same callsign from two
+    devices: a cluster lets one on at a time, and each knocks the other
+    off; the app then waits longer between tries and says so. Give each
+    device its own SSID in the callsign, e.g. *OH6OKSA-2*. Right after
+    this device moves to another network (Wi-Fi to the mobile network or
+    back) the cluster may still hold its login from the network before
+    and refuse the new one, for many minutes on some clusters (each
+    network change leaving another old login): the line says so as long as
+    the refusals go on, and the app gets on by itself once the cluster lets
+    the old login go. To get on at once, give this device its own SSID in
+    the callsign, e.g. *OH6OKSA-2*.
+  - **Park spots** (asked by Robin Bishop G5OUT) — **POTA** and **WWFF**
+    each bring in the activators on the air now, from pota.app and
+    wwff.co, read once a minute while a radio is connected. Like the
+    cluster's, the spots go to the radio (POTA's yellow, WWFF's green),
+    with the park's reference, name and mode as the comment, and go when
+    the activation's spot runs out (POTA's own time, WWFF's after 30
+    minutes). Tap one to tune to it; the Log tab then offers the call,
+    and its button also fills **Their park** (POTA or WWFF with the
+    reference). A cluster spot of an activator the lists hold gives the
+    park the same way. The line under the buttons tells how many each
+    list holds now and when it was read (*Listed now (07:12 UTC): POTA 15,
+    WWFF 2.*), or why a list could not be read. Both lists are public and
+    want no account; switched off, the spots already on the radio stay
+    until they run out. SOTA is not there: its spot interface wants its
+    approval first.
+
+    ![Setup › Spots › Park spots](manual/park-spots.jpg)
+
+  ![Radio Setup › Spots](manual/setup-spots.jpg)
+- **FTx** — not a setting of the radio: FT8 / FT4 in this app (from the
+  FTx tab since build 201; the FTx tab's settings button opens this tab):
+  **Auto stops after … min untouched** (the presence limit), **Answer CQ
+  calls each station … times** and **Report to PSK Reporter**, as
+  described under [Controls › FTx](#8-controls).
+
+  ![Radio Setup › FTx](manual/setup-ftx.jpg)
 
 **A new radio.** When the app connects to a radio that has no callsign yet —
 a new or reset radio — it offers *Set up* once, a few seconds after
@@ -2913,7 +2972,8 @@ Bluetooth keyboard on a phone, or Android's DeX):
 T, Shift + T and A transmit, so the transmit lock (TX tab › Lock) holds
 them as it holds PTT and TUNE.
 
-**PTT key** (Controls › TX, since build 200; thanks Rob Metallo VA3MET):
+**PTT key** (Setup › Transmit, this device's part: the TX tab's **PTT
+key…** opens it; since build 200, in the TX tab until build 201; thanks Rob Metallo VA3MET):
 any key a button sends can be PTT, for a handset's side PTT key, a
 Bluetooth button or a foot switch that acts as a keyboard. Tap **Learn**,
 then press the button: its key shows beside *PTT key* (Esc cancels).
@@ -3002,7 +3062,7 @@ asks. A newer beta installs over the old one and keeps your settings.
 whether a newer beta is out. When one is, it says *Android beta N is out*:
 **Download** opens the APK in the browser (open it to install over this
 one), **What's new** the release page, **Later** asks no more about that
-beta. **Controls → View → New versions** shows the last check and
+beta. **Setup › App → New versions** shows the last check and
 *Download beta N*, and turns the check off (GitHub then sees nothing from
 the app). On the iPhone, iPad and Mac TestFlight updates the app.
 Android 9 or newer, 64-bit ARM (practically every phone and tablet from the

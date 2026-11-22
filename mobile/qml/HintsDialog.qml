@@ -6,7 +6,7 @@ import AetherMobile
 // First-run hints: the gestures nothing on screen shows (the notch hold,
 // the dBm scale and divider drags, the slice and SPLIT holds, the
 // frequency tap and memory holds), once, a few seconds after the first
-// connect, after the setup offer if that shows. View › Hints shows them
+// connect, after the setup offer if that shows. Setup › App › Hints shows them
 // again.
 Dialog {
     id: hints

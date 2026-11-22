@@ -6,7 +6,7 @@ import AetherMobile
 // A newer Android beta is on GitHub (roadmap 111): offered once per beta, a
 // few seconds after it is found, never while transmitting. Download opens the
 // APK in the browser; Android's installer installs it over this one and the
-// settings stay. Later: not offered again until the next beta (View › New
+// settings stay. Later: not offered again until the next beta (Setup › App › New
 // versions still has Download).
 Dialog {
     id: offer

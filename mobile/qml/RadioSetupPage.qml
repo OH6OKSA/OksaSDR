@@ -343,16 +343,19 @@ Popup {
             Label { text: qsTr("Radio Setup"); color: Theme.text; font.pixelSize: Theme.px(22); font.bold: true; Layout.fillWidth: true }
             AppButton { text: qsTr("Close"); focusPolicy: Qt.NoFocus; onClicked: setup.close() }
         }
-        // Eleven in a row where each gets 84 px ("Phone/CW" whole), else
-        // 6 + 5, 4 + 4 + 3 on a phone, 3 + 3 + 3 + 2 on the narrowest.
+        // Fourteen in a row where each gets 88 px with the spacing ("Phone/CW"
+        // whole; 7 in a row elided it on an iPad's 620 px), else 7 + 7,
+        // 5 + 5 + 4, 4 + 4 + 4 + 2 on a phone, 3 + 3 + 3 + 3 + 2 on the
+        // narrowest. App, Spots and FTx last (roadmap 131), so the others
+        // keep their numbers (openSetup, the tests' setupTabN).
         GridLayout {
             id: setupTabs
             Layout.fillWidth: true
-            columns: width >= 11 * 84 ? 11 : width >= 6 * 84 ? 6 : width >= 4 * 68 ? 4 : 3
+            columns: width >= 14 * 92 ? 14 : width >= 7 * 92 ? 7 : width >= 5 * 88 ? 5 : width >= 4 * 68 ? 4 : 3
             columnSpacing: 4
             rowSpacing: 4
             Repeater {
-                model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("RX"), qsTr("Network"), qsTr("XVTR"), qsTr("Amp"), qsTr("USB"), qsTr("MIDI"), qsTr("Logging")]
+                model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("RX"), qsTr("Network"), qsTr("XVTR"), qsTr("Amp"), qsTr("USB"), qsTr("MIDI"), qsTr("Logging"), qsTr("App"), qsTr("Spots"), qsTr("FTx")]
                 delegate: AppButton {
                     required property int index
                     required property string modelData
@@ -387,7 +390,15 @@ Popup {
                 width: scroll.availableWidth
                 Label {
                     Layout.fillWidth: true
-                    text: setup.section === 7
+                    text: setup.section === 1 || setup.section === 2
+                          ? qsTr("The first part is this device's own and stays on it; the rest are the radio's own settings, as in SmartSDR's Radio Setup: changes are written to the radio.")
+                          : setup.section === 11
+                          ? qsTr("Not a setting of the radio: how this app looks and behaves on this device.")
+                          : setup.section === 12
+                          ? qsTr("Where this device reads spots from: it puts them on the radio, so every program on the radio shows them. What the display shows is chosen in Controls › View.")
+                          : setup.section === 13
+                          ? qsTr("Not a setting of the radio: FT8 / FT4 in this app on this device.")
+                          : setup.section === 7
                           ? qsTr("The amplifier is not a setting of the radio: this device reaches it directly, and the address stays on this device.")
                           : setup.section === 9
                           ? qsTr("The MIDI controller is not a setting of the radio: it connects to this device, and its settings stay on this device.")
@@ -509,6 +520,10 @@ Popup {
                 // ---- Transmit ----
                 ColumnLayout {
                     spacing: Theme.spacing / 2
+                    // This device's part first (roadmap 131: from the TX tab).
+                    Heading { text: qsTr("This device: PTT key (not in CW)") }
+                    PttKeySetup { Layout.fillWidth: true }
+                    Heading { text: qsTr("The radio") }
                     Level {
                         label: qsTr("Maximum power")
                         unit: " %"
@@ -785,6 +800,9 @@ Popup {
                 // ---- Phone/CW ----
                 ColumnLayout {
                     spacing: Theme.spacing / 2
+                    // This device's part first (roadmap 131: from the CW tab).
+                    Heading { text: qsTr("This device: CW keying") }
+                    CwKeyingSetup { Layout.fillWidth: true }
                     Heading { text: qsTr("Microphone") }
                     OnOff { label: qsTr("Mic bias (electret microphones)"); on: !!setup.d.micBias; onToggled: (v) => setup.set("micBias", v) }
                     OnOff { label: qsTr("Mic boost (+20 dB)"); on: !!setup.d.micBoost; onToggled: (v) => setup.set("micBoost", v) }
@@ -2320,6 +2338,11 @@ Popup {
 
                 // ---- Logging: this device's logbooks and accounts (roadmap 95) ----
                 LoggingSetup {}
+                // ---- App, Spots, FTx: this device's own, moved from the
+                // Controls tabs (roadmap 131) ----
+                AppSetup {}
+                SpotsSetup {}
+                FtxSetup {}
             }
         }
     }

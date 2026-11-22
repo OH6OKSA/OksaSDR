@@ -6,7 +6,7 @@ import AetherMobile
 // follows the window (rotation, Split View, Stage Manager, folding devices)
 // without per-device rules. Main.qml feeds in the window size.
 QtObject {
-    // ---- Dark or light (Controls › View › Theme, roadmap 118) ----
+    // ---- Dark or light (Setup › App › Theme, roadmap 118, 131) ----
     // Dark is the default and Classic as it has always been: every dark value
     // below is the one the app had before the light theme, so a dark screen
     // stays pixel for pixel the same (classic-check). Light is the operator's

@@ -45,6 +45,24 @@ ColumnLayout {
         }
     }
 
+    // This device's log as a file to share, and where it is (roadmap 131:
+    // moved here from the Log tab, whose Logbooks… opens this page).
+    AppButton {
+        visible: Engine.qsoCount > 0
+        Layout.fillWidth: true
+        Layout.preferredHeight: Theme.touchTarget
+        text: qsTr("Share the log (ADIF)")
+        focusPolicy: Qt.NoFocus
+        onClicked: Engine.shareQsoLog()
+    }
+    Label {
+        Layout.fillWidth: true
+        text: qsTr("Log file: %1").arg(Engine.qsoLogLocation)
+        color: Theme.textDim
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.WordWrap
+    }
+
     // Contacts from another logbook (or another device's OksaSDR log): an
     // ADIF file; contacts already in the log are skipped.
     AppButton {

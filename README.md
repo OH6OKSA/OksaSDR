@@ -83,7 +83,7 @@ radio interface, with no computer running alongside.
   outline instead of a comb of its pitch harmonics), and the 3D floor,
   gain and smoothing in the View tab, remembered on the device; plus the
   radio's own FFT average, FFT frames/s and waterfall speed.
-- **Band** beside −/+ zooms out to the whole band. View › Zoom buttons
+- **Band** beside −/+ zooms out to the whole band. Setup › App › Zoom buttons
   puts −/+, Band and B/S at the right for a right hand. In landscape with
   B/S hiding the band and step rows, these buttons move into the row under
   the waterfall (build 196).
@@ -126,7 +126,7 @@ radio interface, with no computer running alongside.
   drops on another. Several layouts, landscape and portrait apart, Undo,
   Reset, and an arrange bar with exact steps that the screen reader speaks.
   Classic stays as it is.
-- **Light theme** (View › Theme, thanks Larry W9FLA): a light page for
+- **Light theme** (Setup › App › Theme, thanks Larry W9FLA): a light page for
   daylight and tired eyes, text at 4.5:1 or more; the display stays dark as
   a radio's screen. Dark stays the default; **Auto** follows the device's
   own appearance and switches with it.
@@ -371,7 +371,7 @@ radio interface, with no computer running alongside.
 - Magic Keyboard and trackpad: arrows tune, Space is PTT, +/− zoom, F opens
   frequency entry, scroll tunes and ⌘-scroll zooms; a slider, switch or
   list used on the page never keeps the keyboard from them. Any key a
-  button sends can be learned as PTT (TX › PTT key: a handset's side key, a
+  button sends can be learned as PTT (Setup › Transmit › PTT key: a handset's side key, a
   Bluetooth button or a foot switch, thanks Rob VA3MET).
 - Safe-area aware: notch, Dynamic Island and the home indicator.
 - VoiceOver and TalkBack: every control has a spoken name; a double tap
@@ -496,7 +496,7 @@ landscape and Android pictures are taken from the devices.</sub>
   (Android 9 or newer, 64-bit ARM); the
   [tester guide](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md#android)
   has the steps. From beta 107 the app tells you when a newer beta is out
-  (View › New versions; it asks GitHub once a day).
+  (Setup › App › New versions; it asks GitHub once a day).
 - **Build it yourself.** Linux or macOS works for development with the
   built-in demo radio; see [`mobile/README.md`](mobile/README.md):
 

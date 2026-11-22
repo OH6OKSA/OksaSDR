@@ -28,104 +28,14 @@ ColumnLayout {
         }
     }
 
-    // Keying in PTT's place: a straight key, or paddles (dit, dah) timed by
-    // the app's iambic keyer, which follows the radio's iambic mode and
-    // swapped paddles (set here or in Setup > Phone/CW).
-    RowLayout {
+    // The key and the keyboard's paddles are set seldom: Setup › Phone/CW
+    // (roadmap 131), its first part; the radio's Iambic and Swap there too.
+    AppButton {
+        objectName: "openCwKeying"
         Layout.fillWidth: true
-        Label { text: qsTr("Key"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
-        AppButton {
-            text: qsTr("Straight key")
-            checked: !Engine.cwPaddles
-            Layout.fillWidth: true
-            onClicked: Engine.cwPaddles = false
-        }
-        AppButton {
-            text: qsTr("Paddles")
-            checked: Engine.cwPaddles
-            Layout.fillWidth: true
-            onClicked: Engine.cwPaddles = true
-        }
-    }
-    RowLayout {
-        Layout.fillWidth: true
-        visible: Engine.cwPaddles
-        Label { text: qsTr("Iambic"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
-        AppButton {
-            text: "A"
-            checked: Engine.cwIambicMode === 0
-            Layout.fillWidth: true
-            Layout.preferredWidth: 1
-            focusPolicy: Qt.NoFocus
-            onClicked: Engine.cwIambicMode = 0
-        }
-        AppButton {
-            text: "B"
-            checked: Engine.cwIambicMode === 1
-            Layout.fillWidth: true
-            Layout.preferredWidth: 1
-            focusPolicy: Qt.NoFocus
-            onClicked: Engine.cwIambicMode = 1
-        }
-        AppButton {
-            text: qsTr("Swap ⇄")
-            checked: Engine.cwSwapPaddles
-            Layout.fillWidth: true
-            Layout.preferredWidth: 1
-            focusPolicy: Qt.NoFocus
-            onClicked: Engine.cwSwapPaddles = !Engine.cwSwapPaddles
-        }
-    }
-    Label {
-        visible: Engine.cwPaddles
-        Layout.fillWidth: true
-        text: qsTr("Dit and dah take PTT's place; hold both for a squeeze. B adds one more element after a squeeze, A does not. Swap puts dah on the left.")
-        color: Theme.textDim
-        font.pixelSize: Theme.px(12)
-        wrapMode: Text.WordWrap
-    }
-
-    // Paddles on a hardware keyboard: which two keys are dit and dah.
-    Label {
-        visible: Engine.cwPaddles
-        Layout.fillWidth: true
-        Layout.topMargin: Theme.spacing / 2
-        text: qsTr("Paddles on a keyboard   (left key dit, right key dah)")
-        color: Theme.textDim
-        font.pixelSize: Theme.px(15)
-        wrapMode: Text.WordWrap
-    }
-    RowLayout {
-        Layout.fillWidth: true
-        visible: Engine.cwPaddles
-        Repeater {
-            model: [{ key: "off", label: qsTr("Off") }, { key: "ctrl", label: "Ctrl" },
-                    { key: "alt", label: "Alt ⌥" }, { key: "brackets", label: "[  ]" }]
-            delegate: AppButton {
-                required property var modelData
-                text: modelData.label
-                checked: Engine.cwKeyboardPaddles === modelData.key
-                Layout.fillWidth: true
-                Layout.preferredWidth: 1
-                focusPolicy: Qt.NoFocus
-                onClicked: Engine.cwKeyboardPaddles = modelData.key
-            }
-        }
-    }
-    Label {
-        visible: Engine.cwPaddles
-        Layout.fillWidth: true
-        text: {
-            switch (Engine.cwKeyboardPaddles) {
-            case "off": return qsTr("The keyboard does not key CW; use the dit and dah pads on the screen.")
-            case "ctrl": return qsTr("Left Ctrl = dit, right Ctrl = dah. USB paddle adapters (Vail, VBand) send these.")
-            case "alt": return qsTr("Left Alt / Option = dit, right Alt / Option = dah. For keyboards with no right Ctrl, such as Apple's Magic Keyboard.")
-            default: return qsTr("[ = dit, ] = dah. Where [ and ] need AltGr or Option (Finnish, German…), pick Ctrl or Alt.")
-            }
-        }
-        color: Theme.textDim
-        font.pixelSize: Theme.px(12)
-        wrapMode: Text.WordWrap
+        text: Engine.cwPaddles ? qsTr("Keying: paddles…") : qsTr("Keying: straight key…")
+        focusPolicy: Qt.NoFocus
+        onClicked: Engine.openSetup(2)
     }
 
     // The station being worked, for the memories' {HIS} and the Log tab's

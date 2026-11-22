@@ -93,45 +93,6 @@ ColumnLayout {
         wrapMode: Text.WordWrap
     }
 
-    // Band plan strip along the bottom of the spectrum.
-    Label { text: qsTr("Band plan"); color: Theme.textDim; font.pixelSize: Theme.px(16) }
-    Flow {
-        Layout.fillWidth: true
-        spacing: 4
-        Repeater {
-            model: [""].concat(Engine.bandPlans)
-            delegate: AppButton {
-                required property string modelData
-                text: modelData.length > 0 ? modelData : qsTr("Off")
-                checked: Engine.bandPlan === modelData
-                leftPadding: 10
-                rightPadding: 10
-                focusPolicy: Qt.NoFocus
-                onClicked: Engine.bandPlan = modelData
-            }
-        }
-    }
-    // Band plan lock (Tyler K0OTC): the band plan sets and limits the mode
-    // (HF); also in the mode chooser, and PLAN by the mode while it is on.
-    RowLayout {
-        Layout.fillWidth: true
-        Label {
-            text: qsTr("Band plan lock (mode)")
-            color: Theme.textDim
-            font.pixelSize: Theme.px(16)
-            Layout.fillWidth: true
-            wrapMode: Text.Wrap
-        }
-        AppButton {
-            objectName: "bandPlanLock"
-            text: Engine.bandPlanLock ? qsTr("On") : qsTr("Off")
-            checked: Engine.bandPlanLock
-            leftPadding: 10
-            rightPadding: 10
-            focusPolicy: Qt.NoFocus
-            onClicked: Engine.bandPlanLock = !Engine.bandPlanLock
-        }
-    }
     // The band row and the step buttons (also B/S on the display), and what
     // the step buttons step by (Larry Averbeck).
     RowLayout {
@@ -166,182 +127,41 @@ ColumnLayout {
             onClicked: Engine.radioStepButtons = true
         }
     }
-    // The display's corner buttons: zoom, Band and B/S at the left (as the
-    // desktop) or mirrored to the right for a right hand (Larry Averbeck),
-    // + Slice / + Pan then at the left.
-    RowLayout {
-        Layout.fillWidth: true
-        Label { text: qsTr("Zoom buttons"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
-        AppButton {
-            objectName: "displayButtonsLeft"
-            text: qsTr("Left")
-            checked: !Engine.displayButtonsRight
-            Layout.preferredWidth: Theme.buttonWidth
-            focusPolicy: Qt.NoFocus
-            onClicked: Engine.displayButtonsRight = false
-        }
-        AppButton {
-            objectName: "displayButtonsRight"
-            text: qsTr("Right")
-            checked: Engine.displayButtonsRight
-            Layout.preferredWidth: Theme.buttonWidth
-            focusPolicy: Qt.NoFocus
-            onClicked: Engine.displayButtonsRight = true
-        }
-    }
-    // Theme (roadmap 118, Larry Averbeck W9FLA; 125): the page dark (as it
-    // has always been), light for daylight and tired eyes, or Auto as the
-    // device's appearance; the display stays dark in all. Switched at once
-    // and remembered.
-    RowLayout {
-        Layout.fillWidth: true
-        Label { text: qsTr("Theme"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
-        AppButton {
-            objectName: "themeDark"
-            text: qsTr("Dark")
-            checked: Engine.theme === "dark"
-            Layout.preferredWidth: Theme.buttonWidth
-            focusPolicy: Qt.NoFocus
-            onClicked: Engine.theme = "dark"
-        }
-        AppButton {
-            objectName: "themeLight"
-            text: qsTr("Light")
-            checked: Engine.theme === "light"
-            Layout.preferredWidth: Theme.buttonWidth
-            focusPolicy: Qt.NoFocus
-            onClicked: Engine.theme = "light"
-        }
-        // The device's own appearance, switching with it (roadmap 125).
-        AppButton {
-            objectName: "themeAuto"
-            text: qsTr("Auto")
-            checked: Engine.theme === "auto"
-            Layout.preferredWidth: Theme.buttonWidth
-            focusPolicy: Qt.NoFocus
-            onClicked: Engine.theme = "auto"
-        }
-    }
-    // Text size: the system's (iOS Dynamic Type, Android's font scale) or a
-    // fixed one; every text in the app follows (Theme.textScale), held to
-    // 88-135 % so the layouts still fit.
-    ColumnLayout {
-        Layout.fillWidth: true
-        spacing: 4
-        RowLayout {
-            Layout.fillWidth: true
-            Label { text: qsTr("Text size"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
-            Repeater {
-                model: [{ v: "system", l: qsTr("System") }, { v: "100", l: "100 %" }, { v: "115", l: "115 %" }, { v: "130", l: "130 %" }]
-                delegate: AppButton {
-                    required property var modelData
-                    objectName: "textSize" + modelData.v
-                    text: modelData.l
-                    checked: Engine.textSize === modelData.v
-                    Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
-                    focusPolicy: Qt.NoFocus
-                    onClicked: Engine.textSize = modelData.v
-                }
-            }
-        }
-        Label {
-            Layout.fillWidth: true
-            visible: Engine.textSize === "system"
-            text: Engine.systemTextScale > 1.351
-                  ? qsTr("The system's text size is %1 %; the app stops at 135 % so its rows still fit.").arg(Math.round(Engine.systemTextScale * 100))
-                  : qsTr("Follows the system's text size, now %1 %.").arg(Math.round(Engine.systemTextScale * 100))
-            color: Theme.textDim
-            font.pixelSize: Theme.px(12)
-            wrapMode: Text.Wrap
-        }
-    }
-    // Felt taps (iPhone, Android phones): PTT, the step buttons, − / + and a
-    // slider's drag; the system's own setting still applies.
-    RowLayout {
-        Layout.fillWidth: true
-        Label {
-            text: qsTr("Felt taps (phones)")
-            color: Theme.textDim
-            font.pixelSize: Theme.px(15)
-            Layout.fillWidth: true
-            wrapMode: Text.Wrap
-        }
-        AppButton {
-            objectName: "hapticsOn"
-            text: Engine.hapticsOn ? qsTr("On") : qsTr("Off")
-            checked: Engine.hapticsOn
-            Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
-            focusPolicy: Qt.NoFocus
-            onClicked: Engine.hapticsOn = !Engine.hapticsOn
-        }
-    }
-    // The first-run hints again (the gestures nothing on screen shows).
-    RowLayout {
-        Layout.fillWidth: true
-        Label { text: qsTr("Hints"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
-        AppButton {
-            objectName: "showHints"
-            text: qsTr("Show again")
-            Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
-            focusPolicy: Qt.NoFocus
-            onClicked: Engine.showHints()
-        }
-    }
-    // New Android betas from GitHub (roadmap 111): only in the GitHub APK
-    // (TestFlight, the App Store and Play update theirs).
-    RowLayout {
-        visible: Engine.updateCheckBuilt
-        Layout.fillWidth: true
-        Label {
-            text: qsTr("New versions")
-            color: Theme.textDim
-            font.pixelSize: Theme.px(15)
-            Layout.fillWidth: true
-            wrapMode: Text.Wrap
-        }
-        AppButton {
-            objectName: "updateCheckOn"
-            text: Engine.updateCheck ? qsTr("On") : qsTr("Off")
-            checked: Engine.updateCheck
-            Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
-            focusPolicy: Qt.NoFocus
-            onClicked: Engine.updateCheck = !Engine.updateCheck
-        }
-    }
-    Label {
-        visible: Engine.updateCheckBuilt
-        Layout.fillWidth: true
-        text: (Engine.updateCheck
-               ? qsTr("Asks GitHub once a day whether a newer beta is out (GitHub sees this device's address). ")
-               : qsTr("Off: no new beta is looked for. "))
-              + Engine.updateStatus
-        color: Theme.textDim
-        font.pixelSize: Theme.px(13)
-        wrapMode: Text.Wrap
-    }
+    // This app's look and behaviour (Theme, Text size, Zoom buttons, Band
+    // plan, Felt taps, Hints, New versions) are set seldom: Setup › App
+    // (roadmap 131, the user: the Controls tabs keep what is used while
+    // operating, one button to where the rest is set).
     AppButton {
-        objectName: "updateDownload"
-        visible: Engine.updateCheckBuilt && Engine.updateBeta > 0
-        text: qsTr("Download beta %1").arg(Engine.updateBeta)
-        Layout.fillWidth: true
-        focusPolicy: Qt.NoFocus
-        onClicked: Qt.openUrlExternally(Engine.updateApkUrl)
-    }
-    // Spots on the display (the radio's, from every client) and this app's
-    // DX cluster connection, whose spots go to the radio.
-    RowLayout {
+        objectName: "openAppSetup"
         Layout.fillWidth: true
         Layout.topMargin: Theme.spacing / 2
-        Label { text: qsTr("Spots"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
-        AppButton {
-            text: Engine.showSpots ? qsTr("Shown") : qsTr("Hidden")
-            checked: Engine.showSpots
-            leftPadding: 10
-            rightPadding: 10
-            onClicked: Engine.showSpots = !Engine.showSpots
+        text: qsTr("Theme, text size, band plan…")
+        focusPolicy: Qt.NoFocus
+        onClicked: Engine.openSetup(11)
+    }
+    // Spots on the display (roadmap 131): every spot is the radio's, from
+    // every program on it; shown by where it came from: Cluster (a DX
+    // cluster's), POTA, WWFF, Other (SmartSDR's, another program's). The
+    // sources this device reads are set in Setup › Spots (Spot sources…).
+    Label { text: qsTr("Spots shown"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.topMargin: Theme.spacing / 2 }
+    RowLayout {
+        Layout.fillWidth: true
+        Repeater {
+            model: [{ key: "cluster", label: qsTr("Cluster") }, { key: "pota", label: "POTA" },
+                    { key: "wwff", label: "WWFF" }, { key: "other", label: qsTr("Other") }]
+            delegate: AppButton {
+                required property var modelData
+                objectName: "spotsShow_" + modelData.key
+                text: modelData.label
+                checked: Engine.spotSources.indexOf(modelData.key) >= 0
+                Accessible.name: checked ? qsTr("%1 spots, shown").arg(modelData.label) : qsTr("%1 spots, hidden").arg(modelData.label)
+                Layout.fillWidth: true
+                Layout.preferredWidth: 1
+                focusPolicy: Qt.NoFocus
+                onClicked: Engine.setSpotSourceShown(modelData.key, !checked)
+            }
         }
     }
-    // Which spots show: by mode and age.
     RowLayout {
         Layout.fillWidth: true
         visible: Engine.showSpots
@@ -373,119 +193,21 @@ ColumnLayout {
             }
         }
     }
-    RowLayout {
-        Layout.fillWidth: true
-        AppButton {
-            readonly property string state: Engine.dxCluster.state || "off"
-            text: state === "off" ? qsTr("DX cluster") : state === "connected" ? qsTr("DX cluster ✓") : qsTr("Connecting…")
-            checked: state !== "off"
-            enabled: Engine.connectionState === "connected"
-            Layout.preferredWidth: 140
-            onClicked: state === "off" ? Engine.connectDxCluster() : Engine.disconnectDxCluster()
-        }
-        Label {
-            Layout.fillWidth: true
-            text: (Engine.dxCluster.host || "") + ":" + (Engine.dxCluster.port || "")
-            color: Theme.textDim
-            font.pixelSize: Theme.px(13)
-            elide: Text.ElideRight
-        }
-    }
-    // Whether the cluster is on, as the logbook's and PSK Reporter's lines.
-    Label {
-        objectName: "dxClusterStatus"
-        Layout.fillWidth: true
-        visible: Engine.connectionState === "connected" || Engine.dxClusterStatusKind === "failed"
-        text: Engine.dxClusterStatus
-        color: Engine.dxClusterStatusKind === "ok" ? Theme.good
-             : Engine.dxClusterStatusKind === "failed" ? Theme.transmit : Theme.textDim
-        font.pixelSize: Theme.px(13)
-        wrapMode: Text.WordWrap
-    }
-    RowLayout {
-        Layout.fillWidth: true
-        TextField {
-            id: dxHost
-            Accessible.name: qsTr("DX cluster server")
-            Layout.fillWidth: true
-            placeholderText: qsTr("Cluster server")
-            text: Engine.dxCluster.host || ""
-            font.pixelSize: Theme.px(14)
-            inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhUrlCharactersOnly
-            onEditingFinished: if (text !== Engine.dxCluster.host) Engine.setDxCluster("host", text)
-        }
-        TextField {
-            Accessible.name: qsTr("DX cluster port")
-            Layout.preferredWidth: 72
-            placeholderText: qsTr("Port")
-            text: Engine.dxCluster.port || ""
-            font.pixelSize: Theme.px(14)
-            inputMethodHints: Qt.ImhDigitsOnly
-            validator: IntValidator { bottom: 1; top: 65535 }
-            onEditingFinished: Engine.setDxCluster("port", Number(text))
-        }
-    }
-    RowLayout {
-        Layout.fillWidth: true
-        TextField {
-            Accessible.name: qsTr("DX cluster callsign")
-            Layout.fillWidth: true
-            placeholderText: qsTr("Callsign (the radio's if empty)")
-            text: Engine.dxCluster.callsignFromRadio ? "" : (Engine.dxCluster.callsign || "")
-            font.pixelSize: Theme.px(14)
-            inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
-            onEditingFinished: Engine.setDxCluster("callsign", text)
-        }
-        AppButton {
-            text: qsTr("Auto")
-            checked: !!Engine.dxCluster.autoConnect
-            leftPadding: 10
-            rightPadding: 10
-            onClicked: Engine.setDxCluster("autoConnect", !checked)
-        }
-    }
     Label {
         Layout.fillWidth: true
-        text: qsTr("Logs in as %1. Spots go to the radio, so every program on it shows them; tap one on the display to tune to it. Auto connects with the radio.")
-              .arg(Engine.dxCluster.callsign || qsTr("(no callsign)"))
+        visible: !Engine.showSpots
+        text: qsTr("No spots shown: pick where from above.")
         color: Theme.textDim
         font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
     }
-    // POTA and WWFF activators' spots, read every minute (roadmap 109).
-    RowLayout {
+    AppButton {
+        objectName: "openSpotsSetup"
         Layout.fillWidth: true
-        Label { text: qsTr("Park spots"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
-        Repeater {
-            model: ["POTA", "WWFF"]
-            delegate: AppButton {
-                required property string modelData
-                objectName: "parkSpots" + modelData
-                text: modelData
-                checked: modelData === "POTA" ? !!Engine.parkSpots.pota : !!Engine.parkSpots.wwff
-                Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
-                focusPolicy: Qt.NoFocus
-                onClicked: Engine.setParkSpots(modelData, !checked)
-            }
-        }
+        text: Engine.dxCluster.state === "connected" ? qsTr("Spot sources… (DX cluster ✓)") : qsTr("Spot sources…")
+        focusPolicy: Qt.NoFocus
+        onClicked: Engine.openSetup(12)
     }
-    Label {
-        objectName: "parkSpotsStatus"
-        Layout.fillWidth: true
-        visible: text.length > 0
-        text: Engine.parkSpots.status || ""
-        color: Engine.parkSpots.ok ? Theme.textDim : Theme.transmit
-        font.pixelSize: Theme.px(12)
-        wrapMode: Text.WordWrap
-    }
-    Label {
-        Layout.fillWidth: true
-        text: qsTr("Activators from pota.app and wwff.co, read every minute, go to the radio like the cluster's spots. Tap one to tune to it; the Log tab then offers their call with their park.")
-        color: Theme.textDim
-        font.pixelSize: Theme.px(12)
-        wrapMode: Text.WordWrap
-    }
-    // 2D waterfall or the 3D stacked trace.
     RowLayout {
         Layout.fillWidth: true
         AppButton {

@@ -1,0 +1,212 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import AetherMobile
+
+// Setup › App (roadmap 131): this app's look and behaviour, set seldom,
+// moved here from the View tab (the user, 2026-11-22: the Controls tabs
+// keep what is used while operating, and one button leads to where the rest
+// is set). The same Engine calls and stored values as before.
+ColumnLayout {
+    spacing: Theme.spacing / 2
+    // Theme (roadmap 118, Larry Averbeck W9FLA; 125): the page dark (as it
+    // has always been), light for daylight and tired eyes, or Auto as the
+    // device's appearance; the display stays dark in all. Switched at once
+    // and remembered.
+    RowLayout {
+        Layout.fillWidth: true
+        Label { text: qsTr("Theme"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+        AppButton {
+            objectName: "themeDark"
+            text: qsTr("Dark")
+            checked: Engine.theme === "dark"
+            Layout.preferredWidth: Theme.buttonWidth
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.theme = "dark"
+        }
+        AppButton {
+            objectName: "themeLight"
+            text: qsTr("Light")
+            checked: Engine.theme === "light"
+            Layout.preferredWidth: Theme.buttonWidth
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.theme = "light"
+        }
+        // The device's own appearance, switching with it (roadmap 125).
+        AppButton {
+            objectName: "themeAuto"
+            text: qsTr("Auto")
+            checked: Engine.theme === "auto"
+            Layout.preferredWidth: Theme.buttonWidth
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.theme = "auto"
+        }
+    }
+    // Text size: the system's (iOS Dynamic Type, Android's font scale) or a
+    // fixed one; every text in the app follows (Theme.textScale), held to
+    // 88-135 % so the layouts still fit.
+    ColumnLayout {
+        Layout.fillWidth: true
+        spacing: 4
+        RowLayout {
+            Layout.fillWidth: true
+            Label { text: qsTr("Text size"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+            Repeater {
+                model: [{ v: "system", l: qsTr("System") }, { v: "100", l: "100 %" }, { v: "115", l: "115 %" }, { v: "130", l: "130 %" }]
+                delegate: AppButton {
+                    required property var modelData
+                    objectName: "textSize" + modelData.v
+                    text: modelData.l
+                    checked: Engine.textSize === modelData.v
+                    Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+                    focusPolicy: Qt.NoFocus
+                    onClicked: Engine.textSize = modelData.v
+                }
+            }
+        }
+        Label {
+            Layout.fillWidth: true
+            visible: Engine.textSize === "system"
+            text: Engine.systemTextScale > 1.351
+                  ? qsTr("The system's text size is %1 %; the app stops at 135 % so its rows still fit.").arg(Math.round(Engine.systemTextScale * 100))
+                  : qsTr("Follows the system's text size, now %1 %.").arg(Math.round(Engine.systemTextScale * 100))
+            color: Theme.textDim
+            font.pixelSize: Theme.px(12)
+            wrapMode: Text.Wrap
+        }
+    }
+    // The display's corner buttons: zoom, Band and B/S at the left (as the
+    // desktop) or mirrored to the right for a right hand (Larry Averbeck),
+    // + Slice / + Pan then at the left.
+    RowLayout {
+        Layout.fillWidth: true
+        Label { text: qsTr("Zoom buttons"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+        AppButton {
+            objectName: "displayButtonsLeft"
+            text: qsTr("Left")
+            checked: !Engine.displayButtonsRight
+            Layout.preferredWidth: Theme.buttonWidth
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.displayButtonsRight = false
+        }
+        AppButton {
+            objectName: "displayButtonsRight"
+            text: qsTr("Right")
+            checked: Engine.displayButtonsRight
+            Layout.preferredWidth: Theme.buttonWidth
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.displayButtonsRight = true
+        }
+    }
+    // Band plan strip along the bottom of the spectrum.
+    Label { text: qsTr("Band plan"); color: Theme.textDim; font.pixelSize: Theme.px(16) }
+    Flow {
+        Layout.fillWidth: true
+        spacing: 4
+        Repeater {
+            model: [""].concat(Engine.bandPlans)
+            delegate: AppButton {
+                required property string modelData
+                text: modelData.length > 0 ? modelData : qsTr("Off")
+                checked: Engine.bandPlan === modelData
+                leftPadding: 10
+                rightPadding: 10
+                focusPolicy: Qt.NoFocus
+                onClicked: Engine.bandPlan = modelData
+            }
+        }
+    }
+    // Band plan lock (Tyler K0OTC): the band plan sets and limits the mode
+    // (HF); also in the mode chooser, and PLAN by the mode while it is on.
+    RowLayout {
+        Layout.fillWidth: true
+        Label {
+            text: qsTr("Band plan lock (mode)")
+            color: Theme.textDim
+            font.pixelSize: Theme.px(16)
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+        }
+        AppButton {
+            objectName: "bandPlanLock"
+            text: Engine.bandPlanLock ? qsTr("On") : qsTr("Off")
+            checked: Engine.bandPlanLock
+            leftPadding: 10
+            rightPadding: 10
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.bandPlanLock = !Engine.bandPlanLock
+        }
+    }
+    // Felt taps (iPhone, Android phones): PTT, the step buttons, − / + and a
+    // slider's drag; the system's own setting still applies.
+    RowLayout {
+        Layout.fillWidth: true
+        Label {
+            text: qsTr("Felt taps (phones)")
+            color: Theme.textDim
+            font.pixelSize: Theme.px(15)
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+        }
+        AppButton {
+            objectName: "hapticsOn"
+            text: Engine.hapticsOn ? qsTr("On") : qsTr("Off")
+            checked: Engine.hapticsOn
+            Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.hapticsOn = !Engine.hapticsOn
+        }
+    }
+    // The first-run hints again (the gestures nothing on screen shows).
+    RowLayout {
+        Layout.fillWidth: true
+        Label { text: qsTr("Hints"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+        AppButton {
+            objectName: "showHints"
+            text: qsTr("Show again")
+            Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.showHints()
+        }
+    }
+    // New Android betas from GitHub (roadmap 111): only in the GitHub APK
+    // (TestFlight, the App Store and Play update theirs).
+    RowLayout {
+        visible: Engine.updateCheckBuilt
+        Layout.fillWidth: true
+        Label {
+            text: qsTr("New versions")
+            color: Theme.textDim
+            font.pixelSize: Theme.px(15)
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+        }
+        AppButton {
+            objectName: "updateCheckOn"
+            text: Engine.updateCheck ? qsTr("On") : qsTr("Off")
+            checked: Engine.updateCheck
+            Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.updateCheck = !Engine.updateCheck
+        }
+    }
+    Label {
+        visible: Engine.updateCheckBuilt
+        Layout.fillWidth: true
+        text: (Engine.updateCheck
+               ? qsTr("Asks GitHub once a day whether a newer beta is out (GitHub sees this device's address). ")
+               : qsTr("Off: no new beta is looked for. "))
+              + Engine.updateStatus
+        color: Theme.textDim
+        font.pixelSize: Theme.px(13)
+        wrapMode: Text.Wrap
+    }
+    AppButton {
+        objectName: "updateDownload"
+        visible: Engine.updateCheckBuilt && Engine.updateBeta > 0
+        text: qsTr("Download beta %1").arg(Engine.updateBeta)
+        Layout.fillWidth: true
+        focusPolicy: Qt.NoFocus
+        onClicked: Qt.openUrlExternally(Engine.updateApkUrl)
+    }
+}

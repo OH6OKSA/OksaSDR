@@ -8375,7 +8375,7 @@ bool MobileEngine::sendDxSpot(const QString& call, const QString& remark)
         return false;
     }
     if (!m_dx || !m_dx->isConnected()) {
-        setLastError(tr("Not spotted: the DX cluster is not connected (Controls › View › DX cluster)."));
+        setLastError(tr("Not spotted: the DX cluster is not connected (Setup › Spots)."));
         return false;
     }
     m_dx->sendCommand(line);
@@ -8408,10 +8408,14 @@ QVariantList MobileEngine::spots() const
         return out;
     }
     const QString modes = spotModes();
+    const QStringList sources = spotSources();
     const qint64 maxAgeMs = qint64(spotMaxAgeMin()) * 60 * 1000;
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
     for (const SpotData& s : m_session.radioModel().spotModel().spots()) {
         if (maxAgeMs > 0 && s.addedMs > 0 && now - s.addedMs > maxAgeMs) {
+            continue;
+        }
+        if (!sources.contains(spotSourceKind(s.source))) {
             continue;
         }
         if (modes != QLatin1String("all")) {
@@ -8433,16 +8437,81 @@ QVariantList MobileEngine::spots() const
     return out;
 }
 
+// The spots shown by source (roadmap 131: the View tab's Shown / Hidden
+// did not say that it had to be on, and spots showed with this device's
+// cluster and park spots off: they were the radio's, from the user's iPad).
+// Every spot is the radio's; its source tells where it came from: this
+// app's and the desktop's DX cluster send DXCluster, the park spots POTA
+// and WWFF; anything else (SmartSDR's, another program's) is "other".
+namespace {
+const QStringList kSpotSources = {QStringLiteral("cluster"), QStringLiteral("pota"), QStringLiteral("wwff"),
+                                  QStringLiteral("other")};
+const QString kSpotSourcesKey = QStringLiteral("MobileSpotSources");
+} // namespace
+
+QString MobileEngine::spotSourceKind(const QString& source)
+{
+    if (source.compare(QLatin1String("DXCluster"), Qt::CaseInsensitive) == 0) {
+        return QStringLiteral("cluster");
+    }
+    if (source.compare(QLatin1String("POTA"), Qt::CaseInsensitive) == 0) {
+        return QStringLiteral("pota");
+    }
+    if (source.compare(QLatin1String("WWFF"), Qt::CaseInsensitive) == 0) {
+        return QStringLiteral("wwff");
+    }
+    return QStringLiteral("other");
+}
+
+QStringList MobileEngine::spotSources() const
+{
+    const QVariant saved = AppSettings::instance().value(kSpotSourcesKey);
+    if (!saved.isValid() || saved.isNull()) {
+        // Before 131: Shown showed all, Hidden none.
+        const bool shown = AppSettings::instance().value(QStringLiteral("MobileShowSpots"), QStringLiteral("True")).toString()
+            == QLatin1String("True");
+        return shown ? kSpotSources : QStringList();
+    }
+    QStringList out;
+    const QStringList chosen = saved.toString().split(QLatin1Char(','), Qt::SkipEmptyParts);
+    for (const QString& s : kSpotSources) {
+        if (chosen.contains(s)) {
+            out << s;
+        }
+    }
+    return out;
+}
+
+void MobileEngine::setSpotSourceShown(const QString& source, bool shown)
+{
+    if (!kSpotSources.contains(source)) {
+        return;
+    }
+    QStringList now = spotSources();
+    if (shown == now.contains(source)) {
+        return;
+    }
+    if (shown) {
+        now << source;
+    } else {
+        now.removeAll(source);
+    }
+    // Saved even when empty ("none"), so the old Shown does not come back.
+    AppSettings::instance().setValue(kSpotSourcesKey, now.isEmpty() ? QStringLiteral("none") : now.join(QLatin1Char(',')));
+    AppSettings::instance().save();
+    qCInfo(lcMobile).noquote() << "spots shown from:" << (now.isEmpty() ? QStringLiteral("none") : now.join(QStringLiteral(", ")));
+    emit spotsChanged();
+}
+
 bool MobileEngine::showSpots() const
 {
-    return AppSettings::instance().value(QStringLiteral("MobileShowSpots"), QStringLiteral("True")).toString()
-        == QLatin1String("True");
+    return !spotSources().isEmpty();
 }
 
 void MobileEngine::setShowSpots(bool on)
 {
     if (on != showSpots()) {
-        AppSettings::instance().setValue(QStringLiteral("MobileShowSpots"), on ? QStringLiteral("True") : QStringLiteral("False"));
+        AppSettings::instance().setValue(kSpotSourcesKey, on ? kSpotSources.join(QLatin1Char(',')) : QStringLiteral("none"));
         AppSettings::instance().save();
         emit spotsChanged();
     }

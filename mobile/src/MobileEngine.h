@@ -498,6 +498,10 @@ class MobileEngine : public QObject {
     // (the spot's mode, else its comment or the band plan, as the desktop
     // resolves it) and the newest only, 0 (any) or 5/15/30 minutes.
     Q_PROPERTY(QString spotModes READ spotModes WRITE setSpotModes NOTIFY spotsChanged)
+    // Which spots the display shows by where they came from (roadmap 131):
+    // "cluster" (a DX cluster's, source DXCluster), "pota", "wwff" and
+    // "other" (SmartSDR's, another program's). showSpots is any of them.
+    Q_PROPERTY(QStringList spotSources READ spotSources NOTIFY spotsChanged)
     Q_PROPERTY(int spotMaxAgeMin READ spotMaxAgeMin WRITE setSpotMaxAgeMin NOTIFY spotsChanged)
     // DX cluster: {host, port, callsign (the radio's when not set),
     // callsignFromRadio, autoConnect, state off/connecting/connected, error}.
@@ -1617,6 +1621,9 @@ public:
     bool showSpots() const;
     void setShowSpots(bool on);
     QString spotModes() const;
+    QStringList spotSources() const;
+    static QString spotSourceKind(const QString& source);
+    Q_INVOKABLE void setSpotSourceShown(const QString& source, bool shown);
     void setSpotModes(const QString& modes);
     int spotMaxAgeMin() const;
     void setSpotMaxAgeMin(int minutes);

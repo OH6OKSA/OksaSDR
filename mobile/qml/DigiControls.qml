@@ -49,25 +49,6 @@ ColumnLayout {
         running: digi.visible && digi.automatic
         onTriggered: digi.presenceLeft = Engine.digiPresenceLeft()
     }
-    // The presence limit's steps (minutes).
-    readonly property var presenceSteps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 45, 60]
-    function presenceStep(dir) {
-        const now = Engine.digiPresenceMin
-        if (dir > 0) {
-            for (let i = 0; i < presenceSteps.length; ++i) {
-                if (presenceSteps[i] > now) {
-                    return presenceSteps[i]
-                }
-            }
-            return now
-        }
-        for (let j = presenceSteps.length - 1; j >= 0; --j) {
-            if (presenceSteps[j] < now) {
-                return presenceSteps[j]
-            }
-        }
-        return now
-    }
 
     RowLayout {
         Layout.fillWidth: true
@@ -407,106 +388,16 @@ ColumnLayout {
         font.pixelSize: Theme.px(13)
         wrapMode: Text.Wrap
     }
-    // The presence limit: Answer CQ and Keep CQ start no new QSO after
-    // this long without a touch on the app.
-    RowLayout {
+    // Auto stops, Answer CQ's calls and PSK Reporter are set seldom: Setup ›
+    // FTx (roadmap 131).
+    AppButton {
+        objectName: "openFtxSetup"
         visible: digi.settingsShown
         Layout.fillWidth: true
-        Label {
-            objectName: "digiPresence"
-            text: qsTr("Auto stops after %1 min untouched").arg(Engine.digiPresenceMin)
-            color: Theme.textDim
-            font.pixelSize: Theme.px(14)
-            Layout.fillWidth: true
-            wrapMode: Text.WordWrap
-        }
-        AppButton {
-            objectName: "digiPresenceDown"
-            text: "−"
-            Accessible.name: qsTr("Shorter presence limit")
-            Layout.preferredWidth: Theme.touchTarget
-            focusPolicy: Qt.NoFocus
-            enabled: Engine.digiPresenceMin > 1
-            onClicked: Engine.digiPresenceMin = digi.presenceStep(-1)
-        }
-        AppButton {
-            objectName: "digiPresenceUp"
-            text: "+"
-            Accessible.name: qsTr("Longer presence limit")
-            Layout.preferredWidth: Theme.touchTarget
-            focusPolicy: Qt.NoFocus
-            enabled: Engine.digiPresenceMin < 60
-            onClicked: Engine.digiPresenceMin = digi.presenceStep(1)
-        }
-    }
-    // Answer CQ's calls to one station before it moves on to another
-    // (roadmap 102, Kurt DL5EAG): 2-20, one at a time.
-    RowLayout {
-        visible: digi.settingsShown
-        Layout.fillWidth: true
-        Label {
-            objectName: "digiAnswerCalls"
-            text: qsTr("Answer CQ calls each station %1 times").arg(Engine.digiAnswerCalls)
-            color: Theme.textDim
-            font.pixelSize: Theme.px(14)
-            Layout.fillWidth: true
-            wrapMode: Text.WordWrap
-        }
-        AppButton {
-            objectName: "digiAnswerCallsDown"
-            text: "−"
-            Accessible.name: qsTr("Fewer calls to each station")
-            Layout.preferredWidth: Theme.touchTarget
-            focusPolicy: Qt.NoFocus
-            enabled: Engine.digiAnswerCalls > 2
-            autoRepeat: true
-            onClicked: Engine.digiAnswerCalls = Engine.digiAnswerCalls - 1
-        }
-        AppButton {
-            objectName: "digiAnswerCallsUp"
-            text: "+"
-            Accessible.name: qsTr("More calls to each station")
-            Layout.preferredWidth: Theme.touchTarget
-            focusPolicy: Qt.NoFocus
-            enabled: Engine.digiAnswerCalls < 20
-            autoRepeat: true
-            onClicked: Engine.digiAnswerCalls = Engine.digiAnswerCalls + 1
-        }
-    }
-    // PSK Reporter: the stations decoded here, reported (off by default).
-    RowLayout {
-        visible: digi.settingsShown
-        Layout.fillWidth: true
-        Label {
-            text: qsTr("Report to PSK Reporter")
-            color: Theme.text
-            Layout.fillWidth: true
-            wrapMode: Text.WordWrap
-        }
-        AppButton {
-            objectName: "pskReporterOff"
-            text: qsTr("Off")
-            checked: !Engine.pskReporter
-            focusPolicy: Qt.NoFocus
-            Layout.preferredWidth: 64
-            onClicked: Engine.pskReporter = false
-        }
-        AppButton {
-            objectName: "pskReporterOn"
-            text: qsTr("On")
-            checked: Engine.pskReporter
-            focusPolicy: Qt.NoFocus
-            Layout.preferredWidth: 64
-            onClicked: Engine.pskReporter = true
-        }
-    }
-    Label {
-        Layout.fillWidth: true
-        visible: digi.settingsShown && Engine.pskReporter && Engine.pskReporterStatus.length > 0
-        text: Engine.pskReporterStatus
-        color: Theme.textDim
-        font.pixelSize: Theme.px(12)
-        wrapMode: Text.WordWrap
+        text: qsTr("Auto stops %1 min · %2 calls · PSK Reporter %3…").arg(Engine.digiPresenceMin).arg(Engine.digiAnswerCalls)
+              .arg(Engine.pskReporter ? qsTr("on") : qsTr("off"))
+        focusPolicy: Qt.NoFocus
+        onClicked: Engine.openSetup(13)
     }
     // The device clock, judged from the decodes' DT: FT8 fails beyond about
     // a second.

@@ -55,7 +55,7 @@ logging_shots=(setup-logging)
 kpa_shots=(tab-kpa kpa-controls)
 elecraft_shots=(tab-kpa500 kpa500-controls kat500-controls setup-elecraft)
 layout_shots=(layout-edit layout-own)
-theme_shots=(theme-light)
+theme_shots=(theme-light setup-app setup-spots setup-ftx setup-phonecw setup-transmit)
 all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${layout_shots[@]}" "${theme_shots[@]}" "${phone_shots[@]}" phone-landscape phone-landscape-bs bandchooser
            "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" "${logging_shots[@]}" "${kpa_shots[@]}" "${elecraft_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
@@ -204,12 +204,22 @@ if want "${layout_shots[@]}"; then
     } | plan layouts 1366x1024 "${src[@]}" --controls visible
 fi
 
-# The light theme (roadmap 118): the iPad's page with the View tab's Theme
-# row in view; dark put back (the theme is remembered).
+# The light theme (roadmap 118): the iPad's page with the View tab pinned;
+# dark put back (the theme is remembered). Then Setup's tabs of this
+# device's own settings, moved there from the Controls tabs (roadmap 131):
+# App (Theme and the rest), Spots, FTx, and the first parts of Phone/CW
+# (the keying) and Transmit (the PTT key).
 if want "${theme_shots[@]}"; then
     {
         echo "wait $FILL"
-        printf 'pin 5\ntheme light\nwait 1500\nshowname themeLight\nwait 800\nshot theme-light\ntheme dark\nwait 800\n'
+        if want theme-light; then printf 'pin 5\ntheme light\nwait 1500\nshot theme-light\ntheme dark\nwait 800\n'; fi
+        if want setup-app setup-spots setup-ftx setup-phonecw setup-transmit; then printf 'popup radioSetup\nwait 800\n'; fi
+        if want setup-app; then printf 'click setupTab11\nwait 1500\nshot setup-app\n'; fi
+        if want setup-spots; then printf 'click setupTab12\nwait 1500\nshot setup-spots\n'; fi
+        if want setup-ftx; then printf 'click setupTab13\nwait 1500\nshot setup-ftx\n'; fi
+        if want setup-phonecw; then printf 'click setupTab2\nwait 1500\nshot setup-phonecw\n'; fi
+        if want setup-transmit; then printf 'click setupTab1\nwait 1500\nshot setup-transmit\n'; fi
+        if want setup-app setup-spots setup-ftx setup-phonecw setup-transmit; then printf 'close\nwait 600\n'; fi
     } | plan theme 1366x1024 "${src[@]}" --controls visible
 fi
 
@@ -236,12 +246,13 @@ if want "${phone_shots[@]}"; then
             fi
             printf 'holdname bigExit\nwait 1200\n'
         fi
-        # View › Park spots: POTA and WWFF on (off as the app starts), the
-        # line with what the lists hold now, then off again and the spots
-        # they put on the radio taken off.
+        # Setup › Spots (roadmap 131: from the View tab, by its Spot
+        # sources… button) › Park spots: POTA and WWFF on (off as the app
+        # starts), the line with what the lists hold now, then off again and
+        # the spots they put on the radio taken off.
         if want park-spots; then
-            printf 'drawer 5\nshowname parkSpotsPOTA\ntapname parkSpotsPOTA\ntapname parkSpotsWWFF\nwait 5000\n'
-            printf 'showname parkSpotsStatus\nshot park-spots\ntapname parkSpotsPOTA\ntapname parkSpotsWWFF\nspottest clearparks\nwait 1500\n'
+            printf 'drawer 5\nshowname openSpotsSetup\ntapname openSpotsSetup\nwait 1500\nshowname parkSpotsPOTA\ntapname parkSpotsPOTA\ntapname parkSpotsWWFF\nwait 5000\n'
+            printf 'showname parkSpotsStatus\nshot park-spots\ntapname parkSpotsPOTA\ntapname parkSpotsWWFF\nspottest clearparks\nwait 1500\nclose\nwait 600\n'
         fi
         # Hound on (it starts decoding), then off and decoding off again.
         if want ft8-hound; then
@@ -554,6 +565,11 @@ jpg frequency 700x720+333+150 500x
 jpg noslice 985x600+0+340 800x
 jpg network 460x600+448+212
 jpg setup 640x600+363+50
+jpg setup-app 640x600+363+50
+jpg setup-spots 640x600+363+50
+jpg setup-ftx 640x600+363+50
+jpg setup-phonecw 640x600+363+50
+jpg setup-transmit 640x600+363+50
 jpg tnf 967x492+13+354 800x
 jpg memory-edit 440x380+0+280
 # Its buttons only: the log lines below them are the radio's own.
@@ -565,7 +581,7 @@ for m in usb cw am fm rtty psk; do
     jpg "mode-$m" "" 330x
 done
 jpg ft8-hound 440x520+0+436
-jpg park-spots 440x520+0+436
+jpg park-spots "" 330x
 jpg tab-amp 440x520+0+436
 jpg tab-genius 440x520+0+436
 jpg tab-kpa 440x520+0+436

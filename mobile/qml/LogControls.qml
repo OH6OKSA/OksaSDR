@@ -479,21 +479,6 @@ ColumnLayout {
         color: Theme.textDim
         font.pixelSize: Theme.px(14)
     }
-    AppButton {
-        visible: Engine.qsoCount > 0
-        Layout.fillWidth: true
-        Layout.preferredHeight: Theme.touchTarget
-        text: qsTr("Share the log (ADIF)")
-        focusPolicy: Qt.NoFocus
-        onClicked: Engine.shareQsoLog()
-    }
-    Label {
-        Layout.fillWidth: true
-        text: qsTr("Log file: %1").arg(Engine.qsoLogLocation)
-        color: Theme.textDim
-        font.pixelSize: Theme.px(12)
-        wrapMode: Text.WordWrap
-    }
     // Where each logged QSO goes besides this device's log; the logbooks,
     // accounts and the ADIF import are set in Setup › Logging (roadmap 95).
     readonly property string destinations: {
@@ -625,7 +610,7 @@ ColumnLayout {
                 Layout.fillWidth: true
                 text: spotDialog.online
                       ? qsTr("Goes out under %1 to everyone on %2: spot a station you hear.").arg(Engine.dxCluster.callsign || "").arg(Engine.dxCluster.host || "")
-                      : qsTr("The DX cluster is not connected: turn it on in Controls › View › DX cluster.")
+                      : qsTr("The DX cluster is not connected: turn it on in Setup › Spots (the View tab's Spot sources…).")
                 color: spotDialog.online ? Theme.textDim : Theme.warning
                 font.pixelSize: Theme.px(14)
                 wrapMode: Text.Wrap
