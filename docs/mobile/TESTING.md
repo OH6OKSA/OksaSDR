@@ -120,9 +120,15 @@ the same release page as the Android APK:
 1. Open
    **[github.com/OH6OKSA/OksaSDR/releases/latest](https://github.com/OH6OKSA/OksaSDR/releases/latest)**
    and download its `OksaSDR-….AppImage` under *Assets*.
-2. Make it runnable and start it: `chmod +x OksaSDR-*.AppImage`, then
-   `./OksaSDR-*.AppImage` (or double-click it in the file manager).
-3. Connect as on the other devices: the radio's address on your network,
+2. Allow it to run: a downloaded file is not a program until you say so,
+   and without this a double-click does not start the app. In the file
+   manager, right-click the file › *Properties* › *Permissions* and tick
+   **Allow executing file as program** (Linux Mint; Ubuntu's Files calls
+   it *Executable as Program*, KDE's Dolphin *Is executable*), or in a
+   terminal: `chmod +x OksaSDR-*.AppImage`. This is needed once for each
+   new version you download.
+3. Start it with a double-click, or `./OksaSDR-*.AppImage` in a terminal.
+4. Connect as on the other devices: the radio's address on your network,
    SmartLink, or your VPN.
 
 It runs on Ubuntu 22.04, Linux Mint 21 and newer (glibc 2.35 or later).

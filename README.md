@@ -44,7 +44,7 @@ phone, tablet or Mac, with no other program beside it.
 
 **[Join the TestFlight test group](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md)** (iPhone, iPad, Mac with Apple silicon): what you need and how to join.
 
-**[Linux: download the AppImage](https://github.com/OH6OKSA/OksaSDR/releases/latest)** (x86_64, Ubuntu 22.04 / Linux Mint 21 or newer): the same app on a Linux desktop, on the same release page as the Android APK; see the [tester guide](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md#linux).
+**[Linux: download the AppImage](https://github.com/OH6OKSA/OksaSDR/releases/latest)** (x86_64, Ubuntu 22.04 / Linux Mint 21 or newer): the same app on a Linux desktop, on the same release page as the Android APK. After downloading, allow it to run (right-click › *Properties* › *Permissions* › *Allow executing file as program*, or `chmod +x`), then double-click it; see the [tester guide](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md#linux).
 
 **[Android beta: download the APK](https://github.com/OH6OKSA/OksaSDR/releases/latest)** (Android 9 or newer, 64-bit ARM): see the
 [tester guide](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md#android) for installing it.
