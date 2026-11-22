@@ -5,7 +5,8 @@ import AetherMobile
 
 // Setup › Spots (roadmap 131): where this device reads spots from and puts
 // them on the radio, the DX cluster and the park programs, moved here from
-// the View tab (which keeps what the display shows). Every program on the
+// the View tab (the Spots tab keeps what the display shows since build
+// 203). Every program on the
 // radio shows the spots this device sends.
 ColumnLayout {
     spacing: Theme.spacing / 2
@@ -167,7 +168,7 @@ ColumnLayout {
     }
     Label {
         Layout.fillWidth: true
-        text: qsTr("RBN: the Reverse Beacon Network's CW, RTTY and PSK skimmers, through your DX cluster (DX Spider; as RBN asks), from skimmers near you (View › From: your country, else your continent). PSK Reporter: digital stations heard by receivers in your country, live. Heard me: who hears your CQ, by band, from both. All go to the radio like the cluster's spots.")
+        text: qsTr("RBN: the Reverse Beacon Network's CW, RTTY and PSK skimmers, through your DX cluster (DX Spider; as RBN asks), from skimmers near you (Spots › From: your country, else your continent). PSK Reporter: digital stations heard by receivers in your country, live. Heard me: who hears your CQ, by band, from both. All go to the radio like the cluster's spots.")
         color: Theme.textDim
         font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap
@@ -237,7 +238,7 @@ ColumnLayout {
     }
     Label {
         Layout.fillWidth: true
-        text: qsTr("A spot of a call on the watch list, or of a DXCC not in your log (on its band, or not at all), pops up in the middle of the screen with Tune, plays the sound, and with the app in the background comes as a notification. Each call alerts once per band in 30 minutes. Only spots from where the View tab's From allows (anywhere, %1, %2) alert.")
+        text: qsTr("A spot of a call on the watch list, or of a DXCC not in your log (on its band, or not at all), pops up in the middle of the screen with Tune, plays the sound, and with the app in the background comes as a notification. Each call alerts once per band in 30 minutes. Only spots from where the Spots tab's From allows (anywhere, %1, %2) alert.")
               .arg(al.ownContinent || qsTr("your continent")).arg(al.ownPrefix || qsTr("your country"))
         color: Theme.textDim
         font.pixelSize: Theme.px(12)

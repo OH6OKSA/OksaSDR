@@ -41,7 +41,7 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-tabs=(dsp audio tx essb cw view profiles memory log digi freedv rtty)
+tabs=(dsp audio tx essb cw view spots profiles memory log digi freedv rtty)
 # Each run and its pictures; infopanel, slicerow and spectrum are cut from
 # overview. The modes run's segments (one per mode) run only when wanted.
 ipad_shots=(overview infopanel slicerow spectrum filter agc antenna mode frequency step volume split
@@ -55,7 +55,7 @@ logging_shots=(setup-logging)
 kpa_shots=(tab-kpa kpa-controls)
 elecraft_shots=(tab-kpa500 kpa500-controls kat500-controls setup-elecraft)
 layout_shots=(layout-edit layout-own)
-theme_shots=(theme-light setup-app setup-spots setup-spot-alerts setup-ftx setup-phonecw setup-transmit spot-alert)
+theme_shots=(theme-light setup-app setup-spots setup-spot-feeds setup-spot-alerts setup-ftx setup-phonecw setup-transmit spot-alert)
 all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${layout_shots[@]}" "${theme_shots[@]}" "${phone_shots[@]}" phone-landscape phone-landscape-bs bandchooser
            "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" "${logging_shots[@]}" "${kpa_shots[@]}" "${elecraft_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
@@ -213,15 +213,17 @@ if want "${theme_shots[@]}"; then
     {
         echo "wait $FILL"
         if want theme-light; then printf 'pin View\ntheme light\nwait 1500\nshot theme-light\ntheme dark\nwait 800\n'; fi
-        if want setup-app setup-spots setup-spot-alerts setup-ftx setup-phonecw setup-transmit; then printf 'popup radioSetup\nwait 800\n'; fi
+        if want setup-app setup-spots setup-spot-feeds setup-spot-alerts setup-ftx setup-phonecw setup-transmit; then printf 'popup radioSetup\nwait 800\n'; fi
         if want setup-app; then printf 'click setupTab11\nwait 1500\nshot setup-app\n'; fi
-        if want setup-spots setup-spot-alerts; then printf 'click setupTab12\nwait 1500\n'; fi
+        if want setup-spots setup-spot-feeds setup-spot-alerts; then printf 'click setupTab12\nwait 1500\n'; fi
         if want setup-spots; then printf 'shot setup-spots\n'; fi
+        # RBN, PSK Reporter and Heard me (roadmap 136), their switches off.
+        if want setup-spot-feeds; then printf 'scroll 395\nwait 800\nshot setup-spot-feeds\nscroll 0\nwait 500\n'; fi
         if want setup-spot-alerts; then printf 'scroll -10\nwait 800\nshot setup-spot-alerts\nscroll 0\nwait 500\n'; fi
         if want setup-ftx; then printf 'click setupTab13\nwait 1500\nshot setup-ftx\n'; fi
         if want setup-phonecw; then printf 'click setupTab2\nwait 1500\nshot setup-phonecw\n'; fi
         if want setup-transmit; then printf 'click setupTab1\nwait 1500\nshot setup-transmit\n'; fi
-        if want setup-app setup-spots setup-spot-alerts setup-ftx setup-phonecw setup-transmit; then printf 'close\nwait 600\n'; fi
+        if want setup-app setup-spots setup-spot-feeds setup-spot-alerts setup-ftx setup-phonecw setup-transmit; then printf 'close\nwait 600\n'; fi
         # A spot alert (roadmap 132): VK9XY on the watch list, a test spot
         # given by OH2BH, the banner; the watch list emptied and the spot
         # taken off after.
@@ -261,7 +263,7 @@ if want "${phone_shots[@]}"; then
         # starts), the line with what the lists hold now, then off again and
         # the spots they put on the radio taken off.
         if want park-spots; then
-            printf 'drawer View\nshowname openSpotsSetup\ntapname openSpotsSetup\nwait 1500\nshowname parkSpotsPOTA\ntapname parkSpotsPOTA\ntapname parkSpotsWWFF\nwait 5000\n'
+            printf 'drawer Spots\nshowname openSpotsSetup\ntapname openSpotsSetup\nwait 1500\nshowname parkSpotsPOTA\ntapname parkSpotsPOTA\ntapname parkSpotsWWFF\nwait 5000\n'
             printf 'showname parkSpotsStatus\nshot park-spots\ntapname parkSpotsPOTA\ntapname parkSpotsWWFF\nspottest clearparks\nwait 1500\nclose\nwait 600\n'
         fi
         # Hound on (it starts decoding), then off and decoding off again.
@@ -577,6 +579,7 @@ jpg network 460x600+448+212
 jpg setup 640x600+363+50
 jpg setup-app 640x600+363+50
 jpg setup-spots 640x600+363+50
+jpg setup-spot-feeds 640x700+363+50
 jpg setup-spot-alerts 640x940+363+50 520x
 jpg setup-ftx 640x600+363+50
 jpg setup-phonecw 640x600+363+50

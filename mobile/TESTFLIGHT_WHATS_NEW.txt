@@ -9,16 +9,17 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- The Controls tabs keep what you use while operating; settings changed seldom moved to Setup, one button each: View > Theme, text size, band plan… (Setup > App), Spot sources… (Setup > Spots), CW > Keying…, TX > PTT key…, the FTx tab's settings button (Setup > FTx); Share the log is in Setup > Logging.
-- View > Spots shown: Cluster, POTA, WWFF and Other, each with its count; From: anywhere, your continent or country.
-- Spot alerts, Setup > Spots: a call you hunt (VK9XY, 3Y0*) or a needed DXCC pops up in the middle with Tune, a sound, and a notification in the background.
-- Closing a slice closes its empty panadapter too, so your other devices still get one; a refused panadapter says why.
-- Editing or deleting a contact no longer freezes the app in a large log.
+- Spots have their own Controls tab, Spots; View keeps the display. The counts sit inside the buttons.
+- RBN skimmer spots (through your DX cluster) and PSK Reporter's live digital spots, from near you, each station once: Setup > Spots.
+- Heard me on the Spots tab: who hears your CQ, by band, the farthest and the best report.
+- An alert's Tune sets the radio for the spot's mode: FT8 / FT4 into FTx, RTTY, PSK, CW, with their tab.
+- Voice macros with the radio's microphone, a headset and VOX (thanks Chris DM5HF).
+- Done at the top puts the keyboard away (thanks Robin G5OUT); press and hold in the Macros panel edits (thanks Rob VA3MET).
 
-RECENT (builds 94–200)
+RECENT (builds 94–202)
+- 202: tidier Controls, settings in Setup; spot alerts; Spots From; panadapters closed with their slices.
 - 200: a PTT key of your own (thanks Rob VA3MET); held F-keys start once; Mac keys back; the shared ADIF file follows edits (thanks Chris DM5HF); Theme Auto.
 - 199: Light theme, Setup > App > Theme > Light; the display stays dark (thanks Larry W9FLA).
-- 197: own layouts of the iPad and Mac screen, View > Layout (thanks Larry W9FLA); AGC-A in the info line (thanks Tommy W6TPR).
 
 PLEASE TRY
 - Receive on a few bands with zoom, Band and the 3D view.
@@ -31,8 +32,9 @@ PLEASE TRY
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
 - VOX with a headset on this device: Controls > TX > VOX on, speak, and the radio keys by its VOX level and delay. [TX]
 - SmartLink over mobile data as well as Wi-Fi: connect, disconnect and connect again; no error should show after your own Disconnect.
-- New: each Controls tab's button to Setup (View, CW, TX, FTx, Log), and Setup's App, Spots and FTx tabs.
-- New: Setup > Spots > Watch list or Needed DXCC: the alert, Tune, and the notification with the app in the background.
+- New: Setup > Spots > RBN, PSK Reporter and Heard me; then call CQ and see Heard me fill.
+- New: an alert's Tune on an FT8 spot (Watch list): FTx on the band, the station in the list.
+- New: TX > Use the radio's microphone, then a voice macro and Repeat. [TX]
 - A button as PTT (Setup > Transmit > PTT key > Learn), held and with PTT Tap on / off, at low power. [TX]
 - Slices on two or more bands (+ Slice, then Band on one): each gets its own panadapter, and the FTx tab decodes them all, FT8 on one and FT4 on another.
 

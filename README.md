@@ -24,9 +24,13 @@ phone, tablet or Mac, with no other program beside it.
 - **The log**: QRZ.com lookups, the QRZ Logbook, Wavelog / Cloudlog, a
   shared ADIF file for a desktop logging program, ADIF for LoTW: no
   separate logger needed (the one you keep still gets every QSO).
-- **Spots**: the DX cluster, POTA and WWFF activators, and (build 202)
-  alerts for a call you hunt or a DXCC you need: no cluster client.
-- **Voice keyer, MIDI controllers** (CTR2), **amplifiers and tuners**
+- **Spots**: the DX cluster, POTA and WWFF activators, the Reverse
+  Beacon Network's skimmers and PSK Reporter's digital reports (build
+  203), each once, from near you; alerts for a call you hunt or a DXCC
+  you need, whose Tune sets the radio for the spot's mode (FT8 / FT4 into
+  FTx); and *Heard me*, who hears your CQ: no cluster client.
+- **Voice keyer** (also with a headset on the radio's microphone),
+  **MIDI controllers** (CTR2), **amplifiers and tuners**
   (Elecraft KPA1500, KPA500 / KAT500, RF-KIT RF2K-S, 4O3A Power Genius
   and Tuner Genius).
 

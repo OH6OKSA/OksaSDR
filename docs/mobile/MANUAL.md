@@ -454,7 +454,12 @@ The first page lists the ways to reach a radio:
   (Wi-Fi to the mobile network or a phone's hotspot, and back) makes the
   connection to SmartLink again at once, and a remote session that drops
   connects again by itself: *Connecting…* shows meanwhile, with **Cancel**
-  beside it to stop. This works with the app in the background too (the
+  beside it to stop. A session that ended without your own Disconnect
+  says why on this page (since build 203): *The connection ended: the
+  radio closed the connection.*, *…: no answer from the radio to 5
+  pings.* and the like, and every end goes into the log with its cause
+  (*disconnect: the ⋯ menu's Disconnect (asked)*), so a report tells a
+  dropped session from a tap on Disconnect. This works with the app in the background too (the
   radio's audio playing on, the screen off or another app in front): on
   iPhone and iPad the app asks iOS for time to finish the reconnect, which
   takes about 10 s, so the audio comes back without opening the app. If the radio no longer has the app's slice then (a
@@ -1376,8 +1381,11 @@ the value types it); SPLIT again (or XIT off there) ends it.
   CW the memories M1-M12, with the call being worked (`{HIS}`) and the
   calls heard; in RTTY and PSK the Digi tab's macros; in the voice modes
   the voice keyer F1-F12 (the slot sending is lit; an empty one says to
-  record it on the TX tab). A tap sends, **Stop** stops; editing stays on
-  the tabs (press and hold there). PTT, the paddles and the display stay
+  press and hold it to record). A tap sends, **Stop** stops; **press and
+  hold** edits right there (since build 203: the CW memory's or Digi
+  macro's editor, or the voice slot's Record, Listen, Rename and Clear,
+  the same as on the CW, Digi and TX tabs; before, a hold in the panel
+  sent the macro as a tap did, thanks Rob Metallo VA3MET). PTT, the paddles and the display stay
   in use while it is open; ✕ or the button again closes it, and so does
   opening the controls. It is the same set F1-F12 send on a keyboard, and
   it never takes the keyboard. With the CW decoder on (or RTTY / PSK
@@ -1422,14 +1430,15 @@ Controls* closes the drawer (upright, *Close* is at its foot; a tap outside
 it closes it too; thanks Larry Averbeck W9FLA). Where the window has no
 room to pin them (a foldable's inner screen, Split View), the **×** sits
 at the end of the first row of buttons and the drawer is a little wider,
-so no row is spent on it. The buttons are all one size, in rows of six:
-**DSP**, **Audio**, **TX**, **eSSB** (this device's microphone
-processing), **CW**, **View**, **Prof** (profiles), **Mem** (memory),
-**Log**, **FTx** (FT8 / FT4), **FreeDV** (RADE digital voice and FreeDV
-Reporter) and **Digi** (RTTY, PSK31, PSK63). With an amplifier set up
-([Radio Setup › Amp](#9-radio-setup)), or a 4O3A Power Genius XL or Tuner
-Genius XL connected to the radio, an **Amp** tab joins them, in rows of
-seven.
+so no row is spent on it. The buttons are all one size, in rows of seven
+(7 + 6; one row on a wide panel, 5 + 5 + 3 in an iPad's pinned side
+column): **DSP**, **Audio**, **TX**, **eSSB** (this device's microphone
+processing), **CW**, **View**, **Spots** (since build 203), **Prof**
+(profiles), **Mem** (memory), **Log**, **FTx** (FT8 / FT4), **FreeDV**
+(RADE digital voice and FreeDV Reporter) and **Digi** (RTTY, PSK31,
+PSK63). With an amplifier set up ([Radio Setup › Amp](#9-radio-setup)),
+or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
+**Amp** tab joins them.
 
 ![iPad in portrait with the controls pinned under the display](manual/ipad-portrait.jpg)
 
@@ -1535,6 +1544,15 @@ seven.
     audio; thanks Christoph Steinert DM5HF). Either way **Listen** plays a recording to you without
     transmitting, so you can check it before naming it. Features that need
     SmartSDR+ appear only when the radio reports the subscription.
+    With **Use the radio's microphone** (a headset on the radio, VOX) the
+    voice macros still go out (since build 203; Christoph Steinert DM5HF,
+    POTA with a Heil headset): the radio's voice keyer as it is, and the
+    app's own recordings with the radio's mic input switched to this
+    device's for the macro and back to the radio's right after it, however
+    it ends (its end, Stop, the controls opened). With **Repeat** this
+    happens for each send, so your headset and VOX answer in the gaps
+    (*CQ POTA* again and again, the answer by voice). Not while the radio
+    transmits by its own PTT or VOX.
 
   **Digital max** (thanks Sloan Davis, whose Aurora gave 140 W on FT8 with
   the power left at his SSB setting): − and + set the highest RF power for
@@ -1613,34 +1631,44 @@ seven.
   **Bands and steps** (shown or hidden, and *1 Hz – 1 kHz* or *STEP ×1 ×10
   ×100*), **Theme, text size, band plan…** (opens Setup › App: Theme,
   Text size, Zoom buttons, Band plan and its lock, Felt taps, Hints and on
-  Android New versions), **Spots shown**, 2D waterfall or 3D, waterfall
-  levels, spectrum range, FFT smooth and De-comb, 3D floor, smoothing and
-  gain.
+  Android New versions), 2D waterfall or 3D, waterfall levels, spectrum
+  range, FFT smooth and De-comb, 3D floor, smoothing and gain. The spots
+  have a tab of their own since build 203 (below).
+- **Spots** (since build 203; on the View tab until then, the user: they
+  took much of it) — which spots the display shows, and who hears you.
+
+  ![The Spots tab](manual/tab-spots.jpg)
+
   - **Spots shown** — every spot is the radio's: whatever any program on
-    it puts there (this device's cluster and park spots, SmartSDR's, your
-    other devices'). Pick which the display shows by where they came from:
-    **Cluster** (a DX cluster's: this device's, the desktop AetherSDR's or
-    another program's), **POTA**, **WWFF** and **Other**: the rest, such
-    as the Reverse Beacon Network's CW Skimmer spots, WSJT-X's and FreeDV
-    Reporter's stations that the desktop AetherSDR puts on the radio, and
-    what N1MM+, Log4OM or DXLab's SpotCollector send there (with only a
-    phone or a tablet on the radio, Other is usually empty); none picked
-    shows none. The line under the buttons says this too. Before build
-    201 one *Shown / Hidden* switch did this, and spots showed with this
-    device's cluster off because another device had put them on the radio.
+    it puts there (this device's cluster, RBN, PSK Reporter and park
+    spots, SmartSDR's, your other devices'). Pick which the display shows
+    by where they came from: **Cluster** (a DX cluster's), **RBN** (the
+    Reverse Beacon Network's skimmers), **PSKR** (PSK Reporter's digital
+    reports), **POTA**, **WWFF** and **Other**: the rest, such as WSJT-X's
+    and FreeDV Reporter's stations that the desktop AetherSDR puts on the
+    radio, and what N1MM+, Log4OM or DXLab's SpotCollector send there;
+    none picked shows none. Each button shows under its name how many
+    spots the radio has from it now (since build 203 on a second, smaller
+    line, as *Cluster 182* did not fit an iPad's pinned panel). A chosen
+    source this device does not read and that has none says so in amber,
+    with where to turn it on.
   - **Spot filters** — which spots show: *All*, *CW*, *Phone* or *Digital*
     (by the spot's mode, else its comment or the band plan, as on the
     desktop), and *Any age* or only those from the last 5, 15 or 30
-    minutes. **From** (since build 202): *Anywhere*, your continent (*EU*)
-    or your country (*OH*, by the radio's callsign): only spots given by a
-    spotter there, since a station spotted near you is one you can hear;
-    a spotter whose place is not known passes. It holds for the alerts
-    too. Each source button shows how many spots the radio has from it
-    now; a chosen source this device does not read and that has none says
-    so in amber, with where to turn it on.
-  - **Spot sources…** — opens Setup › Spots: the DX cluster this device
-    logs in to and the park spots it reads (✓ while the cluster is
-    connected).
+    minutes. **From**: *Anywhere*, your continent (*EU*) or your country
+    (*OH*, by the radio's callsign): only spots given by a spotter there,
+    since a station spotted near you is one you can hear; a spotter whose
+    place is not known passes. It holds for the alerts too, and since build
+    203 a cluster spot given from farther away does not go onto the radio
+    at all, and RBN's skimmers are chosen by it (see Setup › Spots).
+  - **Spot sources…** — opens Setup › Spots; it shows ✓ for each source
+    this device reads now (Cluster while connected, RBN, PSKR, POTA,
+    WWFF).
+  - **Heard me** (since build 203) — who heard your own signal in the last
+    half hour, by band: *20m FT8: 34 heard you · farthest VK3XX 15800 km ·
+    best +5 dB (OH1XX) · 2 min ago*. From PSK Reporter's reports of your
+    digital transmissions and RBN's skimmers' spots of your CQ (CW, RTTY,
+    PSK). Turned on in Setup › Spots.
 - **Prof** (profiles) — the radio's global, TX and mic profiles: load, save,
   delete, as in SmartSDR. Under them, **App setups** (thanks Larry
   Averbeck W9FLA) do the same for this app's own settings: type a name in
@@ -1766,7 +1794,7 @@ seven.
   too. A new call drops the old call's looked-up name and
   QTH and takes the new call's country. **Spot** beside it (asked by Christoph
   Steinert DM5HF) sends the call to the DX cluster the app is logged in to
-  (Setup › Spots, the View tab's **Spot sources…**), at the slice frequency. It asks first,
+  (Setup › Spots, the Spots tab's **Spot sources…**), at the slice frequency. It asks first,
   as a spot is a public post under your call, and shows the exact line
   (*DX 14154.0 K1ABC SSB*); the remark is the mode, with their park first
   when one is set (*POTA US-1234 SSB*), and can be changed (30
@@ -2862,9 +2890,11 @@ tab holds.
 
   ![Radio Setup › App](manual/setup-app.jpg)
 - **Spots** — where this device reads spots from and puts them on the
-  radio, so every program on it shows them (from the View tab since build
-  201; its **Spot sources…** opens this tab). What the display shows is
-  chosen in the View tab (*Spots shown*).
+  radio, so every program on it shows them (the Spots tab's **Spot
+  sources…** opens this tab). What the display shows is chosen on the
+  Spots tab (*Spots shown*). A spot whose call the radio already has
+  within 1 kHz, from any source or program, is not added again (since
+  build 203, the user: no duplicates from many places).
   - **DX cluster** — tap to connect, again to disconnect. Set the server and
     port (default dxc.nc7j.com 7300) and the callsign it logs in with (the
     radio's own when left empty); **Auto** connects whenever the radio
@@ -2901,6 +2931,36 @@ tab holds.
 
     ![Setup › Spots › Park spots](manual/park-spots.jpg)
 
+  - **RBN and PSK Reporter** (since build 203; the user's idea) — three
+    switches:
+    - **RBN skimmer spots** — the Reverse Beacon Network's CW, RTTY and
+      PSK skimmers, through your DX cluster, as RBN asks end users to (its
+      own servers are for the clusters). The app asks the cluster (DX
+      Spider, as the default dxc.nc7j.com) for skimmer spots from
+      skimmers near you: in your country with *From* on your country,
+      else on your continent (the whole world's would be several spots a
+      second). The DX cluster must be on. RBN's FT8 / FT4 spots are left
+      out: they all carry the band's FT8 frequency, and PSK Reporter has
+      those modes better.
+    - **PSK Reporter spots** — digital stations (FT8, FT4 and the rest)
+      heard by receivers in your country, live from PSK Reporter's feed
+      (mqtt.pskreporter.info; no account). Stations of your own country
+      are left out.
+    - **Heard me** — who hears your own signal: PSK Reporter's reports of
+      it and RBN's spots of your call, shown on the Spots tab. At the
+      start it asks PSK Reporter for the last half hour (at most every 5
+      minutes, as PSK Reporter asks), then follows live.
+
+    The busy feeds are kept in check: a station goes onto the radio once a
+    band in 10 minutes (RBN) or 15 minutes (PSK Reporter), at most 40 new
+    ones a band in that time, only on the radio's bands; a station on your
+    watch list or a needed DXCC (Spot alerts below) always does. The line
+    under the switches tells what each is doing (*RBN: through the DX
+    cluster, 233 skimmer spots so far. PSK Reporter: live, 1339 reports
+    so far.*).
+
+    ![Setup › Spots › RBN and PSK Reporter](manual/setup-spot-feeds.jpg)
+
   - **Spot alerts** (since build 202; the user's idea) — **Watch list**:
     calls you hunt, separated by commas, `*` for any characters
     (*VK9XY, 3Y0\**; a pattern is the whole call: *3Y0\** is 3Y0J, not
@@ -2908,10 +2968,18 @@ tab holds.
     log on the spot's band) or *New* (not in the log at all), by the same
     log and country list as the FTx tab's *New DXCC*; worked counts, not
     confirmed (the line under the buttons says so). A spot of either,
-    from where the View tab's *From* allows, shows in the middle of the
+    from where the Spots tab's *From* allows, shows in the middle of the
     screen: the call, frequency, mode and country, why, the spotter and
-    the time; **Tune** goes to it (as a tap on the spot), **×** shows the
-    next (*N more*; held, clears them all). **Sound** plays two short
+    the time; **Tune** goes to it and sets the radio for the spot's mode
+    (since build 203; the user's idea): CW, USB, LSB, AM or FM by the
+    spot; RTTY into RTTY with the mark on the signal; PSK31 / PSK63 into
+    the Digi tab's PSK; an FT8 or FT4 spot onto the band's FT8 / FT4
+    frequency in DIGU with FTx decoding in that protocol, the station
+    marked so its CQ comes up in the FTx list to answer with a tap (a
+    DXpedition's own frequency, such as 14.090, on the kHz below the
+    spot); and it opens the mode's Controls tab (FTx, Digi, CW). A tap on
+    a spot label does the same, switching the tab only when the controls
+    show. **×** shows the next (*N more*; held, clears them all). **Sound** plays two short
     tones with it; **Notify while the app is in the background** gives a
     notification while the app is away from the front (the first time,
     iOS asks for permission). Each call alerts once per band in 30
@@ -2979,6 +3047,13 @@ the field: logging a contact, sending CW text or saving is still the
 field's own button (until build 139 OK also pressed Return, so the Log
 tab logged a half-typed call at once). The iPad's GameController keyboard
 reading is not used on a Mac.
+
+**The on-screen keyboard** (since build 203; thanks Robin Bishop G5OUT):
+while it is up, **⌄ Done** at the top of the screen puts it away (an
+iPhone's keyboard has no key for it, and Return in some fields acts: in
+the Log tab's call it logs the contact). A tap anywhere outside the text
+field does the same. Either way the open controls or Setup stay open, and
+with a hardware keyboard Space keys PTT again.
 
 With a Magic Keyboard, trackpad or any hardware keyboard (also a
 Bluetooth keyboard on a phone, or Android's DeX):
@@ -3092,9 +3167,11 @@ asks. A newer beta installs over the old one and keeps your settings.
 whether a newer beta is out. When one is, it says *Android beta N is out*:
 **Download** opens the APK in the browser (open it to install over this
 one), **What's new** the release page, **Later** asks no more about that
-beta. **Setup › App → New versions** shows the last check and
-*Download beta N*, and turns the check off (GitHub then sees nothing from
-the app). On the iPhone, iPad and Mac TestFlight updates the app.
+beta. Since build 203 a newer build of the same beta number is offered
+too (*A newer build of Android beta N*): a preview's APK has the coming
+release's number, and the released one is the newer build. **Setup › App
+→ New versions** shows the last check and *Download beta N*, and turns the
+check off (GitHub then sees nothing from the app). On the iPhone, iPad and Mac TestFlight updates the app.
 Android 9 or newer, 64-bit ARM (practically every phone and tablet from the
 last years). The Android itself must be 64-bit: some tablets with a 64-bit
 processor run a 32-bit Android (e.g. the Galaxy Tab A 10.1 of 2019, SM-T510),

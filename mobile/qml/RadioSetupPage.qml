@@ -395,7 +395,7 @@ Popup {
                           : setup.section === 11
                           ? qsTr("Not a setting of the radio: how this app looks and behaves on this device.")
                           : setup.section === 12
-                          ? qsTr("Where this device reads spots from: it puts them on the radio, so every program on the radio shows them. What the display shows is chosen in Controls › View.")
+                          ? qsTr("Where this device reads spots from: it puts them on the radio, so every program on the radio shows them. What the display shows is chosen in Controls › Spots.")
                           : setup.section === 13
                           ? qsTr("Not a setting of the radio: FT8 / FT4 in this app on this device.")
                           : setup.section === 7

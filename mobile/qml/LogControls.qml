@@ -610,7 +610,7 @@ ColumnLayout {
                 Layout.fillWidth: true
                 text: spotDialog.online
                       ? qsTr("Goes out under %1 to everyone on %2: spot a station you hear.").arg(Engine.dxCluster.callsign || "").arg(Engine.dxCluster.host || "")
-                      : qsTr("The DX cluster is not connected: turn it on in Setup › Spots (the View tab's Spot sources…).")
+                      : qsTr("The DX cluster is not connected: turn it on in Setup › Spots (the Spots tab's Spot sources…).")
                 color: spotDialog.online ? Theme.textDim : Theme.warning
                 font.pixelSize: Theme.px(14)
                 wrapMode: Text.Wrap
