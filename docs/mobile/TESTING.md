@@ -104,13 +104,31 @@ The Android beta needs no invitation: download it and install it.
 
 You need Android 9 or newer on a 64-bit ARM phone or tablet. A newer beta
 installs over the old one; from beta 107 the app tells you when one is out
-(*Android beta N is out*, **Download**), and Controls › View › New versions
+(*Android beta N is out*, **Download**), and Setup › App › New versions
 shows the last check. The number in brackets after the version in the
 app's top row is the beta's: (35) for beta 35 (on the iPhone and iPad it is
 the TestFlight build). Report problems the same way as on the iPhone
 (*Log → Share* or *Copy*), and say "Android", your phone model and Android
 version. An email to oh6oksa@gmail.com with what you would like to test is
 welcome, but not needed to start.
+
+## Linux
+
+The same app for a Linux desktop (x86_64), from build 202 / beta 112 on
+the same release page as the Android APK:
+
+1. Open
+   **[github.com/OH6OKSA/OksaSDR/releases/latest](https://github.com/OH6OKSA/OksaSDR/releases/latest)**
+   and download its `OksaSDR-….AppImage` under *Assets*.
+2. Make it runnable and start it: `chmod +x OksaSDR-*.AppImage`, then
+   `./OksaSDR-*.AppImage` (or double-click it in the file manager).
+3. Connect as on the other devices: the radio's address on your network,
+   SmartLink, or your VPN.
+
+It runs on Ubuntu 22.04, Linux Mint 21 and newer (glibc 2.35 or later).
+The SmartLink sign-in and other secrets go to the desktop's Secret
+Service (GNOME Keyring or KWallet). Report problems as on the other
+devices (*Log → Share*), and say "Linux" and your distribution.
 
 ## Privacy
 
