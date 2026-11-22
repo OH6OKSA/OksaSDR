@@ -97,7 +97,8 @@ ColumnLayout {
         Layout.fillWidth: true
         Label {
             text: qsTr("Report to PSK Reporter")
-            color: Theme.text
+            color: Theme.textDim
+            font.pixelSize: Theme.px(14)
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
         }
