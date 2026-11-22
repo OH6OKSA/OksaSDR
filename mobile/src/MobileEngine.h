@@ -3270,6 +3270,7 @@ private:
     bool queueRadioSpot(const QString& call, double freqMhz, const QString& source, const QString& spotter,
                         const QString& comment, int lifetimeSec, QString color);
     void noteSpotCall(const SpotData& spot);
+    static QString spotNamedMode(const SpotData& spot);
     // Roadmap 137: an FT8 / FT4 spot's dial frequency (the band's FT8 / FT4
     // frequency the spot is within 3 kHz above, or a named FT8 / FT4 spot's
     // kHz below it, as a DXpedition's own), and its protocol; 0 if not FTx.

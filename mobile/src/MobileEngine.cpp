@@ -8535,17 +8535,20 @@ void MobileEngine::spotTest(const QString& action)
                                       "trigger_action=none lifetime_seconds=120 color=#FF3FB6FF")
                            .arg(QString::number(action.mid(4).toDouble(), 'f', 6)));
     } else if (action.startsWith(QLatin1String("spot="))) {
-        // spot=CALL,MHZ,SPOTTER,SOURCE[,MODE]: a spot as a cluster or a
-        // program gives one (roadmap 132's alerts and spotter's place);
-        // clear takes these off too.
+        // spot=CALL,MHZ,SPOTTER,SOURCE[,MODE[,COMMENT]]: a spot as a cluster
+        // or a program gives one (roadmap 132's alerts and spotter's place);
+        // COMMENT's _ are its spaces (a mode named inside it, roadmap 137);
+        // an empty MODE gives none. clear takes these off too.
         const QStringList f = action.mid(5).split(QLatin1Char(','));
         if (f.size() >= 4) {
             const QString call = f.at(0).trimmed().toUpper();
             m_spotTestCalls.insert(call);
+            const QString mode = f.value(4).trimmed();
+            const QString comment = f.size() >= 6 ? f.at(5).trimmed().replace(QLatin1Char('_'), QChar(0x7f)) : QStringLiteral("test");
             rm.sendCommand(QStringLiteral("spot add callsign=%1 rx_freq=%2 tx_freq=%2 source=%3 spotter_callsign=%4 %5"
-                                          "trigger_action=none lifetime_seconds=300 color=#FF3FB6FF comment=test")
+                                          "trigger_action=none lifetime_seconds=300 color=#FF3FB6FF comment=%6")
                                .arg(call, QString::number(f.at(1).toDouble(), 'f', 6), f.at(3).trimmed(), f.at(2).trimmed(),
-                                    f.size() >= 5 ? QStringLiteral("mode=%1 ").arg(f.at(4).trimmed()) : QString()));
+                                    mode.isEmpty() ? QString() : QStringLiteral("mode=%1 ").arg(mode), comment));
             qCInfo(lcMobile).noquote() << "spot test: added" << call << f.at(1) << "spotted by" << f.at(2) << "source" << f.at(3);
         }
     } else if (action == QLatin1String("clear")) {
@@ -8970,6 +8973,57 @@ bool MobileEngine::queueRadioSpot(const QString& call, double freqMhz, const QSt
 // program has spotted them (roadmap 109): from the spot itself (a POTA or
 // WWFF spot's comment starts with its reference), else from the programs'
 // latest spots by call, so a cluster spot of a park activator gives it too.
+namespace {
+// One word of a spot as the digital mode this app runs, or "" (roadmap 137;
+// the user, build 203's preview: "Tarkista myös rtty, pskxx"): BPSK31 and
+// PSK alone are PSK31, BPSK63 PSK63, RTTY45 / RTTY50 / RTTY75 RTTY; PSK125,
+// QPSK31 and the like keep their names (not decoded here).
+QString digitalSpotMode(const QString& word)
+{
+    const QString w = word.trimmed().toUpper();
+    if (w == QLatin1String("FT8") || w == QLatin1String("FT4") || w == QLatin1String("RTTY")) {
+        return w;
+    }
+    static const QRegularExpression rttyRe(QStringLiteral("^RTTY\\d{2,3}$"));
+    if (rttyRe.match(w).hasMatch()) {
+        return QStringLiteral("RTTY");
+    }
+    static const QRegularExpression pskRe(QStringLiteral("^(B?PSK|QPSK)(\\d{2,4})?$"));
+    if (const auto m = pskRe.match(w); m.hasMatch()) {
+        const QString rate = m.captured(2);
+        if (m.captured(1) == QLatin1String("QPSK")) {
+            return QStringLiteral("QPSK") + (rate.isEmpty() ? QStringLiteral("31") : rate);
+        }
+        if (rate.isEmpty() || rate == QLatin1String("31")) {
+            return QStringLiteral("PSK31");
+        }
+        return QStringLiteral("PSK") + rate;
+    }
+    return {};
+}
+} // namespace
+
+// The mode a spot names: its mode field, else a digital mode named anywhere
+// in its comment (the resolver reads only the first and last word, so "CQ
+// RTTY test" or "TNX FT8 QSO" named none and the tune went by the band plan
+// to a zero beat in DIGU), else the resolver's word (CW, SSB, ...).
+QString MobileEngine::spotNamedMode(const SpotData& spot)
+{
+    if (const QString mode = digitalSpotMode(spot.mode); !mode.isEmpty()) {
+        return mode;
+    }
+    if (!spot.mode.trimmed().isEmpty()) {
+        return spot.mode.trimmed().toUpper();
+    }
+    static const QRegularExpression splitRe(QStringLiteral("[\\s,;:/()]+"));
+    for (const QString& word : spot.comment.split(splitRe, Qt::SkipEmptyParts)) {
+        if (const QString mode = digitalSpotMode(word); !mode.isEmpty()) {
+            return mode;
+        }
+    }
+    return SpotModeResolver::extractSpotModeFromComment(spot.comment);
+}
+
 void MobileEngine::noteSpotCall(const SpotData& spot)
 {
     static const QRegularExpression refRe(QStringLiteral("^[A-Z0-9]{1,6}-[0-9]{4,5}$"));
@@ -9009,8 +9063,7 @@ void MobileEngine::tuneToSpot(int index)
         rm.sendCommand(QStringLiteral("spot trigger %1 pan=%2").arg(index).arg(m_pan->panId()));
     }
     QString mode = m_slice->mode();
-    const QString named = spot.mode.trimmed().isEmpty() ? SpotModeResolver::extractSpotModeFromComment(spot.comment)
-                                                        : spot.mode.trimmed().toUpper();
+    const QString named = spotNamedMode(spot);
     // A PSK spot (its signal's own frequency, as RBN and the cluster give
     // it) to the Digi tab's PSK in DIGU, the slice so the signal sounds at
     // the carrier set (1000 Hz unless moved), the decoder then onto the
@@ -9030,12 +9083,39 @@ void MobileEngine::tuneToSpot(int index)
         noteSpotCall(spot);
         setDigiProtocol(ftProto);
         digiTune(ftDial);
+        const int audioHz = qRound((spot.rxFreqMhz - ftDial) * 1e6);
+        // The green RX mark on the station's audio frequency (WSJT-X's Rx
+        // frequency, as a tap on its decode sets it): FT8's dial is the
+        // bottom of the audio window, the station that far above it (the
+        // user, build 203's preview, VK9XY on 30 m at 10.136 + 2417 Hz:
+        // "kuuntelu ei virittynyt juuri sille rx kohdalle millä asema
+        // lähetti"). Not while a QSO is on (its station keeps the mark).
+        if (audioHz >= 100 && audioHz <= 3200 && m_digiDx.isEmpty()) {
+            m_digiRxHz = audioHz;
+            emit digiChanged();
+        }
         qCInfo(lcMobile).noquote() << "tune to" << ftProto << "spot" << spot.callsign << spot.rxFreqMhz << "MHz: dial"
-                                   << QString::number(ftDial, 'f', 4) << "audio" << qRound((spot.rxFreqMhz - ftDial) * 1e6) << "Hz";
+                                   << QString::number(ftDial, 'f', 4) << "audio" << audioHz << "Hz, RX mark"
+                                   << (m_digiRxHz == audioHz ? "on it" : "kept on the QSO's station");
         emit controlsSectionRequested(QStringLiteral("Digi"), opensTab);
         return;
     }
-    const bool pskSpot = named == QLatin1String("PSK31") || named == QLatin1String("PSK63") || named == QLatin1String("PSK");
+    // A PSK this app does not decode (PSK125, QPSK31, ...): DIGU with the
+    // signal at 1000 Hz, seen in the waterfall and heard, the Digi tab left
+    // as it is.
+    if (autoMode && (named.startsWith(QLatin1String("PSK")) || named.startsWith(QLatin1String("QPSK")))
+        && named != QLatin1String("PSK31") && named != QLatin1String("PSK63")) {
+        if (m_slice->mode() != QLatin1String("DIGU") && m_slice->modeList().contains(QStringLiteral("DIGU"))) {
+            m_slice->setMode(QStringLiteral("DIGU"));
+        }
+        noteSpotCall(spot);
+        tuneTo(spot.rxFreqMhz - 0.001);
+        centreWhenSettled();
+        qCInfo(lcMobile).noquote() << "tune to" << named << "spot" << spot.callsign << spot.rxFreqMhz
+                                   << "MHz: DIGU, the signal at 1000 Hz (" + named + " is not decoded here)";
+        return;
+    }
+    const bool pskSpot = named == QLatin1String("PSK31") || named == QLatin1String("PSK63");
     if (pskSpot && (pskActive() || AppSettings::instance().value(QStringLiteral("SpotAutoSwitchMode"), QStringLiteral("True")).toString()
                                        == QLatin1String("True"))) {
         setTextMode(named == QLatin1String("PSK63") ? QStringLiteral("PSK63") : QStringLiteral("PSK31"));

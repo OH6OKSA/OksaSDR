@@ -2973,11 +2973,18 @@ tab holds.
     the time; **Tune** goes to it and sets the radio for the spot's mode
     (since build 203; the user's idea): CW, USB, LSB, AM or FM by the
     spot; RTTY into RTTY with the mark on the signal; PSK31 / PSK63 into
-    the Digi tab's PSK; an FT8 or FT4 spot onto the band's FT8 / FT4
-    frequency in DIGU with FTx decoding in that protocol, the station
+    the Digi tab's PSK (PSK125 and other PSKs it does not decode: DIGU
+    with the signal at 1000 Hz, to see and hear); an FT8 or FT4 spot onto
+    the band's FT8 / FT4 frequency in DIGU with FTx decoding in that
+    protocol and the green **RX** mark on the station's audio frequency
+    (FT8's dial is the bottom of the audio window: a spot at 10.1384 MHz
+    is the 30 m dial 10.136 with the station at 2384 Hz), the station
     marked so its CQ comes up in the FTx list to answer with a tap (a
-    DXpedition's own frequency, such as 14.090, on the kHz below the
-    spot); and it opens the mode's Controls tab (FTx, Digi, CW). A tap on
+    DXpedition's own frequency, such as 1.835 or 14.090, on the kHz below
+    the spot); and it opens the mode's Controls tab (FTx, Digi, CW). The
+    mode is the spot's own, else a digital mode named anywhere in its
+    comment (*CQ RTTY test*, *TNX FT8*, *BPSK31*), else its comment's
+    first or last word, else the band plan. A tap on
     a spot label does the same, switching the tab only when the controls
     show. **×** shows the next (*N more*; held, clears them all). **Sound** plays two short
     tones with it; **Notify while the app is in the background** gives a
