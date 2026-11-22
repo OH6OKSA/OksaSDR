@@ -94,6 +94,7 @@ ColumnLayout {
             delegate: AppButton {
                 required property int index
                 required property string modelData
+                objectName: "cwMemory_" + index
                 text: "M" + (index + 1) + "  " + modelData
                 Layout.fillWidth: true
                 Layout.preferredWidth: 1
