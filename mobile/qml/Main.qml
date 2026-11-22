@@ -48,10 +48,28 @@ ApplicationWindow {
     Component.onCompleted: pagePhone = phoneSized
     onPhoneSizedChanged: Qt.callLater(() => { window.pagePhone = window.phoneSized })
 
+    // The on-screen keyboard over the window (roadmap 142): the render
+    // tool's stand-in, or the system's. On an iPad with a hardware keyboard
+    // iOS shows only its shortcut bar, no keys: not counted then.
+    readonly property bool touchOs: Qt.platform.os === "ios" || Qt.platform.os === "android"
+    readonly property rect keyboardRect: Engine.testKeyboard
+                                         ? Qt.rect(0, height - Engine.testKeyboardHeight, width, Engine.testKeyboardHeight)
+                                         : Qt.inputMethod.keyboardRectangle
+    readonly property bool keyboardKeysShown: Qt.platform.os !== "ios" || keyboardRect.height >= 150
+    readonly property bool onScreenKeyboard: (touchOs && Qt.inputMethod.visible && keyboardKeysShown) || Engine.testKeyboard
+    // How much of the window's bottom it covers. The page and the controls
+    // drawers end above it (the user, build 203's preview on the iPad:
+    // typing in the Log tab the keyboard covered PTT, "virtuaalinäppäimistöllä
+    // ei PTT-painamme onnistu silloin, kun logikirjoitus päällä", and "melkein
+    // koko vesiputouksen"). 0 when the system made the window shorter itself.
+    readonly property real keyboardCover: onScreenKeyboard && keyboardRect.height > 0
+                                          ? Math.max(0, Math.min(height * 0.7, height - keyboardRect.y)) : 0
+
     // The page follows the connection: radio list until connected.
     Loader {
         id: pages
         anchors.fill: parent
+        anchors.bottomMargin: window.keyboardCover
         sourceComponent: Engine.connectionState !== "connected" ? connectPage
                        : window.pagePhone ? phoneOperatePage : operatePage
     }
@@ -66,16 +84,18 @@ ApplicationWindow {
 
     // The on-screen keyboard's Done (roadmap 142, Robin Bishop G5OUT): an
     // iPhone's keyboard has no key to put it away, and Return in some fields
-    // acts (the Log tab's call logs the contact). At the top, clear of the
-    // keyboard; it lets go of the field, and the page takes the keys again
-    // (Space PTT on a tablet's keyboard). A tap outside the field does the
-    // same (TextFocusRelease).
+    // acts (the Log tab's call logs the contact). It lets go of the field,
+    // and the page takes the keys again (Space PTT on a tablet's keyboard).
+    // A tap outside the field does the same (TextFocusRelease).
     // A popup of its own, above the controls drawer and Setup: a press on
     // it is not a press outside them (which closed the drawer).
     Popup {
         id: keyboardDonePopup
-        readonly property bool touchOs: Qt.platform.os === "ios" || Qt.platform.os === "android"
-        readonly property bool wanted: (touchOs && Qt.inputMethod.visible) || Engine.testKeyboard
+        readonly property rect keyboard: window.keyboardRect
+        // Not with a hardware keyboard on an iPad (the user, build 203's
+        // preview: "Eikä tuo iPadissäkään kovin järkevältä näytä", Done at
+        // the top with no on-screen keyboard).
+        readonly property bool wanted: window.onScreenKeyboard
         parent: Overlay.overlay
         z: 1000
         modal: false
@@ -84,14 +104,163 @@ ApplicationWindow {
         closePolicy: Popup.NoAutoClose
         padding: 0
         background: null
-        x: Math.round((window.width - width) / 2)
-        y: pages.SafeArea.margins.top + 4
-        onWantedChanged: wanted ? open() : close()
+
+        // Where: by the field being edited, which the system keeps in sight
+        // above the keyboard (sliding the page up for a field low on the
+        // screen). At the window's top Done went out of sight then (the
+        // user, build 203's preview on the OnePlus Open's outer screen:
+        // "Etukannen tilassa sitä ei näy ollenkaan"; an iPhone slides the
+        // page the same way), and it covered the top row. Below the field
+        // at its right end where the keyboard leaves that in sight, else
+        // above it; the first of those spots with nothing to press or type
+        // in under it, as the empty end of the Log tab's Sent / Rcvd row.
+        property string spot: ""
+        function topmostAt(root, sx, sy) {
+            // The deepest visible item under a window point (the Done
+            // popup itself left out), from the topmost child down.
+            let found = null
+            let item = root
+            for (let depth = 0; depth < 48 && item; ++depth) {
+                const kids = item.children
+                let hit = null
+                for (let i = kids.length - 1; i >= 0; --i) {
+                    const c = kids[i]
+                    if (!c.visible || c.opacity <= 0 || c === keyboardDonePopup.contentItem.parent)
+                        continue
+                    const p = c.mapFromItem(null, sx, sy)
+                    if (p.x >= 0 && p.y >= 0 && p.x < c.width && p.y < c.height && (!hit || c.z > hit.z))
+                        hit = c
+                }
+                if (!hit)
+                    break
+                found = hit
+                item = hit
+            }
+            return found
+        }
+        function pressable(item) {
+            // A button, a switch or a text field, or a part of one.
+            for (let i = 0; i < 4 && item; ++i, item = item.parent) {
+                if (typeof item.clicked === "function" || item.cursorRectangle !== undefined
+                        || typeof item.moved === "function")
+                    return true
+            }
+            return false
+        }
+        function covers(sx, sy) {
+            const points = [[sx + 4, sy + 4], [sx + width - 4, sy + 4], [sx + 4, sy + height - 4],
+                            [sx + width - 4, sy + height - 4], [sx + width / 2, sy + height / 2]]
+            for (const pt of points) {
+                const item = topmostAt(Overlay.overlay, pt[0], pt[1]) || topmostAt(window.contentItem, pt[0], pt[1])
+                if (pressable(item))
+                    return true
+            }
+            return false
+        }
+        function place() {
+            const field = window.activeFocusItem
+            const top = pages.SafeArea.margins.top + 4
+            let where = "top"
+            if (!field || field.cursorRectangle === undefined) {
+                x = Math.round((window.width - width) / 2)
+                y = top
+            } else {
+                const p = field.mapToItem(null, 0, 0)
+                const right = Math.round(Math.max(8, Math.min(p.x + field.width - width, window.width - width - 8)))
+                const left = Math.round(Math.max(8, Math.min(p.x, window.width - width - 8)))
+                const below = Math.round(p.y + field.height + 6)
+                const above = Math.round(p.y - height - 6)
+                const keyboardTop = keyboard.height > 0 ? keyboard.y : window.height
+                const belowSeen = below + height <= Math.min(keyboardTop, window.height) - 4
+                const aboveSeen = above >= top
+                const spots = []
+                if (belowSeen) spots.push(["below right", right, below])
+                if (aboveSeen) spots.push(["above right", right, above])
+                if (belowSeen) spots.push(["below left", left, below])
+                if (aboveSeen) spots.push(["above left", left, above])
+                let chosen = null
+                for (const s of spots) {
+                    if (!covers(s[1], s[2])) {
+                        chosen = s
+                        break
+                    }
+                }
+                // Every spot over another control (a field at the bottom of
+                // Setup's room, its port field above): over the field's own
+                // right end instead, not over a neighbour.
+                if (!chosen)
+                    chosen = ["in the field's right end", right - 4, Math.round(p.y + (field.height - height) / 2)]
+                where = chosen[0]
+                x = chosen[1]
+                y = chosen[2]
+            }
+            if (where !== spot) {
+                spot = where
+                console.info("keyboard: Done " + where + " at " + x + "," + y + "; keyboard "
+                             + Math.round(keyboard.y) + "+" + Math.round(keyboard.height) + " of " + window.height)
+            }
+        }
+        // The field scrolled into its page's sight once the page has made
+        // room for the keyboard (a phone in landscape keeps little of the
+        // drawer: the Log tab's call went below its fold). Once per field,
+        // so a scroll of one's own while typing stays.
+        function reveal() {
+            const field = window.activeFocusItem
+            if (!field || field.cursorRectangle === undefined)
+                return
+            for (let flick = field.parent; flick; flick = flick.parent) {
+                if (flick.contentY === undefined || flick.contentHeight === undefined || flick.contentItem === undefined)
+                    continue
+                const p = field.mapToItem(flick.contentItem, 0, 0)
+                const margin = 8
+                if (p.y + field.height + margin > flick.contentY + flick.height)
+                    flick.contentY = Math.min(p.y + field.height + margin - flick.height,
+                                              Math.max(0, flick.contentHeight - flick.height))
+                if (p.y - margin < flick.contentY)
+                    flick.contentY = Math.max(0, p.y - margin)
+                return
+            }
+        }
+        Timer {
+            id: revealTimer
+            interval: 350
+            onTriggered: {
+                keyboardDonePopup.reveal()
+                keyboardDonePopup.place()
+            }
+        }
+        onWantedChanged: {
+            if (wanted) {
+                spot = ""
+                place()
+                open()
+                revealTimer.restart()
+            } else {
+                close()
+            }
+        }
+        // Follows the field while the drawer slides or its page scrolls.
+        Timer {
+            interval: 200
+            repeat: true
+            running: keyboardDonePopup.opened
+            onTriggered: keyboardDonePopup.place()
+        }
+        Connections {
+            target: window
+            function onActiveFocusItemChanged() {
+                if (keyboardDonePopup.opened) {
+                    keyboardDonePopup.place()
+                    revealTimer.restart()
+                }
+            }
+        }
         contentItem: AppButton {
             objectName: "keyboardDone"
             leftPadding: 16
             rightPadding: 16
-            text: qsTr("⌄ Done")
+            // A plain word: Android's font has no "⌄" (it showed a box).
+            text: qsTr("Done")
             Accessible.name: qsTr("Hide the keyboard")
             focusPolicy: Qt.NoFocus
             onClicked: {
@@ -102,6 +271,17 @@ ApplicationWindow {
                     Engine.testKeyboardOff()
             }
         }
+    }
+    // The render tool's stand-in keyboard, drawn where a phone's would be.
+    Rectangle {
+        parent: Overlay.overlay
+        z: 999
+        visible: Engine.testKeyboard && Engine.testKeyboardHeight > 0
+        x: 0
+        y: window.height - Engine.testKeyboardHeight
+        width: window.width
+        height: Engine.testKeyboardHeight
+        color: "#6b6f76"
     }
 
     // A SmartLink radio presented a different TLS certificate than the one

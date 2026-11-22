@@ -308,6 +308,57 @@ public:
 class TextFocusRelease : public QObject {
 public:
     explicit TextFocusRelease(QObject* parent) : QObject(parent) {}
+    // PTT (keepsTextFocus) keeps the field and its keyboard: the operator
+    // keys between typing a call and logging it (roadmap 142, the user on
+    // the iPad, build 203's preview). The deepest visible item under the
+    // point, topmost first (the controls drawer's items are in the overlay,
+    // a child of the content item), and its parents.
+    static QQuickItem* deepestAt(QQuickItem* item, const QPointF& scenePos, int depth = 0)
+    {
+        if (depth > 64) {
+            return nullptr;
+        }
+        QList<QQuickItem*> children = item->childItems();
+        std::stable_sort(children.begin(), children.end(),
+                         [](const QQuickItem* a, const QQuickItem* b) { return a->z() < b->z(); });
+        for (auto it = children.crbegin(); it != children.crend(); ++it) {
+            QQuickItem* child = *it;
+            if (!child->isVisible() || child->opacity() <= 0.0 || !child->contains(child->mapFromScene(scenePos))) {
+                continue;
+            }
+            if (QQuickItem* deeper = deepestAt(child, scenePos, depth + 1)) {
+                return deeper;
+            }
+            // Only what takes a press or draws counts: an empty container
+            // is passed through (the popups' layer and the page's layout
+            // loaders cover the window), as Qt passes a press below it.
+            if (child->inherits("QQuickOverlay")) {
+                continue;   // takes presses only to close popups; its popups count
+            }
+            if (child->acceptedMouseButtons() != Qt::NoButton || child->acceptTouchEvents()
+                || child->flags().testFlag(QQuickItem::ItemHasContents)) {
+                return child;
+            }
+        }
+        return nullptr;
+    }
+    static bool keepsTextFocusAt(QQuickItem* root, const QPointF& scenePos)
+    {
+        QQuickItem* deepest = deepestAt(root, scenePos);
+        if (qEnvironmentVariableIsSet("OKSASDR_DEBUG_PRESS")) {
+            QStringList chain;
+            for (QQuickItem* up = deepest; up && chain.size() < 8; up = up->parentItem()) {
+                chain << QString::fromLatin1(up->metaObject()->className()) + QLatin1Char(':') + up->objectName();
+            }
+            qInfo().noquote() << "press over a text field's page:" << chain.join(QStringLiteral(" < "));
+        }
+        for (QQuickItem* up = deepest; up; up = up->parentItem()) {
+            if (up->property("keepsTextFocus").toBool()) {
+                return true;
+            }
+        }
+        return false;
+    }
     bool eventFilter(QObject* receiver, QEvent* event) override
     {
         if (event->type() != QEvent::MouseButtonPress && event->type() != QEvent::TouchBegin) {
@@ -323,7 +374,8 @@ public:
         if (press->points().isEmpty()) {
             return false;
         }
-        if (!field->contains(field->mapFromScene(press->points().first().scenePosition()))) {
+        const QPointF at = press->points().first().scenePosition();
+        if (!field->contains(field->mapFromScene(at)) && !keepsTextFocusAt(window->contentItem(), at)) {
             field->setFocus(false);
             // And the on-screen keyboard goes (roadmap 142, Robin Bishop
             // G5OUT's iPhone: an iPhone's keyboard has no key to hide it,

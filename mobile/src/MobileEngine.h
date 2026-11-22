@@ -108,6 +108,9 @@ class MobileEngine : public QObject {
     // The render tool's stand-in for the on-screen keyboard (roadmap 142's
     // Done key shows while one is up; a desktop has none).
     Q_PROPERTY(bool testKeyboard READ testKeyboard NOTIFY testKeyboardChanged)
+    // Its height in the window's pixels (0: none drawn), as a phone's
+    // keyboard covering the lower part of the window.
+    Q_PROPERTY(int testKeyboardHeight READ testKeyboardHeight NOTIFY testKeyboardChanged)
     // Text size: "system" follows the system's text size (iOS Dynamic Type,
     // Android's font scale), or "100" / "115" / "130" percent. textScale is
     // the factor every text size in the theme is multiplied by, held to
@@ -1662,7 +1665,15 @@ public:
     QVariantMap spotAlert() const;
     QVariantMap spotFeeds() const;
     bool testKeyboard() const { return m_testKeyboard; }
-    void setTestKeyboard(bool on) { if (on != m_testKeyboard) { m_testKeyboard = on; emit testKeyboardChanged(); } }
+    void setTestKeyboard(bool on, int height = 0)
+    {
+        if (on != m_testKeyboard || height != m_testKeyboardHeight) {
+            m_testKeyboard = on;
+            m_testKeyboardHeight = on ? height : 0;
+            emit testKeyboardChanged();
+        }
+    }
+    int testKeyboardHeight() const { return m_testKeyboardHeight; }
     // The stand-in keyboard put away by Done, as the real one is.
     Q_INVOKABLE void testKeyboardOff() { setTestKeyboard(false); }
     // key: rbn, psk, heardMe.
@@ -3007,6 +3018,7 @@ private:
     void seedHeardMe();
     qint64 m_pskQueryMs{0};
     bool m_testKeyboard{false};
+    int m_testKeyboardHeight{0};
     // Roadmap 143: the radio's mic input a voice macro switched from, and
     // the macro waiting for the switch.
     QString m_dvkRadioMic;

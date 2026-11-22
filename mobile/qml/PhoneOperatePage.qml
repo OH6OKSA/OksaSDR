@@ -604,11 +604,18 @@ Page {
         objectName: "controlsDrawer"
         edge: page.landscape ? Qt.RightEdge : Qt.BottomEdge
         width: page.landscape ? Math.min(page.width * 0.5, 460) : page.width
-        height: page.landscape || page.controlsFull ? (parent ? parent.height : page.height) : Math.min(page.height * 0.55, 520)
+        height: page.landscape || page.controlsFull ? (parent ? parent.height : page.height)
+                                                    : Math.min(page.height * 0.55, 520) + Math.max(0, page.Window.height - page.height)
         // To the window's edges: Qt otherwise keeps popups inside the safe
         // area (above Android's navigation bar) and the drawer stopped short
         // of the page's bottom row. The content below keeps the insets.
         margins: 0
+        // The on-screen keyboard over the drawer's lower part (roadmap 142):
+        // a drawer reaching the window's bottom keeps its controls and PTT
+        // above it (Qt places a bottom drawer at the window's edge whatever
+        // its margins, so it grows by the keyboard instead and pads that).
+        readonly property real keyboardOver: (edge === Qt.BottomEdge || height >= page.Window.height - 1)
+                                             ? Math.max(0, page.Window.height - page.height) : 0
         dim: false
         dragMargin: 0
         // A drawer opening while PTT is held would hide the button.
@@ -632,7 +639,9 @@ Page {
             // Qt already pads a popup's content by the safe area; on top of
             // that the same bottom inset as the page's own bottom row, so the
             // drawer's PTT lands where the page's was.
-            anchors.bottomMargin: Theme.spacing / 2 + Math.max(0, 8 - controlsDrawer.SafeArea.margins.bottom)
+            anchors.bottomMargin: controlsDrawer.keyboardOver > 0
+                                  ? Theme.spacing / 2 + Math.max(0, controlsDrawer.keyboardOver - controlsDrawer.SafeArea.margins.bottom)
+                                  : Theme.spacing / 2 + Math.max(0, 8 - controlsDrawer.SafeArea.margins.bottom)
             spacing: Theme.spacing
             ControlsPanel {
                 id: phoneDrawerPanel
@@ -696,6 +705,7 @@ Page {
                     }
                 }
                 PttButton {
+                    objectName: "drawerPtt"
                     visible: !digiHidden
                     paddleSide: page.splitPaddles ? "right" : "both"
                     paddleState: page.splitPaddles ? paddleState : null

@@ -14,7 +14,7 @@ NEW IN THIS BUILD
 - Heard me on the Spots tab: who hears your CQ, by band, the farthest and the best report.
 - An alert's Tune sets the radio for the spot's mode: FT8 / FT4 into FTx, RTTY, PSK, CW, with their tab.
 - Voice macros with the radio's microphone, a headset and VOX (thanks Chris DM5HF).
-- Done at the top puts the keyboard away (thanks Robin G5OUT); press and hold in the Macros panel edits (thanks Rob VA3MET).
+- The on-screen keyboard: Done by the field, PTT and the display above it, PTT keeps typing (thanks Robin G5OUT); press and hold in the Macros panel edits (thanks Rob VA3MET).
 
 RECENT (builds 94–202)
 - 202: tidier Controls, settings in Setup; spot alerts; Spots From; panadapters closed with their slices.

@@ -13,9 +13,17 @@ Popup {
     objectName: "radioSetup"
     parent: Overlay.overlay
     modal: true
-    anchors.centerIn: parent
+    // Centred in the part of the window the on-screen keyboard leaves
+    // (roadmap 142): its fields stay in sight while typing, and the
+    // keyboard's Done finds room beside them.
+    // Not when that leaves it too low to show a field below its tabs (a
+    // phone in landscape): the system slides the window up then, as before.
+    readonly property real windowCover: ApplicationWindow.window ? ApplicationWindow.window.keyboardCover || 0 : 0
+    readonly property real keyboardCover: parent && parent.height - windowCover >= 420 ? windowCover : 0
+    x: parent ? Math.round((parent.width - width) / 2) : 0
+    y: parent ? Math.round((parent.height - keyboardCover - height) / 2) : 0
     width: Math.min(parent ? parent.width * 0.95 : 600, 640)
-    height: parent ? parent.height * 0.9 : 800
+    height: parent ? (parent.height - keyboardCover) * 0.9 : 800
     padding: Theme.spacing
     background: Rectangle { color: Theme.surface; radius: Theme.radius }
 

@@ -8,7 +8,7 @@
 - **Heard me** (136): who hears your own CQ, by band, the farthest and the best report, from PSK Reporter and RBN, on the Spots tab.
 - **An alert's Tune sets the whole radio** (roadmap 137, the user's idea): the spot's mode (CW, USB, LSB, AM, FM, RTTY, PSK), an FT8 / FT4 spot onto the band's FT8 / FT4 frequency with FTx decoding in that protocol, and the mode's Controls tab.
 - **Voice macros with the radio's microphone** (roadmap 143; Christoph Steinert DM5HF, a headset on the radio and VOX): the radio's input is switched to this device's for the macro and back right after it, also between Repeat's sends.
-- **The keyboard put away** (roadmap 142; Robin Bishop G5OUT): **⌄ Done** at the top while the on-screen keyboard is up, and a tap outside the field.
+- **The keyboard put away** (roadmap 142; Robin Bishop G5OUT): **Done** by the field while the on-screen keyboard is up, and a tap outside the field; the page, the controls drawer and Setup make room above the keyboard, so PTT and part of the waterfall stay in sight, and PTT keeps the field and its keyboard (key between typing the call and logging).
 - **A press and hold in the Macros panel edits** (roadmap 139; Rob Metallo VA3MET): it sent the macro before, as a tap.
 - **Why a connection ended** (roadmap 138): the Connect page says it when it was not your Disconnect, and the log has every end's cause. **The update offer** (133) also offers a newer build of the same beta (a preview's APK).
 

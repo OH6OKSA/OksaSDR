@@ -9,6 +9,9 @@ import AetherMobile
 AppButton {
     id: ptt
     property int fontPx: 32
+    // A press here keeps the text field typed in and its on-screen keyboard
+    // (TextFocusRelease; roadmap 142): call while logging, then go on typing.
+    readonly property bool keepsTextFocus: true
     // Stays enabled while held: disabling a pressed button cancels the
     // press, which would unkey mid-transmission.
     readonly property bool keyMode: Engine.cwMode && !Engine.tuning

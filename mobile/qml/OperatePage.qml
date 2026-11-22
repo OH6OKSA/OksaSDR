@@ -1048,12 +1048,19 @@ Page {
         // Landscape: ends above the page's PTT row, which stays usable, so
         // the drawer needs no PTT of its own. Portrait (from the bottom)
         // covers it and carries a copy.
-        height: page.portrait ? (page.controlsFull ? (parent ? parent.height : page.height) : Math.min(page.height * 0.5, 560))
+        height: page.portrait ? (page.controlsFull ? (parent ? parent.height : page.height)
+                                                   : Math.min(page.height * 0.5, 560) + Math.max(0, page.Window.height - page.height))
                               : page.height - page.pttHeight - 2 * Theme.spacing
                                 - Math.max(page.SafeArea.margins.bottom, 12)
         // From the window's edge: Qt otherwise keeps popups inside the safe
         // area (above Android's navigation bar).
         margins: 0
+        // The on-screen keyboard over the drawer's lower part (roadmap 142):
+        // a drawer reaching the window's bottom keeps its controls and PTT
+        // above it (Qt places a bottom drawer at the window's edge whatever
+        // its margins, so it grows by the keyboard instead and pads that).
+        readonly property real keyboardOver: (edge === Qt.BottomEdge || height >= page.Window.height - 1)
+                                             ? Math.max(0, page.Window.height - page.height) : 0
         dim: false
         dragMargin: 0
         onAboutToShow: {
@@ -1074,7 +1081,9 @@ Page {
             anchors.fill: parent
             anchors.margins: Theme.spacing
             // Qt already pads a popup's content by the safe area.
-            anchors.bottomMargin: Theme.spacing + Math.max(0, 12 - controlsDrawer.SafeArea.margins.bottom)
+            anchors.bottomMargin: controlsDrawer.keyboardOver > 0
+                                  ? Theme.spacing + Math.max(0, controlsDrawer.keyboardOver - controlsDrawer.SafeArea.margins.bottom)
+                                  : Theme.spacing + Math.max(0, 12 - controlsDrawer.SafeArea.margins.bottom)
             spacing: Theme.spacing
             ControlsPanel {
                 id: drawerPanel
@@ -1133,6 +1142,7 @@ Page {
                 }
                 PttButton {
                     id: drawerPtt
+                    objectName: "drawerPtt"
                     visible: !digiHidden
                     Layout.fillWidth: true
                     Layout.preferredHeight: page.pttHeight

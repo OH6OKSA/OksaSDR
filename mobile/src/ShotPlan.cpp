@@ -1678,9 +1678,10 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         m_engine.dvkPlay(arg.toInt());
         *delayMs = 300;
     } else if (command == QLatin1String("keyboard")) {
-        // keyboard on|off: as if the on-screen keyboard were up (roadmap
-        // 142's Done key), for the pictures.
-        m_engine.setTestKeyboard(arg == QLatin1String("on"));
+        // keyboard on [HEIGHT]|off: as if the on-screen keyboard were up
+        // (roadmap 142's Done key), HEIGHT px of the window's bottom covered
+        // (a gray block in the pictures), for the pictures.
+        m_engine.setTestKeyboard(arg == QLatin1String("on"), args.value(1).toInt());
         *delayMs = 400;
     } else if (command == QLatin1String("txblock")) {
         // Every transmission refused, as during a developer-link plan: keys

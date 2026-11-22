@@ -3049,9 +3049,22 @@ tab logged a half-typed call at once). The iPad's GameController keyboard
 reading is not used on a Mac.
 
 **The on-screen keyboard** (since build 203; thanks Robin Bishop G5OUT):
-while it is up, **⌄ Done** at the top of the screen puts it away (an
+while it is up, **Done** by the field you type in puts it away (an
 iPhone's keyboard has no key for it, and Return in some fields acts: in
-the Log tab's call it logs the contact). A tap anywhere outside the text
+the Log tab's call it logs the contact). It sits below the field at its
+right end, or above the field when the keyboard covers the space below
+(the screen then slides up to keep the field in sight), where it covers
+no button (else over the field's own empty end). With a hardware
+keyboard on an iPad there is no on-screen keyboard and no Done.
+
+While the on-screen keyboard is up the page makes room for it instead of
+lying under it: the display, **Macros** and **PTT** move up above the
+keyboard (the waterfall gets lower), the controls drawer and Setup end at
+its top, and the field you type in is scrolled into sight. **PTT keeps
+the field and its keyboard**: in a run, type the call, key, and go on
+typing the report before **Log**. (On a phone in landscape Setup stays
+full size and slides up with the field, as there is too little room
+above the keyboard.) A tap anywhere outside the text
 field does the same. Either way the open controls or Setup stay open, and
 with a hardware keyboard Space keys PTT again.
 
