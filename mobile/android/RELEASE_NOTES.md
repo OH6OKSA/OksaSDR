@@ -1,8 +1,11 @@
-**OksaSDR for Android and Linux — beta 113.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code. One app runs the whole station: the radio, FT8 / FT4, CW, RTTY, PSK, RADE, the log and the spots, with no WSJT-X, logging program or cluster client beside it.
+**OksaSDR for Android and Linux — beta 114.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code. One app runs the whole station: the radio, FT8 / FT4, CW, RTTY, PSK, RADE, the log and the spots, with no WSJT-X, logging program or cluster client beside it.
 
 **Linux** (new on this page): `OksaSDR-….AppImage` under *Assets* is the same app for a Linux desktop (x86_64; Ubuntu 22.04, Linux Mint 21 or newer). Download it, allow it to run (right-click › *Properties* › *Permissions* › tick *Allow executing file as program*, or `chmod +x` in a terminal; without it a double-click does nothing) and start it; see [the tester guide](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md#linux).
 
-### New in beta 113
+### New in beta 114
+- **A Bluetooth headset keeps receive after transmitting** (roadmap 144; Mattias SM6YEC, a Galaxy S24+ with a Jabra Evolve2 65 and a second headset over SmartLink): the microphone opened on the headset's hands-free link ended the receive stream on it, and receive stayed silent after the first transmission until the app was restarted. Receive now opens again on the headset after each transmission.
+
+### Still new from beta 113
 - **Spots on a tab of their own** (roadmap 134, the user: they took much of View): Controls › **Spots** has *Spots shown*, the filters and *Spot sources…*; View keeps the display. The counts now sit on a second line inside each source's button (135).
 - **RBN and PSK Reporter** (roadmap 136, the user's idea): Setup › Spots › **RBN skimmer spots** brings the Reverse Beacon Network's CW, RTTY and PSK skimmers through your DX cluster (as RBN asks), from skimmers in your country or continent (Spots › From); **PSK Reporter spots** the digital stations heard by receivers in your country, live. Each station goes onto the radio once a band in 10–15 minutes, at most 40 new a band, a station you hunt always; a call the radio already has within 1 kHz from any source is not added again, and a cluster spot given farther away than From allows stays off the radio.
 - **Heard me** (136): who hears your own CQ, by band, the farthest and the best report, from PSK Reporter and RBN, on the Spots tab.

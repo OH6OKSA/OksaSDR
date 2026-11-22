@@ -3210,7 +3210,10 @@ and there Android answers *App not installed*.
   OksaSDR → Battery → allow background activity.
 
 **Bluetooth headsets.** With a headset connected, receive audio and the
-microphone go through it (the hands-free link, as on the iPhone). Without
+microphone go through it (the hands-free link, as on the iPhone). Since
+Android beta 114 receive opens again on the headset after each
+transmission, as opening its microphone ends the receive stream on some
+phones (it stayed silent until a restart; thanks Mattias SM6YEC). Without
 one, the phone's speaker and microphone are used. **A USB-C headset** (or a
 USB-C to 3.5 mm adapter) is used the same way with *Auto*, ahead of
 Bluetooth; plugged in or out while connected, receive moves over at once. Controls › Audio ›

@@ -4897,6 +4897,25 @@ void MobileEngine::releasePtt(const QString& reason)
     m_pttInput.stop();
     stopDeviceMicrophoneCapture();
     duckReceive(false, "PTT released");
+#ifdef Q_OS_ANDROID
+    // A Bluetooth headset (roadmap 144; Mattias SM6YEC, beta 112 on a Galaxy
+    // S24+ with a Jabra Evolve2 65 and a second headset: silent after the
+    // first transmission until a restart): the microphone opened on the
+    // headset's hands-free link ends the receive stream playing on it, and
+    // the release only turned receive back on (the log's underruns from
+    // then on). Receive opens again once the microphone has closed, as it
+    // does after a route change.
+    if (m_connected && m_audio && m_session.radioModel().transmitModel().micSelection() == kDeviceMicSelection
+        && QJniObject::callStaticMethod<jboolean>("fi/oh6oksa/oksasdr/Platform", "headsetRoute",
+               "(Landroid/content/Context;)Z", QNativeInterface::QAndroidApplication::context().object())) {
+        QTimer::singleShot(300, this, [this] {
+            if (m_connected && m_audio && !m_pttHeld) {
+                qCInfo(lcMobile) << "receive opened again on the Bluetooth headset after transmitting";
+                QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->reopenRx(); }, Qt::QueuedConnection);
+            }
+        });
+    }
+#endif
     // A voice macro ends with its PTT press.
     if (m_voiceState == QLatin1String("playback")) {
         m_voiceState = QStringLiteral("idle");
