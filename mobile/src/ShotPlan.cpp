@@ -1665,6 +1665,18 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         m_engine.setTestSystemScheme(arg == QLatin1String("light") ? 1 : arg == QLatin1String("dark") ? 2 : 0);
         qInfo().noquote() << "shot-plan: scheme" << arg << "-> light page" << m_engine.lightTheme();
         *delayMs = 600;
+    } else if (command == QLatin1String("voiceclip")) {
+        // voiceclip ID SECONDS: a test tone as voice slot ID's clip (143).
+        m_engine.setTestVoiceClip(args.value(0).toInt(), args.value(1).toDouble());
+        *delayMs = 300;
+    } else if (command == QLatin1String("micinput")) {
+        // micinput MIC|BAL|LINE|ACC|PC: the radio's mic input (143's tests).
+        m_engine.setTestMicInput(arg);
+        *delayMs = 1200;
+    } else if (command == QLatin1String("dvkplay")) {
+        // dvkplay ID: a voice macro as F1-F12 / the Macros panel start it.
+        m_engine.dvkPlay(arg.toInt());
+        *delayMs = 300;
     } else if (command == QLatin1String("keyboard")) {
         // keyboard on|off: as if the on-screen keyboard were up (roadmap
         // 142's Done key), for the pictures.

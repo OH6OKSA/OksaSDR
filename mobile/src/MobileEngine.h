@@ -3007,6 +3007,18 @@ private:
     void seedHeardMe();
     qint64 m_pskQueryMs{0};
     bool m_testKeyboard{false};
+    // Roadmap 143: the radio's mic input a voice macro switched from, and
+    // the macro waiting for the switch.
+    QString m_dvkRadioMic;
+    int m_dvkMicPendingId{0};
+    QTimer m_dvkMicTimer;
+    void restoreDvkMic(const QString& why);
+public:
+    // Tests (shot plans): a test tone as voice slot ID's clip, and the
+    // radio's mic input set directly.
+    void setTestVoiceClip(int id, double seconds);
+    void setTestMicInput(const QString& mic);
+private:
     MiniMqtt* m_pskMqtt{nullptr};
     QHash<QString, qint64> m_pskSeen;
     QHash<QString, QList<qint64>> m_pskBandAdds;

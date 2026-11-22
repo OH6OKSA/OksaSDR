@@ -1766,6 +1766,7 @@ void MobileEngine::disconnectRadio(const QString& why)
         return;
     }
     stopTransmit(QStringLiteral("operator disconnect"));
+    restoreDvkMic(QStringLiteral("disconnect"));
     // RADE's unmute must reach the radio before the link goes, or the radio
     // keeps the slice muted for this app.
     stopRadeBeforeLeaving("disconnect");
@@ -2741,6 +2742,35 @@ void MobileEngine::wireTransmit()
     connect(&rm.transmitModel(), &TransmitModel::micProfileListChanged, this, &MobileEngine::profilesChanged);
     connect(&rm.transmitModel(), &TransmitModel::stateChanged, this, &MobileEngine::profilesChanged);
     connect(&rm.transmitModel(), &TransmitModel::micStateChanged, this, &MobileEngine::profilesChanged);
+    // Roadmap 143: a voice macro waiting for the radio's mic input to be
+    // this device's goes once it is.
+    connect(&rm.transmitModel(), &TransmitModel::micStateChanged, this, [this] {
+        if (m_dvkMicPendingId > 0
+            && m_session.radioModel().transmitModel().micSelection() == kDeviceMicSelection) {
+            const int id = m_dvkMicPendingId;
+            m_dvkMicPendingId = 0;
+            m_dvkMicTimer.stop();
+            // The model takes the new input at once, before the command has
+            // gone: keyed now, "xmit 1" reached the radio before "mic input
+            // PC" (the test of 2026-11-22). A moment for the radio first,
+            // also over SmartLink.
+            QTimer::singleShot(400, this, [this, id] {
+                if (m_connected && m_session.radioModel().transmitModel().micSelection() == kDeviceMicSelection) {
+                    dvkPlay(id);
+                } else {
+                    restoreDvkMic(QStringLiteral("the input changed meanwhile"));
+                }
+            });
+        }
+    });
+    m_dvkMicTimer.setSingleShot(true);
+    connect(&m_dvkMicTimer, &QTimer::timeout, this, [this] {
+        if (m_dvkMicPendingId > 0) {
+            qCInfo(lcMobile) << "voice macro: the radio did not switch its mic input in 3 s";
+            setLastError(tr("The radio did not switch its microphone input for the voice macro."));
+            restoreDvkMic(QStringLiteral("no answer"));
+        }
+    });
     connect(&rm.transmitModel(), &TransmitModel::micStateChanged, this, &MobileEngine::updateMicCheck);
     connect(&rm.transmitModel(), &TransmitModel::stateChanged, this, &MobileEngine::updateMicCheck);
     // VOX on or off, the transmit lock, CW: whether VOX holds the microphone.
@@ -3842,10 +3872,33 @@ void MobileEngine::dvkPlay(int id)
         }
         const QByteArray clip = file.readAll();
         if (!transmitAvailable()) {
+            // Roadmap 143 (Christoph Steinert DM5HF: a headset on the
+            // radio's microphone input with VOX, POTA): the clip goes out
+            // with the mic input on this device's for its time, and the
+            // radio's comes back after it (and between Repeat's sends, so
+            // the headset and VOX answer in the gap).
+            TransmitModel& tm = m_session.radioModel().transmitModel();
+            if (m_connected && m_caps.canTransmit && tm.micSelection() != kDeviceMicSelection
+                && tm.micInputList().contains(kDeviceMicSelection)) {
+                if (tm.isTransmitting()) {
+                    setLastError(tr("Not while the radio transmits (its PTT or VOX)."));
+                    return;
+                }
+                if (txLockRefuses("a voice macro")) {
+                    return;
+                }
+                m_dvkRadioMic = tm.micSelection();
+                m_dvkMicPendingId = id;
+                qCInfo(lcMobile).noquote() << "voice macro F" << id << ": mic input" << m_dvkRadioMic << "-> PC for the macro";
+                tm.setMicSelection(kDeviceMicSelection);
+                m_dvkMicTimer.start(3000);
+                return;   // played when the radio reports PC (micStateChanged)
+            }
             setLastError(transmitUnavailableReason());
             return;
         }
         if (txLockRefuses("a voice macro")) {
+            restoreDvkMic(QStringLiteral("TX locked"));
             return;
         }
         // The clip plays in the microphone's place for one PTT press.
@@ -3853,6 +3906,7 @@ void MobileEngine::dvkPlay(int id)
         setPtt(true);
         m_macroKeying = false;
         if (!m_pttHeld) {
+            restoreDvkMic(QStringLiteral("PTT refused"));
             return;
         }
         m_voiceState = QStringLiteral("playback");
@@ -3870,7 +3924,11 @@ void MobileEngine::dvkPlay(int id)
         dvk.playbackStop();
         return;
     }
-    if (!transmitAvailable()) {
+    // The radio's voice keyer plays its own recording, whatever its mic
+    // input (roadmap 143: the radio's microphone in use).
+    if (!transmitAvailable()
+        && !(m_connected && m_caps.canTransmit
+             && m_session.radioModel().transmitModel().micSelection() != kDeviceMicSelection)) {
         setLastError(transmitUnavailableReason());
         return;
     }
@@ -3892,6 +3950,56 @@ void MobileEngine::dvkPlay(int id)
     qCInfo(lcMobile) << "DVK play slot" << id;
     armMacroRepeat(QStringLiteral("voice"), id);
     dvk.playbackStart(id);
+}
+
+// Roadmap 143: the radio's own microphone input back after a voice macro
+// sent with this device's.
+void MobileEngine::restoreDvkMic(const QString& why)
+{
+    m_dvkMicPendingId = 0;
+    m_dvkMicTimer.stop();
+    if (m_dvkRadioMic.isEmpty()) {
+        return;
+    }
+    const QString mic = m_dvkRadioMic;
+    m_dvkRadioMic.clear();
+    if (m_connected) {
+        qCInfo(lcMobile).noquote() << "voice macro: mic input back to" << mic << "(" + why + ")";
+        m_session.radioModel().transmitModel().setMicSelection(mic);
+    }
+}
+
+void MobileEngine::setTestVoiceClip(int id, double seconds)
+{
+    if (id < 1 || id > DvkModel::kSlotCount || seconds <= 0.0) {
+        return;
+    }
+    // A 700 Hz tone with a soft start and end, float mono at 24 kHz.
+    constexpr int rate = 24000;
+    const int n = int(std::min(seconds, 15.0) * rate);
+    QByteArray clip(n * int(sizeof(float)), Qt::Uninitialized);
+    auto* f = reinterpret_cast<float*>(clip.data());
+    for (int i = 0; i < n; ++i) {
+        const double ramp = std::min({1.0, i / 2400.0, (n - i) / 2400.0});
+        f[i] = float(0.3 * ramp * std::sin(2.0 * M_PI * 700.0 * i / rate));
+    }
+    QDir().mkpath(QFileInfo(voiceClipPath(id)).absolutePath());
+    QFile file(voiceClipPath(id));
+    if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        file.write(clip);
+        AppSettings::instance().setValue(voiceRateKey(id), rate);
+        AppSettings::instance().save();
+        qCInfo(lcMobile) << "voice macro F" << id << "test tone" << seconds << "s";
+        emit dvkChanged();
+    }
+}
+
+void MobileEngine::setTestMicInput(const QString& mic)
+{
+    if (m_connected && m_session.radioModel().transmitModel().micInputList().contains(mic)) {
+        qCInfo(lcMobile).noquote() << "mic input set to" << mic << "(test)";
+        m_session.radioModel().transmitModel().setMicSelection(mic);
+    }
 }
 
 void MobileEngine::dvkRecord(int id)
@@ -3978,6 +4086,7 @@ void MobileEngine::onVoiceClipFinished()
     if (m_voiceState == QLatin1String("playback")) {
         m_voiceState = QStringLiteral("idle");
         releasePtt(QStringLiteral("voice macro done"));
+        restoreDvkMic(QStringLiteral("voice macro done"));
         if (m_repeatSending && m_repeatKind == QLatin1String("voice")) {
             scheduleMacroRepeat();
         }
@@ -4741,6 +4850,12 @@ void MobileEngine::releasePtt(const QString& reason)
         m_voiceState = QStringLiteral("idle");
         QMetaObject::invokeMethod(m_audio, &AudioEngine::stopTxClip, Qt::QueuedConnection);
         emit dvkChanged();
+    }
+    // A voice macro sent with this device's input for the radio's
+    // microphone (roadmap 143): the radio's back however the press ended
+    // (the clip's end, Stop, the controls drawer, a disconnect).
+    if (!m_dvkRadioMic.isEmpty() && m_dvkMicPendingId == 0) {
+        restoreDvkMic(reason);
     }
     // The power out at its peak: none with PTT down says the audio did not
     // reach the transmitter (the microphone, the slice's playback).
