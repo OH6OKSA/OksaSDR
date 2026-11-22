@@ -26,7 +26,7 @@ phone, tablet or Mac, with no other program beside it.
   separate logger needed (the one you keep still gets every QSO).
 - **Spots**: the DX cluster, POTA and WWFF activators, the Reverse
   Beacon Network's skimmers and PSK Reporter's digital reports (build
-  203), each once, from near you; alerts for a call you hunt or a DXCC
+  204), each once, from near you; alerts for a call you hunt or a DXCC
   you need, whose Tune sets the radio for the spot's mode (FT8 / FT4 into
   FTx); and *Heard me*, who hears your CQ: no cluster client.
 - **Voice keyer** (also with a headset on the radio's microphone),

@@ -455,7 +455,7 @@ The first page lists the ways to reach a radio:
   connection to SmartLink again at once, and a remote session that drops
   connects again by itself: *Connecting…* shows meanwhile, with **Cancel**
   beside it to stop. A session that ended without your own Disconnect
-  says why on this page (since build 203): *The connection ended: the
+  says why on this page (since build 204): *The connection ended: the
   radio closed the connection.*, *…: no answer from the radio to 5
   pings.* and the like, and every end goes into the log with its cause
   (*disconnect: the ⋯ menu's Disconnect (asked)*), so a report tells a
@@ -1382,7 +1382,7 @@ the value types it); SPLIT again (or XIT off there) ends it.
   calls heard; in RTTY and PSK the Digi tab's macros; in the voice modes
   the voice keyer F1-F12 (the slot sending is lit; an empty one says to
   press and hold it to record). A tap sends, **Stop** stops; **press and
-  hold** edits right there (since build 203: the CW memory's or Digi
+  hold** edits right there (since build 204: the CW memory's or Digi
   macro's editor, or the voice slot's Record, Listen, Rename and Clear,
   the same as on the CW, Digi and TX tabs; before, a hold in the panel
   sent the macro as a tap did, thanks Rob Metallo VA3MET). PTT, the paddles and the display stay
@@ -1433,7 +1433,7 @@ at the end of the first row of buttons and the drawer is a little wider,
 so no row is spent on it. The buttons are all one size, in rows of seven
 (7 + 6; one row on a wide panel, 5 + 5 + 3 in an iPad's pinned side
 column): **DSP**, **Audio**, **TX**, **eSSB** (this device's microphone
-processing), **CW**, **View**, **Spots** (since build 203), **Prof**
+processing), **CW**, **View**, **Spots** (since build 204), **Prof**
 (profiles), **Mem** (memory), **Log**, **FTx** (FT8 / FT4), **FreeDV**
 (RADE digital voice and FreeDV Reporter) and **Digi** (RTTY, PSK31,
 PSK63). With an amplifier set up ([Radio Setup › Amp](#9-radio-setup)),
@@ -1545,7 +1545,7 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
     transmitting, so you can check it before naming it. Features that need
     SmartSDR+ appear only when the radio reports the subscription.
     With **Use the radio's microphone** (a headset on the radio, VOX) the
-    voice macros still go out (since build 203; Christoph Steinert DM5HF,
+    voice macros still go out (since build 204; Christoph Steinert DM5HF,
     POTA with a Heil headset): the radio's voice keyer as it is, and the
     app's own recordings with the radio's mic input switched to this
     device's for the macro and back to the radio's right after it, however
@@ -1633,8 +1633,8 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   Text size, Zoom buttons, Band plan and its lock, Felt taps, Hints and on
   Android New versions), 2D waterfall or 3D, waterfall levels, spectrum
   range, FFT smooth and De-comb, 3D floor, smoothing and gain. The spots
-  have a tab of their own since build 203 (below).
-- **Spots** (since build 203; on the View tab until then, the user: they
+  have a tab of their own since build 204 (below).
+- **Spots** (since build 204; on the View tab until then, the user: they
   took much of it) — which spots the display shows, and who hears you.
 
   ![The Spots tab](manual/tab-spots.jpg)
@@ -1648,7 +1648,7 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
     and FreeDV Reporter's stations that the desktop AetherSDR puts on the
     radio, and what N1MM+, Log4OM or DXLab's SpotCollector send there;
     none picked shows none. Each button shows under its name how many
-    spots the radio has from it now (since build 203 on a second, smaller
+    spots the radio has from it now (since build 204 on a second, smaller
     line, as *Cluster 182* did not fit an iPad's pinned panel). A chosen
     source this device does not read and that has none says so in amber,
     with where to turn it on.
@@ -1659,12 +1659,12 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
     (*OH*, by the radio's callsign): only spots given by a spotter there,
     since a station spotted near you is one you can hear; a spotter whose
     place is not known passes. It holds for the alerts too, and since build
-    203 a cluster spot given from farther away does not go onto the radio
+    204 a cluster spot given from farther away does not go onto the radio
     at all, and RBN's skimmers are chosen by it (see Setup › Spots).
   - **Spot sources…** — opens Setup › Spots; it shows ✓ for each source
     this device reads now (Cluster while connected, RBN, PSKR, POTA,
     WWFF).
-  - **Heard me** (since build 203) — who heard your own signal in the last
+  - **Heard me** (since build 204) — who heard your own signal in the last
     half hour, by band: *20m FT8: 34 heard you · farthest VK3XX 15800 km ·
     best +5 dB (OH1XX) · 2 min ago*. From PSK Reporter's reports of your
     digital transmissions and RBN's skimmers' spots of your CQ (CW, RTTY,
@@ -2894,7 +2894,7 @@ tab holds.
   sources…** opens this tab). What the display shows is chosen on the
   Spots tab (*Spots shown*). A spot whose call the radio already has
   within 1 kHz, from any source or program, is not added again (since
-  build 203, the user: no duplicates from many places).
+  build 204, the user: no duplicates from many places).
   - **DX cluster** — tap to connect, again to disconnect. Set the server and
     port (default dxc.nc7j.com 7300) and the callsign it logs in with (the
     radio's own when left empty); **Auto** connects whenever the radio
@@ -2931,7 +2931,7 @@ tab holds.
 
     ![Setup › Spots › Park spots](manual/park-spots.jpg)
 
-  - **RBN and PSK Reporter** (since build 203; the user's idea) — three
+  - **RBN and PSK Reporter** (since build 204; the user's idea) — three
     switches:
     - **RBN skimmer spots** — the Reverse Beacon Network's CW, RTTY and
       PSK skimmers, through your DX cluster, as RBN asks end users to (its
@@ -2971,7 +2971,7 @@ tab holds.
     from where the Spots tab's *From* allows, shows in the middle of the
     screen: the call, frequency, mode and country, why, the spotter and
     the time; **Tune** goes to it and sets the radio for the spot's mode
-    (since build 203; the user's idea): CW, USB, LSB, AM or FM by the
+    (since build 204; the user's idea): CW, USB, LSB, AM or FM by the
     spot; RTTY into RTTY with the mark on the signal; PSK31 / PSK63 into
     the Digi tab's PSK (PSK125 and other PSKs it does not decode: DIGU
     with the signal at 1000 Hz, to see and hear); an FT8 or FT4 spot onto
@@ -3055,7 +3055,7 @@ field's own button (until build 139 OK also pressed Return, so the Log
 tab logged a half-typed call at once). The iPad's GameController keyboard
 reading is not used on a Mac.
 
-**The on-screen keyboard** (since build 203; thanks Robin Bishop G5OUT):
+**The on-screen keyboard** (since build 204; thanks Robin Bishop G5OUT):
 while it is up, **Done** by the field you type in puts it away (an
 iPhone's keyboard has no key for it, and Return in some fields acts: in
 the Log tab's call it logs the contact). It sits below the field at its
@@ -3187,7 +3187,7 @@ asks. A newer beta installs over the old one and keeps your settings.
 whether a newer beta is out. When one is, it says *Android beta N is out*:
 **Download** opens the APK in the browser (open it to install over this
 one), **What's new** the release page, **Later** asks no more about that
-beta. Since build 203 a newer build of the same beta number is offered
+beta. Since build 204 a newer build of the same beta number is offered
 too (*A newer build of Android beta N*): a preview's APK has the coming
 release's number, and the released one is the newer build. **Setup › App
 → New versions** shows the last check and *Download beta N*, and turns the
