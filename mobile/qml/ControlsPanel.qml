@@ -82,6 +82,23 @@ ColumnLayout {
     readonly property real buttonCellWidth: (panel.gridWidth - (buttonColumns - 1) * 4) / buttonColumns
     readonly property int sectionButtonFont: buttonFont(buttonCellWidth)
 
+    // A section shown by name (roadmap 137: a spot's Tune brings its mode's
+    // tab): the drawer switches to it; the pinned panel adds it to the
+    // pinned sections when it is not among them.
+    function showSection(name) {
+        if (panel.multiSelect) {
+            if (Engine.pinnedSections.indexOf(name) < 0)
+                toggleSection(name)
+            return
+        }
+        for (let i = 0; i < panel.sections.length; ++i) {
+            if (panel.sections[i].name === name) {
+                tabs.currentIndex = i
+                return
+            }
+        }
+    }
+
     function toggleSection(name) {
         const list = Engine.pinnedSections.slice()
         const i = list.indexOf(name)

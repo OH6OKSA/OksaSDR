@@ -282,6 +282,8 @@ void MobileEngine::tuneSpotAlert()
     const double mhz = m_spotAlert.value(QStringLiteral("mhz")).toDouble();
     // The spot may have run out meanwhile: then its frequency.
     if (m_session.radioModel().spotModel().spots().contains(index)) {
+        // The alert's Tune opens the mode's Controls tab too (roadmap 137).
+        m_spotTuneOpensTab = true;
         tuneToSpot(index);
     } else if (mhz > 0.0) {
         tuneTo(mhz);

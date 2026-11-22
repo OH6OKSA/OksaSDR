@@ -2227,6 +2227,10 @@ signals:
     void qsoLogBusyChanged();
     void spotAlertSettingsChanged();
     void spotAlertChanged();
+    // A spot's Tune (roadmap 137): the Controls tab for the spot's mode
+    // (FTx, Digi, CW) by its section name; open: the alert's Tune opens a
+    // closed drawer, a tap on a spot label only switches a shown one.
+    void controlsSectionRequested(const QString& name, bool open);
     void layoutEditingChanged();
     void txLockChanged();
     void audioCompressionChanged();
@@ -3183,6 +3187,11 @@ private:
     bool queueRadioSpot(const QString& call, double freqMhz, const QString& source, const QString& spotter,
                         const QString& comment, int lifetimeSec, QString color);
     void noteSpotCall(const SpotData& spot);
+    // Roadmap 137: an FT8 / FT4 spot's dial frequency (the band's FT8 / FT4
+    // frequency the spot is within 3 kHz above, or a named FT8 / FT4 spot's
+    // kHz below it, as a DXpedition's own), and its protocol; 0 if not FTx.
+    double ftxDialForSpot(double mhz, const QString& named, QString* protocol) const;
+    bool m_spotTuneOpensTab{false};
     QString m_speechState{QStringLiteral("idle")};
     QString m_speechStatus;
     bool m_speechRecording{false};

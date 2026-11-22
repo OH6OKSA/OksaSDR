@@ -984,6 +984,21 @@ Page {
         anchors.fill: parent
         multiSelect: true
     }
+    // A spot's Tune (roadmap 137): its mode's Controls tab, in the pinned
+    // panel when it shows, else in the drawer (opened by an alert's Tune).
+    Connections {
+        target: Engine
+        function onControlsSectionRequested(name, open) {
+            const pinned = page.canvasOn ? page.canvasControls : page.panelPinned
+            if (pinned) {
+                pinnedControls.showSection(name)
+            } else {
+                drawerPanel.showSection(name)
+                if (open && !controlsDrawer.opened)
+                    controlsDrawer.open()
+            }
+        }
+    }
     AppButton {
         id: macrosButton
         objectName: "macrosButton"

@@ -8789,6 +8789,26 @@ void MobileEngine::tuneToSpot(int index)
     // it) to the Digi tab's PSK in DIGU, the slice so the signal sounds at
     // the carrier set (1000 Hz unless moved), the decoder then onto the
     // signal the display shows near it (a spot is often 50-100 Hz off).
+    const bool autoMode = AppSettings::instance().value(QStringLiteral("SpotAutoSwitchMode"), QStringLiteral("True")).toString()
+                          == QLatin1String("True");
+    const bool opensTab = m_spotTuneOpensTab;
+    m_spotTuneOpensTab = false;
+    // An FT8 / FT4 spot (roadmap 137) the FTx way: the slice on the band's
+    // FT8 / FT4 frequency in DIGU, FTx in the spot's protocol and decoding,
+    // the station's call marked, so its CQ shows in the FTx list to answer
+    // with a tap (the TX Hz kept, as answering a decode keeps it). Its own
+    // frequency (dial + audio) in DIGU heard nothing FTx could work.
+    QString ftProto;
+    const double ftDial = autoMode && m_ft8 ? ftxDialForSpot(spot.rxFreqMhz, named, &ftProto) : 0.0;
+    if (ftDial > 0.0) {
+        noteSpotCall(spot);
+        setDigiProtocol(ftProto);
+        digiTune(ftDial);
+        qCInfo(lcMobile).noquote() << "tune to" << ftProto << "spot" << spot.callsign << spot.rxFreqMhz << "MHz: dial"
+                                   << QString::number(ftDial, 'f', 4) << "audio" << qRound((spot.rxFreqMhz - ftDial) * 1e6) << "Hz";
+        emit controlsSectionRequested(QStringLiteral("Digi"), opensTab);
+        return;
+    }
     const bool pskSpot = named == QLatin1String("PSK31") || named == QLatin1String("PSK63") || named == QLatin1String("PSK");
     if (pskSpot && (pskActive() || AppSettings::instance().value(QStringLiteral("SpotAutoSwitchMode"), QStringLiteral("True")).toString()
                                        == QLatin1String("True"))) {
@@ -8805,6 +8825,7 @@ void MobileEngine::tuneToSpot(int index)
                 emit pskCentreRequested(spotMhz, 150.0);
             }
         });
+        emit controlsSectionRequested(QStringLiteral("RTTY"), opensTab);
         return;
     }
     // RTTY received in DIGL / DIGU (chosen on the RTTY tab) stays there for an
@@ -8839,6 +8860,9 @@ void MobileEngine::tuneToSpot(int index)
         m_rttySpotMhz = spot.rxFreqMhz;
         m_rttySpotTries = 8;
         emit rttyAutotuneRequested(spot.rxFreqMhz, 150.0, false);
+        emit controlsSectionRequested(QStringLiteral("RTTY"), opensTab);
+    } else if (mode == QLatin1String("CW")) {
+        emit controlsSectionRequested(QStringLiteral("CW"), opensTab);
     }
 }
 

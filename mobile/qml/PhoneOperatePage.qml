@@ -635,8 +635,19 @@ Page {
             anchors.bottomMargin: Theme.spacing / 2 + Math.max(0, 8 - controlsDrawer.SafeArea.margins.bottom)
             spacing: Theme.spacing
             ControlsPanel {
+                id: phoneDrawerPanel
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                // A spot's Tune (roadmap 137): its mode's tab, the drawer
+                // opened by an alert's Tune.
+                Connections {
+                    target: Engine
+                    function onControlsSectionRequested(name, open) {
+                        phoneDrawerPanel.showSection(name)
+                        if (open && !controlsDrawer.opened)
+                            controlsDrawer.open()
+                    }
+                }
             }
             // Close where the Controls button was, so the same spot opens and
             // closes the drawer without a tap on the spectrum.

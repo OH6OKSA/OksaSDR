@@ -1408,6 +1408,45 @@ void MobileEngine::setDigiStatus(const QString& status)
     emit digiChanged();
 }
 
+double MobileEngine::ftxDialForSpot(double mhz, const QString& named, QString* protocol) const
+{
+    const bool ft8Named = named == QLatin1String("FT8");
+    const bool ft4Named = named == QLatin1String("FT4");
+    if (!named.isEmpty() && !ft8Named && !ft4Named) {
+        return 0.0;
+    }
+    // The window above each dial (FT8 / FT4 use 200-3000 Hz audio); the
+    // closest dial below wins (80 m's FT8 and FT4 windows overlap).
+    double best = 0.0;
+    QString bestProto;
+    for (const BandFreq& b : kBandFreqs) {
+        const std::pair<double, const char*> dials[] = {{b.ft8, "FT8"}, {b.ft4, "FT4"}};
+        for (const auto& [dial, proto] : dials) {
+            if (dial <= 0.0 || mhz < dial - 1e-7 || mhz > dial + 0.0031) {
+                continue;
+            }
+            if ((ft8Named && QLatin1String(proto) != QLatin1String("FT8"))
+                || (ft4Named && QLatin1String(proto) != QLatin1String("FT4"))) {
+                continue;
+            }
+            if (best <= 0.0 || dial > best) {
+                best = dial;
+                bestProto = QString::fromLatin1(proto);
+            }
+        }
+    }
+    if (best <= 0.0 && (ft8Named || ft4Named)) {
+        // Off the usual frequencies (a DXpedition's F/H dial, 14.090): the
+        // kHz below the spot, the signal within the audio band.
+        best = std::floor(mhz * 1000.0 + 1e-6) / 1000.0;
+        bestProto = named;
+    }
+    if (protocol) {
+        *protocol = bestProto;
+    }
+    return best;
+}
+
 void MobileEngine::digiTune(double mhz)
 {
     if (!m_slice || mhz <= 0.0) {
