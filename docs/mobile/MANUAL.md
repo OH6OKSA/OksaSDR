@@ -1619,8 +1619,13 @@ seven.
   - **Spots shown** — every spot is the radio's: whatever any program on
     it puts there (this device's cluster and park spots, SmartSDR's, your
     other devices'). Pick which the display shows by where they came from:
-    **Cluster** (a DX cluster's), **POTA**, **WWFF** and **Other**
-    (SmartSDR's, another program's); none picked shows none. Before build
+    **Cluster** (a DX cluster's: this device's, the desktop AetherSDR's or
+    another program's), **POTA**, **WWFF** and **Other**: the rest, such
+    as the Reverse Beacon Network's CW Skimmer spots, WSJT-X's and FreeDV
+    Reporter's stations that the desktop AetherSDR puts on the radio, and
+    what N1MM+, Log4OM or DXLab's SpotCollector send there (with only a
+    phone or a tablet on the radio, Other is usually empty); none picked
+    shows none. The line under the buttons says this too. Before build
     201 one *Shown / Hidden* switch did this, and spots showed with this
     device's cluster off because another device had put them on the radio.
   - **Spot filters** — which spots show: *All*, *CW*, *Phone* or *Digital*
@@ -2566,13 +2571,13 @@ tab holds.
   ![Radio Setup › Transmit: the TX band settings](manual/setup-txband.jpg)
 - **Phone/CW** — first this device's CW keying: **Key** (*Straight key* or
   *Paddles*) and **Paddles on a keyboard** (*Off*, *Ctrl*, *Alt ⌥*, *[ ]*,
-  see [KEY](#7-transmitting-ptt-key-and-tune)); then the radio's:
-  microphone bias and boost (the radio's own microphone
+  see [KEY](#7-transmitting-ptt-key-and-tune)); then the radio's: the CW
+  keyer's break-in delay, iambic mode (off, A, B) and swapped paddles, the
+  **CW sideband** (*CWU*, upper, as usual, or *CWL*, lower) and **CWX text
+  at the keyer's speed** (CW memories and typed CW at the radio's keyer
+  speed); the microphone bias and boost (the radio's own microphone
   inputs; this device's microphone gain is the TX tab's Mic level), and
-  **Mic level meter in receive too**; the CW keyer's break-in delay,
-  iambic mode (off, A, B) and swapped paddles, the **CW sideband** (*CWU*,
-  upper, as usual, or *CWL*, lower) and **CWX text at the keyer's speed**
-  (CW memories and typed CW at the radio's keyer speed). **RTTY**: the
+  **Mic level meter in receive too**. **RTTY**: the
   radio's default RTTY mark (2125 Hz as usual), the mark a new RTTY slice
   starts with.
 

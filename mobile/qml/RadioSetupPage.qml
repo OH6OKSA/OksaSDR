@@ -803,16 +803,8 @@ Popup {
                     // This device's part first (roadmap 131: from the CW tab).
                     Heading { text: qsTr("This device: CW keying") }
                     CwKeyingSetup { Layout.fillWidth: true }
-                    Heading { text: qsTr("Microphone") }
-                    OnOff { label: qsTr("Mic bias (electret microphones)"); on: !!setup.d.micBias; onToggled: (v) => setup.set("micBias", v) }
-                    OnOff { label: qsTr("Mic boost (+20 dB)"); on: !!setup.d.micBoost; onToggled: (v) => setup.set("micBoost", v) }
-                    OnOff {
-                        objectName: "setupMetInRx"
-                        label: qsTr("Mic level meter in receive too")
-                        on: !!setup.d.metInRx
-                        onToggled: (v) => setup.set("metInRx", v)
-                    }
-                    // This device's microphone gain is the TX tab's Mic level.
+                    // The radio's CW keyer next to this device's keying (the user,
+                    // build 201's preview: the microphone sat between them).
                     Heading { text: qsTr("CW keyer") }
                     Level {
                         label: qsTr("Break-in delay")
@@ -858,6 +850,16 @@ Popup {
                         on: !!setup.d.syncCwx
                         onToggled: (v) => setup.set("syncCwx", v)
                     }
+                    Heading { text: qsTr("Microphone") }
+                    OnOff { label: qsTr("Mic bias (electret microphones)"); on: !!setup.d.micBias; onToggled: (v) => setup.set("micBias", v) }
+                    OnOff { label: qsTr("Mic boost (+20 dB)"); on: !!setup.d.micBoost; onToggled: (v) => setup.set("micBoost", v) }
+                    OnOff {
+                        objectName: "setupMetInRx"
+                        label: qsTr("Mic level meter in receive too")
+                        on: !!setup.d.metInRx
+                        onToggled: (v) => setup.set("metInRx", v)
+                    }
+                    // This device's microphone gain is the TX tab's Mic level.
                     Heading { text: qsTr("RTTY") }
                     Level {
                         objectName: "setupRttyMark"

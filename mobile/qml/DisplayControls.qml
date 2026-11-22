@@ -162,6 +162,17 @@ ColumnLayout {
             }
         }
     }
+    // What Cluster and Other hold (the user, build 201's preview: "Other"
+    // has to say what it is): every program on the radio puts spots there,
+    // each with its source.
+    Label {
+        objectName: "spotsShownHint"
+        Layout.fillWidth: true
+        text: qsTr("Spots are the radio's, from every program on it. Cluster: a DX cluster's. Other: the rest, such as RBN / CW Skimmer, WSJT-X and FreeDV Reporter from the desktop AetherSDR, N1MM+, Log4OM or SpotCollector.")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.WordWrap
+    }
     RowLayout {
         Layout.fillWidth: true
         visible: Engine.showSpots
