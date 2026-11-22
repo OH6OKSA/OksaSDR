@@ -11,7 +11,7 @@ GETTING STARTED
 NEW IN THIS BUILD
 - The Controls tabs keep what you use while operating; settings changed seldom moved to Setup, one button each: View > Theme, text size, band plan… (Setup > App), Spot sources… (Setup > Spots), CW > Keying…, TX > PTT key…, the FTx tab's settings button (Setup > FTx); Share the log is in Setup > Logging.
 - View > Spots shown: Cluster, POTA, WWFF and Other, each with its count; From: anywhere, your continent or country.
-- Spot alerts, Setup > Spots: a call you hunt (VK9XY, 3Y0*) or a needed DXCC shows at the top with Tune, a sound, and a notification in the background.
+- Spot alerts, Setup > Spots: a call you hunt (VK9XY, 3Y0*) or a needed DXCC pops up in the middle with Tune, a sound, and a notification in the background.
 - Closing a slice closes its empty panadapter too, so your other devices still get one; a refused panadapter says why.
 - Editing or deleting a contact no longer freezes the app in a large log.
 

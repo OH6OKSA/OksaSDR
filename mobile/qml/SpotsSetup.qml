@@ -153,6 +153,14 @@ ColumnLayout {
             }
         }
     }
+    Label {
+        objectName: "spotDxccHint"
+        Layout.fillWidth: true
+        text: qsTr("On the band: a country not yet in your log on the spot's band (all-time new ones too). New: only a country not in your log on any band. By this device's log: worked, not confirmed.")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.WordWrap
+    }
     RowLayout {
         Layout.fillWidth: true
         Label { text: qsTr("Sound"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.fillWidth: true }
@@ -179,7 +187,7 @@ ColumnLayout {
     }
     Label {
         Layout.fillWidth: true
-        text: qsTr("A spot of a call on the watch list, or of a DXCC not in your log (on its band, or not at all), shows at the top of the screen with Tune, plays the sound, and with the app in the background comes as a notification. Each call alerts once per band in 30 minutes. Only spots from where the View tab's From allows (anywhere, %1, %2) alert.")
+        text: qsTr("A spot of a call on the watch list, or of a DXCC not in your log (on its band, or not at all), pops up in the middle of the screen with Tune, plays the sound, and with the app in the background comes as a notification. Each call alerts once per band in 30 minutes. Only spots from where the View tab's From allows (anywhere, %1, %2) alert.")
               .arg(al.ownContinent || qsTr("your continent")).arg(al.ownPrefix || qsTr("your country"))
         color: Theme.textDim
         font.pixelSize: Theme.px(12)

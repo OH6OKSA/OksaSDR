@@ -581,7 +581,7 @@ jpg setup-spot-alerts 640x940+363+50 520x
 jpg setup-ftx 640x600+363+50
 jpg setup-phonecw 640x600+363+50
 jpg setup-transmit 640x600+363+50
-jpg spot-alert 1366x300+0+0 1000x
+jpg spot-alert "" 1000x
 jpg tnf 967x492+13+354 800x
 jpg memory-edit 440x380+0+280
 # Its buttons only: the log lines below them are the radio's own.

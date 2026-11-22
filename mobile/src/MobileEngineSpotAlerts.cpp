@@ -10,7 +10,7 @@
 // passes. Alerts (Setup › Spots) take each new spot through the same place
 // filter: a call on the watch list (whole calls, * for any characters:
 // VK9XY, 3Y0*) or a DXCC not yet in the log (on the spot's band, or at all;
-// the FTx tab's New DXCC, digiNewDxcc) gives a banner at the top of the
+// the FTx tab's New DXCC, digiNewDxcc) pops up in the middle of the
 // screen (Tune goes there), a sound, and, while the app is away from the
 // front, a notification. A call alerts once per band in 30 minutes.
 

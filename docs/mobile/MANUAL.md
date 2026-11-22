@@ -2906,8 +2906,9 @@ tab holds.
     (*VK9XY, 3Y0\**; a pattern is the whole call: *3Y0\** is 3Y0J, not
     K3Y0X). **Needed DXCC**: *Off*, *On the band* (a DXCC not yet in the
     log on the spot's band) or *New* (not in the log at all), by the same
-    log and country list as the FTx tab's *New DXCC*. A spot of either,
-    from where the View tab's *From* allows, shows at the top of the
+    log and country list as the FTx tab's *New DXCC*; worked counts, not
+    confirmed (the line under the buttons says so). A spot of either,
+    from where the View tab's *From* allows, shows in the middle of the
     screen: the call, frequency, mode and country, why, the spotter and
     the time; **Tune** goes to it (as a tap on the spot), **×** shows the
     next (*N more*; held, clears them all). **Sound** plays two short
@@ -2916,7 +2917,7 @@ tab holds.
     iOS asks for permission). Each call alerts once per band in 30
     minutes.
 
-    ![A spot alert at the top of the screen](manual/spot-alert.jpg)
+    ![A spot alert in the middle of the screen](manual/spot-alert.jpg)
     ![Setup › Spots › Spot alerts](manual/setup-spot-alerts.jpg)
 
   ![Radio Setup › Spots](manual/setup-spots.jpg)

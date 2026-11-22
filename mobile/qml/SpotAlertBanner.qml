@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import AetherMobile
 
-// A spot alert at the top of the screen (roadmap 132): a call on the watch
+// A spot alert in the middle of the screen (roadmap 132): a call on the watch
 // list or a needed DXCC, spotted from where Spotted from allows. Tune goes
 // to the spot (the slice's mode by the spot, as a tap on it does), × shows
 // the next one (+N more). Not a popup: it never takes the keyboard from the
@@ -14,12 +14,12 @@ Rectangle {
     readonly property var a: Engine.spotAlert
     visible: Engine.connectionState === "connected" && !!a.call
     z: 50
-    width: Math.min(parent ? parent.width - 2 * Theme.spacing : 400, 600)
+    width: Math.min(parent ? parent.width - 2 * Theme.spacing : 400, 640)
     height: row.implicitHeight + 2 * 8
     radius: Theme.radius
     color: Theme.surfaceRaised
     border.color: Theme.warning
-    border.width: 2
+    border.width: 3
     Accessible.role: Accessible.AlertMessage
     Accessible.name: visible ? qsTr("Spot alert: %1 on %2 MHz, %3").arg(a.call).arg(Number(a.mhz || 0).toFixed(3)).arg(a.why) : ""
 
@@ -37,7 +37,7 @@ Rectangle {
                 text: (banner.a.call || "") + "  " + Number(banner.a.mhz || 0).toFixed(3) + " " + (banner.a.mode || "")
                       + (banner.a.country ? "  ·  " + banner.a.country : "")
                 color: Theme.text
-                font.pixelSize: Theme.px(16)
+                font.pixelSize: Theme.px(19)
                 font.bold: true
                 elide: Text.ElideRight
             }
@@ -47,7 +47,7 @@ Rectangle {
                       + (banner.a.time ? "  " + banner.a.time + " UTC" : "")
                       + (banner.a.more > 0 ? "  ·  " + qsTr("%1 more").arg(banner.a.more) : "")
                 color: Theme.warning
-                font.pixelSize: Theme.px(13)
+                font.pixelSize: Theme.px(14)
                 elide: Text.ElideRight
             }
         }
