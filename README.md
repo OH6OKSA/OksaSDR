@@ -13,6 +13,23 @@ a Mac or an Android phone or tablet and talks to the radio directly. There is no
 SmartSDR in between: at home on the same network, or from anywhere over
 SmartLink (or your own VPN), it is a complete station control surface.
 
+**One app for the whole station.** This is what makes OksaSDR different:
+the radio, the digital modes, the log and the spots are in one app on a
+phone, tablet or Mac, with no other program beside it.
+
+- **FT8 and FT4** decoding and calling, Answer CQ / Keep CQ, Hound for
+  DXpeditions, new-DXCC colours and PSK Reporter: no WSJT-X.
+- **RTTY and PSK31 / PSK63**: no fldigi. **CW** keyer, memories, paddles
+  and decoder. **RADE** digital voice with FreeDV Reporter.
+- **The log**: QRZ.com lookups, the QRZ Logbook, Wavelog / Cloudlog, a
+  shared ADIF file for a desktop logging program, ADIF for LoTW: no
+  separate logger needed (the one you keep still gets every QSO).
+- **Spots**: the DX cluster, POTA and WWFF activators, and (build 201)
+  alerts for a call you hunt or a DXCC you need: no cluster client.
+- **Voice keyer, MIDI controllers** (CTR2), **amplifiers and tuners**
+  (Elecraft KPA1500, KPA500 / KAT500, RF-KIT RF2K-S, 4O3A Power Genius
+  and Tuner Genius).
+
 > OksaSDR is maintained by Niko Oksa, OH6OKSA, and was called *AetherSDR
 > Mobile* until build 74. It is **not** an official AetherSDR app: the
 > AetherSDR project plans its own mobile app. Engine work was offered

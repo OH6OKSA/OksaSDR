@@ -65,6 +65,9 @@ qt_add_executable(aether-mobile
     src/MobileEngineUlanzi.cpp
     src/MobileEnginePttKey.cpp
     src/MobileEnginePicker.cpp
+    src/MobileEngineSpotAlerts.cpp
+    src/LocalNotify.h
+    src/LocalNotify.cpp
     src/MobileEngineDigitalMax.cpp
     src/MobileEngineAmp.cpp
     src/MobileEngineKpa.cpp
@@ -95,10 +98,11 @@ qt_add_executable(aether-mobile
 if(IOS)
     target_sources(aether-mobile PRIVATE ios/ScreenAwake.mm ios/SecureStore.mm ios/AudioSession.mm ios/ShareText.mm
                                          ios/SideKeys.mm ios/Haptics.mm ios/TextScale.mm
-                                         ios/DeviceId.mm ios/MidiPairing.mm ios/VoiceInput.mm
+                                         ios/DeviceId.mm ios/MidiPairing.mm ios/VoiceInput.mm ios/LocalNotify.mm
                                          src/VoskSpeech.h src/VoskSpeech.cpp)
     target_link_libraries(aether-mobile PRIVATE "-framework Security" "-framework AVFAudio" "-framework GameController"
-                                                "-framework MessageUI" "-framework CoreAudioKit" "-framework Speech")
+                                                "-framework MessageUI" "-framework CoreAudioKit" "-framework Speech"
+                                                "-framework UserNotifications")
     # Vosk for logging by voice (roadmap 81): Alphacephei's iOS libvosk
     # (static, arm64; BLAS and LAPACK from Accelerate) and the English model
     # in the bundle (vosk/en-us), as the iOS workflow unpacks them. Without
@@ -237,6 +241,7 @@ qt_add_qml_module(aether-mobile
         qml/FtxSetup.qml
         qml/CwKeyingSetup.qml
         qml/PttKeySetup.qml
+        qml/SpotAlertBanner.qml
         qml/VoiceButton.qml
         qml/OffsetEditor.qml
         qml/DigiControls.qml
@@ -302,6 +307,8 @@ target_link_libraries(aether-mobile PRIVATE
 # unchanged. Regenerate after editing shaders/*.vert|frag with
 #   qsb --glsl "300 es,150" --hlsl 50 --msl 12 -o X.qsb X
 # so the iOS build needs no Qt ShaderTools.
+# The spot alert's sound (roadmap 132): two short tones made for the app.
+qt_add_resources(aether-mobile "alert_sound" PREFIX "/" BASE . FILES sounds/spot-alert.wav)
 qt_add_resources(aether-mobile "spectrum3d_shaders"
     PREFIX "/"
     FILES

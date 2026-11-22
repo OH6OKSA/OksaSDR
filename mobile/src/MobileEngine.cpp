@@ -638,6 +638,7 @@ MobileEngine::MobileEngine(QObject* parent)
     setupUlanzi();
     setupPttKey();
     setupDocumentPicker();
+    setupSpotAlerts();
     applyColorScheme();
     // Auto follows the device switching its appearance (125).
     connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, [this](Qt::ColorScheme scheme) {
@@ -8312,9 +8313,24 @@ void MobileEngine::spotTest(const QString& action)
         rm.sendCommand(QStringLiteral("spot add callsign=OH0PSK rx_freq=%1 tx_freq=%1 mode=PSK31 source=OksaSDR-test "
                                       "trigger_action=none lifetime_seconds=120 color=#FF3FB6FF")
                            .arg(QString::number(action.mid(4).toDouble(), 'f', 6)));
+    } else if (action.startsWith(QLatin1String("spot="))) {
+        // spot=CALL,MHZ,SPOTTER,SOURCE[,MODE]: a spot as a cluster or a
+        // program gives one (roadmap 132's alerts and spotter's place);
+        // clear takes these off too.
+        const QStringList f = action.mid(5).split(QLatin1Char(','));
+        if (f.size() >= 4) {
+            const QString call = f.at(0).trimmed().toUpper();
+            m_spotTestCalls.insert(call);
+            rm.sendCommand(QStringLiteral("spot add callsign=%1 rx_freq=%2 tx_freq=%2 source=%3 spotter_callsign=%4 %5"
+                                          "trigger_action=none lifetime_seconds=300 color=#FF3FB6FF comment=test")
+                               .arg(call, QString::number(f.at(1).toDouble(), 'f', 6), f.at(3).trimmed(), f.at(2).trimmed(),
+                                    f.size() >= 5 ? QStringLiteral("mode=%1 ").arg(f.at(4).trimmed()) : QString()));
+            qCInfo(lcMobile).noquote() << "spot test: added" << call << f.at(1) << "spotted by" << f.at(2) << "source" << f.at(3);
+        }
     } else if (action == QLatin1String("clear")) {
         for (const SpotData& s : rm.spotModel().spots()) {
-            if (s.source == QLatin1String("OksaSDR-test") || s.callsign.startsWith(QLatin1String("OH0TEST"))) {
+            if (s.source == QLatin1String("OksaSDR-test") || s.callsign.startsWith(QLatin1String("OH0TEST"))
+                || m_spotTestCalls.contains(s.callsign.toUpper()) || s.comment == QLatin1String("test")) {
                 rm.sendCommand(QStringLiteral("spot remove %1").arg(s.index));
             }
         }
@@ -8418,6 +8434,10 @@ QVariantList MobileEngine::spots() const
         if (!sources.contains(spotSourceKind(s.source))) {
             continue;
         }
+        // Spotted from (132): anywhere, this station's continent or country.
+        if (!spotFromOk(s.spotterCallsign)) {
+            continue;
+        }
         if (modes != QLatin1String("all")) {
             const QString mode = SpotModeResolver::resolveSpotRadioMode(s.mode, s.comment, s.rxFreqMhz);
             const bool cw = mode.startsWith(QLatin1String("CW"));
@@ -8501,6 +8521,20 @@ void MobileEngine::setSpotSourceShown(const QString& source, bool shown)
     AppSettings::instance().save();
     qCInfo(lcMobile).noquote() << "spots shown from:" << (now.isEmpty() ? QStringLiteral("none") : now.join(QStringLiteral(", ")));
     emit spotsChanged();
+}
+
+QVariantMap MobileEngine::spotCounts() const
+{
+    QVariantMap counts{{QStringLiteral("cluster"), 0}, {QStringLiteral("pota"), 0}, {QStringLiteral("wwff"), 0},
+                       {QStringLiteral("other"), 0}};
+    if (!m_connected) {
+        return counts;
+    }
+    for (const SpotData& s : m_session.radioModel().spotModel().spots()) {
+        const QString kind = spotSourceKind(s.source);
+        counts[kind] = counts.value(kind).toInt() + 1;
+    }
+    return counts;
 }
 
 bool MobileEngine::showSpots() const

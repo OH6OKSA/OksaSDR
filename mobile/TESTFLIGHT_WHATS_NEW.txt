@@ -10,16 +10,15 @@ GETTING STARTED
 
 NEW IN THIS BUILD
 - The Controls tabs keep what you use while operating; settings changed seldom moved to Setup, one button each: View > Theme, text size, band plan… (Setup > App), Spot sources… (Setup > Spots), CW > Keying…, TX > PTT key…, the FTx tab's settings button (Setup > FTx); Share the log is in Setup > Logging.
-- View > Spots shown: pick Cluster, POTA, WWFF and Other. Spots are the radio's, from every program and device on it.
+- View > Spots shown: Cluster, POTA, WWFF and Other, each with its count; From: anywhere, your continent or country.
+- Spot alerts, Setup > Spots: a call you hunt (VK9XY, 3Y0*) or a needed DXCC shows at the top with Tune, a sound, and a notification in the background.
 - Closing a slice closes its empty panadapter too, so your other devices still get one; a refused panadapter says why.
 - Editing or deleting a contact no longer freezes the app in a large log.
 
 RECENT (builds 94–200)
 - 200: a PTT key of your own (thanks Rob VA3MET); held F-keys start once; Mac keys back; the shared ADIF file follows edits (thanks Chris DM5HF); Theme Auto.
 - 199: Light theme, Setup > App > Theme > Light; the display stays dark (thanks Larry W9FLA).
-- 198: own layouts: Meter 1, Meter 2 and Slices as blocks, the slices in one line (thanks Larry W9FLA); Hide controls in a layout; the drawer's × beside the buttons.
 - 197: own layouts of the iPad and Mac screen, View > Layout (thanks Larry W9FLA); AGC-A in the info line (thanks Tommy W6TPR).
-- 196: FFT smooth and De-comb (View > Spectrum); 3D with 768 columns on an iPad or a Mac; with B/S in landscape the waterfall's buttons go under it (thanks Evgeny R0ACS).
 
 PLEASE TRY
 - Receive on a few bands with zoom, Band and the 3D view.
@@ -33,7 +32,7 @@ PLEASE TRY
 - VOX with a headset on this device: Controls > TX > VOX on, speak, and the radio keys by its VOX level and delay. [TX]
 - SmartLink over mobile data as well as Wi-Fi: connect, disconnect and connect again; no error should show after your own Disconnect.
 - New: each Controls tab's button to Setup (View, CW, TX, FTx, Log), and Setup's App, Spots and FTx tabs.
-- New: View > Spots shown, each source on and off.
+- New: Setup > Spots > Watch list or Needed DXCC: the alert, Tune, and the notification with the app in the background.
 - A button as PTT (Setup > Transmit > PTT key > Learn), held and with PTT Tap on / off, at low power. [TX]
 - Slices on two or more bands (+ Slice, then Band on one): each gets its own panadapter, and the FTx tab decodes them all, FT8 on one and FT4 on another.
 

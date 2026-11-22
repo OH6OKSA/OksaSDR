@@ -1,0 +1,293 @@
+// Spot alerts and the spotter's place (roadmap 132; the user, 2026-11-22:
+// "metsästää tiettyä asemaa spottina ... kun vk9xy on äänessä tulisi siitä
+// spotti häly tai jos metsästän puuttuvaa dxcc", and spots "OH:sta annettu,
+// koska silloin se on mahdollista kuulla").
+//
+// Every spot is the radio's (spotSources, 131). Spotted from (the View tab)
+// keeps the display to spots whose spotter is anywhere, on this station's
+// continent or in its country, by the cty lookup of the spotter's call (a
+// skimmer's -# and an SSID dropped); a spotter the lookup does not know
+// passes. Alerts (Setup › Spots) take each new spot through the same place
+// filter: a call on the watch list (whole calls, * for any characters:
+// VK9XY, 3Y0*) or a DXCC not yet in the log (on the spot's band, or at all;
+// the FTx tab's New DXCC, digiNewDxcc) gives a banner at the top of the
+// screen (Tune goes there), a sound, and, while the app is away from the
+// front, a notification. A call alerts once per band in 30 minutes.
+
+#include "MobileEngine.h"
+
+#include "LocalNotify.h"
+#include "QsoLog.h"
+
+#include "core/AppSettings.h"
+#include "core/CtyDatParser.h"
+#include "models/RadioModel.h"
+#include "models/SpotModel.h"
+
+#include <QDateTime>
+#include <QGuiApplication>
+#include <QLoggingCategory>
+#include <QRegularExpression>
+#include <QSoundEffect>
+
+Q_DECLARE_LOGGING_CATEGORY(lcMobile)
+
+namespace AetherSDR::mobile {
+
+namespace {
+const QString kFromKey = QStringLiteral("MobileSpotFrom");
+const QString kWatchKey = QStringLiteral("MobileSpotWatch");
+const QString kDxccKey = QStringLiteral("MobileSpotAlertDxcc");
+const QString kSoundKey = QStringLiteral("MobileSpotAlertSound");
+const QString kNotifyKey = QStringLiteral("MobileSpotAlertNotify");
+constexpr qint64 kAlertAgainMs = 30LL * 60 * 1000;
+constexpr int kQueueMax = 20;
+
+// A callsign as the cty lookup takes it: a skimmer's "-#" and an SSID's
+// "-2" dropped, upper case.
+QString baseCall(QString call)
+{
+    call = call.trimmed().toUpper();
+    const int dash = call.indexOf(QLatin1Char('-'));
+    return dash > 0 ? call.left(dash) : call;
+}
+
+bool on(const QString& key, bool fallback)
+{
+    const QVariant v = AppSettings::instance().value(key);
+    if (!v.isValid() || v.isNull()) {
+        return fallback;
+    }
+    return v.toString() == QLatin1String("True");
+}
+} // namespace
+
+void MobileEngine::setupSpotAlerts()
+{
+    SpotModel& spots = m_session.radioModel().spotModel();
+    connect(&spots, &SpotModel::spotAdded, this, [this](const SpotData& s) { checkSpotAlert(s); });
+}
+
+QString MobileEngine::spotFrom() const
+{
+    const QString v = AppSettings::instance().value(kFromKey, QStringLiteral("anywhere")).toString();
+    return v == QLatin1String("continent") || v == QLatin1String("country") ? v : QStringLiteral("anywhere");
+}
+
+void MobileEngine::setSpotFrom(const QString& from)
+{
+    const QString v = from == QLatin1String("continent") || from == QLatin1String("country") ? from : QStringLiteral("anywhere");
+    if (v == spotFrom()) {
+        return;
+    }
+    AppSettings::instance().setValue(kFromKey, v);
+    AppSettings::instance().save();
+    qCInfo(lcMobile).noquote() << "spots: spotted from" << v;
+    emit spotsChanged();
+    emit spotAlertSettingsChanged();
+}
+
+// This station's own place: the radio's callsign (or the cluster login).
+QVariantMap MobileEngine::ownPlace() const
+{
+    const DxccEntity* e = m_cty ? m_cty->entityForCallsign(baseCall(dxCallsign())) : nullptr;
+    if (!e) {
+        return {};
+    }
+    return {{QStringLiteral("prefix"), e->primaryPrefix}, {QStringLiteral("country"), e->name},
+            {QStringLiteral("continent"), e->continent}};
+}
+
+bool MobileEngine::spotFromOk(const QString& spotter) const
+{
+    const QString from = spotFrom();
+    if (from == QLatin1String("anywhere") || !m_cty) {
+        return true;
+    }
+    const DxccEntity* mine = m_cty->entityForCallsign(baseCall(dxCallsign()));
+    const DxccEntity* theirs = m_cty->entityForCallsign(baseCall(spotter));
+    if (!mine || !theirs) {
+        return true;  // a place not known: not kept out
+    }
+    return from == QLatin1String("country") ? theirs->primaryPrefix == mine->primaryPrefix
+                                             : theirs->continent == mine->continent;
+}
+
+QVariantMap MobileEngine::spotAlertSettings() const
+{
+    const QVariantMap own = ownPlace();
+    return {{QStringLiteral("watch"), AppSettings::instance().value(kWatchKey).toString()},
+            {QStringLiteral("dxcc"), AppSettings::instance().value(kDxccKey, QStringLiteral("off")).toString()},
+            {QStringLiteral("sound"), on(kSoundKey, true)},
+            {QStringLiteral("notify"), on(kNotifyKey, false)},
+            {QStringLiteral("from"), spotFrom()},
+            {QStringLiteral("ownPrefix"), own.value(QStringLiteral("prefix"))},
+            {QStringLiteral("ownContinent"), own.value(QStringLiteral("continent"))},
+            {QStringLiteral("ownCountry"), own.value(QStringLiteral("country"))},
+            {QStringLiteral("active"), spotAlertsActive()}};
+}
+
+bool MobileEngine::spotAlertsActive() const
+{
+    return !AppSettings::instance().value(kWatchKey).toString().trimmed().isEmpty()
+        || AppSettings::instance().value(kDxccKey, QStringLiteral("off")).toString() != QLatin1String("off");
+}
+
+void MobileEngine::setSpotAlertSetting(const QString& key, const QVariant& value)
+{
+    if (key == QLatin1String("watch")) {
+        // Calls and patterns, upper case, one space after each comma.
+        const QStringList parts = value.toString().toUpper().split(QRegularExpression(QStringLiteral("[,;\\s]+")),
+                                                                   Qt::SkipEmptyParts);
+        AppSettings::instance().setValue(kWatchKey, parts.join(QStringLiteral(", ")));
+        qCInfo(lcMobile).noquote() << "spot alerts: watch list" << (parts.isEmpty() ? QStringLiteral("(none)") : parts.join(QLatin1Char(' ')));
+    } else if (key == QLatin1String("dxcc")) {
+        const QString v = value.toString();
+        AppSettings::instance().setValue(kDxccKey, v == QLatin1String("band") || v == QLatin1String("any") ? v : QStringLiteral("off"));
+        qCInfo(lcMobile).noquote() << "spot alerts: needed DXCC" << AppSettings::instance().value(kDxccKey).toString();
+    } else if (key == QLatin1String("sound")) {
+        AppSettings::instance().setValue(kSoundKey, value.toBool() ? QStringLiteral("True") : QStringLiteral("False"));
+    } else if (key == QLatin1String("notify")) {
+        AppSettings::instance().setValue(kNotifyKey, value.toBool() ? QStringLiteral("True") : QStringLiteral("False"));
+        if (value.toBool()) {
+            requestLocalNotifications();
+        }
+    } else {
+        return;
+    }
+    AppSettings::instance().save();
+    emit spotAlertSettingsChanged();
+}
+
+bool MobileEngine::watchMatch(const QString& call) const
+{
+    const QStringList list = AppSettings::instance().value(kWatchKey).toString().split(QStringLiteral(", "), Qt::SkipEmptyParts);
+    for (const QString& entry : list) {
+        if (entry.contains(QLatin1Char('*')) || entry.contains(QLatin1Char('?'))) {
+            // The whole call: 3Y0* is 3Y0J, not K3Y0X.
+            const QRegularExpression re(QRegularExpression::wildcardToRegularExpression(entry),
+                                        QRegularExpression::CaseInsensitiveOption);
+            if (re.match(call).hasMatch()) {
+                return true;
+            }
+        } else if (entry.compare(call, Qt::CaseInsensitive) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void MobileEngine::checkSpotAlert(const SpotData& s)
+{
+    if (!m_connected || !spotAlertsActive() || s.callsign.isEmpty() || s.rxFreqMhz <= 0.0) {
+        return;
+    }
+    const QString call = s.callsign.trimmed().toUpper();
+    if (call == baseCall(dxCallsign())) {
+        return;
+    }
+    if (!spotFromOk(s.spotterCallsign)) {
+        return;
+    }
+    const QString band = QsoLog::bandOf(s.rxFreqMhz);
+    QString why;
+    if (watchMatch(call)) {
+        why = tr("on your watch list");
+    }
+    const QString dxcc = AppSettings::instance().value(kDxccKey, QStringLiteral("off")).toString();
+    if (why.isEmpty() && dxcc != QLatin1String("off")) {
+        const int level = digiNewDxcc(call, true, band);
+        if (level == 2) {
+            why = tr("a new DXCC");
+        } else if (level == 1 && dxcc == QLatin1String("band")) {
+            why = tr("a new DXCC on %1").arg(band);
+        }
+    }
+    if (why.isEmpty()) {
+        return;
+    }
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    const QString key = call + QLatin1Char('|') + band;
+    const auto seen = m_spotAlertSeen.constFind(key);
+    if (seen != m_spotAlertSeen.constEnd() && now - *seen < kAlertAgainMs) {
+        return;
+    }
+    m_spotAlertSeen.insert(key, now);
+    const DxccEntity* e = m_cty ? m_cty->entityForCallsign(call) : nullptr;
+    const QVariantMap alert{{QStringLiteral("call"), call},
+                            {QStringLiteral("mhz"), s.rxFreqMhz},
+                            {QStringLiteral("mode"), s.mode},
+                            {QStringLiteral("band"), band},
+                            {QStringLiteral("country"), e ? e->name : QString()},
+                            {QStringLiteral("why"), why},
+                            {QStringLiteral("spotter"), s.spotterCallsign},
+                            {QStringLiteral("index"), s.index},
+                            {QStringLiteral("time"), QDateTime::currentDateTimeUtc().toString(QStringLiteral("HH:mm"))}};
+    if (!m_spotAlert.isEmpty()) {
+        m_spotAlertQueue.prepend(m_spotAlert);
+        while (m_spotAlertQueue.size() > kQueueMax) {
+            m_spotAlertQueue.removeLast();
+        }
+    }
+    m_spotAlert = alert;
+    const QString line = QStringLiteral("%1 %2 MHz %3%4: %5").arg(call, QString::number(s.rxFreqMhz, 'f', 3), s.mode,
+                                                                 e ? QStringLiteral(" (%1)").arg(e->name) : QString(), why);
+    qCInfo(lcMobile).noquote() << "spot alert:" << line << "spotted by" << s.spotterCallsign;
+    emit spotAlertChanged();
+    if (on(kSoundKey, true)) {
+        if (!m_alertSound) {
+            m_alertSound = new QSoundEffect(this);
+            m_alertSound->setSource(QUrl(QStringLiteral("qrc:/sounds/spot-alert.wav")));
+            m_alertSound->setVolume(0.8f);
+        }
+        m_alertSound->play();
+    }
+    if (on(kNotifyKey, false) && QGuiApplication::applicationState() != Qt::ApplicationActive) {
+        postLocalNotification(tr("Spot: %1").arg(call),
+                              tr("%1 MHz %2%3, %4. Spotted by %5.")
+                                  .arg(QString::number(s.rxFreqMhz, 'f', 3), s.mode,
+                                       e ? QStringLiteral(", ") + e->name : QString(), why, s.spotterCallsign));
+    }
+}
+
+QVariantMap MobileEngine::spotAlert() const
+{
+    if (m_spotAlert.isEmpty()) {
+        return {};
+    }
+    QVariantMap a = m_spotAlert;
+    a.insert(QStringLiteral("more"), int(m_spotAlertQueue.size()));
+    return a;
+}
+
+void MobileEngine::dismissSpotAlert()
+{
+    m_spotAlert = m_spotAlertQueue.isEmpty() ? QVariantMap() : m_spotAlertQueue.takeFirst();
+    emit spotAlertChanged();
+}
+
+void MobileEngine::dismissAllSpotAlerts()
+{
+    m_spotAlert.clear();
+    m_spotAlertQueue.clear();
+    emit spotAlertChanged();
+}
+
+void MobileEngine::tuneSpotAlert()
+{
+    if (m_spotAlert.isEmpty()) {
+        return;
+    }
+    const int index = m_spotAlert.value(QStringLiteral("index")).toInt();
+    const double mhz = m_spotAlert.value(QStringLiteral("mhz")).toDouble();
+    // The spot may have run out meanwhile: then its frequency.
+    if (m_session.radioModel().spotModel().spots().contains(index)) {
+        tuneToSpot(index);
+    } else if (mhz > 0.0) {
+        tuneTo(mhz);
+    }
+    qCInfo(lcMobile).noquote() << "spot alert: tuned to" << m_spotAlert.value(QStringLiteral("call")).toString();
+    dismissSpotAlert();
+}
+
+} // namespace AetherSDR::mobile

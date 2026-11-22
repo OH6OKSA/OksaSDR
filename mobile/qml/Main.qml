@@ -56,6 +56,13 @@ ApplicationWindow {
                        : window.pagePhone ? phoneOperatePage : operatePage
     }
 
+    // A spot alert (roadmap 132) over whichever operating page is shown,
+    // under the status bar.
+    SpotAlertBanner {
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: pages.SafeArea.margins.top + 4
+    }
+
     // A SmartLink radio presented a different TLS certificate than the one
     // pinned for it on first use. The connect waits for the operator.
     Dialog {

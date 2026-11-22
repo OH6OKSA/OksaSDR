@@ -55,7 +55,7 @@ logging_shots=(setup-logging)
 kpa_shots=(tab-kpa kpa-controls)
 elecraft_shots=(tab-kpa500 kpa500-controls kat500-controls setup-elecraft)
 layout_shots=(layout-edit layout-own)
-theme_shots=(theme-light setup-app setup-spots setup-ftx setup-phonecw setup-transmit)
+theme_shots=(theme-light setup-app setup-spots setup-spot-alerts setup-ftx setup-phonecw setup-transmit spot-alert)
 all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${layout_shots[@]}" "${theme_shots[@]}" "${phone_shots[@]}" phone-landscape phone-landscape-bs bandchooser
            "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" "${logging_shots[@]}" "${kpa_shots[@]}" "${elecraft_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
 if [ "$LIST" = 1 ]; then
@@ -213,13 +213,23 @@ if want "${theme_shots[@]}"; then
     {
         echo "wait $FILL"
         if want theme-light; then printf 'pin 5\ntheme light\nwait 1500\nshot theme-light\ntheme dark\nwait 800\n'; fi
-        if want setup-app setup-spots setup-ftx setup-phonecw setup-transmit; then printf 'popup radioSetup\nwait 800\n'; fi
+        if want setup-app setup-spots setup-spot-alerts setup-ftx setup-phonecw setup-transmit; then printf 'popup radioSetup\nwait 800\n'; fi
         if want setup-app; then printf 'click setupTab11\nwait 1500\nshot setup-app\n'; fi
-        if want setup-spots; then printf 'click setupTab12\nwait 1500\nshot setup-spots\n'; fi
+        if want setup-spots setup-spot-alerts; then printf 'click setupTab12\nwait 1500\n'; fi
+        if want setup-spots; then printf 'shot setup-spots\n'; fi
+        if want setup-spot-alerts; then printf 'scroll -10\nwait 800\nshot setup-spot-alerts\nscroll 0\nwait 500\n'; fi
         if want setup-ftx; then printf 'click setupTab13\nwait 1500\nshot setup-ftx\n'; fi
         if want setup-phonecw; then printf 'click setupTab2\nwait 1500\nshot setup-phonecw\n'; fi
         if want setup-transmit; then printf 'click setupTab1\nwait 1500\nshot setup-transmit\n'; fi
-        if want setup-app setup-spots setup-ftx setup-phonecw setup-transmit; then printf 'close\nwait 600\n'; fi
+        if want setup-app setup-spots setup-spot-alerts setup-ftx setup-phonecw setup-transmit; then printf 'close\nwait 600\n'; fi
+        # A spot alert (roadmap 132): VK9XY on the watch list, a test spot
+        # given by OH2BH, the banner; the watch list emptied and the spot
+        # taken off after.
+        if want spot-alert; then
+            printf 'popup radioSetup\nwait 800\nclick setupTab12\nwait 1200\nshowname spotWatch\ntapname spotWatch\nkeys VK9XY\nkeys <Enter>\nwait 500\nclose\nwait 600\n'
+            printf 'spottest spot=VK9XY,14.0235,OH2BH,DXCluster,CW\nwait 3000\nshot spot-alert\ntapname spotAlertDismiss\nwait 500\nspottest clear\nwait 1000\n'
+            printf 'popup radioSetup\nwait 800\nclick setupTab12\nwait 1200\nshowname spotWatch\ntapname spotWatch\nkeys \\b\\b\\b\\b\\b\\b\nkeys <Enter>\nwait 500\nclose\nwait 600\n'
+        fi
     } | plan theme 1366x1024 "${src[@]}" --controls visible
 fi
 
@@ -567,9 +577,11 @@ jpg network 460x600+448+212
 jpg setup 640x600+363+50
 jpg setup-app 640x600+363+50
 jpg setup-spots 640x600+363+50
+jpg setup-spot-alerts 640x940+363+50 520x
 jpg setup-ftx 640x600+363+50
 jpg setup-phonecw 640x600+363+50
 jpg setup-transmit 640x600+363+50
+jpg spot-alert 1366x300+0+0 1000x
 jpg tnf 967x492+13+354 800x
 jpg memory-edit 440x380+0+280
 # Its buttons only: the log lines below them are the radio's own.

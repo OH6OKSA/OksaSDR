@@ -3,6 +3,10 @@ package fi.oh6oksa.oksasdr;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ApplicationExitInfo;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -136,6 +140,37 @@ public final class Platform {
     }
 
     // ---- Share sheet
+
+    // A spot alert while the app is away from the front (roadmap 132): a
+    // notification of its own channel; a tap opens the app. The app asks for
+    // notifications (Android 13+) with its background receive.
+    private static final String ALERT_CHANNEL = "spot_alerts";
+    private static int alertId = 2000;
+
+    public static void postNotification(Context context, String title, String text) {
+        NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null) {
+            return;
+        }
+        nm.createNotificationChannel(new NotificationChannel(ALERT_CHANNEL, "Spot alerts",
+                NotificationManager.IMPORTANCE_HIGH));
+        Intent open = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
+        PendingIntent tap = PendingIntent.getActivity(context, 1, open,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        Notification notification = new Notification.Builder(context, ALERT_CHANNEL)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setStyle(new Notification.BigTextStyle().bigText(text))
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentIntent(tap)
+                .setAutoCancel(true)
+                .build();
+        try {
+            nm.notify(alertId++, notification);
+        } catch (SecurityException e) {
+            android.util.Log.w("OksaSDR", "spot alert: no permission to notify: " + e);
+        }
+    }
 
     public static boolean share(Context context, String subject, String text) {
         try {

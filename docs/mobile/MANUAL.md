@@ -1631,7 +1631,13 @@ seven.
   - **Spot filters** — which spots show: *All*, *CW*, *Phone* or *Digital*
     (by the spot's mode, else its comment or the band plan, as on the
     desktop), and *Any age* or only those from the last 5, 15 or 30
-    minutes.
+    minutes. **From** (since build 201): *Anywhere*, your continent (*EU*)
+    or your country (*OH*, by the radio's callsign): only spots given by a
+    spotter there, since a station spotted near you is one you can hear;
+    a spotter whose place is not known passes. It holds for the alerts
+    too. Each source button shows how many spots the radio has from it
+    now; a chosen source this device does not read and that has none says
+    so in amber, with where to turn it on.
   - **Spot sources…** — opens Setup › Spots: the DX cluster this device
     logs in to and the park spots it reads (✓ while the cluster is
     connected).
@@ -2894,6 +2900,24 @@ tab holds.
     approval first.
 
     ![Setup › Spots › Park spots](manual/park-spots.jpg)
+
+  - **Spot alerts** (since build 201; the user's idea) — **Watch list**:
+    calls you hunt, separated by commas, `*` for any characters
+    (*VK9XY, 3Y0\**; a pattern is the whole call: *3Y0\** is 3Y0J, not
+    K3Y0X). **Needed DXCC**: *Off*, *On the band* (a DXCC not yet in the
+    log on the spot's band) or *New* (not in the log at all), by the same
+    log and country list as the FTx tab's *New DXCC*. A spot of either,
+    from where the View tab's *From* allows, shows at the top of the
+    screen: the call, frequency, mode and country, why, the spotter and
+    the time; **Tune** goes to it (as a tap on the spot), **×** shows the
+    next (*N more*; held, clears them all). **Sound** plays two short
+    tones with it; **Notify while the app is in the background** gives a
+    notification while the app is away from the front (the first time,
+    iOS asks for permission). Each call alerts once per band in 30
+    minutes.
+
+    ![A spot alert at the top of the screen](manual/spot-alert.jpg)
+    ![Setup › Spots › Spot alerts](manual/setup-spot-alerts.jpg)
 
   ![Radio Setup › Spots](manual/setup-spots.jpg)
 - **FTx** — not a setting of the radio: FT8 / FT4 in this app (from the

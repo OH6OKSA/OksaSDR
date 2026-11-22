@@ -1,5 +1,7 @@
 OksaSDR is a FlexRadio client for iPhone, iPad, Mac (Apple silicon) and Android, built on the AetherSDR engine (https://github.com/aethersdr/AetherSDR). It is an unofficial community app, not published or endorsed by the AetherSDR project or by FlexRadio.
 
+One app runs the whole station: the radio, FT8 / FT4, CW, RTTY, PSK, RADE, the log and the spots, with no WSJT-X, logging program or cluster client beside it.
+
 It controls a FlexRadio directly: on your home network, from anywhere over SmartLink, or over your own VPN. Panadapter and waterfall (2D or 3D), tuning, modes, filters, DSP, band stack, memories, spots and DX cluster, notch filters, meters (analog, bar or two bars), receive audio, voice transmit with PTT, CW and voice keyers, FT8 and FT4 with PSK Reporter, RADE digital voice with FreeDV Reporter, and a log with QRZ.com lookup, ADIF and Wavelog / Cloudlog.
 
 Users group (Facebook, for licensed radio amateurs): https://www.facebook.com/groups/1468327561855382

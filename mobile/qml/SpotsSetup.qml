@@ -123,4 +123,66 @@ ColumnLayout {
         wrapMode: Text.WordWrap
     }
     // 2D waterfall or the 3D stacked trace.
+
+    // ---- Alerts (roadmap 132): a call you hunt, or a DXCC you need ----
+    Label { text: qsTr("Spot alerts"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.topMargin: Theme.spacing }
+    readonly property var al: Engine.spotAlertSettings
+    Label { text: qsTr("Watch list"); color: Theme.textDim; font.pixelSize: Theme.px(14) }
+    TextField {
+        objectName: "spotWatch"
+        Accessible.name: qsTr("Watch list")
+        Layout.fillWidth: true
+        placeholderText: qsTr("Calls: VK9XY, 3Y0* (* for any)")
+        text: al.watch || ""
+        font.pixelSize: Theme.px(14)
+        inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
+        onEditingFinished: if (text !== (al.watch || "")) Engine.setSpotAlertSetting("watch", text)
+    }
+    RowLayout {
+        Layout.fillWidth: true
+        Label { text: qsTr("Needed DXCC"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.fillWidth: true; wrapMode: Text.WordWrap }
+        Repeater {
+            model: [{ key: "off", label: qsTr("Off") }, { key: "band", label: qsTr("On the band") }, { key: "any", label: qsTr("New") }]
+            delegate: AppButton {
+                required property var modelData
+                objectName: "spotDxcc_" + modelData.key
+                text: modelData.label
+                checked: (al.dxcc || "off") === modelData.key
+                focusPolicy: Qt.NoFocus
+                onClicked: Engine.setSpotAlertSetting("dxcc", modelData.key)
+            }
+        }
+    }
+    RowLayout {
+        Layout.fillWidth: true
+        Label { text: qsTr("Sound"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.fillWidth: true }
+        AppButton {
+            objectName: "spotAlertSound"
+            text: al.sound ? qsTr("On") : qsTr("Off")
+            checked: !!al.sound
+            Layout.preferredWidth: Theme.buttonWidth
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.setSpotAlertSetting("sound", !al.sound)
+        }
+    }
+    RowLayout {
+        Layout.fillWidth: true
+        Label { text: qsTr("Notify while the app is in the background"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.fillWidth: true; wrapMode: Text.WordWrap }
+        AppButton {
+            objectName: "spotAlertNotify"
+            text: al.notify ? qsTr("On") : qsTr("Off")
+            checked: !!al.notify
+            Layout.preferredWidth: Theme.buttonWidth
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.setSpotAlertSetting("notify", !al.notify)
+        }
+    }
+    Label {
+        Layout.fillWidth: true
+        text: qsTr("A spot of a call on the watch list, or of a DXCC not in your log (on its band, or not at all), shows at the top of the screen with Tune, plays the sound, and with the app in the background comes as a notification. Each call alerts once per band in 30 minutes. Only spots from where the View tab's From allows (anywhere, %1, %2) alert.")
+              .arg(al.ownContinent || qsTr("your continent")).arg(al.ownPrefix || qsTr("your country"))
+        color: Theme.textDim
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.WordWrap
+    }
 }

@@ -38,6 +38,7 @@
 class QJSEngine;
 class QQmlEngine;
 class QThread;
+class QSoundEffect;
 class Ft8Engine;
 
 namespace AetherSDR {
@@ -502,6 +503,19 @@ class MobileEngine : public QObject {
     // "cluster" (a DX cluster's, source DXCluster), "pota", "wwff" and
     // "other" (SmartSDR's, another program's). showSpots is any of them.
     Q_PROPERTY(QStringList spotSources READ spotSources NOTIFY spotsChanged)
+    // How many of the radio's spots each source has now (cluster, pota,
+    // wwff, other), whatever is shown: a 0 tells a chosen source brings
+    // nothing (the user, build 201's preview).
+    Q_PROPERTY(QVariantMap spotCounts READ spotCounts NOTIFY spotsChanged)
+    // Spots by the spotter's place (roadmap 132): anywhere, continent,
+    // country (this station's, by the cty lookup of the spotter's call).
+    Q_PROPERTY(QString spotFrom READ spotFrom WRITE setSpotFrom NOTIFY spotsChanged)
+    // Spot alerts (132): {watch, dxcc (off / band / any), sound, notify,
+    // from, ownPrefix, ownContinent, ownCountry, active}; and the alert shown
+    // now: {call, mhz, mode, band, country, why, spotter, index, time,
+    // more} (empty: none).
+    Q_PROPERTY(QVariantMap spotAlertSettings READ spotAlertSettings NOTIFY spotAlertSettingsChanged)
+    Q_PROPERTY(QVariantMap spotAlert READ spotAlert NOTIFY spotAlertChanged)
     Q_PROPERTY(int spotMaxAgeMin READ spotMaxAgeMin WRITE setSpotMaxAgeMin NOTIFY spotsChanged)
     // DX cluster: {host, port, callsign (the radio's when not set),
     // callsignFromRadio, autoConnect, state off/connecting/connected, error}.
@@ -1623,6 +1637,15 @@ public:
     QString spotModes() const;
     QStringList spotSources() const;
     static QString spotSourceKind(const QString& source);
+    QVariantMap spotCounts() const;
+    QString spotFrom() const;
+    void setSpotFrom(const QString& from);
+    QVariantMap spotAlertSettings() const;
+    Q_INVOKABLE void setSpotAlertSetting(const QString& key, const QVariant& value);
+    QVariantMap spotAlert() const;
+    Q_INVOKABLE void dismissSpotAlert();
+    Q_INVOKABLE void dismissAllSpotAlerts();
+    Q_INVOKABLE void tuneSpotAlert();
     Q_INVOKABLE void setSpotSourceShown(const QString& source, bool shown);
     void setSpotModes(const QString& modes);
     int spotMaxAgeMin() const;
@@ -2190,6 +2213,8 @@ signals:
     void pttKeyChanged();
     void documentPicked(const QString& purpose, const QUrl& url);
     void qsoLogBusyChanged();
+    void spotAlertSettingsChanged();
+    void spotAlertChanged();
     void layoutEditingChanged();
     void txLockChanged();
     void audioCompressionChanged();
@@ -2907,6 +2932,18 @@ private:
     // The learned PTT key (MobileEnginePttKey.cpp).
     void setupPttKey();
     void setupDocumentPicker();
+    // Spot alerts and the spotter's place (MobileEngineSpotAlerts.cpp).
+    void setupSpotAlerts();
+    void checkSpotAlert(const SpotData& spot);
+    bool spotFromOk(const QString& spotter) const;
+    bool spotAlertsActive() const;
+    bool watchMatch(const QString& call) const;
+    QVariantMap ownPlace() const;
+    QVariantMap m_spotAlert;
+    QList<QVariantMap> m_spotAlertQueue;
+    QHash<QString, qint64> m_spotAlertSeen;
+    QSoundEffect* m_alertSound{nullptr};
+    QSet<QString> m_spotTestCalls;
     void releasePttKey(const QString& why);
     bool ulanziOn() const;
     void ulanziEvent(const AetherSDR::UlanziChordDecoder::Event& event);

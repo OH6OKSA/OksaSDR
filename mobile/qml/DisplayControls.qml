@@ -151,10 +151,13 @@ ColumnLayout {
                     { key: "wwff", label: "WWFF" }, { key: "other", label: qsTr("Other") }]
             delegate: AppButton {
                 required property var modelData
+                // How many the radio has now: 0 says nothing comes from it.
+                readonly property int count: Engine.spotCounts[modelData.key] || 0
                 objectName: "spotsShow_" + modelData.key
-                text: modelData.label
+                text: modelData.label + " " + count
                 checked: Engine.spotSources.indexOf(modelData.key) >= 0
-                Accessible.name: checked ? qsTr("%1 spots, shown").arg(modelData.label) : qsTr("%1 spots, hidden").arg(modelData.label)
+                Accessible.name: (checked ? qsTr("%1 spots, shown") : qsTr("%1 spots, hidden")).arg(modelData.label)
+                                 + ", " + qsTr("%n on the radio", "", count)
                 Layout.fillWidth: true
                 Layout.preferredWidth: 1
                 focusPolicy: Qt.NoFocus
@@ -165,6 +168,27 @@ ColumnLayout {
     // What Cluster and Other hold (the user, build 201's preview: "Other"
     // has to say what it is): every program on the radio puts spots there,
     // each with its source.
+    // A chosen source that brings nothing: none on the radio and not read
+    // here; says where it is turned on (the user: someone may pick them
+    // here without knowing that nothing comes until Spot sources has them).
+    Label {
+        objectName: "spotsNoneFrom"
+        readonly property var missing: {
+            const out = []
+            const c = Engine.spotCounts
+            const shown = Engine.spotSources
+            if (shown.indexOf("cluster") >= 0 && !(c.cluster > 0) && Engine.dxCluster.state !== "connected") out.push(qsTr("Cluster"))
+            if (shown.indexOf("pota") >= 0 && !(c.pota > 0) && !Engine.parkSpots.pota) out.push("POTA")
+            if (shown.indexOf("wwff") >= 0 && !(c.wwff > 0) && !Engine.parkSpots.wwff) out.push("WWFF")
+            return out
+        }
+        visible: missing.length > 0
+        Layout.fillWidth: true
+        text: qsTr("No spots from %1: this device does not read them; turn them on in Spot sources… below.").arg(missing.join(", "))
+        color: Theme.warning
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.WordWrap
+    }
     Label {
         objectName: "spotsShownHint"
         Layout.fillWidth: true
@@ -204,6 +228,30 @@ ColumnLayout {
             }
         }
     }
+    // Spotted from (roadmap 132): a spot given near you is one you can hear.
+    RowLayout {
+        Layout.fillWidth: true
+        visible: Engine.showSpots
+        Label { text: qsTr("From"); color: Theme.textDim; font.pixelSize: Theme.px(14) }
+        Repeater {
+            model: [{ key: "anywhere", label: qsTr("Anywhere") },
+                    { key: "continent", label: Engine.spotAlertSettings.ownContinent || qsTr("Continent") },
+                    { key: "country", label: Engine.spotAlertSettings.ownPrefix || qsTr("Country") }]
+            delegate: AppButton {
+                required property var modelData
+                objectName: "spotFrom_" + modelData.key
+                text: modelData.label
+                checked: Engine.spotFrom === modelData.key
+                Accessible.name: modelData.key === "anywhere" ? qsTr("Spotted anywhere")
+                                 : modelData.key === "continent" ? qsTr("Spotted on your continent, %1").arg(modelData.label)
+                                 : qsTr("Spotted in your country, %1").arg(Engine.spotAlertSettings.ownCountry || modelData.label)
+                Layout.fillWidth: true
+                Layout.preferredWidth: 1
+                focusPolicy: Qt.NoFocus
+                onClicked: Engine.spotFrom = modelData.key
+            }
+        }
+    }
     Label {
         Layout.fillWidth: true
         visible: !Engine.showSpots
@@ -215,7 +263,11 @@ ColumnLayout {
     AppButton {
         objectName: "openSpotsSetup"
         Layout.fillWidth: true
-        text: Engine.dxCluster.state === "connected" ? qsTr("Spot sources… (DX cluster ✓)") : qsTr("Spot sources…")
+        // What this device reads, all three (the user: the button said only
+        // the cluster's state).
+        text: qsTr("Spot sources: DX cluster %1 · POTA %2 · WWFF %3…")
+              .arg(Engine.dxCluster.state === "connected" ? "✓" : (Engine.dxCluster.state === "connecting" ? "…" : "–"))
+              .arg(Engine.parkSpots.pota ? "✓" : "–").arg(Engine.parkSpots.wwff ? "✓" : "–")
         focusPolicy: Qt.NoFocus
         onClicked: Engine.openSetup(12)
     }
