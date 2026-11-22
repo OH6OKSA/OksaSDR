@@ -49,7 +49,8 @@ class MobileEngine;
 //   txslice LETTER          that slice active and TX (to put TX back after a test)
 //   addslice                a slice of this app's own (+ Slice)
 //   closeslice LETTER       close that slice (after addslice)
-//   slices                  log every slice (frequency, mode, TX, active) and the power
+//   slices                  log every slice (frequency, mode, TX, active, its pan),
+//                           the number of panadapters and the power
 //   amp HOST[:PORT]|off     the amplifier's address (Radio Setup › Amp); off forgets it,
 //                           pause / resume its Read the amplifier switch
 //   kpa500 HOST:PORT|off    an Elecraft KPA500's bridge (Radio Setup › Amp); off forgets

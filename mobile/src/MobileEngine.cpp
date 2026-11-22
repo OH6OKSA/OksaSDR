@@ -1231,6 +1231,7 @@ MobileEngine::MobileEngine(QObject* parent)
             m_splitPending = false;
         }
         selectActiveSlice();
+        closeEmptiedPanadapter(id);
         emit slicesChanged();
     });
     // A reconnect reuses the previous session's slice and pan objects
@@ -5737,7 +5738,14 @@ void MobileEngine::removeSlice(int sliceId)
             heir->setTxSlice(true);
         }
     }
-    rm.removeSlice(sliceId);
+    // Its panadapter closes with it once the radio confirms the slice gone,
+    // if no slice is left there (roadmap 127, in the sliceRemoved handler).
+    if (SliceModel* s = rm.slice(sliceId)) {
+        m_closingSlicePans.insert(sliceId, s->panId());
+    }
+    if (!rm.removeSlice(sliceId)) {
+        m_closingSlicePans.remove(sliceId);
+    }
 }
 
 void MobileEngine::makeTxSlice(int sliceId)
@@ -5746,6 +5754,29 @@ void MobileEngine::makeTxSlice(int sliceId)
         stopTransmit(QStringLiteral("TX slice changed"));
         s->setTxSlice(true);
     }
+}
+
+// A slice the operator closed was the last on its panadapter: the panadapter
+// closes too (roadmap 127). The app shows one panadapter, so an empty one was
+// invisible, still streamed to the device and held one of the radio's slots
+// (the iPad's three after three slices closed left an Android phone without
+// a panadapter). Never the last panadapter, the shown one or one a slice is
+// still on; only this station's are in the model. Selected first, so a shown
+// slice closed alone on its panadapter has already moved the app to another.
+void MobileEngine::closeEmptiedPanadapter(int sliceId)
+{
+    const QString panId = m_closingSlicePans.take(sliceId);
+    RadioModel& rm = m_session.radioModel();
+    if (panId.isEmpty() || !rm.panadapter(panId) || rm.panadapters().size() <= 1 || (m_pan && m_pan->panId() == panId)) {
+        return;
+    }
+    for (SliceModel* s : rm.slices()) {
+        if (s && s->panId() == panId) {
+            return;
+        }
+    }
+    qCInfo(lcMobile) << "slice" << sliceId << "closed: its panadapter" << panId << "closed too (no slice left on it)";
+    rm.removePanadapter(panId);
 }
 
 int MobileEngine::panCount() const
@@ -9895,6 +9926,7 @@ void MobileEngine::onConnectionStateChanged(bool connected)
     m_netSampleMs = 0;
     m_sliceRecoveryTried = false;
     m_sliceRecoveryPending = false;
+    m_closingSlicePans.clear();
     // A new session: the radio has none of our pan sizes yet.
     m_sentPanId.clear();
     m_sentPanWidth = 0;

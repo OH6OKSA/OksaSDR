@@ -2325,6 +2325,7 @@ private:
     // four on the ThinkPad over the cabin's LTE lost a third of every stream).
     QSet<QString> m_narrowPans;
     void narrowHiddenPans(const QString& shownPanId);
+    void closeEmptiedPanadapter(int sliceId);
     int m_sentPanWidth{0};
     qint64 m_sentPanSizeMs{0};
     void setConnectionState(const QString& state);
@@ -2388,6 +2389,10 @@ private:
     // retry per connection on a fresh panadapter (pending until it arrives).
     bool m_sliceRecoveryTried{false};
     bool m_sliceRecoveryPending{false};
+    // Slices the operator closed, with their panadapters: when the radio
+    // confirms one gone and no slice is left on its panadapter, that closes
+    // too (roadmap 127: the app shows one, and an empty one held a slot).
+    QHash<int, QString> m_closingSlicePans;
     QString m_audioCodingInUse;
     // Performance sampling (2 s).
     QTimer m_perfTimer;

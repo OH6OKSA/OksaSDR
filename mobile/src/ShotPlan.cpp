@@ -893,8 +893,11 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                               << QString::number(m.value(QStringLiteral("frequency")).toDouble(), 'f', 6)
                               << m.value(QStringLiteral("mode")).toString()
                               << (m.value(QStringLiteral("tx")).toBool() ? "TX" : "")
-                              << (m.value(QStringLiteral("active")).toBool() ? "active" : "");
+                              << (m.value(QStringLiteral("active")).toBool() ? "active" : "")
+                              << QStringLiteral("pan=%1").arg(m.value(QStringLiteral("panId")).toString());
         }
+        // This station's panadapters (roadmap 127: an emptied one closes).
+        qInfo().noquote() << "shot-plan: panadapters" << m_engine.panCount();
         qInfo() << "shot-plan: RF power" << m_engine.rfPower() << "W, tune power" << m_engine.tunePower()
                 << "W, tuning" << m_engine.tuning() << ", transmitting" << m_engine.radioTransmitting();
     } else if (command == QLatin1String("agcstate")) {

@@ -1099,7 +1099,9 @@ Power meter. Two fit side by side, four make 2 × 2.
 
 - Tap a slice to make it the active one (tuning, info panel and controls
   follow it).
-- Press and hold for **Make TX slice** and **Close slice**.
+- Press and hold for **Make TX slice** and **Close slice**. A slice closed
+  alone on its panadapter takes the panadapter with it, so the radio's
+  panadapters stay free for your other devices (the last one stays).
 - **+ Slice** and **+ Pan** (bottom right of the waterfall) add a slice or a
   panadapter: **+ Slice** another receiver on the band this panadapter shows,
   **+ Pan** a panadapter of its own with its own slice, for another band.
@@ -1280,7 +1282,9 @@ stacked trace and sets the levels. They work as on the desktop AetherSDR:
 **Panadapters.** The display shows one panadapter at a time: the one of
 the active slice. Selecting a slice on another panadapter (its chip in the
 slice row) switches the display to it. With more than one open, **Close N
-other pans** on the display closes the others.
+other pans** on the display closes the others. A panadapter closes by
+itself when you close the last slice on it (**Close slice**), so one you
+cannot see does not hold one of the radio's panadapters.
 
 ## 6. Split
 
