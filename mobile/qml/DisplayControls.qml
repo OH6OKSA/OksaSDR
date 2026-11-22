@@ -150,11 +150,47 @@ ColumnLayout {
             model: [{ key: "cluster", label: qsTr("Cluster") }, { key: "pota", label: "POTA" },
                     { key: "wwff", label: "WWFF" }, { key: "other", label: qsTr("Other") }]
             delegate: AppButton {
+                id: spotsShowButton
                 required property var modelData
                 // How many the radio has now: 0 says nothing comes from it.
                 readonly property int count: Engine.spotCounts[modelData.key] || 0
                 objectName: "spotsShow_" + modelData.key
                 text: modelData.label + " " + count
+                // The count on a second, smaller line inside the button (the
+                // user, build 202 on the iPad: "Cluster 182" in the pinned
+                // panel's narrow buttons read "Cluster …"); the button keeps
+                // its size, the two lines fit its height at every scale.
+                topPadding: 2
+                bottomPadding: 2
+                contentItem: Item {
+                    implicitWidth: Math.max(spotsName.implicitWidth, spotsCount.implicitWidth)
+                    implicitHeight: spotsName.implicitHeight + spotsCount.implicitHeight
+                    Column {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width
+                        Text {
+                            id: spotsName
+                            width: parent.width
+                            text: spotsShowButton.modelData.label
+                            font.pixelSize: Theme.buttonFont
+                            horizontalAlignment: Text.AlignHCenter
+                            elide: Text.ElideRight
+                            color: spotsShowButton.checked ? Theme.buttonTextOn : Theme.buttonText
+                            opacity: spotsShowButton.enabled ? 1.0 : 0.4
+                        }
+                        Text {
+                            id: spotsCount
+                            objectName: "spotsCount_" + spotsShowButton.modelData.key
+                            width: parent.width
+                            text: spotsShowButton.count
+                            font.pixelSize: Theme.smallFont
+                            horizontalAlignment: Text.AlignHCenter
+                            elide: Text.ElideRight
+                            color: spotsShowButton.checked ? Theme.buttonTextOn : Theme.buttonText
+                            opacity: spotsShowButton.enabled ? 0.85 : 0.35
+                        }
+                    }
+                }
                 checked: Engine.spotSources.indexOf(modelData.key) >= 0
                 Accessible.name: (checked ? qsTr("%1 spots, shown") : qsTr("%1 spots, hidden")).arg(modelData.label)
                                  + ", " + qsTr("%n on the radio", "", count)
