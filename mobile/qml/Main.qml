@@ -38,6 +38,15 @@ ApplicationWindow {
         target: Theme; property: "windowHeight"
         value: pages.height - pages.SafeArea.margins.top - pages.SafeArea.margins.bottom
     }
+    // The same without the on-screen keyboard's room, for the phone / tablet
+    // class: with the keyboard counted an opened OnePlus Open (751 high, a
+    // 316 keyboard) fell under the phone layout's 500, the page was built
+    // anew, the field let go and the keyboard went: no keyboard at all
+    // (beta 117, the user: "sisäkannella ei missään asennossa").
+    Binding {
+        target: Theme; property: "classHeight"
+        value: pages.height + window.keyboardCover - pages.SafeArea.margins.top - pages.SafeArea.margins.bottom
+    }
     readonly property bool phoneSized: Theme.phoneLayout
     // The page's layout, settled: the two bindings above update one after
     // the other, so a phone turning passed through a square window that

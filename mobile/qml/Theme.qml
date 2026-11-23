@@ -67,6 +67,9 @@ QtObject {
     // ---- Window (set by Main.qml) ----
     property real windowWidth: 1366
     property real windowHeight: 1024
+    // The window's height with an on-screen keyboard's room given back
+    // (Main.qml): the phone / tablet class does not change when it shows.
+    property real classHeight: windowHeight
 
     // ---- Classes, as Apple's size classes ----
     readonly property real shortSide: Math.min(windowWidth, windowHeight)
@@ -77,7 +80,7 @@ QtObject {
     // both got the phone's).
     readonly property bool compactWidth: windowWidth < 600
     // Compact height: an iPhone (or small pane) in landscape.
-    readonly property bool compactHeight: windowHeight < 500
+    readonly property bool compactHeight: classHeight < 500
     // Very low: a phone's outer screen in landscape, small iPhones in
     // landscape. Meters fall back to bars to leave room for the display.
     readonly property bool tightHeight: windowHeight < 400
