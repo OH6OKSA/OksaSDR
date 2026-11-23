@@ -12,6 +12,7 @@ NEW IN THIS BUILD
 - Log tab: Back to the call (Setup > Logging) keeps the cursor in the call field with an iPad keyboard too.
 - On-screen keyboard: Done works as Enter (logs the call, sends CW text, saves a name); it stays up on an iPad in landscape, PTT above it; in Big buttons' Log Done no longer covers the mode.
 - Tuner Genius XL: C1, L and C2 step their own relays (thanks Ben KT4O).
+- A 13" iPad and a Mac window upright keep the controls beside the display, as in landscape.
 
 RECENT (builds 94–206)
 - 206: FT8 / FT4 answered at once in the running slot (thanks George KF2T); the Log tab for a run (thanks Chris DM5HF).

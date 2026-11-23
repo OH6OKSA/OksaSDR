@@ -152,7 +152,16 @@ Page {
     // Landscape with the panel pinned: two columns, the panel the full
     // height at the right, PTT under the display only. Otherwise one column
     // and PTT the full width.
-    readonly property bool twoColumns: !portrait && panelPinned
+    readonly property bool twoColumns: !stacked && panelPinned
+    // The controls stacked under the display (the pinned panel below it, the
+    // drawer from the bottom with its own PTT): upright, and only where the
+    // panel does not fit beside the display (roadmap 156, the user on the
+    // iPad: the side arrangement is the better one upright too, "iPad ja
+    // Mac"). A 13" iPad and a Mac window upright take it; an 11" iPad and a
+    // mini (834 and 744 wide) keep the controls under the display, as their
+    // band buttons do not fit beside a 320 panel. Own layouts keep the true
+    // orientation (orientation above).
+    readonly property bool stacked: portrait && !sideFits
     // Landscape side column: the pinned control panel (none when hidden).
     // Fixed, so content can never widen it off screen. At least 320 as the
     // drawer: 287 on a 1024 pt window cut "TX 2170 Hz", "New DXCC" and the
@@ -174,7 +183,7 @@ Page {
     // iPad, the mini's 1089 pt too): lower, the panel's share left the
     // display no height (640 x 700, 683 x 1004); the drawer then.
     readonly property bool bottomFits: Theme.classHeight >= 1050
-    readonly property bool pinFits: portrait ? bottomFits : sideFits
+    readonly property bool pinFits: stacked ? bottomFits : sideFits
     readonly property bool panelPinned: Engine.controlsVisible && pinFits
 
     function formatMhz(mhz) {
@@ -683,11 +692,11 @@ Page {
             // Beside the display and PTT; with PTT hidden (FT8 / FT4) the
             // display's row only, so the empty PTT row does not take height.
             Layout.rowSpan: page.twoColumns && ptt.visible ? 2 : 1
-            Layout.preferredWidth: page.portrait ? -1 : page.sideWidth
-            Layout.maximumWidth: page.portrait ? Number.POSITIVE_INFINITY : page.sideWidth
-            Layout.fillWidth: page.portrait
-            Layout.fillHeight: !page.portrait
-            Layout.preferredHeight: page.portrait ? page.height * 0.42 : -1
+            Layout.preferredWidth: page.stacked ? -1 : page.sideWidth
+            Layout.maximumWidth: page.stacked ? Number.POSITIVE_INFINITY : page.sideWidth
+            Layout.fillWidth: page.stacked
+            Layout.fillHeight: !page.stacked
+            Layout.preferredHeight: page.stacked ? page.height * 0.42 : -1
             spacing: Theme.spacing
 
             // Pinned panel: section toggles; the chosen sections stack below
@@ -706,7 +715,7 @@ Page {
         // so no second PTT peeks out under the drawer.
         RowLayout {
             id: pttRow
-            visible: !(controlsDrawer.visible && page.portrait) && !ptt.digiHidden
+            visible: !(controlsDrawer.visible && page.stacked) && !ptt.digiHidden
             Layout.row: page.twoColumns ? 1 : (page.panelPinned ? 2 : 1)
             Layout.column: 0
             Layout.fillWidth: true
@@ -1045,12 +1054,12 @@ Page {
     Drawer {
         id: controlsDrawer
         objectName: "controlsDrawer"
-        edge: page.portrait ? Qt.BottomEdge : Qt.RightEdge
+        edge: page.stacked ? Qt.BottomEdge : Qt.RightEdge
         // At least 320 pt beside the display: a narrow window's 40 % cut the
         // panel's buttons short.
         // In landscape with no Pin Controls the × sits beside the section
         // buttons (ControlsPanel.closeInGrid): the drawer is that much wider.
-        width: page.portrait ? page.width
+        width: page.stacked ? page.width
                              : Math.min(Math.max(page.width * 0.4, 320 * Theme.bigScale), 460 * Theme.bigScale)
                                + (drawerPanel.closeInGrid ? drawerPanel.closeColumn : 0)
         // Landscape: ends above the page's PTT row, which stays usable, so
@@ -1059,7 +1068,7 @@ Page {
         // Upright with the on-screen keyboard up it takes the whole page above
         // the keyboard, as Full-screen controls: half of a short page left
         // the Log tab's call field one line high (an opened OnePlus Open).
-        height: page.portrait ? (page.controlsFull || page.Window.height - page.height > 1
+        height: page.stacked ? (page.controlsFull || page.Window.height - page.height > 1
                                  ? (parent ? parent.height : page.height)
                                  : Math.min(page.height * 0.5, 560) + Math.max(0, page.Window.height - page.height))
                               : page.height - page.pttHeight - 2 * Theme.spacing
@@ -1115,12 +1124,12 @@ Page {
                     }
                 }
                 // Landscape has no Close at the bottom: a × at the top.
-                showCloseButton: !page.portrait
+                showCloseButton: !page.stacked
                 onCloseRequested: controlsDrawer.close()
             }
             // Upright: Close, full height and the PTT copy, as on the phone.
             RowLayout {
-                visible: page.portrait
+                visible: page.stacked
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
                 AppButton {

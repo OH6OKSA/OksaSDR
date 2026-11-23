@@ -588,9 +588,11 @@ folding switch it live. A window at least 600 points wide and 500 high
 gets the tablet layout, so a foldable's inner screen (the iPhone Duo's,
 the OnePlus Open's) looks the same in both orientations: where the row is short of room, the frequency and the
 info panel beside it shrink a little, and only in a narrow window does the
-panel go under the frequency. In portrait the controls pin under the display only on a
-screen about 1050 points tall (an iPad); on a lower one they open as the
-drawer. On a very low screen in landscape (a phone's outer
+panel go under the frequency. Upright, where the controls fit beside the
+display (a 13" iPad, a Mac window; since build 211) they stay at the right
+as in landscape, pinned or as the drawer from the right; on a narrower
+screen (an 11" iPad, a mini) they pin under the display, on a screen about
+1050 points tall, and open as the drawer from the bottom on a lower one. On a very low screen in landscape (a phone's outer
 screen, the smaller iPhones) the band buttons give way to the display;
 there the **Band** button on the waterfall opens the bands, with *Whole
 band* (the band zoom) and *Close* at the top. **B/S** (bands / steps) beside it hides the
@@ -1423,7 +1425,8 @@ assigned* or *The selected TX antenna cannot transmit on this frequency*).
 ## 8. Controls
 
 **Controls** (top row) opens the controls; on an iPad, *Pin Controls* keeps
-them in the page (at the right in landscape, under the display in portrait),
+them in the page (at the right in landscape and upright on a 13" iPad or a
+Mac window, under the display upright on a narrower iPad),
 with toggle buttons to show several sections at once; *Hide controls* puts
 them back into the drawer. On a tablet in landscape **×** beside *Pin
 Controls* closes the drawer (upright, *Close* is at its foot; a tap outside
@@ -1440,7 +1443,7 @@ PSK63). With an amplifier set up ([Radio Setup › Amp](#9-radio-setup)),
 or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
 **Amp** tab joins them.
 
-![iPad in portrait with the controls pinned under the display](manual/ipad-portrait.jpg)
+![A 13" iPad upright with the controls pinned beside the display](manual/ipad-portrait.jpg)
 
 | DSP | Audio | TX | eSSB |
 |---|---|---|---|
