@@ -604,6 +604,17 @@ waterfall's buttons (− / +, Band, B/S ▲, + Slice and + Pan) then move into
 the row under it, which the step buttons left empty, and the whole
 waterfall shows (thanks Evgeny R0ACS); B/S ▲ there brings the rows back.
 
+On a tablet, a Mac and Linux these buttons have their own place in
+Classic (since build 211, the user's design): **−**, **+**, **Band** and
+**B/S** sit in the PTT row beside **Macros**, and **+ Slice** and **+ Pan**
+on PTT's other side (the other way round with *View › Display buttons ›
+Right*), as high as PTT, so nothing lies over the waterfall. The row keeps
+its proportions on every screen: each small button takes about a twelfth
+of it and PTT the rest, so on a wide Linux or Mac window PTT grows with
+the window, not the small buttons. While FT8 / FT4 runs and hides PTT and
+Macros, the six buttons stay where they are. An own layout keeps them on
+its display, and on a phone they stay on the waterfall.
+
 ![Landscape with B/S hiding the band and step rows: the waterfall's buttons in the row under it](manual/phone-landscape-bs.jpg)
 
 ![The bands from the Band button in a low landscape window](manual/bandchooser.jpg)
@@ -1111,7 +1122,8 @@ Power meter. Two fit side by side, four make 2 × 2.
 - Press and hold for **Make TX slice** and **Close slice**. A slice closed
   alone on its panadapter takes the panadapter with it, so the radio's
   panadapters stay free for your other devices (the last one stays).
-- **+ Slice** and **+ Pan** (bottom right of the waterfall) add a slice or a
+- **+ Slice** and **+ Pan** (bottom right of the waterfall; in the PTT row
+  on a tablet, a Mac and Linux) add a slice or a
   panadapter: **+ Slice** another receiver on the band this panadapter shows,
   **+ Pan** a panadapter of its own with its own slice, for another band.
 - **Slices on several bands.** The radio hears a slice only on the band its
@@ -1145,7 +1157,8 @@ Power meter. Two fit side by side, four make 2 × 2.
   widths stay as they were.
   Holding the finger at either edge keeps tuning, faster nearer the edge.
 - **Drag anywhere else** to move the view; the frequency stays.
-- **Pinch**, or **− / +** (bottom left), to zoom around the slice.
+- **Pinch**, or **− / +** (bottom left; in the PTT row on a tablet, a Mac
+  and Linux), to zoom around the slice.
 - **Band** (beside − / +) zooms out to the whole band you are on; tap it
   again to return to the slice. Off every band (the view dragged or tuned
   outside one), it goes back to the slice's band, or else the nearest one.
@@ -1822,7 +1835,7 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   with **After logging** › *Back to the call* in Setup › Logging the
   cursor stays in the call field for the next call, Enter or the
   keyboard's Return key logging each (on an iPad keyboard and an Android
-  phone since build 207: before it the field let go of the cursor there
+  phone since build 211: before it the field let go of the cursor there
   as without the choice), and Esc (or a tap outside the field) gives
   Space back to PTT. Under the recent contacts a line says where
   each QSO also goes (*Each QSO also to: QRZ.com Logbook, Wavelog /
@@ -3094,17 +3107,26 @@ whose Enter does nothing (a comment), it only puts the keyboard away. It sits be
 right end, or above the field when the keyboard covers the space below
 (the screen then slides up to keep the field in sight), where it covers
 no button (else over the field's own empty end, as in Big buttons' Log,
-where until build 207 it sat on the mode). With a hardware
+where until build 211 it sat on the mode). Since build 211 it sits first
+beside the field on its row: fields are as wide as what they hold (a call
+about 16 characters, a grid 8, an IP address 15), so there is room. With a hardware
 keyboard on an iPad there is no on-screen keyboard and no Done.
 
 While the on-screen keyboard is up the page makes room for it instead of
 lying under it (on Android since beta 117: before it the keyboard's size
 came in screen pixels and no room was made, so an opened OnePlus Open had
-PTT under the keyboard upright; and since build 210 the layout no longer
+PTT under the keyboard upright; and since build 211 the layout no longer
 turns to the phone's under the keyboard, which on an iPad in landscape and
 an opened OnePlus Open rebuilt the page and sent the keyboard away): the display, **Macros** and **PTT** move up above the
 keyboard (the waterfall gets lower), the controls drawer and Setup end at
-its top, and the field you type in is scrolled into sight. **PTT keeps
+its top, and the field you type in is scrolled into sight. So that the waterfall
+keeps some height on a tablet (since build 211), in landscape the band
+row and the step buttons step aside while the keyboard is up, and upright
+the controls drawer above the keyboard is only as high as its tabs, three
+rows of fields and PTT, the display above it, where that leaves room (an
+11" iPad, an iPad mini; on a narrower screen, such as an opened OnePlus
+Open upright, the drawer takes the page above the keyboard). They come
+back when the keyboard goes. **PTT keeps
 the field and its keyboard**: in a run, type the call, key, and go on
 typing the report before **Log**. (On a phone in landscape Setup stays
 full size and slides up with the field, as there is too little room
