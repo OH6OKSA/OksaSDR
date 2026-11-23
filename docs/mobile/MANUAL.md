@@ -2803,7 +2803,8 @@ tab holds.
   at the top **Share the log (ADIF)** with the log file's place (from the
   Log tab since build 202). **After logging** (since build 206):
   *Keyboard away* (the default) takes the keyboard from the call field
-  after Log, so Space is PTT again; *Back to the call* keeps the cursor
+  after Log (Enter, or the on-screen keyboard's Done, logs; on Android it
+  was Next, a Tab into the next field, until beta 117), so Space is PTT again; *Back to the call* keeps the cursor
   there for a run by keyboard (Esc or a tap outside the field gives
   Space back to PTT). The Log tab's **Logbooks…** opens this tab.
 
@@ -3094,7 +3095,9 @@ keyboard on an iPad there is no on-screen keyboard and no Done.
 While the on-screen keyboard is up the page makes room for it instead of
 lying under it (on Android since beta 117: before it the keyboard's size
 came in screen pixels and no room was made, so an opened OnePlus Open had
-PTT under the keyboard upright): the display, **Macros** and **PTT** move up above the
+PTT under the keyboard upright; and since build 210 the layout no longer
+turns to the phone's under the keyboard, which on an iPad in landscape and
+an opened OnePlus Open rebuilt the page and sent the keyboard away): the display, **Macros** and **PTT** move up above the
 keyboard (the waterfall gets lower), the controls drawer and Setup end at
 its top, and the field you type in is scrolled into sight. **PTT keeps
 the field and its keyboard**: in a run, type the call, key, and go on
