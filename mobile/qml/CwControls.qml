@@ -136,6 +136,8 @@ ColumnLayout {
             placeholderText: liveButton.checked ? qsTr("Type: each letter goes now") : qsTr("CW text to send")
             inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
             font.pixelSize: Theme.px(16)
+            // Android: Return, as its Done hides the keyboard before Enter arrives (Enter lost) and Next makes it a Tab (roadmap 142)
+            EnterKey.type: Qt.platform.os === "android" ? Qt.EnterKeyReturn : Qt.EnterKeyDefault
             onAccepted: {
                 if (liveButton.checked) {
                     Engine.sendCwxChar(" ")

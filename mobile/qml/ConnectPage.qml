@@ -301,6 +301,8 @@ Page {
                             Layout.fillWidth: true
                             placeholderText: qsTr("Password")
                             font.pixelSize: Theme.px(17)
+                            // Android: Return, as its Done hides the keyboard before Enter arrives (Enter lost) and Next makes it a Tab (roadmap 142)
+                            EnterKey.type: Qt.platform.os === "android" ? Qt.EnterKeyReturn : Qt.EnterKeyDefault
                             onAccepted: signIn.clicked()
                         }
                         RowLayout {

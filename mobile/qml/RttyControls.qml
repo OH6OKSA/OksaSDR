@@ -309,6 +309,8 @@ ColumnLayout {
             // RTTY has capitals only; PSK has both cases.
             inputMethodHints: rtty.pskMode ? Qt.ImhNoPredictiveText : Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
             font.pixelSize: Theme.px(16)
+            // Android: Return, as its Done hides the keyboard before Enter arrives (Enter lost) and Next makes it a Tab (roadmap 142)
+            EnterKey.type: Qt.platform.os === "android" ? Qt.EnterKeyReturn : Qt.EnterKeyDefault
             onAccepted: sendButton.clicked()
             // F1-F8 (or ⌘ / Ctrl with 1-8) and Esc work while typing too.
             Keys.onPressed: (event) => {

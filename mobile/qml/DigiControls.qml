@@ -361,6 +361,8 @@ ColumnLayout {
             maximumLength: 4
             inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
             Accessible.name: qsTr("CQ direction")
+            // Android: Return, as its Done hides the keyboard before Enter arrives (Enter lost) and Next makes it a Tab (roadmap 142)
+            EnterKey.type: Qt.platform.os === "android" ? Qt.EnterKeyReturn : Qt.EnterKeyDefault
             onAccepted: cqTargetSave.clicked()
         }
         AppButton {

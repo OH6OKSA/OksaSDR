@@ -67,6 +67,8 @@ Popup {
                 placeholderText: qsTr("kHz, e.g. 1.34")
                 font.pixelSize: Theme.px(20)
                 inputMethodHints: Qt.ImhFormattedNumbersOnly | Qt.ImhNoPredictiveText
+                // Android: Return, as its Done hides the keyboard before Enter arrives (Enter lost) and Next makes it a Tab (roadmap 142)
+                EnterKey.type: Qt.platform.os === "android" ? Qt.EnterKeyReturn : Qt.EnterKeyDefault
                 onAccepted: editor.apply(editor.parseHz(text))
             }
             Label { text: qsTr("kHz"); color: Theme.textDim; font.pixelSize: Theme.px(16) }

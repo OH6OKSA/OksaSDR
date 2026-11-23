@@ -328,6 +328,8 @@ Popup {
                 font.pixelSize: Theme.px(17)
                 placeholderText: textSetting.current.length > 0 ? textSetting.current : textSetting.hint
                 inputMethodHints: textSetting.upper ? (Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText) : Qt.ImhNoPredictiveText
+                // Android: Return, as its Done hides the keyboard before Enter arrives (Enter lost) and Next makes it a Tab (roadmap 142)
+                EnterKey.type: Qt.platform.os === "android" ? Qt.EnterKeyReturn : Qt.EnterKeyDefault
                 onAccepted: saveButton.clicked()
             }
             AppButton {

@@ -115,7 +115,8 @@ Dialog {
             color: dialog.complete || text.length === 0 ? Theme.text : Theme.warning
             inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
                               | Qt.ImhPreferLowercase
-            EnterKey.type: Qt.EnterKeyGo
+            // Android: Return, as its Go hides the keyboard before Enter arrives (roadmap 142)
+            EnterKey.type: Qt.platform.os === "android" ? Qt.EnterKeyReturn : Qt.EnterKeyGo
             onTextEdited: dialog.entry = text.trim()
             onAccepted: dialog.commit()
         }

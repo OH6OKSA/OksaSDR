@@ -86,10 +86,12 @@ ColumnLayout {
             // lets the field go (QIOSTextResponder resigns after a Done
             // Return unless the focus moved) and Android hides its keyboard
             // (IME_ACTION_DONE), whatever logging does. Return keeps both.
-            // Keyboard away says Done itself: Android's default for a field
-            // with others after it is Next, a Tab to the next field that
-            // never logged (the user, beta 117 on the OnePlus).
-            EnterKey.type: Engine.logBackToCall ? Qt.EnterKeyReturn : Qt.EnterKeyDone
+            // Keyboard away says Done on iOS (Return logs, then the field
+            // lets go). Android's Done hides the keyboard before Enter arrives
+            // and nothing was logged, and its default for a field with others
+            // after it is Next, a Tab (the user, run 149 on the OnePlus): Return
+            // there in both, Log putting the keyboard away for Keyboard away.
+            EnterKey.type: Engine.logBackToCall || Qt.platform.os === "android" ? Qt.EnterKeyReturn : Qt.EnterKeyDone
             Component.onCompleted: text = Engine.workedCall
             onTextChanged: {
                 Engine.workedCall = text
@@ -634,6 +636,8 @@ ColumnLayout {
                 placeholderText: qsTr("Remark")
                 maximumLength: 30
                 font.pixelSize: Theme.px(15)
+                // Android: Return, as its Done hides the keyboard before Enter arrives (Enter lost) and Next makes it a Tab (roadmap 142)
+                EnterKey.type: Qt.platform.os === "android" ? Qt.EnterKeyReturn : Qt.EnterKeyDefault
                 onAccepted: if (spotDialog.line.length > 0) sendSpot.clicked()
             }
             Label {
