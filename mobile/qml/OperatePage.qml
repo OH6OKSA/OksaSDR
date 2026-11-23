@@ -162,11 +162,37 @@ Page {
     // band buttons do not fit beside a 320 panel. Own layouts keep the true
     // orientation (orientation above).
     readonly property bool stacked: portrait && !sideFits
-    // A wide display column (an iPad in landscape, a Mac window) has the
-    // step buttons on the PTT row, PTT at most 360 wide beside them: the
-    // row the steps took goes to the waterfall (roadmap 158, the user: a PTT
-    // the width of the iPad's whole bottom edge is far too big).
-    readonly property bool stepsBesidePtt: !canvasOn && Engine.tuneRowsShown && leftWidth >= 820
+    // The waterfall's − + Band B/S and + Slice / + Pan on the PTT row, the
+    // row's height, either side of Macros and PTT (roadmap 158, the user's
+    // model): nothing over the waterfall, and PTT no longer the width of the
+    // page. Classic only; an own layout's display keeps its corner buttons.
+    readonly property bool panButtonsOnRow: !canvasOn
+    readonly property bool panButtonsBelow: panButtonsOnRow && pttRow.visible
+    // The row's small buttons at most a twelfth of it, PTT the rest: the
+    // shares an iPad's row has, kept on a wide Linux or Mac window ("venyttäisin
+    // PTT:tä vähän enemmän ja muita nappeja vähemmän", the user; the whole
+    // interface in proportion is roadmap 160). Under FT8 / FT4 they keep
+    // their places, PTT's room left empty.
+    // From the column's computed width, not the row's own: the buttons'
+    // limits feed the row's size, which fed them back (Qt: "recursive
+    // rearrange" while the window was resized, classic-check's sweep).
+    readonly property real rowButtonWidth: leftWidth / 12
+    // The on-screen keyboard up (not a hardware keyboard on a Mac or Linux).
+    readonly property bool keyboardUp: !!(page.Window.window && page.Window.window.keyboardCover > 0)
+    // K1 (the user's review, 2026-11-23): in landscape the band row and the
+    // step buttons give their height to the waterfall while the keyboard is
+    // up (nothing is tuned while a call is typed); back when it goes. On an
+    // 11" iPad the waterfall was gone with them.
+    readonly property bool tuneRowsOnPage: Engine.tuneRowsShown && !(keyboardUp && (!portrait || keyboardDrawerShort))
+    // K2: upright, the drawer above the keyboard only as high as its tabs,
+    // three rows of fields and PTT need, so the waterfall stays above it
+    // (the band and step rows hidden there too, as in K1);
+    // the whole page as before where that would leave too little (an opened
+    // OnePlus Open).
+    readonly property real keyboardDrawerNeed: Math.round(2 * Theme.touchTarget + 3 * (Theme.touchTarget + Theme.spacing)
+                                                          + pttHeight + 5 * Theme.spacing)
+    readonly property bool keyboardDrawerShort: stacked && !controlsFull && page.Window.height - page.height > 1
+                                               && page.height - keyboardDrawerNeed >= 400
     // Landscape side column: the pinned control panel (none when hidden).
     // Fixed, so content can never widen it off screen. At least 320 as the
     // drawer: 287 on a 1024 pt window cut "TX 2170 Hz", "New DXCC" and the
@@ -503,7 +529,7 @@ Page {
         add("slices", chipsRect && row ? { x: chipsRect.x, y: row.y, w: chipsRect.w, h: row.h } : chipsRect)
         add("meter2", classicRect(sliceBar.rightMeterItem))
         add("display", classicRect(panSlot))
-        add("steps", classicRect(page.stepsBesidePtt ? stepRowInline : stepRow))
+        add("steps", classicRect(stepRow))
         add("controls", page.panelPinned ? classicRect(controlsSlot) : null)
         // With PTT hidden (FT8 / FT4 running) its row is not shown: where
         // it would be, under the display.
@@ -531,7 +557,10 @@ Page {
         anchors.leftMargin: Theme.spacing + page.SafeArea.margins.left
         anchors.rightMargin: Theme.spacing + page.SafeArea.margins.right
         anchors.topMargin: Theme.spacing
+        // K2: the display ends above the short drawer, so the waterfall (not
+        // only the spectrum over it) shows above it.
         anchors.bottomMargin: Theme.spacing + Math.max(page.SafeArea.margins.bottom, 12)
+                              + (page.keyboardDrawerShort && controlsDrawer.visible ? page.keyboardDrawerNeed : 0)
         columnSpacing: Theme.spacing
         rowSpacing: Theme.spacing
         columns: page.twoColumns ? 2 : 1
@@ -623,7 +652,7 @@ Page {
                 id: bandRow
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
-                visible: Engine.bandsAvailable && Engine.tuneRowsShown
+                visible: Engine.bandsAvailable && page.tuneRowsOnPage
                 Repeater {
                     model: Engine.bands
                     delegate: AppButton {
@@ -664,7 +693,7 @@ Page {
                 id: stepRow
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
-                visible: Engine.tuneRowsShown && !page.stepsBesidePtt
+                visible: page.tuneRowsOnPage
                 Repeater {
                     model: Theme.stepButtons(Engine.stepHz, Engine.radioStepButtons)
                     delegate: AppButton {
@@ -724,8 +753,9 @@ Page {
         // so no second PTT peeks out under the drawer.
         RowLayout {
             id: pttRow
-            // With the steps on it, it stays while FT8 / FT4 hides PTT.
-            visible: !(controlsDrawer.visible && page.stacked) && (!ptt.digiHidden || page.stepsBesidePtt)
+            // It stays while FT8 / FT4 hides PTT and Macros: the waterfall's
+            // buttons are on it.
+            visible: !(controlsDrawer.visible && page.stacked) && (!ptt.digiHidden || page.panButtonsOnRow)
             Layout.row: page.twoColumns ? 1 : (page.panelPinned ? 2 : 1)
             Layout.column: 0
             Layout.fillWidth: true
@@ -734,48 +764,42 @@ Page {
             Layout.fillHeight: false
             Layout.preferredHeight: page.pttHeight
             spacing: Theme.spacing / 2
-            // The step buttons here on a wide page (stepsBesidePtt).
-            RowLayout {
-                id: stepRowInline
-                visible: page.stepsBesidePtt
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignVCenter
-                spacing: Theme.spacing / 2
-                Repeater {
-                    model: page.stepsBesidePtt ? Theme.stepButtons(Engine.stepHz, Engine.radioStepButtons) : []
-                    delegate: AppButton {
-                        required property int modelData
-                        objectName: "stepInline" + modelData
-                        text: (modelData > 0 ? "+" : "−") + Theme.stepLabel(Math.abs(modelData))
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 40
-                        Layout.preferredWidth: Theme.buttonWidth
-                        Layout.preferredHeight: Theme.touchTarget
-                        focusPolicy: Qt.NoFocus
-                        autoRepeat: true
-                        autoRepeatDelay: 400
-                        autoRepeatInterval: 125
-                        onClicked: {
-                            Engine.haptic("step")
-                            Engine.tuneByHz(modelData)
-                        }
-                    }
-                }
+            // − + Band B/S beside Macros (+ Slice / + Pan with View › Display
+            // buttons › Right, as on the waterfall).
+            Repeater {
+                model: page.panButtonsBelow ? (Engine.displayButtonsRight ? ["pan", "slice"] : ["zoomOut", "zoomIn", "band", "bs"]) : []
+                delegate: panRowButton
             }
             // Macros and PTT (portaled as the display).
             Item {
                 id: macrosSlot
-                visible: macrosPanel.available && !(page.stepsBesidePtt && ptt.digiHidden)
+                visible: macrosPanel.available && !ptt.digiHidden
                 Layout.preferredWidth: Math.max(110, macrosButton.implicitWidth)
+                // Its whole label: a 13" iPad upright with the panel pinned
+                // cut it to "Ma…" beside the row's buttons.
+                Layout.minimumWidth: macrosButton.implicitWidth
+                Layout.fillWidth: page.panButtonsBelow
+                Layout.maximumWidth: page.panButtonsBelow ? Math.max(Layout.preferredWidth, page.rowButtonWidth * 1.1) : Number.POSITIVE_INFINITY
                 Layout.fillHeight: true
             }
             Item {
                 id: pttSlot
-                visible: !(page.stepsBesidePtt && ptt.digiHidden)
-                Layout.fillWidth: !page.stepsBesidePtt
-                Layout.preferredWidth: page.stepsBesidePtt ? 300 : -1
-                Layout.maximumWidth: page.stepsBesidePtt ? 360 : Number.POSITIVE_INFINITY
+                visible: !ptt.digiHidden
+                Layout.fillWidth: true
+                // The rest of the row (rowButtonWidth).
+                Layout.minimumWidth: 140
+                Layout.preferredWidth: page.panButtonsBelow ? 300 : -1
                 Layout.fillHeight: true
+            }
+            // Where PTT is while FT8 / FT4 runs.
+            Item {
+                visible: ptt.digiHidden && page.panButtonsBelow
+                Layout.fillWidth: true
+            }
+            // + Slice / + Pan on PTT's other side.
+            Repeater {
+                model: page.panButtonsBelow ? (Engine.displayButtonsRight ? ["bs", "band", "zoomOut", "zoomIn"] : ["slice", "pan"]) : []
+                delegate: panRowButton
             }
         }
     }
@@ -1023,6 +1047,53 @@ Page {
     // The display, the pinned controls, Macros and PTT keep their state
     // (the waterfall, a held PTT) and their cost once: in Classic's cell
     // or in the own layout's block.
+    // One of the waterfall's buttons on the PTT row (panButtonsBelow): the
+    // row's height, the width shared with Macros and PTT.
+    Component {
+        id: panRowButton
+        AppButton {
+            required property string modelData
+            readonly property bool zoomButton: modelData === "zoomOut" || modelData === "zoomIn"
+            objectName: ({ zoomOut: "zoomOutButtonBelow", zoomIn: "zoomInButtonBelow", band: "bandZoomButtonBelow",
+                           bs: "tuneRowsButtonBelow", slice: "addSliceButtonBelow", pan: "addPanButtonBelow" })[modelData]
+            visible: modelData === "slice" ? Engine.canAddSlice : (modelData === "pan" ? Engine.canAddPanadapter : true)
+            text: ({ zoomOut: "−", zoomIn: "+", band: qsTr("Band"),
+                     bs: Engine.tuneRowsShown ? qsTr("B/S") : qsTr("B/S ▲"),
+                     slice: qsTr("+ Slice"), pan: qsTr("+ Pan") })[modelData]
+            Accessible.name: ({ zoomOut: qsTr("Zoom out"), zoomIn: qsTr("Zoom in"), band: qsTr("Band"),
+                                bs: qsTr("Band row and step buttons"), slice: qsTr("+ Slice"), pan: qsTr("+ Pan") })[modelData]
+            Accessible.description: modelData === "bs" ? (Engine.tuneRowsShown ? qsTr("Shown; tap to hide them") : qsTr("Hidden; tap to show them")) : ""
+            checked: modelData === "band" ? !!Engine.panDisplay.bandZoom : (modelData === "bs" ? Engine.tuneRowsShown : false)
+            font.pixelSize: zoomButton ? Math.round(Theme.buttonFont * 1.3) : macrosButton.font.pixelSize   // as Macros beside them
+            leftPadding: zoomButton ? 0 : 6
+            rightPadding: zoomButton ? 0 : 6
+            focusPolicy: Qt.NoFocus
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.minimumWidth: zoomButton ? 44 : implicitContentWidth + 12
+            Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitContentWidth + 16)
+            Layout.maximumWidth: Math.max(Layout.minimumWidth, page.rowButtonWidth)
+            onClicked: {
+                if (modelData === "zoomOut") Engine.zoom(2.0)
+                else if (modelData === "zoomIn") Engine.zoom(0.5)
+                else if (modelData === "band") {
+                    if (panView.bandPicker) panView.openBandChooser()
+                    else Engine.setPanDisplay("bandZoom", checked ? 0 : 1)
+                } else if (modelData === "bs") Engine.tuneRowsShown = !Engine.tuneRowsShown
+                else if (modelData === "slice") Engine.addSlice()
+                else Engine.addPanadapter()
+            }
+            // B/S hidden says so, as on the waterfall (Michael Walker).
+            Rectangle {
+                anchors.fill: parent
+                visible: parent.modelData === "bs" && !Engine.tuneRowsShown
+                radius: Theme.radius
+                color: "transparent"
+                border.color: Theme.warning
+                border.width: 2
+            }
+        }
+    }
     PanadapterView {
         id: panView
         parent: page.canvasOn ? blockDisplay.contentArea : panSlot
@@ -1033,8 +1104,9 @@ Page {
         // B/S hides the band row and the step buttons: Band then picks the
         // bands. In an own layout B/S is not there (the layout decides
         // what shows) and Band picks when the Bands block is hidden.
-        bandPicker: page.canvasOn ? !blockBands.shown : !Engine.tuneRowsShown
+        bandPicker: page.canvasOn ? !blockBands.shown : !page.tuneRowsOnPage
         tuneRowsToggle: !page.canvasOn
+        buttonsBelow: page.panButtonsBelow
     }
     ControlsPanel {
         id: pinnedControls
@@ -1109,7 +1181,9 @@ Page {
         // Upright with the on-screen keyboard up it takes the whole page above
         // the keyboard, as Full-screen controls: half of a short page left
         // the Log tab's call field one line high (an opened OnePlus Open).
-        height: page.stacked ? (page.controlsFull || page.Window.height - page.height > 1
+        height: page.stacked ? (page.keyboardDrawerShort
+                                 ? page.keyboardDrawerNeed + Math.max(0, page.Window.height - page.height)
+                                 : page.controlsFull || page.Window.height - page.height > 1
                                  ? (parent ? parent.height : page.height)
                                  : Math.min(page.height * 0.5, 560) + Math.max(0, page.Window.height - page.height))
                               : page.height - page.pttHeight - 2 * Theme.spacing
