@@ -3612,6 +3612,8 @@ private:
     double m_digiTxPeakW{0.0};
     // The forward power's peak since PTT was keyed (the release logs it).
     double m_pttPeakW{0.0};
+    qint64 m_pttPressedMs{0};   // the last PTT press (a headset's microphone held a second from it)
+    quint64 m_pttGen{0};        // counts PTT presses: a delayed release step skips a newer press
     // Peaks of the transmission under way and the last one (radio and a
     // linked amplifier), for the log's TX power.
     bool m_txPeakOn{false};

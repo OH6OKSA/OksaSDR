@@ -218,6 +218,11 @@ QString headsetState()
         "(Landroid/content/Context;)Ljava/lang/String;", androidContext().object()).toString();
 }
 
+bool headsetInUse()
+{
+    return s_connected && s_outputMode == QLatin1String("Auto") && s_headsetInUse;
+}
+
 QString reassertHeadsetRoute()
 {
     if (!s_connected || s_outputMode != QLatin1String("Auto") || !s_headsetInUse) {

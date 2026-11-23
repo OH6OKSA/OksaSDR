@@ -4880,6 +4880,8 @@ void MobileEngine::setPtt(bool down, const QString& reason)
         return;
     }
     m_pttPeakW = 0.0;
+    m_pttPressedMs = QDateTime::currentMSecsSinceEpoch();
+    ++m_pttGen;
     qCInfo(lcMobile) << "PTT keyed";
 }
 
@@ -4905,7 +4907,29 @@ void MobileEngine::releasePtt(const QString& reason)
         emit pttToggleChanged();
     }
     m_pttInput.stop();
-    stopDeviceMicrophoneCapture();
+    // A Bluetooth headset's microphone stays open at least a second from the
+    // press (roadmap 144, the user's OnePlus with beta 117: a short tap still
+    // left the headset chirping now and then, with Media audio on too, while
+    // a press of a second or more never did; the microphone took 0.1-0.2 s to
+    // open and was shut at once). The radio is let go at once; only the
+    // microphone and the receive's return after it wait.
+    qint64 micHoldMs = 0;
+#ifdef Q_OS_ANDROID
+    if (headsetInUse() && m_session.radioModel().transmitModel().micSelection() == kDeviceMicSelection) {
+        micHoldMs = std::max<qint64>(0, 1000 - (QDateTime::currentMSecsSinceEpoch() - m_pttPressedMs));
+    }
+#endif
+    if (micHoldMs > 0) {
+        qCInfo(lcMobile).noquote() << QStringLiteral("PTT released after %1 ms: the headset's microphone kept open %2 ms more")
+                                          .arg(1000 - micHoldMs).arg(micHoldMs);
+        QTimer::singleShot(int(micHoldMs), this, [this, gen = m_pttGen] {
+            if (gen == m_pttGen && !m_pttHeld) {
+                stopDeviceMicrophoneCapture();
+            }
+        });
+    } else {
+        stopDeviceMicrophoneCapture();
+    }
     duckReceive(false, "PTT released");
 #ifdef Q_OS_ANDROID
     // A Bluetooth headset (roadmap 144; Mattias SM6YEC, beta 112 on a Galaxy
@@ -4926,8 +4950,8 @@ void MobileEngine::releasePtt(const QString& reason)
     // that; the log line says the headset's state (its link, media audio).
     if (m_connected && m_audio && audioOutput() == QLatin1String("Auto")
         && m_session.radioModel().transmitModel().micSelection() == kDeviceMicSelection) {
-        QTimer::singleShot(300, this, [this] {
-            if (!m_connected || !m_audio || m_pttHeld) {
+        QTimer::singleShot(int(300 + micHoldMs), this, [this, gen = m_pttGen] {
+            if (!m_connected || !m_audio || m_pttHeld || gen != m_pttGen) {
                 return;
             }
             const QString route = reassertHeadsetRoute();

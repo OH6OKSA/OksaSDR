@@ -86,7 +86,10 @@ ColumnLayout {
             // lets the field go (QIOSTextResponder resigns after a Done
             // Return unless the focus moved) and Android hides its keyboard
             // (IME_ACTION_DONE), whatever logging does. Return keeps both.
-            EnterKey.type: Engine.logBackToCall ? Qt.EnterKeyReturn : Qt.EnterKeyDefault
+            // Keyboard away says Done itself: Android's default for a field
+            // with others after it is Next, a Tab to the next field that
+            // never logged (the user, beta 117 on the OnePlus).
+            EnterKey.type: Engine.logBackToCall ? Qt.EnterKeyReturn : Qt.EnterKeyDone
             Component.onCompleted: text = Engine.workedCall
             onTextChanged: {
                 Engine.workedCall = text
