@@ -696,7 +696,11 @@ Page {
             Layout.maximumWidth: page.stacked ? Number.POSITIVE_INFINITY : page.sideWidth
             Layout.fillWidth: page.stacked
             Layout.fillHeight: !page.stacked
-            Layout.preferredHeight: page.stacked ? page.height * 0.42 : -1
+            // With the on-screen keyboard up a lower panel, its field
+            // scrolled into sight there, so the waterfall stays (an 11" iPad
+            // upright kept a strip of spectrum under a 0.42 panel; the user:
+            // the waterfall as large as it can be).
+            Layout.preferredHeight: page.stacked ? page.height * (page.Window.window && page.Window.window.keyboardCover > 0 ? 0.30 : 0.42) : -1
             spacing: Theme.spacing
 
             // Pinned panel: section toggles; the chosen sections stack below

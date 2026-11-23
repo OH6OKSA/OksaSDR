@@ -189,7 +189,7 @@ ApplicationWindow {
             // on Big buttons' mode in its Log panel, the user on Android).
             for (let i = 0; i < 4 && item; ++i, item = item.parent) {
                 if (typeof item.clicked === "function" || item.cursorRectangle !== undefined
-                        || typeof item.moved === "function")
+                        || typeof item.moved === "function" || item.keepsTextFocus === true)
                     return true
                 const handlers = item.data
                 for (let j = 0; handlers && j < handlers.length; ++j) {
