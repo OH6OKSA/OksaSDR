@@ -1,8 +1,12 @@
-**OksaSDR for Android and Linux — beta 114.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code. One app runs the whole station: the radio, FT8 / FT4, CW, RTTY, PSK, RADE, the log and the spots, with no WSJT-X, logging program or cluster client beside it.
+**OksaSDR for Android and Linux — beta 115.** A FlexRadio client for Android phones and tablets, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine: the same app as on the iPhone and iPad (TestFlight), from the same code. One app runs the whole station: the radio, FT8 / FT4, CW, RTTY, PSK, RADE, the log and the spots, with no WSJT-X, logging program or cluster client beside it.
 
 **Linux** (new on this page): `OksaSDR-….AppImage` under *Assets* is the same app for a Linux desktop (x86_64; Ubuntu 22.04, Linux Mint 21 or newer). Download it, allow it to run (right-click › *Properties* › *Permissions* › tick *Allow executing file as program*, or `chmod +x` in a terminal; without it a double-click does nothing) and start it; see [the tester guide](https://github.com/OH6OKSA/OksaSDR/blob/mobile/oksasdr/docs/mobile/TESTING.md#linux).
 
-### New in beta 114
+### New in beta 115
+- **A tapped FT8 / FT4 decode is answered at once** (roadmap 145; George Molnar KF2T): a decode shows only as the other station's slot ends, so your slot had already begun when you tapped, and the call waited a whole cycle, until after the station's next CQ. Now it goes out in the slot already running while less than three quarters of it has gone by, without the part of the message already past, so it stays in time with the other station (WSJT-X's late start); Answer CQ does the same. On the air at 10 W a call started 5 s late was answered in the next slot.
+- **The Log tab for a fast run** (roadmap 141; Christoph Steinert DM5HF, after a POTA activation of 126 QSOs in an hour and a half): a green line beside *Log: N contacts* shows the run you are working (*34 this session · 84 / h*: the contacts back to a pause of an hour and their rate per hour); the recent contacts show the operator's name (their park when there is no name); and Setup › Logging › **After logging** › *Back to the call* keeps the cursor in the call field after Log for the next call (Esc or a tap outside the field gives Space back to PTT; *Keyboard away* stays the default).
+
+### Still new from beta 114
 - **A Bluetooth headset keeps receive after transmitting** (roadmap 144; Mattias SM6YEC, a Galaxy S24+ with a Jabra Evolve2 65 and a second headset over SmartLink): the microphone opened on the headset's hands-free link ended the receive stream on it, and receive stayed silent after the first transmission until the app was restarted. Receive now opens again on the headset after each transmission.
 
 ### Still new from beta 113

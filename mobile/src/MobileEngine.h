@@ -416,6 +416,9 @@ class MobileEngine : public QObject {
     // Dial frequencies of the protocol on each band: band, mhz.
     Q_PROPERTY(QVariantList digiFrequencies READ digiFrequencies NOTIFY digiChanged)
     Q_PROPERTY(int qsoCount READ qsoCount NOTIFY qsoLogChanged)
+    // The Log tab: after logging, the cursor back in the call field (off: the
+    // keyboard goes, so Space is PTT again; roadmap 141).
+    Q_PROPERTY(bool logBackToCall READ logBackToCall WRITE setLogBackToCall NOTIFY logBackToCallChanged)
     // An edit or deletion being written (roadmap 130).
     Q_PROPERTY(bool qsoLogBusy READ qsoLogBusy NOTIFY qsoLogBusyChanged)
     Q_PROPERTY(QVariantMap callLookup READ callLookup NOTIFY callLookupChanged)
@@ -1367,6 +1370,11 @@ public:
     QVariantList memories() const;
     QVariantList recentQsos() const;
     int qsoCount() const;
+    // The run being worked (roadmap 141): {count, perHour} of the newest
+    // contacts back to a gap of an hour; empty when none is under an hour old.
+    Q_INVOKABLE QVariantMap qsoRun() const;
+    bool logBackToCall() const;
+    void setLogBackToCall(bool on);
     bool qsoLogBusy() const;
     QVariantMap callLookup() const { return m_callLookup; }
     QString lastSpotCall() const { return m_lastSpotCall; }
@@ -2325,6 +2333,7 @@ signals:
     void rfGainChanged();
     void memoriesChanged();
     void qsoLogChanged();
+    void logBackToCallChanged();
     void adifImported(const QVariantMap& result);
     void digiChanged();
     void radeChanged();
@@ -2840,6 +2849,9 @@ private:
     void onDigiSlot(qint64 slotMs);
     void handleDigiDecodes(const QVariantList& decodes, qint64 slotMs);
     void startDigiTx(qint64 slotMs);
+    // A tapped decode: TX at once in the slot already running when it is
+    // ours and early enough (WSJT-X's late start), else at the next one.
+    void digiLateStart();
     void onDigiTxFinished();
     // Keyboard-mode transmit: the next text keyed (or played on while
     // keyed), and what to do when a clip has gone out.
@@ -2902,6 +2914,8 @@ private:
     int m_digiTxParity{0};
     int m_digiTries{0};
     int m_digiTxSeq{0};
+    // The slot a tap started late in (its message cut to stay in time).
+    qint64 m_digiLateSlotMs{0};
     bool m_digiTransmitting{false};
     bool m_digiLogged{false};
     bool m_digiEndAfterTx{false};

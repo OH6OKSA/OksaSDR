@@ -1782,7 +1782,9 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   and **Name** the operator's name: the looked-up first name until you
   type one (thanks Christoph Steinert DM5HF); it goes into ADIF's NAME.
   **Log CALL** (the button names the call) writes the contact; the newest
-  ten are listed, and a tap on one opens it to **edit** or **delete**
+  ten are listed (time, call, band and mode, the reports, then the
+  operator's name, or their park when there is no name; since build 206,
+  thanks Christoph Steinert DM5HF), and a tap on one opens it to **edit** or **delete**
   (thanks Christoph): the call, date and time (UTC), frequency, mode,
   reports, name, comment and the parks, then *Save*, or *Delete* and
   *Delete it*. It changes this device's log and the shared ADIF file (if
@@ -1807,7 +1809,16 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   (ADIF)**, in Setup › Logging since build 202 (**Logbooks…** below opens
   it), opens the share sheet with the whole log as an `.adi` file: mail
   it, save it to Files or Drive, AirDrop it, or open it in your logbook
-  program or TQSL for LoTW; the log file's place is under it. Under the recent contacts a line says where
+  program or TQSL for LoTW; the log file's place is under it. Beside
+  *Log: N contacts* a green line shows the run you are working (since
+  build 206, asked by Christoph Steinert DM5HF after a POTA activation of
+  126 QSOs in an hour and a half): *34 this session · 84 / h*, the
+  contacts back to a pause of an hour and their rate per hour (over at
+  least ten minutes); it is gone an hour after the last contact. After
+  Log the keyboard goes, so Space is PTT again on an iPad or Mac keyboard;
+  with **After logging** › *Back to the call* in Setup › Logging the
+  cursor stays in the call field for the next call, and Esc (or a tap
+  outside the field) gives Space back to PTT. Under the recent contacts a line says where
   each QSO also goes (*Each QSO also to: QRZ.com Logbook, Wavelog /
   Cloudlog*), and **Logbooks…** opens **Setup › Logging**, where the rest of
   this section lives: the ADIF import, the station and the QRZ.com
@@ -1994,7 +2005,15 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
 
   **Tap a decode** to answer that station: the row flashes yellow, TX,
   the active slice and the display move to the slice it was heard on, and
-  the app starts calling.
+  the app starts calling. A decode shows only as the station's slot ends,
+  so your slot has already begun when you tap: the call goes out at once
+  in it while less than three quarters of it has gone by, without the
+  part of the message already past, so it stays in time with the other
+  station (as WSJT-X's late start; since build 206, thanks George Molnar
+  KF2T: the call went out a whole cycle late, after the station's next
+  CQ). Tested on the air at 10 W: a call started 5 s late was answered
+  in the next slot. Later than that it waits for your next slot, and the
+  following calls start on time; Answer CQ does the same.
   **CQ** calls CQ on the **TX slice** (the one with the red TX badge), in
   the slot set by **CQ slot**: *Auto* (the next one), *Even* (FT8: 0 and
   30 s, FT4: 0, 15, 30, 45 s) or *Odd* (15 and 45 s; FT4: 7.5, 22.5 …).
@@ -2779,7 +2798,11 @@ tab holds.
   Cloudlog, the QRZ.com Logbook, the shared ADIF file, Logger32 and the
   logging program, as described under [Controls › Log](#8-controls)), and
   at the top **Share the log (ADIF)** with the log file's place (from the
-  Log tab since build 202). The Log tab's **Logbooks…** opens this tab.
+  Log tab since build 202). **After logging** (since build 206):
+  *Keyboard away* (the default) takes the keyboard from the call field
+  after Log, so Space is PTT again; *Back to the call* keeps the cursor
+  there for a run by keyboard (Esc or a tap outside the field gives
+  Space back to PTT). The Log tab's **Logbooks…** opens this tab.
 
   ![Setup › Logging](manual/setup-logging.jpg)
 - **MIDI** — not a setting of the radio: a MIDI controller as a VFO knob

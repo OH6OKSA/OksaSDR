@@ -108,6 +108,7 @@
 #include <QNetworkProxy>
 #include <QNetworkInterface>
 #include <QTimer>
+#include <QTimeZone>
 #include <QMediaDevices>
 
 #include <algorithm>
@@ -7355,6 +7356,66 @@ QVariantList MobileEngine::recentQsos() const
 int MobileEngine::qsoCount() const
 {
     return static_cast<int>(m_qsoLog->count());
+}
+
+// The run being worked (roadmap 141, Christoph Steinert DM5HF after a POTA
+// activation of 126 QSOs in 1.5 h: the number on a line, to see the rate):
+// the newest contacts back to the first gap of an hour or more, while the
+// newest is under an hour old; the count and the rate per hour over their
+// span (at least ten minutes, so the first few do not read as hundreds).
+QVariantMap MobileEngine::qsoRun() const
+{
+    const QList<QsoEntry>& entries = m_qsoLog->entries();
+    const auto minuteOf = [](const QsoEntry& e) -> qint64 {
+        const QDate date(int(e.date / 10000), int(e.date / 100 % 100), int(e.date % 100));
+        const QTime time(e.time / 100, e.time % 100);
+        if (!date.isValid() || !time.isValid()) {
+            return -1;
+        }
+        return QDateTime(date, time, QTimeZone::UTC).toSecsSinceEpoch() / 60;
+    };
+    const qint64 now = QDateTime::currentSecsSinceEpoch() / 60;
+    int count = 0;
+    qint64 newest = 0;
+    qint64 oldest = 0;
+    for (qsizetype i = entries.size() - 1; i >= 0; --i) {
+        const qint64 minute = minuteOf(entries.at(i));
+        if (minute < 0) {
+            break;
+        }
+        if (count == 0) {
+            if (now - minute >= 60 || minute - now > 5) {
+                break;  // nothing logged in the last hour: no run
+            }
+            newest = minute;
+        } else if (minute > oldest || oldest - minute >= 60) {
+            break;  // a gap of an hour, or an older contact added later (an import)
+        }
+        oldest = minute;
+        ++count;
+    }
+    if (count == 0) {
+        return {};
+    }
+    const qint64 span = std::max<qint64>(newest - oldest, 10);
+    return {{QStringLiteral("count"), count},
+            {QStringLiteral("perHour"), count >= 2 ? int(std::lround(count * 60.0 / double(span))) : 0}};
+}
+
+bool MobileEngine::logBackToCall() const
+{
+    return AppSettings::instance().value(QStringLiteral("MobileLogBackToCall"), QStringLiteral("False")).toString()
+        == QLatin1String("True");
+}
+
+void MobileEngine::setLogBackToCall(bool on)
+{
+    if (on == logBackToCall()) {
+        return;
+    }
+    AppSettings::instance().setValue(QStringLiteral("MobileLogBackToCall"), on ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    emit logBackToCallChanged();
 }
 
 QString MobileEngine::qrzUser() const

@@ -66,6 +66,14 @@ constexpr qint64 kDigiRepeatWindowMs = 10 * 60 * 1000;
 // Keying and the audio path to the radio, so the tones reach the air at the
 // nominal 0.5 s into the slot.
 constexpr double kTxLatencyS = 0.25;
+// A tapped decode starts TX in the slot of ours already running while less
+// than this share of it has gone by, as WSJT-X's "Allow late starts"
+// (guiUpdate: fTR < 0.75): the decode shows only as the other station's
+// slot ends, so waiting for the next slot of ours answered a whole cycle
+// late (George Molnar KF2T). The part of the message already past is left
+// out, as WSJT-X's Modulator does, so the tones keep their time (DT right,
+// the start cut).
+constexpr double kLateStartShare = 0.75;
 
 struct BandFreq {
     const char* band;
@@ -1711,6 +1719,7 @@ void MobileEngine::digiAnswer(int index)
                           .arg(m_digiHoundFox)
                           .arg(m_digiTxHz)
                           .arg(kHoundCalls));
+        digiLateStart();
         return;
     }
     m_digiState = QStringLiteral("answer");
@@ -1744,6 +1753,7 @@ void MobileEngine::digiAnswer(int index)
     }
     m_digiTries = 0;
     setDigiStatus(tr("Calling %1").arg(m_digiDx));
+    digiLateStart();
 }
 
 void MobileEngine::digiHalt()
@@ -1781,6 +1791,22 @@ void MobileEngine::digiEnd(const QString& status)
     m_digiEndAfterTx = false;
     m_digiAutoQso = false;
     setDigiStatus(status);
+}
+
+void MobileEngine::digiLateStart()
+{
+    if (!m_ft8 || m_digiTransmitting || m_digiTxMsg.isEmpty()) {
+        return;
+    }
+    const qint64 slotLen = qint64(m_ft8->slotSeconds() * 1000);
+    const qint64 now = Ft8Engine::nowMs();
+    const qint64 slot = now / slotLen * slotLen;
+    if (int((slot / slotLen) % 2) != m_digiTxParity || now - slot >= qint64(kLateStartShare * double(slotLen))) {
+        return;  // not ours, or too far gone: the next slot of ours
+    }
+    m_digiLateSlotMs = slot;
+    qCInfo(lcMobile).noquote() << QStringLiteral("digi: a tap %1 s into a slot of ours: transmitting in it").arg((now - slot) / 1000.0, 0, 'f', 2);
+    onDigiSlot(slot);
 }
 
 void MobileEngine::onDigiSlot(qint64 slotMs)
@@ -1833,7 +1859,8 @@ void MobileEngine::startDigiTx(qint64 slotMs)
         return;
     }
     const double elapsed = (Ft8Engine::nowMs() - slotMs) / 1000.0;
-    if (elapsed > 2.0) {
+    const bool late = slotMs == m_digiLateSlotMs;
+    if (elapsed > (late ? kLateStartShare * m_ft8->slotSeconds() : 2.0)) {
         return;  // too late in the slot; the next one of ours
     }
     QString error;
@@ -1851,7 +1878,28 @@ void MobileEngine::startDigiTx(qint64 slotMs)
         }
     }
     const double lead = std::max(0.0, 0.5 - elapsed - kTxLatencyS);
-    audio.prepend(QByteArray(int(lead * Ft8Engine::kTxSampleRate) * int(sizeof(float)), '\0'));
+    double leftOutS = 0.0;
+    if (late && lead <= 0.0) {
+        // A late start: leave out what would have gone out by now, so the
+        // rest is on air when the other station expects it, and ramp the
+        // cut in over 1/8 symbol as the encoder ramps the message's own
+        // ends (no click on the air).
+        leftOutS = elapsed + kTxLatencyS - 0.5;
+        const qsizetype total = audio.size() / qsizetype(sizeof(float));
+        const qsizetype skip = std::min(total, qsizetype(leftOutS * Ft8Engine::kTxSampleRate));
+        audio.remove(0, skip * qsizetype(sizeof(float)));
+        const double symbolS = m_ft8->protocol() == Ft8Engine::Protocol::Ft4 ? 0.048 : 0.16;
+        const int nRamp = int(std::lround(symbolS * Ft8Engine::kTxSampleRate / 8.0));
+        auto* f = reinterpret_cast<float*>(audio.data());
+        for (qsizetype i = 0, n = std::min<qsizetype>(nRamp, audio.size() / qsizetype(sizeof(float))); i < n; ++i) {
+            f[i] *= float((1.0 - std::cos(M_PI * double(i) / nRamp)) / 2.0);
+        }
+        if (audio.isEmpty()) {
+            return;
+        }
+    } else {
+        audio.prepend(QByteArray(int(lead * Ft8Engine::kTxSampleRate) * int(sizeof(float)), '\0'));
+    }
     // Digital-mode audio from this device: allowed in DIGU like RADE (voice
     // PTT is refused there).
     RadioModel& rm = m_session.radioModel();
@@ -1867,11 +1915,15 @@ void MobileEngine::startDigiTx(qint64 slotMs)
         m_digiSentMsg = m_digiTxMsg;
         ++m_digiTries;
         const int ms = int(qint64(audio.size() / int(sizeof(float))) * 1000 / Ft8Engine::kTxSampleRate);
-        qCInfo(lcMobile).noquote() << QStringLiteral("digi: dry TX \"%1\" at %4 Hz, try %2, %3 slot")
+        qCInfo(lcMobile).noquote() << QStringLiteral("digi: dry TX \"%1\" at %4 Hz, try %2, %3 slot, %5 s into it, %6 ms of audio%7")
                                           .arg(m_digiTxMsg)
                                           .arg(m_digiTries)
                                           .arg((slotMs / qint64(m_ft8->slotSeconds() * 1000)) % 2 ? QStringLiteral("odd") : QStringLiteral("even"))
-                                          .arg(m_digiTxHz);
+                                          .arg(m_digiTxHz)
+                                          .arg(elapsed, 0, 'f', 2)
+                                          .arg(ms)
+                                          .arg(leftOutS > 0.0 ? QStringLiteral(", a late start: its first %1 s left out").arg(leftOutS, 0, 'f', 2)
+                                                              : QString());
         QTimer::singleShot(ms, this, [this] {
             m_digiTransmitting = false;
             if (m_digiEndAfterTx && m_digiSentMsg == m_digiTxMsg) {
@@ -1936,11 +1988,13 @@ void MobileEngine::startDigiTx(qint64 slotMs)
             onDigiTxFinished();
         }
     });
-    qCInfo(lcMobile).noquote() << QStringLiteral("digi: TX \"%1\" at %2 Hz, %3 s into the slot, try %4")
+    qCInfo(lcMobile).noquote() << QStringLiteral("digi: TX \"%1\" at %2 Hz, %3 s into the slot, try %4%5")
                                       .arg(m_digiTxMsg)
                                       .arg(m_digiTxHz)
                                       .arg(elapsed, 0, 'f', 2)
-                                      .arg(m_digiTries);
+                                      .arg(m_digiTries)
+                                      .arg(leftOutS > 0.0 ? QStringLiteral(", a late start: its first %1 s left out").arg(leftOutS, 0, 'f', 2)
+                                                          : QString());
     emit digiChanged();
 }
 

@@ -9,14 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Spots have their own Controls tab, Spots; View keeps the display. The counts sit inside the buttons.
-- RBN skimmer spots (through your DX cluster) and PSK Reporter's live digital spots, from near you, each station once: Setup > Spots.
-- Heard me on the Spots tab: who hears your CQ, by band, the farthest and the best report.
-- An alert's Tune sets the radio for the spot's mode: FT8 / FT4 into FTx, RTTY, PSK, CW, with their tab.
-- Voice macros with the radio's microphone, a headset and VOX (thanks Chris DM5HF).
-- The on-screen keyboard: Done by the field, PTT and the display above it, PTT keeps typing (thanks Robin G5OUT); press and hold in the Macros panel edits (thanks Rob VA3MET).
+- FT8 / FT4: a tapped decode is answered at once, in the slot already running, its past part left out as WSJT-X's late start (thanks George KF2T); Answer CQ too.
+- The Log tab for a run: the session's count and rate per hour in green, names in the recent contacts, and Setup > Logging > After logging > Back to the call (thanks Chris DM5HF).
 
-RECENT (builds 94–202)
+RECENT (builds 94–204)
+- 204: Spots tab; RBN and PSK Reporter spots; Heard me; an alert's Tune sets the mode; voice macros with the radio's mic (thanks Chris DM5HF); keyboard Done (thanks Robin G5OUT).
 - 202: tidier Controls, settings in Setup; spot alerts; Spots From; panadapters closed with their slices.
 - 200: a PTT key of your own (thanks Rob VA3MET); held F-keys start once; Mac keys back; the shared ADIF file follows edits (thanks Chris DM5HF); Theme Auto.
 - 199: Light theme, Setup > App > Theme > Light; the display stays dark (thanks Larry W9FLA).

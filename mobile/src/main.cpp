@@ -393,7 +393,7 @@ int main(int argc, char* argv[])
         QStringLiteral("Development: 8 s after start tune to 20 m FT8 (or FT4 with ft4; 40 for 40 m, mhz=N for any), "
                        "decode for <s> seconds and log the decodes; with cq also call CQ twice at 10 W; with "
                        "hound,live,fox=CALL work that Fox as a Hound at 10 W; with answer=CALL,w=N answer that station's CQ "
-                       "in the normal mode at N W. Frequency, mode, power and the TX "
+                       "in the normal mode at N W; answer,tap=N answers the strongest CQ N s after its decode (a late start). Frequency, mode, power and the TX "
                        "slice are restored, then the app quits. E.g. 120 or 120,cq or 60,ft4."),
         QStringLiteral("spec"));
     parser.addOption(ft8TestOption);
@@ -2999,10 +2999,20 @@ int main(int argc, char* argv[])
                 }
             });
         }
+        // tap=N: the answer N seconds after the decodes came, as a person
+        // reading the list taps it (roadmap 145: in the slot of ours already
+        // running, a late start).
+        int tapDelayS = -1;
+        for (const QString& s : spec) {
+            if (s.startsWith(QLatin1String("tap="))) {
+                tapDelayS = std::clamp(s.mid(4).toInt(), 0, 14);
+            }
+        }
         if (answer) {
             // Answer the strongest plain CQ, once the app is idle again.
-            QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::digiDecodesChanged, &app, [&engine] {
-                if (engine.digi().value(QStringLiteral("state")).toString() != QLatin1String("idle")) {
+            auto tapPending = std::make_shared<bool>(false);
+            QObject::connect(&engine, &AetherSDR::mobile::MobileEngine::digiDecodesChanged, &app, [&engine, tapDelayS, tapPending] {
+                if (engine.digi().value(QStringLiteral("state")).toString() != QLatin1String("idle") || *tapPending) {
                     return;
                 }
                 const QVariantList list = engine.digiDecodes();
@@ -3018,7 +3028,27 @@ int main(int argc, char* argv[])
                     best = i;
                     bestSnr = d.value(QStringLiteral("snr")).toInt();
                 }
-                if (best >= 0) {
+                if (best >= 0 && tapDelayS >= 0) {
+                    const QString text = list.at(best).toMap().value(QStringLiteral("text")).toString();
+                    *tapPending = true;
+                    qInfo().noquote() << "ft8-test: tapping" << text << "in" << tapDelayS << "s";
+                    QTimer::singleShot(tapDelayS * 1000, &engine, [&engine, text, tapPending] {
+                        *tapPending = false;
+                        const QVariantList now = engine.digiDecodes();
+                        for (int i = 0; i < now.size(); ++i) {
+                            if (now.at(i).toMap().value(QStringLiteral("text")).toString() == text) {
+                                engine.setRfPower(10);
+                                engine.armTransmit();  // as the operator's hold arms a transmit lock (SB)
+                                engine.digiAnswer(i);
+                                qInfo().noquote() << "ft8-test: tapped" << text << "row" << i << "->"
+                                                  << engine.digi().value(QStringLiteral("state")).toString()
+                                                  << engine.digi().value(QStringLiteral("status")).toString();
+                                return;
+                            }
+                        }
+                        qInfo().noquote() << "ft8-test: tap found no row" << text << "of" << now.size();
+                    });
+                } else if (best >= 0) {
                     qInfo().noquote() << "ft8-test: answering" << list.at(best).toMap().value(QStringLiteral("text")).toString();
                     engine.setRfPower(10);
                     engine.digiAnswer(best);

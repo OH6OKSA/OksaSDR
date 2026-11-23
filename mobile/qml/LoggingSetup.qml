@@ -102,6 +102,40 @@ ColumnLayout {
         }
     }
 
+    // ---- After logging (roadmap 141, Christoph Steinert DM5HF: a run by
+    // keyboard without the mouse) ----
+    RowLayout {
+        Layout.fillWidth: true
+        Layout.topMargin: Theme.spacing
+        Label {
+            text: qsTr("After logging")
+            color: Theme.text
+            Layout.fillWidth: true
+            wrapMode: Text.WordWrap
+        }
+        AppButton {
+            objectName: "logBackToCallOff"
+            text: qsTr("Keyboard away")
+            checked: !Engine.logBackToCall
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.logBackToCall = false
+        }
+        AppButton {
+            objectName: "logBackToCallOn"
+            text: qsTr("Back to the call")
+            checked: Engine.logBackToCall
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.logBackToCall = true
+        }
+    }
+    Label {
+        Layout.fillWidth: true
+        text: qsTr("Back to the call keeps the cursor in the Log tab's call field after Log (or Return), so the next call is typed at once; Space then types there, and Esc or a tap outside the field gives Space back to PTT. Keyboard away (the default) gives it back at once.")
+        color: Theme.textDim
+        font.pixelSize: Theme.px(12)
+        wrapMode: Text.WordWrap
+    }
+
     // ---- Station and QRZ.com ----
     Label { text: qsTr("Station"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
     RowLayout {

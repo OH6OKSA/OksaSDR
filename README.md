@@ -336,7 +336,9 @@ radio interface, with no computer running alongside.
   and coloured as in WSJT-X (CQ, your call, new DXCC, CQ zone or
   continent, new call, worked before), with a filter (All, CQ, CQ POTA,
   New, New DXCC, New call). Tap a
-  call to answer it (TX and the display move to its slice) or call CQ;
+  call to answer it (TX and the display move to its slice; the call goes
+  out at once in the slot already running, its past part left out, as
+  WSJT-X's late start) or call CQ;
   the app runs the QSO and logs it. *Keep CQ* goes on calling; *Answer CQ*
   answers CQs by itself (the rarest first, five calls each, then the
   next); both stop after a time without a touch on the app, which you
@@ -360,7 +362,8 @@ radio interface, with no computer running alongside.
   every device, nothing leaving it; the international
   alphabet and the older and DX spelling words; nothing logs until you
   tap Log), a Name field, a logged contact **edited
-  or deleted** with a tap, and
+  or deleted** with a tap, the run's count and rate per hour, the cursor
+  back in the call field after Log if you choose, and
   the log as an ADIF file in Files (iPhone, iPad) or Documents (Android,
   computer): share it to your logbook or LoTW, or import contacts from
   another logbook. Every QSO can also go straight to your **Wavelog** or

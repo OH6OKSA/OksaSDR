@@ -23,10 +23,13 @@ ColumnLayout {
     }
 
     property var defaults: Engine.qsoDefaults()
+    // The run being worked: its count and rate (roadmap 141).
+    property var run: Engine.qsoRun()
     property var worked: ({ worked: 0, dupe: false })
     property string timeOn: ""
     function refreshDefaults() {
         defaults = Engine.qsoDefaults()
+        run = Engine.qsoRun()
         // Follows the mode until the operator types a report.
         if (!rstSent.activeFocus && !rstSent.edited) rstSent.text = defaults.rstSent || defaults.rst || ""
         if (!rstRcvd.activeFocus && !rstRcvd.edited) rstRcvd.text = defaults.rstRcvd || defaults.rst || ""
@@ -64,7 +67,12 @@ ColumnLayout {
             // F1-F12, ⌘ / Ctrl 1-0 and Esc work while typing here too, as on
             // the page (Christoph Steinert DM5HF: a pile-up from the Log tab;
             // roadmap 90); letters, digits and Space still type.
-            Keys.onPressed: (event) => { if (Engine.operateKey(event.key, event.modifiers, event.isAutoRepeat)) event.accepted = true }
+            // With Back to the call on (roadmap 141) Esc also leaves the field,
+            // so Space is PTT again.
+            Keys.onPressed: (event) => {
+                if (Engine.operateKey(event.key, event.modifiers, event.isAutoRepeat)) event.accepted = true
+                if (event.key === Qt.Key_Escape && Engine.logBackToCall) logTab.dropKeyboard()
+            }
             objectName: "logCall"
             Accessible.name: qsTr("Callsign")
             Layout.fillWidth: true
@@ -443,7 +451,11 @@ ColumnLayout {
                 })
                 if (ok) {
                     logTab.reset()
-                    logTab.dropKeyboard()
+                    // The next call typed at once in a run (roadmap 141,
+                    // Christoph Steinert DM5HF), or the keyboard back to
+                    // the page so Space is PTT again (the default).
+                    if (Engine.logBackToCall) callField.forceActiveFocus()
+                    else logTab.dropKeyboard()
                 }
             }
         }
@@ -474,10 +486,28 @@ ColumnLayout {
     }
 
     // ---- Recent contacts ----
-    Label {
-        text: Engine.qsoCount > 0 ? qsTr("Log: %n contact(s)", "", Engine.qsoCount) : qsTr("No contacts logged yet.")
-        color: Theme.textDim
-        font.pixelSize: Theme.px(14)
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: Theme.spacing
+        Label {
+            text: Engine.qsoCount > 0 ? qsTr("Log: %n contact(s)", "", Engine.qsoCount) : qsTr("No contacts logged yet.")
+            color: Theme.textDim
+            font.pixelSize: Theme.px(14)
+        }
+        // The run's count and rate in green while one is going (roadmap
+        // 141, Christoph Steinert DM5HF): contacts back to a gap of an hour.
+        Label {
+            objectName: "logRun"
+            visible: (logTab.run.count || 0) > 0
+            Layout.fillWidth: true
+            horizontalAlignment: Text.AlignRight
+            text: (logTab.run.perHour || 0) > 0
+                  ? qsTr("%n this session · %1 / h", "", logTab.run.count || 0).arg(logTab.run.perHour)
+                  : qsTr("%n this session", "", logTab.run.count || 0)
+            color: Theme.good
+            font.pixelSize: Theme.px(13)
+            elide: Text.ElideLeft
+        }
     }
     // Where each logged QSO goes besides this device's log; the logbooks,
     // accounts and the ADIF import are set in Setup › Logging (roadmap 95).
@@ -530,7 +560,8 @@ ColumnLayout {
             text: (modelData.TIME_ON || "").slice(0, 2) + ":" + (modelData.TIME_ON || "").slice(2, 4) + "  "
                   + modelData.CALL + "  " + (modelData.BAND || "") + " " + (modelData.SUBMODE || modelData.MODE || "")
                   + "  " + (modelData.RST_SENT || "") + "/" + (modelData.RST_RCVD || "")
-                  + (modelData.SIG_INFO ? "  " + modelData.SIG_INFO : "")
+                  // The name when known, else their park (roadmap 141).
+                  + (modelData.NAME ? "  " + modelData.NAME : modelData.SIG_INFO ? "  " + modelData.SIG_INFO : "")
             color: Theme.text
             font.pixelSize: Theme.px(14)
             font.family: "monospace"
