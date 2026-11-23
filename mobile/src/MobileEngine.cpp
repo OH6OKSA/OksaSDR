@@ -377,6 +377,17 @@ public:
         }
         const QPointF at = press->points().first().scenePosition();
         if (!field->contains(field->mapFromScene(at)) && !keepsTextFocusAt(window->contentItem(), at)) {
+            // What the press landed on, in the log (the iPad, build 210: in
+            // landscape a tap on PTT above the on-screen keyboard let the
+            // field go and keyed nothing, which the render tool does not do).
+            QStringList chain;
+            for (QQuickItem* up = deepestAt(window->contentItem(), at); up && chain.size() < 5; up = up->parentItem()) {
+                chain << QString::fromLatin1(up->metaObject()->className()).section(QLatin1Char('_'), 0, 0)
+                             + (up->objectName().isEmpty() ? QString() : QLatin1Char(':') + up->objectName());
+            }
+            qCInfo(lcMobile).noquote() << QStringLiteral("keyboard: a press at %1,%2 let the field go: %3")
+                                              .arg(qRound(at.x())).arg(qRound(at.y()))
+                                              .arg(chain.isEmpty() ? QStringLiteral("nothing under it") : chain.join(QStringLiteral(" < ")));
             field->setFocus(false);
             // And the on-screen keyboard goes (roadmap 142, Robin Bishop
             // G5OUT's iPhone: an iPhone's keyboard has no key to hide it,
