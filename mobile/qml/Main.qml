@@ -72,13 +72,36 @@ ApplicationWindow {
     // showed no PTT; Done unseen in a lower Controls drawer). Scaled back
     // when its bottom lies that far past the window.
     readonly property rect systemKeyboardRect: {
-        const r = Qt.inputMethod.keyboardRectangle
+        const r = Qt.platform.os === "android" ? androidKeyboardRaw : Qt.inputMethod.keyboardRectangle
         const dpr = Screen.devicePixelRatio
         const s = Qt.platform.os === "android" && dpr > 1.05 && r.y + r.height > height * 1.2 ? 1 / dpr : 1
         return Qt.rect(r.x * s, r.y * s, r.width * s, r.height * s)
     }
+    // Android: Qt's keyboard rectangle changes without its signal and
+    // inputMethod.visible lags it (the OnePlus, beta 117: typing with the
+    // keyboard up read "keyboard 0+0, the system's 1413+1027", and the room
+    // came only after Enter had put the keyboard away). Read here every
+    // 150 ms while a field has the focus or the keyboard is still counted,
+    // and the keyboard is up while its rectangle has a height.
+    property rect androidKeyboardRaw: Qt.rect(0, 0, 0, 0)
+    Timer {
+        interval: 150
+        repeat: true
+        running: Qt.platform.os === "android"
+                 && (window.androidKeyboardRaw.height > 0
+                     || (!!window.activeFocusItem && window.activeFocusItem.cursorRectangle !== undefined))
+        onTriggered: {
+            const r = Qt.inputMethod.keyboardRectangle
+            const o = window.androidKeyboardRaw
+            if (r.x !== o.x || r.y !== o.y || r.width !== o.width || r.height !== o.height)
+                window.androidKeyboardRaw = r
+        }
+    }
     readonly property bool keyboardKeysShown: Qt.platform.os !== "ios" || keyboardRect.height >= 150
-    readonly property bool onScreenKeyboard: (touchOs && Qt.inputMethod.visible && keyboardKeysShown) || Engine.testKeyboard
+    readonly property bool onScreenKeyboard: (touchOs && (Qt.platform.os === "android"
+                                                          ? systemKeyboardRect.height > 0
+                                                          : Qt.inputMethod.visible && keyboardKeysShown))
+                                             || Engine.testKeyboard
     // How much of the window's bottom it covers. The page and the controls
     // drawers end above it (the user, build 203's preview on the iPad:
     // typing in the Log tab the keyboard covered PTT, "virtuaalinäppäimistöllä
@@ -237,6 +260,17 @@ ApplicationWindow {
         // room for the keyboard (a phone in landscape keeps little of the
         // drawer: the Log tab's call went below its fold). Once per field,
         // so a scroll of one's own while typing stays.
+        // The scroll reveal() made, given back when the keyboard goes: it
+        // stayed, and with the room back the call was scrolled out of sight
+        // under the drawer's tab buttons (the OnePlus, beta 117).
+        property var revealedFlick: null
+        property real revealedFromY: 0
+        function unreveal() {
+            const flick = revealedFlick
+            revealedFlick = null
+            if (flick && flick.contentY !== undefined)
+                flick.contentY = Math.max(0, Math.min(revealedFromY, flick.contentHeight - flick.height))
+        }
         function reveal() {
             const field = window.activeFocusItem
             if (!field || field.cursorRectangle === undefined)
@@ -244,6 +278,10 @@ ApplicationWindow {
             for (let flick = field.parent; flick; flick = flick.parent) {
                 if (flick.contentY === undefined || flick.contentHeight === undefined || flick.contentItem === undefined)
                     continue
+                if (revealedFlick !== flick) {
+                    revealedFlick = flick
+                    revealedFromY = flick.contentY
+                }
                 const p = field.mapToItem(flick.contentItem, 0, 0)
                 const margin = 8
                 if (p.y + field.height + margin > flick.contentY + flick.height)
@@ -270,6 +308,8 @@ ApplicationWindow {
                 revealTimer.restart()
             } else {
                 close()
+                revealTimer.stop()
+                unreveal()
             }
         }
         // Follows the field while the drawer slides or its page scrolls.
