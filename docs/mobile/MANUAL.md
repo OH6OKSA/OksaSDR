@@ -1817,8 +1817,11 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   least ten minutes); it is gone an hour after the last contact. After
   Log the keyboard goes, so Space is PTT again on an iPad or Mac keyboard;
   with **After logging** › *Back to the call* in Setup › Logging the
-  cursor stays in the call field for the next call, and Esc (or a tap
-  outside the field) gives Space back to PTT. Under the recent contacts a line says where
+  cursor stays in the call field for the next call, Enter or the
+  keyboard's Return key logging each (on an iPad keyboard and an Android
+  phone since build 207: before it the field let go of the cursor there
+  as without the choice), and Esc (or a tap outside the field) gives
+  Space back to PTT. Under the recent contacts a line says where
   each QSO also goes (*Each QSO also to: QRZ.com Logbook, Wavelog /
   Cloudlog*), and **Logbooks…** opens **Setup › Logging**, where the rest of
   this section lives: the ADIF import, the station and the QRZ.com
@@ -3084,7 +3087,8 @@ iPhone's keyboard has no key for it, and Return in some fields acts: in
 the Log tab's call it logs the contact). It sits below the field at its
 right end, or above the field when the keyboard covers the space below
 (the screen then slides up to keep the field in sight), where it covers
-no button (else over the field's own empty end). With a hardware
+no button (else over the field's own empty end, as in Big buttons' Log,
+where until build 207 it sat on the mode). With a hardware
 keyboard on an iPad there is no on-screen keyboard and no Done.
 
 While the on-screen keyboard is up the page makes room for it instead of
@@ -3236,7 +3240,14 @@ and there Android answers *App not installed*.
 microphone go through it (the hands-free link, as on the iPhone). Since
 Android beta 114 receive opens again on the headset after each
 transmission, as opening its microphone ends the receive stream on some
-phones (it stayed silent until a restart; thanks Mattias SM6YEC). Without
+phones (it stayed silent until a restart; thanks Mattias SM6YEC), and
+since beta 116 the hands-free link is also taken again first, as at
+connecting, so receive comes back with the headset's *Media audio* off
+in Android's Bluetooth settings too (only *Calls* on). If receive still
+goes silent after PTT, turn on the headset's Media audio (Settings ›
+Bluetooth › the gear beside the headset; on a Samsung *Audio*) and send
+the log: it says the headset's link and media audio after each
+transmission. Without
 one, the phone's speaker and microphone are used. **A USB-C headset** (or a
 USB-C to 3.5 mm adapter) is used the same way with *Auto*, ahead of
 Bluetooth; plugged in or out while connected, receive moves over at once. Controls › Audio ›

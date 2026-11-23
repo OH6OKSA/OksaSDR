@@ -1,0 +1,14 @@
+# With this file in the tree, a push builds as a preview: TestFlight's
+# internal group only (What to Test set, no external group, no beta review)
+# and the Android APK as the run artifact only. Removed when the user
+# releases the build to the testers (mobile-release.yml).
+
+Build 207 / Android beta 116: Back to the call keeps the call field after
+Return on an iPad keyboard and Android (141); Big buttons' Log keeps the
+keyboard's Done off the mode, Done's place in the engine's log (142); a
+Bluetooth headset with only Calls on gets receive back after PTT, the
+headset's state logged after each transmission (144). On devices: the
+iPad keyboard's Return with Back to the call on and off (Space PTT after
+Esc); the OnePlus with the headset's Media audio off and on, long and
+short PTT presses; Done in Big buttons' Log and on the Log tab in a lower
+Controls drawer (the "keyboard: Done" line).

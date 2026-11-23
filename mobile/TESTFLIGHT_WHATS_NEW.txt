@@ -9,10 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- FT8 / FT4: a tapped decode is answered at once, in the slot already running, its past part left out as WSJT-X's late start (thanks George KF2T); Answer CQ too.
-- The Log tab for a run: the session's count and rate per hour in green, names in the recent contacts, and Setup > Logging > After logging > Back to the call (thanks Chris DM5HF).
+- The Log tab: Setup > Logging > After logging > Back to the call now keeps the cursor in the call field with an iPad keyboard too (its Return let the field go, with either choice).
+- Big buttons' Log: the keyboard's Done sits in the call field's end, no longer on the mode.
 
-RECENT (builds 94–204)
+RECENT (builds 94–206)
+- 206: FT8 / FT4 answered at once in the running slot (thanks George KF2T); the Log tab for a run (thanks Chris DM5HF).
 - 204: Spots tab; RBN and PSK Reporter spots; Heard me; an alert's Tune sets the mode; voice macros with the radio's mic (thanks Chris DM5HF); keyboard Done (thanks Robin G5OUT).
 - 202: tidier Controls, settings in Setup; spot alerts; Spots From; panadapters closed with their slices.
 - 200: a PTT key of your own (thanks Rob VA3MET); held F-keys start once; Mac keys back; the shared ADIF file follows edits (thanks Chris DM5HF); Theme Auto.

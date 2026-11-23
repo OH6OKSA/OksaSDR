@@ -1275,6 +1275,9 @@ public:
     // Keyboard paddles' diagnostics to the app log (QML's console output
     // does not reach it).
     Q_INVOKABLE void logKeyboardPaddles(const QString& what);
+    // A line from the QML side into the engine's log (the developer link
+    // and Send to the developer carry only the engine's categories).
+    Q_INVOKABLE void logUi(const QString& what);
     int cwSpeed() const;
     void setCwSpeed(int wpm);
     int cwPitch() const;

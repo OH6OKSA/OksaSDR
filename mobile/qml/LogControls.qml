@@ -81,6 +81,12 @@ ColumnLayout {
             font.family: "monospace"
             font.capitalization: Font.AllUppercase
             inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+            // Back to the call needs a Return key that keeps the field: a
+            // one-line field's default key is Done, after which Qt on iOS
+            // lets the field go (QIOSTextResponder resigns after a Done
+            // Return unless the focus moved) and Android hides its keyboard
+            // (IME_ACTION_DONE), whatever logging does. Return keeps both.
+            EnterKey.type: Engine.logBackToCall ? Qt.EnterKeyReturn : Qt.EnterKeyDefault
             Component.onCompleted: text = Engine.workedCall
             onTextChanged: {
                 Engine.workedCall = text

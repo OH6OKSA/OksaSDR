@@ -355,6 +355,43 @@ public final class Platform {
         return am.isBluetoothScoOn();
     }
 
+    // The headset route now, for the log (roadmap 144: receive silent after
+    // transmitting with the headset's media audio off): Android's
+    // communication device, the hands-free audio link, and whether the
+    // headset's media link (A2DP) is there, which Android's Bluetooth
+    // settings turn off as the headset's Media audio.
+    public static String headsetState(Context context) {
+        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        String comm;
+        if (Build.VERSION.SDK_INT >= 31) {
+            AudioDeviceInfo d = am.getCommunicationDevice();
+            comm = d == null ? "none" : deviceTypeName(d.getType());
+        } else {
+            comm = am.isBluetoothScoOn() ? "Bluetooth hands-free" : "not Bluetooth";
+        }
+        boolean media = false;
+        for (AudioDeviceInfo d : am.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
+            if (d.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP) {
+                media = true;
+            }
+        }
+        long up = scoUpAt;
+        return "communication device " + comm + ", hands-free link " + (up == 0 ? "down" : "up")
+            + ", media audio " + (media ? "on" : "off") + ", audio mode " + am.getMode();
+    }
+
+    private static String deviceTypeName(int type) {
+        switch (type) {
+            case AudioDeviceInfo.TYPE_BLUETOOTH_SCO: return "Bluetooth hands-free";
+            case AudioDeviceInfo.TYPE_BLE_HEADSET: return "Bluetooth LE headset";
+            case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER: return "speaker";
+            case AudioDeviceInfo.TYPE_BUILTIN_EARPIECE: return "earpiece";
+            case AudioDeviceInfo.TYPE_WIRED_HEADSET: return "wired headset";
+            case AudioDeviceInfo.TYPE_USB_HEADSET: return "USB headset";
+            default: return "type " + type;
+        }
+    }
+
     // ---- Device speaker (the operator's choice): receive on the built-in
     // speaker even with Bluetooth audio connected. Android sends media to a
     // connected Bluetooth device on its own, so the speaker is taken as the

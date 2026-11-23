@@ -139,11 +139,18 @@ ApplicationWindow {
             return found
         }
         function pressable(item) {
-            // A button, a switch or a text field, or a part of one.
+            // A button, a switch or a text field, or a part of one; also an
+            // item pressed through a TapHandler (the mode button: Done sat
+            // on Big buttons' mode in its Log panel, the user on Android).
             for (let i = 0; i < 4 && item; ++i, item = item.parent) {
                 if (typeof item.clicked === "function" || item.cursorRectangle !== undefined
                         || typeof item.moved === "function")
                     return true
+                const handlers = item.data
+                for (let j = 0; handlers && j < handlers.length; ++j) {
+                    if (handlers[j] && typeof handlers[j].tapped === "function" && handlers[j].enabled !== false)
+                        return true
+                }
             }
             return false
         }
@@ -196,7 +203,9 @@ ApplicationWindow {
             }
             if (where !== spot) {
                 spot = where
-                console.info("keyboard: Done " + where + " at " + x + "," + y + "; keyboard "
+                // In the engine's log, so a device's developer link and
+                // Send to the developer carry it (a QML console line did not).
+                Engine.logUi("keyboard: Done " + where + " at " + x + "," + y + "; keyboard "
                              + Math.round(keyboard.y) + "+" + Math.round(keyboard.height) + " of " + window.height)
             }
         }

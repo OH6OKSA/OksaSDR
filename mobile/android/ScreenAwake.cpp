@@ -127,6 +127,7 @@ namespace {
 
 QString s_outputMode = QStringLiteral("Auto");
 bool s_connected = false;
+bool s_headsetInUse = false;   // Auto took a Bluetooth headset's hands-free link
 
 // The audio route while a radio is connected: Auto takes a connected
 // Bluetooth headset's hands-free link (receive and microphone); Speaker and
@@ -144,6 +145,7 @@ void applyAudioRoute()
         return;
     }
     QString route;
+    s_headsetInUse = false;
     if (s_outputMode == QLatin1String("Speaker")) {
         route = QStringLiteral("the device's speaker and microphone (the streams open on them)");
     } else if (s_outputMode == QLatin1String("Bluetooth")) {
@@ -151,11 +153,15 @@ void applyAudioRoute()
     } else {
         route = QJniObject::callStaticObjectMethod(kPlatformClass, "useHeadset",
             "(Landroid/content/Context;Z)Ljava/lang/String;", context.object(), jboolean(true)).toString();
+        s_headsetInUse = !route.isEmpty();
         if (route.isEmpty()) {
             route = QStringLiteral("no Bluetooth headset (Android's own route)");
         }
     }
     qCInfo(lcAndroid).noquote() << "audio output" << s_outputMode << "->" << route;
+    if (s_headsetInUse) {
+        qCInfo(lcAndroid).noquote() << "headset:" << headsetState();
+    }
 }
 
 } // namespace
@@ -204,6 +210,21 @@ void setAudioOutputMode(const QString& mode)
     if (s_connected) {
         applyAudioRoute();
     }
+}
+
+QString headsetState()
+{
+    return QJniObject::callStaticObjectMethod(kPlatformClass, "headsetState",
+        "(Landroid/content/Context;)Ljava/lang/String;", androidContext().object()).toString();
+}
+
+QString reassertHeadsetRoute()
+{
+    if (!s_connected || s_outputMode != QLatin1String("Auto") || !s_headsetInUse) {
+        return {};
+    }
+    return QJniObject::callStaticObjectMethod(kPlatformClass, "useHeadset",
+        "(Landroid/content/Context;Z)Ljava/lang/String;", androidContext().object(), jboolean(true)).toString();
 }
 
 // The foreground service keeps the app running through a reconnect.

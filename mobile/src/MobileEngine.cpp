@@ -4906,14 +4906,29 @@ void MobileEngine::releasePtt(const QString& reason)
     // the release only turned receive back on (the log's underruns from
     // then on). Receive opens again once the microphone has closed, as it
     // does after a route change.
-    if (m_connected && m_audio && m_session.radioModel().transmitModel().micSelection() == kDeviceMicSelection
-        && QJniObject::callStaticMethod<jboolean>("fi/oh6oksa/oksasdr/Platform", "headsetRoute",
-               "(Landroid/content/Context;)Z", QNativeInterface::QAndroidApplication::context().object())) {
+    // That alone did not do it with the headset's media audio off in
+    // Android's Bluetooth settings (hands-free only, the user's OnePlus with
+    // beta 115, 2026-11-23: silent after PTT; with media audio on it played),
+    // and a short press (0.1 s, let go before the microphone had opened on
+    // the headset) did not even try, the route question at the release
+    // saying no headset. Now as a connect does it: once the microphone has
+    // closed the hands-free route is taken again, receive opens again, and
+    // the link watch opens it once more if Android brings the link up after
+    // that; the log line says the headset's state (its link, media audio).
+    if (m_connected && m_audio && audioOutput() == QLatin1String("Auto")
+        && m_session.radioModel().transmitModel().micSelection() == kDeviceMicSelection) {
         QTimer::singleShot(300, this, [this] {
-            if (m_connected && m_audio && !m_pttHeld) {
-                qCInfo(lcMobile) << "receive opened again on the Bluetooth headset after transmitting";
-                QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->reopenRx(); }, Qt::QueuedConnection);
+            if (!m_connected || !m_audio || m_pttHeld) {
+                return;
             }
+            const QString route = reassertHeadsetRoute();
+            if (route.isEmpty()) {
+                return;   // no headset in use
+            }
+            qCInfo(lcMobile).noquote() << "receive opened again on the Bluetooth headset after transmitting ("
+                                              + route + "; " + headsetState() + ")";
+            QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->reopenRx(); }, Qt::QueuedConnection);
+            watchHeadsetLink();
         });
     }
 #endif
@@ -7415,6 +7430,7 @@ void MobileEngine::setLogBackToCall(bool on)
     }
     AppSettings::instance().setValue(QStringLiteral("MobileLogBackToCall"), on ? QStringLiteral("True") : QStringLiteral("False"));
     AppSettings::instance().save();
+    qCInfo(lcMobile).noquote() << "log tab: after logging:" << (on ? "back to the call" : "the keyboard away");
     emit logBackToCallChanged();
 }
 
@@ -9967,6 +9983,11 @@ void MobileEngine::onSideKey(int keyValue, bool pressed)
 void MobileEngine::logKeyboardPaddles(const QString& what)
 {
     qCInfo(lcMobile).noquote() << "CW keyboard paddles:" << what.left(200);
+}
+
+void MobileEngine::logUi(const QString& what)
+{
+    qCInfo(lcMobile).noquote() << what.left(300);
 }
 
 void MobileEngine::noteBreakInOff()

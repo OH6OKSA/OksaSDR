@@ -27,4 +27,14 @@ void setAudioSessionReactivatedHandler(std::function<void()> handler);
 // is connected); a no-op elsewhere.
 void setAudioOutputMode(const QString& mode);
 
+#ifdef Q_OS_ANDROID
+// Android (android/ScreenAwake.cpp), Auto with a Bluetooth headset: its
+// hands-free route taken again, as a connect takes it, after a transmission
+// (roadmap 144); returns the route, or "" when no headset route is in use.
+QString reassertHeadsetRoute();
+// The headset's state for the log: Android's communication device, the
+// hands-free link up or down, its media audio on or off, the audio mode.
+QString headsetState();
+#endif
+
 } // namespace AetherSDR::mobile
