@@ -12,7 +12,7 @@ NEW IN THIS BUILD
 - The Log tab: Setup > Logging > After logging > Back to the call now keeps the cursor in the call field with an iPad keyboard too (its Return let the field go, with either choice).
 - Big buttons' Log: the keyboard's Done sits in the call field's end, no longer on the mode.
 - Tuner Genius XL: C1, L and C2 step their own relays (C1 + moved L before; thanks Ben KT4O).
-- The on-screen keyboard stays up on an iPad in landscape (typing in the Log tab it went away at once).
+- The on-screen keyboard stays up on an iPad in landscape (typing in the Log tab it went away at once), and PTT stays above it.
 
 RECENT (builds 94–206)
 - 206: FT8 / FT4 answered at once in the running slot (thanks George KF2T); the Log tab for a run (thanks Chris DM5HF).

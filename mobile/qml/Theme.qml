@@ -83,7 +83,7 @@ QtObject {
     readonly property bool compactHeight: classHeight < 500
     // Very low: a phone's outer screen in landscape, small iPhones in
     // landscape. Meters fall back to bars to leave room for the display.
-    readonly property bool tightHeight: windowHeight < 400
+    readonly property bool tightHeight: classHeight < 400
     // The phone layout (drawer controls, strip PTT) for either.
     readonly property bool phoneLayout: compactWidth || compactHeight
 

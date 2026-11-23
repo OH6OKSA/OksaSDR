@@ -143,7 +143,12 @@ Page {
     // navigation bars): a near-square foldable screen is then laid out the
     // same in both orientations (the OnePlus Open's 698 x 751 counted the
     // bars and turned to the portrait layout with 668 left).
-    readonly property bool portrait: Theme.windowHeight > Theme.windowWidth
+    // The whole window's height (Theme.classHeight): the on-screen keyboard's
+    // room turned an upright OnePlus Open and iPad to landscape under it, the
+    // Controls drawer came from the side and the page's PTT row went under
+    // the keyboard (the user, run 149: "sisänäytön kummassakaan asennossa ei
+    // ptt näy").
+    readonly property bool portrait: Theme.classHeight > Theme.windowWidth
     // Landscape with the panel pinned: two columns, the panel the full
     // height at the right, PTT under the display only. Otherwise one column
     // and PTT the full width.
@@ -168,7 +173,7 @@ Page {
     // In portrait it pins under the display only in a tall window (an
     // iPad, the mini's 1089 pt too): lower, the panel's share left the
     // display no height (640 x 700, 683 x 1004); the drawer then.
-    readonly property bool bottomFits: Theme.windowHeight >= 1050
+    readonly property bool bottomFits: Theme.classHeight >= 1050
     readonly property bool pinFits: portrait ? bottomFits : sideFits
     readonly property bool panelPinned: Engine.controlsVisible && pinFits
 
@@ -525,7 +530,10 @@ Page {
             Layout.column: 0
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.minimumHeight: 320
+            // With the on-screen keyboard up the page is short (382 of an
+            // opened OnePlus Open in landscape): the display gives way so
+            // the PTT row stays above the keyboard.
+            Layout.minimumHeight: page.Window.window && page.Window.window.keyboardCover > 0 ? 100 : 320
             spacing: page.compact ? Theme.spacing / 2 : Theme.spacing
 
             RowLayout {
@@ -1048,8 +1056,12 @@ Page {
         // Landscape: ends above the page's PTT row, which stays usable, so
         // the drawer needs no PTT of its own. Portrait (from the bottom)
         // covers it and carries a copy.
-        height: page.portrait ? (page.controlsFull ? (parent ? parent.height : page.height)
-                                                   : Math.min(page.height * 0.5, 560) + Math.max(0, page.Window.height - page.height))
+        // Upright with the on-screen keyboard up it takes the whole page above
+        // the keyboard, as Full-screen controls: half of a short page left
+        // the Log tab's call field one line high (an opened OnePlus Open).
+        height: page.portrait ? (page.controlsFull || page.Window.height - page.height > 1
+                                 ? (parent ? parent.height : page.height)
+                                 : Math.min(page.height * 0.5, 560) + Math.max(0, page.Window.height - page.height))
                               : page.height - page.pttHeight - 2 * Theme.spacing
                                 - Math.max(page.SafeArea.margins.bottom, 12)
         // From the window's edge: Qt otherwise keeps popups inside the safe
