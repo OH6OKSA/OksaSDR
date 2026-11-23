@@ -196,6 +196,8 @@ ColumnLayout {
                         id: freqEdit
                         Accessible.name: qsTr("Memory frequency in MHz")
                         Layout.fillWidth: true
+                        // Sized to what it holds, about 12 characters (roadmap 158)
+                        Layout.maximumWidth: Math.ceil(12 * font.pixelSize * 0.62) + leftPadding + rightPadding
                         font.pixelSize: Theme.px(15)
                         font.family: "monospace"
                         inputMethodHints: Qt.ImhFormattedNumbersOnly

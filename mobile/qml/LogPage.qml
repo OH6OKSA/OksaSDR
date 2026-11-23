@@ -95,6 +95,8 @@ Popup {
         component HostField: TextField {
             Accessible.name: qsTr("Developer link PC address")
             Layout.fillWidth: true
+            // Sized to what it holds, about 21 characters (roadmap 158)
+            Layout.maximumWidth: Math.ceil(21 * font.pixelSize * 0.62) + leftPadding + rightPadding
             text: DevLink.host
             placeholderText: qsTr("PC address")
             inputMethodHints: Qt.ImhPreferNumbers | Qt.ImhNoPredictiveText

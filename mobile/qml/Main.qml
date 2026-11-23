@@ -225,7 +225,14 @@ ApplicationWindow {
                 const keyboardTop = keyboard.height > 0 ? keyboard.y : window.height
                 const belowSeen = below + height <= Math.min(keyboardTop, window.height) - 4
                 const aboveSeen = above >= top
+                // First beside the field on its own row, where a field sized
+                // to its content (the call, roadmap 158) leaves the room: the
+                // user, "miksi se done nappi ei voi olla kutsu laatikossa".
+                const besideX = Math.round(p.x + field.width + 6)
+                const besideY = Math.round(p.y + (field.height - height) / 2)
                 const spots = []
+                if (besideX + width <= window.width - 8 && besideY + height <= Math.min(keyboardTop, window.height) - 4)
+                    spots.push(["beside", besideX, besideY])
                 if (belowSeen) spots.push(["below right", right, below])
                 if (aboveSeen) spots.push(["above right", right, above])
                 if (belowSeen) spots.push(["below left", left, below])

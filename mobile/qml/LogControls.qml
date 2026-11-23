@@ -76,6 +76,8 @@ ColumnLayout {
             objectName: "logCall"
             Accessible.name: qsTr("Callsign")
             Layout.fillWidth: true
+            // Sized to what it holds, about 16 characters (roadmap 158)
+            Layout.maximumWidth: Math.ceil(16 * font.pixelSize * 0.62) + leftPadding + rightPadding
             placeholderText: qsTr("Callsign")
             font.pixelSize: Theme.px(20)
             font.family: "monospace"
@@ -385,6 +387,8 @@ ColumnLayout {
         Accessible.name: qsTr("Their reference")
         visible: theirSig.value.length > 0
         Layout.fillWidth: true
+        // Sized to what it holds, about 22 characters (roadmap 158)
+        Layout.maximumWidth: Math.ceil(22 * font.pixelSize * 0.62) + leftPadding + rightPadding
         placeholderText: theirSig.value === "POTA" ? qsTr("Park, e.g. US-1234") : qsTr("Reference, e.g. OHFF-0001")
         font.pixelSize: Theme.px(15)
         inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
@@ -417,6 +421,8 @@ ColumnLayout {
             objectName: "logMyRef"
             Accessible.name: qsTr("My reference")
             Layout.fillWidth: true
+            // Sized to what it holds, about 22 characters (roadmap 158)
+            Layout.maximumWidth: Math.ceil(22 * font.pixelSize * 0.62) + leftPadding + rightPadding
             text: Engine.myRef
             onTextEdited: Engine.myRef = text
             placeholderText: qsTr("My reference")

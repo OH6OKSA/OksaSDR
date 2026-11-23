@@ -605,6 +605,8 @@ Rectangle {
                     objectName: "bigLogCall"
                     Accessible.name: qsTr("Callsign")
                     Layout.fillWidth: true
+                    // Sized to what it holds, about 16 characters (roadmap 158)
+                    Layout.maximumWidth: Math.ceil(16 * font.pixelSize * 0.62) + leftPadding + rightPadding
                     placeholderText: qsTr("Callsign")
                     font.pixelSize: logPanel.bigPx
                     font.family: "monospace"
@@ -637,7 +639,7 @@ Rectangle {
                 checked: enabled
                 focusPolicy: Qt.NoFocus
                 font.pixelSize: Math.round(Math.max(Theme.buttonFont, big.readingPx * 0.8))
-                Layout.fillWidth: !big.landscape
+                Layout.fillWidth: true   // the rest of the row beside a call field sized to its content (roadmap 158)
                 Layout.preferredHeight: Math.max(Theme.touchTarget, logPanel.bigPx * 1.6)
                 onClicked: big.logIt()
             }

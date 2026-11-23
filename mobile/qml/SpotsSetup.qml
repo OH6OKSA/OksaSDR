@@ -70,6 +70,8 @@ ColumnLayout {
             objectName: "dxClusterCallsign"
             Accessible.name: qsTr("DX cluster callsign")
             Layout.fillWidth: true
+            // Sized to what it holds, about 16 characters (roadmap 158)
+            Layout.maximumWidth: Math.ceil(16 * font.pixelSize * 0.62) + leftPadding + rightPadding
             placeholderText: qsTr("Callsign (the radio's if empty)")
             text: Engine.dxCluster.callsignFromRadio ? "" : (Engine.dxCluster.callsign || "")
             font.pixelSize: Theme.px(14)

@@ -64,6 +64,8 @@ Popup {
                 objectName: "offsetField"
                 Accessible.name: qsTr("Offset in kHz")
                 Layout.fillWidth: true
+                // Sized to what it holds, about 8 characters (roadmap 158)
+                Layout.maximumWidth: Math.ceil(8 * font.pixelSize * 0.62) + leftPadding + rightPadding
                 placeholderText: qsTr("kHz, e.g. 1.34")
                 font.pixelSize: Theme.px(20)
                 inputMethodHints: Qt.ImhFormattedNumbersOnly | Qt.ImhNoPredictiveText

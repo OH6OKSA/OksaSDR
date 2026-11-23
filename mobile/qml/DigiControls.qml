@@ -357,6 +357,8 @@ ColumnLayout {
             id: cqTargetField
             objectName: "digiCqTargetField"
             Layout.fillWidth: true
+            // Sized to what it holds, about 14 characters (roadmap 158)
+            Layout.maximumWidth: Math.ceil(14 * font.pixelSize * 0.62) + leftPadding + rightPadding
             placeholderText: qsTr("e.g. SA, JA, POTA or 001")
             maximumLength: 4
             inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText

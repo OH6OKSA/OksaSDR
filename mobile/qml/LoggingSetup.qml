@@ -150,6 +150,8 @@ ColumnLayout {
             id: gridField
             Accessible.name: qsTr("My grid")
             Layout.fillWidth: true
+            // Sized to what it holds, about 8 characters (roadmap 158)
+            Layout.maximumWidth: Math.ceil(8 * font.pixelSize * 0.62) + leftPadding + rightPadding
             placeholderText: qsTr("My grid, e.g. KP22")
             font.pixelSize: Theme.px(15)
             inputMethodHints: Qt.ImhUppercaseOnly | Qt.ImhNoPredictiveText
@@ -506,6 +508,8 @@ ColumnLayout {
             Accessible.name: qsTr("Logger32 PC address")
             objectName: "logger32Host"
             Layout.fillWidth: true
+            // Sized to what it holds, about 21 characters (roadmap 158)
+            Layout.maximumWidth: Math.ceil(21 * font.pixelSize * 0.62) + leftPadding + rightPadding
             placeholderText: qsTr("PC address, e.g. 192.168.1.10:52001")
             font.pixelSize: Theme.px(15)
             text: Engine.logger32.host || ""
@@ -552,6 +556,8 @@ ColumnLayout {
             Accessible.name: qsTr("Logging program's computer address")
             objectName: "loggerUdpHost"
             Layout.fillWidth: true
+            // Sized to what it holds, about 21 characters (roadmap 158)
+            Layout.maximumWidth: Math.ceil(21 * font.pixelSize * 0.62) + leftPadding + rightPadding
             placeholderText: qsTr("Computer address, e.g. 192.168.1.10:2237")
             font.pixelSize: Theme.px(15)
             text: Engine.loggerUdp.host || ""

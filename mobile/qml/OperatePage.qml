@@ -162,6 +162,11 @@ Page {
     // band buttons do not fit beside a 320 panel. Own layouts keep the true
     // orientation (orientation above).
     readonly property bool stacked: portrait && !sideFits
+    // A wide display column (an iPad in landscape, a Mac window) has the
+    // step buttons on the PTT row, PTT at most 360 wide beside them: the
+    // row the steps took goes to the waterfall (roadmap 158, the user: a PTT
+    // the width of the iPad's whole bottom edge is far too big).
+    readonly property bool stepsBesidePtt: !canvasOn && Engine.tuneRowsShown && leftWidth >= 820
     // Landscape side column: the pinned control panel (none when hidden).
     // Fixed, so content can never widen it off screen. At least 320 as the
     // drawer: 287 on a 1024 pt window cut "TX 2170 Hz", "New DXCC" and the
@@ -498,7 +503,7 @@ Page {
         add("slices", chipsRect && row ? { x: chipsRect.x, y: row.y, w: chipsRect.w, h: row.h } : chipsRect)
         add("meter2", classicRect(sliceBar.rightMeterItem))
         add("display", classicRect(panSlot))
-        add("steps", classicRect(stepRow))
+        add("steps", classicRect(page.stepsBesidePtt ? stepRowInline : stepRow))
         add("controls", page.panelPinned ? classicRect(controlsSlot) : null)
         // With PTT hidden (FT8 / FT4 running) its row is not shown: where
         // it would be, under the display.
@@ -659,7 +664,7 @@ Page {
                 id: stepRow
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
-                visible: Engine.tuneRowsShown
+                visible: Engine.tuneRowsShown && !page.stepsBesidePtt
                 Repeater {
                     model: Theme.stepButtons(Engine.stepHz, Engine.radioStepButtons)
                     delegate: AppButton {
@@ -719,7 +724,8 @@ Page {
         // so no second PTT peeks out under the drawer.
         RowLayout {
             id: pttRow
-            visible: !(controlsDrawer.visible && page.stacked) && !ptt.digiHidden
+            // With the steps on it, it stays while FT8 / FT4 hides PTT.
+            visible: !(controlsDrawer.visible && page.stacked) && (!ptt.digiHidden || page.stepsBesidePtt)
             Layout.row: page.twoColumns ? 1 : (page.panelPinned ? 2 : 1)
             Layout.column: 0
             Layout.fillWidth: true
@@ -728,16 +734,47 @@ Page {
             Layout.fillHeight: false
             Layout.preferredHeight: page.pttHeight
             spacing: Theme.spacing / 2
+            // The step buttons here on a wide page (stepsBesidePtt).
+            RowLayout {
+                id: stepRowInline
+                visible: page.stepsBesidePtt
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+                spacing: Theme.spacing / 2
+                Repeater {
+                    model: page.stepsBesidePtt ? Theme.stepButtons(Engine.stepHz, Engine.radioStepButtons) : []
+                    delegate: AppButton {
+                        required property int modelData
+                        objectName: "stepInline" + modelData
+                        text: (modelData > 0 ? "+" : "−") + Theme.stepLabel(Math.abs(modelData))
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 40
+                        Layout.preferredWidth: Theme.buttonWidth
+                        Layout.preferredHeight: Theme.touchTarget
+                        focusPolicy: Qt.NoFocus
+                        autoRepeat: true
+                        autoRepeatDelay: 400
+                        autoRepeatInterval: 125
+                        onClicked: {
+                            Engine.haptic("step")
+                            Engine.tuneByHz(modelData)
+                        }
+                    }
+                }
+            }
             // Macros and PTT (portaled as the display).
             Item {
                 id: macrosSlot
-                visible: macrosPanel.available
+                visible: macrosPanel.available && !(page.stepsBesidePtt && ptt.digiHidden)
                 Layout.preferredWidth: Math.max(110, macrosButton.implicitWidth)
                 Layout.fillHeight: true
             }
             Item {
                 id: pttSlot
-                Layout.fillWidth: true
+                visible: !(page.stepsBesidePtt && ptt.digiHidden)
+                Layout.fillWidth: !page.stepsBesidePtt
+                Layout.preferredWidth: page.stepsBesidePtt ? 300 : -1
+                Layout.maximumWidth: page.stepsBesidePtt ? 360 : Number.POSITIVE_INFINITY
                 Layout.fillHeight: true
             }
         }

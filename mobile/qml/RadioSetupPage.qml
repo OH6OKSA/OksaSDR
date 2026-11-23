@@ -1155,6 +1155,8 @@ Popup {
                                 objectName: "setupStaticIp"
                                 Accessible.name: qsTr("Static IP address")
                                 Layout.fillWidth: true
+                                // Sized to what it holds, about 15 characters (roadmap 158)
+                                Layout.maximumWidth: Math.ceil(15 * font.pixelSize * 0.62) + leftPadding + rightPadding
                                 font.pixelSize: Theme.px(17)
                                 placeholderText: setup.d.staticIp || "192.168.1.60"
                                 inputMethodHints: Qt.ImhPreferNumbers | Qt.ImhNoPredictiveText
@@ -1164,6 +1166,8 @@ Popup {
                                 id: staticMaskField
                                 Accessible.name: qsTr("Static netmask")
                                 Layout.fillWidth: true
+                                // Sized to what it holds, about 15 characters (roadmap 158)
+                                Layout.maximumWidth: Math.ceil(15 * font.pixelSize * 0.62) + leftPadding + rightPadding
                                 font.pixelSize: Theme.px(17)
                                 placeholderText: setup.d.staticNetmask || "255.255.255.0"
                                 inputMethodHints: Qt.ImhPreferNumbers | Qt.ImhNoPredictiveText
@@ -1173,6 +1177,8 @@ Popup {
                                 id: staticGwField
                                 Accessible.name: qsTr("Static gateway")
                                 Layout.fillWidth: true
+                                // Sized to what it holds, about 15 characters (roadmap 158)
+                                Layout.maximumWidth: Math.ceil(15 * font.pixelSize * 0.62) + leftPadding + rightPadding
                                 font.pixelSize: Theme.px(17)
                                 placeholderText: setup.d.staticGateway || "192.168.1.1"
                                 inputMethodHints: Qt.ImhPreferNumbers | Qt.ImhNoPredictiveText
