@@ -38,6 +38,7 @@
 
 #include <QDateTime>
 #include <QLoggingCategory>
+#include <QTimer>
 #include <cmath>
 
 Q_DECLARE_LOGGING_CATEGORY(lcMobile)
@@ -685,7 +686,19 @@ void MobileEngine::tgxlAdjustRelay(int relay, int direction)
 {
     if (relay < 0 || relay > 2 || (direction != 1 && direction != -1) || !m_tgxlConn->isConnected()) return;
     if (!geniusCommandAllowed(true, true, "relay")) return;
-    m_session.radioModel().tunerModel().adjustRelay(relay, direction);
+    // Which button, what went to the tuner and its relays before and after
+    // (roadmap 155: the relays numbered 0-2 as a real TGXL does).
+    TunerModel& t = m_session.radioModel().tunerModel();
+    static const char* const kRelayName[] = {"C1", "L", "C2"};
+    qCInfo(lcMobile).noquote() << QStringLiteral("TGXL relay %1 %2: sent tune relay=%3 move=%4; before C1 %5, L %6, C2 %7")
+                                      .arg(QLatin1String(kRelayName[relay]), direction > 0 ? QStringLiteral("+") : QStringLiteral("-"))
+                                      .arg(relay).arg(direction).arg(t.relayC1()).arg(t.relayL()).arg(t.relayC2());
+    t.adjustRelay(relay, direction);
+    QTimer::singleShot(1500, this, [this] {
+        const TunerModel& tm = m_session.radioModel().tunerModel();
+        qCInfo(lcMobile).noquote() << QStringLiteral("TGXL relays 1.5 s after the step: C1 %1, L %2, C2 %3")
+                                          .arg(tm.relayC1()).arg(tm.relayL()).arg(tm.relayC2());
+    });
 }
 
 void MobileEngine::tgxlSetAntenna(int antenna)

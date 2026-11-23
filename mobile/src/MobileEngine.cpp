@@ -3101,7 +3101,15 @@ void MobileEngine::startDeviceMicrophoneCapture()
     const float gainDb = float(micGainDb());
     const QHostAddress address = m_session.radioModel().radioAddress();
     AudioEngine* audio = m_audio;
-    QMetaObject::invokeMethod(audio, [audio, gainDb, address] {
+    const std::shared_ptr<std::atomic<quint64>> stops = m_micStopSeq;
+    const quint64 stopsAtStart = stops->load();
+    QMetaObject::invokeMethod(audio, [audio, gainDb, address, stops, stopsAtStart] {
+        // Stopped before this start came up (both run here in order): the
+        // microphone stays closed rather than open and shut at once.
+        if (stops->load() != stopsAtStart) {
+            qCInfo(lcMobile) << "mic capture: not opened, stopped before it could open (a short press)";
+            return;
+        }
         audio->setPcMicGainDb(gainDb);
         if (!audio->isTxStreaming() && audio->hasAnyTxStream()) {
             audio->startTxStream(address, kRadioTxAudioPort);
@@ -3121,6 +3129,7 @@ void MobileEngine::stopDeviceMicrophoneCapture(bool force)
     if (m_micCheckOpen && !force) {
         return;   // a shown TX tab keeps metering it
     }
+    m_micStopSeq->fetch_add(1);
     AudioEngine* audio = m_audio;
     QMetaObject::invokeMethod(audio, [audio] {
         if (audio->isTxStreaming()) {

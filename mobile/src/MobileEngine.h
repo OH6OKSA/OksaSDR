@@ -2599,6 +2599,13 @@ private:
     QHash<QString, QString> m_loggedLicenseFeatures;
     QString m_loggedLicenseSubscription;
     QList<QObject*> m_micCheckHolders;   // shown TX tabs
+    // Bumped by every stop of the device microphone, read on the audio thread
+    // when a start queued before it comes up: a start whose stop came first
+    // does not open the microphone at all (a short PTT tap on Android, where
+    // a Bluetooth microphone opened 0.1-0.2 s after the press, after the
+    // release, and its instant close left the headset chirping until a long
+    // press; the user's OnePlus with beta 116, 2026-11-23).
+    std::shared_ptr<std::atomic<quint64>> m_micStopSeq{std::make_shared<std::atomic<quint64>>(0)};
     bool m_micCheckOpen{false};          // the microphone is held open: for them or for VOX
     bool m_voxMicOpen{false};            // ... and it is VOX that holds it (roadmap 19)
     std::unique_ptr<QsoLog> m_qsoLog;

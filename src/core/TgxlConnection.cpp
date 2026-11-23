@@ -545,10 +545,12 @@ void TgxlConnection::adjustRelay(int relay, int direction)
     if (!m_connected) return;
     if (relay < 0 || relay > 2) return;
     int move = (direction > 0) ? 1 : -1;
-    // 4O3A's TGXL protocol description numbers the relays from 1 (1 = C1,
-    // 2 = L, 3 = C2); callers pass 0..2 in that order. Sent as 0..2, C1
-    // was relay 0 (not in the protocol), L moved C1 and C2 moved L.
-    sendCommand(QString("tune relay=%1 move=%2").arg(relay + 1).arg(move));
+    // A real TGXL numbers the relays 0 = C1, 1 = L, 2 = C2, as a capture of
+    // 4O3A's own program showed (firmware 1.2.17, upstream #469) and a
+    // tester's TGXL on 1.2.44 confirmed (Ben Morris KT4O, 2026-11-23: C1 +
+    // sent as relay=1 moved L). 4O3A's protocol description numbers them
+    // 1-3, which OksaSDR followed from 2026-11-04 (roadmap 155).
+    sendCommand(QString("tune relay=%1 move=%2").arg(relay).arg(move));
 }
 
 void TgxlConnection::requestAutotune()

@@ -54,7 +54,20 @@ ApplicationWindow {
     readonly property bool touchOs: Qt.platform.os === "ios" || Qt.platform.os === "android"
     readonly property rect keyboardRect: Engine.testKeyboard
                                          ? Qt.rect(0, height - Engine.testKeyboardHeight, width, Engine.testKeyboardHeight)
-                                         : Qt.inputMethod.keyboardRectangle
+                                         : systemKeyboardRect
+    // Qt on Android gives the keyboard's rectangle in device pixels, not the
+    // window's (the OnePlus Open, beta 116: "keyboard 1413+1071 of 764" on
+    // the outer screen, 1532+908 of 751 on the inner, a ratio of 3.25): it
+    // lay below the window, so nothing made room for it and the keyboard
+    // covered PTT and Done (the user: in Big buttons' Log the opened phone
+    // showed no PTT; Done unseen in a lower Controls drawer). Scaled back
+    // when its bottom lies that far past the window.
+    readonly property rect systemKeyboardRect: {
+        const r = Qt.inputMethod.keyboardRectangle
+        const dpr = Screen.devicePixelRatio
+        const s = Qt.platform.os === "android" && dpr > 1.05 && r.y + r.height > height * 1.2 ? 1 / dpr : 1
+        return Qt.rect(r.x * s, r.y * s, r.width * s, r.height * s)
+    }
     readonly property bool keyboardKeysShown: Qt.platform.os !== "ios" || keyboardRect.height >= 150
     readonly property bool onScreenKeyboard: (touchOs && Qt.inputMethod.visible && keyboardKeysShown) || Engine.testKeyboard
     // How much of the window's bottom it covers. The page and the controls
@@ -206,7 +219,9 @@ ApplicationWindow {
                 // In the engine's log, so a device's developer link and
                 // Send to the developer carry it (a QML console line did not).
                 Engine.logUi("keyboard: Done " + where + " at " + x + "," + y + "; keyboard "
-                             + Math.round(keyboard.y) + "+" + Math.round(keyboard.height) + " of " + window.height)
+                             + Math.round(keyboard.y) + "+" + Math.round(keyboard.height) + " of " + window.height
+                             + " (the system's " + Math.round(Qt.inputMethod.keyboardRectangle.y) + "+"
+                             + Math.round(Qt.inputMethod.keyboardRectangle.height) + ", ratio " + Screen.devicePixelRatio + ")")
             }
         }
         // The field scrolled into its page's sight once the page has made

@@ -12,7 +12,7 @@ the V version line (with " AUTH" and the auth handshake under --auth),
 C<seq>|cmd -> R<seq>|code|body, S0| state pushes and M| alerts. The PGXL
 answers info, setup read, status, setup writes (fan mode) and the radio's
 relayed operate=0/1 (STANDBY / IDLE, IDLE being OPERATE unkeyed); the TGXL
-answers info and status, the radio's relayed operate set= / bypass set=, steps its relays (tune relay=1..3 move=D, 1 = C1), switches
+answers info and status, the radio's relayed operate set= / bypass set=, steps its relays (tune relay=0..2 move=D, 0 = C1, as a real TGXL), switches
 its antenna (activate ant=N) and runs a 3 s autotune that ends with a new
 solution and a "Tuned SWR" alert. --transmit reports the amplifier keyed at
 1 kW. Every command received is printed, so a test can check what the app
@@ -206,8 +206,10 @@ def tgxl_handler(conn, peer, args):
                 with LOCK:
                     conn.sendall((tgxl_status(seq) + "\n").encode())
             elif cmd.startswith("tune "):
-                # 4O3A numbers the relays 1 = C1, 2 = L, 3 = C2.
-                name = {"1": "relayC1", "2": "relayL", "3": "relayC2"}.get(words.get("relay"))
+                # A real TGXL numbers the relays 0 = C1, 1 = L, 2 = C2 (a
+                # capture of 4O3A's program; a TGXL on 1.2.44), not 1-3 as
+                # 4O3A's protocol description has it.
+                name = {"0": "relayC1", "1": "relayL", "2": "relayC2"}.get(words.get("relay"))
                 if name and words.get("move") in ("1", "-1"):
                     with LOCK:
                         TGXL[name] = max(0, min(255, TGXL[name] + int(words["move"])))

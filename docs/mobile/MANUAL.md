@@ -3092,7 +3092,9 @@ where until build 207 it sat on the mode). With a hardware
 keyboard on an iPad there is no on-screen keyboard and no Done.
 
 While the on-screen keyboard is up the page makes room for it instead of
-lying under it: the display, **Macros** and **PTT** move up above the
+lying under it (on Android since beta 117: before it the keyboard's size
+came in screen pixels and no room was made, so an opened OnePlus Open had
+PTT under the keyboard upright): the display, **Macros** and **PTT** move up above the
 keyboard (the waterfall gets lower), the controls drawer and Setup end at
 its top, and the field you type in is scrolled into sight. **PTT keeps
 the field and its keyboard**: in a run, type the call, key, and go on
@@ -3243,8 +3245,11 @@ transmission, as opening its microphone ends the receive stream on some
 phones (it stayed silent until a restart; thanks Mattias SM6YEC), and
 since beta 116 the hands-free link is also taken again first, as at
 connecting, so receive comes back with the headset's *Media audio* off
-in Android's Bluetooth settings too (only *Calls* on). If receive still
-goes silent after PTT, turn on the headset's Media audio (Settings ›
+in Android's Bluetooth settings too (only *Calls* on). A PTT press shorter
+than the moment Android takes to open the headset's microphone does not
+open it at all (since beta 117: opened after the release and shut at
+once, it left the headset chirping until a longer press). If receive
+still goes silent after PTT, turn on the headset's Media audio (Settings ›
 Bluetooth › the gear beside the headset; on a Samsung *Audio*) and send
 the log: it says the headset's link and media audio after each
 transmission. Without
