@@ -9,11 +9,9 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- The Log tab: Setup > Logging > After logging > Back to the call now keeps the cursor in the call field with an iPad keyboard too (its Return let the field go, with either choice).
-- Big buttons' Log: the keyboard's Done sits in the call field's end, no longer on the mode.
-- The on-screen keyboard's Done works as Enter: it logs the call, sends the CW text, saves a name, then hides the keyboard.
-- Tuner Genius XL: C1, L and C2 step their own relays (C1 + moved L before; thanks Ben KT4O).
-- The on-screen keyboard stays up on an iPad in landscape (typing in the Log tab it went away at once), and PTT stays above it.
+- Log tab: Back to the call (Setup > Logging) keeps the cursor in the call field with an iPad keyboard too.
+- On-screen keyboard: Done works as Enter (logs the call, sends CW text, saves a name); it stays up on an iPad in landscape, PTT above it; in Big buttons' Log Done no longer covers the mode.
+- Tuner Genius XL: C1, L and C2 step their own relays (thanks Ben KT4O).
 
 RECENT (builds 94–206)
 - 206: FT8 / FT4 answered at once in the running slot (thanks George KF2T); the Log tab for a run (thanks Chris DM5HF).
