@@ -102,7 +102,13 @@ jobs:
     # Xcode 27, never a beta (App Store Connect refuses beta builds). Before
     # this, macos-15 with Xcode 26.3, as macos-26 runners went short in
     # October 2026.
-    runs-on: xcode-27
+    # The repository variable IOS_RUNNER picks another runner without a
+    # commit: GitHub's xcode-27 pool left build 207 and 208 unstarted
+    # (2026-11-23: "not acquired by Runner of type hosted"), so WarpBuild's
+    # warp-macos-26-arm64-6x (macOS 26 with Xcode 27, its GitHub App on this
+    # repository only, billed per minute) or GitHub's paid xcode-27-xlarge.
+    # Unset: xcode-27.
+    runs-on: ${{ vars.IOS_RUNNER || 'xcode-27' }}
     timeout-minutes: 150
     outputs:
       preview: ${{ steps.preview.outputs.preview }}
