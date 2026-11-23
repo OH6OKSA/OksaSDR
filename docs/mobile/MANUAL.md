@@ -3083,9 +3083,11 @@ tab logged a half-typed call at once). The iPad's GameController keyboard
 reading is not used on a Mac.
 
 **The on-screen keyboard** (since build 204; thanks Robin Bishop G5OUT):
-while it is up, **Done** by the field you type in puts it away (an
-iPhone's keyboard has no key for it, and Return in some fields acts: in
-the Log tab's call it logs the contact). It sits below the field at its
+while it is up, **Done** by the field you type in finishes the field as
+its Enter does and puts the keyboard away: in the Log tab's call it logs
+the contact, in CWX it sends the text, in a name it saves (since build
+211; before it Done only hid the keyboard). In an empty field, and one
+whose Enter does nothing (a comment), it only puts the keyboard away. It sits below the field at its
 right end, or above the field when the keyboard covers the space below
 (the screen then slides up to keep the field in sight), where it covers
 no button (else over the field's own empty end, as in Big buttons' Log,

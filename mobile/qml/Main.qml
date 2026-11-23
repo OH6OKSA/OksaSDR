@@ -330,13 +330,26 @@ ApplicationWindow {
         }
         contentItem: AppButton {
             objectName: "keyboardDone"
+            // The press-outside release (TextFocusRelease) leaves the field
+            // to Done, which finishes it first.
+            readonly property bool keepsTextFocus: true
             leftPadding: 16
             rightPadding: 16
             // A plain word: Android's font has no "⌄" (it showed a box).
             text: qsTr("Done")
-            Accessible.name: qsTr("Hide the keyboard")
+            Accessible.name: qsTr("Done: as Enter, then hide the keyboard")
             focusPolicy: Qt.NoFocus
             onClicked: {
+                // Done finishes the field as its Enter does, then puts the
+                // keyboard away (the user, build 210 on the iPad and the
+                // OnePlus: Done only hid the keyboard, so the call was not
+                // logged and the CW text not sent, "toimii epäloogisesti").
+                // An empty field, and one whose Enter does nothing, only
+                // lose the keyboard.
+                const field = window.activeFocusItem
+                if (field && field.cursorRectangle !== undefined && typeof field.accepted === "function"
+                        && String(field.text || "").trim().length > 0)
+                    field.accepted()
                 if (window.activeFocusItem)
                     window.activeFocusItem.focus = false
                 Qt.inputMethod.hide()
