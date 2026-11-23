@@ -9,13 +9,10 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Log tab: Back to the call (Setup > Logging) keeps the cursor in the call field with an iPad keyboard too.
-- On-screen keyboard: Done works as Enter (logs the call, sends CW text, saves a name); it stays up on an iPad in landscape, PTT above it; in Big buttons' Log Done no longer covers the mode.
-- Tuner Genius XL: C1, L and C2 step their own relays (thanks Ben KT4O).
-- A 13" iPad and a Mac window upright keep the controls beside the display, as in landscape.
-- iPad and Mac: the waterfall's buttons are in the PTT row, nothing over the waterfall; fields sized to content, Done beside them; the keyboard leaves the waterfall room.
+- PTT works while the Controls drawer is open at the side (iPad, Mac): a press on it only closed the drawer. The Log tab's call field and its keyboard stay while you key, so a run goes: type the call, key, type on, Log.
 
-RECENT (builds 94–206)
+RECENT (builds 94–211)
+- 211: Back to the call with an iPad keyboard; keyboard Done works as Enter and sits beside the field; the waterfall's buttons in the PTT row; a 13" iPad upright keeps the controls beside the display; TGXL relays (thanks Ben KT4O).
 - 206: FT8 / FT4 answered at once in the running slot (thanks George KF2T); the Log tab for a run (thanks Chris DM5HF).
 - 204: Spots tab; RBN and PSK Reporter spots; Heard me; an alert's Tune sets the mode; voice macros with the radio's mic (thanks Chris DM5HF); keyboard Done (thanks Robin G5OUT).
 - 202: tidier Controls, settings in Setup; spot alerts; Spots From; panadapters closed with their slices.

@@ -29,6 +29,9 @@ AppButton {
     // the display gets the room (Halt TX is on the Digi tab). RADE is voice
     // and keeps it.
     readonly property bool digiHidden: Engine.digiRunning && !Engine.rade
+    // A finger is on it: the button itself or one of its paddles (the side
+    // drawer's copy stays while held, OperatePage).
+    readonly property bool held: pressed || paddles.dit || paddles.dah
     // Transmit lock (TX tab, Larry Averbeck): in standby the button says SB
     // and a second's hold arms it (nothing is sent); armed, the time left
     // shows under the label as OA m:ss.

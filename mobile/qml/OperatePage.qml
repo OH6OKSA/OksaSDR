@@ -1293,6 +1293,61 @@ Page {
         }
     }
 
+    // PTT while the side drawer is open. The drawer is modal: a press outside
+    // it is not passed on and closes it, so the page's PTT, in full view
+    // under the drawer's lower edge, did nothing but close the drawer (the
+    // user, an opened OnePlus Open with the Log tab and the keyboard up:
+    // "PTT poistaa loginäkymän"; the call field and its keyboard went with
+    // it). As the upright drawer carries a PTT of its own, the side drawer
+    // has one too: a copy over the page's button, in a popup above the
+    // drawer, which takes the press. Everything else outside the drawer
+    // stays as it was (a tap closes the drawer and does nothing more).
+    // Not where the drawer covers the page's PTT (an own layout may put it
+    // there), and kept while held, should the drawer close under the finger.
+    readonly property bool sidePttClear: {
+        if (!canvasOn)
+            return true     // Classic: the drawer ends above the PTT row
+        // What moves the button or the drawer in an own layout.
+        page.width; page.height; ptt.width; ptt.height; ptt.parent
+        controlsDrawer.width; controlsDrawer.height; page.ws.active; page.layoutEditing
+        const at = ptt.mapToItem(page, 0, 0)
+        return at.x + ptt.width <= page.width - controlsDrawer.width || at.y >= controlsDrawer.height
+    }
+    readonly property bool sidePttWanted: controlsDrawer.visible && !stacked && ptt.visible && !ptt.digiHidden
+                                          && !Engine.bigButtons && sidePttClear
+    readonly property bool sidePttShown: sidePttWanted || sidePtt.held
+    Popup {
+        id: sidePttPopup
+        objectName: "sidePttPopup"
+        parent: ptt
+        x: 0
+        y: 0
+        // Open as long as the drawer is, from the moment it has opened: its
+        // place among the popups is then right above the drawer and under
+        // every dialog opened from the drawer later (Logbooks…, Setup),
+        // which cover it as they cover the page's PTT. Whether the button
+        // shows only sizes it: opened anew (a turned device, FT8 stopped) it
+        // would land above such a dialog.
+        visible: controlsDrawer.opened || sidePtt.held
+        width: page.sidePttShown ? ptt.width : 0
+        height: page.sidePttShown ? ptt.height : 0
+        margins: -1
+        padding: 0
+        modal: false
+        dim: false
+        focus: false
+        closePolicy: Popup.NoAutoClose
+        enter: null
+        exit: null
+        background: null
+        contentItem: PttButton {
+            id: sidePtt
+            objectName: "sidePtt"
+            visible: page.sidePttShown
+            fontPx: ptt.fontPx
+        }
+    }
+
     // Big buttons (roadmap 55) over the whole page, which keeps the keyboard
     // (Space and a Bluetooth PTT button key, the arrows tune). Made only
     // while on, so it costs nothing hidden.

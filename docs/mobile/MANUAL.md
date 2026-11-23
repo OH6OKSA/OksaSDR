@@ -1422,7 +1422,11 @@ the value types it); SPLIT again (or XIT off there) ends it.
 The button is always on top. On a phone an open controls drawer carries its
 own copy at the bottom, beside **Close** (which closes the drawer) and **▲**
 (full screen), and so does a tablet's drawer from the bottom; on a
-tablet on its side the drawer stops above the page's PTT, so nothing ever covers it.
+tablet on its side the drawer stops above the page's PTT, so nothing ever covers it,
+and PTT works while the drawer is open (since build 212 / Android beta 118: until
+then a press on it only closed the drawer; every other tap outside the drawer
+still closes it and does nothing more). In an own layout this holds where the
+drawer does not lie over the PTT block.
 When transmit is not possible (no TX slice, the radio's mic input not
 this device, a refusal), the reason shows above PTT and under the
 controls; on a phone the power and SWR show beside PTT while you
