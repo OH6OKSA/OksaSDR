@@ -3126,7 +3126,9 @@ the controls drawer above the keyboard is only as high as its tabs, three
 rows of fields and PTT, the display above it, where that leaves room (an
 11" iPad, an iPad mini; on a narrower screen, such as an opened OnePlus
 Open upright, the drawer takes the page above the keyboard). They come
-back when the keyboard goes. **PTT keeps
+back when the keyboard goes. On Android the keyboard never takes the
+whole screen in landscape (since beta 118: on a phone's low screen it hid
+the app). **PTT keeps
 the field and its keyboard**: in a run, type the call, key, and go on
 typing the report before **Log**. (On a phone in landscape Setup stays
 full size and slides up with the field, as there is too little room

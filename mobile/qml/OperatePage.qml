@@ -559,7 +559,12 @@ Page {
         anchors.topMargin: Theme.spacing
         // K2: the display ends above the short drawer, so the waterfall (not
         // only the spectrum over it) shows above it.
-        anchors.bottomMargin: Theme.spacing + Math.max(page.SafeArea.margins.bottom, 12)
+        // With the on-screen keyboard up the page already ends at its top:
+        // Android's navigation bar lies under the keyboard, and its inset
+        // left a band of 60 pt between PTT and the keyboard (the OnePlus
+        // Open, beta 117: "musta raita ... ihan turhaa"; in landscape the
+        // Log drawer then showed only its tabs).
+        anchors.bottomMargin: (page.keyboardUp ? Theme.spacing : Theme.spacing + Math.max(page.SafeArea.margins.bottom, 12))
                               + (page.keyboardDrawerShort && controlsDrawer.visible ? page.keyboardDrawerNeed : 0)
         columnSpacing: Theme.spacing
         rowSpacing: Theme.spacing
@@ -1187,7 +1192,7 @@ Page {
                                  ? (parent ? parent.height : page.height)
                                  : Math.min(page.height * 0.5, 560) + Math.max(0, page.Window.height - page.height))
                               : page.height - page.pttHeight - 2 * Theme.spacing
-                                - Math.max(page.SafeArea.margins.bottom, 12)
+                                - (page.keyboardUp ? 0 : Math.max(page.SafeArea.margins.bottom, 12))
         // From the window's edge: Qt otherwise keeps popups inside the safe
         // area (above Android's navigation bar).
         margins: 0

@@ -134,7 +134,9 @@ Page {
         anchors.leftMargin: Theme.spacing / 2 + page.SafeArea.margins.left
         anchors.rightMargin: Theme.spacing / 2 + page.SafeArea.margins.right
         anchors.topMargin: Theme.spacing / 2
-        anchors.bottomMargin: Theme.spacing / 2 + Math.max(page.SafeArea.margins.bottom, 8)
+        // Not over the keyboard: the navigation bar lies under it (OperatePage).
+        anchors.bottomMargin: Theme.spacing / 2 + (page.Window.window && page.Window.window.keyboardCover > 0
+                                                   ? 0 : Math.max(page.SafeArea.margins.bottom, 8))
         columns: 1
         columnSpacing: Theme.spacing / 2
         rowSpacing: Theme.spacing / 2

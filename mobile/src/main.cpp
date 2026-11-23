@@ -317,6 +317,13 @@ int main(int argc, char* argv[])
 #ifdef Q_OS_ANDROID
     addAndroidSymbolFallbacks();
     AetherSDR::mobile::androidStartup();
+    // The keyboard never full screen (roadmap 142, the OnePlus Open's outer
+    // screen in landscape, beta 117: Android's landscape "extract" keyboard
+    // covered the whole app and told it nothing, "vaakassa ei näy mitään
+    // muuta kuin näppiä"). Qt 6.12 reads this when a field takes the
+    // keyboard and sets IME_FLAG_NO_FULLSCREEN (QtEditText.java); Android's
+    // System.getenv reads the process environment live.
+    qputenv("QT_ANDROID_NO_FULLSCREEN_KEYBOARD", "1");
 #elif !defined(Q_OS_IOS) && !defined(Q_OS_MACOS)
     if (qEnvironmentVariableIsSet("AETHER_SYMBOL_FONTS")) {
         addAndroidSymbolFallbacks();

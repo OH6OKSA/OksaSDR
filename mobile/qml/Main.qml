@@ -98,8 +98,11 @@ ApplicationWindow {
         }
     }
     readonly property bool keyboardKeysShown: Qt.platform.os !== "ios" || keyboardRect.height >= 150
+    // On Android a rectangle under 120 is not the keyboard but a strip left
+    // of it (the OnePlus Open, beta 117: turned upright with no keyboard up,
+    // the Controls drawer took the whole page as it does above a keyboard).
     readonly property bool onScreenKeyboard: (touchOs && (Qt.platform.os === "android"
-                                                          ? systemKeyboardRect.height > 0
+                                                          ? systemKeyboardRect.height >= 120
                                                           : Qt.inputMethod.visible && keyboardKeysShown))
                                              || Engine.testKeyboard
     // How much of the window's bottom it covers. The page and the controls
@@ -109,6 +112,12 @@ ApplicationWindow {
     // koko vesiputouksen"). 0 when the system made the window shorter itself.
     readonly property real keyboardCover: onScreenKeyboard && keyboardRect.height > 0
                                           ? Math.max(0, Math.min(height * 0.7, height - keyboardRect.y)) : 0
+    // Each change in the log, with the system's numbers: the room a device
+    // makes (or not) can then be read from a tester's log.
+    onKeyboardCoverChanged: Qt.callLater(() => Engine.logUi("keyboard: cover " + Math.round(window.keyboardCover) + " of "
+        + window.width + "x" + window.height + " (the system's " + Math.round(Qt.inputMethod.keyboardRectangle.y) + "+"
+        + Math.round(Qt.inputMethod.keyboardRectangle.height) + ", ratio " + Screen.devicePixelRatio + "; safe area top "
+        + Math.round(pages.SafeArea.margins.top) + " bottom " + Math.round(pages.SafeArea.margins.bottom) + ")"))
 
     // The page follows the connection: radio list until connected.
     Loader {
@@ -260,7 +269,8 @@ ApplicationWindow {
                 Engine.logUi("keyboard: Done " + where + " at " + x + "," + y + "; keyboard "
                              + Math.round(keyboard.y) + "+" + Math.round(keyboard.height) + " of " + window.height
                              + " (the system's " + Math.round(Qt.inputMethod.keyboardRectangle.y) + "+"
-                             + Math.round(Qt.inputMethod.keyboardRectangle.height) + ", ratio " + Screen.devicePixelRatio + ")")
+                             + Math.round(Qt.inputMethod.keyboardRectangle.height) + ", ratio " + Screen.devicePixelRatio
+                             + "; safe area top " + Math.round(pages.SafeArea.margins.top) + " bottom " + Math.round(pages.SafeArea.margins.bottom) + ")")
             }
         }
         // The field scrolled into its page's sight once the page has made
