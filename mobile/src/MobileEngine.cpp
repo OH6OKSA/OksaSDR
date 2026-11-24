@@ -1626,10 +1626,25 @@ MobileEngine::MobileEngine(QObject* parent)
     // the app runs, which this client has no use for (roadmap 167).
     m_discovery = makeLocalRadioDiscoverySource(
         {.local = true, .simulator = true, .families = {QStringLiteral("flex")}});
-    connect(m_discovery.get(), &RadioDiscoverySource::radioChanged, this,
-            [this](const DiscoveredRadio& radio) { m_radios.upsert(radio); });
-    connect(m_discovery.get(), &RadioDiscoverySource::radioLost, this,
-            [this](const QString& family, const QString& serial) { m_radios.remove(family, serial); });
+    // A radio's coming to the list and its going are logged (roadmap 166):
+    // "it does not find my radio" and a check at the radio's own network
+    // were both read from a log that said nothing of it. The model, the
+    // version and the address; no serial number, no nickname.
+    connect(m_discovery.get(), &RadioDiscoverySource::radioChanged, this, [this](const DiscoveredRadio& radio) {
+        if (radio.transport != QLatin1String("sim") && m_radios.indexOf(radio.family, radio.serial) < 0) {
+            qCInfo(lcMobile).noquote() << "discovery: a radio on this network:" << radio.model
+                                       << QStringLiteral("v%1 at %2").arg(radio.version, radio.address)
+                                       << (radio.inUse ? "(in use)" : "");
+        }
+        m_radios.upsert(radio);
+    });
+    connect(m_discovery.get(), &RadioDiscoverySource::radioLost, this, [this](const QString& family, const QString& serial) {
+        if (const DiscoveredRadio* gone = m_radios.radioAt(m_radios.indexOf(family, serial));
+            gone && gone->transport != QLatin1String("sim")) {
+            qCInfo(lcMobile).noquote() << "discovery: the radio at" << gone->address << "is no longer on this network";
+        }
+        m_radios.remove(family, serial);
+    });
     m_discovery->start();
 }
 
@@ -1693,6 +1708,10 @@ void MobileEngine::connectToRadio(int row)
     }
     m_savedRadioAddress.clear();
     m_lastTarget = radio->address;
+    // The way in, in the log (roadmap 166): a radio found on this network.
+    qCInfo(lcMobile).noquote() << "connect:" << (radio->transport == QLatin1String("sim")
+        ? QStringLiteral("the demo radio")
+        : QStringLiteral("a radio found on this network, %1 v%2 at %3").arg(radio->model, radio->version, radio->address));
     RadioInfo info;
     info.family = radio->family;
     info.serial = radio->serial;
@@ -1769,6 +1788,7 @@ void MobileEngine::connectToHostAddress(const QString& entered, const QHostAddre
     emit lastAddressChanged();
     rememberSavedRadio(entered);
     m_savedRadioAddress = entered;
+    qCInfo(lcMobile).noquote() << "connect: by address," << entered;
     connectWithInfo(info, entered);
 }
 
@@ -2492,6 +2512,7 @@ void MobileEngine::connectSmartLinkRadioNow(int index, const QList<quint32>& dis
     m_wan.setValidateDelay(0);
     m_radioName = radio.nickname.isEmpty() ? radio.model : radio.nickname;
     setLastError({});
+    qCInfo(lcMobile).noquote() << "connect: over SmartLink," << radio.model;
     setConnectionState(QStringLiteral("connecting"));
     // The SmartLink server connection may have dropped (after a disconnect,
     // in the background, on a network change): sign in again from the kept

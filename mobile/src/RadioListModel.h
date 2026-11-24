@@ -35,6 +35,9 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     const DiscoveredRadio* radioAt(int row) const;
+    // The row of a radio, -1 when it is not on the list (the engine logs a
+    // radio's first appearance and its going: roadmap 166).
+    int indexOf(const QString& family, const QString& serial) const;
 
     void upsert(const DiscoveredRadio& radio);
     void remove(const QString& family, const QString& serial);
@@ -43,8 +46,6 @@ signals:
     void countChanged();
 
 private:
-    int indexOf(const QString& family, const QString& serial) const;
-
     QList<DiscoveredRadio> m_radios;
 };
 
