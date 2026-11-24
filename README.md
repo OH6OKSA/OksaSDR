@@ -507,7 +507,7 @@ landscape and Android pictures are taken from the devices.</sub>
 | PSK31 / PSK63 | ✅ PSK31 decoded live (LZ1AEY's CQ on 14.071) and a PSK31 QSO at 25 W with F6FPU near Lyon, answering our first CQ (2026-11-02); the decoder tested to -12 dB SNR, AFC and a neighbour 100 Hz away |
 | CW decoder | ✅ Decodes a strong signal cleanly and weak stations' calls (8–45 WPM, Sens filter against noise) |
 | LAN discovery on iOS | ⏳ Needs Apple's multicast entitlement. Connect by IP for now. |
-| LAN discovery on Android | 🧪 Built in; to be verified on the radio's own network |
+| LAN discovery on Android | ✅ The radio found on its own network (the developer, Android 16, beta 118, 2026-11-24) |
 
 **Next:** see the [roadmap](mobile/ROADMAP.md).
 
