@@ -43,31 +43,86 @@ Page {
             border.color: row.enabled ? Theme.accent : Theme.surface
             opacity: row.enabled ? 1.0 : 0.6
         }
-        contentItem: RowLayout {
-            spacing: Theme.spacing
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 2
-                Label { text: row.title; color: Theme.text; font.pixelSize: Theme.px(20); elide: Text.ElideRight; Layout.fillWidth: true }
-                Label { text: row.subtitle; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
-                Label { text: row.detail; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
+        // On a narrow page (page.stackCards) the name has the card's first
+        // row for itself, on two lines when it needs them, and "Connect ›"
+        // sits under it beside the second line: beside the chip a 344 pt
+        // screen left the name room for "★ OT…" at a large text size, and
+        // for half a name at any (Ian Gilchrist VK1HF; roadmap 164).
+        property bool stacked: false
+        contentItem: Loader { sourceComponent: row.stacked ? stackedContent : besideContent }
+        Component {
+            id: besideContent
+            RowLayout {
+                spacing: Theme.spacing
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
+                    Label { text: row.title; color: Theme.text; font.pixelSize: Theme.px(20); elide: Text.ElideRight; Layout.fillWidth: true }
+                    Label { text: row.subtitle; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
+                    Label { text: row.detail; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
+                }
+                ConnectChip { visible: row.enabled; down: row.down }
             }
-            Rectangle {
-                visible: row.enabled
-                implicitWidth: connectChip.implicitWidth + 2 * Theme.spacing
-                implicitHeight: Theme.touchTarget * 0.8
-                radius: Theme.radius
-                color: row.down ? Theme.buttonFaceDown : Theme.buttonFace
+        }
+        Component {
+            id: stackedContent
+            ColumnLayout {
+                spacing: 2
                 Label {
-                    id: connectChip
-                    anchors.centerIn: parent
-                    text: qsTr("Connect ›")
-                    color: Theme.buttonText
-                    font.pixelSize: Theme.px(16)
+                    text: row.title
+                    color: Theme.text
+                    font.pixelSize: Theme.px(20)
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 2
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.spacing
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Label { text: row.subtitle; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
+                        Label { text: row.detail; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
+                    }
+                    ConnectChip { visible: row.enabled; down: row.down }
                 }
             }
         }
     }
+
+    // "Connect ›" on a radio's card, beside the name or under it. Its text
+    // grows with the text size, as it did (keeping it at the buttons' size
+    // was the proposal's part (b), asked from the user and not chosen).
+    component ConnectChip: Rectangle {
+        property bool down: false
+        implicitWidth: chipLabel.implicitWidth + 2 * Theme.spacing
+        implicitHeight: Theme.touchTarget * 0.8
+        radius: Theme.radius
+        color: down ? Theme.buttonFaceDown : Theme.buttonFace
+        Label {
+            id: chipLabel
+            anchors.centerIn: parent
+            text: qsTr("Connect ›")
+            color: Theme.buttonText
+            font.pixelSize: Theme.px(16)
+        }
+    }
+
+    // The room the narrowest card on the page (a SmartLink radio's: inside
+    // the box, ☆ beside it) leaves a name beside "Connect ›". Under some 23
+    // characters of it (12 em), every card gives the name its own row
+    // (RadioRow.stacked): each phone upright, a narrow Split View pane, and
+    // wider windows only at a large text size. One rule for the page, so its
+    // cards look alike and none changes as a radio appears.
+    FontMetrics { id: chipMetrics; font.pixelSize: Theme.px(16) }
+    readonly property real nameRoomBeside: Math.min(scroll.availableWidth, 560)
+                                           - 2 * Theme.spacing                  // the SmartLink box's margins
+                                           - Theme.spacing - Theme.touchTarget  // ☆, ✕ or ✎ beside the card
+                                           - 24                                 // the card's own padding (Basic style)
+                                           - Theme.spacing - (chipMetrics.advanceWidth(qsTr("Connect ›")) + 2 * Theme.spacing)
+    readonly property bool stackCards: nameRoomBeside < 12 * Theme.px(20)
 
     PageScroll {
         id: scroll
@@ -182,6 +237,7 @@ Page {
             Repeater {
                 model: Engine.radios
                 delegate: RadioRow {
+                    stacked: page.stackCards
                     required property int index
                     required property string name
                     required property string nickname
@@ -231,6 +287,7 @@ Page {
                             spacing: Theme.spacing
                             RadioRow {
                                 objectName: "smartLinkFavourite" + favRow.index
+                                stacked: page.stackCards
                                 title: "★ " + favRow.modelData.name
                                 subtitle: favRow.modelData.account
                                           + (favRow.modelData.online ? "" : favRow.modelData.active && Engine.smartLinkState === "signedIn"
@@ -421,6 +478,7 @@ Page {
                                 spacing: Theme.spacing
                                 RadioRow {
                                     objectName: "smartLinkRadio" + wanRow.index
+                                    stacked: page.stackCards
                                     title: (wanRow.modelData.nickname.length > 0 ? wanRow.modelData.nickname + " — " : "") + wanRow.modelData.model
                                     subtitle: wanRow.modelData.status + (wanRow.modelData.reachable ? "" : qsTr("   not reachable"))
                                     enabled: Engine.connectionState === "idle" && wanRow.modelData.reachable
@@ -469,6 +527,7 @@ Page {
                     spacing: Theme.spacing
                     RadioRow {
                         objectName: "savedRadio" + savedRow.index
+                        stacked: page.stackCards
                         title: savedRow.userName || savedRow.radioName || savedRow.address
                         // The user's name over the radio's own, then the
                         // address on a line of its own.
