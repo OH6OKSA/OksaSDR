@@ -139,10 +139,12 @@ ApplicationWindow {
     onKeyboardCoverChanged: Qt.callLater(() => Engine.logUi("keyboard: cover " + Math.round(window.keyboardCover) + " of "
         + window.width + "x" + window.height + " (the system's " + Math.round(Qt.inputMethod.keyboardRectangle.y) + "+"
         + Math.round(Qt.inputMethod.keyboardRectangle.height) + ", ratio " + Screen.devicePixelRatio + "; bars top "
-        + Math.round(window.barTop) + " bottom " + Math.round(window.barBottom) + ")"))
+        + Math.round(window.barTop) + " bottom " + Math.round(window.barBottom) + "; the window at " + window.x + "," + window.y
+        + " of " + Screen.width + "x" + Screen.height + ")"))
     // The window and its bars in the log once they settle (a turn, a fold,
     // a resized window): a layout question from a tester's log starts here.
-    readonly property string geometryNote: width + "x" + height + ", bars top " + Math.round(barTop) + " bottom "
+    readonly property string geometryNote: width + "x" + height + " at " + x + "," + y + " of " + Screen.width + "x" + Screen.height
+                                           + ", bars top " + Math.round(barTop) + " bottom "
                                            + Math.round(barBottom) + ", the page " + Math.round(pages.width) + "x" + Math.round(pages.height)
     onGeometryNoteChanged: geometryLog.restart()
     Timer {

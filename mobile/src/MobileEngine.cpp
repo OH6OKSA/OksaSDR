@@ -385,9 +385,18 @@ public:
                 chain << QString::fromLatin1(up->metaObject()->className()).section(QLatin1Char('_'), 0, 0)
                              + (up->objectName().isEmpty() ? QString() : QLatin1Char(':') + up->objectName());
             }
-            qCInfo(lcMobile).noquote() << QStringLiteral("keyboard: a press at %1,%2 let the field go: %3")
+            // With the press as the screen has it and where the window is
+            // on its screen (an iPad in landscape with its keyboard up,
+            // build 213: eight presses meant for PTT and one for a field
+            // landed just under their targets; whether the view and the
+            // touches disagree there shows in these numbers).
+            const QPointF global = press->points().first().globalPosition();
+            const QRect screen = window->screen() ? window->screen()->geometry() : QRect();
+            qCInfo(lcMobile).noquote() << QStringLiteral("keyboard: a press at %1,%2 let the field go: %3 (on the screen %4,%5; the window at %6,%7 of %8x%9)")
                                               .arg(qRound(at.x())).arg(qRound(at.y()))
-                                              .arg(chain.isEmpty() ? QStringLiteral("nothing under it") : chain.join(QStringLiteral(" < ")));
+                                              .arg(chain.isEmpty() ? QStringLiteral("nothing under it") : chain.join(QStringLiteral(" < ")))
+                                              .arg(qRound(global.x())).arg(qRound(global.y()))
+                                              .arg(window->x()).arg(window->y()).arg(screen.width()).arg(screen.height());
             field->setFocus(false);
             // And the on-screen keyboard goes (roadmap 142, Robin Bishop
             // G5OUT's iPhone: an iPhone's keyboard has no key to hide it,
