@@ -18,8 +18,12 @@ public:
     {
         QStringList sources;
         if (m_options.local) {
-            sources = {QStringLiteral("flex"), QStringLiteral("hl2"), QStringLiteral("anan")};
-            if (RtlSdrDiscovery::isAvailable()) {
+            for (const QString& family : {QStringLiteral("flex"), QStringLiteral("hl2"), QStringLiteral("anan")}) {
+                if (wants(family)) {
+                    sources.append(family);
+                }
+            }
+            if (wants(QStringLiteral("rtl")) && RtlSdrDiscovery::isAvailable()) {
                 sources.append(QStringLiteral("rtl"));
             }
         }
@@ -38,16 +42,24 @@ public:
         m_started = true;
         m_running = true;
         if (m_options.local) {
-            m_flex = std::make_unique<RadioDiscovery>();
-            m_hl2 = std::make_unique<hl2::Hl2Discovery>();
-            m_anan = std::make_unique<anan::AnanDiscovery>();
-            wire(m_flex.get(), QStringLiteral("flex"), QStringLiteral("lan"));
-            wire(m_hl2.get(), QStringLiteral("hl2"), QStringLiteral("lan"));
-            wire(m_anan.get(), QStringLiteral("anan"), QStringLiteral("lan"));
-            m_flex->startListening();
-            m_hl2->start();
-            m_anan->start();
-            if (RtlSdrDiscovery::isAvailable()) {
+            // Only the families asked for are made at all: a source that is
+            // never made sends no probe (LocalDiscoveryOptions::families).
+            if (wants(QStringLiteral("flex"))) {
+                m_flex = std::make_unique<RadioDiscovery>();
+                wire(m_flex.get(), QStringLiteral("flex"), QStringLiteral("lan"));
+            }
+            if (wants(QStringLiteral("hl2"))) {
+                m_hl2 = std::make_unique<hl2::Hl2Discovery>();
+                wire(m_hl2.get(), QStringLiteral("hl2"), QStringLiteral("lan"));
+            }
+            if (wants(QStringLiteral("anan"))) {
+                m_anan = std::make_unique<anan::AnanDiscovery>();
+                wire(m_anan.get(), QStringLiteral("anan"), QStringLiteral("lan"));
+            }
+            if (m_flex) { m_flex->startListening(); }
+            if (m_hl2) { m_hl2->start(); }
+            if (m_anan) { m_anan->start(); }
+            if (wants(QStringLiteral("rtl")) && RtlSdrDiscovery::isAvailable()) {
                 m_rtl = std::make_unique<RtlSdrDiscovery>();
                 wire(m_rtl.get(), QStringLiteral("rtl"), QStringLiteral("usb"));
                 m_rtl->start();
@@ -91,6 +103,11 @@ private:
                 emit radioLost(family, serial);
             }
         });
+    }
+
+    bool wants(const QString& family) const
+    {
+        return m_options.families.isEmpty() || m_options.families.contains(family);
     }
 
     const LocalDiscoveryOptions m_options;

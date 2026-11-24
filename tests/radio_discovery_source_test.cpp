@@ -28,5 +28,18 @@ int main(int argc, char* argv[])
             return 1;
         }
     }
+    // A client that names its families gets only those: OksaSDR asks for
+    // "flex", so the HL2 and ANAN sweeps (a broadcast probe every five
+    // seconds) are never made. enabledSources() opens no socket.
+    {
+        const QStringList all = makeLocalRadioDiscoverySource({true, false})->enabledSources();
+        const QStringList flexOnly =
+            makeLocalRadioDiscoverySource({true, false, {QStringLiteral("flex")}})->enabledSources();
+        if (!all.contains(QStringLiteral("flex")) || !all.contains(QStringLiteral("hl2"))
+            || !all.contains(QStringLiteral("anan")) || flexOnly != QStringList{QStringLiteral("flex")}) {
+            std::fprintf(stderr, "a named family list must limit the local sources\n");
+            return 1;
+        }
+    }
     return 0;
 }

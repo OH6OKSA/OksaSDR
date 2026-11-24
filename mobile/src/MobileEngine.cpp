@@ -1621,7 +1621,11 @@ MobileEngine::MobileEngine(QObject* parent)
         });
     }
 
-    m_discovery = makeLocalRadioDiscoverySource({.local = true, .simulator = true});
+    // FlexRadios only: the shared source otherwise also sweeps for HL2 and
+    // ANAN radios, a broadcast to UDP 1024 every five seconds for as long as
+    // the app runs, which this client has no use for (roadmap 167).
+    m_discovery = makeLocalRadioDiscoverySource(
+        {.local = true, .simulator = true, .families = {QStringLiteral("flex")}});
     connect(m_discovery.get(), &RadioDiscoverySource::radioChanged, this,
             [this](const DiscoveredRadio& radio) { m_radios.upsert(radio); });
     connect(m_discovery.get(), &RadioDiscoverySource::radioLost, this,

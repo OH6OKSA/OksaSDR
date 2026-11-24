@@ -42,6 +42,12 @@ signals:
 struct LocalDiscoveryOptions {
     bool local{false}; // Explicit operator opt-in: LAN broadcasts/listening and USB scans.
     bool simulator{false}; // Demo identity only; never starts an RX/TX backend.
+    // The families to look for ("flex", "hl2", "anan", "rtl"); empty means
+    // every one. A client that serves one family names it and sends nothing
+    // for the others: the HL2 and ANAN sweeps broadcast a probe to UDP 1024
+    // every five seconds on every network the device is on, which a
+    // FlexRadio-only client has no use for (OksaSDR, roadmap 167).
+    QStringList families;
 };
 
 // Implementation lives below the vendor seam. Above-seam consumers see only
