@@ -44,6 +44,9 @@ ColumnLayout {
     // 520 for the whole fixed part: a 764 pt phone's 489 never reached it,
     // so List only scrolled the whole tab there and did nothing).
     readonly property bool useList: wantList && viewHeight >= 260
+    // The height the tab is to have while the list fills the view (0: its
+    // own height). ControlsPanel gives it, and the list takes what is over.
+    readonly property real viewFill: useList ? viewHeight : 0
 
     Timer {
         interval: 200
@@ -799,23 +802,34 @@ ColumnLayout {
             Engine.digiAnswer(modelData.index)
         }
     }
-    // List only: where the list starts, and the list in the rest of the
-    // view (four rows at least: the page scrolls a little if the settings
-    // open on a phone).
-    Item {
-        id: listTop
-        visible: digi.useList
-        Layout.fillWidth: true
-    }
     Repeater {
         model: digi.useList ? [] : digi.shown
         delegate: DecodeRow {}
     }
-    ListView {
-        id: decodeList
+    // (One more gap above the list, where the mark of its start was: the
+    // list stays where it was drawn.)
+    Item {
         visible: digi.useList
         Layout.fillWidth: true
-        Layout.preferredHeight: digi.useList ? Math.max(digi.listRows, digi.viewHeight - listTop.y - digi.spacing) : 0
+    }
+    // List only: the list in the rest of the view. The tab is as high as
+    // the view (viewFill) and the list is the one item that stretches; four
+    // rows at least, so the page scrolls a little if the settings open on a
+    // phone. Its height used to be worked out from where the list starts
+    // (the view's height less the list's y), which put the layout's own
+    // result back into what it is laid out from: with decodes in the list
+    // and the tab loaded but not shown (another tab open in the drawer: no
+    // width), the tab's height went down a point a pass and the app stood
+    // still (the preview of build 213: a OnePlus Open froze after unfolding
+    // with FT8 running; the same with the Log tab opened on a tablet).
+    ListView {
+        id: decodeList
+        objectName: "digiDecodeList"
+        visible: digi.useList
+        Layout.fillWidth: true
+        Layout.fillHeight: digi.useList
+        Layout.minimumHeight: digi.useList ? digi.listRows : 0
+        Layout.preferredHeight: digi.useList ? digi.listRows : 0
         clip: true
         spacing: digi.spacing
         boundsBehavior: Flickable.StopAtBounds

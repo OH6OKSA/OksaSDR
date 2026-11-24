@@ -217,9 +217,24 @@ ColumnLayout {
                 Loader {
                     width: tabScroll.availableWidth
                     sourceComponent: tabScroll.modelData.component
-                    // A tab that can fill the view (FTx's List only) gets its height.
-                    onLoaded: if (item.hasOwnProperty("viewHeight"))
-                                  item.viewHeight = Qt.binding(() => tabScroll.availableHeight)
+                    // A tab that can fill the view (FTx's List only) is
+                    // told the view's height, and is made that high when
+                    // it asks (viewFill): what stretches in it is its own
+                    // matter. Other tabs keep their own height.
+                    // Only the tab shown has a view: the stack sizes no
+                    // other, so a tab not shown is as high as its content,
+                    // and its "view's height" was its own height. The FTx
+                    // tab took that for room for the list, became shorter,
+                    // lost the room, grew again with every decode as a row,
+                    // and so on without end: the app stood still (build
+                    // 213's preview, FT8 with decodes and List only on,
+                    // another tab open: a OnePlus Open after unfolding,
+                    // where the tab went back to DSP).
+                    onLoaded: if (item.hasOwnProperty("viewHeight")) {
+                                  item.viewHeight = Qt.binding(() => tabScroll.StackLayout.isCurrentItem
+                                                                     ? tabScroll.availableHeight : 0)
+                                  height = Qt.binding(() => item ? Math.max(item.implicitHeight, item.viewFill) : 0)
+                              }
                 }
             }
         }
@@ -278,9 +293,12 @@ ColumnLayout {
                         // only) gets it here as in the drawer (roadmap 169:
                         // the pinned panel had no List only at all). With
                         // more sections the panel scrolls as one, as before.
-                        onLoaded: if (item.hasOwnProperty("viewHeight"))
+                        onLoaded: if (item.hasOwnProperty("viewHeight")) {
                                       item.viewHeight = Qt.binding(() => panel.pinnedShown === 1
                                                                          ? Math.max(0, pinnedScroll.availableHeight - pinnedSection.y - pinnedLoader.y) : 0)
+                                      Layout.preferredHeight = Qt.binding(() => item && item.viewFill > 0
+                                                                                ? Math.max(item.implicitHeight, item.viewFill) : -1)
+                                  }
                     }
                 }
             }
