@@ -87,6 +87,21 @@ ColumnLayout {
     // A section shown by name (roadmap 137: a spot's Tune brings its mode's
     // tab): the drawer switches to it; the pinned panel adds it to the
     // pinned sections when it is not among them.
+    // How many of the pinned sections show: a stored name of a section this
+    // radio does not offer now (Amp with no amplifier set, a tab of an older
+    // build) is in the list but not on screen, and counted as a second
+    // section it took List only from an iPad with FTx alone (the user, the
+    // preview of build 213: "ei ole list only valintaa???").
+    readonly property int pinnedShown: {
+        const pinned = Engine.pinnedSections
+        let n = 0
+        for (let i = 0; i < sections.length; ++i) {
+            if (pinned.indexOf(sections[i].name) >= 0)
+                ++n
+        }
+        return n
+    }
+
     function showSection(name) {
         if (panel.multiSelect) {
             if (Engine.pinnedSections.indexOf(name) < 0)
@@ -264,7 +279,7 @@ ColumnLayout {
                         // the pinned panel had no List only at all). With
                         // more sections the panel scrolls as one, as before.
                         onLoaded: if (item.hasOwnProperty("viewHeight"))
-                                      item.viewHeight = Qt.binding(() => Engine.pinnedSections.length === 1
+                                      item.viewHeight = Qt.binding(() => panel.pinnedShown === 1
                                                                          ? Math.max(0, pinnedScroll.availableHeight - pinnedSection.y - pinnedLoader.y) : 0)
                     }
                 }
