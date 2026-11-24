@@ -8227,6 +8227,13 @@ void MobileEngine::recallMemory(int index)
         rm.recallCachedMemory(index);
         return;
     }
+    // The radio applies a memory to its ACTIVE slice, while the retune below
+    // names ours: where the two differ (the radio kept another slice active,
+    // as after a profile load), both slices moved. Ours is made active first
+    // (upstream #7502, 55f891971; roadmap 153).
+    if (m_slice) {
+        rm.sendCommand(QStringLiteral("slice set %1 active=1").arg(m_slice->sliceId()));
+    }
     rm.sendCommand(QStringLiteral("memory apply %1").arg(index));
     // As the desktop: the radio's memory apply sets the repeater direction and
     // shift but not tx_offset_freq, which moves the transmitter, so a
@@ -12302,6 +12309,13 @@ enum class PlanUse { None, Cw, Phone, All };
 // SSB/DIGI, CW/NB), data, beacons, AM and FM give no mode and allow any.
 PlanUse segmentUse(const BandPlanManager::Segment& seg)
 {
+    // An all-mode row the plan gives to digimodes ("Digimodes", the SSA's
+    // "Digimoder": 1.840-1.843 with FT8, 14.101-14.112 ...) sets no mode, as
+    // while those rows were labelled DIGI (roadmap 152): phone by default
+    // there would turn a digi slice to SSB on its way in.
+    if (seg.usage.contains(QLatin1String("digimod"), Qt::CaseInsensitive)) {
+        return PlanUse::None;
+    }
     static const QRegularExpression power(QStringLiteral("\\s+\\d+W$"));
     QString label = seg.label.trimmed().toUpper();
     label.remove(power);

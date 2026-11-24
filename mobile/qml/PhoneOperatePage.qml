@@ -116,7 +116,11 @@ Page {
                     MenuItem { text: qsTr("Radio Setup"); onTriggered: radioSetup.open() }
                     MenuItem { text: qsTr("Manual"); onTriggered: Qt.openUrlExternally(Engine.manualUrl) }
                     MenuItem { text: qsTr("Log"); onTriggered: logPage.open() }
-                    MenuItem { text: qsTr("Big buttons"); onTriggered: Engine.bigButtons = true }
+                    MenuItem {
+                        // Already there, it leaves (roadmap 161).
+                        text: Engine.bigButtons ? qsTr("Exit Big buttons") : qsTr("Big buttons")
+                        onTriggered: Engine.bigButtons = !Engine.bigButtons
+                    }
                     MenuItem { text: qsTr("Disconnect"); onTriggered: Engine.disconnectRadio("the ⋯ menu's Disconnect") }
                 }
             }

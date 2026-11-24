@@ -907,7 +907,12 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                               << m.value(QStringLiteral("mode")).toString()
                               << (m.value(QStringLiteral("tx")).toBool() ? "TX" : "")
                               << (m.value(QStringLiteral("active")).toBool() ? "active" : "")
-                              << QStringLiteral("pan=%1").arg(m.value(QStringLiteral("panId")).toString());
+                              << QStringLiteral("pan=%1").arg(m.value(QStringLiteral("panId")).toString())
+                              // The radio's own number (for radiostatus slice N ...) and the
+                              // filter, which a memory recall changes too (roadmap 153's test).
+                              << QStringLiteral("id=%1").arg(m.value(QStringLiteral("id")).toInt())
+                              << QStringLiteral("filter=%1..%2").arg(m.value(QStringLiteral("filterLow")).toInt())
+                                     .arg(m.value(QStringLiteral("filterHigh")).toInt());
         }
         // This station's panadapters (roadmap 127: an emptied one closes).
         qInfo().noquote() << "shot-plan: panadapters" << m_engine.panCount();

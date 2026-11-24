@@ -403,7 +403,11 @@ the one last chosen), on HF (below 30 MHz).
   bringing it, gives a notice and the part's mode.
 - An **all-mode part** (IARU's ALL) sets the sideband but allows any mode
   (FT8 on 7.074 in Region 1 stays DIGU); data, beacon and mixed parts
-  allow any mode and set none.
+  allow any mode and set none. Nor do the all-mode rows a plan gives to
+  digimodes (in *IARU Region 1* and *SSA (Sweden)*: 1.840–1.843,
+  3.600–3.620, 7.050–7.060, 14.101–14.112, 18.111–18.120, 24.931–24.940
+  and 29.200–29.300 MHz; most of them read DIGI on the strip before build
+  212 / Android beta 118): a DIGU slice tuned into them stays DIGU.
 - Inside a part the mode you chose stays while you tune.
 - For a contest that uses the whole band, turn the lock off (tap PLAN):
   any mode on any frequency.
@@ -761,7 +765,10 @@ main screen with a few large controls, for the car (the device mounted,
 used as the law allows), gloves or a glance (asked by Michael Walker):
 
 - **Exit** at the top left, as large as the slice buttons: hold it a
-  moment (half the usual press and hold) to leave; a tap only says so.
+  moment (half the usual press and hold) to leave; a tap only says so
+  (*hold to exit*, in amber). The button and menu item that opened Big
+  buttons leave it too: they read **Exit Big buttons** while it is on
+  (since build 212 / Android beta 118; thanks Kent Winrich).
 - **The slices** beside it as on the main screen: the transmit slice's
   chip shows its letter and the set power (*TX 100 W*; a % on an Aurora,
   AMP with an amplifier in Operate), the others their letter. A tap makes a

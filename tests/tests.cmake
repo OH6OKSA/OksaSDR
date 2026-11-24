@@ -7753,6 +7753,8 @@ add_test(NAME device_diagnostics_test COMMAND device_diagnostics_test)
 add_executable(midi_settings_test
     tests/midi_settings_test.cpp
     src/core/MidiSettings.cpp
+    # This fork's MidiSettings takes its directory from SettingsPaths.
+    src/core/SettingsPaths.cpp
 )
 target_compile_definitions(midi_settings_test PRIVATE HAVE_MIDI)
 

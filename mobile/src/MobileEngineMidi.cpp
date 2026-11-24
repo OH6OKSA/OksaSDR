@@ -57,6 +57,21 @@ const QString kMidiVfoParam = QStringLiteral("rx.tuneKnob");
 // and an accelerating encoder seldom ramps by exactly one this long.
 constexpr int kMidiVfoPositionRun = 6;
 const QString kMidiTransmitKey = QStringLiteral("MobileMidiTransmit");
+// A preference save (the device to return to, connect by itself). MidiSettings
+// refuses one while midi.settings cannot be read or parsed, so that a damaged
+// file stays for the operator to restore (upstream #6846). On a phone or a
+// tablet nobody can reach that file: there the bindings in use replace it, as
+// before the refusal, and the preference is saved with them (roadmap 154).
+void saveMidiPreferences(MidiControlManager* midi)
+{
+    if (MidiSettings::instance().save() || !midi) {
+        return;
+    }
+    const bool rewritten = MidiSettings::instance().saveBindings(midi->bindings());
+    qCWarning(lcMobile) << "MIDI: midi.settings could not be read; rewritten from the bindings in use:"
+                        << (rewritten ? "saved" : "not saved");
+}
+
 } // namespace
 
 void MobileEngine::setupMidi()
@@ -190,7 +205,7 @@ void MobileEngine::setupMidi()
             }
         }
         MidiSettings::instance().setLastDevice(name);
-        MidiSettings::instance().save();
+        saveMidiPreferences(m_midi);
         emit midiChanged();
     });
     connect(m_midi, &MidiControlManager::portClosed, this, [this] {
@@ -630,7 +645,7 @@ void MobileEngine::midiOpen(const QString& port)
 {
     if (m_midi->openPortByName(port)) {
         MidiSettings::instance().setAutoConnect(true);
-        MidiSettings::instance().save();
+        saveMidiPreferences(m_midi);
     }
     emit midiChanged();
 }
@@ -639,7 +654,7 @@ void MobileEngine::midiClose()
 {
     // Not opened again by itself until chosen again.
     MidiSettings::instance().setAutoConnect(false);
-    MidiSettings::instance().save();
+    saveMidiPreferences(m_midi);
     m_midi->closePort();
     qCInfo(lcMobile) << "MIDI: closed by the operator";
     emit midiChanged();
@@ -769,7 +784,7 @@ void MobileEngine::midiPair()
 void MobileEngine::setMidiAutoConnect(bool on)
 {
     MidiSettings::instance().setAutoConnect(on);
-    MidiSettings::instance().save();
+    saveMidiPreferences(m_midi);
     emit midiChanged();
     if (on) {
         midiWatch();

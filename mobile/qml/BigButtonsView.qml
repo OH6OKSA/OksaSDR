@@ -401,7 +401,9 @@ Rectangle {
                 id: holdHint
                 visible: false
                 text: qsTr("hold to exit")
-                color: Theme.textDim
+                // Amber: in the dim text colour it went unseen (roadmap 161).
+                // Not bold, which is wider and pushed the mode off a phone's row.
+                color: Theme.warning
                 font.pixelSize: Theme.px(14)
                 Timer { running: holdHint.visible; interval: 2500; onTriggered: holdHint.visible = false }
             }

@@ -19,9 +19,12 @@ ColumnLayout {
     AppButton {
         objectName: "bigButtonsOpen"
         Layout.fillWidth: true
-        text: qsTr("Big buttons")
+        // Already there, it leaves: the button did nothing then, and a tester
+        // who had not found Exit's hold took himself for stuck (Kent
+        // Winrich, FB 2026-11-24, Android beta 117; roadmap 161).
+        text: Engine.bigButtons ? qsTr("Exit Big buttons") : qsTr("Big buttons")
         focusPolicy: Qt.NoFocus
-        onClicked: Engine.bigButtons = true
+        onClicked: Engine.bigButtons = !Engine.bigButtons
     }
     Label {
         Layout.fillWidth: true
