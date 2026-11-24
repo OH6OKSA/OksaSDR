@@ -1271,10 +1271,20 @@ Page {
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: Theme.spacing
-            // Qt already pads a popup's content by the safe area.
+            // Qt already pads a popup's content by the safe area. A drawer
+            // that reaches the window's bottom keeps the page's own margin
+            // there (its Close and PTT level with the page's row). The side
+            // drawer that ends above the PTT row has no edge under it: half
+            // a spacing, as the phone's drawer. It had the full margin and
+            // 12 more, 23 pt of nothing between its last line and PTT (the
+            // user, the preview of build 213, marked in red: "controls
+            // laatikon alalaitaa ennen ptt ... jos tuota mustaa tyhjää siinä
+            // ei olisi teksti näkyisi kokonaan").
             anchors.bottomMargin: controlsDrawer.keyboardOver > 0
                                   ? Theme.spacing + Math.max(0, controlsDrawer.keyboardOver - controlsDrawer.SafeArea.margins.bottom)
-                                  : Theme.spacing + Math.max(0, 12 - controlsDrawer.SafeArea.margins.bottom)
+                                  : controlsDrawer.height >= page.Window.height - 1
+                                  ? Theme.spacing + Math.max(0, 12 - controlsDrawer.SafeArea.margins.bottom)
+                                  : Theme.spacing / 2
             spacing: Theme.spacing
             ControlsPanel {
                 id: drawerPanel
