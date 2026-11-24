@@ -702,10 +702,10 @@ Page {
                 }
                 AppButton {
                     objectName: "closeControls"
-                    Layout.fillWidth: Engine.digiRunning && !Engine.rade
+                    Layout.fillWidth: ptt.digiHidden
                     Accessible.name: qsTr("Close controls")
                     Layout.preferredWidth: Math.max(110, page.width * 0.22)
-                    Layout.preferredHeight: Engine.digiRunning && !Engine.rade ? Theme.touchTarget : page.pttHeight
+                    Layout.preferredHeight: ptt.digiHidden ? Theme.touchTarget : page.pttHeight
                     onClicked: controlsDrawer.close()
                     contentItem: Label {
                         text: qsTr("Close")
@@ -722,7 +722,7 @@ Page {
                     visible: !page.landscape
                     Accessible.name: page.controlsFull ? qsTr("Smaller controls") : qsTr("Full-screen controls")
                     Layout.preferredWidth: Theme.touchTarget
-                    Layout.preferredHeight: Engine.digiRunning && !Engine.rade ? Theme.touchTarget : page.pttHeight
+                    Layout.preferredHeight: ptt.digiHidden ? Theme.touchTarget : page.pttHeight
                     onClicked: page.controlsFull = !page.controlsFull
                     contentItem: Item {
                         Caret {

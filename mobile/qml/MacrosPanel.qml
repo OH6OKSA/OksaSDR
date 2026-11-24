@@ -23,7 +23,7 @@ Popup {
 
     // Which macros: "cw", "text" or "voice"; "" while the mode has none
     // (FT8 / FT4 running, no CWX, no voice keyer).
-    readonly property string kind: Engine.digiRunning && !Engine.rade ? ""
+    readonly property string kind: Engine.digiOwnsTx && !Engine.rade ? ""
         : Engine.cwMode ? (Engine.cwxAvailable ? "cw" : "")
         : Engine.textModeActive ? "text"
         : Engine.dvkState !== "unavailable" ? "voice" : ""

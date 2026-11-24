@@ -351,6 +351,13 @@ class MobileEngine : public QObject {
     // ---- Digi tab: FT8 / FT4 on this device ----
     // Decoding on or off; "FT8" or "FT4"; the transmit audio frequency (Hz).
     Q_PROPERTY(bool digiRunning READ digiRunning WRITE setDigiRunning NOTIFY digiChanged)
+    // FT8 / FT4 have the transmitter: decoding runs and the slice they key
+    // (the TX slice) is in DIGU or DIGL. Only then do the pages hide PTT
+    // and Macros. They hid them whenever decoding ran: with Decode pressed
+    // on a slice in LSB (no mode change follows, so decoding stays on) or
+    // decoding kept for another slice, a voice slice had no PTT (the user,
+    // 2026-11-24, the preview of build 213: "ptt hävisi nyt kokonaan").
+    Q_PROPERTY(bool digiOwnsTx READ digiOwnsTx NOTIFY digiChanged)
     Q_PROPERTY(QString digiProtocol READ digiProtocol WRITE setDigiProtocol NOTIFY digiChanged)
     Q_PROPERTY(int digiTxHz READ digiTxHz WRITE setDigiTxHz NOTIFY digiChanged)
     // The transmit audio level in dB below full scale (-20 to 0), as WSJT-X's
@@ -1439,6 +1446,7 @@ public:
     Q_INVOKABLE QStringList qsoLogbooks() const;
 
     bool digiRunning() const;
+    bool digiOwnsTx() const;
     void setDigiRunning(bool on);
     // The active slice's FT8 / FT4 (the FTx tab's buttons and bands); each
     // slice has its own (roadmap 96), the TX by the TX slice's.

@@ -30,7 +30,9 @@ ColumnLayout {
     // until decoding runs; the Show choices go under More with the
     // settings. Before, the fixed part took 373 pt of a phone's 529 and
     // left the list four rows.
-    readonly property bool setupShown: settingsShown || !Engine.digiRunning
+    // Nor while decoding is on for a TX slice outside DIGU / DIGL (Decode
+    // pressed in LSB): Decode and the bands then say so and mend it.
+    readonly property bool setupShown: settingsShown || !Engine.digiOwnsTx
     // Where the view is too low for the main buttons and four rows (a
     // phone on its side, the drawer at half height), the whole tab scrolls
     // as before. Decided from the view's height alone: judged from where

@@ -27,8 +27,9 @@ AppButton {
     property QtObject paddleState: null
     // FT8 / FT4 decoding keys the radio itself: the pages hide PTT then, so
     // the display gets the room (Halt TX is on the Digi tab). RADE is voice
-    // and keeps it.
-    readonly property bool digiHidden: Engine.digiRunning && !Engine.rade
+    // and keeps it, and so does a TX slice in a voice mode while decoding is
+    // on (Engine.digiOwnsTx: it had no PTT at all).
+    readonly property bool digiHidden: Engine.digiOwnsTx && !Engine.rade
     // A finger is on it: the button itself or one of its paddles (the side
     // drawer's copy stays while held, OperatePage).
     readonly property bool held: pressed || paddles.dit || paddles.dah

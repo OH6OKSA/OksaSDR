@@ -197,6 +197,16 @@ bool MobileEngine::digiRunning() const
     return m_digiOn;
 }
 
+bool MobileEngine::digiOwnsTx() const
+{
+    if (!m_digiOn) {
+        return false;
+    }
+    // No slice known yet (decoding just turned on): as before, theirs.
+    const SliceModel* slice = digiSlice();
+    return !slice || slice->mode() == QLatin1String("DIGU") || slice->mode() == QLatin1String("DIGL");
+}
+
 void MobileEngine::setDigiRunning(bool on)
 {
     if (!m_ft8 || on == m_digiOn) {
@@ -224,6 +234,26 @@ void MobileEngine::setDigiRunning(bool on)
             m_slice->setTxSlice(true);
         }
         bindDigiSlice(m_session.radioModel().txSlice() ? m_session.radioModel().txSlice() : m_slice.data());
+        // FT8 / FT4 are DIGU / DIGL modes, and a decoder goes with its mode
+        // (the user, 2026-11-24: "decodaukset liittyvät aina tiettyihin mode
+        // valintoihin muulloin ne eivät voi jäädä päälle"). Decode pressed on
+        // a slice in another mode takes that slice to DIGU where it is, as a
+        // band button does on its dial frequency; leaving DIGU / DIGL ends
+        // decoding again (bindDigiSlice's guard). Before, decoding started
+        // on a slice in LSB and stayed there: no decodes, and no PTT.
+        if (SliceModel* slice = digiSlice();
+            slice && slice->mode() != QLatin1String("DIGU") && slice->mode() != QLatin1String("DIGL")) {
+            qCInfo(lcMobile) << "digi: slice" << slice->letter() << "to DIGU for decoding, it was in" << slice->mode();
+            const bool active = slice == m_slice.data();
+            if (active) {
+                armModeAgc();
+            }
+            slice->setMode(QStringLiteral("DIGU"));
+            if (active) {
+                applyModeAgc();
+            }
+            QTimer::singleShot(700, this, [this] { widenDigiFilter(); });
+        }
         if (!m_ntpSynced.isValid() || m_ntpSynced.elapsed() > kNtpResyncMs) {
             m_ntp->sync();
         }
