@@ -11413,6 +11413,11 @@ void MobileEngine::setConnectionState(const QString& state)
         m_connectionState = state;
         qCInfo(lcMobile) << "connection state" << state;
         emit connectionStateChanged();
+        // A new connection starts with the Controls drawer closed (it is
+        // kept open only across a page built anew while connected).
+        if (state != QLatin1String("connected")) {
+            setControlsDrawerOpen(false);
+        }
         // A connect or reconnect gets time to finish in the background; once
         // up, its receive audio keeps the app running (3 s for it to start).
         if (state == QLatin1String("connecting")) {

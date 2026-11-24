@@ -72,8 +72,16 @@ Page {
 
     // A layout switch (rotation, fold/unfold) destroys this page; a held
     // PTT must not outlive its button.
-    Component.onCompleted: page.forceActiveFocus()
+    // The Controls drawer open again on a page built anew while it was open
+    // (a foldable's other screen): see Engine.controlsDrawerOpen.
+    property bool leaving: false
+    Component.onCompleted: {
+        page.forceActiveFocus()
+        if (Engine.controlsDrawerOpen)
+            Qt.callLater(() => controlsDrawer.open())
+    }
     Component.onDestruction: {
+        leaving = true
         Engine.keyboardOnPage = false
         Engine.stopTransmit("layout changed")
     }
@@ -642,6 +650,8 @@ Page {
             Engine.setPtt(false, "controls drawer opened")
             Engine.setCwKey(false, "controls drawer opened")
         }
+        onOpened: Engine.controlsDrawerOpen = true
+        onClosed: if (!page.leaving) Engine.controlsDrawerOpen = false
         background: Rectangle {
             color: Theme.surface
             // Light: opaque, as the page's dark text showed through.

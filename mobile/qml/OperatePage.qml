@@ -1257,6 +1257,8 @@ Page {
             Engine.setPtt(false, "controls drawer opened")
             Engine.setCwKey(false, "controls drawer opened")
         }
+        onOpened: Engine.controlsDrawerOpen = true
+        onClosed: if (!page.leaving) Engine.controlsDrawerOpen = false
         background: Rectangle {
             color: Theme.surface
             // Light: opaque, as the page's dark text showed through.
@@ -1539,13 +1541,20 @@ Page {
         id: freqDialog
         onClosed: page.forceActiveFocus()
     }
+    // The Controls drawer open again on a page built anew while it was open
+    // (a foldable's other screen): see Engine.controlsDrawerOpen. Not where
+    // the controls are pinned instead.
+    property bool leaving: false
     Component.onCompleted: {
         page.forceActiveFocus()
         Qt.callLater(page.migrateSlices)
+        if (Engine.controlsDrawerOpen)
+            Qt.callLater(() => { if (!(page.canvasOn ? page.canvasControls : page.panelPinned)) controlsDrawer.open() })
     }
     // A layout switch (rotation, Split View, fold/unfold) destroys this page;
     // a held PTT must not outlive its button.
     Component.onDestruction: {
+        leaving = true
         Engine.keyboardOnPage = false
         Engine.stopTransmit("layout changed")
     }

@@ -266,6 +266,14 @@ class MobileEngine : public QObject {
     Q_PROPERTY(QString connectionCheckTarget READ connectionCheckTarget NOTIFY connectionCheckChanged)
     Q_PROPERTY(bool remoteSession READ remoteSession NOTIFY connectionStateChanged)
     Q_PROPERTY(bool controlsVisible READ controlsVisible WRITE setControlsVisible NOTIFY controlsVisibleChanged)
+    // The Controls drawer's tab and whether the drawer is open, kept while
+    // the app runs and the radio stays connected: a foldable turned between
+    // its screens (a window crossing the phone / tablet line) builds the page
+    // anew, which put the drawer back to DSP and closed it (the user,
+    // 2026-11-24, the OnePlus Open with FT8 running: "controls hyppää aina
+    // dsp painikkeeseen kun näyttöä vaihdetaan").
+    Q_PROPERTY(QString controlsSection READ controlsSection WRITE setControlsSection NOTIFY controlsSectionChanged)
+    Q_PROPERTY(bool controlsDrawerOpen READ controlsDrawerOpen WRITE setControlsDrawerOpen NOTIFY controlsDrawerOpenChanged)
     Q_PROPERTY(bool tuneRowsShown READ tuneRowsShown WRITE setTuneRowsShown NOTIFY tuneRowsChanged)
     Q_PROPERTY(bool radioStepButtons READ radioStepButtons WRITE setRadioStepButtons NOTIFY tuneRowsChanged)
     Q_PROPERTY(bool transmitAvailable READ transmitAvailable NOTIFY transmitStateChanged)
@@ -1151,6 +1159,22 @@ public:
     // the room (PTT always stays). Remembered on the device.
     bool controlsVisible() const;
     void setControlsVisible(bool visible);
+    QString controlsSection() const { return m_controlsSection; }
+    void setControlsSection(const QString& name)
+    {
+        if (name != m_controlsSection) {
+            m_controlsSection = name;
+            emit controlsSectionChanged();
+        }
+    }
+    bool controlsDrawerOpen() const { return m_controlsDrawerOpen; }
+    void setControlsDrawerOpen(bool open)
+    {
+        if (open != m_controlsDrawerOpen) {
+            m_controlsDrawerOpen = open;
+            emit controlsDrawerOpenChanged();
+        }
+    }
     // The band row and the step buttons, or hidden behind B/S on the display
     // so the waterfall has their height (Larry Averbeck); remembered.
     bool tuneRowsShown() const;
@@ -2325,6 +2349,8 @@ signals:
     void savedRadiosChanged();
     void connectionCheckChanged();
     void controlsVisibleChanged();
+    void controlsSectionChanged();
+    void controlsDrawerOpenChanged();
     void tuneRowsChanged();
     void smartLinkChanged();
     void smartLinkRadiosChanged();
@@ -3075,6 +3101,8 @@ private:
     bool m_testKeyboard{false};
     int m_testKeyboardHeight{0};
     bool m_testAddButtons{false};
+    QString m_controlsSection;
+    bool m_controlsDrawerOpen{false};
     int m_testSafeTop{0};
     int m_testSafeBottom{0};
     // Roadmap 143: the radio's mic input a voice macro switched from, and

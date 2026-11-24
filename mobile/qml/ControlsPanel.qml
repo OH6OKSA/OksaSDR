@@ -140,6 +140,12 @@ ColumnLayout {
         id: tabs
         objectName: "controlsTabs"
         property int currentIndex: 0
+        // The chosen tab outlives the page (Engine.controlsSection): a
+        // foldable's other screen builds the page anew.
+        onCurrentIndexChanged: if (!panel.multiSelect && panel.sections[currentIndex])
+                                   Engine.controlsSection = panel.sections[currentIndex].name
+        Component.onCompleted: if (!panel.multiSelect && Engine.controlsSection !== "")
+                                   panel.showSection(Engine.controlsSection)
         visible: !panel.multiSelect
         Layout.fillWidth: true
         implicitHeight: tabGrid.implicitHeight
