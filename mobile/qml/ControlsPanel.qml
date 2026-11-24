@@ -240,6 +240,7 @@ ColumnLayout {
             Repeater {
                 model: panel.multiSelect ? panel.sections : []
                 delegate: ColumnLayout {
+                    id: pinnedSection
                     required property var modelData
                     readonly property bool shown: Engine.pinnedSections.indexOf(modelData.name) >= 0
                     visible: shown
@@ -247,9 +248,18 @@ ColumnLayout {
                     spacing: Theme.spacing / 2
                     Label { text: modelData.title; color: Theme.accent; font.pixelSize: 15; font.bold: true }
                     Loader {
+                        id: pinnedLoader
                         Layout.fillWidth: true
                         active: parent.shown
                         sourceComponent: modelData.component
+                        // The only section shown has the panel's height to
+                        // itself: a tab that can fill a view (FTx's List
+                        // only) gets it here as in the drawer (roadmap 169:
+                        // the pinned panel had no List only at all). With
+                        // more sections the panel scrolls as one, as before.
+                        onLoaded: if (item.hasOwnProperty("viewHeight"))
+                                      item.viewHeight = Qt.binding(() => Engine.pinnedSections.length === 1
+                                                                         ? Math.max(0, pinnedScroll.availableHeight - pinnedSection.y - pinnedLoader.y) : 0)
                     }
                 }
             }

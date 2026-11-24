@@ -23,6 +23,14 @@ ColumnLayout {
     readonly property bool wantList: Engine.digiListScroll && viewHeight > 0
     property bool settingsOpen: false
     readonly property bool settingsShown: !wantList || settingsOpen
+    // List only means the list (roadmap 169, the user: "eihän list only
+    // tilassa näy normaalisti kaikki nuo painikkeet"): while decoding runs
+    // only the slot, the CQ row with More and the QSO's state stay above
+    // it. Decode, FT8 / FT4 and the bands are needed to start, so they show
+    // until decoding runs; the Show choices go under More with the
+    // settings. Before, the fixed part took 373 pt of a phone's 529 and
+    // left the list four rows.
+    readonly property bool setupShown: settingsShown || !Engine.digiRunning
     // Where the view is too low for the main buttons and four rows (a
     // phone on its side, the drawer at half height), the whole tab scrolls
     // as before. Decided from the view's height alone: judged from where
@@ -30,7 +38,10 @@ ColumnLayout {
     // (rows wrap), which flipped the choice, which moved the bar again, and
     // the app hung.
     readonly property real listRows: 4 * 34
-    readonly property bool useList: wantList && viewHeight >= 520
+    // The CQ row, the QSO's state and four rows fit from about 260 (it was
+    // 520 for the whole fixed part: a 764 pt phone's 489 never reached it,
+    // so List only scrolled the whole tab there and did nothing).
+    readonly property bool useList: wantList && viewHeight >= 260
 
     Timer {
         interval: 200
@@ -51,6 +62,7 @@ ColumnLayout {
     }
 
     RowLayout {
+        visible: digi.setupShown
         Layout.fillWidth: true
         spacing: 4
         AppButton {
@@ -109,6 +121,7 @@ ColumnLayout {
     }
     // The protocol's dial frequency on each band (DIGU).
     Flow {
+        visible: digi.setupShown
         Layout.fillWidth: true
         spacing: 4
         Repeater {
@@ -134,11 +147,28 @@ ColumnLayout {
         value: digi.slotPos
     }
 
+    // The row's labels in the buttons' type, and how much of that fits: with
+    // More the row has five buttons, which a 320 pt pinned panel cut to
+    // "Answer…" and "Keep…". The type gives way a little instead.
+    TextMetrics {
+        id: cqRowText
+        font.pixelSize: Theme.buttonFont
+        text: cqButton.text + qsTr("Keep CQ") + qsTr("Answer CQ") + qsTr("Halt TX") + (digi.wantList ? qsTr("More") : "")
+    }
+    // Only with More in the row (List only): without it the row is as it
+    // always was.
+    readonly property int cqRowFont: !wantList ? Theme.buttonFont : Math.round(Theme.buttonFont
+        * Math.max(0.7, Math.min(1, (width - 4 * 4 - 5 * 12) / Math.max(1, cqRowText.advanceWidth))))
     RowLayout {
         Layout.fillWidth: true
         spacing: 4
         AppButton {
+            id: cqButton
             objectName: "digiCq"
+            // With More in the row, as wide as its own label asks: a short
+            // one then does not take a long one's room.
+            Layout.preferredWidth: digi.wantList ? implicitContentWidth + 12 : -1
+            font.pixelSize: digi.cqRowFont
             // The direction in the button itself: CQ DX (Kurt DL5EAG).
             readonly property string cqText: Engine.digiCqDirectable && Engine.digiCqTarget.length > 0
                                              ? qsTr("CQ %1").arg(Engine.digiCqTarget) : qsTr("CQ")
@@ -157,7 +187,11 @@ ColumnLayout {
         // the slot row a narrow panel cut it to "Keep …".
         AppButton {
             objectName: "digiAutoCq"
+            // With More in the row, as wide as its own label asks: a short
+            // one then does not take a long one's room.
+            Layout.preferredWidth: digi.wantList ? implicitContentWidth + 12 : -1
             text: qsTr("Keep CQ")
+            font.pixelSize: digi.cqRowFont
             checked: Engine.digiAutoCq
             enabled: !Engine.digiHound
             Accessible.name: qsTr("Call CQ again after each QSO")
@@ -169,7 +203,11 @@ ColumnLayout {
         // per station set under More (2-20), then another; Halt TX ends it.
         AppButton {
             objectName: "digiAutoAnswer"
+            // With More in the row, as wide as its own label asks: a short
+            // one then does not take a long one's room.
+            Layout.preferredWidth: digi.wantList ? implicitContentWidth + 12 : -1
             text: qsTr("Answer CQ")
+            font.pixelSize: digi.cqRowFont
             checked: Engine.digiAutoAnswer
             enabled: (Engine.transmitAvailable || Engine.digiAutoAnswer) && !Engine.digiHound
             Accessible.name: Engine.digiAutoAnswer ? qsTr("Stop answering CQs by itself") : qsTr("Answer CQs by itself")
@@ -179,7 +217,11 @@ ColumnLayout {
         }
         AppButton {
             objectName: "digiHalt"
+            // With More in the row, as wide as its own label asks: a short
+            // one then does not take a long one's room.
+            Layout.preferredWidth: digi.wantList ? implicitContentWidth + 12 : -1
             text: qsTr("Halt TX")
+            font.pixelSize: digi.cqRowFont
             enabled: digi.qso.state !== "idle" || digi.qso.transmitting || Engine.digiAutoAnswer
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
@@ -188,8 +230,12 @@ ColumnLayout {
         // List only: the settings below fold away; More shows them.
         AppButton {
             objectName: "digiMore"
+            // With More in the row, as wide as its own label asks: a short
+            // one then does not take a long one's room.
+            Layout.preferredWidth: digi.wantList ? implicitContentWidth + 12 : -1
             visible: digi.wantList
             text: qsTr("More")
+            font.pixelSize: digi.cqRowFont
             checked: digi.settingsOpen
             Accessible.name: digi.settingsOpen ? qsTr("Hide the FTx settings") : qsTr("Show the FTx settings")
             Layout.fillWidth: true
@@ -640,6 +686,7 @@ ColumnLayout {
     // pinned panel cut "New DXCC" and "New call" short).
     GridLayout {
         id: showRow
+        visible: digi.settingsShown
         Layout.fillWidth: true
         readonly property bool oneRow: width >= 560
         columns: oneRow ? 7 : 4
