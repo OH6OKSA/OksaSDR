@@ -343,8 +343,8 @@ radio interface, with no computer running alongside.
   answers CQs by itself (the rarest first, five calls each, then the
   next); both stop after a time without a touch on the app, which you
   set. Drag the red TX band to a free
-  frequency on the display. *List only* keeps the main buttons fixed and
-  scrolls just the decodes. **Hound** (FTx › DXpedition) works a
+  frequency on the display. *List only* keeps just the CQ row and the QSO's
+  state fixed and gives the decodes the rest. **Hound** (FTx › DXpedition) works a
   DXpedition's Fox by WSJT-X's FT8 DXpedition mode rules; the Fox's
   combined messages and contest exchanges (Field Day, RTTY Roundup, EU
   VHF) show as in WSJT-X.

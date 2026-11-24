@@ -576,7 +576,12 @@ screen (FTx then lists about twice as many decodes) and **▼** takes it back
 to half; the choice holds while the app runs. A tablet's drawer from the
 bottom (upright on a screen lower than an iPad's, such as the iPhone Duo's
 inner screen) has the same **Close** and **▲**. A swipe inside the open drawer
-never tunes; the part of the display still in view tunes as usual.
+never tunes; the part of the display still in view tunes as usual. The
+drawer's **Close** and PTT stand where the page's bottom row does, just
+above the device's navigation bar or home indicator, and with the on-screen
+keyboard up both end right above the keyboard (since build 213 / Android
+beta 119: the status bar and the navigation bar had been counted as a
+keyboard, which lifted them by a status bar's height).
 
 | iPhone, portrait | iPhone, landscape |
 |---|---|
@@ -616,8 +621,13 @@ Right*), as high as PTT, so nothing lies over the waterfall. The row keeps
 its proportions on every screen: each small button takes about a twelfth
 of it and PTT the rest, so on a wide Linux or Mac window PTT grows with
 the window, not the small buttons. While FT8 / FT4 runs and hides PTT and
-Macros, the six buttons stay where they are. An own layout keeps them on
-its display, and on a phone they stay on the waterfall.
+Macros, what is hidden gives its room away (since build 213 / Android
+beta 119): the row is only as high as a button, the pinned controls run
+beside it to the bottom of the window, and a drawer opened at the side
+runs to the bottom too, with the six buttons gathered left of it (a little
+smaller where the room is short, as on an opened foldable held upright).
+An own layout keeps them on its display, and on a phone they stay on the
+waterfall.
 
 ![Landscape with B/S hiding the band and step rows: the waterfall's buttons in the row under it](manual/phone-landscape-bs.jpg)
 
@@ -1429,7 +1439,8 @@ the value types it); SPLIT again (or XIT off there) ends it.
 The button is always on top. On a phone an open controls drawer carries its
 own copy at the bottom, beside **Close** (which closes the drawer) and **▲**
 (full screen), and so does a tablet's drawer from the bottom; on a
-tablet on its side the drawer stops above the page's PTT, so nothing ever covers it,
+tablet on its side the drawer stops above the page's PTT, so nothing ever covers it
+(while FT8 / FT4 hides PTT it runs to the bottom),
 and PTT works while the drawer is open (since build 212 / Android beta 118: until
 then a press on it only closed the drawer; every other tap outside the drawer
 still closes it and does nothing more). In an own layout this holds where the
@@ -1993,17 +2004,24 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   starts decoding and zooms the display to the 4 kHz audio band (again with
   *Zoom*). The bar shows where in the 15 s (FT4: 7.5 s) slot you are.
 
-  **Scroll** (in the drawer): *Whole tab* scrolls the tab in one piece, as
-  before; *List only* keeps the main buttons at the top (Decode, the
-  bands, the slot bar, CQ, Keep CQ, Answer CQ, Halt TX, the QSO's state
-  and Show) and scrolls only the decode list under them, with its own
-  scroll bar. The rest (DXpedition, CQ slot, the time line, TX Hz and TX
-  level, the colours, and the button to Setup › FTx) folds under
-  **More**. That button names the settings it opens: *Auto stops 10 min ·
-  5 calls · PSK Reporter off…* (the presence limit, Answer CQ's calls to
-  a station and PSK Reporter, in the FTx tab until build 200). Where the drawer is lower than about
-  520 px (a phone on its side, the drawer at half height), the whole tab
-  scrolls anyway. (Michael Whaley's request.)
+  **Scroll**: *Whole tab* scrolls the tab in one piece, as before. *List
+  only* means the list: while decoding runs, only the slot bar, the row
+  CQ, Keep CQ, Answer CQ, Halt TX and **More**, and the QSO's state stay
+  at the top, and the decode list takes all the rest with its own scroll
+  bar (on a phone with the drawer at full screen about twelve rows). The
+  rest opens in place with **More**: Decode and FT8 / FT4, the bands,
+  Show, DXpedition, CQ slot, the time line, TX Hz and TX level, the
+  colours, and the button to Setup › FTx, which names the settings it
+  opens: *Auto stops 10 min · 5 calls · PSK Reporter off…* (the presence
+  limit, Answer CQ's calls to a station and PSK Reporter, in the FTx tab
+  until build 200). Until decoding is started, Decode, FT8 / FT4 and the
+  bands show without More, as they start it. The choice is offered in the
+  drawer and, when FTx is the only section shown, in the pinned controls
+  of an iPad, a Mac or a tablet. Where the tab's view is lower than about
+  260 px (a phone on its side), the whole tab scrolls anyway. (Michael
+  Whaley's request; since build 213 / Android beta 119 the list has the
+  room: until then Decode, the bands and Show stayed fixed too and left
+  a phone four rows, and the choice took effect only from a 520 px view.)
 
   **Every slice in DIGU / DIGL decodes at once** (say 40 m on slice A and
   20 m on slice B, each band on a panadapter of its own: see *Slices on

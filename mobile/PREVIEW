@@ -1,0 +1,23 @@
+# With this file in the tree, a push builds as a preview: TestFlight's
+# internal group only (What to Test set, no external group, no beta review)
+# and the Android APK as the run artifact only. Removed when the user
+# releases the build to the testers (mobile-release.yml).
+
+Build 213 / Android beta 119: roadmap 169 (the user's FT8 tests on the
+OnePlus Open, a second phone and the iPad, 2026-11-24). The status and
+navigation bars are no longer taken for a keyboard: a drawer's Close and
+PTT stand at the bottom, the page ends at the keyboard. While FT8 / FT4
+hides PTT the pinned panel and the side drawer run to the bottom, the
+bottom row is a button's height and its six buttons stand left of the
+open side drawer. FTx's List only is the list: the CQ row with More and
+the QSO's state above it, in the pinned panel too. With 166 (how a radio
+was found and connected, in the log) and 167 (no probes for radios the
+app does not serve).
+On devices: the phones' drawer half and full (Close level with the
+page's Controls), the keyboard with the Log tab (no band above it), FT8
+with List only and More; the opened OnePlus Open in both orientations
+with the drawer at the side; the iPad in both orientations with the
+controls pinned, FTx alone and with another section; the log's "window:"
+line with the bars.
+Before the release: pictures of List only and of a tablet layout with
+FT8 running for the manual.

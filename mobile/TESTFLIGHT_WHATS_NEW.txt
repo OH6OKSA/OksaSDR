@@ -9,17 +9,17 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- PTT works while the Controls drawer is open at the side (iPad, Mac): a press on it only closed the drawer. The Log tab's call field and its keyboard stay while you key.
-- Big buttons: the menu's and View's Big buttons item reads Exit Big buttons while it is on, and leaves; the "hold to exit" hint is amber (thanks Kent K9EZ).
-- A memory tunes only your own slice: with two slices the other one could get it.
-- CW text with a quotation mark is sent as typed.
-- Band plan (IARU Region 1, SSA): the all-mode rows used for digimodes read ALL; the lock keeps a digital mode there.
-- PGXL / TGXL meters on SmartSDR 4.3; MIDI settings saved safely.
+- FTx > List only is the list: while decoding runs only the slot bar, the CQ row with More and the QSO's state stay above it; Decode, the bands and Show open with More. Also in the pinned controls when FTx is their only section.
+- FT8 / FT4 on an iPad or Mac: the pinned controls and a drawer at the side run to the bottom, and the bottom row is lower: three to four more decode rows.
+- iPhone: the Controls drawer's Close and PTT are at the bottom again (a status bar too high since build 203); with the keyboard up the page ends at the keyboard.
+- A smaller iPad upright: the Controls drawer is half the screen again.
+- The log tells how a radio was found and connected.
 
-RECENT (builds 94–211)
-- 211: Back to the call with an iPad keyboard; keyboard Done works as Enter and sits beside the field; the waterfall's buttons in the PTT row; a 13" iPad upright keeps the controls beside the display; TGXL relays (thanks Ben KT4O).
+RECENT (builds 94–212)
+- 212: PTT with the side drawer open; Exit Big buttons in the menu (thanks Kent K9EZ); a memory tunes only your own slice; band plan ALL rows.
+- 211: keyboard Done works as Enter beside the field; the waterfall's buttons in the PTT row; a 13" iPad upright keeps the controls at the side; TGXL relays (thanks Ben KT4O).
 - 206: FT8 / FT4 answered at once in the running slot (thanks George KF2T); the Log tab for a run (thanks Chris DM5HF).
-- 204: Spots tab; RBN and PSK Reporter spots; Heard me; an alert's Tune sets the mode; voice macros with the radio's mic (thanks Chris DM5HF); keyboard Done (thanks Robin G5OUT).
+- 204: Spots tab; RBN and PSK Reporter spots; Heard me; voice macros with the radio's mic (thanks Chris DM5HF).
 
 PLEASE TRY
 - Receive on a few bands with zoom, Band and the 3D view.
