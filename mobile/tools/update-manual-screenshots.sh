@@ -57,7 +57,7 @@ elecraft_shots=(tab-kpa500 kpa500-controls kat500-controls setup-elecraft)
 layout_shots=(layout-edit layout-own)
 theme_shots=(theme-light setup-app setup-spots setup-spot-feeds setup-spot-alerts setup-ftx setup-phonecw setup-transmit spot-alert)
 all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${layout_shots[@]}" "${theme_shots[@]}" "${phone_shots[@]}" phone-landscape phone-landscape-bs bandchooser
-           "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" "${logging_shots[@]}" "${kpa_shots[@]}" "${elecraft_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running)
+           "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" "${logging_shots[@]}" "${kpa_shots[@]}" "${elecraft_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running ft8-list-only ft8-tablet)
 if [ "$LIST" = 1 ]; then
     printf '%s\n' "${all_shots[@]}" | sort -u
     exit 0
@@ -537,6 +537,23 @@ if want ft8-running && [ "$DRY" = 0 ]; then
     command grep -h "ft8-test: restored" "$TMP/ft8-running.log" | sed 's/^/  /' \
         || echo "  ft8-running: no restore line in its log: check the slice" >&2
 fi
+# FT8 with real decodes on 40 m (it has them day and night), receive only.
+# List only on a phone (roadmap 169): the drawer at full height, Scroll ›
+# List only, Decode, two slots of decodes; then Decode off under More, the
+# whole tab again and 14.074 back. And a tablet with the drawer at the side
+# while FT8 hides PTT: the drawer to the window's bottom, the row's buttons
+# left of it.
+if want ft8-list-only; then
+    printf 'ready\nwait 8000\nfreq 7.074\nwait 1500\ndrawer Digi\nwait 1200\ntapname fullControls\nwait 800\nshowname digiScrollList\ntapname digiScrollList\nwait 800\ntapname digiDecode\nwait 36000\nshot ft8-list-only\ntapname digiMore\nwait 800\ntapname digiDecode\nwait 1000\nshowname digiScrollTab\ntapname digiScrollTab\nwait 800\nclose\nwait 600\nfreq 14.074\nwait 1500\nslices\n' \
+        | plan ft8-list-only 440x956 "${src[@]}"
+fi
+if want ft8-tablet; then
+    printf 'ready\nwait 8000\nfreq 7.074\nwait 1500\ndrawer Digi\nwait 1200\ntapname digiDecode\nwait 36000\nshot ft8-tablet\ntapname digiDecode\nwait 1000\nclose\nwait 600\nfreq 14.074\nwait 1500\nslices\n' \
+        | plan ft8-tablet 1366x1024 "${src[@]}"
+fi
+if want ft8-list-only ft8-tablet && [ "$DRY" = 0 ]; then
+    command grep -h "shot-plan: slice" "$TMP"/ft8-list-only.log "$TMP"/ft8-tablet.log 2>/dev/null | tail -n 2 | sed 's/^/  left: /'
+fi
 
 jpg connect "" 900x
 jpg overview "" 1100x
@@ -572,6 +589,8 @@ jpg macros 440x456+0+500
 jpg app-setups 440x236+0+636
 jpg rade-on 440x620+0+0
 jpg ft8-running "" 330x
+jpg ft8-list-only "" 330x
+jpg ft8-tablet "" 1100x
 jpg tx-meters 985x140+0+200
 jpg frequency 700x720+333+150 500x
 jpg noslice 985x600+0+340 800x

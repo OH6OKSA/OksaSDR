@@ -633,6 +633,8 @@ smaller where the room is short, as on an opened foldable held upright).
 An own layout keeps them on its display, and on a phone they stay on the
 waterfall.
 
+![An iPad with FT8 running and the Controls drawer at the side: the drawer runs to the bottom, the row's buttons sit left of it](manual/ft8-tablet.jpg)
+
 ![Landscape with B/S hiding the band and step rows: the waterfall's buttons in the row under it](manual/phone-landscape-bs.jpg)
 
 ![The bands from the Band button in a low landscape window](manual/bandchooser.jpg)
@@ -2029,6 +2031,8 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   Whaley's request; since build 214 / Android beta 119 the list has the
   room: until then Decode, the bands and Show stayed fixed too and left
   a phone four rows, and the choice took effect only from a 520 px view.)
+
+  ![List only on a phone with the drawer at full height: the slot bar, the CQ row with More, then the decodes](manual/ft8-list-only.jpg)
 
   **Every slice in DIGU / DIGL decodes at once** (say 40 m on slice A and
   20 m on slice B, each band on a panadapter of its own: see *Slices on
