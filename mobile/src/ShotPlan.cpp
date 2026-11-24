@@ -8,6 +8,7 @@
 #include <QGuiApplication>
 #include <QDir>
 #include <QFile>
+#include <QFont>
 #include <QPointer>
 #include <QRegularExpression>
 #include <QQmlApplicationEngine>
@@ -379,6 +380,30 @@ void ShotPlan::logLayout()
         }
     }
     qInfo().noquote() << "shot-plan: layout" << parts.join(QStringLiteral("; "));
+    // The display's own room, on a line of its own (layout-diff.py reads only
+    // the line above): the spectrum and the waterfall in window pixels and
+    // their share of the window, to review "waterfall first" by numbers at
+    // every size (roadmap 160).
+    for (QObject* root : m_qml.rootObjects()) {
+        const auto* window = qobject_cast<QQuickWindow*>(root);
+        if (!window || window->width() <= 0 || window->height() <= 0) {
+            continue;
+        }
+        for (QObject* o : allObjects(root)) {
+            const auto* item = qobject_cast<QQuickItem*>(o);
+            if (!item || !seen(item)
+                || !QString::fromLatin1(o->metaObject()->className()).startsWith(QLatin1String("AetherSDR::mobile::SpectrumItem"))) {
+                continue;
+            }
+            const QRectF r = item->mapRectToScene(QRectF(0, 0, item->width(), item->height()));
+            const double spectrum = r.height() * o->property("spectrumFraction").toDouble();
+            qInfo().noquote() << QStringLiteral("shot-plan: display window=%1x%2 x=%3 y=%4 w=%5 h=%6 spectrum=%7 waterfall=%8 share=%9")
+                                     .arg(window->width()).arg(window->height())
+                                     .arg(qRound(r.x())).arg(qRound(r.y())).arg(qRound(r.width())).arg(qRound(r.height()))
+                                     .arg(qRound(spectrum)).arg(qRound(r.height() - spectrum))
+                                     .arg(QString::number(100.0 * r.width() * r.height() / (double(window->width()) * window->height()), 'f', 1));
+        }
+    }
 }
 
 void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs)
@@ -2037,6 +2062,79 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                 }
             }
         }
+        *delayMs = 100;
+    } else if (command == QLatin1String("radiocmd")) {
+        // radiocmd TEXT: a command to the radio as this app's own client
+        // sends them, for a protocol question a plan answers on the radio
+        // (roadmap 162: does "profile transmit create" write over a profile
+        // of that name). The answer is logged as radio-commands: "..." ->
+        // 0xCODE. Not among the plan lines a device takes (DevLink.cpp).
+        m_engine.devCommand(args.join(QLatin1Char(' ')));
+        *delayMs = 1500;
+    } else if (command == QLatin1String("cuttext")) {
+        // cuttext [TAG]: every text on screen that does not show whole, by
+        // numbers (roadmap 164: a radio's name cut to "★ OT…" at a large
+        // text size on a narrow phone, passed in pictures before). cut: the
+        // text is elided or lost lines; wide: it paints past its own box
+        // (over its neighbour or under a clip); out: its box ends outside
+        // the window at a side; off: above or below it. TAG names the view
+        // in the log.
+        int texts = 0;
+        int found = 0;
+        for (QObject* root : m_qml.rootObjects()) {
+            const auto* rootWindow = qobject_cast<QQuickWindow*>(root);
+            const qreal windowWidth = rootWindow ? rootWindow->width() : 0;
+            const qreal windowHeight = rootWindow ? rootWindow->height() : 0;
+            for (QObject* o : allObjects(root)) {
+                auto* item = qobject_cast<QQuickItem*>(o);
+                if (!item || !item->inherits("QQuickText") || !seen(item)) {
+                    continue;
+                }
+                const QString text = item->property("text").toString();
+                if (text.trimmed().isEmpty() || item->width() <= 0) {
+                    continue;
+                }
+                ++texts;
+                const QRectF r = item->mapRectToScene(QRectF(0, 0, item->width(), item->height()));
+                const qreal natural = item->implicitWidth();
+                const qreal painted = item->property("contentWidth").toReal();
+                const bool wraps = item->property("wrapMode").toInt() != 0;
+                // Shrunk to fit its box (fontSizeMode): drawn smaller, not cut.
+                const bool fitted = item->property("fontSizeMode").toInt() != 0;
+                QString kind;
+                if (item->property("truncated").toBool()) {
+                    kind = QStringLiteral("cut");
+                } else if (!wraps && !fitted && painted > item->width() + 1.0) {
+                    kind = QStringLiteral("wide");
+                } else if (windowWidth > 0 && (r.left() < -1.0 || r.right() > windowWidth + 1.0)) {
+                    kind = QStringLiteral("out");
+                } else if (windowHeight > 0 && (r.top() < -1.0 || r.bottom() > windowHeight + 1.0)) {
+                    // Above or below the window with nothing clipping it: a
+                    // dialog taller than the screen (its last rows and
+                    // buttons out of reach).
+                    kind = QStringLiteral("off");
+                }
+                if (kind.isEmpty()) {
+                    continue;
+                }
+                ++found;
+                // The nearest named item above it says where it is.
+                QString place;
+                for (const QQuickItem* i = item; i && place.isEmpty(); i = i->parentItem()) {
+                    place = i->objectName();
+                }
+                QString shown = text;
+                shown.replace(QLatin1Char('\n'), QLatin1Char(' '));
+                qInfo().noquote() << QStringLiteral("shot-plan: cuttext %1 %2 \"%3\" has %4 needs %5 px %6 at %7,%8 in %9")
+                                         .arg(arg.isEmpty() ? QStringLiteral("-") : arg, kind, shown.left(48))
+                                         .arg(qRound(item->width())).arg(qRound(wraps ? painted : natural))
+                                         .arg(item->property("font").value<QFont>().pixelSize())
+                                         .arg(qRound(r.x())).arg(qRound(r.y()))
+                                         .arg(place.isEmpty() ? QStringLiteral("?") : place);
+            }
+        }
+        qInfo().noquote() << QStringLiteral("shot-plan: cuttext %1 total %2 of %3 texts on screen")
+                                 .arg(arg.isEmpty() ? QStringLiteral("-") : arg).arg(found).arg(texts);
         *delayMs = 100;
     } else if (command == QLatin1String("caption")) {
         // Timed by the line log above while recording.
