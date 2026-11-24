@@ -111,6 +111,14 @@ class MobileEngine : public QObject {
     // Its height in the window's pixels (0: none drawn), as a phone's
     // keyboard covering the lower part of the window.
     Q_PROPERTY(int testKeyboardHeight READ testKeyboardHeight NOTIFY testKeyboardChanged)
+    // The render tool's stand-in for a device's status and navigation bars:
+    // the window's safe area at the top and the bottom, in the window's
+    // pixels (0: none). A desktop window has none, and Qt lays the page
+    // inside them (ApplicationWindow pads its content by the safe area),
+    // which no render showed: a drawer's sums counted the bars as a
+    // keyboard on every phone and no picture said so (roadmap 169).
+    Q_PROPERTY(int testSafeTop READ testSafeTop NOTIFY testSafeAreaChanged)
+    Q_PROPERTY(int testSafeBottom READ testSafeBottom NOTIFY testSafeAreaChanged)
     // Text size: "system" follows the system's text size (iOS Dynamic Type,
     // Android's font scale), or "100" / "115" / "130" percent. textScale is
     // the factor every text size in the theme is multiplied by, held to
@@ -1685,6 +1693,28 @@ public:
         }
     }
     int testKeyboardHeight() const { return m_testKeyboardHeight; }
+    // The render tool's stand-ins for what the demo radio cannot show, for
+    // layout pictures with no radio at hand: sample decodes in the FTx list
+    // (WSJT-X's own example calls), and the waterfall's + Slice / + Pan,
+    // which the demo radio has no room for.
+    void setTestDecodes(int count);
+    void setTestAddButtons(bool on)
+    {
+        if (on != m_testAddButtons) {
+            m_testAddButtons = on;
+            emit slicesChanged();
+        }
+    }
+    int testSafeTop() const { return m_testSafeTop; }
+    int testSafeBottom() const { return m_testSafeBottom; }
+    void setTestSafeArea(int top, int bottom)
+    {
+        if (top != m_testSafeTop || bottom != m_testSafeBottom) {
+            m_testSafeTop = qMax(0, top);
+            m_testSafeBottom = qMax(0, bottom);
+            emit testSafeAreaChanged();
+        }
+    }
     // The stand-in keyboard put away by Done, as the real one is.
     Q_INVOKABLE void testKeyboardOff() { setTestKeyboard(false); }
     // key: rbn, psk, heardMe.
@@ -2268,6 +2298,7 @@ signals:
     void spotAlertChanged();
     void spotFeedsChanged();
     void testKeyboardChanged();
+    void testSafeAreaChanged();
     void heardMeChanged();
     // A spot's Tune (roadmap 137): the Controls tab for the spot's mode
     // (FTx, Digi, CW) by its section name; open: the alert's Tune opens a
@@ -3043,6 +3074,9 @@ private:
     qint64 m_pskQueryMs{0};
     bool m_testKeyboard{false};
     int m_testKeyboardHeight{0};
+    bool m_testAddButtons{false};
+    int m_testSafeTop{0};
+    int m_testSafeBottom{0};
     // Roadmap 143: the radio's mic input a voice macro switched from, and
     // the macro waiting for the switch.
     QString m_dvkRadioMic;

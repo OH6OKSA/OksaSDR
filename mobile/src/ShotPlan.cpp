@@ -1713,6 +1713,27 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         // (a gray block in the pictures), for the pictures.
         m_engine.setTestKeyboard(arg == QLatin1String("on"), args.value(1).toInt());
         *delayMs = 400;
+    } else if (command == QLatin1String("safearea")) {
+        // safearea TOP BOTTOM: as if the window had a phone's status bar and
+        // navigation bar (the OnePlus Open's outer screen: 41 44, an iPhone
+        // with an island: 59 34, an iPad: 24 20; 0 0 takes them away). Qt
+        // lays the page inside them and pads a drawer's content by them, so
+        // a sum that takes the window's height for the page's is wrong by
+        // the bars, which a desktop window never showed (roadmap 169). Drawn
+        // as two dim strips in the pictures.
+        m_engine.setTestSafeArea(arg.toInt(), args.value(1).toInt());
+        *delayMs = 600;
+    } else if (command == QLatin1String("decodes")) {
+        // decodes N: N sample decodes in the FTx list, for layout pictures
+        // with the demo radio, which decodes nothing (WSJT-X's example
+        // calls; the next real slot's decodes take their place).
+        m_engine.setTestDecodes(arg.toInt());
+        *delayMs = 500;
+    } else if (command == QLatin1String("addbuttons")) {
+        // addbuttons on|off: the waterfall's + Slice / + Pan shown whatever
+        // the radio has room for (the demo radio never shows them).
+        m_engine.setTestAddButtons(arg == QLatin1String("on"));
+        *delayMs = 300;
     } else if (command == QLatin1String("txblock")) {
         // Every transmission refused, as during a developer-link plan: keys
         // and macros can be tested on the radio with nothing on air.

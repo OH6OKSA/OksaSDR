@@ -2236,4 +2236,63 @@ void MobileEngine::handleDigiDecodes(const QVariantList& decodes, qint64 slotMs)
     }
 }
 
+
+// The render tool's sample decodes (ShotPlan's "decodes N"): the list as a
+// busy band fills it, for layout pictures with the demo radio, which decodes
+// nothing. WSJT-X's own example calls, no station on the air.
+void MobileEngine::setTestDecodes(int count)
+{
+    struct Sample {
+        const char* text;
+        const char* call;
+        bool cq;
+        const char* hl;
+        int snr;
+        const char* dt;
+        int freq;
+    };
+    static const Sample kSamples[] = {
+        {"CQ K1ABC FN42", "K1ABC", true, "cq", 3, "0.1", 522},
+        {"K1ABC W9XYZ EN37", "W9XYZ", false, "", -11, "0.1", 453},
+        {"CQ DX G4ABC IO91", "G4ABC", true, "newcall", -2, "0.2", 759},
+        {"W9XYZ K1ABC -11", "K1ABC", false, "", 18, "-0.3", 300},
+        {"PA9XYZ G4ABC RR73", "G4ABC", false, "", -18, "0.1", 572},
+        {"CQ POTA PA9XYZ JO22", "PA9XYZ", true, "cq", -10, "0.1", 647},
+        {"K1ABC W9XYZ R-09", "W9XYZ", false, "", -5, "0.2", 722},
+        {"CQ NA K1ABC FN42", "K1ABC", true, "newcallBand", 13, "1.3", 1206},
+        {"G4ABC PA9XYZ JO22", "PA9XYZ", false, "", 4, "-0.2", 1247},
+        {"W9XYZ K1ABC RRR", "K1ABC", false, "", -2, "0.1", 1369},
+        {"CQ G4ABC IO91", "G4ABC", true, "dxccBand", 5, "0.2", 1419},
+        {"K1ABC W9XYZ 73", "W9XYZ", false, "", -14, "0.6", 2403},
+    };
+    const int samples = int(sizeof(kSamples) / sizeof(kSamples[0]));
+    QVariantList list;
+    qint64 slotMs = (QDateTime::currentMSecsSinceEpoch() / 15000) * 15000;
+    for (int i = 0; i < count; ++i) {
+        const Sample& sample = kSamples[i % samples];
+        if (i > 0 && i % 7 == 0) {
+            slotMs -= 15000;
+        }
+        list.append(QVariantMap{{QStringLiteral("utc"), QDateTime::fromMSecsSinceEpoch(slotMs, QTimeZone::UTC).toString(QStringLiteral("HHmmss"))},
+                                {QStringLiteral("snr"), sample.snr},
+                                {QStringLiteral("dt"), QString::fromLatin1(sample.dt)},
+                                {QStringLiteral("freq"), sample.freq},
+                                {QStringLiteral("text"), QString::fromLatin1(sample.text)},
+                                {QStringLiteral("call"), QString::fromLatin1(sample.call)},
+                                {QStringLiteral("cq"), sample.cq},
+                                {QStringLiteral("toMe"), false},
+                                {QStringLiteral("hl"), QString::fromLatin1(sample.hl)},
+                                {QStringLiteral("newDxcc"), false},
+                                {QStringLiteral("newCall"), false},
+                                {QStringLiteral("sliceId"), -1},
+                                {QStringLiteral("slice"), QStringLiteral("A")},
+                                {QStringLiteral("band"), QStringLiteral("20m")},
+                                {QStringLiteral("protocol"), QStringLiteral("FT8")},
+                                {QStringLiteral("slotOdd"), (slotMs / 15000) % 2 == 1},
+                                {QStringLiteral("slotMs"), slotMs}});
+    }
+    m_digiDecodes = list;
+    emit digiDecodesChanged();
+}
+
 }  // namespace AetherSDR::mobile

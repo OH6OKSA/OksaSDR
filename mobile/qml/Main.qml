@@ -24,6 +24,12 @@ ApplicationWindow {
     palette.base: Theme.light ? "#ffffff" : "#05080b"
     palette.text: Theme.text
     palette.placeholderText: Theme.textDim
+    // The render tool's stand-in for a device's bars (Engine.testSafeTop):
+    // margins added to the window's safe area, which Qt then treats as the
+    // device's own (the page inside them, a drawer's content padded). 0 on
+    // every device.
+    SafeArea.additionalMargins.top: Engine.testSafeTop
+    SafeArea.additionalMargins.bottom: Engine.testSafeBottom
 
     // Phone-sized windows (iPhone, folded iPhone Duo, narrow Split View)
     // get the phone layout; it switches live on rotation or fold/unfold.
@@ -373,6 +379,24 @@ ApplicationWindow {
                 if (Engine.testKeyboard)
                     Engine.testKeyboardOff()
             }
+        }
+    }
+    // The render tool's stand-in for a phone's status and navigation bars
+    // (plan verb safearea): two dim strips where they would be.
+    Repeater {
+        model: [Engine.testSafeTop, Engine.testSafeBottom]
+        delegate: Rectangle {
+            required property int modelData
+            required property int index
+            parent: Overlay.overlay
+            z: 998
+            visible: modelData > 0
+            x: 0
+            y: index === 0 ? 0 : window.height - modelData
+            width: window.width
+            height: modelData
+            color: "#000000"
+            opacity: 0.55
         }
     }
     // The render tool's stand-in keyboard, drawn where a phone's would be.

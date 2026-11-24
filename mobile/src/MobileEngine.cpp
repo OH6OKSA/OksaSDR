@@ -5806,13 +5806,13 @@ int MobileEngine::activeSliceId() const
 bool MobileEngine::canAddSlice() const
 {
     const RadioModel& rm = m_session.radioModel();
-    return m_connected && rm.slices().size() < rm.maxSlices();
+    return m_testAddButtons || (m_connected && rm.slices().size() < rm.maxSlices());
 }
 
 bool MobileEngine::canAddPanadapter() const
 {
     const RadioModel& rm = m_session.radioModel();
-    return m_connected && rm.usesFlexCommandPlane() && rm.panadapters().size() < rm.maxPanadapters();
+    return m_testAddButtons || (m_connected && rm.usesFlexCommandPlane() && rm.panadapters().size() < rm.maxPanadapters());
 }
 
 void MobileEngine::selectSlice(int sliceId)
