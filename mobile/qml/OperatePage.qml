@@ -134,6 +134,26 @@ Page {
     // PTT height, shared with the drawer's copy of the button.
     // PTT runs the full width along the bottom in every orientation.
     readonly property real pttHeight: Math.round(Theme.touchTarget * 1.5)
+    // What is hidden gives its room away (roadmap 169, the user on the
+    // OnePlus Open and the iPad with FT8 running: "aina tulisi maksimoida
+    // tilan käyttö ... skaalautuminen on aidosti dynaamista laite kuin
+    // laite"). FT8 / FT4 hide PTT and Macros:
+    // the bottom row is then a button's height, not PTT's;
+    readonly property real bottomRowHeight: ptt.digiHidden ? Theme.touchTarget : pttHeight
+    // the side drawer runs to the window's bottom (it ended above a PTT row
+    // that had no PTT), and while it is open the row's buttons gather in
+    // the room left of it, smaller where six do not fit at their own size
+    // (an opened OnePlus Open upright: 314 pt for about 346).
+    readonly property bool sideDrawerFull: !stacked && ptt.digiHidden
+    readonly property bool rowBesideDrawer: sideDrawerFull && !canvasOn && controlsDrawer.visible
+    readonly property real rowRoom: leftWidth - (rowBesideDrawer ? Math.max(0, controlsDrawer.width - barRight) : 0)
+    readonly property real rowNeed: rowLabels.advanceWidth + 4 * 12 + 2 * 44 + 5 * Theme.spacing / 2
+    readonly property real rowFit: rowBesideDrawer ? Math.max(0.6, Math.min(1, rowRoom / rowNeed)) : 1
+    TextMetrics {
+        id: rowLabels
+        font.pixelSize: macrosButton.font.pixelSize
+        text: qsTr("Band") + qsTr("B/S ▲") + qsTr("+ Slice") + qsTr("+ Pan")
+    }
     // Upright, the controls drawer can take the whole height (▲ beside
     // Close, as on the phone): FTx then lists its decodes on the full height,
     // e.g. on an iPhone Duo's inner screen, where half showed none. Kept
@@ -187,6 +207,7 @@ Page {
     readonly property real keyboardCover: page.Window.window ? page.Window.window.keyboardCover || 0 : 0
     readonly property real barTop: page.Window.window ? page.Window.window.barTop || 0 : 0
     readonly property real barBottom: page.Window.window ? page.Window.window.barBottom || 0 : 0
+    readonly property real barRight: page.Window.window ? page.Window.window.barRight || 0 : 0
     // Under the bottom row: 12 from a window's edge; none above a navigation
     // bar, whose inset the page ends above already, nor over the keyboard.
     readonly property real rowInset: keyboardUp ? 0 : Math.max(page.SafeArea.margins.bottom, 12 - barBottom, 0)
@@ -743,9 +764,11 @@ Page {
             visible: page.panelPinned
             Layout.row: page.twoColumns ? 0 : 1
             Layout.column: page.twoColumns ? 1 : 0
-            // Beside the display and PTT; with PTT hidden (FT8 / FT4) the
-            // display's row only, so the empty PTT row does not take height.
-            Layout.rowSpan: page.twoColumns && ptt.visible ? 2 : 1
+            // Beside the display and the bottom row, to the page's bottom:
+            // also while FT8 / FT4 hides PTT, as the row stays for the
+            // waterfall's buttons (the panel ended at the display and left
+            // 93 pt under the decode list on an iPad, roadmap 169).
+            Layout.rowSpan: page.twoColumns && pttRow.visible ? 2 : 1
             Layout.preferredWidth: page.stacked ? -1 : page.sideWidth
             Layout.maximumWidth: page.stacked ? Number.POSITIVE_INFINITY : page.sideWidth
             Layout.fillWidth: page.stacked
@@ -782,7 +805,9 @@ Page {
             // A layout in a layout fills the height by default: the row took
             // the display's room (1366 x 1024).
             Layout.fillHeight: false
-            Layout.preferredHeight: page.pttHeight
+            Layout.preferredHeight: page.bottomRowHeight
+            // Left of the open side drawer (rowBesideDrawer).
+            Layout.rightMargin: page.rowBesideDrawer ? Math.max(0, controlsDrawer.width * controlsDrawer.position - page.barRight) : 0
             spacing: Theme.spacing / 2
             // − + Band B/S beside Macros (+ Slice / + Pan with View › Display
             // buttons › Right, as on the waterfall).
@@ -811,9 +836,10 @@ Page {
                 Layout.preferredWidth: page.panButtonsBelow ? 300 : -1
                 Layout.fillHeight: true
             }
-            // Where PTT is while FT8 / FT4 runs.
+            // Where PTT is while FT8 / FT4 runs (not beside the open side
+            // drawer: the six then stand together at the left).
             Item {
-                visible: ptt.digiHidden && page.panButtonsBelow
+                visible: ptt.digiHidden && page.panButtonsBelow && !page.rowBesideDrawer
                 Layout.fillWidth: true
             }
             // + Slice / + Pan on PTT's other side.
@@ -1084,13 +1110,15 @@ Page {
                                 bs: qsTr("Band row and step buttons"), slice: qsTr("+ Slice"), pan: qsTr("+ Pan") })[modelData]
             Accessible.description: modelData === "bs" ? (Engine.tuneRowsShown ? qsTr("Shown; tap to hide them") : qsTr("Hidden; tap to show them")) : ""
             checked: modelData === "band" ? !!Engine.panDisplay.bandZoom : (modelData === "bs" ? Engine.tuneRowsShown : false)
-            font.pixelSize: zoomButton ? Math.round(Theme.buttonFont * 1.3) : macrosButton.font.pixelSize   // as Macros beside them
-            leftPadding: zoomButton ? 0 : 6
-            rightPadding: zoomButton ? 0 : 6
+            // As Macros beside them; smaller beside an open side drawer
+            // where the six do not fit at that size (rowFit).
+            font.pixelSize: Math.round((zoomButton ? Theme.buttonFont * 1.3 : macrosButton.font.pixelSize) * page.rowFit)
+            leftPadding: zoomButton ? 0 : Math.round(6 * page.rowFit)
+            rightPadding: zoomButton ? 0 : Math.round(6 * page.rowFit)
             focusPolicy: Qt.NoFocus
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.minimumWidth: zoomButton ? 44 : implicitContentWidth + 12
+            Layout.minimumWidth: zoomButton ? Math.round(44 * page.rowFit) : implicitContentWidth + Math.round(12 * page.rowFit)
             Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitContentWidth + 16)
             Layout.maximumWidth: Math.max(Layout.minimumWidth, page.rowButtonWidth)
             onClicked: {
@@ -1196,7 +1224,8 @@ Page {
                              : Math.min(Math.max(page.width * 0.4, 320 * Theme.bigScale), 460 * Theme.bigScale)
                                + (drawerPanel.closeInGrid ? drawerPanel.closeColumn : 0)
         // Landscape: ends above the page's PTT row, which stays usable, so
-        // the drawer needs no PTT of its own. Portrait (from the bottom)
+        // the drawer needs no PTT of its own; to the window's bottom while
+        // FT8 / FT4 hides PTT (sideDrawerFull). Portrait (from the bottom)
         // covers it and carries a copy.
         // Upright with the on-screen keyboard up it takes the whole page above
         // the keyboard, as Full-screen controls: half of a short page left
@@ -1210,6 +1239,7 @@ Page {
                                  : page.controlsFull || page.keyboardUp
                                  ? (parent ? parent.height : page.height)
                                  : Math.min(page.height * 0.5, 560) + page.barBottom)
+                              : page.sideDrawerFull ? (parent ? parent.height : page.height)
                               : page.barTop + page.height - page.pttHeight - 2 * Theme.spacing - page.rowInset
         // From the window's edge: Qt otherwise keeps popups inside the safe
         // area (above Android's navigation bar).
