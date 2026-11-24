@@ -2002,7 +2002,12 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
 
   **Decode** turns decoding on and takes the slice to DIGU when it is in
   another mode (PTT gives way to FT8 / FT4 only while the TX slice is in
-  DIGU or DIGL with decoding on; a TX slice in a voice mode keeps its PTT);
+  DIGU or DIGL with decoding on; a TX slice in a voice mode keeps its PTT).
+  When decoding starts, a receive filter narrower than FT8 / FT4 need opens
+  to the full 3 kHz (FreeDV's 750–2250 Hz stays on the radio as DIGU's own
+  filter: with it FT8 hears little outside that part, and the signal
+  reports come out some 30 dB too high). A filter you narrow while decoding
+  runs is left as you set it.
   *FT8* or *FT4* is chosen per slice, for the
   active one, so one slice can decode FT8 and another FT4 at once (FT8 on
   7.074 on slice A and FT4 on 7.0475 on slice B): a slice on a mode's dial

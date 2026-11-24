@@ -253,6 +253,18 @@ void MobileEngine::setDigiRunning(bool on)
                 applyModeAgc();
             }
             QTimer::singleShot(700, this, [this] { widenDigiFilter(); });
+        } else if (digiSlice()) {
+            // Already in DIGU / DIGL: a filter left narrow is opened at the
+            // start of decoding too (roadmap 173). FreeDV works in DIGU with
+            // 750..2250 Hz, the radio keeps that as DIGU's own filter, and
+            // DIGU chosen by hand later came up with it: FT8 then heard
+            // little outside that part, and its reports came out some 30 dB
+            // too high (the same three stations on the FLEX: -7, -5 and
+            // -7 dB with 0..3000, +24, +27 and +27 with 750..2250: the noise
+            // the reports are measured against is cut away). Only the start
+            // opens it; a filter narrowed while decoding runs is the
+            // operator's.
+            widenDigiFilter();
         }
         if (!m_ntpSynced.isValid() || m_ntpSynced.elapsed() > kNtpResyncMs) {
             m_ntp->sync();
