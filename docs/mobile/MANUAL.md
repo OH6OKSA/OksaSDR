@@ -611,7 +611,7 @@ waterfall shows (thanks Evgeny R0ACS); B/S ▲ there brings the rows back.
 On a tablet, a Mac and Linux these buttons have their own place in
 Classic (since build 211, the user's design): **−**, **+**, **Band** and
 **B/S** sit in the PTT row beside **Macros**, and **+ Slice** and **+ Pan**
-on PTT's other side (the other way round with *View › Display buttons ›
+on PTT's other side (the other way round with *Setup › App › Zoom buttons ›
 Right*), as high as PTT, so nothing lies over the waterfall. The row keeps
 its proportions on every screen: each small button takes about a twelfth
 of it and PTT the rest, so on a wide Linux or Mac window PTT grows with
