@@ -3,21 +3,16 @@
 # and the Android APK as the run artifact only. Removed when the user
 # releases the build to the testers (mobile-release.yml).
 
-Build 213 / Android beta 119: roadmap 169 (the user's FT8 tests on the
-OnePlus Open, a second phone and the iPad, 2026-11-24). The status and
-navigation bars are no longer taken for a keyboard: a drawer's Close and
-PTT stand at the bottom, the page ends at the keyboard. While FT8 / FT4
-hides PTT the pinned panel and the side drawer run to the bottom, the
-bottom row is a button's height and its six buttons stand left of the
-open side drawer. FTx's List only is the list: the CQ row with More and
-the QSO's state above it, in the pinned panel too. With 166 (how a radio
-was found and connected, in the log) and 167 (no probes for radios the
-app does not serve).
-On devices: the phones' drawer half and full (Close level with the
-page's Controls), the keyboard with the Log tab (no band above it), FT8
-with List only and More; the opened OnePlus Open in both orientations
-with the drawer at the side; the iPad in both orientations with the
-controls pinned, FTx alone and with another section; the log's "window:"
-line with the bars.
-Before the release: pictures of List only and of a tablet layout with
-FT8 running for the manual.
+Build 214 / Android beta 119: what the preview 213 had (roadmap 169: the
+bars no longer taken for a keyboard, the FTx list to the bottom on every
+device, List only as the list; 166, 167) and what its tests on the
+developer's devices brought (2026-11-24): 170 (the Controls drawer keeps
+its tab and stays open when a foldable changes screens), 171 (Decode
+takes the slice to DIGU; PTT gives way only where FT8 / FT4 keys), the
+side drawer's bottom margin, List only in the pinned panel with a stale
+section name stored, the freeze with FT8 running and the drawer on
+another tab than FTx, PTT above the on-screen keyboard (a press up to
+32 pt under it keys; iOS: Qt's hide-the-keyboard gesture leaves it
+alone), and 164 (a) (a radio's whole name on its Connect card on a
+narrow page). Released to everyone by the user's PuJu of 2026-11-25
+once the builds are green; this file goes then.

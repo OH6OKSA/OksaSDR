@@ -443,7 +443,10 @@ The first page lists the ways to reach a radio:
 
 - **On this network** — FlexRadios found on the local network (on an
   iPhone or iPad, connect by IP address for now). Tap a radio's card, or its
-  **Connect ›**, to connect. *AetherSDR Demo* is a built-in receive-only demo radio for trying
+  **Connect ›**, to connect. On a phone, and in any
+  narrow window, a card gives the radio's name its first row (two lines
+  when it needs them) and **Connect ›** sits under it, so a long name is
+  whole (since build 214 / Android beta 119). *AetherSDR Demo* is a built-in receive-only demo radio for trying
   the app without a radio; **Demo** on the heading's line hides it
   (*Hidden*) or shows it again (*Shown*), remembered (thanks Ian Gilchrist
   VK1HF).
@@ -579,9 +582,10 @@ inner screen) has the same **Close** and **▲**. A swipe inside the open drawer
 never tunes; the part of the display still in view tunes as usual. The
 drawer's **Close** and PTT stand where the page's bottom row does, just
 above the device's navigation bar or home indicator, and with the on-screen
-keyboard up both end right above the keyboard (since build 213 / Android
+keyboard up both end right above the keyboard (since build 214 / Android
 beta 119: the status bar and the navigation bar had been counted as a
-keyboard, which lifted them by a status bar's height).
+keyboard, which lifted them by a status bar's height). A foldable that is
+opened or closed keeps the drawer open on the tab it had.
 
 | iPhone, portrait | iPhone, landscape |
 |---|---|
@@ -621,7 +625,7 @@ Right*), as high as PTT, so nothing lies over the waterfall. The row keeps
 its proportions on every screen: each small button takes about a twelfth
 of it and PTT the rest, so on a wide Linux or Mac window PTT grows with
 the window, not the small buttons. While FT8 / FT4 runs and hides PTT and
-Macros, what is hidden gives its room away (since build 213 / Android
+Macros, what is hidden gives its room away (since build 214 / Android
 beta 119): the row is only as high as a button, the pinned controls run
 beside it to the bottom of the window, and a drawer opened at the side
 runs to the bottom too, with the six buttons gathered left of it (a little
@@ -1994,7 +1998,10 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   |---|---|
   | ![FTx](manual/tab-digi.jpg) | ![Decodes](manual/digi-decodes.jpg) |
 
-  **Decode** turns decoding on; *FT8* or *FT4* is chosen per slice, for the
+  **Decode** turns decoding on and takes the slice to DIGU when it is in
+  another mode (PTT gives way to FT8 / FT4 only while the TX slice is in
+  DIGU or DIGL with decoding on; a TX slice in a voice mode keeps its PTT);
+  *FT8* or *FT4* is chosen per slice, for the
   active one, so one slice can decode FT8 and another FT4 at once (FT8 on
   7.074 on slice A and FT4 on 7.0475 on slice B): a slice on a mode's dial
   frequency starts in that mode, an FT4 decode shows its time with the
@@ -2019,7 +2026,7 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   drawer and, when FTx is the only section shown, in the pinned controls
   of an iPad, a Mac or a tablet. Where the tab's view is lower than about
   260 px (a phone on its side), the whole tab scrolls anyway. (Michael
-  Whaley's request; since build 213 / Android beta 119 the list has the
+  Whaley's request; since build 214 / Android beta 119 the list has the
   room: until then Decode, the bands and Show stayed fixed too and left
   a phone four rows, and the choice took effect only from a 520 px view.)
 
@@ -3159,7 +3166,10 @@ back when the keyboard goes. On Android the keyboard never takes the
 whole screen in landscape (since beta 118: on a phone's low screen it hid
 the app). **PTT keeps
 the field and its keyboard**: in a run, type the call, key, and go on
-typing the report before **Log**. (On a phone in landscape Setup stays
+typing the report before **Log**. While the keyboard is up, a press that
+lands just under PTT (up to 32 points, the gap above the keyboard) keys as
+PTT too, so a low press no longer puts the keyboard away (since build 214
+/ Android beta 119). (On a phone in landscape Setup stays
 full size and slides up with the field, as there is too little room
 above the keyboard.) A tap anywhere outside the text
 field does the same. Either way the open controls or Setup stay open, and
