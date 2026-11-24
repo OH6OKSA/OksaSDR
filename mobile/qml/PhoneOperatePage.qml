@@ -56,6 +56,11 @@ Page {
     // Close): FTx then lists its decodes on the full height (Michael
     // Whaley). Kept while the app runs.
     property bool controlsFull: false
+    // The on-screen keyboard's cover of the window's bottom, and the
+    // navigation bar's (or home indicator's) share of it (Main.qml). The
+    // page lies inside the bars, so its height tells neither.
+    readonly property real keyboardCover: page.Window.window ? page.Window.window.keyboardCover || 0 : 0
+    readonly property real barBottom: page.Window.window ? page.Window.window.barBottom || 0 : 0
 
     function formatMhz(mhz) {
         const hz = Math.round(mhz * 1e6)
@@ -138,9 +143,11 @@ Page {
         anchors.leftMargin: Theme.spacing / 2 + page.SafeArea.margins.left
         anchors.rightMargin: Theme.spacing / 2 + page.SafeArea.margins.right
         anchors.topMargin: Theme.spacing / 2
-        // Not over the keyboard: the navigation bar lies under it (OperatePage).
-        anchors.bottomMargin: Theme.spacing / 2 + (page.Window.window && page.Window.window.keyboardCover > 0
-                                                   ? 0 : Math.max(page.SafeArea.margins.bottom, 8))
+        // 8 from a window's edge; none above a navigation bar, whose inset
+        // the page ends above already (the row sat 8 higher than the drawer's
+        // copy of it), nor over the keyboard.
+        anchors.bottomMargin: Theme.spacing / 2 + (page.keyboardCover > 0
+                                                   ? 0 : Math.max(page.SafeArea.margins.bottom, 8 - page.barBottom, 0))
         columns: 1
         columnSpacing: Theme.spacing / 2
         rowSpacing: Theme.spacing / 2
@@ -610,8 +617,10 @@ Page {
         objectName: "controlsDrawer"
         edge: page.landscape ? Qt.RightEdge : Qt.BottomEdge
         width: page.landscape ? Math.min(page.width * 0.5, 460) : page.width
+        // Its own height counts above what covers the window's bottom: the
+        // keyboard, or the navigation bar (Qt pads the content by that).
         height: page.landscape || page.controlsFull ? (parent ? parent.height : page.height)
-                                                    : Math.min(page.height * 0.55, 520) + Math.max(0, page.Window.height - page.height)
+                                                    : Math.min(page.height * 0.55, 520) + Math.max(page.keyboardCover, page.barBottom)
         // To the window's edges: Qt otherwise keeps popups inside the safe
         // area (above Android's navigation bar) and the drawer stopped short
         // of the page's bottom row. The content below keeps the insets.
@@ -620,8 +629,11 @@ Page {
         // a drawer reaching the window's bottom keeps its controls and PTT
         // above it (Qt places a bottom drawer at the window's edge whatever
         // its margins, so it grows by the keyboard instead and pads that).
+        // The keyboard's own cover, not the window's height less the page's:
+        // that counts the status and navigation bars too, and lifted Close
+        // and PTT by them with no keyboard up (roadmap 169).
         readonly property real keyboardOver: (edge === Qt.BottomEdge || height >= page.Window.height - 1)
-                                             ? Math.max(0, page.Window.height - page.height) : 0
+                                             ? page.keyboardCover : 0
         dim: false
         dragMargin: 0
         // A drawer opening while PTT is held would hide the button.

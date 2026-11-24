@@ -51,7 +51,7 @@ ApplicationWindow {
     // (beta 117, the user: "sisäkannella ei missään asennossa").
     Binding {
         target: Theme; property: "classHeight"
-        value: pages.height + window.keyboardCover - pages.SafeArea.margins.top - pages.SafeArea.margins.bottom
+        value: pages.height + window.keyboardLift - pages.SafeArea.margins.top - pages.SafeArea.margins.bottom
     }
     readonly property bool phoneSized: Theme.phoneLayout
     // The page's layout, settled: the two bindings above update one after
@@ -118,18 +118,44 @@ ApplicationWindow {
     // koko vesiputouksen"). 0 when the system made the window shorter itself.
     readonly property real keyboardCover: onScreenKeyboard && keyboardRect.height > 0
                                           ? Math.max(0, Math.min(height * 0.7, height - keyboardRect.y)) : 0
+    // The device's bars: the status bar's and the navigation bar's (or the
+    // home indicator's) share of the window. Qt lays the pages inside them
+    // (ApplicationWindow pads its content by the safe area since Qt 6.9) and
+    // pads a popup's content by them, so a page is shorter than the window
+    // by both with no keyboard anywhere. The pages' sums took that
+    // difference for the keyboard (roadmap 169, measured on two Android
+    // phones: a drawer's Close and PTT 85 pt above the window's bottom, the
+    // status bar's 41 of them for nothing).
+    readonly property real barTop: SafeArea.margins.top
+    readonly property real barBottom: SafeArea.margins.bottom
+    readonly property real barRight: SafeArea.margins.right
+    // What the keyboard takes of the pages' room: its cover less the
+    // navigation bar under it, which the pages end above already. With the
+    // whole cover the page ended the bar's height above the keyboard (the
+    // OnePlus Open, beta 117: "musta raita ... ihan turhaa").
+    readonly property real keyboardLift: Math.max(0, keyboardCover - barBottom)
     // Each change in the log, with the system's numbers: the room a device
     // makes (or not) can then be read from a tester's log.
     onKeyboardCoverChanged: Qt.callLater(() => Engine.logUi("keyboard: cover " + Math.round(window.keyboardCover) + " of "
         + window.width + "x" + window.height + " (the system's " + Math.round(Qt.inputMethod.keyboardRectangle.y) + "+"
-        + Math.round(Qt.inputMethod.keyboardRectangle.height) + ", ratio " + Screen.devicePixelRatio + "; safe area top "
-        + Math.round(pages.SafeArea.margins.top) + " bottom " + Math.round(pages.SafeArea.margins.bottom) + ")"))
+        + Math.round(Qt.inputMethod.keyboardRectangle.height) + ", ratio " + Screen.devicePixelRatio + "; bars top "
+        + Math.round(window.barTop) + " bottom " + Math.round(window.barBottom) + ")"))
+    // The window and its bars in the log once they settle (a turn, a fold,
+    // a resized window): a layout question from a tester's log starts here.
+    readonly property string geometryNote: width + "x" + height + ", bars top " + Math.round(barTop) + " bottom "
+                                           + Math.round(barBottom) + ", the page " + Math.round(pages.width) + "x" + Math.round(pages.height)
+    onGeometryNoteChanged: geometryLog.restart()
+    Timer {
+        id: geometryLog
+        interval: 800
+        onTriggered: Engine.logUi("window: " + window.geometryNote)
+    }
 
     // The page follows the connection: radio list until connected.
     Loader {
         id: pages
         anchors.fill: parent
-        anchors.bottomMargin: window.keyboardCover
+        anchors.bottomMargin: window.keyboardLift
         sourceComponent: Engine.connectionState !== "connected" ? connectPage
                        : window.pagePhone ? phoneOperatePage : operatePage
     }
@@ -276,7 +302,7 @@ ApplicationWindow {
                              + Math.round(keyboard.y) + "+" + Math.round(keyboard.height) + " of " + window.height
                              + " (the system's " + Math.round(Qt.inputMethod.keyboardRectangle.y) + "+"
                              + Math.round(Qt.inputMethod.keyboardRectangle.height) + ", ratio " + Screen.devicePixelRatio
-                             + "; safe area top " + Math.round(pages.SafeArea.margins.top) + " bottom " + Math.round(pages.SafeArea.margins.bottom) + ")")
+                             + "; bars top " + Math.round(window.barTop) + " bottom " + Math.round(window.barBottom) + ")")
             }
         }
         // The field scrolled into its page's sight once the page has made

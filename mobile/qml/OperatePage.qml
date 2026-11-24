@@ -179,6 +179,17 @@ Page {
     readonly property real rowButtonWidth: leftWidth / 12
     // The on-screen keyboard up (not a hardware keyboard on a Mac or Linux).
     readonly property bool keyboardUp: !!(page.Window.window && page.Window.window.keyboardCover > 0)
+    // Its cover of the window's bottom, and the device's bars (Main.qml):
+    // the status bar's share at the top, the navigation bar's (or home
+    // indicator's) at the bottom. The page lies inside them, so the window's
+    // height less the page's is not the keyboard: it took the bars for one
+    // (roadmap 169).
+    readonly property real keyboardCover: page.Window.window ? page.Window.window.keyboardCover || 0 : 0
+    readonly property real barTop: page.Window.window ? page.Window.window.barTop || 0 : 0
+    readonly property real barBottom: page.Window.window ? page.Window.window.barBottom || 0 : 0
+    // Under the bottom row: 12 from a window's edge; none above a navigation
+    // bar, whose inset the page ends above already, nor over the keyboard.
+    readonly property real rowInset: keyboardUp ? 0 : Math.max(page.SafeArea.margins.bottom, 12 - barBottom, 0)
     // K1 (the user's review, 2026-11-23): in landscape the band row and the
     // step buttons give their height to the waterfall while the keyboard is
     // up (nothing is tuned while a call is typed); back when it goes. On an
@@ -191,7 +202,7 @@ Page {
     // OnePlus Open).
     readonly property real keyboardDrawerNeed: Math.round(2 * Theme.touchTarget + 3 * (Theme.touchTarget + Theme.spacing)
                                                           + pttHeight + 5 * Theme.spacing)
-    readonly property bool keyboardDrawerShort: stacked && !controlsFull && page.Window.height - page.height > 1
+    readonly property bool keyboardDrawerShort: stacked && !controlsFull && keyboardUp
                                                && page.height - keyboardDrawerNeed >= 400
     // Landscape side column: the pinned control panel (none when hidden).
     // Fixed, so content can never widen it off screen. At least 320 as the
@@ -568,7 +579,7 @@ Page {
         // left a band of 60 pt between PTT and the keyboard (the OnePlus
         // Open, beta 117: "musta raita ... ihan turhaa"; in landscape the
         // Log drawer then showed only its tabs).
-        anchors.bottomMargin: (page.keyboardUp ? Theme.spacing : Theme.spacing + Math.max(page.SafeArea.margins.bottom, 12))
+        anchors.bottomMargin: Theme.spacing + page.rowInset
                               + (page.keyboardDrawerShort && controlsDrawer.visible ? page.keyboardDrawerNeed : 0)
         columnSpacing: Theme.spacing
         rowSpacing: Theme.spacing
@@ -1190,13 +1201,16 @@ Page {
         // Upright with the on-screen keyboard up it takes the whole page above
         // the keyboard, as Full-screen controls: half of a short page left
         // the Log tab's call field one line high (an opened OnePlus Open).
+        // Its own height counts above what covers the window's bottom (the
+        // keyboard, or the navigation bar: Qt pads the content by that). At
+        // the side it starts at the window's top, the status bar's height
+        // above the page.
         height: page.stacked ? (page.keyboardDrawerShort
-                                 ? page.keyboardDrawerNeed + Math.max(0, page.Window.height - page.height)
-                                 : page.controlsFull || page.Window.height - page.height > 1
+                                 ? page.keyboardDrawerNeed + page.keyboardCover
+                                 : page.controlsFull || page.keyboardUp
                                  ? (parent ? parent.height : page.height)
-                                 : Math.min(page.height * 0.5, 560) + Math.max(0, page.Window.height - page.height))
-                              : page.height - page.pttHeight - 2 * Theme.spacing
-                                - (page.keyboardUp ? 0 : Math.max(page.SafeArea.margins.bottom, 12))
+                                 : Math.min(page.height * 0.5, 560) + page.barBottom)
+                              : page.barTop + page.height - page.pttHeight - 2 * Theme.spacing - page.rowInset
         // From the window's edge: Qt otherwise keeps popups inside the safe
         // area (above Android's navigation bar).
         margins: 0
@@ -1205,7 +1219,7 @@ Page {
         // above it (Qt places a bottom drawer at the window's edge whatever
         // its margins, so it grows by the keyboard instead and pads that).
         readonly property real keyboardOver: (edge === Qt.BottomEdge || height >= page.Window.height - 1)
-                                             ? Math.max(0, page.Window.height - page.height) : 0
+                                             ? page.keyboardCover : 0
         dim: false
         dragMargin: 0
         onAboutToShow: {
