@@ -32,7 +32,14 @@ AppButton {
     readonly property bool digiHidden: Engine.digiOwnsTx && !Engine.rade
     // A finger is on it: the button itself or one of its paddles (the side
     // drawer's copy stays while held, OperatePage).
-    readonly property bool held: pressed || paddles.dit || paddles.dah
+    readonly property bool held: pressed || paddles.dit || paddles.dah || skirt.pressed
+    // Room to press under the button, not drawn (pt). For a button right
+    // above the on-screen keyboard: on the user's iPad in landscape (build
+    // 213) 14 of 30 presses meant for PTT came in 0-24 pt under its edge
+    // (y 483-507 for a button at 417-483), which keyed nothing, let the Log
+    // tab's field go and put the keyboard away. A press there keys as one
+    // on the button; nothing else is under it but the keyboard.
+    property real touchBelow: 0
     // Transmit lock (TX tab, Larry Averbeck): in standby the button says SB
     // and a second's hold arms it (nothing is sent); armed, the time left
     // shows under the label as OA m:ss.
@@ -42,7 +49,7 @@ AppButton {
         const s = Engine.txArmedSeconds
         return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0")
     }
-    enabled: (keyMode ? Engine.cwKeyAvailable : Engine.transmitAvailable) || Engine.tuning || pressed
+    enabled: (keyMode ? Engine.cwKeyAvailable : Engine.transmitAvailable) || Engine.tuning || pressed || skirt.pressed
     text: Engine.tuning ? qsTr("TUNE") : txStandby ? qsTr("SB")
           : keyMode ? (Engine.cwKeyDown ? qsTr("KEY ●") : qsTr("KEY"))
           : Engine.pttLatched ? qsTr("TX ■") : Engine.transmitting ? qsTr("TX") : qsTr("PTT")
@@ -98,7 +105,11 @@ AppButton {
     // In tap on/off mode a press switches and the release does nothing.
     // A tap felt on press and release, voice only: the straight key and the
     // paddles key too fast for it.
-    onPressed: {
+    // y: the press down from the button's top edge, for the log (not the
+    // straight key's, which keys every dit).
+    function pressAction(y) {
+        if (!keyMode)
+            Engine.notePttPress(y, height, touchBelow)
         if (txStandby) {
             arming = true
             Engine.armHold(true)
@@ -111,7 +122,7 @@ AppButton {
         else if (toggleMode) Engine.togglePtt()
         else Engine.setPtt(true)
     }
-    onReleased: {
+    function releaseAction() {
         if (arming) {
             arming = false
             Engine.armHold(false)
@@ -124,7 +135,7 @@ AppButton {
             Engine.setPtt(false, "button released")
         }
     }
-    onCanceled: {
+    function cancelAction() {
         if (arming) {
             arming = false
             Engine.armHold(false)
@@ -133,6 +144,25 @@ AppButton {
         if (paddleMode) return
         if (keyMode) Engine.setCwKey(false, "touch cancelled by the system")
         else if (!toggleMode) Engine.setPtt(false, "touch cancelled by the system")
+    }
+    onPressed: pressAction(pressY)
+    onReleased: releaseAction()
+    onCanceled: cancelAction()
+    // The room under the button (touchBelow): the same press, release and
+    // cancel as the button's own, and held as long as the finger is down
+    // wherever it rolls. Not for the paddles, which have their own touches.
+    // While the button cannot key it takes nothing, as the button itself.
+    MouseArea {
+        id: skirt
+        objectName: "pttTouchBelow"
+        y: ptt.height
+        width: ptt.width
+        height: ptt.touchBelow
+        visible: ptt.touchBelow > 0
+        enabled: !ptt.paddleMode
+        onPressed: (mouse) => ptt.pressAction(ptt.height + mouse.y)
+        onReleased: ptt.releaseAction()
+        onCanceled: ptt.cancelAction()
     }
 
     Item {

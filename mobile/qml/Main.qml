@@ -418,6 +418,8 @@ ApplicationWindow {
             required property int index
             parent: Overlay.overlay
             z: 998
+            // Drawn only: a press goes to what is under it (TextFocusRelease).
+            property bool passesPresses: true
             visible: modelData > 0
             x: 0
             y: index === 0 ? 0 : window.height - modelData
@@ -431,12 +433,33 @@ ApplicationWindow {
     Rectangle {
         parent: Overlay.overlay
         z: 999
+        // Drawn only: a press goes to what is under it (TextFocusRelease).
+        property bool passesPresses: true
         visible: Engine.testKeyboard && Engine.testKeyboardHeight > 0
         x: 0
         y: window.height - Engine.testKeyboardHeight
         width: window.width
         height: Engine.testKeyboardHeight
         color: "#6b6f76"
+    }
+    // The developer link's press marks (a plan's "pressmarks on"): a ring
+    // and a cross where the app took the last press, for two seconds, so a
+    // tester sees it against where the finger was. Drawn only.
+    Item {
+        parent: Overlay.overlay
+        z: 1000
+        property bool passesPresses: true
+        visible: Engine.pressMarks && pressMarkTimer.running
+        x: Engine.pressMark.x
+        y: Engine.pressMark.y
+        Rectangle { x: -24; y: -24; width: 48; height: 48; radius: 24; color: "transparent"; border.width: 3; border.color: "#ffd400" }
+        Rectangle { x: -34; y: -1; width: 68; height: 2; color: "#ffd400" }
+        Rectangle { x: -1; y: -34; width: 2; height: 68; color: "#ffd400" }
+        Timer { id: pressMarkTimer; interval: 2000 }
+        Connections {
+            target: Engine
+            function onPressMarked() { pressMarkTimer.restart() }
+        }
     }
 
     // A SmartLink radio presented a different TLS certificate than the one

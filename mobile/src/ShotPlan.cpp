@@ -1739,6 +1739,21 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         // and macros can be tested on the radio with nothing on air.
         m_engine.setTransmitBlocked(arg == QLatin1String("on"));
         *delayMs = 200;
+    } else if (command == QLatin1String("pressmarks")) {
+        // pressmarks on|off: each press is logged with what is under it and
+        // marked on the screen with a ring for two seconds; stays on after
+        // the plan (a device takes this line too).
+        m_engine.setPressMarks(arg == QLatin1String("on"));
+        *delayMs = 200;
+    } else if (command == QLatin1String("txready")) {
+        // txready on|off: PTT takes presses on a radio that cannot transmit
+        // (the demo radio) while "txblock on" refuses them all (the button
+        // then says SB, as under a developer-link plan): where a press on
+        // PTT lands shows as "PTT pressed ..." in the log with nothing asked
+        // of any radio. Give "txblock on" first; without it this does
+        // nothing. Not among the plan lines a device takes.
+        m_engine.setTestTransmitAvailable(arg == QLatin1String("on"));
+        *delayMs = 300;
     } else if (command == QLatin1String("keyhold")) {
         // <F1>..<F12> held MS ms as a hardware keyboard sends it: the press,
         // its auto-repeat every 50 ms, the release (roadmap 120's repeat and

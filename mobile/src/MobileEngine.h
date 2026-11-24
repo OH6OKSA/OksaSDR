@@ -21,6 +21,7 @@
 #include <optional>
 #include <QSet>
 #include <QObject>
+#include <QPointF>
 #include <QPointer>
 #include <QStringList>
 #include <QElapsedTimer>
@@ -119,6 +120,12 @@ class MobileEngine : public QObject {
     // keyboard on every phone and no picture said so (roadmap 169).
     Q_PROPERTY(int testSafeTop READ testSafeTop NOTIFY testSafeAreaChanged)
     Q_PROPERTY(int testSafeBottom READ testSafeBottom NOTIFY testSafeAreaChanged)
+    // The developer link's press marks (a plan's "pressmarks on"): each
+    // press is written to the log with what is under it and marked on the
+    // screen (Main.qml), so a tester sees where the app takes a press
+    // against where the finger is.
+    Q_PROPERTY(bool pressMarks READ pressMarks NOTIFY pressMarksChanged)
+    Q_PROPERTY(QPointF pressMark READ pressMark NOTIFY pressMarked)
     // Text size: "system" follows the system's text size (iOS Dynamic Type,
     // Android's font scale), or "100" / "115" / "130" percent. textScale is
     // the factor every text size in the theme is multiplied by, held to
@@ -1730,6 +1737,22 @@ public:
     // (WSJT-X's own example calls), and the waterfall's + Slice / + Pan,
     // which the demo radio has no room for.
     void setTestDecodes(int count);
+    // PTT shown ready on a radio that cannot transmit (the demo radio): for
+    // a test of where a press on it lands, with "txblock on" before it so
+    // that nothing is asked of the radio.
+    void setTestTransmitAvailable(bool on);
+    bool pressMarks() const { return m_pressMarks; }
+    void setPressMarks(bool on);
+    QPointF pressMark() const { return m_pressMark; }
+    void markPress(const QPointF& at, const QString& under);
+    // Where a press on PTT landed, for the log: y pt down from the button's
+    // top edge (more than its height: in the room under it that a button
+    // above the on-screen keyboard has, PttButton's touchBelow).
+    Q_INVOKABLE void notePttPress(double y, double height, double roomBelow);
+    // Qt's own hide-the-keyboard gesture (iOS) is kept from the presses
+    // that keep the text field (KeyboardGuard.h); asked again whenever the
+    // keyboard comes up.
+    void guardKeyboard();
     void setTestAddButtons(bool on)
     {
         if (on != m_testAddButtons) {
@@ -2331,6 +2354,8 @@ signals:
     void spotFeedsChanged();
     void testKeyboardChanged();
     void testSafeAreaChanged();
+    void pressMarksChanged();
+    void pressMarked();
     void heardMeChanged();
     // A spot's Tune (roadmap 137): the Controls tab for the spot's mode
     // (FTx, Digi, CW) by its section name; open: the alert's Tune opens a
@@ -3109,6 +3134,11 @@ private:
     bool m_testKeyboard{false};
     int m_testKeyboardHeight{0};
     bool m_testAddButtons{false};
+    bool m_testTransmitAvailable{false};
+    bool m_pressMarks{false};
+    QPointF m_pressMark;
+    qint64 m_pressMarkMs{0};
+    int m_keyboardGuards{-1};
     QString m_controlsSection;
     bool m_controlsDrawerOpen{false};
     int m_testSafeTop{0};

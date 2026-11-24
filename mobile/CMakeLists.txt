@@ -93,6 +93,7 @@ qt_add_executable(aether-mobile
     src/TextScale.h
     src/DeviceId.h
     src/SideKeys.h
+    src/KeyboardGuard.h
     src/MidiPairing.h
     src/VoiceInput.h
     src/CallsignSpeech.h
@@ -101,7 +102,7 @@ qt_add_executable(aether-mobile
 )
 if(IOS)
     target_sources(aether-mobile PRIVATE ios/ScreenAwake.mm ios/SecureStore.mm ios/AudioSession.mm ios/ShareText.mm
-                                         ios/SideKeys.mm ios/Haptics.mm ios/TextScale.mm
+                                         ios/SideKeys.mm ios/Haptics.mm ios/TextScale.mm ios/KeyboardGuard.mm
                                          ios/DeviceId.mm ios/MidiPairing.mm ios/VoiceInput.mm ios/LocalNotify.mm
                                          src/VoskSpeech.h src/VoskSpeech.cpp)
     target_link_libraries(aether-mobile PRIVATE "-framework Security" "-framework AVFAudio" "-framework GameController"
@@ -135,13 +136,13 @@ if(IOS)
 elseif(ANDROID)
     target_sources(aether-mobile PRIVATE android/AndroidJni.h android/ScreenAwake.cpp android/SecureStore.cpp
                                          src/AudioSession.cpp android/ShareText.cpp src/SideKeys.cpp android/KeyLog.cpp
-                                         android/Haptics.cpp android/TextScale.cpp src/DeviceId.cpp
+                                         android/Haptics.cpp android/TextScale.cpp src/DeviceId.cpp src/KeyboardGuard.cpp
                                          android/MidiPairing.cpp android/VoiceInput.cpp
                                          src/VoskSpeech.h src/VoskSpeech.cpp)
     target_include_directories(aether-mobile PRIVATE src)
 else()
     target_sources(aether-mobile PRIVATE src/ScreenAwake.cpp src/SecureStore.cpp src/AudioSession.cpp src/ShareText.cpp
-                                         src/SideKeys.cpp src/Haptics.cpp src/TextScale.cpp
+                                         src/SideKeys.cpp src/Haptics.cpp src/TextScale.cpp src/KeyboardGuard.cpp
                                          src/DeviceId.cpp src/MidiPairing.cpp src/VoiceInput.cpp
                                          src/VoskSpeech.h src/VoskSpeech.cpp)
     target_link_libraries(aether-mobile PRIVATE ${CMAKE_DL_LIBS})

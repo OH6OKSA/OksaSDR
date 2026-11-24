@@ -38,6 +38,7 @@
 #include "ScreenAwake.h"
 #include "SecureStore.h"
 #include "SideKeys.h"
+#include "KeyboardGuard.h"
 
 #include "core/AppActivity.h"
 #include "core/AppSettings.h"
@@ -324,11 +325,21 @@ public:
                          [](const QQuickItem* a, const QQuickItem* b) { return a->z() < b->z(); });
         for (auto it = children.crbegin(); it != children.crend(); ++it) {
             QQuickItem* child = *it;
-            if (!child->isVisible() || child->opacity() <= 0.0 || !child->contains(child->mapFromScene(scenePos))) {
+            if (!child->isVisible() || child->opacity() <= 0.0 || child->property("passesPresses").toBool()) {
+                continue;   // also the render tool's stand-ins (keyboard, bars), which only draw
+            }
+            // As Qt delivers a press: a child may lie outside its parent (the
+            // room to press under PTT, PttButton.touchBelow), unless the
+            // parent clips.
+            const bool inside = child->contains(child->mapFromScene(scenePos));
+            if (!inside && child->clip()) {
                 continue;
             }
             if (QQuickItem* deeper = deepestAt(child, scenePos, depth + 1)) {
                 return deeper;
+            }
+            if (!inside) {
+                continue;
             }
             // Only what takes a press or draws counts: an empty container
             // is passed through (the popups' layer and the page's layout
@@ -345,8 +356,11 @@ public:
     }
     static bool keepsTextFocusAt(QQuickItem* root, const QPointF& scenePos)
     {
+        QElapsedTimer walk;
+        walk.start();
         QQuickItem* deepest = deepestAt(root, scenePos);
         if (qEnvironmentVariableIsSet("OKSASDR_DEBUG_PRESS")) {
+            qInfo().noquote() << "press: the walk over the items took" << QString::number(walk.nsecsElapsed() / 1000) << "us";
             QStringList chain;
             for (QQuickItem* up = deepest; up && chain.size() < 8; up = up->parentItem()) {
                 chain << QString::fromLatin1(up->metaObject()->className()) + QLatin1Char(':') + up->objectName();
@@ -405,6 +419,40 @@ public:
         }
         return false;
     }
+};
+
+// The developer link's press marks ("pressmarks on" in a plan): each press
+// at a window goes to the log with what is under it and is marked on the
+// screen. On the user's iPad in landscape (build 213) the presses meant for
+// PTT above the on-screen keyboard came in 0-24 pt under the button: with
+// the marks a tester sees whether the app takes a press where the finger is.
+class PressMarks : public QObject {
+public:
+    explicit PressMarks(MobileEngine* engine) : QObject(engine), m_engine(engine) {}
+    bool eventFilter(QObject* receiver, QEvent* event) override
+    {
+        if (!m_engine->pressMarks()
+            || (event->type() != QEvent::MouseButtonPress && event->type() != QEvent::TouchBegin)) {
+            return false;
+        }
+        auto* window = qobject_cast<QQuickWindow*>(receiver);
+        const auto* press = static_cast<QPointerEvent*>(event);
+        if (!window || press->points().isEmpty()) {
+            return false;
+        }
+        const QPointF at = press->points().first().scenePosition();
+        QStringList chain;
+        for (QQuickItem* up = TextFocusRelease::deepestAt(window->contentItem(), at); up && chain.size() < 4;
+             up = up->parentItem()) {
+            chain << QString::fromLatin1(up->metaObject()->className()).section(QLatin1Char('_'), 0, 0)
+                         + (up->objectName().isEmpty() ? QString() : QLatin1Char(':') + up->objectName());
+        }
+        m_engine->markPress(at, chain.isEmpty() ? QStringLiteral("nothing") : chain.join(QStringLiteral(" < ")));
+        return false;
+    }
+
+private:
+    MobileEngine* m_engine;
 };
 
 // The operator is there: a touch, a click, a wheel or a key on any of the
@@ -1563,7 +1611,18 @@ MobileEngine::MobileEngine(QObject* parent)
         auto* diag = new KeyboardDiag(this);
         qApp->installEventFilter(diag);
         qApp->installEventFilter(new TextFocusRelease(this));
+        qApp->installEventFilter(new PressMarks(this));
         qApp->installEventFilter(new OperatorPresence(this));
+        // Qt's hide-the-keyboard gesture (iOS) gets no press that keeps the
+        // text field: it is on the window only once Qt has put it there, so
+        // it is looked for again each time the keyboard comes up.
+#ifdef Q_OS_IOS
+        connect(QGuiApplication::inputMethod(), &QInputMethod::visibleChanged, this, [this] {
+            if (QGuiApplication::inputMethod()->isVisible()) {
+                guardKeyboard();
+            }
+        });
+#endif
         qApp->installEventFilter(new AppleControlKeys(this));
         qCInfo(lcMobile) << "keyboard: iPad app on a Mac:" << (runningAsIosAppOnMac() ? "yes" : "no");
         if (runningAsIosAppOnMac()) {
@@ -3512,8 +3571,71 @@ double MobileEngine::compReductionDb() const
 
 bool MobileEngine::transmitAvailable() const
 {
+    if (m_testTransmitAvailable && m_txBlocked) {
+        return true;    // the render tool: PTT shown ready, every press refused (txblock)
+    }
     return m_connected && m_caps.canTransmit
         && m_session.radioModel().transmitModel().micSelection() == kDeviceMicSelection;
+}
+
+void MobileEngine::setPressMarks(bool on)
+{
+    if (on != m_pressMarks) {
+        m_pressMarks = on;
+        qCInfo(lcMobile) << "press marks" << (on ? "on: each press is logged and marked on the screen" : "off");
+        emit pressMarksChanged();
+    }
+}
+
+void MobileEngine::markPress(const QPointF& at, const QString& under)
+{
+    // A touch nothing takes comes again as the mouse press made of it: once.
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (now - m_pressMarkMs < 250 && (at - m_pressMark).manhattanLength() < 2.0) {
+        return;
+    }
+    m_pressMarkMs = now;
+    m_pressMark = at;
+    qCInfo(lcMobile).noquote() << QStringLiteral("press mark: %1,%2 on %3").arg(qRound(at.x())).arg(qRound(at.y())).arg(under);
+    emit pressMarked();
+}
+
+void MobileEngine::notePttPress(double y, double height, double roomBelow)
+{
+    if (y > height) {
+        qCInfo(lcMobile).noquote() << QStringLiteral("PTT pressed %1 pt under the button (its room above the keyboard, %2 pt)")
+                                          .arg(qRound(y - height)).arg(qRound(roomBelow));
+    } else {
+        qCInfo(lcMobile).noquote() << QStringLiteral("PTT pressed %1 pt down its %2 pt%3")
+                                          .arg(qRound(y)).arg(qRound(height))
+                                          .arg(roomBelow > 0 ? QStringLiteral(" (above the keyboard)") : QString());
+    }
+}
+
+void MobileEngine::guardKeyboard()
+{
+    const int asking = mobile::guardKeyboardFromPresses([](double x, double y) {
+        for (QWindow* top : QGuiApplication::topLevelWindows()) {
+            auto* window = qobject_cast<QQuickWindow*>(top);
+            if (window && window->isVisible()) {
+                return TextFocusRelease::keepsTextFocusAt(window->contentItem(), QPointF(x, y));
+            }
+        }
+        return false;
+    });
+    if (asking != m_keyboardGuards) {
+        m_keyboardGuards = asking;
+        qCInfo(lcMobile) << "keyboard: Qt's hide-the-keyboard gesture is kept from presses on PTT:" << asking
+                         << "gesture(s) found";
+    }
+}
+
+void MobileEngine::setTestTransmitAvailable(bool on)
+{
+    if (on != m_testTransmitAvailable) {
+        m_testTransmitAvailable = on;
+        emit transmitStateChanged();
+    }
 }
 
 bool MobileEngine::canUseDeviceMicrophone() const

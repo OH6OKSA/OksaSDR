@@ -208,6 +208,11 @@ Page {
     readonly property real barTop: page.Window.window ? page.Window.window.barTop || 0 : 0
     readonly property real barBottom: page.Window.window ? page.Window.window.barBottom || 0 : 0
     readonly property real barRight: page.Window.window ? page.Window.window.barRight || 0 : 0
+    // With the on-screen keyboard up PTT stands right above it, and the
+    // presses on its lower part are taken under its edge (the user's iPad in
+    // landscape, build 213: 0-24 pt under it): that much and a little more
+    // under the button keys too (PttButton.touchBelow).
+    readonly property real pttTouchBelow: keyboardUp ? 32 : 0
     // Under the bottom row: 12 from a window's edge; none above a navigation
     // bar, whose inset the page ends above already, nor over the keyboard.
     readonly property real rowInset: keyboardUp ? 0 : Math.max(page.SafeArea.margins.bottom, 12 - barBottom, 0)
@@ -1193,6 +1198,7 @@ Page {
     PttButton {
         id: ptt
         objectName: "pagePtt"
+        touchBelow: page.pttTouchBelow
         parent: page.canvasOn ? blockPtt.contentArea : pttSlot
         anchors.fill: parent
         // FT8 / FT4 running hides it (Classic hides its whole row).
@@ -1344,6 +1350,7 @@ Page {
                 PttButton {
                     id: drawerPtt
                     objectName: "drawerPtt"
+                    touchBelow: page.pttTouchBelow
                     visible: !digiHidden
                     Layout.fillWidth: true
                     Layout.preferredHeight: page.pttHeight
@@ -1403,6 +1410,7 @@ Page {
         contentItem: PttButton {
             id: sidePtt
             objectName: "sidePtt"
+            touchBelow: ptt.touchBelow
             visible: page.sidePttShown
             fontPx: ptt.fontPx
         }

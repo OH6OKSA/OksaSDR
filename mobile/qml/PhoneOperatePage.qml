@@ -61,6 +61,9 @@ Page {
     // page lies inside the bars, so its height tells neither.
     readonly property real keyboardCover: page.Window.window ? page.Window.window.keyboardCover || 0 : 0
     readonly property real barBottom: page.Window.window ? page.Window.window.barBottom || 0 : 0
+    // Room to press under PTT while it stands right above the on-screen
+    // keyboard (PttButton.touchBelow; OperatePage has the story).
+    readonly property real pttTouchBelow: keyboardCover > 0 ? 32 : 0
 
     function formatMhz(mhz) {
         const hz = Math.round(mhz * 1e6)
@@ -509,6 +512,7 @@ Page {
                 // and on some devices (Android insets) this one would peek out
                 // under it as a second PTT.
                 PttButton {
+                    touchBelow: page.pttTouchBelow
                     visible: page.landscape && !controlsDrawer.visible && !digiHidden
                     paddleSide: page.splitPaddles ? "right" : "both"
                     paddleState: page.splitPaddles ? paddleState : null
@@ -596,6 +600,7 @@ Page {
                 }
                 PttButton {
                     id: ptt
+                    touchBelow: page.pttTouchBelow
                     visible: !controlsDrawer.visible && !digiHidden
                     paddleSide: page.splitPaddles ? "right" : "both"
                     paddleState: page.splitPaddles ? paddleState : null
@@ -734,6 +739,7 @@ Page {
                 }
                 PttButton {
                     objectName: "drawerPtt"
+                    touchBelow: page.pttTouchBelow
                     visible: !digiHidden
                     paddleSide: page.splitPaddles ? "right" : "both"
                     paddleState: page.splitPaddles ? paddleState : null
