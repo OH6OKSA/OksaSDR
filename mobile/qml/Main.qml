@@ -414,23 +414,23 @@ ApplicationWindow {
     // The render tool's stand-in for a phone's status and navigation bars
     // (plan verb safearea): dim strips where they would be; at the sides
     // too, as a phone's outer screen on its side has them (a camera cutout
-    // and the navigation bar).
-    Repeater {
-        model: [Engine.testSafeTop, Engine.testSafeBottom, Engine.testSafeLeft, Engine.testSafeRight]
-        delegate: Rectangle {
-            required property int modelData
-            required property int index
+    // and the navigation bar). One item in the window's overlay, made only
+    // while a test inset is set: as a Repeater's rectangles moved into the
+    // overlay they wrote "Cannot stack ..." into every log at each start,
+    // on every device (roadmap 207).
+    Loader {
+        active: Engine.testSafeTop + Engine.testSafeBottom + Engine.testSafeLeft + Engine.testSafeRight > 0
+        sourceComponent: Item {
             parent: Overlay.overlay
             z: 998
+            width: window.width
+            height: window.height
             // Drawn only: a press goes to what is under it (TextFocusRelease).
             property bool passesPresses: true
-            visible: modelData > 0
-            x: index === 3 ? window.width - modelData : 0
-            y: index === 1 ? window.height - modelData : 0
-            width: index < 2 ? window.width : modelData
-            height: index < 2 ? modelData : window.height
-            color: "#000000"
-            opacity: 0.55
+            Rectangle { width: parent.width; height: Engine.testSafeTop; color: "#000000"; opacity: 0.55 }
+            Rectangle { y: parent.height - height; width: parent.width; height: Engine.testSafeBottom; color: "#000000"; opacity: 0.55 }
+            Rectangle { width: Engine.testSafeLeft; height: parent.height; color: "#000000"; opacity: 0.55 }
+            Rectangle { x: parent.width - width; width: Engine.testSafeRight; height: parent.height; color: "#000000"; opacity: 0.55 }
         }
     }
     // The render tool's stand-in keyboard, drawn where a phone's would be.
