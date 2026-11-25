@@ -2572,6 +2572,7 @@ private:
     void startDeviceMicrophoneCapture();
     void stopDeviceMicrophoneCapture(bool force = false);
     void updateMicCheck();
+    void retryReceiveOpen(const char* why);
     void releasePtt(const QString& reason);
     void duckReceive(bool on, const char* why);
     void wireSmartLink();
@@ -2639,6 +2640,10 @@ private:
     bool m_outputDeviceApplied{false};
     QTimer m_headsetLinkTimer;
     int m_headsetLinkTicks{0};
+    // Receive that could not be opened (AudioEngine::rxOpenFailed): tried
+    // again every 5 s and when the app comes to the front (roadmap 181 b: an
+    // iPad's receive stayed shut after an interruption in the background).
+    QTimer m_rxRetryTimer;
     // Android: Qt's default output, to reopen receive when a USB-C or wired
     // headset comes or goes.
     QByteArray m_defaultOutputId;

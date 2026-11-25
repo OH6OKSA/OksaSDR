@@ -819,6 +819,10 @@ public slots:
 signals:
     void rxStarted();
     void rxStopped();
+    // OksaSDR: the receive sink could not be opened again after its retries
+    // (retryRxStart): the app goes on trying, more slowly, and when it comes
+    // back to the front (roadmap 181 b, 201).
+    void rxOpenFailed();
     void levelChanged(float rms);  // audio level for VU meter, 0.0–1.0
     // Linear post-NR / pre-NR block RMS on the main RX path (1.0 = passthrough,
     // 0.0 = fully suppressed), the same for every NR method. `active` is false when

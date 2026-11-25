@@ -747,6 +747,22 @@ MobileEngine::MobileEngine(QObject* parent)
     m_speechTimer.setSingleShot(true);
     connect(&m_speechTimer, &QTimer::timeout, this, &MobileEngine::voiceInputStop);
     connect(m_audio, &AudioEngine::txClipFinished, this, &MobileEngine::onVoiceClipFinished);
+    // Receive that could not be opened is tried again: every 5 s, and at
+    // once when the app comes to the front (roadmap 181 b, 201).
+    m_rxRetryTimer.setInterval(5000);
+    connect(&m_rxRetryTimer, &QTimer::timeout, this, [this] { retryReceiveOpen("the 5 s retry"); });
+    connect(m_audio, &AudioEngine::rxOpenFailed, this, [this] {
+        if (m_connected && !m_rxRetryTimer.isActive()) {
+            qCWarning(lcMobile) << "receive could not be opened: tried again every 5 s and when the app comes to the front";
+            m_rxRetryTimer.start();
+        }
+    });
+    connect(m_audio, &AudioEngine::rxStarted, this, [this] {
+        if (m_rxRetryTimer.isActive()) {
+            m_rxRetryTimer.stop();
+            qCInfo(lcMobile) << "receive opened again";
+        }
+    });
     // The meter choices offer SNR while RADE runs: a choice of it comes
     // back with RADE (only the start and end, not every SNR report).
     connect(this, &MobileEngine::radeChanged, this, [this] {
@@ -1116,10 +1132,7 @@ MobileEngine::MobileEngine(QObject* parent)
         AudioEngine* audio = m_audio;
         if (!audioOnRadio()) {   // with the audio on the radio nothing plays here
             qCInfo(lcMobile) << "audio session back: restarting receive audio";
-            QMetaObject::invokeMethod(audio, [audio] {
-                audio->stopRxStream();
-                audio->startRxStream();
-            }, Qt::QueuedConnection);
+            QMetaObject::invokeMethod(audio, [audio] { audio->reopenRx(); }, Qt::QueuedConnection);
         }
         if (m_micCheckOpen || m_pttHeld) {
             stopDeviceMicrophoneCapture(true);
@@ -1300,6 +1313,9 @@ MobileEngine::MobileEngine(QObject* parent)
         }
         update3DGuard();
         qCInfo(lcMobile) << "app state:" << state;
+        if (state == Qt::ApplicationActive && m_rxRetryTimer.isActive()) {
+            retryReceiveOpen("the app came to the front");
+        }
         // Nobody sees the display once the app is in the background: stop
         // feeding the spectrum, waterfall and 3D view (audio keeps playing).
         // iOS kills an app whose main thread is busy when it moves to the
@@ -10991,8 +11007,13 @@ void MobileEngine::onConnectionStateChanged(bool connected)
 
 void MobileEngine::startAudio()
 {
+    // With its retries (and, when they run out, the slower ones of
+    // rxOpenFailed): a first opening that failed was final (roadmap 181 b:
+    // an iPad reconnected in the background after an interruption, the
+    // play-and-record session not yet allowed, and stayed silent until the
+    // app came to the front).
     AudioEngine* audio = m_audio;
-    QMetaObject::invokeMethod(audio, [audio] { audio->startRxStream(); }, Qt::QueuedConnection);
+    QMetaObject::invokeMethod(audio, [audio] { audio->restartRxSoon(); }, Qt::QueuedConnection);
 }
 
 void MobileEngine::stopAudio()
@@ -12433,6 +12454,19 @@ void MobileEngine::watchHeadsetLink()
     m_headsetLinkTicks = 0;
     m_headsetLinkTimer.start();
 #endif
+}
+
+// Receive that could not be opened, tried again (AudioEngine::rxOpenFailed).
+void MobileEngine::retryReceiveOpen(const char* why)
+{
+    if (!m_connected || !m_audio) {
+        m_rxRetryTimer.stop();
+        return;
+    }
+    qCInfo(lcMobile).noquote() << "receive: opening it again," << why;
+    // The play-and-record session first (iOS: lost to an interruption).
+    configureAudioSession();
+    QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->restartRxSoon(); }, Qt::QueuedConnection);
 }
 
 void MobileEngine::applyAudioBuffer()

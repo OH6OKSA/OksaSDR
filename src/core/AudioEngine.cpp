@@ -4145,6 +4145,15 @@ bool AudioEngine::startRxStream()
 
 bool AudioEngine::openRxSink(int producerRate)
 {
+    // OksaSDR, AETHER_RX_OPEN_FAILS (development): that many openings fail,
+    // to test what follows a receive sink that cannot be opened (a session
+    // not yet allowed, a route Android does not give).
+    static std::atomic<int> testFailsLeft{qEnvironmentVariableIntValue("AETHER_RX_OPEN_FAILS")};
+    if (testFailsLeft.load() > 0) {
+        testFailsLeft.fetch_sub(1);
+        qCWarning(lcAudio) << "AudioEngine: failed to open RX audio sink (AETHER_RX_OPEN_FAILS)";
+        return false;
+    }
     ++m_rxSinkGeneration;
     m_rxZombieTickCount = 0;
     m_rxStaleTickCount = 0;
@@ -4480,6 +4489,7 @@ void AudioEngine::retryRxStart(int triesLeft)
     }
     if (triesLeft <= 0) {
         qCWarning(lcAudio) << "AudioEngine: RX could not be opened again";
+        emit rxOpenFailed();
         return;
     }
     // A stop (disconnect) or another open meanwhile ends the retries.
