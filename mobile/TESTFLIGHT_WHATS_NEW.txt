@@ -9,19 +9,18 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Connect page on a phone: a radio's whole name on its card, Connect under it (thanks Ian VK1HF).
-- FTx > List only is the list: while decoding runs only the slot bar, the CQ row with More and the QSO's state stay above it; Decode, the bands and Show open with More. Also in pinned controls that show FTx alone.
-- FT8 / FT4 on an iPad or Mac: pinned controls and a drawer at the side run to the bottom: three to four more decode rows.
-- Decode sets the slice to DIGU. PTT gives way only while the TX slice is the one FT8 / FT4 keys.
-- PTT above the on-screen keyboard: a press just under the button keys too, and the keyboard stays.
-- iPhone, a smaller iPad upright: the Controls drawer's Close and PTT at the bottom again; with the keyboard up the page ends at the keyboard.
-- A foldable keeps the Controls drawer and its tab when opened or closed.
-- The log tells how a radio was found and connected.
+- iPhone: PTT where your thumb is. Setup > App > PTT: Left, Wide or Right (thanks Antonio IZ7LDG).
+- Setup > App > At start > Last radio: at a start the app connects to the radio you used last, the way you used it (thanks Tyler K0OTC).
+- SmartLink sign-in: Forgot password? has FlexRadio mail you its reset link (thanks Bob WB3BOB).
+- Prof tab: Save with no name saves over the profile chosen above, after asking (thanks Larry W9FLA).
+- FT8 / FT4: signal reports are right with a receive filter narrower than 3 kHz, and Decode opens a narrow DIGU filter (left by FreeDV).
+- A voice macro that gets no microphone audio ends after 3 s and lets PTT go.
+- Connect page: Connect > keeps its size at a large text size.
 
-RECENT (builds 94–212)
+RECENT (builds 94–214)
+- 214: FTx > List only is the list; a radio's whole name on its Connect card (thanks Ian VK1HF); PTT above the keyboard.
 - 212: PTT with the side drawer open; Exit Big buttons in the menu (thanks Kent K9EZ); a memory tunes only your own slice.
 - 211: Done works as Enter; the waterfall's buttons in the PTT row; TGXL relays (thanks Ben KT4O).
-- 206: FT8 / FT4 answered in the running slot (thanks George KF2T); the Log tab for a run (thanks Chris DM5HF).
 
 PLEASE TRY
 - Receive on a few bands with zoom, Band and the 3D view.
@@ -34,9 +33,10 @@ PLEASE TRY
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
 - VOX with a headset on this device: Controls > TX > VOX on, speak, and the radio keys by its VOX level and delay. [TX]
 - SmartLink over mobile data as well as Wi-Fi: connect, disconnect and connect again; no error should show after your own Disconnect.
-- New: Setup > Spots > RBN, PSK Reporter and Heard me; then call CQ and see Heard me fill.
-- New: an alert's Tune on an FT8 spot (Watch list): FTx on the band, the station in the list.
-- New: TX > Use the radio's microphone, then a voice macro and Repeat. [TX]
+- New: Setup > App > PTT > Left or Wide on an iPhone: key from the page and with the Controls drawer open, upright and on its side. [TX]
+- New: Setup > App > At start > Last radio, then close the app and start it again: it should connect by itself, at home and away.
+- Setup > Spots > RBN, PSK Reporter and Heard me; then call CQ and see Heard me fill.
+- TX > Use the radio's microphone, then a voice macro and Repeat. [TX]
 - A button as PTT (Setup > Transmit > PTT key > Learn), held and with PTT Tap on / off, at low power. [TX]
 - Slices on two or more bands (+ Slice, then Band on one): each gets its own panadapter, and the FTx tab decodes them all, FT8 on one and FT4 on another.
 

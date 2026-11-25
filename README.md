@@ -226,7 +226,8 @@ radio interface, with no computer running alongside.
   hold adds none; tap one for its settings or remove; drawn through
   spectrum and waterfall as on the desktop.
 - The radio's global, TX and mic profiles: load, save and delete, as in
-  SmartSDR and AetherSDR.
+  SmartSDR and AetherSDR. **Save** with no name typed saves over the
+  profile chosen in the list, after asking.
 - **Auto AGC-T**: the radio's own on Early Access radios; on every other
   radio the app finds the AGC knee on a clear spot and keeps it per band
   and mode group, and **Follow** keeps AGC-T on the noise as it rises and
@@ -310,6 +311,8 @@ radio interface, with no computer running alongside.
   set to `PC` when the app connects), with RF power and mic level, plus forward power and SWR
   while transmitting. The microphone is open only while PTT is held, and
   the speaker goes quiet at the press, so receive never reaches the air.
+- **PTT's place on a phone** (Setup › App › PTT): *Left* for a phone held in
+  the left hand, *Wide* across the page, or *Right* as always.
 - **Transmit lock** (TX tab, off by default): nothing transmits in
   standby until PTT, KEY, Space, TUNE or CQ is held for a second; then it
   stays armed for five minutes after the last transmission, counting down
@@ -385,6 +388,9 @@ radio interface, with no computer running alongside.
   never stored.
 - Several accounts on one device (**+ Account**, a tap changes between
   them) and **☆ favourite radios** of any account that connect in one tap.
+- **Forgot password?** on the sign-in form: FlexRadio's sign-in service
+  mails a reset link; the new password is set on its page, never in the
+  app.
 
 **Made for the device**
 - A tablet layout and a phone layout. They switch live on rotation, Split
@@ -415,6 +421,9 @@ radio interface, with no computer running alongside.
 - **Several radios by IP address or host name** on the Connect page, each
   with your name for it or the radio's own: a dynamic DNS or Tailscale
   MagicDNS name is looked up at each connect.
+- **Straight to your radio at a start** (Setup › App › At start › *Last
+  radio*): the app connects to the radio used last, the way it was used,
+  and shows the radio list when that radio does not turn up.
 - **Radio Setup** (top row), as SmartSDR's: callsign, radio and station
   names, remote, multiFLEX, license, GPS, restarting the radio, transmit
   limits and timing, keying an amplifier (output delays, TX REQ, TX band
