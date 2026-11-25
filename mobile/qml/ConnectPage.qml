@@ -350,6 +350,7 @@ Page {
                         }
                         TextField {
                             id: emailField
+                            objectName: "smartLinkEmail"
                             Accessible.name: qsTr("SmartLink e-mail")
                             Layout.fillWidth: true
                             text: page.addingAccount ? "" : Engine.smartLinkEmail
@@ -366,6 +367,32 @@ Page {
                             // Android: Return, as its Done hides the keyboard before Enter arrives (Enter lost) and Next makes it a Tab (roadmap 142)
                             EnterKey.type: Qt.platform.os === "android" ? Qt.EnterKeyReturn : Qt.EnterKeyDefault
                             onAccepted: signIn.clicked()
+                        }
+                        // Forgot password? (roadmap 157, Bob Manley WB3BOB):
+                        // FlexRadio's sign-in service mails its reset link
+                        // to the e-mail typed above; the new password is set
+                        // on its page, never here. Asked first; the answer
+                        // shows under the button, the form's width (beside
+                        // the button a narrow phone broke it into a column
+                        // of short lines).
+                        AppButton {
+                            objectName: "smartLinkForgot"
+                            text: qsTr("Forgot password?")
+                            font.pixelSize: Theme.px(14)
+                            leftPadding: 10
+                            rightPadding: 10
+                            enabled: emailField.text.indexOf("@") > 0 && Engine.smartLinkReset.state !== "sending"
+                            focusPolicy: Qt.NoFocus
+                            onClicked: confirmReset.open()
+                        }
+                        Label {
+                            objectName: "smartLinkResetText"
+                            Layout.fillWidth: true
+                            visible: text.length > 0
+                            text: Engine.smartLinkReset.text || ""
+                            color: Engine.smartLinkReset.state === "failed" ? Theme.warning : Theme.textDim
+                            font.pixelSize: Theme.px(13)
+                            wrapMode: Text.Wrap
                         }
                         RowLayout {
                             Layout.fillWidth: true
@@ -585,6 +612,26 @@ Page {
         // address goes back to its editor.
         property bool forEditor: false
         onConnectRequested: (address) => forEditor ? (radioEditor.address = address) : Engine.connectToAddress(address)
+    }
+    // Forgot password? asks before anything is sent (roadmap 157).
+    Dialog {
+        id: confirmReset
+        objectName: "confirmReset"
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(parent ? parent.width - 2 * Theme.spacing : 400, 420)
+        modal: true
+        title: qsTr("Send a password reset e-mail?")
+        standardButtons: Dialog.Yes | Dialog.No
+        contentItem: ColumnLayout {
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("FlexRadio's sign-in service mails a reset link to %1. The new password is set on its page, not in this app.").arg(emailField.text.trim())
+                wrapMode: Text.Wrap
+                color: Theme.text
+            }
+        }
+        onAccepted: Engine.requestSmartLinkPasswordReset(emailField.text)
     }
     // A saved radio: the user's name for it, its address (on the keypad) and
     // removing it (asked again on the button).

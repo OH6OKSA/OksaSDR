@@ -59,6 +59,11 @@ public:
     void saveCredentials();
     // Clear stored credentials from OS keychain
     void clearCredentials();
+    // "Forgot password?" (OksaSDR roadmap 157): asks the sign-in service to
+    // mail its password reset link to the address, as SmartSDR's own link
+    // does. No password passes through the app; passwordResetAnswered says
+    // how it went.
+    void requestPasswordReset(const QString& email);
 
     // Request connection to a specific radio (by serial).
     // holePunchPort is the local UDP port we've bound for VITA-49 reception;
@@ -111,6 +116,8 @@ signals:
     // Auth0 login result
     void authenticated();
     void authFailed(const QString& error);
+    // The answer to requestPasswordReset: sent, or why not (in words).
+    void passwordResetAnswered(bool sent, const QString& message);
 
     // SmartLink server events
     void serverConnected();

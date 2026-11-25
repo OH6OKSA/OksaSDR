@@ -266,6 +266,10 @@ class MobileEngine : public QObject {
     Q_PROPERTY(bool connectAtStart READ connectAtStart WRITE setConnectAtStart NOTIFY connectAtStartChanged)
     Q_PROPERTY(QString startConnectWaiting READ startConnectWaiting NOTIFY startConnectChanged)
     Q_PROPERTY(QString smartLinkState READ smartLinkState NOTIFY smartLinkChanged)
+    // Forgot password? (roadmap 157, Bob Manley WB3BOB): FlexRadio's sign-in
+    // service mails its reset link to the address typed; the app handles no
+    // password. {state: "" / "sending" / "sent" / "failed", text}.
+    Q_PROPERTY(QVariantMap smartLinkReset READ smartLinkReset NOTIFY smartLinkResetChanged)
     Q_PROPERTY(QString smartLinkAccount READ smartLinkAccount NOTIFY smartLinkChanged)
     Q_PROPERTY(QString smartLinkEmail READ smartLinkEmail NOTIFY smartLinkChanged)
     Q_PROPERTY(QVariantList smartLinkRadios READ smartLinkRadios NOTIFY smartLinkRadiosChanged)
@@ -2221,6 +2225,8 @@ public:
     // them), a VPN, or a dynamic DNS name.
     Q_INVOKABLE void connectToAddress(const QString& host);
     Q_INVOKABLE void signInSmartLink(const QString& email, const QString& password);
+    Q_INVOKABLE void requestSmartLinkPasswordReset(const QString& email);
+    QVariantMap smartLinkReset() const { return m_smartLinkReset; }
     Q_INVOKABLE void signOutSmartLink();
     // Connect to the radio at `index` in smartLinkRadios.
     Q_INVOKABLE void connectSmartLinkRadio(int index);
@@ -2406,6 +2412,7 @@ signals:
     void savedRadiosChanged();
     void connectAtStartChanged();
     void startConnectChanged();
+    void smartLinkResetChanged();
     void connectionCheckChanged();
     void controlsVisibleChanged();
     void controlsSectionChanged();
@@ -3637,6 +3644,8 @@ private:
     bool m_testRefuseFirst{false};   // development: the first remote connection refused
     QHostAddress m_testNat64Prefix;  // development: the radio's TLS through this NAT64 prefix (OKSASDR_TEST_NAT64)
     QString m_smartLinkState{QStringLiteral("signedOut")};
+    QVariantMap m_smartLinkReset;
+    QString m_smartLinkResetEmail;
     // SmartLink accounts (roadmap 62, MobileEngineSmartLink.cpp): the list
     // (id, email, label) in AppSettings, each account's refresh token in the
     // secure store under smartLinkTokenKey(id); the first account keeps the

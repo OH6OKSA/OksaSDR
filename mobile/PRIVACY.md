@@ -35,6 +35,9 @@ these services:
   FlexRadio account sign-in and the connection to your radio go through
   FlexRadio's SmartLink service, under FlexRadio's terms. With several
   accounts signed in, only the active one talks to SmartLink at a time.
+  *Forgot password?* on the sign-in form sends the e-mail address you
+  typed to the same sign-in service, which mails its reset link to that
+  address; the app handles no password in it and keeps nothing of it.
 - **QRZ.com**, if you save a QRZ.com account in Radio Setup › Logging: the callsign
   you type is looked up there with your account.
 - **A DX cluster**, if you turn it on: the app connects to the cluster
@@ -241,4 +244,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-11-25 (the radio used last, kept for At start › Last radio; earlier: Android: GitHub for new versions; the microphone with VOX and for the TX tab's meter, speech recognition on the device everywhere, SmartLink accounts and favourites, Bluetooth MIDI search on Android; the Elecraft KPA1500, Bluetooth MIDI controllers, App setups)
+Last updated: 2026-11-25 (Forgot password? on the SmartLink sign-in; the radio used last, kept for At start › Last radio; earlier: Android: GitHub for new versions; the microphone with VOX and for the TX tab's meter, speech recognition on the device everywhere, SmartLink accounts and favourites, Bluetooth MIDI search on Android; the Elecraft KPA1500, Bluetooth MIDI controllers, App setups)

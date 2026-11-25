@@ -175,6 +175,59 @@ void SmartLinkClient::login(const QString& email, const QString& password)
     });
 }
 
+// Auth0's database-connection "change password" call
+// (auth0.com/docs/api/authentication/change-password/change-password): the
+// service mails its reset link to the address. 200 with a line of plain text
+// when it has; 400, 404 or 429 otherwise. The same tenant, connection and
+// client id as the sign-in above.
+void SmartLinkClient::requestPasswordReset(const QString& email)
+{
+    QString base = QString("https://%1").arg(AUTH0_DOMAIN);
+#if !defined(Q_OS_IOS) && !defined(Q_OS_ANDROID)
+    // Development tests: a stand-in for the service on this machine
+    // (OKSASDR_TEST_AUTH0=http://127.0.0.1:PORT, mobile/tools/auth0-mock.py).
+    if (const QByteArray test = qgetenv("OKSASDR_TEST_AUTH0"); !test.isEmpty()) {
+        base = QString::fromUtf8(test);
+    }
+#endif
+    QNetworkRequest req(QUrl(base + "/dbconnections/change_password"));
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    QJsonObject body;
+    body["client_id"]  = AUTH0_CLIENT_ID;
+    body["email"]      = email;
+    body["connection"] = "Username-Password-Authentication";
+
+    qCInfo(lcSmartLink) << "SmartLinkClient: password reset mail asked for" << email.left(3) + "***";
+
+    auto* reply = m_nam.post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply] {
+        reply->deleteLater();
+        const int http = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const QByteArray data = reply->readAll();
+        if (reply->error() == QNetworkReply::NoError && http == 200) {
+            qCInfo(lcSmartLink) << "SmartLinkClient: the service took the password reset request";
+            emit passwordResetAnswered(true, {});
+            return;
+        }
+        const QString desc = QJsonDocument::fromJson(data).object().value("error_description").toString();
+        qCWarning(lcSmartLink) << "SmartLinkClient: password reset request failed: HTTP" << http
+                               << (desc.isEmpty() ? reply->errorString() : desc);
+        QString why;
+        if (http == 404) {
+            why = tr("The sign-in service knows no account with that e-mail.");
+        } else if (http == 429) {
+            why = tr("Too many requests just now. Try again in a minute.");
+        } else if (http == 0) {
+            why = tr("The sign-in service was not reached (%1).").arg(reply->errorString());
+        } else {
+            why = tr("The sign-in service did not take the request (%1).")
+                      .arg(desc.isEmpty() ? QStringLiteral("HTTP %1").arg(http) : desc);
+        }
+        emit passwordResetAnswered(false, why);
+    });
+}
+
 void SmartLinkClient::loginWithRefreshToken(const QString& refreshToken)
 {
     if (m_authRequestInProgress) {

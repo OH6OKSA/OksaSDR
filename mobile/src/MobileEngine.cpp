@@ -1953,6 +1953,15 @@ void MobileEngine::disconnectRadio(const QString& why)
 
 void MobileEngine::wireSmartLink()
 {
+    connect(&m_smartLink, &SmartLinkClient::passwordResetAnswered, this, [this](bool sent, const QString& message) {
+        qCInfo(lcMobile) << "SmartLink: password reset request" << (sent ? "taken by the service" : "failed");
+        m_smartLinkReset = {{QStringLiteral("state"), sent ? QStringLiteral("sent") : QStringLiteral("failed")},
+                            {QStringLiteral("text"),
+                             sent ? tr("Sent. If %1 has a SmartLink account, a reset link is on its way: set the new password on the page it opens, then sign in here.")
+                                        .arg(m_smartLinkResetEmail)
+                                  : message}};
+        emit smartLinkResetChanged();
+    });
     connect(&m_smartLink, &SmartLinkClient::authenticated, this, [this] {
         // A password sign-in: its e-mail's account (new or known) active.
         adoptSmartLinkSignIn();
@@ -2413,6 +2422,22 @@ QVariantList MobileEngine::smartLinkRadios() const
 bool MobileEngine::remoteSession() const
 {
     return m_connected && m_session.radioModel().isWan();
+}
+
+// Forgot password? (roadmap 157): the sign-in service is asked to mail its
+// reset link; what it answered is the line under the button.
+void MobileEngine::requestSmartLinkPasswordReset(const QString& email)
+{
+    const QString address = email.trimmed();
+    if (!address.contains(QLatin1Char('@'))
+        || m_smartLinkReset.value(QStringLiteral("state")).toString() == QLatin1String("sending")) {
+        return;
+    }
+    m_smartLinkResetEmail = address;
+    m_smartLinkReset = {{QStringLiteral("state"), QStringLiteral("sending")},
+                        {QStringLiteral("text"), tr("Asking the sign-in service…")}};
+    emit smartLinkResetChanged();
+    m_smartLink.requestPasswordReset(address);
 }
 
 void MobileEngine::signInSmartLink(const QString& email, const QString& password)

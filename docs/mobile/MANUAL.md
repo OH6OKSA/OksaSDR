@@ -473,7 +473,14 @@ The first page lists the ways to reach a radio:
   radio that takes one station still holding the old session), the app
   makes it again on the frequency, mode and filter it had. The eye in the password field
   shows what you typed (dots again when you leave the field); the QRZ.com
-  password and the Wavelog / Cloudlog API key have the same eye. **Sign out** takes two taps
+  password and the Wavelog / Cloudlog API key have the same eye.
+  **Forgot password?** under the password field (since build 215 /
+  Android beta 120; asked by Bob Manley WB3BOB): type your SmartLink
+  e-mail, tap it and answer *Yes*, and FlexRadio's sign-in service mails a
+  reset link to that address. The new password is set on the page the
+  link opens, never in this app; then sign in here with it. The line under
+  the button says how it went: *Sent…*, or why not (no account with that
+  e-mail, too many requests, the service not reached). **Sign out** takes two taps
   (the first turns it into *Sign out?* for three seconds), so a stray tap
   does not sign you out. Each radio's card says whether it is free
   (*Available*) or *In use by* and the station using it (e.g. another
