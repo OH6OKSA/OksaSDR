@@ -145,7 +145,40 @@ jpg() {
 echo "Rendering manual screenshots (${RADIO:-demo radio})${ONLY:+, only $ONLY}..."
 missing=0
 if want connect; then
-    printf 'wait 3000\nshot connect\n' | plan connect 1366x1024
+    # The Connect page from settings of its own: a copy of this machine's
+    # with each saved radio shown by its model alone (a radio's nickname is
+    # its operator's and stays out of a public picture) and no SmartLink
+    # sign-in, so the section shows its form. The desktop's keyring is out
+    # of reach for this one run: the kept sign-in is neither read nor
+    # changed.
+    CH="$TMP/connect-home"
+    mkdir -p "$CH/.config/OksaSDR" "$CH/.local/share"
+    if [ "$DRY" = 0 ] && [ -f "$HOME/.config/OksaSDR/AetherSDR.db" ]; then
+        cp "$HOME/.config/OksaSDR/AetherSDR.db" "$CH/.config/OksaSDR/"
+        python3 - "$CH/.config/OksaSDR/AetherSDR.db" <<'CONNECT_SETTINGS'
+import json
+import sqlite3
+import sys
+
+db = sqlite3.connect(sys.argv[1])
+row = db.execute("select value from app_settings where key='MobileSavedRadios'").fetchone()
+if row:
+    radios = json.loads(row[0] or '[]')
+    for radio in radios:
+        radio.pop('name', None)
+        learned = radio.pop('radio', '')
+        if ' \u2014 ' in learned:          # "nickname \u2014 model": the model
+            radio['radio'] = learned.split(' \u2014 ')[-1]
+    db.execute("update app_settings set value=? where key='MobileSavedRadios'",
+               (json.dumps(radios, separators=(',', ':')),))
+for key in ('MobileSmartLinkAccounts', 'MobileSmartLinkActive', 'MobileSmartLinkFavourites',
+            'MobileLastRadio', 'SmartLinkEmail'):
+    db.execute('delete from app_settings where key=?', (key,))
+db.commit()
+CONNECT_SETTINGS
+    fi
+    printf 'wait 3000\nshot connect\n' | HOME="$CH" XDG_CONFIG_HOME="$CH/.config" XDG_DATA_HOME="$CH/.local/share" \
+        DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent/bus" plan connect 1366x1024
 fi
 
 # popup_shot NAME POPUP: open a chooser, take it, close it (when wanted)
@@ -290,6 +323,11 @@ if want ptt-place; then
         echo "wait $FILL"
         for p in left wide right; do
             printf 'popup radioSetup\nwait 800\nclick setupTab11\nwait 1500\nshowname pttPlace_%s\ntapname pttPlace_%s\nwait 600\nclose\nwait 1500\nshot ptt-place-%s\n' "$p" "$p" "$p"
+            # Wide with the phone on its side (roadmap 204): PTT in the
+            # middle of the one row; its row is added under the three.
+            if [ "$p" = wide ]; then
+                printf 'size 956x440\nwait 4000\nshot ptt-place-wide-side\nsize 440x956\nwait 3000\n'
+            fi
         done
     } | plan ptt-place 440x956 "${src[@]}"
 fi
@@ -572,6 +610,12 @@ if want ptt-place && [ "$DRY" = 0 ] && [ -f "$TMP/ptt-place-left.png" ] && [ -f 
     magick \( "$TMP/ptt-place-left.png" -crop 440x300+0+656 +repage \) \( -size 8x300 xc:'#0b0f14' \) \
         \( "$TMP/ptt-place-wide.png" -crop 440x300+0+656 +repage \) \( -size 8x300 xc:'#0b0f14' \) \
         \( "$TMP/ptt-place-right.png" -crop 440x300+0+656 +repage \) +append "$TMP/ptt-place.png"
+    # Under them, Wide on its side: the page's one row, PTT in its middle.
+    if [ -f "$TMP/ptt-place-wide-side.png" ]; then
+        magick "$TMP/ptt-place.png" \( -size 1336x8 xc:'#0b0f14' \) \
+            \( "$TMP/ptt-place-wide-side.png" -crop 956x70+0+370 +repage -background '#0b0f14' -gravity center -extent 1336x70 \) \
+            -append "$TMP/ptt-place.png"
+    fi
 fi
 jpg ptt-place
 jpg connect "" 900x

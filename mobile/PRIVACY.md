@@ -153,9 +153,14 @@ on the device.
 The microphone is used only to transmit through your radio (voice, RADE
 digital voice) and to record voice keyer messages you choose to record, and
 it is open only while you hold PTT or record, while the TX or eSSB tab is
-shown (for its microphone meter; nothing is transmitted), or while you have
+shown (for its microphone meter; nothing is transmitted), while you have
 the radio's VOX on with this device's microphone (the audio then streams to
-your radio, whose VOX transmits when you speak). Transmitting from the device requires the radio's mic
+your radio, whose VOX transmits when you speak), or, on Android, while a
+Bluetooth headset is the app's hands-free set (Audio output *Auto*) and the
+app is connected and in front: a headset's call link stays up only while its
+microphone is open, so the app holds it open then (the audio streams to your
+radio, which transmits only at PTT; Android shows its microphone indicator
+for as long). Transmitting from the device requires the radio's mic
 input to be set to this device ("Use this device's microphone"). The audio
 goes only to your radio and is not recorded or stored, except the voice
 keyer messages you record yourself, which stay on the device. iOS and
@@ -244,4 +249,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-11-25 (Forgot password? on the SmartLink sign-in; the radio used last, kept for At start › Last radio; earlier: Android: GitHub for new versions; the microphone with VOX and for the TX tab's meter, speech recognition on the device everywhere, SmartLink accounts and favourites, Bluetooth MIDI search on Android; the Elecraft KPA1500, Bluetooth MIDI controllers, App setups)
+Last updated: 2026-11-26 (Android: the microphone held open for a Bluetooth headset while the app is in front; earlier: Forgot password? on the SmartLink sign-in; the radio used last, kept for At start › Last radio; Android: GitHub for new versions; the microphone with VOX and for the TX tab's meter, speech recognition on the device everywhere, SmartLink accounts and favourites, Bluetooth MIDI search on Android; the Elecraft KPA1500, Bluetooth MIDI controllers, App setups)

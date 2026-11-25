@@ -1409,7 +1409,8 @@ the value types it); SPLIT again (or XIT off there) ends it.
   side they start the step row instead of ending it. *Wide* gives PTT the
   whole width of the page upright, with Controls and Macros in a row of
   their own above it (the waterfall gives up that row's height); on its
-  side, where the page has one row for everything, PTT stands in the
+  side (since build 216 / Android beta 121), where the page has one row
+  for everything, PTT stands in the
   middle of that row with the other buttons at its two sides, and takes
   the room the row has, a third of it at least (the step buttons give
   way a little).
@@ -1417,7 +1418,7 @@ the value types it); SPLIT again (or XIT off there) ends it.
   right. The choice shows on a phone's page only; a tablet's page places
   PTT in its layouts.
 
-  ![PTT at the left, wide and at the right](manual/ptt-place.jpg)
+  ![PTT at the left, wide and at the right; under them the row of Wide with the phone on its side](manual/ptt-place.jpg)
 - **Transmit lock** — Controls → TX → Lock *Transmit lock* (off by
   default), for a finger that touches PTT or the paddles by mistake. With
   it on, nothing transmits in standby: PTT says **SB** (*hold to arm*),
@@ -3388,14 +3389,16 @@ open it at all (since beta 117: opened after the release and shut at
 once, it left the headset chirping until a longer press). Since beta 121
 the app keeps the headset's link itself: while it is in front it holds
 the headset's microphone open (Android shows its microphone indicator for
-as long; the radio transmits only at PTT), so the link stays up and
-receive is back at once after PTT; a link that drops is taken again; and
-back in front after the background the route is renewed once, with a
-second and a half of silence. In the background Android does not let the
-microphone stay open, so there the link is only taken again when it
-drops. If Android does not open the link at all, a notice says so:
-Controls › Audio › Audio output › *Speaker* and back to *Auto*, or the
-headset connected again, has brought it back. If receive still goes
+as long; the audio goes to your radio as with VOX, up to some 50 MB an
+hour over mobile data, and the radio transmits only at PTT), so the link
+stays up and receive is back at once after PTT; a link that drops is
+taken again, up to five times; and back in front after the background the
+route of a headset used for calls only (*Media audio* off) is renewed
+once, with a second and a half of silence. In the background Android does
+not let the microphone stay open, so there such a headset can lose
+receive until the app is in front again. If Android does not open the
+link, a notice says so: Controls › Audio › Audio output › *Speaker* and
+back to *Auto*, or the headset connected again, has brought it back. If receive still goes
 silent, send the log: it says the headset's link at each step. Without
 one, the phone's speaker and microphone are used. **A USB-C headset** (or a
 USB-C to 3.5 mm adapter) is used the same way with *Auto*, ahead of
