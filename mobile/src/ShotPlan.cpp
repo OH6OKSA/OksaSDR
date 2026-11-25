@@ -20,6 +20,7 @@
 #include <QSet>
 #include <QThreadPool>
 #include <QStyleHints>
+#include <QThread>
 #include <QTimer>
 #include <qpa/qwindowsysteminterface.h>
 
@@ -1714,14 +1715,16 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         m_engine.setTestKeyboard(arg == QLatin1String("on"), args.value(1).toInt());
         *delayMs = 400;
     } else if (command == QLatin1String("safearea")) {
-        // safearea TOP BOTTOM: as if the window had a phone's status bar and
+        // safearea TOP BOTTOM [LEFT RIGHT]: as if the window had a phone's status bar and
         // navigation bar (the OnePlus Open's outer screen: 41 44, an iPhone
         // with an island: 59 34, an iPad: 24 20; 0 0 takes them away). Qt
         // lays the page inside them and pads a drawer's content by them, so
         // a sum that takes the window's height for the page's is wrong by
-        // the bars, which a desktop window never showed (roadmap 169). Drawn
-        // as two dim strips in the pictures.
-        m_engine.setTestSafeArea(arg.toInt(), args.value(1).toInt());
+        // the bars, which a desktop window never showed (roadmap 169). LEFT and
+        // RIGHT: the side insets of a phone on its side (the OnePlus Open's
+        // outer screen in landscape: 39 0 39 44, the page 681x304 of 764x343).
+        // Drawn as dim strips in the pictures.
+        m_engine.setTestSafeArea(arg.toInt(), args.value(1).toInt(), args.value(2).toInt(), args.value(3).toInt());
         *delayMs = 600;
     } else if (command == QLatin1String("decodes")) {
         // decodes N: N sample decodes in the FTx list, for layout pictures
@@ -1739,6 +1742,17 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         // and macros can be tested on the radio with nothing on air.
         m_engine.setTransmitBlocked(arg == QLatin1String("on"));
         *delayMs = 200;
+    } else if (command == QLatin1String("stall")) {
+        // stall MS: the GUI thread held for MS ms (8000 at most), to see what
+        // the stall watch says of it: its "GUI thread stalled" lines, and
+        // where the threads were (the stacks: at once on Linux, from 4 s on
+        // Android, where no stall could be located before; roadmap 203). A
+        // device takes this line too: "stall 4500" over the developer link
+        // shows that the stacks come on that device.
+        const int ms = qBound(0, arg.toInt(), 8000);
+        qInfo().noquote() << "shot-plan: stall" << ms << "ms";
+        QThread::msleep(ms);
+        *delayMs = 1500;
     } else if (command == QLatin1String("pressmarks")) {
         // pressmarks on|off: each press is logged with what is under it and
         // marked on the screen with a ring for two seconds; stays on after

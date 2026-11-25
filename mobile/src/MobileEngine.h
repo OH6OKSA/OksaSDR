@@ -121,6 +121,8 @@ class MobileEngine : public QObject {
     // keyboard on every phone and no picture said so (roadmap 169).
     Q_PROPERTY(int testSafeTop READ testSafeTop NOTIFY testSafeAreaChanged)
     Q_PROPERTY(int testSafeBottom READ testSafeBottom NOTIFY testSafeAreaChanged)
+    Q_PROPERTY(int testSafeLeft READ testSafeLeft NOTIFY testSafeAreaChanged)
+    Q_PROPERTY(int testSafeRight READ testSafeRight NOTIFY testSafeAreaChanged)
     // The developer link's press marks (a plan's "pressmarks on"): each
     // press is written to the log with what is under it and marked on the
     // screen (Main.qml), so a tester sees where the app takes a press
@@ -1781,11 +1783,19 @@ public:
     }
     int testSafeTop() const { return m_testSafeTop; }
     int testSafeBottom() const { return m_testSafeBottom; }
-    void setTestSafeArea(int top, int bottom)
+    int testSafeLeft() const { return m_testSafeLeft; }
+    int testSafeRight() const { return m_testSafeRight; }
+    void setTestSafeArea(int top, int bottom, int left = 0, int right = 0)
     {
-        if (top != m_testSafeTop || bottom != m_testSafeBottom) {
-            m_testSafeTop = qMax(0, top);
-            m_testSafeBottom = qMax(0, bottom);
+        top = qMax(0, top);
+        bottom = qMax(0, bottom);
+        left = qMax(0, left);
+        right = qMax(0, right);
+        if (top != m_testSafeTop || bottom != m_testSafeBottom || left != m_testSafeLeft || right != m_testSafeRight) {
+            m_testSafeTop = top;
+            m_testSafeBottom = bottom;
+            m_testSafeLeft = left;
+            m_testSafeRight = right;
             emit testSafeAreaChanged();
         }
     }
@@ -3177,6 +3187,8 @@ private:
     bool m_controlsDrawerOpen{false};
     int m_testSafeTop{0};
     int m_testSafeBottom{0};
+    int m_testSafeLeft{0};
+    int m_testSafeRight{0};
     // Roadmap 143: the radio's mic input a voice macro switched from, and
     // the macro waiting for the switch.
     QString m_dvkRadioMic;

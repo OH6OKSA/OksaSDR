@@ -30,6 +30,8 @@ ApplicationWindow {
     // every device.
     SafeArea.additionalMargins.top: Engine.testSafeTop
     SafeArea.additionalMargins.bottom: Engine.testSafeBottom
+    SafeArea.additionalMargins.left: Engine.testSafeLeft
+    SafeArea.additionalMargins.right: Engine.testSafeRight
 
     // Phone-sized windows (iPhone, folded iPhone Duo, narrow Split View)
     // get the phone layout; it switches live on rotation or fold/unfold.
@@ -410,9 +412,11 @@ ApplicationWindow {
         }
     }
     // The render tool's stand-in for a phone's status and navigation bars
-    // (plan verb safearea): two dim strips where they would be.
+    // (plan verb safearea): dim strips where they would be; at the sides
+    // too, as a phone's outer screen on its side has them (a camera cutout
+    // and the navigation bar).
     Repeater {
-        model: [Engine.testSafeTop, Engine.testSafeBottom]
+        model: [Engine.testSafeTop, Engine.testSafeBottom, Engine.testSafeLeft, Engine.testSafeRight]
         delegate: Rectangle {
             required property int modelData
             required property int index
@@ -421,10 +425,10 @@ ApplicationWindow {
             // Drawn only: a press goes to what is under it (TextFocusRelease).
             property bool passesPresses: true
             visible: modelData > 0
-            x: 0
-            y: index === 0 ? 0 : window.height - modelData
-            width: window.width
-            height: modelData
+            x: index === 3 ? window.width - modelData : 0
+            y: index === 1 ? window.height - modelData : 0
+            width: index < 2 ? window.width : modelData
+            height: index < 2 ? modelData : window.height
             color: "#000000"
             opacity: 0.55
         }

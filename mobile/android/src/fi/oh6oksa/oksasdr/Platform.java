@@ -472,6 +472,31 @@ public final class Platform {
     // crash the readable parts of Android's trace (frames, libraries,
     // message), so a crash shows in the next run's log.
 
+    // The Java side of the Android UI thread and Qt's threads, for the stall
+    // watch (roadmap 203): a thread that waits in a call up to Android, or
+    // on Android's UI thread, shows it here and not in its native frames.
+    // Threads with no Java frames (Qt's own, not in a call up) are left out.
+    public static String threadStacks() {
+        StringBuilder out = new StringBuilder();
+        try {
+            for (java.util.Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
+                String name = entry.getKey().getName();
+                StackTraceElement[] frames = entry.getValue();
+                if (frames.length == 0 || !(name.equals("main") || name.startsWith("qt") || name.startsWith("Qt")
+                        || name.startsWith("QSG") || name.startsWith("QThread"))) {
+                    continue;
+                }
+                out.append(name).append(" (").append(entry.getKey().getState()).append(")\n");
+                for (int i = 0; i < frames.length && i < 12; ++i) {
+                    out.append("  ").append(frames[i].toString()).append('\n');
+                }
+            }
+        } catch (Throwable t) {
+            out.append("none: ").append(t).append('\n');
+        }
+        return out.toString();
+    }
+
     public static String lastExit(Context context) {
         if (Build.VERSION.SDK_INT < 30) {
             return "";

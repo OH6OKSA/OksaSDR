@@ -281,7 +281,7 @@ const QStringList kPlanCommands{
     QStringLiteral("a11yinc"), QStringLiteral("a11ydec"), QStringLiteral("focus"), QStringLiteral("focussweep"),
     QStringLiteral("keys"), QStringLiteral("layoutitems"), QStringLiteral("agcstate"), QStringLiteral("tnfs"),
     QStringLiteral("where"), QStringLiteral("setupget"), QStringLiteral("theme"), QStringLiteral("keyhold"),
-    QStringLiteral("pressmarks"),
+    QStringLiteral("pressmarks"), QStringLiteral("stall"),
 };
 } // namespace
 
