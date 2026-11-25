@@ -2659,6 +2659,13 @@ private:
     // not, until Audio output went to Speaker and back to Auto).
     bool m_headsetWasAway{false};
     qint64 m_headsetCycleUntilMs{0};
+    // The link has been seen up while this route was in use: only then is a
+    // link that is down a drop to mend. A headset or phone that never says
+    // its link is up is left as it was before the keeper (the link watch).
+    bool m_headsetLinkSeenUp{false};
+    // The tries for this drop are used up: nothing more until the link's
+    // state changes or the app comes back to the front.
+    bool m_headsetGaveUp{false};
     // Receive that could not be opened (AudioEngine::rxOpenFailed): tried
     // again every 5 s and when the app comes to the front (roadmap 181 b: an
     // iPad's receive stayed shut after an interruption in the background).

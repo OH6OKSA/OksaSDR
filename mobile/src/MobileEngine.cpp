@@ -5243,9 +5243,14 @@ void MobileEngine::releasePtt(const QString& reason)
     // release: the link is up and receive plays on, back at once. Measured
     // on the user's OnePlus Open with a Jabra Evolve2 65: 1.1 s of silence
     // with the microphone closed after PTT, two reopenings in it; with it
-    // held, the link stayed up and what was left was this reopening alone.
-    if (m_micCheckOpen && headsetRouteOk()) {
-        qCInfo(lcMobile) << "receive back at once on the Bluetooth headset: its link was held through the transmission";
+    // held, the link stayed up and one reopening 0.3 s after the release was
+    // all (receive running 0.45 s after it).
+    // Receive is still opened again, as it has been after every transmission
+    // since beta 114 (on some phones the transmission ends the stream), but
+    // at once: nothing to wait for.
+    if (m_micCheckOpen && m_connected && m_audio && headsetRouteOk()) {
+        qCInfo(lcMobile) << "receive opened again at once on the Bluetooth headset: its link was held through the transmission";
+        QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->reopenRx(); }, Qt::QueuedConnection);
     } else if (m_connected && m_audio && audioOutput() == QLatin1String("Auto")
         && m_session.radioModel().transmitModel().micSelection() == kDeviceMicSelection) {
         QTimer::singleShot(int(300 + micHoldMs), this, [this, gen = m_pttGen] {
@@ -12506,7 +12511,10 @@ void MobileEngine::retryReceiveOpen(const char* why)
 }
 
 // Android, twice a second: a Bluetooth headset's route kept while it is the
-// Auto route (roadmap 201; the members' comment has the story).
+// Auto route (roadmap 201; the members' comment has the story). Careful by
+// design, as none of it had run on a device when it went out: it mends only
+// a link it has itself seen up, a bounded number of times, and what it does
+// at each step is what the app or the user's hand did before.
 void MobileEngine::headsetKeeperTick()
 {
 #ifdef Q_OS_ANDROID
@@ -12521,6 +12529,8 @@ void MobileEngine::headsetKeeperTick()
         m_headsetNoticeShown = false;
         m_headsetWasAway = false;
         m_headsetCycleUntilMs = 0;
+        m_headsetLinkSeenUp = false;
+        m_headsetGaveUp = false;
         return;
     }
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
@@ -12550,23 +12560,33 @@ void MobileEngine::headsetKeeperTick()
     if (!inFront) {
         m_headsetWasAway = true;
     } else if (m_headsetWasAway && appState == Qt::ApplicationActive) {
-        // Back in front: the route let go and taken again, once.
         m_headsetWasAway = false;
-        m_headsetCycleUntilMs = now + 1600;
+        m_headsetGaveUp = false;
         m_headsetBadSinceMs = 0;
         m_headsetTries = 0;
-        qCInfo(lcMobile).noquote() << "back in front with the Bluetooth headset: its route let go and taken again ("
-                                          + headsetState() + ")";
-        dropHeadsetRoute();
-        QTimer::singleShot(700, this, take);
+        // Back in front: the route let go and taken again, once, for a
+        // headset used over its call link alone (its media audio off in
+        // Android's settings: the user's phone stayed silent after the
+        // background until this was done by hand). A headset with a music
+        // link as well is left as it is.
+        const QString state = headsetState();
+        if (state.contains(QLatin1String("media audio off"))) {
+            m_headsetCycleUntilMs = now + 1600;
+            qCInfo(lcMobile).noquote() << "back in front with the Bluetooth headset: its route let go and taken again ("
+                                              + state + ")";
+            dropHeadsetRoute();
+            QTimer::singleShot(700, this, take);
+        }
     }
     // The microphone held open for the link: this device's microphone, the
     // app in front (in the background Android does not let it stay open),
     // not during the route's own round above, and only once the microphone
     // is allowed (never asked for from here).
-    const bool hold = inFront && now >= m_headsetCycleUntilMs
-        && m_session.radioModel().transmitModel().micSelection() == kDeviceMicSelection
-        && qApp->checkPermission(QMicrophonePermission{}) == Qt::PermissionStatus::Granted;
+    bool hold = inFront && now >= m_headsetCycleUntilMs
+        && m_session.radioModel().transmitModel().micSelection() == kDeviceMicSelection;
+    if (hold && !m_headsetMicHold) {
+        hold = qApp->checkPermission(QMicrophonePermission{}) == Qt::PermissionStatus::Granted;
+    }
     if (hold != m_headsetMicHold) {
         m_headsetMicHold = hold;
         updateMicCheck();
@@ -12593,9 +12613,16 @@ void MobileEngine::headsetKeeperTick()
                 setLastError({});
             }
         }
+        m_headsetLinkSeenUp = true;
         m_headsetBadSinceMs = 0;
         m_headsetTries = 0;
         m_headsetNoticeShown = false;
+        m_headsetGaveUp = false;
+        return;
+    }
+    // Down. A drop only if it has been up: a headset or phone that gives no
+    // link state is not touched. And not once the tries are used up.
+    if (!m_headsetLinkSeenUp || m_headsetGaveUp) {
         return;
     }
     if (m_headsetBadSinceMs == 0) {
@@ -12604,30 +12631,35 @@ void MobileEngine::headsetKeeperTick()
     }
     // After 1.5 s the route is taken again, as after a transmission; from
     // the third time it is let go first and taken 0.7 s later (what Audio
-    // output > Speaker and back to Auto does by hand); every 3 s, then
-    // every 10 s.
+    // output > Speaker and back to Auto does by hand); every 3 s, five times
+    // in all.
+    constexpr int kTries = 5;
     const qint64 badMs = now - m_headsetBadSinceMs;
-    const qint64 nextAtMs = m_headsetTries < 5 ? 1500 + m_headsetTries * 3000LL
-                                               : 13500 + (m_headsetTries - 4) * 10000LL;
-    if (badMs < nextAtMs) {
+    if (badMs < 1500 + m_headsetTries * 3000LL) {
+        return;
+    }
+    if (m_headsetTries >= kTries) {
+        m_headsetGaveUp = true;
+        qCWarning(lcMobile).noquote() << QStringLiteral("headset link still down after %1 tries (%2): left as it is")
+                                             .arg(m_headsetTries).arg(headsetState());
+        if (inFront && !m_headsetNoticeShown) {
+            m_headsetNoticeShown = true;
+            setLastError(tr("No receive on the Bluetooth headset: Android does not open its call link. "
+                            "In Controls › Audio choose Audio output › Speaker, then Auto again, or connect the headset again."));
+        }
         return;
     }
     ++m_headsetTries;
-    qCWarning(lcMobile).noquote() << QStringLiteral("headset link down for %1 ms (%2): the route %3, try %4")
+    qCWarning(lcMobile).noquote() << QStringLiteral("headset link down for %1 ms (%2): the route %3, try %4 of %5")
                                          .arg(badMs).arg(headsetState(),
                                               m_headsetTries <= 2 ? QStringLiteral("taken again")
                                                                   : QStringLiteral("let go and taken again"))
-                                         .arg(m_headsetTries);
+                                         .arg(m_headsetTries).arg(kTries);
     if (m_headsetTries <= 2) {
         take();
     } else {
         dropHeadsetRoute();
         QTimer::singleShot(700, this, take);
-    }
-    if (m_headsetTries >= 6 && inFront && !m_headsetNoticeShown) {
-        m_headsetNoticeShown = true;
-        setLastError(tr("No receive on the Bluetooth headset: Android does not open its call link. "
-                        "In Controls › Audio choose Audio output › Speaker, then Auto again, or connect the headset again."));
     }
 #endif
 }
