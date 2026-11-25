@@ -9,7 +9,7 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Android, a Bluetooth headset used hands-free: receive is back at once after PTT, and the headset keeps its sound when a tab closes or the app comes back from the background (thanks Mattias SM6YEC). The app holds the headset's microphone open while in front; the radio transmits only at PTT.
+- Android, a Bluetooth headset used hands-free: receive should be back at once after PTT and stay when a tab closes or the app returns from the background (thanks Mattias SM6YEC). The app holds the headset's microphone open while in front; the radio transmits only at PTT.
 - Phone: PTT > Wide also with the phone on its side: PTT in the middle of the row.
 - Receive audio that could not start (a call or another app's sound in the background) is tried again by itself.
 - The 3D view is no longer switched off for a busy moment.
