@@ -2572,6 +2572,7 @@ private:
     void startDeviceMicrophoneCapture();
     void stopDeviceMicrophoneCapture(bool force = false);
     void updateMicCheck();
+    void headsetKeeperTick();
     void retryReceiveOpen(const char* why);
     void releasePtt(const QString& reason);
     void duckReceive(bool on, const char* why);
@@ -2640,6 +2641,24 @@ private:
     bool m_outputDeviceApplied{false};
     QTimer m_headsetLinkTimer;
     int m_headsetLinkTicks{0};
+    // Android, a Bluetooth headset as the Auto route (roadmap 201). Its call
+    // link is the only way receive reaches a headset used hands-free, and
+    // Android drops it whenever the microphone closes; only a PTT release
+    // took the route again. The keeper looks twice a second: in front the
+    // microphone is held open for the link (no switching at PTT, no silence
+    // after it); a link that is down is taken again, then let go and taken,
+    // and said on the page when nothing brings it back.
+    QTimer m_headsetKeeper;
+    qint64 m_headsetBadSinceMs{0};
+    int m_headsetTries{0};
+    bool m_headsetNoticeShown{false};
+    bool m_headsetMicHold{false};
+    // The app was away from the front with the headset as the route: back in
+    // front the route is let go and taken again once (the user's phone: after
+    // a visit to the background receive stayed silent in the headset, PTT or
+    // not, until Audio output went to Speaker and back to Auto).
+    bool m_headsetWasAway{false};
+    qint64 m_headsetCycleUntilMs{0};
     // Receive that could not be opened (AudioEngine::rxOpenFailed): tried
     // again every 5 s and when the app comes to the front (roadmap 181 b: an
     // iPad's receive stayed shut after an interruption in the background).

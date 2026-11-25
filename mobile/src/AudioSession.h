@@ -37,6 +37,16 @@ QString reassertHeadsetRoute();
 QString headsetState();
 // Whether Auto has a Bluetooth headset's hands-free route while connected.
 bool headsetInUse();
+// Whether that route is really had: Android's communication device is the
+// headset and its hands-free link is up (roadmap 201).
+bool headsetRouteOk();
+// The headset's route let go, to be taken again (reassertHeadsetRoute) a
+// moment later: down and up, as Audio output › Speaker and back to Auto
+// does by hand, which brought receive back on the user's phone.
+void dropHeadsetRoute();
+// The route worked out anew from what is connected now (a headset switched
+// off while it was the route).
+void reapplyAudioRoute();
 #endif
 
 } // namespace AetherSDR::mobile

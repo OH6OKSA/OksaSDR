@@ -344,6 +344,25 @@ public final class Platform {
         return scoUpAt;
     }
 
+    // Whether receive can reach the headset now: the headset's hands-free
+    // audio link is up (roadmap 201: the route asked for is not always the
+    // route had; a link that dropped when the microphone closed was taken
+    // again only after a transmission). The link's own state, as the watch
+    // above has it, not Android's word for the communication device, which
+    // lags behind it. An LE Audio headset has no such link: its being the
+    // communication device counts.
+    public static boolean headsetRouteOk(Context context) {
+        if (scoUpAt != 0) {
+            return true;
+        }
+        if (Build.VERSION.SDK_INT >= 31) {
+            AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            AudioDeviceInfo d = am.getCommunicationDevice();
+            return d != null && d.getType() == AudioDeviceInfo.TYPE_BLE_HEADSET;
+        }
+        return false;
+    }
+
     // Whether Android's communication route is a Bluetooth headset now.
     public static boolean headsetRoute(Context context) {
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);

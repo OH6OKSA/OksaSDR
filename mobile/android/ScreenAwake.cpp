@@ -232,6 +232,29 @@ QString reassertHeadsetRoute()
         "(Landroid/content/Context;Z)Ljava/lang/String;", androidContext().object(), jboolean(true)).toString();
 }
 
+bool headsetRouteOk()
+{
+    if (!headsetInUse()) {
+        return false;
+    }
+    return QJniObject::callStaticMethod<jboolean>(kPlatformClass, "headsetRouteOk", "(Landroid/content/Context;)Z",
+                                                  androidContext().object());
+}
+
+void dropHeadsetRoute()
+{
+    if (!headsetInUse()) {
+        return;
+    }
+    QJniObject::callStaticObjectMethod(kPlatformClass, "useHeadset", "(Landroid/content/Context;Z)Ljava/lang/String;",
+                                       androidContext().object(), jboolean(false));
+}
+
+void reapplyAudioRoute()
+{
+    applyAudioRoute();
+}
+
 // The foreground service keeps the app running through a reconnect.
 void setBackgroundTimeHeld(bool)
 {
