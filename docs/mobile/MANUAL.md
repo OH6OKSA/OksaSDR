@@ -3385,11 +3385,18 @@ connecting, so receive comes back with the headset's *Media audio* off
 in Android's Bluetooth settings too (only *Calls* on). A PTT press shorter
 than the moment Android takes to open the headset's microphone does not
 open it at all (since beta 117: opened after the release and shut at
-once, it left the headset chirping until a longer press). If receive
-still goes silent after PTT, turn on the headset's Media audio (Settings ›
-Bluetooth › the gear beside the headset; on a Samsung *Audio*) and send
-the log: it says the headset's link and media audio after each
-transmission. Without
+once, it left the headset chirping until a longer press). Since beta 121
+the app keeps the headset's link itself: while it is in front it holds
+the headset's microphone open (Android shows its microphone indicator for
+as long; the radio transmits only at PTT), so the link stays up and
+receive is back at once after PTT; a link that drops is taken again; and
+back in front after the background the route is renewed once, with a
+second and a half of silence. In the background Android does not let the
+microphone stay open, so there the link is only taken again when it
+drops. If Android does not open the link at all, a notice says so:
+Controls › Audio › Audio output › *Speaker* and back to *Auto*, or the
+headset connected again, has brought it back. If receive still goes
+silent, send the log: it says the headset's link at each step. Without
 one, the phone's speaker and microphone are used. **A USB-C headset** (or a
 USB-C to 3.5 mm adapter) is used the same way with *Auto*, ahead of
 Bluetooth; plugged in or out while connected, receive moves over at once. Controls › Audio ›

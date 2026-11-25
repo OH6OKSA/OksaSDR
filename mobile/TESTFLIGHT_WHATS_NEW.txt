@@ -9,18 +9,17 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- iPhone: PTT where your thumb is. Setup > App > PTT: Left, Wide or Right (thanks Antonio IZ7LDG).
-- Setup > App > At start > Last radio: at a start the app connects to the radio you used last, the way you used it (thanks Tyler K0OTC).
-- SmartLink sign-in: Forgot password? has FlexRadio mail you its reset link (thanks Bob WB3BOB).
-- Prof tab: Save with no name saves over the profile chosen above, after asking (thanks Larry W9FLA).
-- FT8 / FT4: signal reports are right with a receive filter narrower than 3 kHz, and Decode opens a narrow DIGU filter (left by FreeDV).
-- A voice macro that gets no microphone audio ends after 3 s and lets PTT go.
-- Connect page: Connect > keeps its size at a large text size.
+- Android, a Bluetooth headset used hands-free: receive is back at once after PTT, and the headset keeps its sound when a tab closes or the app comes back from the background (thanks Mattias SM6YEC). The app holds the headset's microphone open while in front; the radio transmits only at PTT.
+- Phone: PTT > Wide also with the phone on its side: PTT in the middle of the row.
+- Receive audio that could not start (a call or another app's sound in the background) is tried again by itself.
+- The 3D view is no longer switched off for a busy moment.
+- The log's lines begin oksa.…; the demo radio is OksaSDR Demo.
+- Android: when the app stops answering, the log says where.
 
-RECENT (builds 94–214)
+RECENT (builds 94–215)
+- 215: PTT Left / Wide / Right (thanks Antonio IZ7LDG); At start > Last radio (thanks Tyler K0OTC); Forgot password? (thanks Bob WB3BOB); Prof tab Save over a profile (thanks Larry W9FLA).
 - 214: FTx > List only is the list; a radio's whole name on its Connect card (thanks Ian VK1HF); PTT above the keyboard.
 - 212: PTT with the side drawer open; Exit Big buttons in the menu (thanks Kent K9EZ); a memory tunes only your own slice.
-- 211: Done works as Enter; the waterfall's buttons in the PTT row; TGXL relays (thanks Ben KT4O).
 
 PLEASE TRY
 - Receive on a few bands with zoom, Band and the 3D view.
@@ -33,8 +32,8 @@ PLEASE TRY
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
 - VOX with a headset on this device: Controls > TX > VOX on, speak, and the radio keys by its VOX level and delay. [TX]
 - SmartLink over mobile data as well as Wi-Fi: connect, disconnect and connect again; no error should show after your own Disconnect.
-- New: Setup > App > PTT > Left or Wide on an iPhone: key from the page and with the Controls drawer open, upright and on its side. [TX]
-- New: Setup > App > At start > Last radio, then close the app and start it again: it should connect by itself, at home and away.
+- New: Android with a Bluetooth headset (Audio output Auto): PTT, quick taps, the app to the background and back; receive should stay in the headset. [TX]
+- New: Setup > App > PTT > Wide on a phone, upright and on its side. [TX]
 - Setup > Spots > RBN, PSK Reporter and Heard me; then call CQ and see Heard me fill.
 - TX > Use the radio's microphone, then a voice macro and Repeat. [TX]
 - A button as PTT (Setup > Transmit > PTT key > Learn), held and with PTT Tap on / off, at low power. [TX]
