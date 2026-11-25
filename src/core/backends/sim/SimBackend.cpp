@@ -241,7 +241,9 @@ void SimBackend::setDemoNb(bool on)
     }, Qt::QueuedConnection);
 }
 
-QString SimBackend::demoModelName() { return QStringLiteral("AetherSDR Demo"); }
+// OksaSDR: the demo radio under the app's own name on the Connect page and
+// in the header (roadmap 192; upstream: "AetherSDR Demo").
+QString SimBackend::demoModelName() { return QStringLiteral("OksaSDR Demo"); }
 QString SimBackend::demoSerial()    { return DemoRadio::serial(); }
 QString SimBackend::familyName()    { return QStringLiteral("sim"); }
 
