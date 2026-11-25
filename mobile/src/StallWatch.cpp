@@ -322,9 +322,12 @@ void run()
                     .arg(context(now));
                 qCWarning(lcStall).noquote() << line;
 #ifdef OKSASDR_STALL_STACKS
-                // Where, under the line that says how long; and once more at
-                // 16 s: the same place twice is a thread that waits or goes
-                // round in one spot, another place one that still works.
+                // Where, under the line that says how long (Linux: at the
+                // first second; Android: at the report of 16 s), and once
+                // more at the first report from 16 s on after that (Linux:
+                // at 16 s; Android: at 32 s): the same place twice is a
+                // thread that waits or goes round in one spot, another
+                // place one that still works.
                 if (active && ((stacksTaken == 0 && silentMs >= kStacksAfterMs)
                                || (stacksTaken == 1 && silentMs >= kStacksAgainMs))) {
                     ++stacksTaken;
