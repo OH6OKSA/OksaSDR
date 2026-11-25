@@ -56,11 +56,15 @@ Page {
     // bottom rows are mirrored (PTT, Macros, Controls from the left; the
     // drawer's own row the same, so PTT stays under the thumb); wide gives
     // PTT the page's width upright, Controls and Macros in a row above it
-    // (on its side the page has one row for all, so wide is as right there).
+    // (on its side the page has one row for all: see pttWideSide).
     // Split CW paddles keep their sides whatever is chosen: dit left, dah
     // right.
     readonly property bool pttLeft: Engine.pttPlace === "left" && !splitPaddles
     readonly property bool pttWide: Engine.pttPlace === "wide" && !splitPaddles && !landscape
+    // Wide with the phone on its side (roadmap 204): PTT in the middle of
+    // the one row the page has there, the other buttons at its two sides
+    // (the user's drawing, 2026-11-25: "leveä keskellä", as upright).
+    readonly property bool pttWideSide: Engine.pttPlace === "wide" && !splitPaddles && landscape
     // Upright, the controls can take the whole screen (the button beside
     // Close): FTx then lists its decodes on the full height (Michael
     // Whaley). Kept while the app runs.
@@ -422,9 +426,13 @@ Page {
                 }
                 // Step buttons: land on round frequencies (tuneByHz); FM
                 // channel steps take the radio's STEP (Theme.stepButtons).
-                Repeater {
-                    model: Engine.tuneRowsShown ? Theme.stepButtons(Engine.stepHz, Engine.radioStepButtons) : []
-                    delegate: AppButton {
+                // The steps down, then the steps up: PTT stands between them
+                // when it is wide (roadmap 204), and takes the room the row
+                // has, a third of it at least; the steps then keep to their
+                // own width and give way.
+                Component {
+                    id: stepButton
+                    AppButton {
                         required property int modelData
                         text: (modelData > 0 ? "+" : "−") + Theme.stepLabel(Math.abs(modelData))
                         leftPadding: 1
@@ -432,6 +440,7 @@ Page {
                         Layout.fillWidth: true
                         Layout.minimumWidth: 30
                         Layout.preferredWidth: Theme.buttonWidth
+                        Layout.maximumWidth: middlePtt.visible ? Theme.buttonWidth : 100000
                         Layout.preferredHeight: Theme.touchTarget
                         // Held: steps on (Larry Averbeck), from 0.4 s, 8 a second.
                         autoRepeat: true
@@ -442,6 +451,27 @@ Page {
                             Engine.tuneByHz(modelData)
                         }
                     }
+                }
+                Repeater {
+                    model: Engine.tuneRowsShown
+                           ? Theme.stepButtons(Engine.stepHz, Engine.radioStepButtons).filter(hz => hz < 0) : []
+                    delegate: stepButton
+                }
+                PttButton {
+                    id: middlePtt
+                    objectName: "pagePttMiddle"
+                    touchBelow: page.pttTouchBelow
+                    visible: page.pttWideSide && Engine.tuneRowsShown && !controlsDrawer.visible && !digiHidden
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: Math.max(150, Math.round(stepRow.width * 0.3))
+                    Layout.preferredWidth: Math.max(150, Math.round(stepRow.width * 0.3))
+                    Layout.preferredHeight: Theme.touchTarget
+                    fontPx: 22
+                }
+                Repeater {
+                    model: Engine.tuneRowsShown
+                           ? Theme.stepButtons(Engine.stepHz, Engine.radioStepButtons).filter(hz => hz > 0) : []
+                    delegate: stepButton
                 }
                 // With the steps hidden the controls button and PTT stay at
                 // the right, where the thumb finds them. In landscape the
@@ -505,7 +535,22 @@ Page {
                             border.width: 2
                         }
                     }
-                    Item { Layout.fillWidth: true }
+                    Item {
+                        visible: !middlePttBelow.visible
+                        Layout.fillWidth: true
+                    }
+                    // Wide: PTT in the room between the two groups.
+                    PttButton {
+                        id: middlePttBelow
+                        objectName: "pagePttMiddle"
+                        touchBelow: page.pttTouchBelow
+                        visible: page.pttWideSide && !controlsDrawer.visible && !digiHidden
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 2
+                        Layout.rightMargin: 2
+                        Layout.preferredHeight: Theme.touchTarget
+                        fontPx: 22
+                    }
                     Repeater {
                         model: page.panButtonsBelow
                                ? [{ label: qsTr("+ Slice"), pan: false }, { label: qsTr("+ Pan"), pan: true }]
@@ -557,7 +602,7 @@ Page {
                 PttButton {
                     objectName: "pagePttSide"
                     touchBelow: page.pttTouchBelow
-                    visible: page.landscape && !page.pttLeft && !controlsDrawer.visible && !digiHidden
+                    visible: page.landscape && !page.pttLeft && !page.pttWideSide && !controlsDrawer.visible && !digiHidden
                     paddleSide: page.splitPaddles ? "right" : "both"
                     paddleState: page.splitPaddles ? paddleState : null
                     Layout.preferredWidth: page.splitPaddles ? Math.max(110, page.width * 0.15) : Math.max(150, page.width * 0.2)

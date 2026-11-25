@@ -1409,7 +1409,10 @@ the value types it); SPLIT again (or XIT off there) ends it.
   side they start the step row instead of ending it. *Wide* gives PTT the
   whole width of the page upright, with Controls and Macros in a row of
   their own above it (the waterfall gives up that row's height); on its
-  side the page has one row for everything, so PTT is at the right there.
+  side, where the page has one row for everything, PTT stands in the
+  middle of that row with the other buttons at its two sides, and takes
+  the room the row has, a third of it at least (the step buttons give
+  way a little).
   Split CW paddles keep their sides whatever is chosen: dit left, dah
   right. The choice shows on a phone's page only; a tablet's page places
   PTT in its layouts.
