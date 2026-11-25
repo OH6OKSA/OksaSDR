@@ -850,6 +850,14 @@ int main(int argc, char* argv[])
     }
     // Stalls: frames are expected while connected with the app in front.
     AetherSDR::mobile::StallWatch::start();
+    // Its thread is stopped on every way out of main (roadmap 200). The quit
+    // stops it (aboutToQuit), but the test modes return straight after
+    // their test without one, and a watcher thread still running when the
+    // statics are destroyed aborted the exit: the test had passed and the
+    // process still ended with a failure. Stopping twice is harmless.
+    struct StallWatchStop {
+        ~StallWatchStop() { AetherSDR::mobile::StallWatch::stop(); }
+    } stallWatchStop;
     auto* stallContext = new QTimer(&app);
     stallContext->setInterval(500);
     QObject::connect(stallContext, &QTimer::timeout, &engine, [&engine] {
