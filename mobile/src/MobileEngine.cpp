@@ -4144,6 +4144,29 @@ void MobileEngine::dvkPlay(int id)
         AudioEngine* audio = m_audio;
         QMetaObject::invokeMethod(audio, [audio, clip, rate] { audio->playTxClip(clip, rate); }, Qt::QueuedConnection);
         qCInfo(lcMobile) << "voice macro play F" << id << clip.size() / sizeof(float) / double(rate) << "s";
+        // The clip takes the microphone's place block by block, so it runs
+        // on the capture's clock: with no blocks coming it neither plays nor
+        // ends, and the radio would stay keyed with nothing to send (roadmap
+        // 199: seen on a machine with no microphone at all, keyed for ten
+        // seconds until something else let PTT go; a capture taken by a call
+        // or stopped by the system would do the same, and a repeat would
+        // never end). Two checks end such a macro and say so: no transmit
+        // audio three seconds after keying, or no end three seconds past
+        // the clip's own length.
+        constexpr int kGuardStartMs = 3000;
+        constexpr int kGuardTailMs = 3000;
+        const int clipMs = int(clip.size() / sizeof(float) * 1000.0 / rate);
+        const quint64 guard = ++m_voiceGuardId;
+        QTimer::singleShot(kGuardStartMs, this, [this, guard] {
+            if (guard == m_voiceGuardId && m_voiceState == QLatin1String("playback") && m_txSendStats->packets.load() == 0) {
+                endStalledVoiceMacro(QStringLiteral("no transmit audio 3 s after keying"));
+            }
+        });
+        QTimer::singleShot(clipMs + kGuardTailMs, this, [this, guard] {
+            if (guard == m_voiceGuardId && m_voiceState == QLatin1String("playback")) {
+                endStalledVoiceMacro(QStringLiteral("the clip did not end 3 s past its length"));
+            }
+        });
         emit dvkChanged();
         return;
     }
@@ -4299,6 +4322,22 @@ void MobileEngine::onVoiceClipRecorded(const QByteArray& clip, int rate)
             setLastError(tr("The voice macro could not be saved."));
         }
     }
+    emit dvkChanged();
+}
+
+// A voice macro whose clip does not run (dvkPlay's guard): the macro and its
+// repeat end, PTT is let go and the operator is told why.
+void MobileEngine::endStalledVoiceMacro(const QString& what)
+{
+    qCWarning(lcMobile).noquote() << "voice macro F" << m_voiceActiveId << "ended by its guard:" << what
+                                  << "(the clip runs on the microphone's capture)";
+    cancelMacroRepeat(QStringLiteral("voice macro not sent"));
+    m_voiceState = QStringLiteral("idle");
+    AudioEngine* audio = m_audio;
+    QMetaObject::invokeMethod(audio, [audio] { audio->stopTxClip(); }, Qt::QueuedConnection);
+    releasePtt(QStringLiteral("voice macro not sent: no audio from the microphone"));
+    restoreDvkMic(QStringLiteral("voice macro not sent"));
+    setLastError(tr("The voice macro was not sent: this device's microphone gave no audio, so PTT was let go."));
     emit dvkChanged();
 }
 

@@ -3306,6 +3306,8 @@ private:
     void onVoiceClipRecorded(const QByteArray& clip, int rate);
     void voiceAnswered(const QStringList& alternatives, const QString& error);
     void onVoiceClipFinished();
+    void endStalledVoiceMacro(const QString& what);
+    quint64 m_voiceGuardId{0};   // the voice macro being guarded (dvkPlay)
     QString m_voiceState{QStringLiteral("idle")};
     int m_voiceActiveId{-1};
     // Macro repeat (roadmap 33): what repeats ("voice" slot id or "cw"

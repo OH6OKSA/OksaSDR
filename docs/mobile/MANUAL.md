@@ -1583,7 +1583,11 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
     DVK slots (up to 10 s, shared with other programs); otherwise (no
     SmartSDR+, or a radio that does not say) the app keeps them on this
     device (up to 15 s) and plays them into the transmit audio as if
-    spoken. In RADE the app's own recordings go out as RADE like your voice;
+    spoken. They ride on this device's microphone audio: when the
+    microphone gives none (a call has it, or the system has stopped it), the
+    macro ends after three seconds, PTT is let go and a notice says so,
+    rather than leaving the radio keyed with nothing to send.
+    In RADE the app's own recordings go out as RADE like your voice;
     the radio's DVK slots do not play there (the radio sends them as analog
     audio; thanks Christoph Steinert DM5HF). Either way **Listen** plays a recording to you without
     transmitting, so you can check it before naming it. Features that need
