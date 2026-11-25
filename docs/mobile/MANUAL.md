@@ -516,6 +516,20 @@ The first page lists the ways to reach a radio:
   the phone anyway. SmartLink or a VPN is the way from outside. (Host
   names asked by Sebastian Schu DG5CST.)
 
+**Straight to your radio at a start** (since build 215 / Android beta 120;
+asked by Tyler Akerman K0OTC). Setup › App › **At start** › *Last radio*
+makes the app connect, when it is started, to the radio you used last,
+the way you used it: a radio found on this network, a saved address or
+name, or a SmartLink radio on its account. While it looks, this page says
+*Waiting for* and the radio's name, with **Cancel** beside it; the list
+can be used meanwhile, and a tap on any card connects to that one
+instead. A radio that does not show up in 8 seconds leaves the radio list
+as it is, as with *Radio list* (the default). The way is never changed
+for you: a radio last used on your own network is not taken over
+SmartLink when you are somewhere else. It happens only at a start of the
+app, not after your own Disconnect; the demo radio is never the one
+remembered; and a radio with another station on it still asks first.
+
 **Another station on the radio.** A radio with multiFLEX off takes one
 station at a time. When another (SmartSDR, AetherSDR on a PC) is on it,
 the app asks *Another station is on the radio* and names it: **Disconnect
@@ -2998,7 +3012,8 @@ tab holds.
   whole app, scaled to its screen)), **Zoom
   buttons** (*Left* or *Right*: the display's corner buttons), on a phone
   **PTT** (*Left*, *Wide* or *Right*: see
-  [Transmitting](#7-transmitting-ptt-key-and-tune)), **Band plan**
+  [Transmitting](#7-transmitting-ptt-key-and-tune)), **At start** (*Radio
+  list* or *Last radio*: see [Connecting](#1-connecting)), **Band plan**
   (the strip at the foot of the spectrum: *Off*, *ARRL (US)*, *IARU Region
   1 / 2 / 3*, *RAC (Canada)* or *SSA (Sweden)*), **Band plan lock (mode)**
   (see [Band plan lock](#band-plan-lock)), **Felt taps (phones)** (see

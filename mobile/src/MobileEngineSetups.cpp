@@ -71,6 +71,9 @@ bool deviceBound(const QString& key)
         QStringLiteral("MobileQrzLogPending"), QStringLiteral("MobileSharedAdifPending"),
         QStringLiteral("MobileOnlineLogReadFrom"), QStringLiteral("MobileOnlineLogReadIds"),
         QStringLiteral("MobileQrzLogReadId"),
+        // The radio this device used last (roadmap 189): a setup taken to
+        // another device, or back to an older one, does not change it.
+        QStringLiteral("MobileLastRadio"),
     };
     return exact.contains(key) || key.contains(QLatin1String("Migrated"))
         // A recording's sample rate belongs to the sound file on the device.

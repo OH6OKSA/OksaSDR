@@ -197,7 +197,10 @@ your device, except as part of the normal connection to your radio.
   keyring on Linux); a SmartLink
   password is never stored. The SmartLink accounts' e-mail addresses and
   names (as SmartLink gives them) and your favourite SmartLink radios are
-  kept in the app's own storage, for the Connect page.
+  kept in the app's own storage, for the Connect page. So is the radio you
+  connected to last (the way it was reached, its serial number or address
+  and its name), for *At start › Last radio*; it stays on this device and
+  an App setup does not carry it.
 - The in-app diagnostic log (what the app did: connections, commands sent
   to the radio, errors) is also written to a file in the app's own
   storage as it runs, so that after a crash the next start can show the
@@ -238,4 +241,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-11-20 (Android: GitHub for new versions; earlier: the microphone with VOX and for the TX tab's meter, speech recognition on the device everywhere, SmartLink accounts and favourites, Bluetooth MIDI search on Android; the Elecraft KPA1500, Bluetooth MIDI controllers, App setups)
+Last updated: 2026-11-25 (the radio used last, kept for At start › Last radio; earlier: Android: GitHub for new versions; the microphone with VOX and for the TX tab's meter, speech recognition on the device everywhere, SmartLink accounts and favourites, Bluetooth MIDI search on Android; the Elecraft KPA1500, Bluetooth MIDI controllers, App setups)

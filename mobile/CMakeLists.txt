@@ -56,6 +56,7 @@ qt_add_executable(aether-mobile
     ${CMAKE_SOURCE_DIR}/src/gui/workspace/WorkspaceDocument.cpp
     src/MobileEngineVoiceLog.cpp
     src/MobileEngineSmartLink.cpp
+    src/MobileEngineStart.cpp
     src/MobileEngineSharedAdif.cpp
     src/MobileEngineLogger32.cpp
     src/MobileEngineLoggerUdp.cpp

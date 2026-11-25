@@ -1714,6 +1714,15 @@ MobileEngine::MobileEngine(QObject* parent)
         m_radios.remove(family, serial);
     });
     m_discovery->start();
+
+    // Connect at start to the radio used last (roadmap 189): once the
+    // event loop runs, so a connect asked on the command line goes first.
+    m_startConnectTimer.setSingleShot(true);
+    connect(&m_startConnectTimer, &QTimer::timeout, this,
+            [this] { endStartConnect(QStringLiteral("the radio did not show up in time")); });
+    connect(&m_radios, &RadioListModel::countChanged, this, &MobileEngine::tryStartConnect);
+    connect(this, &MobileEngine::smartLinkRadiosChanged, this, &MobileEngine::tryStartConnect);
+    QTimer::singleShot(0, this, &MobileEngine::beginStartConnect);
 }
 
 MobileEngine::~MobileEngine()
@@ -1792,6 +1801,11 @@ void MobileEngine::connectToRadio(int row)
     if (radio->port != 0) {
         info.port = radio->port;
     }
+    if (radio->transport == QLatin1String("sim")) {
+        noteConnectWay({}, {}, {}, {});
+    } else {
+        noteConnectWay(QStringLiteral("found"), radio->serial, {}, radio->nickname.isEmpty() ? radio->model : radio->nickname);
+    }
     connectWithInfo(info, radio->nickname.isEmpty() ? radio->model : radio->nickname);
 }
 
@@ -1857,11 +1871,13 @@ void MobileEngine::connectToHostAddress(const QString& entered, const QHostAddre
     rememberSavedRadio(entered);
     m_savedRadioAddress = entered;
     qCInfo(lcMobile).noquote() << "connect: by address," << entered;
+    noteConnectWay(QStringLiteral("address"), entered, {}, entered);
     connectWithInfo(info, entered);
 }
 
 void MobileEngine::connectWithInfo(const RadioInfo& info, const QString& displayName)
 {
+    endStartConnect({});  // a card tapped while the start waited for another radio
     applyAudioCompression(info.address, false);
     m_wanActive = false;
     m_wanReconnectTimer.stop();
@@ -2574,6 +2590,9 @@ void MobileEngine::connectSmartLinkRadioNow(int index, const QList<quint32>& dis
         return;
     }
     m_pendingWan = radio;
+    endStartConnect({});
+    noteConnectWay(QStringLiteral("smartlink"), radio.serial, m_smartLinkActiveId,
+                   radio.nickname.isEmpty() ? radio.model : radio.nickname);
     m_wanActive = true;
     m_wanUserDisconnect = false;
     m_wanValidateRetried = false;
@@ -10778,6 +10797,7 @@ void MobileEngine::onConnectionStateChanged(bool connected)
     if (!connected && m_connected) {
         noteSessionEnd();
     } else if (connected) {
+        rememberLastRadio();
         m_disconnectWhy.clear();
         m_lastLinkError.clear();
         if (!m_disconnectCause.isEmpty()) {

@@ -121,6 +121,30 @@ ColumnLayout {
             }
         }
     }
+    // What the app does at a start (roadmap 189, Tyler Akerman K0OTC): the
+    // radio list as always, or straight to the radio used last when it
+    // shows up within a few seconds (found on this network, a saved address
+    // or SmartLink, whichever way it was used).
+    RowLayout {
+        Layout.fillWidth: true
+        Label { text: qsTr("At start"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+        AppButton {
+            objectName: "startRadioList"
+            text: qsTr("Radio list")
+            checked: !Engine.connectAtStart
+            Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.connectAtStart = false
+        }
+        AppButton {
+            objectName: "startLastRadio"
+            text: qsTr("Last radio")
+            checked: Engine.connectAtStart
+            Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.connectAtStart = true
+        }
+    }
     // Band plan strip along the bottom of the spectrum.
     Label { text: qsTr("Band plan"); color: Theme.textDim; font.pixelSize: Theme.px(16) }
     Flow {

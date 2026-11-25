@@ -168,27 +168,32 @@ Page {
                 // Disconnect says why (the radio, SmartLink, the network).
                 readonly property string ended: Engine.disconnectCause.length > 0
                                                 ? qsTr("The connection ended: %1.").arg(Engine.disconnectCause) : ""
-                visible: Engine.connectionState !== "idle" || Engine.lastError.length > 0 || ended.length > 0
+                // Roadmap 189: at a start with "connect to the radio used
+                // last" chosen, the wait for that radio shows here, with
+                // the same Cancel.
+                readonly property bool waiting: Engine.connectionState === "idle" && Engine.startConnectWaiting.length > 0
+                visible: Engine.connectionState !== "idle" || Engine.lastError.length > 0 || ended.length > 0 || waiting
                 spacing: 12
                 Label {
                     objectName: "connectStatus"
                     Layout.fillWidth: true
-                    text: Engine.connectionState === "connecting"
+                    text: parent.waiting ? qsTr("Waiting for %1…").arg(Engine.startConnectWaiting)
+                          : Engine.connectionState === "connecting"
                           ? (parent.ended.length > 0 ? qsTr("Connecting again… (%1)").arg(Engine.disconnectCause) : qsTr("Connecting…"))
                           // The link's own error for a session that was up: said
                           // as its end ("The connection ended: ...").
                           : Engine.lastError.length > 0 && Engine.lastError !== Engine.disconnectCause ? Engine.lastError
                           : parent.ended.length > 0 ? parent.ended : Engine.lastError
-                    color: Engine.connectionState === "connecting" ? Theme.textDim : Theme.warning
+                    color: Engine.connectionState === "connecting" || parent.waiting ? Theme.textDim : Theme.warning
                     font.pixelSize: Theme.px(17)
                     wrapMode: Text.Wrap
                 }
                 AppButton {
                     objectName: "cancelConnect"
-                    visible: Engine.connectionState === "connecting"
+                    visible: Engine.connectionState === "connecting" || parent.waiting
                     text: qsTr("Cancel")
                     focusPolicy: Qt.NoFocus
-                    onClicked: Engine.disconnectRadio("Cancel on the connect page")
+                    onClicked: parent.waiting ? Engine.cancelStartConnect() : Engine.disconnectRadio("Cancel on the connect page")
                 }
             }
             // The connection doctor: what blocks the connection, step by step
@@ -196,7 +201,7 @@ Page {
             // always for the last radio tried.
             AppButton {
                 objectName: "checkConnection"
-                visible: Engine.connectionState === "idle"
+                visible: Engine.connectionState === "idle" && Engine.startConnectWaiting.length === 0
                 text: Engine.lastError.length > 0 ? qsTr("Why? Check the connection") : qsTr("Check the connection")
                 focusPolicy: Qt.NoFocus
                 Layout.preferredHeight: Theme.touchTarget

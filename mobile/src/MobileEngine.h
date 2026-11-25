@@ -2,6 +2,7 @@
 
 #include "models/BandPlanManager.h"
 #include <QJsonArray>
+#include <QJsonObject>
 #include "QsoLog.h"
 #include "RadioListModel.h"
 
@@ -259,6 +260,11 @@ class MobileEngine : public QObject {
     // user's, may be empty), radio (what the radio called itself at the last
     // connect: nickname and model), last (the one connected or tried last).
     Q_PROPERTY(QVariantList savedRadios READ savedRadios NOTIFY savedRadiosChanged)
+    // Connect at start to the radio used last (roadmap 189; Setup › App):
+    // off unless chosen. startConnectWaiting is that radio's name while the
+    // app waits for it at a start, "" otherwise (the Connect page's line).
+    Q_PROPERTY(bool connectAtStart READ connectAtStart WRITE setConnectAtStart NOTIFY connectAtStartChanged)
+    Q_PROPERTY(QString startConnectWaiting READ startConnectWaiting NOTIFY startConnectChanged)
     Q_PROPERTY(QString smartLinkState READ smartLinkState NOTIFY smartLinkChanged)
     Q_PROPERTY(QString smartLinkAccount READ smartLinkAccount NOTIFY smartLinkChanged)
     Q_PROPERTY(QString smartLinkEmail READ smartLinkEmail NOTIFY smartLinkChanged)
@@ -1148,6 +1154,10 @@ public:
     bool bandsAvailable() const;
     QString lastAddress() const;
     QVariantList savedRadios() const;
+    bool connectAtStart() const;
+    void setConnectAtStart(bool on);
+    QString startConnectWaiting() const { return m_startConnectName; }
+    Q_INVOKABLE void cancelStartConnect();
     QVariantList connectionCheck() const { return m_check; }
     bool connectionCheckRunning() const { return m_checkRunning; }
     QString connectionCheckTarget() const { return m_checkTarget; }
@@ -2394,6 +2404,8 @@ signals:
     void filterChanged();
     void lastAddressChanged();
     void savedRadiosChanged();
+    void connectAtStartChanged();
+    void startConnectChanged();
     void connectionCheckChanged();
     void controlsVisibleChanged();
     void controlsSectionChanged();
@@ -3641,6 +3653,16 @@ private:
     void forgetSmartLinkAccount(const QString& id);
     void useSmartLinkAccount(const QString& id);
     void favouriteRadioListed();
+    // Connect at start (MobileEngineStart.cpp).
+    void noteConnectWay(const QString& kind, const QString& key, const QString& account, const QString& name);
+    void rememberLastRadio();
+    void beginStartConnect();
+    void tryStartConnect();
+    void endStartConnect(const QString& why);
+    QJsonObject m_connectWay;    // the connect being made: kind, key, account, name
+    QJsonObject m_startConnect;  // the radio awaited at this start
+    QString m_startConnectName;
+    QTimer m_startConnectTimer;
     QString m_smartLinkActiveId;
     QString m_smartLinkPendingEmail;   // a password sign-in under way
     QString m_smartLinkFallbackId;     // the account active before it, if it fails
