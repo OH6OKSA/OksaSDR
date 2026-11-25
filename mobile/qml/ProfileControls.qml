@@ -39,6 +39,7 @@ ColumnLayout {
             Layout.fillWidth: true
             TextField {
                 id: nameField
+                objectName: "profileName_" + section.type
                 Accessible.name: qsTr("New %1 profile name").arg(section.title)
                 Layout.fillWidth: true
                 placeholderText: qsTr("Save as…")
@@ -49,11 +50,26 @@ ColumnLayout {
             }
             AppButton {
                 id: saveButton
+                objectName: "profileSave_" + section.type
                 text: qsTr("Save")
-                enabled: nameField.text.trim().length > 0
+                // A typed name saves under it. With the field empty Save goes
+                // over the profile chosen above, after a question that names
+                // it (roadmap 162, Larry Averbeck W9FLA: a small change saved
+                // again needed the whole name typed again).
+                enabled: nameField.text.trim().length > 0 || picker.currentIndex >= 0
                 focusPolicy: Qt.NoFocus
                 onClicked: {
-                    Engine.saveProfile(section.type, nameField.text.trim())
+                    const typed = nameField.text.trim()
+                    const name = typed.length > 0 ? typed : picker.currentText
+                    if (section.names.indexOf(name) >= 0) {
+                        confirmSaveOver.type = section.type
+                        confirmSaveOver.kind = section.title
+                        confirmSaveOver.name = name
+                        confirmSaveOver.field = nameField
+                        confirmSaveOver.open()
+                        return
+                    }
+                    Engine.saveProfile(section.type, name)
                     nameField.text = ""
                 }
             }
@@ -83,14 +99,14 @@ ColumnLayout {
         title: qsTr("Global profile")
         names: Engine.globalProfiles
         active: Engine.activeGlobalProfile
-        hint: qsTr("Loading a global profile changes bands, panadapters and slices. Save overwrites a profile of the same name.")
+        hint: qsTr("Loading a global profile changes bands, panadapters and slices. Save with no name saves over the profile chosen above.")
     }
     ProfileSection {
         type: "transmit"
         title: qsTr("TX profile")
         names: Engine.txProfiles
         active: Engine.activeTxProfile
-        hint: qsTr("Save creates a new profile; to replace one, delete it first.")
+        hint: qsTr("Save with no name saves over the profile chosen above.")
     }
     ProfileSection {
         type: "mic"
@@ -155,10 +171,12 @@ ColumnLayout {
                 id: setupSave
                 objectName: "appSetupSave"
                 text: qsTr("Save")
-                enabled: setupName.text.trim().length > 0
+                // With no name: over the setup chosen above (roadmap 162).
+                enabled: setupName.text.trim().length > 0 || setupPicker.currentIndex >= 0
                 focusPolicy: Qt.NoFocus
                 onClicked: {
-                    const name = setupName.text.trim()
+                    const typed = setupName.text.trim()
+                    const name = typed.length > 0 ? typed : setupPicker.currentText
                     if (Engine.appSetups.indexOf(name) >= 0) {
                         confirmReplace.name = name
                         confirmReplace.open()
@@ -280,6 +298,35 @@ ColumnLayout {
         onAccepted: {
             setups.show(Engine.saveAppSetup(name), qsTr("Saved “%1”.").arg(name))
             setupName.text = ""
+        }
+    }
+
+    // Save over a profile that exists: the three kinds of the radio's
+    // profiles (roadmap 162). The radio writes the settings in use over it.
+    Dialog {
+        id: confirmSaveOver
+        objectName: "confirmSaveOver"
+        property string type
+        property string kind
+        property string name
+        property var field: null
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(parent ? parent.width - 2 * Theme.spacing : 400, 420)
+        modal: true
+        title: qsTr("Save over “%1”?").arg(name)
+        standardButtons: Dialog.Yes | Dialog.No
+        contentItem: ColumnLayout {
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("%1: the settings now in use replace the ones saved in it.").arg(confirmSaveOver.kind)
+                wrapMode: Text.Wrap
+                color: Theme.text
+            }
+        }
+        onAccepted: {
+            Engine.saveProfile(type, name)
+            if (field) field.text = ""
         }
     }
 

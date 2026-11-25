@@ -7509,12 +7509,11 @@ void MobileEngine::saveProfile(const QString& type, const QString& name)
     if (type == QLatin1String("global")) {
         rm.sendCommand(QStringLiteral("profile global save ") + quotedProfileName(name));
     } else if (type == QLatin1String("transmit") || type == QLatin1String("mic")) {
-        const QStringList& existing = type == QLatin1String("mic") ? micProfiles() : txProfiles();
-        if (existing.contains(name.trimmed())) {
-            setLastError(tr("A %1 profile named “%2” exists. The radio cannot overwrite it: "
-                            "delete it first, then save again.").arg(type, name.trimmed()));
-            return;
-        }
+        // "create" on a name that exists writes the settings in use over
+        // that profile and makes it the current one (tried on a FLEX-6600M
+        // with SmartSDR 4.3.16, the radio's Auto Save on and off; roadmap
+        // 162): the app refused it with "delete it first", after upstream's
+        // #2712. The profile tab asks before a save over a name in use.
         rm.sendCommand(QStringLiteral("profile %1 create ").arg(type) + quotedProfileName(name));
     }
 }

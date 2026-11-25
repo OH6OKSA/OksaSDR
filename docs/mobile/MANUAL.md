@@ -1718,9 +1718,16 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
     digital transmissions and RBN's skimmers' spots of your CQ (CW, RTTY,
     PSK). Turned on in Setup › Spots.
 - **Prof** (profiles) — the radio's global, TX and mic profiles: load, save,
-  delete, as in SmartSDR. Under them, **App setups** (thanks Larry
+  delete, as in SmartSDR. **Save** with a name typed in *Save as…* saves
+  under that name. With the field left empty it saves over the profile
+  chosen in the list above, after asking *Save over “…”?* with its name,
+  so a small change is saved again without typing the name (since build
+  215 / Android beta 120; asked by Larry Averbeck W9FLA). A typed name
+  that exists asks the same. Under them, **App setups** (thanks Larry
   Averbeck W9FLA) do the same for this app's own settings: type a name in
-  *Save as…* and tap **Save** (an existing name asks before replacing it);
+  *Save as…* and tap **Save** (an existing name asks before replacing it;
+  with no name typed, **Save** goes over the setup chosen in the list,
+  asking first);
   pick a setup in the list to switch to it at once. A setup holds the
   display, meters, panels, DSP, audio and the TX chain, macros and CW
   memories, the logbooks, the devices and the radio list, with their
