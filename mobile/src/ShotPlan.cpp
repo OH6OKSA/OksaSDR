@@ -1743,13 +1743,14 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         m_engine.setTransmitBlocked(arg == QLatin1String("on"));
         *delayMs = 200;
     } else if (command == QLatin1String("stall")) {
-        // stall MS: the GUI thread held for MS ms (8000 at most), to see what
+        // stall MS: the GUI thread held for MS ms (20 s at most), to see what
         // the stall watch says of it: its "GUI thread stalled" lines, and
-        // where the threads were (the stacks: at once on Linux, from 4 s on
+        // where the threads were (the stacks: at once on Linux, from 16 s on
         // Android, where no stall could be located before; roadmap 203). A
-        // device takes this line too: "stall 4500" over the developer link
-        // shows that the stacks come on that device.
-        const int ms = qBound(0, arg.toInt(), 8000);
+        // device takes this line too: "stall 17000" over the developer link
+        // shows that the stacks come on that device (Android may offer to
+        // close the app meanwhile: wait).
+        const int ms = qBound(0, arg.toInt(), 20000);
         qInfo().noquote() << "shot-plan: stall" << ms << "ms";
         QThread::msleep(ms);
         *delayMs = 1500;

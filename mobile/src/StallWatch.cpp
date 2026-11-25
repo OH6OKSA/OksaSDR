@@ -107,11 +107,12 @@ std::atomic<int> s_stackDepth{-1};
 std::atomic<int> s_stacksLogged{0};
 #ifdef Q_OS_ANDROID
 constexpr int kMaxStackReports = 6;
-// Not at the first second: a start, a connect or a page built anew holds the
-// thread that long on a phone, and the walk is not free of risk where a
-// thread is only slow (it runs in a signal handler on that thread). At 4 s
-// the app has failed already.
-constexpr qint64 kStacksAfterMs = 4000;
+// Not before the main thread has stood 16 s: the walk runs in a signal
+// handler on that thread and has not been seen to work on a device yet, so
+// it is kept to where nothing is left to lose (the system ends an app that
+// stands that long; the user's stops were for good). A slow start, connect
+// or page is never walked: a tester's handset stands 4 s at every connect.
+constexpr qint64 kStacksAfterMs = 16000;
 #else
 constexpr int kMaxStackReports = 12;
 constexpr qint64 kStacksAfterMs = 0;
@@ -390,9 +391,13 @@ void StallWatch::start()
     sigemptyset(&action.sa_mask);
     action.sa_flags = SA_RESTART;
     if (sigaction(s_stackSignal, &action, nullptr) == 0) {
+#ifndef Q_OS_ANDROID
         // The unwinder sets itself up on its first walk: not in the handler.
+        // (Not on Android: nothing of the walk runs there before a stall of
+        // 16 s.)
         void* warm[4];
         walkStack(warm, 4);
+#endif
         s_guiThreadKnown = true;
     }
 #endif
