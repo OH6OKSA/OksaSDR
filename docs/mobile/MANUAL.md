@@ -1376,6 +1376,21 @@ the value types it); SPLIT again (or XIT off there) ends it.
   → TX → PTT) makes it a switch: tap to transmit, tap again to stop (TX ■
   while it is on); as a safety it stops by itself after 3 minutes. Space on
   a keyboard works the same way.
+- **PTT's place on a phone** (since build 215 / Android beta 120; asked by
+  Antonio Ferrulli IZ7LDG, for a big phone held in the left hand) — Setup ›
+  App › **PTT**: *Left*, *Wide* or *Right*. *Right* is where PTT has always
+  been. *Left* mirrors the bottom row: PTT at the left, then Macros and
+  Controls, and the Controls drawer's own row the same way, so PTT stays
+  under the same thumb while the drawer is open; with the phone on its
+  side they start the step row instead of ending it. *Wide* gives PTT the
+  whole width of the page upright, with Controls and Macros in a row of
+  their own above it (the waterfall gives up that row's height); on its
+  side the page has one row for everything, so PTT is at the right there.
+  Split CW paddles keep their sides whatever is chosen: dit left, dah
+  right. The choice shows on a phone's page only; a tablet's page places
+  PTT in its layouts.
+
+  ![PTT at the left, wide and at the right](manual/ptt-place.jpg)
 - **Transmit lock** — Controls → TX → Lock *Transmit lock* (off by
   default), for a finger that touches PTT or the paddles by mistake. With
   it on, nothing transmits in standby: PTT says **SB** (*hold to arm*),
@@ -2981,7 +2996,9 @@ tab holds.
   a 13" iPad, a Mac window or an external display shows larger type
   throughout; an iPhone with Display Zoom set to *Larger Text* gets the
   whole app, scaled to its screen)), **Zoom
-  buttons** (*Left* or *Right*: the display's corner buttons), **Band plan**
+  buttons** (*Left* or *Right*: the display's corner buttons), on a phone
+  **PTT** (*Left*, *Wide* or *Right*: see
+  [Transmitting](#7-transmitting-ptt-key-and-tune)), **Band plan**
   (the strip at the foot of the spectrum: *Off*, *ARRL (US)*, *IARU Region
   1 / 2 / 3*, *RAC (Canada)* or *SSA (Sweden)*), **Band plan lock (mode)**
   (see [Band plan lock](#band-plan-lock)), **Felt taps (phones)** (see

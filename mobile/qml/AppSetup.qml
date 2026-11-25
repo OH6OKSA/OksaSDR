@@ -98,6 +98,29 @@ ColumnLayout {
             onClicked: Engine.displayButtonsRight = true
         }
     }
+    // Where a phone's PTT sits (roadmap 191, Antonio Ferrulli IZ7LDG: a
+    // big phone held in the left hand): at the left (the bottom row
+    // mirrored, the Controls drawer's own row with it), across the page
+    // upright, or at the right as always. In that order, as the user put
+    // it: for the left hand, the middle one, for the right hand. A tablet's
+    // page places PTT in its layouts.
+    RowLayout {
+        Layout.fillWidth: true
+        visible: Theme.phoneLayout
+        Label { text: qsTr("PTT"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
+        Repeater {
+            model: [{ v: "left", t: qsTr("Left") }, { v: "wide", t: qsTr("Wide") }, { v: "right", t: qsTr("Right") }]
+            delegate: AppButton {
+                required property var modelData
+                objectName: "pttPlace_" + modelData.v
+                text: modelData.t
+                checked: Engine.pttPlace === modelData.v
+                Layout.preferredWidth: Theme.buttonWidth
+                focusPolicy: Qt.NoFocus
+                onClicked: Engine.pttPlace = modelData.v
+            }
+        }
+    }
     // Band plan strip along the bottom of the spectrum.
     Label { text: qsTr("Band plan"); color: Theme.textDim; font.pixelSize: Theme.px(16) }
     Flow {

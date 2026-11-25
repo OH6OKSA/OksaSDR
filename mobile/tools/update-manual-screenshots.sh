@@ -56,7 +56,7 @@ kpa_shots=(tab-kpa kpa-controls)
 elecraft_shots=(tab-kpa500 kpa500-controls kat500-controls setup-elecraft)
 layout_shots=(layout-edit layout-own)
 theme_shots=(theme-light setup-app setup-spots setup-spot-feeds setup-spot-alerts setup-ftx setup-phonecw setup-transmit spot-alert)
-all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${layout_shots[@]}" "${theme_shots[@]}" "${phone_shots[@]}" phone-landscape phone-landscape-bs bandchooser
+all_shots=(connect "${ipad_shots[@]}" ipad-portrait "${layout_shots[@]}" "${theme_shots[@]}" "${phone_shots[@]}" phone-landscape phone-landscape-bs ptt-place bandchooser
            "${modes_shots[@]}" "${amp_shots[@]}" "${midi_shots[@]}" "${logging_shots[@]}" "${kpa_shots[@]}" "${elecraft_shots[@]}" tab-genius cw-paddles macros app-setups rade-on ft8-running ft8-list-only ft8-tablet)
 if [ "$LIST" = 1 ]; then
     printf '%s\n' "${all_shots[@]}" | sort -u
@@ -281,6 +281,17 @@ fi
 if want phone-landscape-bs; then
     printf 'wait %s\ntapname tuneRowsButton\nwait 2500\nshot phone-landscape-bs\ntapname tuneRowsButtonBelow\nwait 1000\n' "$FILL" \
         | plan phone-landscape-bs 852x393 "${src[@]}"
+fi
+# PTT's place on a phone (roadmap 191): Setup › App › PTT set to Left, Wide
+# and Right in turn and the page taken after each; its foot is cut out of
+# each below. Right, the default, comes last and stays.
+if want ptt-place; then
+    {
+        echo "wait $FILL"
+        for p in left wide right; do
+            printf 'popup radioSetup\nwait 800\nclick setupTab11\nwait 1500\nshowname pttPlace_%s\ntapname pttPlace_%s\nwait 600\nclose\nwait 1500\nshot ptt-place-%s\n' "$p" "$p" "$p"
+        done
+    } | plan ptt-place 440x956 "${src[@]}"
 fi
 if want bandchooser; then
     printf 'wait %s\npopup bandChooser\nshot bandchooser\n' "$FILL" | plan bandchooser 844x390 "${src[@]}"
@@ -555,6 +566,14 @@ if want ft8-list-only ft8-tablet && [ "$DRY" = 0 ]; then
     command grep -h "shot-plan: slice" "$TMP"/ft8-list-only.log "$TMP"/ft8-tablet.log 2>/dev/null | tail -n 2 | sed 's/^/  left: /'
 fi
 
+# PTT's three places side by side: Left, Wide, Right (the page's foot).
+if want ptt-place && [ "$DRY" = 0 ] && [ -f "$TMP/ptt-place-left.png" ] && [ -f "$TMP/ptt-place-wide.png" ] \
+    && [ -f "$TMP/ptt-place-right.png" ]; then
+    magick \( "$TMP/ptt-place-left.png" -crop 440x300+0+656 +repage \) \( -size 8x300 xc:'#0b0f14' \) \
+        \( "$TMP/ptt-place-wide.png" -crop 440x300+0+656 +repage \) \( -size 8x300 xc:'#0b0f14' \) \
+        \( "$TMP/ptt-place-right.png" -crop 440x300+0+656 +repage \) +append "$TMP/ptt-place.png"
+fi
+jpg ptt-place
 jpg connect "" 900x
 jpg overview "" 1100x
 jpg layout-edit "" 1100x

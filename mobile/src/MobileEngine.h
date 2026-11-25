@@ -744,6 +744,11 @@ class MobileEngine : public QObject {
     // The display's corner buttons mirrored for a right hand (Larry
     // Averbeck): zoom, Band and B/S at the right, + Slice / + Pan at the left.
     Q_PROPERTY(bool displayButtonsRight READ displayButtonsRight WRITE setDisplayButtonsRight NOTIFY displayLevelsChanged)
+    // Where a phone's PTT sits (roadmap 191, Antonio Ferrulli IZ7LDG: a big
+    // phone in the left hand does not reach PTT at the right): "right" as
+    // it has always been, "left" with the bottom row mirrored, "wide" across
+    // the page upright with Controls and Macros in a row above it.
+    Q_PROPERTY(QString pttPlace READ pttPlace WRITE setPttPlace NOTIFY displayLevelsChanged)
     Q_PROPERTY(int wfBlackLevel READ wfBlackLevel WRITE setWfBlackLevel NOTIFY displayLevelsChanged)
     Q_PROPERTY(int wfColorGain READ wfColorGain WRITE setWfColorGain NOTIFY displayLevelsChanged)
     Q_PROPERTY(bool traceAutoRange READ traceAutoRange WRITE setTraceAutoRange NOTIFY displayLevelsChanged)
@@ -1926,6 +1931,15 @@ public:
     void setWfAutoLevel(bool on) { setDisplayInt("MobileWfAuto", on ? 1 : 0); }
     bool displayButtonsRight() const { return displayInt("MobileDisplayButtonsRight", 0) != 0; }
     void setDisplayButtonsRight(bool on) { setDisplayInt("MobileDisplayButtonsRight", on ? 1 : 0); }
+    QString pttPlace() const
+    {
+        const int v = displayInt("MobilePttPlace", 0);
+        return v == 1 ? QStringLiteral("left") : v == 2 ? QStringLiteral("wide") : QStringLiteral("right");
+    }
+    void setPttPlace(const QString& place)
+    {
+        setDisplayInt("MobilePttPlace", place == QLatin1String("left") ? 1 : place == QLatin1String("wide") ? 2 : 0);
+    }
     int wfBlackLevel() const { return displayInt("MobileWfBlack", 50); }
     int spectrumSplit() const { return displayInt("MobileSpectrumSplit", 0); }
     void setSpectrumSplit(int percent) { setDisplayInt("MobileSpectrumSplit", percent <= 0 ? 0 : std::clamp(percent, 10, 90)); }

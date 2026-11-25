@@ -52,6 +52,15 @@ Page {
     // PTT height, shared with the drawer's copy of the button. PTT runs
     // along the bottom in both orientations; lower in landscape.
     readonly property real pttHeight: landscape ? Math.round(Theme.touchTarget * 1.2) : 64
+    // Where PTT sits (roadmap 191; Setup › App › PTT): at the left the
+    // bottom rows are mirrored (PTT, Macros, Controls from the left; the
+    // drawer's own row the same, so PTT stays under the thumb); wide gives
+    // PTT the page's width upright, Controls and Macros in a row above it
+    // (on its side the page has one row for all, so wide is as right there).
+    // Split CW paddles keep their sides whatever is chosen: dit left, dah
+    // right.
+    readonly property bool pttLeft: Engine.pttPlace === "left" && !splitPaddles
+    readonly property bool pttWide: Engine.pttPlace === "wide" && !splitPaddles && !landscape
     // Upright, the controls can take the whole screen (the button beside
     // Close): FTx then lists its decodes on the full height (Michael
     // Whaley). Kept while the app runs.
@@ -369,6 +378,40 @@ Page {
                 visible: page.landscape || Engine.tuneRowsShown
                 Layout.fillWidth: true
                 spacing: 4
+                // PTT at the left (roadmap 191): PTT, Controls and Macros
+                // start the row, as they end it otherwise.
+                PttButton {
+                    objectName: "pagePttLeft"
+                    touchBelow: page.pttTouchBelow
+                    visible: page.landscape && page.pttLeft && !controlsDrawer.visible && !digiHidden
+                    Layout.preferredWidth: Math.max(150, page.width * 0.2)
+                    Layout.preferredHeight: Theme.touchTarget
+                    fontPx: 22
+                }
+                AppButton {
+                    visible: page.landscape && page.pttLeft
+                    Accessible.name: qsTr("Controls")
+                    contentItem: Item {
+                        MenuIcon { anchors.centerIn: parent; width: 20; height: 16 }
+                    }
+                    Layout.preferredWidth: Theme.touchTarget * 1.2
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: controlsDrawer.open()
+                }
+                AppButton {
+                    objectName: "macrosButton"
+                    visible: page.landscape && page.pttLeft && macrosPanel.available
+                    text: Engine.macroRepeatSlot.length > 0 ? "↻ " + Engine.macroRepeatSlot : qsTr("Macros")
+                    warn: Engine.macroRepeatSlot.length > 0
+                    font.pixelSize: 13
+                    checked: macrosPanel.opened
+                    focusPolicy: Qt.NoFocus
+                    leftPadding: 4
+                    rightPadding: 4
+                    Layout.preferredWidth: Math.max(Theme.touchTarget * 1.4, implicitWidth)
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: macrosPanel.opened ? macrosPanel.close() : macrosPanel.open()
+                }
                 PttButton {
                     visible: page.landscape && page.splitPaddles && !controlsDrawer.visible
                     paddleSide: "left"
@@ -486,7 +529,7 @@ Page {
                 // spectrum.
                 AppButton {
                     objectName: "macrosButton"
-                    visible: page.landscape && macrosPanel.available
+                    visible: page.landscape && !page.pttLeft && macrosPanel.available
                     text: Engine.macroRepeatSlot.length > 0 ? "↻ " + Engine.macroRepeatSlot : qsTr("Macros")
                     warn: Engine.macroRepeatSlot.length > 0
                     font.pixelSize: 13
@@ -499,7 +542,7 @@ Page {
                     onClicked: macrosPanel.opened ? macrosPanel.close() : macrosPanel.open()
                 }
                 AppButton {
-                    visible: page.landscape
+                    visible: page.landscape && !page.pttLeft
                     Accessible.name: qsTr("Controls")
                     contentItem: Item {
                         MenuIcon { anchors.centerIn: parent; width: 20; height: 16 }
@@ -512,8 +555,9 @@ Page {
                 // and on some devices (Android insets) this one would peek out
                 // under it as a second PTT.
                 PttButton {
+                    objectName: "pagePttSide"
                     touchBelow: page.pttTouchBelow
-                    visible: page.landscape && !controlsDrawer.visible && !digiHidden
+                    visible: page.landscape && !page.pttLeft && !controlsDrawer.visible && !digiHidden
                     paddleSide: page.splitPaddles ? "right" : "both"
                     paddleState: page.splitPaddles ? paddleState : null
                     Layout.preferredWidth: page.splitPaddles ? Math.max(110, page.width * 0.15) : Math.max(150, page.width * 0.2)
@@ -547,10 +591,57 @@ Page {
                       .arg(Engine.swrValid ? Engine.swr.toFixed(1) : "–")
                 color: Engine.swrValid && Engine.swr > 2.5 ? Theme.transmit : Theme.text
             }
+            // PTT across the page (roadmap 191): Controls and Macros in
+            // their own row above it, a button's height.
             RowLayout {
-                id: pttRow
+                id: wideRow
+                visible: page.pttWide
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
+                AppButton {
+                    Accessible.name: qsTr("Controls")
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: controlsDrawer.open()
+                    contentItem: Item {
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 8
+                            MenuIcon { width: 18; height: 14; anchors.verticalCenter: parent.verticalCenter }
+                            Label {
+                                Accessible.ignored: true
+                                text: qsTr("Controls")
+                                color: Theme.buttonText
+                                font.pixelSize: 15
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+                    }
+                }
+                AppButton {
+                    objectName: "macrosButton"
+                    visible: macrosPanel.available
+                    text: Engine.macroRepeatSlot.length > 0 ? "↻ " + Engine.macroRepeatSlot : qsTr("Macros")
+                    warn: Engine.macroRepeatSlot.length > 0
+                    font.pixelSize: 15
+                    checked: macrosPanel.opened
+                    focusPolicy: Qt.NoFocus
+                    leftPadding: 6
+                    rightPadding: 6
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: macrosPanel.opened ? macrosPanel.close() : macrosPanel.open()
+                }
+            }
+            RowLayout {
+                id: pttRow
+                // Wide with PTT hidden by FT8 / FT4: nothing is left in the
+                // row (Controls and Macros are in the row above), and its
+                // spacing goes to the waterfall too.
+                visible: !(page.pttWide && ptt.digiHidden)
+                Layout.fillWidth: true
+                spacing: Theme.spacing / 2
+                layoutDirection: page.pttLeft ? Qt.RightToLeft : Qt.LeftToRight
                 PttButton {
                     visible: page.splitPaddles && !controlsDrawer.visible
                     paddleSide: "left"
@@ -561,6 +652,7 @@ Page {
                     fontPx: 26
                 }
                 AppButton {
+                    visible: !page.pttWide
                     Accessible.name: qsTr("Controls")
                     // Without PTT (FT8 / FT4) a plain full-width row, so the
                     // waterfall gets the height.
@@ -586,7 +678,7 @@ Page {
                 // The macros of this mode a tap from PTT (MacrosPanel).
                 AppButton {
                     objectName: "macrosButton"
-                    visible: macrosPanel.available
+                    visible: macrosPanel.available && !page.pttWide
                     text: Engine.macroRepeatSlot.length > 0 ? "↻ " + Engine.macroRepeatSlot : qsTr("Macros")
                     warn: Engine.macroRepeatSlot.length > 0
                     font.pixelSize: 15
@@ -600,6 +692,7 @@ Page {
                 }
                 PttButton {
                     id: ptt
+                    objectName: "pagePtt"
                     touchBelow: page.pttTouchBelow
                     visible: !controlsDrawer.visible && !digiHidden
                     paddleSide: page.splitPaddles ? "right" : "both"
@@ -609,6 +702,15 @@ Page {
                     Layout.preferredHeight: page.pttHeight
                     fontPx: 26
                 }
+                // Wide: PTT is the row's only button, and it hides behind
+                // the open drawer (which has its own). Its room is kept: an
+                // empty row would stretch and push the page up under the
+                // drawer.
+                Item {
+                    visible: page.pttWide && controlsDrawer.visible && !ptt.digiHidden
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: page.pttHeight
+                }
             }
         }
     }
@@ -617,7 +719,7 @@ Page {
     // K0OTC); the drawer opening closes it.
     MacrosPanel {
         id: macrosPanel
-        anchorItem: page.landscape ? stepRow : pttRow
+        anchorItem: page.landscape ? stepRow : page.pttWide ? wideRow : pttRow
     }
 
     // Controls slide in over the waterfall: from the right in landscape, from
@@ -691,11 +793,50 @@ Page {
                     }
                 }
             }
+            // PTT across the page (roadmap 191): Close and the height arrow
+            // in the row above it, where the page has Controls and Macros.
+            RowLayout {
+                visible: page.pttWide
+                Layout.fillWidth: true
+                // The page's bottom rows are half a spacing apart, the
+                // drawer's a whole one: Close lands on the page's Controls.
+                Layout.bottomMargin: -Theme.spacing / 2
+                spacing: Theme.spacing / 2
+                AppButton {
+                    objectName: "closeControls"
+                    Layout.fillWidth: true
+                    Accessible.name: qsTr("Close controls")
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: controlsDrawer.close()
+                    contentItem: Label {
+                        text: qsTr("Close")
+                        color: Theme.buttonText
+                        font.pixelSize: 15
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                }
+                AppButton {
+                    objectName: "fullControls"
+                    Accessible.name: page.controlsFull ? qsTr("Smaller controls") : qsTr("Full-screen controls")
+                    Layout.preferredWidth: Theme.touchTarget
+                    Layout.preferredHeight: Theme.touchTarget
+                    onClicked: page.controlsFull = !page.controlsFull
+                    contentItem: Item {
+                        Caret {
+                            anchors.centerIn: parent
+                            size: 16
+                            rotation: page.controlsFull ? 0 : 180
+                        }
+                    }
+                }
+            }
             // Close where the Controls button was, so the same spot opens and
             // closes the drawer without a tap on the spectrum.
             RowLayout {
                 Layout.fillWidth: true
                 spacing: Theme.spacing / 2
+                layoutDirection: page.pttLeft ? Qt.RightToLeft : Qt.LeftToRight
                 PttButton {
                     visible: page.splitPaddles
                     paddleSide: "left"
@@ -707,6 +848,7 @@ Page {
                 }
                 AppButton {
                     objectName: "closeControls"
+                    visible: !page.pttWide
                     Layout.fillWidth: ptt.digiHidden
                     Accessible.name: qsTr("Close controls")
                     Layout.preferredWidth: Math.max(110, page.width * 0.22)
@@ -724,7 +866,7 @@ Page {
                 // already runs the window's height).
                 AppButton {
                     objectName: "fullControls"
-                    visible: !page.landscape
+                    visible: !page.landscape && !page.pttWide
                     Accessible.name: page.controlsFull ? qsTr("Smaller controls") : qsTr("Full-screen controls")
                     Layout.preferredWidth: Theme.touchTarget
                     Layout.preferredHeight: ptt.digiHidden ? Theme.touchTarget : page.pttHeight
