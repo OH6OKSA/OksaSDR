@@ -407,6 +407,16 @@ void Ft8Engine::startDecode(qint64 slotMs)
     });
 }
 
+void Ft8Engine::setPassband(int lowHz, int highHz)
+{
+    if (highHz - lowHz < 400) {
+        lowHz = 0;
+        highHz = 0;
+    }
+    m_passLowHz = lowHz;
+    m_passHighHz = highHz;
+}
+
 QVector<Ft8Engine::Decode> Ft8Engine::decodeSamples(const std::vector<float>& samples12k, qint64 slotMs) const
 {
     const ftx_protocol_t protocol = m_protocol == Protocol::Ft4 ? FTX_PROTOCOL_FT4 : FTX_PROTOCOL_FT8;
@@ -419,19 +429,60 @@ QVector<Ft8Engine::Decode> Ft8Engine::decodeSamples(const std::vector<float>& sa
     cfg.protocol = protocol;
     monitor_t mon;
     monitor_init(&mon, &cfg);
+    // Which blocks had audio at all: a slot that began before the decoder
+    // did comes with its first part empty (startDecode fills it with
+    // zeros), and those blocks are no noise to measure against.
+    std::vector<char> heard;
+    heard.reserve(samples12k.size() / size_t(mon.block_size) + 1);
     for (size_t pos = 0; pos + size_t(mon.block_size) <= samples12k.size(); pos += size_t(mon.block_size)) {
+        bool any = false;
+        for (int i = 0; i < mon.block_size && !any; ++i) {
+            any = std::abs(samples12k[pos + size_t(i)]) > 1e-7f;
+        }
+        heard.push_back(any ? 1 : 0);
         monitor_process(&mon, samples12k.data() + pos);
     }
     const ftx_waterfall_t* wf = &mon.wf;
 
-    // Noise floor: the 30th percentile of the waterfall's power, per bin.
+    // Noise floor: the 30th percentile of the waterfall's power, per bin,
+    // inside the receive filter's passband. Taken over the whole decode
+    // band it fell among the bins a narrower filter had emptied (with 750
+    // to 2250 Hz nearly half of them), some 25 dB under the noise the
+    // signals stand in, and every report came out that much too high: on
+    // 40 m the same stations read -7, -4 and -7 dB through 0..3000 and
+    // +18, +21 and +19 through 750..2250 (roadmap 195). 50 Hz inside each
+    // edge, off the filter's skirts. And only over the blocks that had
+    // audio: the first slot after decoding starts is part empty (76 % heard
+    // in the test), which put its reports some 7 dB too high the same way.
     double noiseLin = 1e-12;
     {
-        const int total = wf->num_blocks * wf->block_stride;
+        int binLow = 0;
+        int binHigh = wf->num_bins - 1;
+        if (const int passHigh = m_passHighHz.load(); passHigh > 0) {
+            const int low = int(std::ceil((m_passLowHz.load() + 50) * mon.symbol_period)) - mon.min_bin;
+            const int high = int(std::floor((passHigh - 50) * mon.symbol_period)) - mon.min_bin;
+            if (std::min(high, binHigh) - std::max(low, binLow) >= 40) {
+                binLow = std::max(low, binLow);
+                binHigh = std::min(high, binHigh);
+            }
+        }
+        const int subs = wf->time_osr * wf->freq_osr;
         std::vector<uint8_t> sample;
-        sample.reserve(size_t(total / 5 + 1));
-        for (int i = 0; i < total; i += 5) {
-            sample.push_back(wf->mag[i]);
+        sample.reserve(size_t(wf->num_blocks) * size_t(subs) * size_t(binHigh - binLow + 1) / 5 + 1);
+        int step = 0;
+        for (int block = 0; block < wf->num_blocks; ++block) {
+            if (size_t(block) < heard.size() && !heard[size_t(block)]) {
+                continue;
+            }
+            for (int sub = 0; sub < subs; ++sub) {
+                const auto* row = wf->mag + block * wf->block_stride + sub * wf->num_bins;
+                for (int bin = binLow; bin <= binHigh; ++bin) {
+                    if (++step == 5) {
+                        step = 0;
+                        sample.push_back(row[bin]);
+                    }
+                }
+            }
         }
         if (!sample.empty()) {
             auto mid = sample.begin() + qsizetype(sample.size() * 3 / 10);

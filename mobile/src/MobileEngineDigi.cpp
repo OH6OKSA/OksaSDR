@@ -111,7 +111,15 @@ struct MobileEngine::DigiDecoder {
     // The slice's band, and the watch that clears the list when it changes.
     QString band;
     QMetaObject::Connection bandWatch;
-    ~DigiDecoder() { QObject::disconnect(bandWatch); }
+    // The slice's receive filter, handed to the decoder (roadmap 195).
+    QMetaObject::Connection filterWatch;
+    QMetaObject::Connection sidebandWatch;
+    ~DigiDecoder()
+    {
+        QObject::disconnect(bandWatch);
+        QObject::disconnect(filterWatch);
+        QObject::disconnect(sidebandWatch);
+    }
 };
 
 // The FT8 / FT4 choices kept in the settings: at start, and again when an
@@ -258,12 +266,10 @@ void MobileEngine::setDigiRunning(bool on)
             // start of decoding too (roadmap 173). FreeDV works in DIGU with
             // 750..2250 Hz, the radio keeps that as DIGU's own filter, and
             // DIGU chosen by hand later came up with it: FT8 then heard
-            // little outside that part, and its reports came out some 30 dB
-            // too high (the same three stations on the FLEX: -7, -5 and
-            // -7 dB with 0..3000, +24, +27 and +27 with 750..2250: the noise
-            // the reports are measured against is cut away). Only the start
-            // opens it; a filter narrowed while decoding runs is the
-            // operator's.
+            // little outside that part (and its reports came out some 30 dB
+            // too high until the decoder measured its noise inside the
+            // filter, roadmap 195). Only the start opens it; a filter
+            // narrowed while decoding runs is the operator's.
             widenDigiFilter();
         }
         if (!m_ntpSynced.isValid() || m_ntpSynced.elapsed() > kNtpResyncMs) {
@@ -479,7 +485,27 @@ void MobileEngine::syncDigiAudio()
         d->ft8->setTag(QStringLiteral("%1 ch%2").arg(slice->letter()).arg(slice->daxChannel()));
         qCInfo(lcMobile) << "digi: decoder on for slice" << slice->letter() << "DAX channel" << slice->daxChannel();
         m_digiDecoders.emplace(id, d);
+        // The decoder counts its reports against the noise inside this
+        // slice's receive filter (roadmap 195), now and as the filter or the
+        // sideband changes.
+        d->filterWatch = connect(slice, &SliceModel::filterChanged, this, [this, id] { digiPassband(id); });
+        d->sidebandWatch = connect(slice, &SliceModel::modeChanged, this, [this, id] { digiPassband(id); });
+        digiPassband(id);
     }
+}
+
+// The slice's receive filter as the decoder hears it: the passband in the
+// audio, Hz above the carrier in DIGU and below it in DIGL.
+void MobileEngine::digiPassband(int sliceId)
+{
+    const auto it = m_digiDecoders.find(sliceId);
+    if (it == m_digiDecoders.end() || !it->second->slice || !it->second->ft8) {
+        return;
+    }
+    const SliceModel* slice = it->second->slice;
+    const bool lower = slice->mode() == QLatin1String("DIGL");
+    it->second->ft8->setPassband(lower ? -slice->filterHigh() : slice->filterLow(),
+                                 lower ? -slice->filterLow() : slice->filterHigh());
 }
 
 void MobileEngine::rebuildWorked()

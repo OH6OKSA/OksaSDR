@@ -2469,6 +2469,16 @@ int main(int argc, char* argv[])
         if (ft4) {
             path = path.mid(4);
         }
+        // pass=LOW-HIGH: before the path: the receive filter the recording
+        // was made through (roadmap 195).
+        int passLow = 0;
+        int passHigh = 0;
+        if (path.startsWith(QLatin1String("pass="))) {
+            const QString range = path.section(QLatin1Char(':'), 0, 0).mid(5);
+            passLow = range.section(QLatin1Char('-'), 0, 0).toInt();
+            passHigh = range.section(QLatin1Char('-'), 1, 1).toInt();
+            path = path.section(QLatin1Char(':'), 1);
+        }
         QFile file(path);
         if (!file.open(QIODevice::ReadOnly)) {
             qCritical().noquote() << "ft8-wav: cannot open" << path;
@@ -2487,6 +2497,7 @@ int main(int argc, char* argv[])
         }
         Ft8Engine ft8;
         ft8.setProtocol(ft4 ? Ft8Engine::Protocol::Ft4 : Ft8Engine::Protocol::Ft8);
+        ft8.setPassband(passLow, passHigh);
         const auto decodes = ft8.decodeSamples(s12, 0);
         for (const Ft8Engine::Decode& d : decodes) {
             qInfo().noquote() << QStringLiteral("ft8-wav %1 %2 %3 %4").arg(d.snr, 3).arg(d.dt, 4, 'f', 1).arg(int(d.freq), 4).arg(d.text);

@@ -2981,6 +2981,7 @@ private:
     // slice's own DAX channel; their decodes go into one list marked with
     // the slice.
     struct DigiDecoder;
+    void digiPassband(int sliceId);
     std::map<int, std::shared_ptr<DigiDecoder>> m_digiDecoders;
     bool m_digiOn{false};
     QString m_rttyRunVia;  // the RTTY decoder's current way (RTTY / DIGL / DIGU)

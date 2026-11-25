@@ -50,6 +50,10 @@ public:
 
     Protocol protocol() const { return m_protocol; }
     void setProtocol(Protocol protocol);
+    // The receive filter's passband in the audio (Hz), where the noise the
+    // reports are counted against is measured (roadmap 195). The whole
+    // decode band by default; a range narrower than 400 Hz is not taken.
+    void setPassband(int lowHz, int highHz);
     // Which decoder this is in the log and FT8_DUMP_DIR's files ("A ch3").
     void setTag(const QString& tag) { m_tag = tag; }
     double slotSeconds() const;
@@ -114,6 +118,8 @@ private:
     qint64 m_nextDecodeSlotMs{0};
     qint64 m_lastSlotMs{0};
     std::atomic<bool> m_decoding{false};
+    std::atomic<int> m_passLowHz{0};
+    std::atomic<int> m_passHighHz{0};   // 0: the whole decode band
     QThreadPool m_pool;
     class QTimer* m_timer{nullptr};
 };
