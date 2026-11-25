@@ -2169,10 +2169,24 @@ void MobileEngine::wireSmartLink()
             const auto old = std::find_if(m_wanRadios.cbegin(), m_wanRadios.cend(),
                                           [&radio](const WanRadioInfo& r) { return r.serial == radio.serial; });
             if (old == m_wanRadios.cend() || old->licensedClients != radio.licensedClients
-                || old->guiClientPrograms != radio.guiClientPrograms) {
+                || old->guiClientPrograms != radio.guiClientPrograms
+                || old->guiClientStations != radio.guiClientStations) {
+                // The stations by their names, as the line says (it listed
+                // the programs: this app's own name for each of its
+                // sessions, which told nothing); another program on the
+                // radio (SmartSDR, a Maestro) is named after them.
+                QStringList others;
+                const QString programs = QString(radio.guiClientPrograms).replace(QChar(0x7f), QLatin1Char(' '));
+                for (const QString& program : programs.split(QLatin1Char(','), Qt::SkipEmptyParts)) {
+                    if (program.trimmed() != QLatin1String("AetherSDR") && !others.contains(program.trimmed())) {
+                        others << program.trimmed();
+                    }
+                }
                 qCInfo(lcMobile).noquote() << "SmartLink radio" << radio.model << "licensed clients"
                                            << radio.licensedClients << "stations on it:"
-                                           << QString(radio.guiClientPrograms).replace(QChar(0x7f), QLatin1Char(' '));
+                                           << QString(radio.guiClientStations).replace(QChar(0x7f), QLatin1Char(' '))
+                                           << (others.isEmpty() ? QString()
+                                                                : QStringLiteral("(other programs: %1)").arg(others.join(QStringLiteral(", "))));
             }
         }
         m_wanRadios = radios;

@@ -245,10 +245,17 @@ void messageHandler(QtMsgType type, const QMessageLogContext& context, const QSt
     if (!s_bufferAlive.load() || !worthKeeping(context, type, message)) {
         return;
     }
+    // The channels under the app's own name in the log (roadmap 192 a): the
+    // categories are named aether.… in the code, the shared core's among
+    // them, and each line of the Log page, the run's file and a log sent to
+    // the developer began with that. Only what is written here changes; the
+    // names in the code, the filter above and a desktop terminal keep theirs.
+    QString channel = QString::fromLatin1(context.category ? context.category : "default");
+    if (channel.startsWith(QLatin1String("aether."))) {
+        channel = QStringLiteral("oksa.") + channel.mid(7);
+    }
     const QString line = QStringLiteral("%1 %2 %3")
-        .arg(QDateTime::currentDateTime().toString(QStringLiteral("HH:mm:ss.zzz")),
-             QString::fromLatin1(context.category ? context.category : "default"),
-             message.left(300));
+        .arg(QDateTime::currentDateTime().toString(QStringLiteral("HH:mm:ss.zzz")), channel, message.left(300));
     fileLine(line);
     // Messages arrive from any thread; the buffer lives on the GUI thread.
     LogBuffer* buffer = LogBuffer::instance();
