@@ -93,8 +93,8 @@ Page {
     }
 
     // "Connect ›" on a radio's card, beside the name or under it. Its text
-    // grows with the text size, as it did (keeping it at the buttons' size
-    // was the proposal's part (b), asked from the user and not chosen).
+    // keeps the buttons' size at a large text size (the proposal's part (b),
+    // chosen by the user on 2026-11-25: "164b mukaan").
     component ConnectChip: Rectangle {
         property bool down: false
         implicitWidth: chipLabel.implicitWidth + 2 * Theme.spacing
@@ -106,7 +106,11 @@ Page {
             anchors.centerIn: parent
             text: qsTr("Connect ›")
             color: Theme.buttonText
-            font.pixelSize: Theme.px(16)
+            // A button's text: it keeps its size at a large system text
+            // size, as the page's other buttons do (roadmap 164 b). Grown
+            // with the text it took the room from the line beside it: at
+            // 135 % on a narrow phone "Available" read "Avail…".
+            font.pixelSize: Math.round(16 * Theme.bigScale)
         }
     }
 

@@ -446,7 +446,10 @@ The first page lists the ways to reach a radio:
   **Connect ›**, to connect. On a phone, and in any
   narrow window, a card gives the radio's name its first row (two lines
   when it needs them) and **Connect ›** sits under it, so a long name is
-  whole (since build 214 / Android beta 119). *AetherSDR Demo* is a built-in receive-only demo radio for trying
+  whole (since build 214 / Android beta 119). **Connect ›** keeps its own
+  size when the device's text size is large, so the line beside it (the
+  radio's state or address) stays whole (since build 215 / Android beta
+  120). *AetherSDR Demo* is a built-in receive-only demo radio for trying
   the app without a radio; **Demo** on the heading's line hides it
   (*Hidden*) or shows it again (*Shown*), remembered (thanks Ian Gilchrist
   VK1HF).
