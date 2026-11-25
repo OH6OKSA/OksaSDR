@@ -242,6 +242,33 @@ Spectrum3DItem::Spectrum3DItem(QQuickItem* parent)
         m_appActive = state == Qt::ApplicationActive;
         holdSlowJudgement();
     });
+    connect(this, &QQuickItem::windowChanged, this, &Spectrum3DItem::watchFrames);
+}
+
+// Each frame of the item's window timed on the thread that draws it: from
+// the scene graph beginning the frame to its end, the swap included.
+void Spectrum3DItem::watchFrames(QQuickWindow* window)
+{
+    disconnect(m_frameBeginConnection);
+    disconnect(m_frameEndConnection);
+    m_frameBeginMs = 0;
+    m_frameDrawMs = 0;
+    if (!window) {
+        return;
+    }
+    const auto nowMs = [] {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(
+                   std::chrono::steady_clock::now().time_since_epoch())
+            .count();
+    };
+    m_frameBeginConnection = connect(window, &QQuickWindow::beforeFrameBegin, this,
+                                     [this, nowMs] { m_frameBeginMs = nowMs(); }, Qt::DirectConnection);
+    m_frameEndConnection = connect(window, &QQuickWindow::afterFrameEnd, this, [this, nowMs] {
+        const qint64 begin = m_frameBeginMs.exchange(0);
+        if (begin > 0) {
+            m_frameDrawMs = int(std::min<qint64>(nowMs() - begin, 60000));
+        }
+    }, Qt::DirectConnection);
 }
 
 void Spectrum3DItem::setEngine(MobileEngine* engine)
@@ -532,9 +559,15 @@ void Spectrum3DRenderer::synchronize(QQuickRhiItem* rhiItem)
             m_slowFrames = 0;
         }
         m_lastFrameMs = now;
+        // The frame before this one as the GPU had it (watchFrames).
+        // AETHER_3D_DRAW_MS (development): that time given, to test the
+        // judgement where every frame is slow (a VM's software GPU) or none.
+        constexpr int kSlowDrawMs = 250;
+        static const int forcedDrawMs = qEnvironmentVariableIntValue("AETHER_3D_DRAW_MS");
+        const int drew = forcedDrawMs > 0 ? forcedDrawMs : item->m_frameDrawMs.load();
         if (qEnvironmentVariableIsSet("AETHER_3D_WAIT_LOG") && waited > 0) {
-            qCInfo(lcSpectrum3D) << "3D row waited" << waited << "ms, slow frames" << m_slowFrames
-                                 << (now < m_warmUpUntilMs ? "(warm-up)" : "");
+            qCInfo(lcSpectrum3D) << "3D row waited" << waited << "ms, the frame before drew in" << drew
+                                 << "ms, slow frames" << m_slowFrames << (now < m_warmUpUntilMs ? "(warm-up)" : "");
         }
         // Not judged either while the app is away from the front or for a
         // while after a profile load or the app's return (holdSlowJudgement):
@@ -543,12 +576,15 @@ void Spectrum3DRenderer::synchronize(QQuickRhiItem* rhiItem)
             m_slowFrames = 0;
         } else if (now < m_warmUpUntilMs) {
             // still warming up
-        } else if (waited > kSlowFrameMs && waited < 30000) {
+        } else if (waited > kSlowFrameMs && waited < 30000 && drew > kSlowDrawMs) {
             ++m_slowFrames;
-        } else if (waited > 0 && waited < 100) {
+        } else if (waited > 0 && (waited < 100 || drew <= kSlowDrawMs)) {
+            // On time, or late with a frame that was quick to draw: the GUI
+            // thread kept it waiting, not the GPU.
             m_slowFrames = 0;
         }
-        // Five frames in a row, each late by over half a second.
+        // Five frames in a row, each late by over half a second and slow to
+        // draw.
         // AETHER_3D_KEEP (development) keeps the view on a slow software
         // GPU, e.g. Mesa's llvmpipe in a VM, to check what it draws.
         if (m_slowFrames >= 5 && !m_reportedSlow && !qEnvironmentVariableIsSet("AETHER_3D_KEEP")) {

@@ -9,6 +9,7 @@
 #include <QtQml/qqmlregistration.h>
 
 #include <array>
+#include <atomic>
 
 namespace AetherSDR::mobile {
 
@@ -120,6 +121,20 @@ private:
     qint64 m_judgeAfterMs{0};
     bool m_appActive{true};
     void holdSlowJudgement();
+    // How long the last frame itself took, from the scene graph beginning it
+    // to its end with the swap (the render thread's clock, ms): the GPU's own
+    // share of a late frame. A row that waited over half a second counts
+    // against the GPU only when the frames themselves take long; a frame
+    // that was quick to draw came late because the GUI thread was busy, from
+    // whatever cause (roadmap 181 c: Mattias SM6YEC's phone, beta 120,
+    // switched to 2D eleven seconds after an audio route change, with no
+    // profile load and the app in front, which is all holdSlowJudgement
+    // knows of).
+    std::atomic<qint64> m_frameBeginMs{0};
+    std::atomic<int> m_frameDrawMs{0};
+    QMetaObject::Connection m_frameBeginConnection;
+    QMetaObject::Connection m_frameEndConnection;
+    void watchFrames(QQuickWindow* window);
     // Smoothing state (median of three raw rows, then the temporal blend).
     Row m_rawPrev1{};
     Row m_rawPrev2{};
