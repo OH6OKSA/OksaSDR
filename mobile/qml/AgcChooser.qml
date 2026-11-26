@@ -87,7 +87,9 @@ Popup {
                 // FM has no AGC (roadmap 48).
                 enabled: !Engine.agcAuto.noAgc
                 focusPolicy: Qt.NoFocus
-                Accessible.name: Engine.agcAuto.radioAvailable ? qsTr("Auto AGC-T, the radio's") : qsTr("Auto AGC-T, measure")
+                // Measuring, the button says Stop: so must its name.
+                Accessible.name: Engine.agcAuto.measuring ? qsTr("Stop, AGC-T measuring")
+                                 : Engine.agcAuto.radioAvailable ? qsTr("Auto AGC-T, the radio's") : qsTr("Auto AGC-T, measure")
                 Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
                 Layout.preferredHeight: Theme.touchTarget
                 onClicked: Engine.agcAutoPress()

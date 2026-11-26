@@ -54,6 +54,7 @@ ColumnLayout {
         AppButton {
             visible: Engine.workedCall.length > 0
             text: Engine.workedCall + "  ✕"
+            Accessible.name: qsTr("%1, clear the worked call").arg(Engine.workedCall)
             font.family: "monospace"
             font.bold: true
             checked: true
@@ -233,6 +234,7 @@ ColumnLayout {
         AppButton {
             objectName: "cwSidetone"
             text: qsTr("On")
+            Accessible.name: qsTr("On, sidetone")
             checked: Engine.cwSidetone
             Layout.preferredWidth: 64
             focusPolicy: Qt.NoFocus

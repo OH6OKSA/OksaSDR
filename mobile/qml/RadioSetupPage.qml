@@ -1225,6 +1225,7 @@ Popup {
                         Layout.fillWidth: true
                         RepeatButton {
                             text: "−"
+                            Accessible.name: qsTr("Network MTU, one step down")
                             Layout.preferredWidth: 56
                             onStepped: (n) => network.step(n, -1)
                         }
@@ -1238,6 +1239,7 @@ Popup {
                         }
                         RepeatButton {
                             text: "+"
+                            Accessible.name: qsTr("Network MTU, one step up")
                             Layout.preferredWidth: 56
                             onStepped: (n) => network.step(n, 1)
                         }
@@ -2291,6 +2293,7 @@ Popup {
                                             AppButton {
                                                 objectName: "midiUnbind_" + midiRow.modelData.id.replace(/[^A-Za-z0-9]/g, "")
                                                 text: "×"
+                                                Accessible.name: qsTr("Clear %1").arg(midiRow.modelData.name)
                                                 enabled: (midiRow.modelData.source || "").length > 0
                                                 focusPolicy: Qt.NoFocus
                                                 Layout.preferredWidth: 44

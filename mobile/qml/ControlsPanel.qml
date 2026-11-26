@@ -190,6 +190,10 @@ ColumnLayout {
                     required property int index
                     required property var modelData
                     text: modelData.button
+                    // The short label and then the heading ("Mem, Memory"): "FTx" alone
+                    // says little to a screen reader.
+                    Accessible.name: modelData.title.indexOf(modelData.button) === 0 ? modelData.title
+                                     : qsTr("%1, %2").arg(modelData.button).arg(modelData.title)
                     checked: tabs.currentIndex === index
                     font.pixelSize: panel.sectionButtonFont
                     leftPadding: 2
@@ -253,6 +257,8 @@ ColumnLayout {
             delegate: AppButton {
                 required property var modelData
                 text: modelData.button
+                Accessible.name: modelData.title.indexOf(modelData.button) === 0 ? modelData.title
+                                 : qsTr("%1, %2").arg(modelData.button).arg(modelData.title)
                 checked: Engine.pinnedSections.indexOf(modelData.name) >= 0
                 font.pixelSize: panel.sectionButtonFont
                 leftPadding: 2

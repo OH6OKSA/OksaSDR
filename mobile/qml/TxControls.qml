@@ -31,6 +31,8 @@ ColumnLayout {
                 delegate: AppButton {
                     required property var modelData
                     text: modelData.label
+                    // Said as words: a screen reader reads "−" as "minus" alone.
+                    Accessible.name: modelData.key === "down" ? qsTr("Shift minus") : modelData.key === "up" ? qsTr("Shift plus") : modelData.label
                     checked: Engine.repeaterDir === modelData.key
                     Layout.fillWidth: true
                     Layout.preferredWidth: modelData.key === "simplex" ? 2 : 1
@@ -123,6 +125,8 @@ ColumnLayout {
             id: tuneButton
             objectName: "txTune"
             text: Engine.tuning ? qsTr("TUNE ●") : Engine.txLocked ? qsTr("TUNE · SB") : qsTr("TUNE")
+            // The dot and "SB" in words, as PttButton says them.
+            Accessible.name: Engine.tuning ? qsTr("Tune, transmitting") : Engine.txLocked ? qsTr("Tune, transmit locked, standby") : qsTr("Tune")
             enabled: Engine.tuneAvailable || Engine.tuning
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
@@ -139,6 +143,7 @@ ColumnLayout {
         }
         AppButton {
             text: Engine.atuTuned ? qsTr("ATU ✓") : qsTr("ATU")
+            Accessible.name: Engine.atuTuned ? qsTr("ATU, tuned") : qsTr("ATU")
             visible: Engine.hasTuner
             enabled: Engine.tuneAvailable
             Layout.fillWidth: true

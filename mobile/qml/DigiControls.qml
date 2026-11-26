@@ -178,6 +178,7 @@ ColumnLayout {
             readonly property string cqText: Engine.digiCqDirectable && Engine.digiCqTarget.length > 0
                                              ? qsTr("CQ %1").arg(Engine.digiCqTarget) : qsTr("CQ")
             text: Engine.txLocked ? qsTr("%1 · SB").arg(cqText) : cqText
+            Accessible.name: Engine.txLocked ? qsTr("%1, transmit locked, standby").arg(cqText) : cqText
             checked: digi.qso.state === "cq"
             // A Hound never calls CQ: it calls the Fox.
             enabled: Engine.transmitAvailable && !Engine.digiHound

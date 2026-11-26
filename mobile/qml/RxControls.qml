@@ -44,6 +44,7 @@ ColumnLayout {
         // held. Counted from the value at the press, not the radio's echo.
         RepeatButton {
             text: "−"
+            Accessible.name: qsTr("%1, one step down").arg(row.label)
             Layout.preferredWidth: 44
             onStepped: (n) => row.step(n, -1)
         }
@@ -62,6 +63,7 @@ ColumnLayout {
         }
         RepeatButton {
             text: "+"
+            Accessible.name: qsTr("%1, one step up").arg(row.label)
             Layout.preferredWidth: 44
             onStepped: (n) => row.step(n, 1)
         }

@@ -178,7 +178,7 @@ ColumnLayout {
             text: Engine.noiseFloorLine ? qsTr("On") : qsTr("Off")
             checked: Engine.noiseFloorLine
             focusPolicy: Qt.NoFocus
-            Accessible.name: qsTr("Noise floor line")
+            Accessible.name: qsTr("Noise floor line, %1").arg(Engine.noiseFloorLine ? qsTr("on") : qsTr("off"))
             leftPadding: 10
             rightPadding: 10
             onClicked: Engine.noiseFloorLine = !Engine.noiseFloorLine
@@ -286,6 +286,8 @@ ColumnLayout {
         Label { text: qsTr("Waterfall"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
         AppButton {
             text: qsTr("Auto")
+            // Two buttons say "Auto": what each sets, after the word.
+            Accessible.name: qsTr("Auto, waterfall level")
             checked: Engine.wfAutoLevel
             focusPolicy: Qt.NoFocus
             onClicked: Engine.wfAutoLevel = !Engine.wfAutoLevel
@@ -320,6 +322,7 @@ ColumnLayout {
         Label { text: qsTr("Spectrum"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
         AppButton {
             text: qsTr("Auto")
+            Accessible.name: qsTr("Auto, spectrum range")
             checked: Engine.traceAutoRange
             focusPolicy: Qt.NoFocus
             onClicked: Engine.traceAutoRange = !Engine.traceAutoRange

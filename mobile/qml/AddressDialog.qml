@@ -131,6 +131,9 @@ Dialog {
                     required property string modelData
                     objectName: "addressKey" + (modelData === "⌫" ? "Back" : modelData === "." ? "Dot" : modelData)
                     text: modelData === "⌫" ? "" : modelData
+                    // The delete key draws its arrow and has no text: without
+                    // a name a screen reader skips it.
+                    Accessible.name: modelData === "⌫" ? qsTr("Delete") : modelData === "." ? qsTr("Dot") : modelData
                     font.pixelSize: Theme.px(26)
                     Layout.fillWidth: true
                     Layout.preferredHeight: dialog.keyHeight

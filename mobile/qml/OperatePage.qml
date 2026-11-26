@@ -1189,6 +1189,7 @@ Page {
         anchors.fill: parent
         visible: macrosPanel.available
         text: Engine.macroRepeatSlot.length > 0 ? "↻ " + Engine.macroRepeatSlot : qsTr("Macros")
+        Accessible.name: Engine.macroRepeatSlot.length > 0 ? qsTr("Macros, %1 repeating").arg(Engine.macroRepeatSlot) : qsTr("Macros")
         warn: Engine.macroRepeatSlot.length > 0
         font.pixelSize: 17
         checked: macrosPanel.opened

@@ -185,6 +185,11 @@ ColumnLayout {
               .arg(Engine.dxCluster.state === "connected" ? "✓" : (Engine.dxCluster.state === "connecting" ? "…" : "–"))
               .arg(Engine.spotFeeds.rbn ? "✓" : "–").arg(Engine.spotFeeds.psk ? "✓" : "–")
               .arg(Engine.parkSpots.pota ? "✓" : "–").arg(Engine.parkSpots.wwff ? "✓" : "–")
+        // The marks in words: a screen reader says "check mark" and "en dash".
+        Accessible.name: qsTr("Spot sources: Cluster %1, RBN %2, PSKR %3, POTA %4, WWFF %5")
+              .arg(Engine.dxCluster.state === "connected" ? qsTr("on") : (Engine.dxCluster.state === "connecting" ? qsTr("connecting") : qsTr("off")))
+              .arg(Engine.spotFeeds.rbn ? qsTr("on") : qsTr("off")).arg(Engine.spotFeeds.psk ? qsTr("on") : qsTr("off"))
+              .arg(Engine.parkSpots.pota ? qsTr("on") : qsTr("off")).arg(Engine.parkSpots.wwff ? qsTr("on") : qsTr("off"))
         focusPolicy: Qt.NoFocus
         onClicked: Engine.openSetup(12)
     }
