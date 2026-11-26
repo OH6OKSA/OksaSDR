@@ -10,7 +10,7 @@ GETTING STARTED
 
 NEW IN THIS BUILD
 - FT8 / FT4: a tap on a spot (or Tune on its alert) now calls the station: at once if it was heard in the last two minutes, else when it is next heard ("called when heard"; Halt TX ends the wait). [TX]
-- VoiceOver: toggles say when on, symbol buttons have names, meters and alerts are spoken, a double tap no longer keys PTT (thanks Justin AI5OS).
+- VoiceOver: toggles should say when on, symbol buttons have names, meters and alerts are spoken, a double tap no longer keys PTT (thanks Justin AI5OS).
 - The learned PTT key can be a combination, e.g. Option + Space.
 - A spot alert now shows above the open Controls, Setup and dialogs.
 
