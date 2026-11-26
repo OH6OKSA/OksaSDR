@@ -1199,7 +1199,10 @@ MobileEngine::MobileEngine(QObject* parent)
             qCInfo(lcMobile) << "audio session back: restarting receive audio";
             QMetaObject::invokeMethod(audio, [audio] { audio->reopenRx(); }, Qt::QueuedConnection);
         }
-        if (m_micCheckOpen || m_pttHeld) {
+        // Not on a playing-only session (iOS in the background after an
+        // interruption, roadmap 215): the microphone opens again when the
+        // play-and-record session is back, with the app in front.
+        if ((m_micCheckOpen || m_pttHeld) && !audioSessionPlaybackOnly()) {
             stopDeviceMicrophoneCapture(true);
             startDeviceMicrophoneCapture();
         }

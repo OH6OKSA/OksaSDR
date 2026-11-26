@@ -18,6 +18,11 @@ void configureAudioSession();
 // could not open meanwhile can be restarted.
 void setAudioSessionReactivatedHandler(std::function<void()> handler);
 
+// iOS: the session is a playing-only one, taken when an interruption ended
+// while the app was in the background (roadmap 215), until the app is in
+// front again: no microphone can be opened on it. False elsewhere.
+bool audioSessionPlaybackOnly();
+
 // Where receive audio plays (Audio › Audio output), from the next moment it
 // can: "Auto" a connected Bluetooth headset's hands-free link with its
 // microphone, else the speaker; "Speaker" the device's own speaker and
