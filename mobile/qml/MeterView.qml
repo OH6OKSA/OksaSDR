@@ -162,6 +162,12 @@ Item {
         case "Volts":
             return { v: Engine.supplyVolts, min: 10, max: 16, live: Engine.hasSupplyVolts,
                      text: Engine.supplyVolts.toFixed(1) + " V", red: 15 }
+        // The radio's main fan (John N1JM): its speed, on a scale to 2000 RPM
+        // that grows when the fan runs faster (the engine's); no alarm level
+        // known.
+        case "Fan":
+            return { v: Engine.mainFanRpm, min: 0, max: Engine.mainFanMaxRpm > 0 ? Engine.mainFanMaxRpm : 2000,
+                     live: Engine.mainFanLive, text: "Fan " + Engine.mainFanRpm.toFixed(0) + " RPM", red: 1e9 }
         }
         return { v: 0, min: 0, max: 1, live: false, text: kind, red: 1e9 }
     }
@@ -376,6 +382,7 @@ Item {
                         Engine.tgxl.present
                         Engine.kat500.set
                         Engine.rade
+                        Engine.hasMainFan
                         return Engine.meterKindsFor(meter.side, section.modelData.tx)
                     }
                     readonly property var radioKinds: kinds.filter(k => k.indexOf("Amp ") !== 0 && k.indexOf("Tuner ") !== 0)

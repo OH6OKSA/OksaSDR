@@ -221,7 +221,8 @@ Item {
         return /^[A-Za-z]+$/.test(parts[0]) ? parts.slice(1).join(" ") : parts.join(" ")
     }
     // Where "-91 dBm" does not fit beside the S unit: "-91" (not "… dBm").
-    readonly property string valueShort: kind === "S" ? valueText.replace(/\s*dBm$/, "") : valueText
+    readonly property string valueShort: kind === "S" ? valueText.replace(/\s*dBm$/, "")
+                                         : kind === "Fan" ? valueText.replace(/\s*RPM$/, "") : valueText
     TextMetrics {
         id: valueMetrics
         font.pixelSize: gauge.headerFont

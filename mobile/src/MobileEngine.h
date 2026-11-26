@@ -855,6 +855,14 @@ class MobileEngine : public QObject {
     Q_PROPERTY(bool hasPaTemp READ hasPaTemp NOTIFY txMetersChanged)
     Q_PROPERTY(double supplyVolts READ supplyVolts NOTIFY txMetersChanged)
     Q_PROPERTY(bool hasSupplyVolts READ hasSupplyVolts NOTIFY txMetersChanged)
+    // The radio's main fan (roadmap 213): whether the radio reports it (the
+    // meters then offer it), its speed, the top of the scale shown for it
+    // (2000 RPM, growing when the fan runs faster), and whether a reading has
+    // come.
+    Q_PROPERTY(bool hasMainFan READ hasMainFan NOTIFY meterSelectionChanged)
+    Q_PROPERTY(double mainFanRpm READ mainFanRpm NOTIFY txMetersChanged)
+    Q_PROPERTY(double mainFanMaxRpm READ mainFanMaxRpm NOTIFY txMetersChanged)
+    Q_PROPERTY(bool mainFanLive READ mainFanLive NOTIFY txMetersChanged)
     Q_PROPERTY(QStringList meterKinds READ meterKinds CONSTANT)
     Q_PROPERTY(QString meterLeft READ meterLeft WRITE setMeterLeft NOTIFY meterSelectionChanged)
     Q_PROPERTY(QString meterRight READ meterRight WRITE setMeterRight NOTIFY meterSelectionChanged)
@@ -2176,6 +2184,10 @@ public:
     bool hasPaTemp() const;
     double supplyVolts() const { return m_supplyVolts; }
     bool hasSupplyVolts() const;
+    bool hasMainFan() const { return m_hasMainFan; }
+    double mainFanRpm() const { return m_mainFanRpm; }
+    double mainFanMaxRpm() const { return m_mainFanMaxRpm; }
+    bool mainFanLive() const { return m_mainFanLive; }
     // Selectable meters for the two meter faces, remembered on the device.
     QStringList meterKinds() const;
     // The kinds one meter offers: Power, SWR, ALC and Comp only in transmit
@@ -3608,6 +3620,14 @@ private:
     bool m_alcAvailable{false};
     double m_paTempC{0.0};
     double m_supplyVolts{0.0};
+    // The radio's main fan (roadmap 213), read once a second while connected.
+    void refreshMainFan();
+    QTimer m_mainFanTimer;
+    bool m_hasMainFan{false};
+    bool m_mainFanLive{false};
+    double m_mainFanRpm{0.0};
+    double m_mainFanMaxRpm{0.0};
+    double m_mainFanSeenRpm{0.0};   // the fastest seen while connected (the scale grows with it)
     bool m_pttHeld{false};
     int m_pttKey{0};
     quint32 m_pttKeyScan{0};

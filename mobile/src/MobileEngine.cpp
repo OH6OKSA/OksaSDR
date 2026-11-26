@@ -3077,6 +3077,13 @@ void MobileEngine::wireTransmit()
         m_supplyVolts = supplyVolts;
         emit txMetersChanged();
     });
+    // The radio's main fan (roadmap 213): looked at when the radio's list of
+    // readings changes and once a second while connected.
+    connect(&rm.meterModel(), &MeterModel::meterDefinitionChanged, this, [this](int) { refreshMainFan(); });
+    connect(&rm.meterModel(), &MeterModel::meterRemoved, this, [this](int) { refreshMainFan(); });
+    connect(&rm.meterModel(), &MeterModel::metersCleared, this, [this] { refreshMainFan(); });
+    m_mainFanTimer.setInterval(1000);
+    connect(&m_mainFanTimer, &QTimer::timeout, this, &MobileEngine::refreshMainFan);
     connect(&rm, &RadioModel::radioTransmittingChanged, this, &MobileEngine::txMetersChanged);
     // Tune, ATU and radio-side TX audio state.
     TransmitModel& tm = rm.transmitModel();
@@ -3885,10 +3892,53 @@ bool MobileEngine::hasSupplyVolts() const
     return m_session.radioModel().meterModel().hasSupplyVoltage();
 }
 
+// The radio's main fan speed (roadmap 213, John N1JM): the radio's own reading
+// RAD / MAINFAN in RPM ("Main radio fan RPM"), which SmartSDR does not show.
+// The core's meter model keeps every reading's value but announces only the
+// ones it knows by name, so this one is read here: when the radio's list of
+// readings changes, and once a second while connected. The radio's own scale
+// for the reading goes to 8192 RPM on a FLEX-6600M, whose fan idles at some
+// 800: a tenth of the bar. So the scale goes to 2000 RPM until the fan has
+// been seen faster, then to 4000, then to the radio's own top; it never comes
+// down while connected, and another model's fan finds its own scale the same
+// way.
+void MobileEngine::refreshMainFan()
+{
+    const MeterModel& meters = m_session.radioModel().meterModel();
+    const int index = m_connected ? meters.findMeter(QStringLiteral("RAD"), QStringLiteral("MAINFAN")) : -1;
+    const MeterDef* def = index >= 0 ? meters.meterDef(index) : nullptr;
+    const bool has = def != nullptr;
+    const bool live = has && meters.valueUpdatedAtMs(index) > 0;
+    const double rpm = live ? double(meters.value(index)) : 0.0;
+    m_mainFanSeenRpm = live ? std::max(m_mainFanSeenRpm, rpm) : 0.0;
+    const double radioTop = has && def->high > 0.0 ? def->high : 8000.0;
+    const double top = !has ? 0.0
+                     : m_mainFanSeenRpm <= 2000.0 && radioTop > 2000.0 ? 2000.0
+                     : m_mainFanSeenRpm <= 4000.0 && radioTop > 4000.0 ? 4000.0 : radioTop;
+    if (has == m_hasMainFan && live == m_mainFanLive && qRound(rpm) == qRound(m_mainFanRpm) && top == m_mainFanMaxRpm) {
+        return;
+    }
+    if (live && !m_mainFanLive) {
+        qCInfo(lcMobile).noquote() << QStringLiteral("main fan: %1 RPM (the radio's scale for it: to %2)").arg(qRound(rpm)).arg(qRound(radioTop));
+    }
+    const bool offerChanged = has != m_hasMainFan;
+    m_hasMainFan = has;
+    m_mainFanLive = live;
+    m_mainFanRpm = rpm;
+    m_mainFanMaxRpm = top;
+    emit txMetersChanged();
+    if (offerChanged) {
+        // The meters offer the reading, and a remembered choice of it holds,
+        // only while the radio reports it.
+        emit meterSelectionChanged();
+    }
+}
+
 QStringList MobileEngine::meterKinds() const
 {
     return {QStringLiteral("S"), QStringLiteral("Power"), QStringLiteral("SWR"), QStringLiteral("ALC"),
-            QStringLiteral("Mic"), QStringLiteral("Comp"), QStringLiteral("PA temp"), QStringLiteral("Volts")};
+            QStringLiteral("Mic"), QStringLiteral("Comp"), QStringLiteral("PA temp"), QStringLiteral("Volts"),
+            QStringLiteral("Fan")};
 }
 
 QStringList MobileEngine::meterKindsFor(const QString& side, bool tx) const
@@ -3906,6 +3956,10 @@ QStringList MobileEngine::meterKindsFor(const QString& side, bool tx) const
     }
     if (side.startsWith(QLatin1String("right"))) {
         kinds.removeAll(QStringLiteral("Mic"));
+    }
+    // The radio's main fan, where the radio reports its speed (roadmap 213).
+    if (!m_hasMainFan) {
+        kinds.removeAll(QStringLiteral("Fan"));
     }
     // RADE's own SNR while it decodes (Scott L Stanford, roadmap 45),
     // beside the S meter; receive only.
@@ -11036,12 +11090,16 @@ void MobileEngine::onConnectionStateChanged(bool connected)
         updateRttyDecoder();
         updateMicCheck();
         updateParkSpotPolling();
+        m_mainFanTimer.start();
+        refreshMainFan();
         return;
     }
     stopTransmit(QStringLiteral("radio disconnected"));
     updateParkSpotPolling();
     updateCwDecoder();
     updateRttyDecoder();
+    m_mainFanTimer.stop();
+    refreshMainFan();
     if (m_wanActive && !m_wanUserDisconnect) {
         qCInfo(lcMobile) << "remote session dropped; reconnecting";
         m_wanReconnectTimer.start();

@@ -14,6 +14,18 @@ function marks(kind, min, max, red) {
     if (kind === "Amp fan") {
         return [[0, "0", false], [1, "1", false], [2, "2", false], [3, "3", false], [4, "4", false], [5, "5", false]]
     }
+    // The radio's main fan: round numbers of RPM up to the scale's top (to
+    // 2000: 0, 500 ... 2000; to the radio's own 8192: 0, 2000 ... 8000), at
+    // most five of them.
+    if (kind === "Fan") {
+        let step = 10000
+        for (const s of [250, 500, 1000, 2000, 2500, 5000]) {
+            if (Math.floor(max / s) <= 4) { step = s; break }
+        }
+        const fan = []
+        for (let v = 0; v <= max; v += step) fan.push([v, v.toString(), false])
+        return fan
+    }
     const out = []
     for (let i = 0; i <= 4; ++i) {
         const v = min + (max - min) * i / 4
