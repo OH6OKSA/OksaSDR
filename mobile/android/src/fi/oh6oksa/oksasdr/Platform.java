@@ -363,6 +363,45 @@ public final class Platform {
         return false;
     }
 
+    // Whether Android lists a Bluetooth headset as a call device now (roadmap
+    // 214): asked when taking the route again came back empty, to tell a
+    // headset that is gone (switched off, out of reach) from one Android
+    // gave no route this time. The same list useHeadset takes from.
+    public static boolean headsetListed(Context context) {
+        try {
+            AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (Build.VERSION.SDK_INT >= 31) {
+                for (AudioDeviceInfo d : am.getAvailableCommunicationDevices()) {
+                    int t = d.getType();
+                    if (t == AudioDeviceInfo.TYPE_BLUETOOTH_SCO || t == AudioDeviceInfo.TYPE_BLE_HEADSET) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            for (AudioDeviceInfo d : am.getDevices(AudioManager.GET_DEVICES_INPUTS)) {
+                if (d.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
+                    return true;
+                }
+            }
+        } catch (Throwable t) {
+            // No list: taken as none listed.
+        }
+        return false;
+    }
+
+    // Android's audio mode now (AudioManager.MODE_*): 1 while the phone
+    // rings, 2 in a phone call, 4 while a call is screened; 3 is an app's
+    // own call mode (ours with a headset), 0 none. During a phone call the
+    // headset's route is the call's and is left alone (roadmap 214).
+    public static int audioMode(Context context) {
+        try {
+            return ((AudioManager) context.getSystemService(Context.AUDIO_SERVICE)).getMode();
+        } catch (Throwable t) {
+            return 0;
+        }
+    }
+
     // Whether Android's communication route is a Bluetooth headset now.
     public static boolean headsetRoute(Context context) {
         AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);

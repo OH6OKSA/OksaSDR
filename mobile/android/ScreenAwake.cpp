@@ -241,6 +241,18 @@ bool headsetRouteOk()
                                                   androidContext().object());
 }
 
+bool headsetListed()
+{
+    return QJniObject::callStaticMethod<jboolean>(kPlatformClass, "headsetListed", "(Landroid/content/Context;)Z",
+                                                  androidContext().object());
+}
+
+int androidAudioMode()
+{
+    return QJniObject::callStaticMethod<jint>(kPlatformClass, "audioMode", "(Landroid/content/Context;)I",
+                                              androidContext().object());
+}
+
 void dropHeadsetRoute()
 {
     if (!headsetInUse()) {

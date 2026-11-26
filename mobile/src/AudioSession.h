@@ -47,6 +47,13 @@ void dropHeadsetRoute();
 // The route worked out anew from what is connected now (a headset switched
 // off while it was the route).
 void reapplyAudioRoute();
+// Whether Android lists a Bluetooth headset as a call device now: tells a
+// headset that is gone from one Android gave no route this time (roadmap
+// 214).
+bool headsetListed();
+// Android's audio mode (AudioManager.MODE_*): 1 ringing, 2 a phone call,
+// 4 call screening; during those the headset's route is the call's.
+int androidAudioMode();
 #endif
 
 } // namespace AetherSDR::mobile

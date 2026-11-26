@@ -2663,9 +2663,20 @@ private:
     // link that is down a drop to mend. A headset or phone that never says
     // its link is up is left as it was before the keeper (the link watch).
     bool m_headsetLinkSeenUp{false};
-    // The tries for this drop are used up: nothing more until the link's
-    // state changes or the app comes back to the front.
+    // The quick tries for this drop are used up: from then on one try every
+    // 20 s for as long as Android lists the headset (roadmap 214).
     bool m_headsetGaveUp{false};
+    // When the next try is due (the first 1.5 s into a drop, then 3 s apart;
+    // 1 s after one Android answered with no route).
+    qint64 m_headsetNextTryMs{0};
+    // The headset that was the route is no longer listed by Android, and the
+    // phone's own route is in use: looked for every 5 s while the choice is
+    // still Auto, and taken when Android lists one again (roadmap 214).
+    bool m_headsetLost{false};
+    qint64 m_headsetLookAtMs{0};
+    // A phone call (ringing, in a call, screening): the route is the call's
+    // and nothing is asked of Android until it has ended.
+    bool m_headsetInCall{false};
     // Receive that could not be opened (AudioEngine::rxOpenFailed): tried
     // again every 5 s and when the app comes to the front (roadmap 181 b: an
     // iPad's receive stayed shut after an interruption in the background).
