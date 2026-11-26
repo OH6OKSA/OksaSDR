@@ -107,12 +107,14 @@ std::atomic<int> s_stackDepth{-1};
 std::atomic<int> s_stacksLogged{0};
 #ifdef Q_OS_ANDROID
 constexpr int kMaxStackReports = 6;
-// Not before the main thread has stood 16 s: the walk runs in a signal
-// handler on that thread and has not been seen to work on a device yet, so
-// it is kept to where nothing is left to lose (the system ends an app that
-// stands that long; the user's stops were for good). A slow start, connect
-// or page is never walked: a tester's handset stands 4 s at every connect.
-constexpr qint64 kStacksAfterMs = 16000;
+// Not before the main thread has stood 8 s: a slow start, connect or page is
+// never walked (a tester's handset stands 4 s at every connect). It was 16 s
+// while the walk, which runs in a signal handler on that thread, had not
+// been seen to work on a device; it has now (the user's OnePlus Open,
+// 2026-11-26: the test line stall 17000 gave 56 lines and the app went on),
+// and the same day two real stops of 15.5 and 15.8 s ended just short of it
+// (roadmap 221), so their place was not seen.
+constexpr qint64 kStacksAfterMs = 8000;
 #else
 constexpr int kMaxStackReports = 12;
 constexpr qint64 kStacksAfterMs = 0;
@@ -323,11 +325,11 @@ void run()
                 qCWarning(lcStall).noquote() << line;
 #ifdef OKSASDR_STALL_STACKS
                 // Where, under the line that says how long (Linux: at the
-                // first second; Android: at the report of 16 s), and once
-                // more at the first report from 16 s on after that (Linux:
-                // at 16 s; Android: at 32 s): the same place twice is a
-                // thread that waits or goes round in one spot, another
-                // place one that still works.
+                // first second; Android: at the report of 8 s), and once
+                // more at the first report from 16 s on after that (at
+                // 16 s): the same place twice is a thread that waits or
+                // goes round in one spot, another place one that still
+                // works.
                 if (active && ((stacksTaken == 0 && silentMs >= kStacksAfterMs)
                                || (stacksTaken == 1 && silentMs >= kStacksAgainMs))) {
                     ++stacksTaken;
