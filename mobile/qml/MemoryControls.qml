@@ -250,6 +250,7 @@ ColumnLayout {
                         delegate: AppButton {
                             required property var modelData
                             text: modelData.label
+                            Accessible.name: modelData.key === "down" ? qsTr("Shift minus") : modelData.key === "up" ? qsTr("Shift plus") : modelData.label
                             checked: editDialog.dir === modelData.key
                             Layout.fillWidth: true
                             Layout.preferredWidth: modelData.key === "simplex" ? 2 : 1

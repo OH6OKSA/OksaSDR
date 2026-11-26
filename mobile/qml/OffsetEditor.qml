@@ -84,6 +84,7 @@ Popup {
                     required property int modelData
                     objectName: "offsetQuick" + (modelData < 0 ? "Minus" : "Plus") + Math.abs(modelData / 1000)
                     text: (modelData > 0 ? "+" : "−") + Math.abs(modelData / 1000)
+                    Accessible.name: qsTr("%1 kHz").arg(text)
                     focusPolicy: Qt.NoFocus
                     width: Math.max(Theme.buttonWidth * 0.8, 56)
                     height: Theme.touchTarget

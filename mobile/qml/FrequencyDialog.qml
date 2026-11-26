@@ -98,6 +98,9 @@ Dialog {
                 delegate: AppButton {
                     required property string modelData
                     text: modelData === "⌫" ? "" : modelData
+                    // The delete key draws its arrow and has no text: without
+                    // a name a screen reader skips it.
+                    Accessible.name: modelData === "⌫" ? qsTr("Delete") : modelData === "." ? qsTr("Point") : modelData
                     font.pixelSize: Theme.px(26)
                     Layout.fillWidth: true
                     Layout.preferredHeight: dialog.keyHeight

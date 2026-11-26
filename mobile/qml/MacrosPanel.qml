@@ -237,6 +237,7 @@ Popup {
             AppButton {
                 visible: Engine.workedCall.length > 0
                 text: Engine.workedCall + "  ✕"
+                Accessible.name: qsTr("%1, clear the worked call").arg(Engine.workedCall)
                 font.family: "monospace"
                 font.bold: true
                 checked: true

@@ -178,6 +178,7 @@ ColumnLayout {
                     required property int index
                     objectName: "tgxlChannel" + (index === 0 ? "A" : "B")
                     text: index === 0 ? "A" : "B"
+                    Accessible.name: qsTr("Channel %1").arg(text)
                     checked: genius.t.active === index + 1
                     enabled: tuner.canMove
                     Layout.preferredWidth: Theme.touchTarget
@@ -210,6 +211,7 @@ ColumnLayout {
                 AppButton {
                     objectName: "tgxlRelay" + modelData.l + "Down"
                     text: "−"
+                    Accessible.name: qsTr("%1, one step down").arg(modelData.l)
                     enabled: tuner.canMove
                     Layout.preferredWidth: Theme.touchTarget
                     onClicked: Engine.tgxlAdjustRelay(modelData.r, -1)
@@ -217,6 +219,7 @@ ColumnLayout {
                 AppButton {
                     objectName: "tgxlRelay" + modelData.l + "Up"
                     text: "+"
+                    Accessible.name: qsTr("%1, one step up").arg(modelData.l)
                     enabled: tuner.canMove
                     Layout.preferredWidth: Theme.touchTarget
                     onClicked: Engine.tgxlAdjustRelay(modelData.r, 1)
@@ -234,6 +237,7 @@ ColumnLayout {
                     required property int index
                     objectName: "tgxlAntenna" + (index + 1)
                     text: index + 1
+                    Accessible.name: qsTr("Antenna %1").arg(index + 1)
                     checked: genius.t.antenna === index + 1
                     enabled: tuner.canMove
                     Layout.fillWidth: true

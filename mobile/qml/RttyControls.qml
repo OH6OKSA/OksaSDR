@@ -232,6 +232,7 @@ ColumnLayout {
             visible: Engine.workedCall.length > 0
             objectName: "textWorkedCall"
             text: Engine.workedCall + "  ✕"
+            Accessible.name: qsTr("%1, clear the worked call").arg(Engine.workedCall)
             font.family: "monospace"
             font.bold: true
             checked: true
@@ -374,6 +375,7 @@ ColumnLayout {
         AppButton {
             objectName: "pskCarrierDown"
             text: "−10"
+            Accessible.name: qsTr("Carrier 10 Hz down")
             Layout.fillWidth: true
             Layout.preferredWidth: 1
             Layout.preferredHeight: Theme.touchTarget
@@ -390,6 +392,7 @@ ColumnLayout {
         AppButton {
             objectName: "pskCarrierUp"
             text: "+10"
+            Accessible.name: qsTr("Carrier 10 Hz up")
             Layout.fillWidth: true
             Layout.preferredWidth: 1
             Layout.preferredHeight: Theme.touchTarget
