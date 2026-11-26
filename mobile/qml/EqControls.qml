@@ -15,7 +15,7 @@ ColumnLayout {
 
     RowLayout {
         Layout.fillWidth: true
-        Label { text: qsTr("Equalizer"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
+        Label { text: qsTr("Equalizer"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
         AppButton { text: qsTr("RX"); checked: !eq.tx; focusPolicy: Qt.NoFocus; onClicked: eq.tx = false }
         AppButton { text: qsTr("TX"); checked: eq.tx; focusPolicy: Qt.NoFocus; onClicked: eq.tx = true }
     }

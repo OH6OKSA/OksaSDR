@@ -99,6 +99,9 @@ ColumnLayout {
     Dialog {
         id: editDialog
         objectName: "memoryEditDialog"
+        // Named on its item: Accessible on a Popup itself is refused ("must be
+        // attached to an object deriving from Item").
+        Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("Edit memory"))
         property int index: -1
         property string mode: ""
         // FM repeater: direction, shift (MHz), CTCSS on and its tone.
@@ -175,6 +178,7 @@ ColumnLayout {
 
                 Label {
                     text: qsTr("Edit memory")
+                    Accessible.role: Accessible.Heading
                     color: Theme.text
                     font.pixelSize: Theme.labelFont
                     font.bold: true

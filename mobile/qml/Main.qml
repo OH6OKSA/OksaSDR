@@ -535,6 +535,9 @@ ApplicationWindow {
     Popup {
         id: conflictDialog
         objectName: "stationConflict"
+        // Named on its item: Accessible on a Popup itself is refused ("must be
+        // attached to an object deriving from Item").
+        Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => conflictDialog.c.full ? qsTr("All station slots are in use") : qsTr("Another station is on the radio"))
         readonly property var c: Engine.stationConflict
         visible: !!c.open
         modal: true
@@ -555,6 +558,7 @@ ApplicationWindow {
             Label {
                 Layout.fillWidth: true
                 text: conflictDialog.c.full ? qsTr("All station slots are in use") : qsTr("Another station is on the radio")
+                Accessible.role: Accessible.Heading
                 color: Theme.text
                 font.bold: true
                 font.pixelSize: Math.round(Theme.buttonFont * 1.6)

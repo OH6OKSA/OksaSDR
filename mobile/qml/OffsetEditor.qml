@@ -9,6 +9,9 @@ import AetherMobile
 // Return applies, Esc closes.
 Popup {
     id: editor
+    // Named on its item: Accessible on a Popup itself is refused ("must be
+    // attached to an object deriving from Item").
+    Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => editor.title)
     objectName: "offsetEditor"
     property string title: ""
     property int limitHz: 9999
@@ -53,6 +56,7 @@ Popup {
         Label {
             Layout.fillWidth: true
             text: editor.title
+            Accessible.role: Accessible.Heading
             color: Theme.text
             font.pixelSize: Theme.px(18)
             font.bold: true

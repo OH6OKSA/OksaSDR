@@ -15,7 +15,7 @@ ColumnLayout {
     // every program on it; shown by where it came from: Cluster (a DX
     // cluster's), POTA, WWFF, Other (SmartSDR's, another program's). The
     // sources this device reads are set in Setup › Spots (Spot sources…).
-    Label { text: qsTr("Spots shown"); color: Theme.textDim; font.pixelSize: Theme.px(16) }
+    Label { text: qsTr("Spots shown"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(16) }
     // Six sources since 136 (RBN, PSK Reporter): one row where they fit,
     // else two of three.
     GridLayout {
@@ -197,6 +197,7 @@ ColumnLayout {
     // ---- Heard me (roadmap 136): who heard this station, by band ----
     Label {
         text: qsTr("Heard me (last 30 min)")
+        Accessible.role: Accessible.Heading
         color: Theme.textDim
         font.pixelSize: Theme.px(16)
         Layout.topMargin: Theme.spacing

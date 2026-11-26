@@ -22,7 +22,7 @@ ColumnLayout {
         visible: Engine.fmMode
         Layout.fillWidth: true
         spacing: Theme.spacing / 2
-        Label { text: qsTr("FM repeater"); color: Theme.textDim; font.pixelSize: Theme.px(16) }
+        Label { text: qsTr("FM repeater"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(16) }
         RowLayout {
             Layout.fillWidth: true
             Label { text: qsTr("Offset"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
@@ -650,6 +650,7 @@ ColumnLayout {
               : Engine.dvkState === "recording" ? qsTr("Voice keyer: recording F%1 (tap it to stop)").arg(Engine.dvkActiveId)
               : Engine.dvkState === "preview" ? qsTr("Voice keyer: listening to F%1").arg(Engine.dvkActiveId)
               : qsTr("Voice keyer: sending F%1").arg(Engine.dvkActiveId)
+        Accessible.role: Accessible.Heading
         color: Engine.dvkState === "idle" ? Theme.textDim : Theme.warning
         font.pixelSize: Theme.px(15)
     }

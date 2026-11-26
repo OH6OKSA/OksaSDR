@@ -46,6 +46,7 @@ RowLayout {
     Label {
         objectName: "panelTitle"
         text: header.title
+        Accessible.role: Accessible.Heading
         color: Theme.text
         font.pixelSize: Theme.labelFont
         font.bold: true

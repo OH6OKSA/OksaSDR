@@ -8,6 +8,9 @@ import AetherMobile
 Popup {
     id: popup
     objectName: "logPage"
+    // Named on its item: Accessible on a Popup itself is refused ("must be
+    // attached to an object deriving from Item").
+    Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("Log (%1 lines)").arg(popup.opened ? LogBuffer.lines.length : 0))
     modal: true
     anchors.centerIn: parent
     width: parent.width * 0.95
@@ -39,6 +42,7 @@ Popup {
             Label {
                 objectName: "logTitle"
                 text: qsTr("Log (%1 lines)").arg(popup.opened ? LogBuffer.lines.length : 0)
+                Accessible.role: Accessible.Heading
                 color: Theme.text
                 font.pixelSize: Theme.px(22)
                 elide: Text.ElideRight

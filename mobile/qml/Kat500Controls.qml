@@ -62,6 +62,7 @@ ColumnLayout {
         Label {
             Layout.fillWidth: true
             text: kat.t.device || "Elecraft KAT500"
+            Accessible.role: Accessible.Heading
             color: Theme.text
             font.pixelSize: Theme.px(17)
             font.bold: true
@@ -302,6 +303,9 @@ ColumnLayout {
     Dialog {
         id: confirm
         objectName: "katConfirm"
+        // Named on its item: Accessible on a Popup itself is refused ("must be
+        // attached to an object deriving from Item").
+        Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => confirmTitle.text)
         property string action: ""
         property string mode: ""
         property int antenna: 0
@@ -324,6 +328,7 @@ ColumnLayout {
         contentItem: ColumnLayout {
             spacing: Theme.spacing
             Label {
+                id: confirmTitle
                 objectName: "katConfirmTitle"
                 Layout.fillWidth: true
                 text: confirm.action === "mode" ? qsTr("Put the tuner in %1?").arg(confirm.mode.toUpperCase())
@@ -334,6 +339,7 @@ ColumnLayout {
                     : confirm.action === "poweron" ? qsTr("Turn the KAT500 on?")
                     : confirm.action === "poweroff" ? qsTr("Turn the KAT500 off?")
                     : qsTr("Clear the tuner's fault?")
+                Accessible.role: Accessible.Heading
                 color: Theme.text
                 font.pixelSize: Theme.px(18)
                 font.bold: true

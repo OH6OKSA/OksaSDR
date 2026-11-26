@@ -27,6 +27,7 @@ ColumnLayout {
     // ---- RADE digital voice ----
     Label {
         text: qsTr("RADE digital voice")
+        Accessible.role: Accessible.Heading
         color: Theme.textDim
         font.pixelSize: Theme.px(14)
     }
@@ -130,6 +131,7 @@ ColumnLayout {
         spacing: 4
         Label {
             text: qsTr("Stations (%1)").arg(Engine.freedvStations.length)
+            Accessible.role: Accessible.Heading
             color: Theme.textDim
             font.pixelSize: Theme.px(14)
             Layout.fillWidth: true

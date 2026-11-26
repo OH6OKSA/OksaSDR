@@ -113,6 +113,7 @@ ColumnLayout {
         Label {
             Layout.fillWidth: true
             text: (ampTab.a.device || "RF2K-S") + (ampTab.a.name ? "  " + ampTab.a.name : "")
+            Accessible.role: Accessible.Heading
             color: Theme.text
             font.pixelSize: Theme.px(17)
             font.bold: true
@@ -516,6 +517,9 @@ ColumnLayout {
     Dialog {
         id: confirm
         objectName: "ampConfirm"
+        // Named on its item: Accessible on a Popup itself is refused ("must be
+        // attached to an object deriving from Item").
+        Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => confirmTitle.text)
         property string action: ""
         property int antenna: 0
         function ask(what, n) {
@@ -544,6 +548,7 @@ ColumnLayout {
         contentItem: ColumnLayout {
             spacing: Theme.spacing
             Label {
+                id: confirmTitle
                 objectName: "ampConfirmTitle"
                 Layout.fillWidth: true
                 text: confirm.action === "poweron" ? qsTr("Turn the KPA500 on?")
@@ -556,6 +561,7 @@ ColumnLayout {
                     : confirm.action === "tune" ? (ampTab.kpa ? qsTr("Tune the amplifier's ATU?") : qsTr("Send a tune carrier for the amplifier?"))
                     : ampTab.elecraft ? qsTr("Clear the amplifier's fault?")
                     : qsTr("Reset the amplifier's error?")
+                Accessible.role: Accessible.Heading
                 color: Theme.text
                 font.pixelSize: Theme.px(18)
                 font.bold: true

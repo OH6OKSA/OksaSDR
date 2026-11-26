@@ -604,6 +604,9 @@ ColumnLayout {
     Dialog {
         id: spotDialog
         objectName: "logSpotDialog"
+        // Named on its item: Accessible on a Popup itself is refused ("must be
+        // attached to an object deriving from Item").
+        Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("Spot %1 on the DX cluster?").arg(callField.text.trim().toUpperCase()))
         readonly property bool online: Engine.dxCluster.state === "connected"
         // Follows the slice: the tab's defaults are read again every second.
         readonly property string line: {
@@ -630,6 +633,7 @@ ColumnLayout {
             Label {
                 Layout.fillWidth: true
                 text: qsTr("Spot %1 on the DX cluster?").arg(callField.text.trim().toUpperCase())
+                Accessible.role: Accessible.Heading
                 color: Theme.text
                 font.pixelSize: Theme.px(18)
                 font.bold: true
@@ -694,6 +698,9 @@ ColumnLayout {
     Dialog {
         id: potaDialog
         objectName: "logSelfSpotDialog"
+        // Named on its item: Accessible on a Popup itself is refused ("must be
+        // attached to an object deriving from Item").
+        Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("Spot yourself on POTA?"))
         property var info: ({})
         property string park: ""
         function ask() {
@@ -715,6 +722,7 @@ ColumnLayout {
             Label {
                 Layout.fillWidth: true
                 text: qsTr("Spot yourself on POTA?")
+                Accessible.role: Accessible.Heading
                 color: Theme.text
                 font.pixelSize: Theme.px(18)
                 font.bold: true
@@ -793,6 +801,9 @@ ColumnLayout {
     Dialog {
         id: qsoEdit
         objectName: "logEditDialog"
+        // Named on its item: Accessible on a Popup itself is refused ("must be
+        // attached to an object deriving from Item").
+        Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("Edit the contact"))
         property var record: ({})
         property bool confirmDelete: false
         function ask(r) {
@@ -833,6 +844,7 @@ ColumnLayout {
                 Label {
                     Layout.fillWidth: true
                     text: qsTr("Edit the contact")
+                    Accessible.role: Accessible.Heading
                     color: Theme.text
                     font.pixelSize: Theme.px(18)
                     font.bold: true

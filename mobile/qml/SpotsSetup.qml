@@ -10,7 +10,7 @@ import AetherMobile
 // radio shows the spots this device sends.
 ColumnLayout {
     spacing: Theme.spacing / 2
-    Label { text: qsTr("DX cluster"); color: Theme.textDim; font.pixelSize: Theme.px(16) }
+    Label { text: qsTr("DX cluster"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(16) }
     RowLayout {
         Layout.fillWidth: true
         AppButton {
@@ -128,7 +128,7 @@ ColumnLayout {
         wrapMode: Text.WordWrap
     }
     // ---- RBN and PSK Reporter, Heard me (roadmap 136) ----
-    Label { text: qsTr("RBN and PSK Reporter"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.topMargin: Theme.spacing }
+    Label { text: qsTr("RBN and PSK Reporter"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.topMargin: Theme.spacing }
     Repeater {
         model: [{ key: "rbn", label: qsTr("RBN skimmer spots") },
                 { key: "psk", label: qsTr("PSK Reporter spots") },
@@ -178,7 +178,7 @@ ColumnLayout {
     // 2D waterfall or the 3D stacked trace.
 
     // ---- Alerts (roadmap 132): a call you hunt, or a DXCC you need ----
-    Label { text: qsTr("Spot alerts"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.topMargin: Theme.spacing }
+    Label { text: qsTr("Spot alerts"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.topMargin: Theme.spacing }
     readonly property var al: Engine.spotAlertSettings
     Label { text: qsTr("Watch list"); color: Theme.textDim; font.pixelSize: Theme.px(14) }
     TextField {
