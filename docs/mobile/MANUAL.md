@@ -3391,12 +3391,17 @@ the app keeps the headset's link itself: while it is in front it holds
 the headset's microphone open (Android shows its microphone indicator for
 as long; the audio goes to your radio as with VOX, up to some 50 MB an
 hour over mobile data, and the radio transmits only at PTT), so the link
-stays up and receive is back at once after PTT; a link that drops is
-taken again, up to five times; and back in front after the background the
-route of a headset used for calls only (*Media audio* off) is renewed
-once, with a second and a half of silence. In the background Android does
-not let the microphone stay open, so there such a headset can lose
-receive until the app is in front again. If Android does not open the
+stays up and receive is back at once after PTT. A link that drops is
+taken again: five quick tries, then (since beta 122) one every 20 seconds
+for as long as Android lists the headset, so the sound does not stay on
+the phone. A headset that is switched off or goes out of reach gives the
+sound to the phone, and is taken again within five seconds of coming
+back. During a phone call the app leaves the headset to the call and
+takes it again afterwards. In the background Android does not let the
+microphone stay open: the link drops as the app leaves the front and is
+taken again a few seconds later. Back in front, the route of a headset
+used for calls only (*Media audio* off) is renewed once if its link is
+down, with a second and a half of silence. If Android does not open the
 link, a notice says so: Controls › Audio › Audio output › *Speaker* and
 back to *Auto*, or the headset connected again, has brought it back. If receive still goes
 silent, send the log: it says the headset's link at each step. Without
