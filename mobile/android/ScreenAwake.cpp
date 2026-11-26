@@ -467,38 +467,6 @@ void reapplyAudioRoute()
     applyAudioRoute();
 }
 
-int bluetoothOutputId(bool music)
-{
-    if (androidAudioBusy()) {
-        return -1;
-    }
-    const QJniObject context = androidContext();
-    auto out = std::make_shared<int>(-1);
-    if (!runAudioCall([context, out, music] {
-            *out = QJniObject::callStaticMethod<jint>(kPlatformClass, "bluetoothOutputId",
-                "(Landroid/content/Context;Z)I", context.object(), jboolean(music));
-        }, kAskWaitMs)) {
-        return -1;
-    }
-    return *out;
-}
-
-QString androidPlaybackDevices()
-{
-    if (androidAudioBusy()) {
-        return {};
-    }
-    const QJniObject context = androidContext();
-    auto out = std::make_shared<QString>();
-    if (!runAudioCall([context, out] {
-            *out = QJniObject::callStaticObjectMethod(kPlatformClass, "playbackDevices",
-                "(Landroid/content/Context;)Ljava/lang/String;", context.object()).toString();
-        }, kAskWaitMs)) {
-        return {};
-    }
-    return *out;
-}
-
 // The foreground service keeps the app running through a reconnect.
 void setBackgroundTimeHeld(bool)
 {

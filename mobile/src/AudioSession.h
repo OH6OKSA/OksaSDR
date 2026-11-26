@@ -71,14 +71,6 @@ bool runAndroidAudioCall(std::function<void()> fn, int waitMs);
 // Whether Android's communication route is a Bluetooth headset now; false
 // also when it cannot be asked at the moment.
 bool headsetIsAndroidsRoute();
-// The id of the connected Bluetooth headset's music device (true) or call
-// device (false) among Android's outputs, which is also Qt's id for it; -1
-// when none is listed or it cannot be asked now (roadmap 219).
-int bluetoothOutputId(bool music);
-// The devices Android plays the app's own sound on now, by their kind, for
-// the log ("" when none or not known): what Qt opened a stream on is not
-// always where Android plays it (roadmap 219).
-QString androidPlaybackDevices();
 #endif
 
 } // namespace AetherSDR::mobile

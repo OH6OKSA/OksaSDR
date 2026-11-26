@@ -490,65 +490,9 @@ public final class Platform {
             + ", media audio " + (media ? "on" : "off") + ", audio mode " + am.getMode();
     }
 
-    // The id of the connected Bluetooth headset's music device (music) or
-    // call device among Android's outputs, -1 when none is listed (roadmap
-    // 219). Qt gives its devices these ids too, and names a headset's call
-    // device and music device alike, so the app asks for the kind it wants
-    // by id. A classic headset first, then an LE Audio one (one device for
-    // both uses).
-    public static int bluetoothOutputId(Context context, boolean music) {
-        try {
-            AudioDeviceInfo[] outputs = audioManager(context).getDevices(AudioManager.GET_DEVICES_OUTPUTS);
-            int classic = music ? AudioDeviceInfo.TYPE_BLUETOOTH_A2DP : AudioDeviceInfo.TYPE_BLUETOOTH_SCO;
-            for (AudioDeviceInfo d : outputs) {
-                if (d.getType() == classic) {
-                    return d.getId();
-                }
-            }
-            for (AudioDeviceInfo d : outputs) {
-                if (d.getType() == AudioDeviceInfo.TYPE_BLE_HEADSET) {
-                    return d.getId();
-                }
-            }
-        } catch (Throwable t) {
-            // No list: none.
-        }
-        return -1;
-    }
-
-    // The devices Android plays this app's own sound on now, by kind, for
-    // the log (roadmap 219): Android tells an app where its own players are
-    // routed (Android 12 on); other apps' players come without a device and
-    // are left out. "" when nothing of the app's plays or it is not told.
-    public static String playbackDevices(Context context) {
-        if (Build.VERSION.SDK_INT < 31) {
-            return "";
-        }
-        try {
-            StringBuilder out = new StringBuilder();
-            for (android.media.AudioPlaybackConfiguration c : audioManager(context).getActivePlaybackConfigurations()) {
-                AudioDeviceInfo d = c.getAudioDeviceInfo();
-                if (d == null) {
-                    continue;
-                }
-                String name = deviceTypeName(d.getType()) + " (" + d.getId() + ")";
-                if (out.indexOf(name) < 0) {
-                    if (out.length() > 0) {
-                        out.append(", ");
-                    }
-                    out.append(name);
-                }
-            }
-            return out.toString();
-        } catch (Throwable t) {
-            return "";
-        }
-    }
-
     private static String deviceTypeName(int type) {
         switch (type) {
             case AudioDeviceInfo.TYPE_BLUETOOTH_SCO: return "Bluetooth hands-free";
-            case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP: return "Bluetooth media";
             case AudioDeviceInfo.TYPE_BLE_HEADSET: return "Bluetooth LE headset";
             case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER: return "speaker";
             case AudioDeviceInfo.TYPE_BUILTIN_EARPIECE: return "earpiece";
