@@ -3,33 +3,31 @@
 # and the Android APK as the run artifact only. Removed when the user
 # releases the build to the testers (mobile-release.yml).
 
-Android beta 122 as a preview, the second one: roadmap 218 beside 214.
-Android only: the code is under Q_OS_ANDROID and in the Android Java, no
-iOS build is made and build 216 stays the newest on TestFlight. The
-user's word of 2026-11-26 ("push" at about 08:20 to the first preview,
-"toinen esiversio" at about 14:30 to this one); to everyone only on their
-word after the try.
+Android beta 122 as a preview, the third one: roadmap 203, 219 and 221
+beside 214 and 218. Android only: the code is under Q_OS_ANDROID and in
+the Android Java, no iOS build is made and build 216 stays the newest on
+TestFlight. The user's words of 2026-11-26: "push" (08:20, the first
+preview), "toinen esiversio" (14:30), "Tee esiversio" (15:20, this one);
+to everyone only on their word after the try.
 
-218, new in this preview: the headset's link kept when the microphone
-closes. On the OnePlus Open with the Jabra Evolve2 65, Audio output Auto,
-media audio off:
-1. After the connect the log says once "headset route asked through an
-   AudioManager of the app's own: yes".
-2. The headset playing, the screen made dark; another app to the front;
-   and back. No break in the sound, and in the log no "headset link down"
-   after "mic check: microphone closed". ("headset link down for 0 ms ...
-   try 1 of 5" instead: the link dropped all the same and was taken again
-   at once; about a second of silence instead of three.)
-3. Every Audio output choice once, as the route code is changed: Auto,
-   Speaker, Bluetooth media and back to Auto, also with the TX tab open.
-4. PTT with the headset: receive back at once, as before.
-
-214, left from the first preview (seen there: the background, two phone
-calls, the return with the link up, 11 PTT presses):
-5. The headset switched off while connected: the sound to the phone
-   ("Android lists no Bluetooth headset any more"); switched on again:
-   back in the headset within about five seconds of Android listing it.
-6. Bluetooth media and back to Auto, and the same with media audio on.
-7. If the link drops by itself: "headset link down for ...", perhaps
-   "Android gave the headset no route this time", then "headset link back
-   after ...". It cannot be asked for; the log shows it if it comes.
+On the OnePlus Open with the Jabra Evolve2 65, Audio output Auto:
+1. 221, the reason for this preview. The headset's Media audio ON in
+   Android's Bluetooth settings; the headset switched off while connected.
+   The second preview stood still 15 s and the radio dropped the
+   connection. Now the app has to go on and stay connected; the sound
+   moves to the phone. In the log: "Android's audio service has not
+   answered in ... ms: the app goes on without it until it does", later
+   "Android's audio service answers again (a call took ... ms)", no "GUI
+   thread stalled" of more than a second or two. If the app stands all
+   the same, stacks now come at 8 s ("stall stack"): the place is seen.
+   Then the headset on again: back in the headset. The same with Media
+   audio off (clean before too), and with the app in the background.
+2. 219. Media audio on: Speaker to Bluetooth media has to move the sound
+   to the headset. After every change the log says "receive plays on:
+   ..." with Android's own word for the device (Bluetooth media,
+   Bluetooth hands-free, speaker): to be read against what is heard.
+   Every change between Auto, Speaker and Bluetooth media once more.
+3. 218, as in the second preview: the screen dark, another app in front
+   and back: no break, no "headset link down" after "mic check:
+   microphone closed".
+4. PTT with the headset; a phone call; all as before.
