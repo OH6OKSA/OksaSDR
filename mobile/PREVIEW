@@ -3,25 +3,33 @@
 # and the Android APK as the run artifact only. Removed when the user
 # releases the build to the testers (mobile-release.yml).
 
-Android beta 122 as a preview (roadmap 214): the headset keeper after its
-first run on a device. Android only: the code is under Q_OS_ANDROID, no
+Android beta 122 as a preview, the second one: roadmap 218 beside 214.
+Android only: the code is under Q_OS_ANDROID and in the Android Java, no
 iOS build is made and build 216 stays the newest on TestFlight. The
-user's word of 2026-11-26, about 08:20 ("push"), to mending 214 and pushing it
-for their own phone; to everyone only on their word after the try.
-On the OnePlus Open with the Jabra Evolve2 65, Audio output Auto, media
-audio off:
-1. Some minutes of normal use. If the link drops by itself again, the
-   sound has to be back in the headset within a few seconds (the log:
-   "headset link down for ...", perhaps "Android gave the headset no
-   route this time", then "headset link back after ...").
-2. The headset switched off while connected: the sound to the phone
+user's word of 2026-11-26 ("push" at about 08:20 to the first preview,
+"toinen esiversio" at about 14:30 to this one); to everyone only on their
+word after the try.
+
+218, new in this preview: the headset's link kept when the microphone
+closes. On the OnePlus Open with the Jabra Evolve2 65, Audio output Auto,
+media audio off:
+1. After the connect the log says once "headset route asked through an
+   AudioManager of the app's own: yes".
+2. The headset playing, the screen made dark; another app to the front;
+   and back. No break in the sound, and in the log no "headset link down"
+   after "mic check: microphone closed". ("headset link down for 0 ms ...
+   try 1 of 5" instead: the link dropped all the same and was taken again
+   at once; about a second of silence instead of three.)
+3. Every Audio output choice once, as the route code is changed: Auto,
+   Speaker, Bluetooth media and back to Auto, also with the TX tab open.
+4. PTT with the headset: receive back at once, as before.
+
+214, left from the first preview (seen there: the background, two phone
+calls, the return with the link up, 11 PTT presses):
+5. The headset switched off while connected: the sound to the phone
    ("Android lists no Bluetooth headset any more"); switched on again:
    back in the headset within about five seconds of Android listing it.
-3. A phone call with the app in the background, and one with it in front:
-   "a phone call (audio mode 2): the headset's route left alone", and the
-   headset back after "the phone call has ended".
-4. To the background and back with the headset playing: no interruption
-   at the return.
-5. What beta 121 did well still holds: receive at once after PTT, the
-   link mended in the background in about three seconds.
-Then Bluetooth media and back to Auto, and the same with media audio on.
+6. Bluetooth media and back to Auto, and the same with media audio on.
+7. If the link drops by itself: "headset link down for ...", perhaps
+   "Android gave the headset no route this time", then "headset link back
+   after ...". It cannot be asked for; the log shows it if it comes.

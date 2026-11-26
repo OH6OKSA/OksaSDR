@@ -3397,11 +3397,14 @@ for as long as Android lists the headset, so the sound does not stay on
 the phone. A headset that is switched off or goes out of reach gives the
 sound to the phone, and is taken again within five seconds of coming
 back. During a phone call the app leaves the headset to the call and
-takes it again afterwards. In the background Android does not let the
-microphone stay open: the link drops as the app leaves the front and is
-taken again a few seconds later. Back in front, the route of a headset
-used for calls only (*Media audio* off) is renewed once if its link is
-down, with a second and a half of silence. If Android does not open the
+takes it again afterwards. In the background the microphone is closed
+(Android does not let it stay open there), and since beta 122 the headset
+goes on playing through that: with the screen off, the cover closed or
+another app in front receive stays in the headset. Before, the sound
+stopped for a few seconds each time the app left the front; if the link
+still drops there, it is taken again at once. Back in front, the route of
+a headset used for calls only (*Media audio* off) is renewed once if its
+link is down, with a second and a half of silence. If Android does not open the
 link, a notice says so: Controls › Audio › Audio output › *Speaker* and
 back to *Auto*, or the headset connected again, has brought it back. If receive still goes
 silent, send the log: it says the headset's link at each step. Without
