@@ -9420,6 +9420,7 @@ bool AudioEngine::startTxStream(const QHostAddress& radioAddress, quint16 radioP
     }, Qt::QueuedConnection);
 
     m_txSourceStartTime.restart();
+    m_txOpenedInputId = dev.id();
     qCWarning(lcAudio) << "AudioEngine: TX stream started ->" << radioAddress.toString()
              << ":" << radioPort << "streamId:" << Qt::hex << m_txStreamId
              << Qt::dec << "device:" << dev.description() << "id:" << dev.id()
@@ -10339,6 +10340,24 @@ void AudioEngine::setInputDevice(const QAudioDevice& dev, AudioDeviceSelection s
     }
 
     emit inputDeviceChanged();
+}
+
+bool AudioEngine::reseatTxOnDefaultInput()
+{
+    if (!m_audioSource || !m_inputDevice.isNull()) {
+        return false;
+    }
+    const QAudioDevice now = QMediaDevices::defaultAudioInput();
+    if (now.isNull() || now.id() == m_txOpenedInputId) {
+        return false;
+    }
+    qCInfo(lcAudio).noquote() << "AudioEngine: the default input is now" << now.description()
+                              << "(" + QString::fromUtf8(now.id()) + "): the open microphone moves to it";
+    const QHostAddress addr = m_txAddress;
+    const quint16 port = m_txPort;
+    stopTxStream();
+    startTxStream(addr, port);
+    return true;
 }
 
 #ifdef Q_OS_MACOS

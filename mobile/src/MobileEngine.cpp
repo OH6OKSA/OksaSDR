@@ -161,17 +161,14 @@ const QString kControlsVisibleKey = QStringLiteral("MobileControlsVisible");
 const QString kTuneRowsShownKey = QStringLiteral("MobileTuneRowsShown");
 const QString kRadioStepButtonsKey = QStringLiteral("MobileRadioStepButtons");
 const QString kDeviceMicSelection = QStringLiteral("PC");
-// Where the microphone is kept open the whole time the app is connected and
-// in front (roadmap 216): iOS (an iPhone, an iPad, the iPad app on a Mac).
-// OKSASDR_TEST_MIC_ALWAYS=1 turns it on elsewhere, for a test run.
+// The microphone is kept open the whole time the app is connected and in
+// front (roadmap 216), on every device: iOS since build 221, Android and the
+// desktops since Android beta 123. OKSASDR_TEST_MIC_ALWAYS=0 turns it off
+// for a test run (a comparison with how it was).
 bool micAlwaysOpenHere()
 {
-#ifdef Q_OS_IOS
-    return true;
-#else
-    static const bool test = qEnvironmentVariableIntValue("OKSASDR_TEST_MIC_ALWAYS") > 0;
-    return test;
-#endif
+    static const bool off = qEnvironmentVariable("OKSASDR_TEST_MIC_ALWAYS") == QLatin1String("0");
+    return !off;
 }
 // In front for that microphone: on the screen, also while something lies over
 // the app for a moment (the control centre, a banner: inactive), so that it
@@ -759,6 +756,7 @@ struct AndroidAudioDevices {
     QList<QAudioDevice> outputs;
     QList<QAudioDevice> inputs;
     QAudioDevice defaultOutput;
+    QAudioDevice defaultInput;
 };
 
 AndroidAudioDevices androidAudioDevices()
@@ -771,6 +769,7 @@ AndroidAudioDevices androidAudioDevices()
                 read->outputs = QMediaDevices::audioOutputs();
                 read->inputs = QMediaDevices::audioInputs();
                 read->defaultOutput = QMediaDevices::defaultAudioOutput();
+                read->defaultInput = QMediaDevices::defaultAudioInput();
             }, 150)) {
             QMutexLocker lock(&mutex);
             known = *read;
@@ -988,6 +987,36 @@ MobileEngine::MobileEngine(QObject* parent)
         qCInfo(lcMobile).noquote() << "default audio output now" << now.description();
         if (m_connected && m_audio && audioOutput() != QLatin1String("Speaker")) {
             QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->reopenRx(); }, Qt::QueuedConnection);
+        }
+    });
+    // The microphone, the same (roadmap 216). It stays open the whole time
+    // now and a stream stays on the device it opened on, so with a USB-C or
+    // wired headset plugged in or out the open microphone is moved to Qt's
+    // new default input (Auto; the other choices name the device's own).
+    // Until then it opened afresh at each PTT. Receive opens again if the
+    // move left it stopped. A Bluetooth headset's microphone comes and goes
+    // with its route (headsetKeeperTick).
+    {
+        const QAudioDevice atStart = androidAudioDevices().defaultInput;
+        m_defaultInputId = atStart.id();
+        m_defaultInputWired = wired(atStart);
+    }
+    connect(new QMediaDevices(this), &QMediaDevices::audioInputsChanged, this, [this, wired] {
+        if (androidAudioBusy()) {
+            return;   // Android's audio service does not answer now: nothing is known
+        }
+        const QAudioDevice now = androidAudioDevices().defaultInput;
+        const bool wasWired = std::exchange(m_defaultInputWired, wired(now));
+        if (std::exchange(m_defaultInputId, now.id()) == now.id() || !(wasWired || m_defaultInputWired)) {
+            return;
+        }
+        qCInfo(lcMobile).noquote() << "default microphone now" << now.description();
+        if (m_connected && m_audio) {
+            QMetaObject::invokeMethod(m_audio, [audio = m_audio] {
+                if (audio->reseatTxOnDefaultInput()) {
+                    audio->restartRxSoon();
+                }
+            }, Qt::QueuedConnection);
         }
     });
 #endif
@@ -3378,6 +3407,16 @@ void MobileEngine::startDeviceMicrophoneCapture()
             return;
         }
         audio->setPcMicGainDb(gainDb);
+#ifdef Q_OS_ANDROID
+        // Open already (it stays open the whole time, roadmap 216): moved to
+        // the default input if that is another device by now, so that a PTT
+        // press finds the microphone where one opened at the press would be
+        // (a Bluetooth headset switched on after connecting is not the route
+        // until the first transmission has been made through it).
+        if (audio->isTxStreaming()) {
+            audio->reseatTxOnDefaultInput();
+        }
+#endif
         if (!audio->isTxStreaming() && audio->hasAnyTxStream()) {
             audio->startTxStream(address, kRadioTxAudioPort);
         }
@@ -3502,15 +3541,21 @@ void MobileEngine::updateMicCheck()
     // Open the whole time the app is connected and in front (roadmap 216): as
     // the other Flex programs keep it, so that the level and the microphone's
     // audio chain can be set without transmitting; the radio transmits only at
-    // PTT all the same. On an iPhone, an iPad and a Mac for now (the user's
-    // word is for every device; Android and Linux follow with tries of their
-    // own, as an open microphone moves Android's audio routes). Only once the
-    // microphone has been allowed: this reason alone never asks for it, so a
-    // listener is not asked at the first connect. Not in the background:
-    // nothing is keyed there, and iOS would show the app recording all the
-    // time.
-    const bool always = deviceMic && micAlwaysOpenHere() && m_caps.canTransmit && !tm.voxEnable() && appInFrontForMic()
-                        && qApp->checkPermission(QMicrophonePermission{}) == Qt::PermissionStatus::Granted;
+    // PTT all the same. On every device (the user, 2026-11-26: with the
+    // microphone always open, the TX and eSSB tabs' own opening of it is
+    // needless and may even cause trouble as it is; now a tab changes
+    // nothing, and no microphone opens or closes in the middle of listening).
+    // Only once the microphone has been allowed: this reason alone never asks
+    // for it, so a listener is not asked at the first connect. Not in the
+    // background: nothing is keyed there, and iOS would show the app
+    // recording all the time. On Android not while a Bluetooth headset is the
+    // route (the headset's keeper holds its microphone for the link and lets
+    // it go for a round of its own), and not during a phone call.
+    bool always = deviceMic && micAlwaysOpenHere() && m_caps.canTransmit && !tm.voxEnable() && appInFrontForMic()
+                  && qApp->checkPermission(QMicrophonePermission{}) == Qt::PermissionStatus::Granted;
+#ifdef Q_OS_ANDROID
+    always = always && !headsetInUse() && !m_phoneCall;
+#endif
     const bool want = vox || meter || link || always;
     if (want == m_micCheckOpen && vox == m_voxMicOpen) {
         return;
@@ -12730,8 +12775,26 @@ void MobileEngine::headsetKeeperTick()
     }
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
     const bool inUse = m_connected && m_audio && headsetInUse();
+    // The microphone that stays open (roadmap 216) follows the route. It is
+    // open for the headset's link while the headset is the route and for
+    // itself otherwise, so when the route is taken or let go the reason
+    // changes and the microphone stays open through it; a stream stays on
+    // the device it opened on, so the audio engine moves it when the default
+    // input is another now (a headset that went or came back; nothing when
+    // it is on the right one already: a headset's microphone shut and opened
+    // at once is what left the user's headset chirping, roadmap 144). And it
+    // is not held through a phone call: Android's audio mode says one.
+    const int mode = m_connected ? androidAudioMode() : 0;
+    const bool phoneCall = mode == 1 || mode == 2 || mode == 4;
+    const bool routeChanged = inUse != m_headsetRouteSeen;
+    const bool micRecheck = routeChanged || phoneCall != m_phoneCall;
+    m_headsetRouteSeen = inUse;
+    m_phoneCall = phoneCall;
+    if (routeChanged && m_connected && m_audio) {
+        QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->reseatTxOnDefaultInput(); }, Qt::QueuedConnection);
+    }
     if (!inUse) {
-        if (m_headsetMicHold) {
+        if (m_headsetMicHold || micRecheck) {
             m_headsetMicHold = false;
             updateMicCheck();
         }
@@ -12800,14 +12863,13 @@ void MobileEngine::headsetKeeperTick()
     // microphone is not held; when the call has ended the link is looked at
     // afresh, as after any drop. (Beta 121 read a call made with the app in
     // the background as a drop and asked for the route in the middle of it.)
-    const int mode = androidAudioMode();
-    if (mode == 1 || mode == 2 || mode == 4) {
+    if (phoneCall) {
         if (!m_headsetInCall) {
             m_headsetInCall = true;
             qCInfo(lcMobile).noquote() << QStringLiteral("a phone call (audio mode %1): the headset's route left alone until it has ended")
                                               .arg(mode);
         }
-        if (m_headsetMicHold) {
+        if (m_headsetMicHold || micRecheck) {
             m_headsetMicHold = false;
             updateMicCheck();
         }
@@ -12901,6 +12963,8 @@ void MobileEngine::headsetKeeperTick()
             m_headsetMicClosedMs = now;
         }
         m_headsetMicHold = hold;
+        updateMicCheck();
+    } else if (micRecheck) {
         updateMicCheck();
     }
     // Not judged during that round, while transmitting (receive is silent

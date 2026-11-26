@@ -87,7 +87,7 @@
     <key>NSCameraUsageDescription</key>
     <string>OksaSDR does not use the camera. The audio library it includes contains camera functions, so iOS requires this notice.</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>OksaSDR sends your voice to the radio when you transmit.</string>
+    <string>OksaSDR sends your microphone's audio to your radio while the app is connected and in front, so that the level can be set; the radio transmits it only when you press PTT.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>OksaSDR turns a callsign you spell with the voice button into text for the log, on this device where it can.</string>
     <key>NSBluetoothAlwaysUsageDescription</key>

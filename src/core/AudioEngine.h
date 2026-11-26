@@ -132,6 +132,13 @@ public:
     Q_INVOKABLE void reopenRx();
     // When RX last opened (Unix ms; 0 before), any thread.
     qint64 rxStartedAtMs() const { return m_rxStartedAtMs.load(); }
+    // The open microphone moved to the system's default input when it runs
+    // on another device (OksaSDR keeps the microphone open the whole time,
+    // and a stream stays on the device it opened on: a headset that comes or
+    // goes changes the default). Nothing with the microphone closed, with a
+    // device chosen by name, or with the default unchanged. True when it
+    // moved. On the audio thread.
+    Q_INVOKABLE bool reseatTxOnDefaultInput();
 
     // Dedicated low-latency sidetone sink — independent of the RX sink.
     // Started alongside the RX sink and on-demand when the user enables
@@ -1190,6 +1197,7 @@ private:
 #endif
     QHostAddress  m_txAddress;
     quint16       m_txPort{0};
+    QByteArray    m_txOpenedInputId;   // the device the microphone last opened on
     quint32       m_txStreamId{0};         // DAX TX stream
     quint32       m_remoteTxStreamId{0};  // remote_audio_tx (voice/VOX)
     // Host-modulating backend (HL2): no Flex stream id will ever be assigned,

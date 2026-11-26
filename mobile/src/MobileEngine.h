@@ -2718,6 +2718,11 @@ private:
     // at once, without the moment a change in progress otherwise gets
     // (roadmap 218).
     qint64 m_headsetMicClosedMs{0};
+    // Android: whether a headset's route was in use at the keeper's last
+    // look, and whether a phone call is on (roadmap 216: the microphone that
+    // stays open follows the route and is not held through a call).
+    bool m_headsetRouteSeen{false};
+    bool m_phoneCall{false};
     // Receive that could not be opened (AudioEngine::rxOpenFailed): tried
     // again every 5 s and when the app comes to the front (roadmap 181 b: an
     // iPad's receive stayed shut after an interruption in the background).
@@ -2726,6 +2731,10 @@ private:
     // headset comes or goes.
     QByteArray m_defaultOutputId;
     bool m_defaultOutputWired{false};
+    // The same for the microphone (roadmap 216: it stays open, so it has to
+    // be moved when a wired or USB headset is plugged in or out).
+    QByteArray m_defaultInputId;
+    bool m_defaultInputWired{false};
     // Per-thread CPU (Linux and Android, from /proc/self/task): ticks at
     // the last sample, by thread id.
     QHash<int, quint64> m_threadTicks;
