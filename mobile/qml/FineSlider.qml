@@ -73,8 +73,10 @@ RowLayout {
         snapMode: Slider.SnapAlways
         focusPolicy: Qt.NoFocus
         Accessible.name: fine.accessibleName
-        Accessible.onIncreaseAction: fine.nudge(1)
-        Accessible.onDecreaseAction: fine.nudge(-1)
+        // A screen reader's swipe steps the slider even while it is
+        // disabled (the squelch level moved with SQL off): not here.
+        Accessible.onIncreaseAction: if (fine.enabled) fine.nudge(1)
+        Accessible.onDecreaseAction: if (fine.enabled) fine.nudge(-1)
         onMoved: {
             fine.feelDrag(value)
             if (fine.liveDrag) fine.moved(value)

@@ -197,7 +197,12 @@ Rectangle {
         focusPolicy: Qt.NoFocus
         Accessible.name: qsTr("Slice %1%2").arg(slice.letter)
                          .arg(slice.tx ? qsTr(", the transmit slice, %1").arg(chip.powerText) : "")
-        Accessible.description: qsTr("Hold for Make TX slice and Close slice")
+        // As the page's slice chips: the active one's double tap opens the
+        // hold's menu for a screen reader.
+        Accessible.description: slice.active ? qsTr("Opens Make TX slice and Close slice")
+                                             : qsTr("Makes it the active slice")
+        Accessible.onPressAction: slice.active ? sliceMenu.popup(chip, 0, chip.height)
+                                               : Engine.selectSlice(slice.id)
         readonly property string powerText: Engine.rfPower + (Engine.rfPowerIsPercent ? " %" : " W")
                                             + (big.ampOperating ? " AMP" : "")
         onClicked: Engine.selectSlice(slice.id)
@@ -380,7 +385,10 @@ Rectangle {
                 objectName: "bigExit"
                 text: qsTr("Exit")
                 Accessible.name: qsTr("Exit big buttons")
-                Accessible.description: qsTr("Hold to exit")
+                // The hold keeps a large hand in the car from leaving by a
+                // brush; a screen reader's double tap is no brush, and it
+                // cannot hold (it is press and release at once), so it exits.
+                Accessible.onPressAction: Engine.bigButtons = false
                 focusPolicy: Qt.NoFocus
                 font.pixelSize: Math.round(Math.max(Theme.buttonFont, big.readingPx * 0.7))
                 leftPadding: 16

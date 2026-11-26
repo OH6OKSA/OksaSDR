@@ -63,7 +63,24 @@ AppButton {
                      : Engine.pttLatched ? qsTr("Transmitting, tap to stop") : Engine.transmitting ? qsTr("Transmitting")
                      : qsTr("Push to talk")
     Accessible.description: txStandby ? qsTr("Hold for a second to arm transmitting")
-                            : toggleMode ? qsTr("Tap to transmit, tap again to stop") : qsTr("Hold to transmit")
+                            : toggleMode ? qsTr("Tap to transmit, tap again to stop")
+                            : qsTr("Double tap and hold to transmit")
+    // A screen reader's double tap is Qt's click(): press and release at
+    // once. Through onPressed / onReleased that keyed the radio for no time
+    // at all (PTT down and up in one go, a dit on the CW key) and could never
+    // arm the transmit lock, whose hold it cut to nothing. So the double tap
+    // does what a tap means where a tap is meant (stop the tune carrier,
+    // switch in Tap on / off) and nothing where a hold is (Hold to talk, the
+    // key, standby): those are keyed by the screen reader's double tap and
+    // hold, which passes a real touch through and keys as a finger's hold.
+    Accessible.onPressAction: {
+        if (!ptt.enabled || ptt.paddleMode)
+            return
+        if (Engine.tuning)
+            Engine.stopTransmit("PTT (screen reader) during tune")
+        else if (ptt.toggleMode && !ptt.txStandby)
+            Engine.togglePtt()
+    }
     // Ready, unavailable and transmitting must look different at a glance:
     // ready has a bright border and label, unavailable is dim.
     contentItem: Item {
