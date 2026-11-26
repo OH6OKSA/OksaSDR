@@ -67,6 +67,8 @@ Popup {
                 AppButton {
                     visible: !row.modelData.ours
                     text: qsTr("Disconnect")
+                    // Every row's button reads "Disconnect": the name says which.
+                    Accessible.name: qsTr("Disconnect %1").arg(row.modelData.station || row.modelData.program)
                     leftPadding: 12
                     rightPadding: 12
                     Layout.preferredHeight: Theme.touchTarget

@@ -586,7 +586,10 @@ ColumnLayout {
             topPadding: 4
             bottomPadding: 4
             Accessible.role: Accessible.Button
-            Accessible.name: qsTr("Edit %1").arg(modelData.CALL)
+            // The line as shown (time, call, band, mode, reports), and what a
+            // double tap does in the description.
+            Accessible.name: text
+            Accessible.description: qsTr("Opens the contact to edit or delete")
             Accessible.onPressAction: if (!Engine.qsoLogBusy) qsoEdit.ask(modelData)
             TapHandler {
                 enabled: !Engine.qsoLogBusy

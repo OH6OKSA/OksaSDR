@@ -168,6 +168,25 @@ ColumnLayout {
             color: modelData.tx ? Qt.alpha(Theme.transmit, 0.25) : Qt.alpha(Theme.text, 0.06)
             border.color: modelData.you ? Theme.accent : "transparent"
             border.width: modelData.you ? 1 : 0
+            // One button for VoiceOver and TalkBack (a TapHandler gives the
+            // row no role or action): the row's lines in one name, with
+            // "transmitting" for what only the red says, and a double tap
+            // tuning as a tap does.
+            Accessible.role: Accessible.Button
+            Accessible.name: [modelData.callsign + (modelData.you ? qsTr(", you") : ""),
+                              qsTr("%1 MHz").arg(modelData.mhz.toFixed(3)),
+                              modelData.tx ? qsTr("transmitting")
+                                  : modelData.txAgoMin !== undefined
+                                    ? (modelData.txAgoMin < 1 ? qsTr("TX just now") : qsTr("TX %1 min ago").arg(modelData.txAgoMin))
+                                  : (modelData.rxOnly ? qsTr("receive only") : ""),
+                              modelData.grid || "",
+                              modelData.km !== undefined ? qsTr("%1 km").arg(modelData.km) : "",
+                              modelData.mode || "",
+                              modelData.heard ? qsTr("hears %1 (%2 dB)").arg(modelData.heard).arg(modelData.snr) : "",
+                              modelData.message || ""]
+                             .filter(s => s && s.length > 0).join(", ")
+            Accessible.description: qsTr("Tunes there")
+            Accessible.onPressAction: if (Engine.connectionState === "connected") Engine.freedvTune(station.modelData.mhz, station.modelData.mode || "")
             ColumnLayout {
                 id: rows
                 anchors.left: parent.left
@@ -180,12 +199,14 @@ ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 8
                     Label {
+                        Accessible.ignored: true
                         text: station.modelData.callsign + (station.modelData.you ? " " + qsTr("(you)") : "")
                         color: Theme.text
                         font.pixelSize: Theme.px(15)
                         font.bold: true
                     }
                     Label {
+                        Accessible.ignored: true
                         Layout.fillWidth: true
                         text: [station.modelData.grid,
                                station.modelData.km !== undefined ? qsTr("%1 km").arg(station.modelData.km) : ""]
@@ -195,6 +216,7 @@ ColumnLayout {
                         elide: Text.ElideRight
                     }
                     Label {
+                        Accessible.ignored: true
                         text: station.modelData.mhz.toFixed(3)
                         color: Theme.text
                         font.pixelSize: Theme.px(15)
@@ -202,6 +224,7 @@ ColumnLayout {
                     }
                 }
                 Label {
+                    Accessible.ignored: true
                     Layout.fillWidth: true
                     visible: text.length > 0
                     text: [station.modelData.tx ? qsTr("TX now")
