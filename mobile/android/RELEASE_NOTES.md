@@ -8,6 +8,7 @@
 - **No change of audio mode when the app leaves the front with a Bluetooth headset** (roadmap 218): in beta 122 a short break could still be heard at that moment. The app now keeps Android's audio mode its own for as long as the headset is the route.
 - **Space is PTT can be switched off** (roadmap 209; Justin Mann AI5OS): Setup › Transmit › *Space is PTT*, for a screen reader that presses with Space. With a keyboard, Space pressed with Ctrl and Alt together or with the Search (Windows) key never keys.
 - **Meters: Fan** (roadmap 213; John N1JM): the radio's main fan speed as a choice on every meter.
+- **FT8 / FT4: a tap on a spot calls the station** (roadmap 224; found by the developer chasing a DXpedition). A tap on an FT8 or FT4 spot in the display, or *Tune* on its alert, tuned and marked the station, but the call took a tap on its row in the FTx list, which a weak station seldom gives. Now the tap calls: at once from the station's latest transmission when it was heard in the last two minutes, else the app waits (*… : called when heard*, also in the amber line at the top of the display) and calls from its next decoded transmission. *Halt TX*, another band, a CQ of your own or the FTx auto stop end the wait. With transmit locked (SB) the tap only tunes, as before.
 - **A spot alert shows above the open Controls** (roadmap 222; found on the developer's phone): with Controls, Radio Setup or a dialog open the alert lay under it, on a phone out of sight.
 
 ### Still new from beta 122

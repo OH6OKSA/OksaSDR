@@ -227,7 +227,8 @@ ColumnLayout {
             Layout.preferredWidth: digi.wantList ? implicitContentWidth + 12 : -1
             text: qsTr("Halt TX")
             font.pixelSize: digi.cqRowFont
-            enabled: digi.qso.state !== "idle" || digi.qso.transmitting || Engine.digiAutoAnswer
+            // Also while a spotted station is waited for (roadmap 224).
+            enabled: digi.qso.state !== "idle" || digi.qso.transmitting || Engine.digiAutoAnswer || !!digi.qso.waitFor
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiHalt()
@@ -585,7 +586,7 @@ ColumnLayout {
     // amber while waiting, red while transmitting.
     Rectangle {
         Layout.fillWidth: true
-        readonly property bool active: digi.qso.state !== "idle" || Engine.digiAutoAnswer
+        readonly property bool active: digi.qso.state !== "idle" || Engine.digiAutoAnswer || !!digi.qso.waitFor
         visible: statusText.text.length > 0
         implicitHeight: statusText.implicitHeight + (active ? 14 : 0)
         radius: 6

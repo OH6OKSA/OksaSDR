@@ -1564,6 +1564,9 @@ public:
     Q_INVOKABLE void digiHalt();
     // Tunes to the protocol's dial frequency on a band, in DIGU.
     Q_INVOKABLE void digiTune(double mhz);
+    // A test: one decode as if heard now (ShotPlan's digiheard), `ago` whole
+    // periods back.
+    void testDigiHeard(const QString& text, int freqHz, int snr, int ago);
     // Fits the display to the audio band (4 kHz), for picking a TX tone.
     Q_INVOKABLE void digiZoom();
     // Moves the TX audio frequency to the clearest spot (200-2800 Hz) among
@@ -3825,6 +3828,17 @@ private:
     bool digiOperatorAway() const;
     bool digiFilterPasses(const QVariantMap& row) const;
     void digiAutoAnswerPick(const QVariantList& decodes);
+    // FT8 / FT4: a tap on a station's spot calls it (roadmap 224): at once
+    // from its latest transmission when it was heard lately, else when it is
+    // next heard. digiTune hands the call on at its end (m_digiSpotCall).
+    void digiCallSpotted(const QString& spotted, const QString& band);
+    bool digiWaitTry(int newRows);
+    void digiEndWait(const QString& status);
+    int digiRowFrom(const QString& call, const QString& band, qint64 maxAgeMs, int limit) const;
+    QString m_digiWaitCall;       // the station waited for, its base call; empty: none
+    QString m_digiWaitBand;
+    QString m_digiSpotCall;       // a spot tap's call on its way through digiTune
+    qint64 m_digiSpotCallMs{0};
     // FT8 / FT4 keying its own tones: past setPtt's voice-only check (DIGU
     // is where they transmit; builds 108-112 refused them there).
     bool m_digiKeying{false};

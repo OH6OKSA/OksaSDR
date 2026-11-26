@@ -9,12 +9,12 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- A spot alert (a call on your Watch list spotted) now shows above the open Controls, Setup and dialogs. Before, it lay under them.
+- FT8 / FT4: a tap on a spot (or Tune on its alert) now calls the station: at once if it was heard in the last two minutes, else when it is next heard ("called when heard"; Halt TX ends the wait). [TX]
+- A spot alert (a call on your Watch list spotted) now shows above the open Controls, Setup and dialogs.
 - The microphone question iOS asks at first use now says what the app does since build 221.
 
 RECENT (builds 94–221)
-- 221: the microphone stays open while the app is connected and in front (once allowed): the Mic meter moves in receive, so level, gate and compressor can be set without transmitting; the radio transmits only at PTT. Closed in the background. Receive should come back by itself after a call in the background (not yet run on a device). Setup > Transmit > Space is PTT (thanks Justin AI5OS). Meters: Fan (thanks John N1JM).
-- 216: PTT > Wide also with the phone on its side; receive audio that could not start is tried again by itself.
+- 221: the microphone stays open while the app is connected and in front (the Mic meter moves in receive; closed in the background). Receive should return by itself after a call in the background (not yet run on a device). Setup > Transmit > Space is PTT (thanks Justin AI5OS). Meters: Fan (thanks John N1JM).
 - 215: PTT Left / Wide / Right (thanks Antonio IZ7LDG); At start > Last radio (thanks Tyler K0OTC); Forgot password? (thanks Bob WB3BOB); Prof tab Save over a profile (thanks Larry W9FLA).
 
 PLEASE TRY
@@ -32,8 +32,8 @@ PLEASE TRY
 - New: the Mic meter in receive with the TX tab closed, then PTT as before. [TX]
 - New: with a keyboard, Space as PTT; then Setup > Transmit > Space is PTT off. [TX]
 - New: a Watch list call spotted (Setup > Spots) with Controls open: the alert shows on top.
+- New: tap an FT8 spot: a station you hear is called at once, another "when heard"; Halt TX ends it. [TX]
 - Setup > Spots > RBN, PSK Reporter and Heard me; then call CQ and see Heard me fill.
-- TX > Use the radio's microphone, then a voice macro and Repeat. [TX]
 - A button as PTT (Setup > Transmit > PTT key > Learn), held and with PTT Tap on / off, at low power. [TX]
 - Slices on two or more bands (+ Slice, then Band on one): each gets its own panadapter, and the FTx tab decodes them all, FT8 on one and FT4 on another.
 

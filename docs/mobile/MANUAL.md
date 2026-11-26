@@ -234,7 +234,10 @@ What has to be set up first is in [Getting started](#getting-started-what-each-m
    counts the Log tab's log, and your Wavelog or QRZ.com logbook with
    **Worked before from the logbook** on, or a **Shared ADIF file** (Log tab).
 3. **Answer**: tap a decode. The app calls, runs the QSO (report, R-report,
-   RR73, 73) and logs it.
+   RR73, 73) and logs it. A tap on the station's **spot** in the display
+   calls it too (since build 223 / Android beta 123): at once when it was
+   heard in the last two minutes, else the app shows *… : called when heard*
+   and calls from its next decoded transmission. **Halt TX** ends the wait.
 4. **Call CQ**: **CQ** (in the **CQ slot** you choose); **Keep CQ** goes
    back to CQ after each QSO. **CQ to** (FTx settings) directs it: *CQ DX*,
    *CQ NA*, *CQ EU* or your own.
@@ -1251,7 +1254,8 @@ Power meter. Two fit side by side, four make 2 × 2.
   the spots the radio holds, from this app's DX cluster connection, its
   POTA and WWFF park spots and any other program on the radio. Tap one to
   tune to it (the mode follows the spot, as on the desktop, and the view
-  centres on the filter). Close ones stack in up to four
+  centres on the filter); an FT8 or FT4 spot's tap also calls the station
+  (below, under *Spot alerts*). Close ones stack in up to four
   rows; zoom in to see more. In View, *Spots* shows or hides them,
   *DX cluster* connects the app to a cluster of your choice and *Park
   spots* brings in the POTA and WWFF activators.
@@ -3161,9 +3165,20 @@ tab holds.
     protocol and the green **RX** mark on the station's audio frequency
     (FT8's dial is the bottom of the audio window: a spot at 10.1384 MHz
     is the 30 m dial 10.136 with the station at 2384 Hz), the station
-    marked so its CQ comes up in the FTx list to answer with a tap (a
+    marked so its CQ comes up in the FTx list (a
     DXpedition's own frequency, such as 1.835 or 14.090, on the kHz below
-    the spot); and it opens the mode's Controls tab (FTx, Digi, CW). The
+    the spot); and it opens the mode's Controls tab (FTx, Digi, CW).
+    **An FT8 or FT4 spot is also called** (since build 223 / Android beta
+    123; before, the call took a tap on the station's row, which a weak
+    station seldom gives): heard on that band in the last two minutes, the
+    station is called at once from its latest transmission, as from a tap
+    on that row; not heard, the app waits (*… : called when heard*, in the
+    FTx tab and in the amber line at the top of the display) and calls
+    from its next decoded transmission, since only that tells which period
+    to answer in. **Halt TX**, another band, a CQ of your own, a tap on
+    another station's row or the FTx auto stop's minutes without a touch
+    end the wait; a QSO under way is finished first. With transmit locked
+    (SB) the tap only tunes. The
     mode is the spot's own, else a digital mode named anywhere in its
     comment (*CQ RTTY test*, *TNX FT8*, *BPSK31*), else its comment's
     first or last word, else the band plan. A tap on

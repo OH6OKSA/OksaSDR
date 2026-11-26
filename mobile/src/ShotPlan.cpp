@@ -1733,6 +1733,23 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         // calls; the next real slot's decodes take their place).
         m_engine.setTestDecodes(arg.toInt());
         *delayMs = 500;
+    } else if (command == QLatin1String("digiheard")) {
+        // digiheard HZ SNR AGO TEXT...: one FT8 / FT4 decode as if heard on
+        // the FTx slice, AGO whole periods back (0: the period just ended):
+        // a spotted station's transmission, for the call a spot's tap asks
+        // for (roadmap 224).
+        m_engine.testDigiHeard(args.mid(3).join(QLatin1Char(' ')), arg.toInt(), args.value(1).toInt(), args.value(2).toInt());
+        *delayMs = 500;
+    } else if (command == QLatin1String("digistate")) {
+        // The FTx state into the log: state, the station, the one waited
+        // for, the status line, the next message, the period.
+        const QVariantMap q = m_engine.digi();
+        qInfo().noquote() << QStringLiteral("shot-plan: digi state=%1 dx=%2 waitFor=%3 status=\"%4\" txMsg=\"%5\" parity=%6 transmitting=%7")
+                                 .arg(q.value(QStringLiteral("state")).toString(), q.value(QStringLiteral("dx")).toString(),
+                                      q.value(QStringLiteral("waitFor")).toString(), q.value(QStringLiteral("status")).toString(),
+                                      q.value(QStringLiteral("txMsg")).toString(), q.value(QStringLiteral("parity")).toString())
+                                 .arg(q.value(QStringLiteral("transmitting")).toBool() ? 1 : 0);
+        *delayMs = 100;
     } else if (command == QLatin1String("addbuttons")) {
         // addbuttons on|off: the waterfall's + Slice / + Pan shown whatever
         // the radio has room for (the demo radio never shows them).

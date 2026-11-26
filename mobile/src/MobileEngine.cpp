@@ -9706,10 +9706,17 @@ void MobileEngine::tuneToSpot(int index)
     // the station's call marked, so its CQ shows in the FTx list to answer
     // with a tap (the TX Hz kept, as answering a decode keeps it). Its own
     // frequency (dial + audio) in DIGU heard nothing FTx could work.
+    // And the station is called (roadmap 224): the tap tuned and marked it
+    // only, and the user tapped VK9XY's spot twenty times waiting for a call
+    // to start; a weak station seldom gives a row to tap.
     QString ftProto;
     const double ftDial = autoMode && m_ft8 ? ftxDialForSpot(spot.rxFreqMhz, named, &ftProto) : 0.0;
     if (ftDial > 0.0) {
         noteSpotCall(spot);
+        // digiTune hands the call on at its end, which comes later when the
+        // slice first moves to a panadapter of its own on another band.
+        m_digiSpotCall = spot.callsign.trimmed().toUpper();
+        m_digiSpotCallMs = QDateTime::currentMSecsSinceEpoch();
         setDigiProtocol(ftProto);
         digiTune(ftDial);
         const int audioHz = qRound((spot.rxFreqMhz - ftDial) * 1e6);
@@ -11089,6 +11096,13 @@ void MobileEngine::onConnectionStateChanged(bool connected)
     if (!connected && radeActive()) {
         deactivateRade();
         emit radeChanged();
+    }
+    // A station waited for (roadmap 224) is not waited for across a
+    // disconnect: a call must not start by itself after a later connect.
+    if (!connected && (!m_digiWaitCall.isEmpty() || !m_digiSpotCall.isEmpty())) {
+        m_digiWaitCall.clear();
+        m_digiSpotCall.clear();
+        emit digiChanged();
     }
     if (!connected) {
         m_sliceFt4.clear();  // slice ids are the radio's, per session

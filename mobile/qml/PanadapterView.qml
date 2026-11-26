@@ -1842,7 +1842,9 @@ Rectangle {
         readonly property var qso: Engine.digi
         // Above the slice flags and marks (z), in FT8 / FT4 only.
         z: 100
-        visible: panArea.digiMode && qso.state !== "idle" && (qso.status || qso.txMsg)
+        // Also while a spotted station is waited for (roadmap 224): the
+        // tap on its spot is answered here, where the tap was made.
+        visible: panArea.digiMode && (qso.state !== "idle" || !!qso.waitFor) && (qso.status || qso.txMsg)
         anchors.horizontalCenter: parent.horizontalCenter
         y: 30  // below the slice flags
         width: Math.min(parent.width - 16, bannerText.implicitWidth + 16)

@@ -58,6 +58,10 @@ constexpr qint64 kHoundLateMs = 3 * 60 * 1000;
 constexpr int kAutoAnswerCallsMin = 2;
 constexpr int kAutoAnswerCallsMax = 20;
 constexpr qint64 kAutoRetryMs = 30 * 60 * 1000;
+// A spotted station heard this lately is called at once from that
+// transmission (roadmap 224): eight FT8 periods, in which a station keeps
+// its period; older than that, its next transmission is waited for.
+constexpr qint64 kSpotCallHeardMs = 2 * 60 * 1000;
 // How often FT8 / FT4 ask the time server again while running.
 constexpr int kNtpResyncMs = 30 * 60 * 1000;
 // How long after a contact is logged the same station on the same band is
@@ -352,6 +356,10 @@ void MobileEngine::syncDigiAudio()
             if (m_digiHound && dec.slice == digiSlice()) {
                 setDigiHound(false);
                 setDigiStatus(tr("Hound off: the band changed"));
+            }
+            // A station waited for is waited for on its spot's band.
+            if (!m_digiWaitCall.isEmpty() && dec.slice == digiSlice() && band != m_digiWaitBand) {
+                digiEndWait(tr("%1 is no longer waited for: the band changed").arg(m_digiWaitCall));
             }
             const qsizetype before = m_digiDecodes.size();
             m_digiDecodes.erase(std::remove_if(m_digiDecodes.begin(), m_digiDecodes.end(),
@@ -1170,7 +1178,11 @@ void MobileEngine::digiAutoAnswerPick(const QVariantList& decodes)
                                       .arg(bestSnr)
                                       .arg(cqs);
     m_digiAutoTried.insert(call, now);
+    // A station waited for (roadmap 224) stays waited for through Answer
+    // CQ's own QSOs; only a row tapped by hand ends the wait.
+    const QString waitCall = m_digiWaitCall;
     digiAnswer(best);
+    m_digiWaitCall = waitCall;
     if (m_digiState == QLatin1String("answer") && m_digiDx == call) {
         m_digiAutoQso = true;
         setDigiStatus(tr("Answer CQ: calling %1, %2 calls at most").arg(call).arg(m_digiAnswerCalls));
@@ -1414,6 +1426,8 @@ QVariantMap MobileEngine::digi() const
             {QStringLiteral("rxHz"), m_digiRxHz > 0 ? m_digiRxHz : m_digiTxHz},
             {QStringLiteral("txMsg"), m_digiTxMsg},
             {QStringLiteral("status"), m_digiStatus},
+            // The station that is called when heard (roadmap 224); "": none.
+            {QStringLiteral("waitFor"), m_digiWaitCall},
             {QStringLiteral("transmitting"), m_digiTransmitting},
             {QStringLiteral("parity"), m_digiTxParity == 1 ? QStringLiteral("odd") : QStringLiteral("even")},
             {QStringLiteral("slotSeconds"), m_ft8 ? m_ft8->slotSeconds() : 15.0},
@@ -1564,6 +1578,15 @@ void MobileEngine::digiTune(double mhz)
     }
     // Then the audio band fills the display, once the pan has followed.
     QTimer::singleShot(800, this, [this] { digiZoom(); });
+    // A tap on a spot asked for a call to its station (roadmap 224): now
+    // that the slice is on the spot's band, in DIGU and decoding. (A call
+    // left over from a tune that never came here is too old to mean it.)
+    if (!m_digiSpotCall.isEmpty()) {
+        const QString spotted = std::exchange(m_digiSpotCall, QString());
+        if (QDateTime::currentMSecsSinceEpoch() - m_digiSpotCallMs < 15000) {
+            digiCallSpotted(spotted, QsoLog::bandOf(mhz));
+        }
+    }
 }
 
 // FT8 / FT4 decode across about 200-3000 Hz: a filter left narrower (RADE's
@@ -1684,6 +1707,12 @@ void MobileEngine::digiCallCq()
     if (!digiRunning()) {
         setDigiRunning(true);
     }
+    // A CQ of our own ends a wait for a spotted station (roadmap 224): one
+    // thing at a time, and the operator has chosen this one.
+    if (!m_digiWaitCall.isEmpty()) {
+        qCInfo(lcMobile).noquote() << "digi: no longer waiting for" << m_digiWaitCall << "(a CQ of our own)";
+        m_digiWaitCall.clear();
+    }
     const qint64 slotLen = qint64(m_ft8->slotSeconds() * 1000);
     m_digiState = QStringLiteral("cq");
     m_digiDx.clear();
@@ -1722,6 +1751,9 @@ void MobileEngine::digiAnswer(int index)
     if (p.de.isEmpty() || p.de == my || d.value(QStringLiteral("hl")) == QLatin1String("tx")) {
         return;
     }
+    // A wait for a spotted station (roadmap 224) ends here: this row is its
+    // own, or the operator has tapped another station's.
+    m_digiWaitCall.clear();
     // Heard on another slice: TX and the display go there (the key waits
     // for the radio to confirm the TX move).
     const int sliceId = d.value(QStringLiteral("sliceId"), -1).toInt();
@@ -1824,6 +1856,177 @@ void MobileEngine::digiAnswer(int index)
     digiLateStart();
 }
 
+namespace {
+// A call as rows and spots are compared by it: no hash brackets, its base.
+QString plainCall(const QString& call)
+{
+    return baseCall(QString(call).remove(QLatin1Char('<')).remove(QLatin1Char('>')).trimmed().toUpper());
+}
+}  // namespace
+
+// The newest row the station itself sent (not one to it, not our own) on
+// that band, among the first `limit` rows (below 0: all of them) and no
+// older than maxAgeMs (0: any age). In Hound mode only a row a Hound may
+// answer (the Fox's own, below 1000 Hz, or a CQ). -1: none.
+int MobileEngine::digiRowFrom(const QString& call, const QString& band, qint64 maxAgeMs, int limit) const
+{
+    const qint64 now = Ft8Engine::nowMs();
+    const int rows = limit < 0 ? int(m_digiDecodes.size()) : std::min(limit, int(m_digiDecodes.size()));
+    int best = -1;
+    qint64 bestMs = -1;
+    for (int i = 0; i < rows; ++i) {
+        const QVariantMap d = m_digiDecodes.at(i).toMap();
+        if (d.value(QStringLiteral("hl")) == QLatin1String("tx")) {
+            continue;
+        }
+        QString from = d.value(QStringLiteral("call")).toString();
+        if (from.isEmpty()) {
+            from = Ft8Engine::parse(d.value(QStringLiteral("text")).toString()).de;
+        }
+        if (from.isEmpty() || plainCall(from) != call) {
+            continue;
+        }
+        if (!band.isEmpty() && d.value(QStringLiteral("band")).toString() != band) {
+            continue;
+        }
+        const qint64 slotMs = d.value(QStringLiteral("slotMs")).toLongLong();
+        if (maxAgeMs > 0 && now - slotMs > maxAgeMs) {
+            continue;
+        }
+        if (m_digiHound && !d.value(QStringLiteral("cq")).toBool() && d.value(QStringLiteral("freq")).toInt() >= 1000) {
+            continue;
+        }
+        if (slotMs > bestMs) {
+            best = i;
+            bestMs = slotMs;
+        }
+    }
+    return best;
+}
+
+// FT8 / FT4: a tap on a station's spot, or Tune on its alert, calls it
+// (roadmap 224; the user chasing VK9XY, 2026-11-26: the tap tuned and marked
+// the station, and a call took a tap on its row, which a weak station seldom
+// gives). Heard in the last two minutes on this band: called at once from
+// its latest transmission, exactly as a tap on that row. Not heard: called
+// when it next is, since only its own transmission tells which of the two
+// periods to answer in. A QSO under way is not broken off: the call waits
+// for its end. With transmit locked or not to be had, the tap tunes and
+// marks as before and no call is asked for.
+void MobileEngine::digiCallSpotted(const QString& spotted, const QString& band)
+{
+    const QString call = plainCall(spotted);
+    const QString my = digiMyCall();
+    if (call.isEmpty() || !m_ft8 || !digiRunning() || radeActive() || my.isEmpty() || plainCall(my) == call) {
+        return;
+    }
+    // (A developer-link test's block is not the lock: it refuses the
+    // transmission itself, in digiAnswer, so the rest can be tested.)
+    const bool locked = txLocked() && !m_txBlocked;
+    if (locked || !transmitAvailable()) {
+        qCInfo(lcMobile).noquote() << "digi:" << call << "not called from its spot:"
+                                   << (locked ? QStringLiteral("transmit is locked (SB)") : transmitUnavailableReason());
+        return;
+    }
+    noteOperator();
+    const bool inQso = m_digiState != QLatin1String("idle") && !(m_digiState == QLatin1String("cq") && m_digiDx.isEmpty());
+    if (inQso && plainCall(m_digiDx) == call) {
+        return;   // being called or worked already
+    }
+    if (!inQso) {
+        const int row = digiRowFrom(call, band, kSpotCallHeardMs, -1);
+        if (row >= 0) {
+            const QVariantMap d = m_digiDecodes.at(row).toMap();
+            qCInfo(lcMobile).noquote() << QStringLiteral("digi: %1 was heard %2 s ago (%3): called from that transmission (a tap on its spot)")
+                                              .arg(call)
+                                              .arg((Ft8Engine::nowMs() - d.value(QStringLiteral("slotMs")).toLongLong()) / 1000)
+                                              .arg(d.value(QStringLiteral("text")).toString());
+            m_digiWaitCall.clear();
+            digiAnswer(row);
+            // Refused (digiAnswer says why): a line of its own, not an old
+            // "called when heard".
+            if (!(m_digiState == QLatin1String("answer") && plainCall(m_digiDx) == call) && m_digiState == QLatin1String("idle")) {
+                setDigiStatus(tr("%1: the call did not start").arg(call));
+            }
+            return;
+        }
+    }
+    if (m_digiWaitCall != call || m_digiWaitBand != band) {
+        qCInfo(lcMobile).noquote() << QStringLiteral("digi: %1 not heard on %2 in the last two minutes: called when heard (a tap on its spot)%3")
+                                          .arg(call, band, inQso ? QStringLiteral(", after the QSO under way") : QString());
+    }
+    m_digiWaitCall = call;
+    m_digiWaitBand = band;
+    if (!inQso && !m_digiAutoAnswer) {
+        setDigiStatus(tr("%1: called when heard").arg(call));
+    } else {
+        emit digiChanged();
+    }
+}
+
+// New decodes with a station waited for: its own transmission among the
+// first newRows rows starts the call, once (a call that cannot start ends
+// the wait too, with the reason). True when the call started.
+bool MobileEngine::digiWaitTry(int newRows)
+{
+    const QString call = m_digiWaitCall;
+    // Not in the middle of a QSO; a CQ of our own gives way, as to a tapped row.
+    const bool free = m_digiState == QLatin1String("idle") || (m_digiState == QLatin1String("cq") && m_digiDx.isEmpty());
+    if (!free) {
+        return false;
+    }
+    if (digiOperatorAway()) {
+        digiEndWait(tr("%1 was not heard: no longer waited for, no touch on the app for %n min (the presence limit)", nullptr,
+                       m_digiPresenceMin)
+                        .arg(call));
+        return false;
+    }
+    const int row = digiRowFrom(call, m_digiWaitBand, 0, newRows);
+    if (row < 0) {
+        const QString waiting = tr("%1: called when heard").arg(call);
+        if (m_digiState == QLatin1String("idle") && !m_digiAutoAnswer && m_digiStatus != waiting) {
+            setDigiStatus(waiting);
+        }
+        return false;
+    }
+    if (txLocked() && !m_txBlocked) {
+        digiEndWait(tr("%1 heard, not called: transmit is locked (SB)").arg(call));
+        return false;
+    }
+    if (!transmitAvailable()) {
+        digiEndWait(tr("%1 heard, not called: %2").arg(call, transmitUnavailableReason()));
+        return false;
+    }
+    qCInfo(lcMobile).noquote() << QStringLiteral("digi: %1 heard (%2): the call a tap on its spot asked for starts")
+                                      .arg(call, m_digiDecodes.at(row).toMap().value(QStringLiteral("text")).toString());
+    m_digiWaitCall.clear();
+    digiAnswer(row);
+    const bool started = m_digiState == QLatin1String("answer") && plainCall(m_digiDx) == call;
+    if (!started) {
+        qCInfo(lcMobile).noquote() << "digi: the call to" << call << "did not start: no longer waited for";
+        if (m_digiState == QLatin1String("idle")) {
+            setDigiStatus(tr("%1: the call did not start").arg(call));
+        } else {
+            emit digiChanged();
+        }
+    }
+    return started;
+}
+
+void MobileEngine::digiEndWait(const QString& status)
+{
+    if (m_digiWaitCall.isEmpty()) {
+        return;
+    }
+    qCInfo(lcMobile).noquote() << "digi: no longer waiting for" << m_digiWaitCall << "-" << status;
+    m_digiWaitCall.clear();
+    if (m_digiState == QLatin1String("idle")) {
+        setDigiStatus(status);
+    } else {
+        emit digiChanged();
+    }
+}
+
 void MobileEngine::digiHalt()
 {
     if (m_digiTransmitting) {
@@ -1843,10 +2046,18 @@ void MobileEngine::digiHalt()
         m_digiAutoAnswer = false;
         qCInfo(lcMobile) << "digi: Answer CQ off (halted)";
     }
+    // ... and a wait for a spotted station (roadmap 224).
+    const bool wasWaiting = !m_digiWaitCall.isEmpty();
+    if (wasWaiting) {
+        qCInfo(lcMobile).noquote() << "digi: no longer waiting for" << m_digiWaitCall << "(halted)";
+        m_digiWaitCall.clear();
+    }
     if (m_digiState != QLatin1String("idle")) {
         digiEnd(tr("Stopped"));
     } else if (wasAnswering) {
         setDigiStatus(tr("Answer CQ off"));
+    } else if (wasWaiting) {
+        setDigiStatus(tr("Stopped"));
     }
 }
 
@@ -2157,6 +2368,12 @@ void MobileEngine::handleDigiDecodes(const QVariantList& decodes, qint64 slotMs)
     m_digiDecodes = merged;
     emit digiDecodesChanged();
 
+    // A station waited for (roadmap 224): its own transmission among these
+    // rows starts the call a tap on its spot asked for.
+    if (!m_digiWaitCall.isEmpty() && digiWaitTry(int(decodes.size()))) {
+        return;
+    }
+
     // Hound: only the Fox's messages to us count, by the Hound rules.
     if (m_digiHound) {
         const int txId = digiSlice() ? digiSlice()->sliceId() : -1;
@@ -2308,6 +2525,36 @@ void MobileEngine::handleDigiDecodes(const QVariantList& decodes, qint64 slotMs)
 // The render tool's sample decodes (ShotPlan's "decodes N"): the list as a
 // busy band fills it, for layout pictures with the demo radio, which decodes
 // nothing. WSJT-X's own example calls, no station on the air.
+void MobileEngine::testDigiHeard(const QString& text, int freqHz, int snr, int ago)
+{
+    if (!m_ft8) {
+        return;
+    }
+    SliceModel* sl = digiSlice();
+    const qint64 slotLen = qint64(m_ft8->slotSeconds() * 1000);
+    // The period that has just ended (its decodes come at its end), `ago`
+    // periods further back.
+    const qint64 slotMs = (Ft8Engine::nowMs() / slotLen - 1 - std::max(0, ago)) * slotLen;
+    const Ft8Engine::Parsed p = Ft8Engine::parse(text);
+    digiInjectDecodes({QVariantMap{{QStringLiteral("utc"), QDateTime::fromMSecsSinceEpoch(slotMs, QTimeZone::UTC).toString(QStringLiteral("HHmmss"))},
+                                   {QStringLiteral("snr"), snr},
+                                   {QStringLiteral("dt"), QStringLiteral("0.1")},
+                                   {QStringLiteral("freq"), freqHz},
+                                   {QStringLiteral("text"), text},
+                                   {QStringLiteral("call"), p.de},
+                                   {QStringLiteral("cq"), p.cq},
+                                   {QStringLiteral("toMe"), false},
+                                   {QStringLiteral("hl"), QString()},
+                                   {QStringLiteral("newDxcc"), false},
+                                   {QStringLiteral("newCall"), false},
+                                   {QStringLiteral("slice"), sl ? sl->letter() : QString()},
+                                   {QStringLiteral("band"), sl ? QsoLog::bandOf(sl->frequency()) : QString()},
+                                   {QStringLiteral("protocol"), digiTxProtocol()},
+                                   {QStringLiteral("slotOdd"), (slotMs / slotLen) % 2 == 1},
+                                   {QStringLiteral("slotMs"), slotMs}}});
+    qCInfo(lcMobile).noquote() << QStringLiteral("digi: test decode \"%1\" at %2 Hz, %3 dB, %4 periods back").arg(text).arg(freqHz).arg(snr).arg(ago);
+}
+
 void MobileEngine::setTestDecodes(int count)
 {
     struct Sample {
