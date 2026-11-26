@@ -49,6 +49,7 @@ ColumnLayout {
                 model: [0.6, 1.6, 5.0, 7.6]
                 delegate: AppButton {
                     required property real modelData
+                    Accessible.name: qsTr("%1: %2").arg(qsTr("Shift")).arg(qsTr("%1 MHz").arg(text))
                     text: modelData.toFixed(1)
                     checked: Math.abs(Engine.repeaterOffsetMhz - modelData) < 0.0005
                     Layout.fillWidth: true
@@ -79,6 +80,7 @@ ColumnLayout {
             Layout.fillWidth: true
             Label { text: qsTr("Tone"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
             AppButton {
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Tone")).arg(text)
                 text: qsTr("Off")
                 checked: !Engine.ctcssOn
                 Layout.fillWidth: true
@@ -87,6 +89,7 @@ ColumnLayout {
                 onClicked: Engine.ctcssOn = false
             }
             AppButton {
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Tone")).arg(text)
                 text: "CTCSS"
                 checked: Engine.ctcssOn
                 Layout.fillWidth: true
@@ -256,6 +259,8 @@ ColumnLayout {
             delegate: AppButton {
                 required property int index
                 required property string modelData
+                // The PROC button beside it is the row's label: "Processor: NOR".
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Processor")).arg(text)
                 text: modelData
                 checked: Engine.procLevel === index
                 enabled: Engine.procEnabled
@@ -288,6 +293,9 @@ ColumnLayout {
         property string key: ""
         property string toggleKey: ""
         property string title: ""
+        // What a screen reader calls the level: the title, or more where the
+        // title leans on the row above ("Delay" is VOX's).
+        property string spokenTitle: title
         Layout.fillWidth: true
         AppButton {
             visible: pl.toggleKey.length > 0
@@ -305,7 +313,7 @@ ColumnLayout {
         }
         FineSlider {
             id: plSlider
-            accessibleName: pl.title
+            accessibleName: pl.spokenTitle
             Layout.fillWidth: true
             from: 0; to: 100; stepSize: 1
             liveDrag: false
@@ -326,7 +334,7 @@ ColumnLayout {
     // app keeps the microphone streaming while VOX is on (roadmap 19,
     // Christoph DM5HF). DEXP stays with the radio's own inputs.
     PhoneLevel { visible: !Engine.cwMode && (Engine.canUseDeviceMicrophone || Engine.usingDeviceMicrophone); key: "voxLevel"; toggleKey: "voxOn"; title: qsTr("VOX") }
-    PhoneLevel { visible: !Engine.cwMode && (Engine.canUseDeviceMicrophone || Engine.usingDeviceMicrophone); key: "voxDelay"; title: qsTr("Delay") }
+    PhoneLevel { visible: !Engine.cwMode && (Engine.canUseDeviceMicrophone || Engine.usingDeviceMicrophone); key: "voxDelay"; title: qsTr("Delay"); spokenTitle: qsTr("VOX delay") }
     Label {
         objectName: "voxDeviceNote"
         visible: !Engine.cwMode && Engine.usingDeviceMicrophone && !!Engine.phone.voxOn
@@ -343,6 +351,7 @@ ColumnLayout {
         visible: ["AM", "SAM", "DSB"].indexOf(Engine.mode) >= 0
         key: "amCarrier"
         title: qsTr("Carrier")
+        spokenTitle: qsTr("AM carrier")
     }
 
     // ---- Monitor ----
@@ -448,6 +457,7 @@ ColumnLayout {
         Label { text: qsTr("PTT"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
         AppButton {
             objectName: "pttHoldToTalk"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("PTT")).arg(text)
             text: qsTr("Hold to talk")
             checked: !Engine.pttToggle
             Layout.fillWidth: true
@@ -455,6 +465,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "pttTapToggle"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("PTT")).arg(text)
             text: qsTr("Tap on / off")
             checked: Engine.pttToggle
             Layout.fillWidth: true
@@ -488,6 +499,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "splitByXit"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Split")).arg(text)
             text: qsTr("XIT")
             checked: Engine.splitMethod === "xit"
             Layout.fillWidth: true
@@ -512,6 +524,7 @@ ColumnLayout {
         Label { text: qsTr("Lock"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
         AppButton {
             objectName: "txLockOff"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Lock")).arg(text)
             text: qsTr("Off")
             checked: !Engine.txLock
             Layout.fillWidth: true
@@ -534,6 +547,7 @@ ColumnLayout {
         Label { text: qsTr("At start"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
         AppButton {
             objectName: "txArmAtStartOff"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("At start")).arg(text)
             text: qsTr("Ready")
             checked: !Engine.txArmAtStart
             Layout.fillWidth: true
@@ -541,6 +555,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "txArmAtStartOn"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("At start")).arg(text)
             text: qsTr("Hold to arm")
             checked: Engine.txArmAtStart
             Layout.fillWidth: true
@@ -580,6 +595,7 @@ ColumnLayout {
         Label { text: qsTr("APD"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
         AppButton {
             objectName: "apdOff"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("APD")).arg(text)
             text: qsTr("Off")
             checked: !Engine.apd.enabled
             Layout.fillWidth: true
@@ -587,6 +603,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "apdOn"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("APD")).arg(text)
             text: qsTr("On")
             checked: !!Engine.apd.enabled
             Layout.fillWidth: true

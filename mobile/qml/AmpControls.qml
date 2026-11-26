@@ -275,6 +275,7 @@ ColumnLayout {
             Label { text: qsTr("Power"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
             AppButton {
                 objectName: "ampPowerOn"
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Power")).arg(text)
                 text: qsTr("On")
                 checked: ampTab.poweredOn
                 enabled: ampTab.canPower && !ampTab.poweredOn
@@ -283,6 +284,7 @@ ColumnLayout {
             }
             AppButton {
                 objectName: "ampPowerOff"
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Power")).arg(text)
                 text: qsTr("Off")
                 checked: ampTab.reading && ampTab.a.power === false
                 enabled: ampTab.canPower && ampTab.poweredOn
@@ -369,6 +371,7 @@ ColumnLayout {
             Label { text: qsTr("ATU"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
             AppButton {
                 objectName: "kpaAtuIn"
+                Accessible.name: qsTr("%1: %2").arg(qsTr("ATU")).arg(text)
                 text: qsTr("In line")
                 checked: ampTab.a.atu === "INLINE"
                 enabled: ampTab.canCommand && ampTab.a.atu !== undefined
@@ -377,6 +380,7 @@ ColumnLayout {
             }
             AppButton {
                 objectName: "kpaAtuBypass"
+                Accessible.name: qsTr("%1: %2").arg(qsTr("ATU")).arg(text)
                 text: qsTr("Bypass")
                 checked: ampTab.a.atu === "BYPASS"
                 enabled: ampTab.canCommand && ampTab.a.atu !== undefined

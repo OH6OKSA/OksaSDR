@@ -230,6 +230,7 @@ ColumnLayout {
                         model: editDialog.modeChoices
                         delegate: AppButton {
                             required property string modelData
+                            Accessible.name: qsTr("%1: %2").arg(qsTr("Mode")).arg(text)
                             text: modelData
                             checked: editDialog.mode === modelData
                             focusPolicy: Qt.NoFocus
@@ -271,6 +272,8 @@ ColumnLayout {
                         model: [0.6, 1.6, 5.0, 7.6]
                         delegate: AppButton {
                             required property real modelData
+                            // A bare "0.6": the shift, in MHz as the field beside it.
+                            Accessible.name: qsTr("%1: %2").arg(qsTr("Repeater shift")).arg(qsTr("%1 MHz").arg(text))
                             text: modelData.toFixed(1)
                             checked: Math.abs(parseFloat(shiftEdit.text.replace(",", ".")) - modelData) < 0.0005
                             Layout.fillWidth: true

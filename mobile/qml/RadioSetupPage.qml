@@ -155,10 +155,14 @@ Popup {
         AppButton {
             objectName: onOff.objectName.length > 0 ? onOff.objectName + "Off" : ""
             text: qsTr("Off"); checked: !onOff.on; focusPolicy: Qt.NoFocus; Layout.preferredWidth: 64; onClicked: onOff.toggled(false)
+            // The row's label is a Label beside the buttons, which a screen
+            // reader never ties to them: the name carries it.
+            Accessible.name: onOff.label.length > 0 ? qsTr("%1: %2").arg(onOff.label).arg(text) : text
         }
         AppButton {
             objectName: onOff.objectName.length > 0 ? onOff.objectName + "On" : ""
             text: qsTr("On"); checked: onOff.on; focusPolicy: Qt.NoFocus; Layout.preferredWidth: 64; onClicked: onOff.toggled(true)
+            Accessible.name: onOff.label.length > 0 ? qsTr("%1: %2").arg(onOff.label).arg(text) : text
         }
     }
     // One of a few values as a row (or rows) of the app's buttons, the
@@ -184,6 +188,9 @@ Popup {
                     required property var modelData
                     objectName: choice.objectName.length > 0 ? choice.objectName + String(modelData.value).replace(/[^A-Za-z0-9]/g, "") : ""
                     text: modelData.label
+                    // The group's label is a Label above the buttons, never
+                    // tied to them by a screen reader: the name carries it.
+                    Accessible.name: choice.label.length > 0 ? qsTr("%1: %2").arg(choice.label).arg(text) : text
                     checked: String(choice.current) === String(modelData.value)
                     focusPolicy: Qt.NoFocus
                     Layout.fillWidth: true
@@ -624,6 +631,7 @@ Popup {
                         Layout.fillWidth: true
                         AppButton {
                             text: qsTr("Single tone")
+                            Accessible.name: qsTr("%1: %2").arg(qsTr("TUNE signal")).arg(text)
                             checked: setup.d.tuneMode === "single_tone"
                             focusPolicy: Qt.NoFocus
                             Layout.fillWidth: true
@@ -631,6 +639,7 @@ Popup {
                         }
                         AppButton {
                             text: qsTr("Two tone")
+                            Accessible.name: qsTr("%1: %2").arg(qsTr("TUNE signal")).arg(text)
                             checked: setup.d.tuneMode === "two_tone"
                             focusPolicy: Qt.NoFocus
                             Layout.fillWidth: true
@@ -702,6 +711,7 @@ Popup {
                             AppButton {
                                 objectName: "txReq" + polarity.modelData.name + "Low"
                                 text: qsTr("Active low")
+                                Accessible.name: qsTr("%1: %2").arg(polarity.modelData.label).arg(text)
                                 checked: !polarity.high
                                 Layout.preferredWidth: Math.max(Theme.buttonWidth * 1.5, implicitWidth)
                                 onClicked: if (polarity.high) setup.set(polarity.modelData.key, 0)
@@ -709,6 +719,7 @@ Popup {
                             AppButton {
                                 objectName: "txReq" + polarity.modelData.name + "High"
                                 text: qsTr("Active high")
+                                Accessible.name: qsTr("%1: %2").arg(polarity.modelData.label).arg(text)
                                 checked: polarity.high
                                 Layout.preferredWidth: Math.max(Theme.buttonWidth * 1.5, implicitWidth)
                                 onClicked: {
@@ -851,9 +862,10 @@ Popup {
                     RowLayout {
                         Layout.fillWidth: true
                         Label { text: qsTr("Iambic"); color: Theme.text; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
-                        AppButton { text: qsTr("Off"); checked: !setup.d.iambic; focusPolicy: Qt.NoFocus; Layout.preferredWidth: 56; onClicked: setup.set("iambic", false) }
+                        AppButton { text: qsTr("Off"); Accessible.name: qsTr("%1: %2").arg(qsTr("Iambic")).arg(text); checked: !setup.d.iambic; focusPolicy: Qt.NoFocus; Layout.preferredWidth: 56; onClicked: setup.set("iambic", false) }
                         AppButton {
                             text: "A"
+                            Accessible.name: qsTr("%1: %2").arg(qsTr("Iambic")).arg(text)
                             checked: !!setup.d.iambic && setup.d.iambicMode === 0
                             focusPolicy: Qt.NoFocus
                             Layout.preferredWidth: 56
@@ -861,6 +873,7 @@ Popup {
                         }
                         AppButton {
                             text: "B"
+                            Accessible.name: qsTr("%1: %2").arg(qsTr("Iambic")).arg(text)
                             checked: !!setup.d.iambic && setup.d.iambicMode === 1
                             focusPolicy: Qt.NoFocus
                             Layout.preferredWidth: 56
@@ -1090,6 +1103,8 @@ Popup {
                                     required property int index
                                     objectName: "setupFilter" + parent.modelData.mode + index
                                     text: index
+                                    // "Voice filter: 0" (the row's label beside it).
+                                    Accessible.name: qsTr("%1 filter: %2").arg(parent.modelData.label).arg(text)
                                     checked: !parent.modelData.auto && parent.modelData.level === index
                                     enabled: !parent.modelData.auto
                                     focusPolicy: Qt.NoFocus
@@ -1100,6 +1115,7 @@ Popup {
                             AppButton {
                                 objectName: "setupFilterAuto" + modelData.mode
                                 text: qsTr("Auto")
+                                Accessible.name: qsTr("%1 filter: %2").arg(modelData.label).arg(text)
                                 checked: !!modelData.auto
                                 focusPolicy: Qt.NoFocus
                                 onClicked: setup.set("filterAuto", { mode: modelData.mode, value: !checked })
@@ -1148,6 +1164,7 @@ Popup {
                             AppButton {
                                 objectName: "setupDhcp"
                                 text: qsTr("DHCP")
+                                Accessible.name: qsTr("%1: %2").arg(qsTr("Address by")).arg(text)
                                 checked: !setup.d.hasStaticIp && !ipConfig.editStatic
                                 focusPolicy: Qt.NoFocus
                                 Layout.preferredWidth: Theme.buttonWidth * 1.4
@@ -1162,6 +1179,7 @@ Popup {
                             AppButton {
                                 objectName: "setupStatic"
                                 text: qsTr("Static")
+                                Accessible.name: qsTr("%1: %2").arg(qsTr("Address by")).arg(text)
                                 checked: ipConfig.showStatic
                                 focusPolicy: Qt.NoFocus
                                 Layout.preferredWidth: Theme.buttonWidth * 1.4
@@ -1276,6 +1294,9 @@ Popup {
                             delegate: AppButton {
                                 required property int modelData
                                 text: modelData + (modelData === 1450 ? " (" + qsTr("default") + ")" : "")
+                                // "Network MTU: 1450 bytes (default)".
+                                Accessible.name: qsTr("%1: %2").arg(qsTr("Network MTU"))
+                                                 .arg(modelData + " " + qsTr("bytes") + (modelData === 1450 ? " (" + qsTr("default") + ")" : ""))
                                 checked: setup.d.networkMtu === modelData
                                 leftPadding: 12
                                 rightPadding: 12
@@ -1410,6 +1431,7 @@ Popup {
                                 required property var modelData
                                 objectName: "ampMaker_" + modelData.id
                                 text: ampTab.inUse[modelData.id] ? qsTr("%1 · in use").arg(modelData.name) : modelData.name
+                                Accessible.name: qsTr("%1: %2").arg(qsTr("Manufacturer")).arg(text)
                                 checked: ampTab.shown(modelData.id)
                                 leftPadding: 12
                                 rightPadding: 12
@@ -1889,6 +1911,7 @@ Popup {
                                 required property int index
                                 objectName: "usbCable" + index
                                 text: modelData.label
+                                Accessible.name: qsTr("%1: %2").arg(qsTr("USB cable")).arg(text)
                                 checked: setup.usbSn === modelData.sn
                                 Layout.fillWidth: true
                                 Layout.preferredWidth: 1

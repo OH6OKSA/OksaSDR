@@ -262,6 +262,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "digiScrollTab"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Scroll")).arg(text)
             text: qsTr("Whole tab")
             checked: !Engine.digiListScroll
             Layout.fillWidth: true
@@ -270,6 +271,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "digiScrollList"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Scroll")).arg(text)
             text: qsTr("List only")
             checked: Engine.digiListScroll
             Layout.fillWidth: true
@@ -293,6 +295,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "digiHoundOff"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("DXpedition")).arg(text)
             text: qsTr("Off")
             checked: !Engine.digiHound
             Layout.fillWidth: true
@@ -336,6 +339,7 @@ ColumnLayout {
             delegate: AppButton {
                 required property var modelData
                 objectName: "digiCqParity_" + modelData.key
+                Accessible.name: qsTr("%1: %2").arg(qsTr("CQ slot")).arg(text)
                 text: modelData.text
                 checked: Engine.digiCqParity === modelData.key
                 Layout.fillWidth: true
@@ -361,6 +365,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "digiCqTarget_all"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("CQ to")).arg(text)
             text: qsTr("All")
             checked: Engine.digiCqTarget.length === 0
             enabled: Engine.digiCqDirectable
@@ -730,6 +735,7 @@ ColumnLayout {
                 required property var modelData
                 required property int index
                 objectName: "digiFilter_" + modelData.key
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Show")).arg(text)
                 text: modelData.text
                 checked: Engine.digiFilter === modelData.key
                 Layout.fillWidth: true

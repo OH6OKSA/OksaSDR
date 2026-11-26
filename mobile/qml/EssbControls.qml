@@ -27,6 +27,9 @@ ColumnLayout {
         property real step: 1
         property string unit: " dB"
         property int decimals: 0
+        // What a screen reader calls the slider: the title, or more where
+        // two would sound alike (EQ's Bass and EVO's).
+        property string spokenTitle: title
         Layout.fillWidth: true
         AppButton {
             objectName: "essb_" + cs.toggleKey
@@ -46,7 +49,9 @@ ColumnLayout {
         }
         FineSlider {
             id: csSlider
-            accessibleName: cs.title
+            // With an on / off button beside it named the title, the
+            // slider is the stage's level, not a second "Gate".
+            accessibleName: cs.toggleKey.length > 0 ? qsTr("%1 level").arg(cs.spokenTitle) : cs.spokenTitle
             Layout.fillWidth: true
             from: cs.from; to: cs.to; stepSize: cs.step
             value: Engine.txChain[cs.key] || 0
@@ -74,6 +79,7 @@ ColumnLayout {
             delegate: AppButton {
                 required property int index
                 objectName: "essb_" + cc.key + "_" + cc.values[index]
+                Accessible.name: qsTr("%1: %2").arg(cc.title).arg(text)
                 text: cc.labels[index]
                 checked: Math.round(Engine.txChain[cc.key] || 0) === cc.values[index]
                 Layout.fillWidth: true
@@ -125,6 +131,7 @@ ColumnLayout {
                 model: [0, 100, 150, 200, 300]
                 delegate: AppButton {
                     required property int modelData
+                    Accessible.name: qsTr("%1: %2").arg(qsTr("Low cut")).arg(modelData === 0 ? text : qsTr("%1 Hz").arg(modelData))
                     text: modelData === 0 ? qsTr("Off") : modelData
                     checked: (Engine.txChain.lowCut || 0) === modelData
                     Layout.fillWidth: true
@@ -135,7 +142,7 @@ ColumnLayout {
                 }
             }
         }
-        ChainSlider { title: qsTr("Bass"); key: "bass"; from: -12; to: 12 }
+        ChainSlider { title: qsTr("Bass"); spokenTitle: qsTr("EQ bass"); key: "bass"; from: -12; to: 12 }
         ChainSlider { title: qsTr("Presence"); key: "presence"; from: -12; to: 12 }
         ChainSlider { title: qsTr("Comp"); toggleKey: "compOn"; key: "compThreshold"; from: -60; to: 0 }
         RowLayout {
@@ -145,6 +152,8 @@ ColumnLayout {
                 model: [2, 3, 4, 8]
                 delegate: AppButton {
                     required property int modelData
+                    // "2:1" read as a time or "2 colon 1": "Ratio: 2 to 1".
+                    Accessible.name: qsTr("%1: %2").arg(qsTr("Ratio")).arg(qsTr("%1 to 1").arg(modelData))
                     text: modelData + ":1"
                     checked: Math.round(Engine.txChain.compRatio || 0) === modelData
                     Layout.fillWidth: true
@@ -170,7 +179,7 @@ ColumnLayout {
         ChainChoice { title: qsTr("Model"); key: "tubeModel"; values: [0, 1, 2]; labels: ["A", "B", "C"] }
         ChainSlider { title: qsTr("Mix"); key: "tubeMix"; from: 0; to: 100; unit: " %" }
         ChainSlider { title: qsTr("EVO"); toggleKey: "excOn"; key: "excAir"; from: 0; to: 24 }
-        ChainSlider { title: qsTr("Bass"); key: "excBass"; from: 0; to: 24 }
+        ChainSlider { title: qsTr("Bass"); spokenTitle: qsTr("EVO bass"); key: "excBass"; from: 0; to: 24 }
         ChainChoice { title: qsTr("Mode"); key: "excMode"; values: [0, 1]; labels: [qsTr("Even"), qsTr("Odd")] }
         ChainSlider { title: qsTr("Reverb"); toggleKey: "reverbOn"; key: "reverbMix"; from: 0; to: 100; unit: " %" }
         ChainSlider { title: qsTr("Decay"); key: "reverbDecay"; from: 0.3; to: 5; step: 0.1; unit: " s"; decimals: 1 }

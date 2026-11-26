@@ -115,6 +115,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "logBackToCallOff"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("After logging")).arg(text)
             text: qsTr("Keyboard away")
             checked: !Engine.logBackToCall
             focusPolicy: Qt.NoFocus
@@ -122,6 +123,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "logBackToCallOn"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("After logging")).arg(text)
             text: qsTr("Back to the call")
             checked: Engine.logBackToCall
             focusPolicy: Qt.NoFocus
@@ -289,6 +291,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "onlineLogReadOff"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Worked before from the logbook")).arg(text)
             text: qsTr("Off")
             checked: Engine.onlineLog.read !== true
             focusPolicy: Qt.NoFocus
@@ -297,6 +300,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "onlineLogReadOn"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Worked before from the logbook")).arg(text)
             text: qsTr("On")
             checked: Engine.onlineLog.read === true
             focusPolicy: Qt.NoFocus
@@ -385,6 +389,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "qrzLogReadOff"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Worked before from the logbook")).arg(text)
             text: qsTr("Off")
             checked: Engine.qrzLog.read !== true
             focusPolicy: Qt.NoFocus
@@ -393,6 +398,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "qrzLogReadOn"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Worked before from the logbook")).arg(text)
             text: qsTr("On")
             checked: Engine.qrzLog.read === true
             focusPolicy: Qt.NoFocus

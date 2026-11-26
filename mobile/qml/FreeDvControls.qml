@@ -80,6 +80,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "freedvReporterOff"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Report to FreeDV Reporter")).arg(text)
             text: qsTr("Off")
             checked: !Engine.freedvReporter
             focusPolicy: Qt.NoFocus
@@ -88,6 +89,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "freedvReporterOn"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Report to FreeDV Reporter")).arg(text)
             text: qsTr("On")
             checked: Engine.freedvReporter
             focusPolicy: Qt.NoFocus
@@ -137,12 +139,14 @@ ColumnLayout {
             Layout.fillWidth: true
         }
         AppButton {
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Stations")).arg(text)
             text: qsTr("This band")
             checked: !Engine.freedvAllBands
             focusPolicy: Qt.NoFocus
             onClicked: Engine.freedvAllBands = false
         }
         AppButton {
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Stations")).arg(text)
             text: qsTr("All bands")
             checked: Engine.freedvAllBands
             focusPolicy: Qt.NoFocus
