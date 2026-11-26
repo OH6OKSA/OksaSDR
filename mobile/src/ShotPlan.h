@@ -117,7 +117,8 @@ class MobileEngine;
 //   keyev press|release K   one key event through the window, K a key with
 //                           modifiers before it: Alt, Ctrl, Shift, Meta, Space,
 //                           Esc, F1..F12, a letter (Alt+Space, Meta+Alt); for the PTT key
-//   pttkey learn|clear      the PTT key's Learn or Clear (Setup › Transmit)
+//   pttkey learn|clear      the PTT key's Learn or Clear (Setup › Transmit);
+//   pttkey space|nospace    Space is PTT or not
 //   focussweep              give the keyboard to every control in view that takes it
 //                           on a press (no press): each must hand it back to the page
 //   focusaudit FX,FY        tap every text field in view, then FX,FY: each must

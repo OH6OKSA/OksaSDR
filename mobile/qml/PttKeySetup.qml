@@ -11,7 +11,8 @@ ColumnLayout {
     // side key sends F2): the next key or combination pressed after Learn
     // becomes PTT (Option + Space; modifiers alone, Control + Option),
     // held as long as the key (Tap on / off: a press toggles), wherever the
-    // keyboard is; it no longer acts as itself. Space stays PTT either way.
+    // keyboard is; it no longer acts as itself. Space is PTT unless switched
+    // off below (roadmap 209).
     RowLayout {
         Layout.fillWidth: true
         Label { text: qsTr("PTT key"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
@@ -40,9 +41,31 @@ ColumnLayout {
             onClicked: Engine.clearPttKey()
         }
     }
+    // Space as PTT (roadmap 209): off leaves Space to the system, for
+    // VoiceOver or Full Keyboard Access pressing a button on a Mac.
+    RowLayout {
+        Layout.fillWidth: true
+        Label { text: qsTr("Space"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
+        AppButton {
+            objectName: "spaceIsPttOn"
+            text: qsTr("Space is PTT")
+            checked: Engine.spaceIsPtt
+            Layout.fillWidth: true
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.spaceIsPtt = true
+        }
+        AppButton {
+            objectName: "spaceIsPttOff"
+            text: qsTr("Space not PTT")
+            checked: !Engine.spaceIsPtt
+            Layout.fillWidth: true
+            focusPolicy: Qt.NoFocus
+            onClicked: Engine.spaceIsPtt = false
+        }
+    }
     Label {
         Layout.fillWidth: true
-        text: qsTr("For a button that sends a key (a handset's side PTT key, a Bluetooth button or foot switch): tap Learn, then press it. A combination works too: hold the modifiers, such as Option, then press a key, or let go of the modifiers alone. Held, it keys as PTT; it no longer does what the key did before. Space is PTT anyway.")
+        text: qsTr("For a button that sends a key (a handset's side PTT key, a Bluetooth button or foot switch): tap Learn, then press it. A combination works too: hold the modifiers, such as Option, then press a key, or let go of the modifiers alone. Held, it keys as PTT; it no longer does what the key did before. Space not PTT leaves Space to the system, such as VoiceOver pressing a button.")
         color: Theme.textDim
         font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap

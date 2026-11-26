@@ -32,6 +32,9 @@ Item {
         if (paddles.handlePress(event)) {
             return true
         }
+        // Space is PTT off (roadmap 209): Space is the system's (VoiceOver,
+        // Full Keyboard Access), not the page's.
+        if (event.key === Qt.Key_Space && !Engine.spaceIsPtt) return false
         if (event.isAutoRepeat && event.key === Qt.Key_Space) {
             return true
         }
@@ -81,6 +84,7 @@ Item {
         if (paddles.handleRelease(event)) {
             return true
         }
+        if (event.key === Qt.Key_Space && !Engine.spaceIsPtt && !keys.spacePtt) return false
         if (event.key === Qt.Key_Space && Engine.nativeKeyboardSides) {
             return true
         }
@@ -90,6 +94,17 @@ Item {
             return true
         }
         return false
+    }
+
+    // Space is PTT switched off while Space holds PTT: let go.
+    Connections {
+        target: Engine
+        function onSpaceIsPttChanged() {
+            if (!Engine.spaceIsPtt && keys.spacePtt) {
+                keys.spacePtt = false
+                Engine.setPtt(false, "Space is PTT switched off")
+            }
+        }
     }
 
     function pageFocusChanged(active) {

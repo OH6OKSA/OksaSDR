@@ -147,6 +147,9 @@ class MobileEngine : public QObject {
     Q_PROPERTY(int pttKey READ pttKey NOTIFY pttKeyChanged)
     Q_PROPERTY(QString pttKeyName READ pttKeyName NOTIFY pttKeyChanged)
     Q_PROPERTY(bool pttKeyLearning READ pttKeyLearning NOTIFY pttKeyChanged)
+    // Space keys PTT from a hardware keyboard (roadmap 209); off, Space is
+    // left to the system (VoiceOver, Full Keyboard Access). Remembered.
+    Q_PROPERTY(bool spaceIsPtt READ spaceIsPtt WRITE setSpaceIsPtt NOTIFY spaceIsPttChanged)
     // The tablet page's own-layout editor is open: the PTT key keys nothing.
     Q_PROPERTY(bool layoutEditing READ layoutEditing WRITE setLayoutEditing NOTIFY layoutEditingChanged)
     Q_PROPERTY(bool pttLatched READ pttLatched NOTIFY pttToggleChanged)
@@ -957,6 +960,8 @@ public:
     Q_INVOKABLE void learnPttKey();
     Q_INVOKABLE void cancelPttKeyLearn();
     Q_INVOKABLE void clearPttKey();
+    bool spaceIsPtt() const { return m_spaceIsPtt; }
+    void setSpaceIsPtt(bool on);
     bool layoutEditing() const { return m_layoutEditing; }
     void setLayoutEditing(bool editing);
     // The learned key's press or release (PttKeyFilter, every window): true = taken.
@@ -2389,6 +2394,7 @@ signals:
     void textScaleChanged();
     void pttToggleChanged();
     void pttKeyChanged();
+    void spaceIsPttChanged();
     void documentPicked(const QString& purpose, const QUrl& url);
     void qsoLogBusyChanged();
     void spotAlertSettingsChanged();
@@ -3613,6 +3619,7 @@ private:
     bool m_pttKeyHeld{false};
     // The combination's own key went down with PTT: its release is taken.
     bool m_pttKeyMainDown{false};
+    bool m_spaceIsPtt{true};
     bool m_layoutEditing{false};
     int m_testSystemScheme{0};
     // Receive playback silent while the microphone is keyed (duckReceive).

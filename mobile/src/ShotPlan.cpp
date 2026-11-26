@@ -1858,6 +1858,8 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             m_engine.learnPttKey();
         } else if (arg == QLatin1String("clear")) {
             m_engine.clearPttKey();
+        } else if (arg == QLatin1String("space") || arg == QLatin1String("nospace")) {
+            m_engine.setSpaceIsPtt(arg == QLatin1String("space"));
         }
         qInfo().noquote() << "shot-plan: pttkey" << arg << "->" << m_engine.pttKeyName();
         *delayMs = 200;

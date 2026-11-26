@@ -41,6 +41,7 @@ namespace {
 const QString kPttKeyKey = QStringLiteral("MobileTxPttKey");
 const QString kPttKeyScanKey = QStringLiteral("MobileTxPttKeyScan");
 const QString kPttKeyModsKey = QStringLiteral("MobileTxPttKeyMods");
+const QString kSpaceIsPttKey = QStringLiteral("MobileSpaceIsPtt");
 
 const Qt::KeyboardModifiers kPttModMask =
     Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
@@ -147,6 +148,7 @@ void MobileEngine::setupPttKey()
         m_pttKey = 0;
         m_pttKeyScan = 0;
     }
+    m_spaceIsPtt = AppSettings::instance().value(kSpaceIsPttKey, QStringLiteral("True")).toString() != QLatin1String("False");
     qApp->installEventFilter(new PttKeyFilter(this));
     // A held key let go when the app leaves the front or the keyboard goes
     // elsewhere: its release would never come here.
@@ -225,6 +227,23 @@ void MobileEngine::clearPttKey()
     AppSettings::instance().save();
     qCInfo(lcMobile) << "PTT key: cleared";
     emit pttKeyChanged();
+}
+
+void MobileEngine::setSpaceIsPtt(bool on)
+{
+    if (on == m_spaceIsPtt) {
+        return;
+    }
+    m_spaceIsPtt = on;
+    // Space held through GameController as it is switched off: let go.
+    if (!on && m_spacePtt) {
+        m_spacePtt = false;
+        setPtt(false, QStringLiteral("Space is PTT switched off"));
+    }
+    AppSettings::instance().setValue(kSpaceIsPttKey, on ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    qCInfo(lcMobile) << "Space is PTT:" << (on ? "on" : "off");
+    emit spaceIsPttChanged();
 }
 
 void MobileEngine::setLayoutEditing(bool editing)

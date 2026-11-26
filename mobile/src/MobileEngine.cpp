@@ -10271,7 +10271,8 @@ void MobileEngine::onSideKey(int keyValue, bool pressed)
                              << (m_keyboardOnPage ? "" : "- page has no keyboard focus");
         }
         if (pressed) {
-            if (m_spacePtt || !m_keyboardOnPage || QGuiApplication::applicationState() != Qt::ApplicationActive) {
+            if (m_spacePtt || !m_spaceIsPtt || !m_keyboardOnPage
+                || QGuiApplication::applicationState() != Qt::ApplicationActive) {
                 return;
             }
             if (pttToggle() && !cwMode()) {

@@ -3250,7 +3250,7 @@ Bluetooth keyboard on a phone, or Android's DeX):
 | ← / → | Tune one step |
 | ↑ / ↓ | Tune ten steps |
 | Shift + arrows | Ten times as far |
-| Space | PTT (hold) |
+| Space | PTT (hold), unless Setup › Transmit says *Space not PTT* |
 | + / − | Zoom |
 | F | Frequency entry |
 | T | TUNE on / off (the TX tab's Tune power) |
@@ -3278,9 +3278,16 @@ released.
 Held, it keys PTT as Space does, and lets go when released; with PTT *Tap
 on / off* a press keys and the next unkeys. The key no longer does what it
 did before (a rugged phone's PTT key that sends F2 no longer plays voice
-macro 2), and Space stays PTT too. **Clear** forgets it. PTT is let go
+macro 2), and Space stays PTT too unless *Space not PTT* is chosen
+(below). **Clear** forgets it. PTT is let go
 when the app leaves the front, and the key keys nothing while an own
 layout is edited. The transmit lock holds it as it holds PTT.
+
+**Space** (Setup › Transmit, below the PTT key): *Space is PTT* (the
+default) or *Space not PTT*. With *Space not PTT* the app leaves Space
+alone, so VoiceOver or Full Keyboard Access on a Mac can press a button
+with it; key PTT with the PTT button or a learned PTT key such as
+Option + Space instead.
 
 **A Ulanzi dial on a Mac** (thanks Christoph Steinert DM5HF): with Ulanzi
 Studio running on the Mac, give the knob and keys key combinations there,

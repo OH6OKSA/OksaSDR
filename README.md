@@ -400,7 +400,7 @@ radio interface, with no computer running alongside.
   panel can be hidden into the same drawer. PTT/KEY always stays on screen:
   the drawer carries it at the bottom, never covering it.
 - Apple Pencil drags tune 10× finer, for zero-beating.
-- Magic Keyboard and trackpad: arrows tune, Space is PTT, +/− zoom, F opens
+- Magic Keyboard and trackpad: arrows tune, Space is PTT (or not, for VoiceOver), +/− zoom, F opens
   frequency entry, scroll tunes and ⌘-scroll zooms; a slider, switch or
   list used on the page never keeps the keyboard from them. Any key a
   button sends, or a key combination such as Option + Space, can be learned as PTT (Setup › Transmit › PTT key: a handset's side key, a
