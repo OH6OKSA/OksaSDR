@@ -161,6 +161,26 @@ const QString kControlsVisibleKey = QStringLiteral("MobileControlsVisible");
 const QString kTuneRowsShownKey = QStringLiteral("MobileTuneRowsShown");
 const QString kRadioStepButtonsKey = QStringLiteral("MobileRadioStepButtons");
 const QString kDeviceMicSelection = QStringLiteral("PC");
+// Where the microphone is kept open the whole time the app is connected and
+// in front (roadmap 216): iOS (an iPhone, an iPad, the iPad app on a Mac).
+// OKSASDR_TEST_MIC_ALWAYS=1 turns it on elsewhere, for a test run.
+bool micAlwaysOpenHere()
+{
+#ifdef Q_OS_IOS
+    return true;
+#else
+    static const bool test = qEnvironmentVariableIntValue("OKSASDR_TEST_MIC_ALWAYS") > 0;
+    return test;
+#endif
+}
+// In front for that microphone: on the screen, also while something lies over
+// the app for a moment (the control centre, a banner: inactive), so that it
+// is not closed and opened for those.
+bool appInFrontForMic()
+{
+    const Qt::ApplicationState state = QGuiApplication::applicationState();
+    return state == Qt::ApplicationActive || state == Qt::ApplicationInactive;
+}
 constexpr int kPanPixelsSettleMs = 400;
 // The radio's FFT vertical encoding, the same in every orientation and on
 // every device: the desktop's 700 rows, also the decoder's default. It used
@@ -3053,6 +3073,11 @@ void MobileEngine::wireTransmit()
     connect(&rm.transmitModel(), &TransmitModel::phoneStateChanged, this, &MobileEngine::updateMicCheck);
     connect(this, &MobileEngine::txLockChanged, this, &MobileEngine::updateMicCheck);
     connect(this, &MobileEngine::modeChanged, this, &MobileEngine::updateMicCheck);
+    // The microphone kept open while the app is in front (roadmap 216) closes
+    // in the background and opens again at the return.
+    if (micAlwaysOpenHere()) {
+        connect(qApp, &QGuiApplication::applicationStateChanged, this, &MobileEngine::updateMicCheck);
+    }
     connect(&rm.equalizerModel(), &EqualizerModel::txStateChanged, this, &MobileEngine::eqChanged);
     connect(&rm.equalizerModel(), &EqualizerModel::rxStateChanged, this, &MobileEngine::eqChanged);
     connect(&rm.meterModel(), &MeterModel::micMetersChanged, this,
@@ -3293,6 +3318,9 @@ bool MobileEngine::ensureMicrophonePermission()
             qCInfo(lcMobile) << "microphone" << (result.status() == Qt::PermissionStatus::Granted ? "allowed" : "refused");
             if (result.status() != Qt::PermissionStatus::Granted) {
                 setLastError(tr("Microphone access is off. Allow it in Settings to transmit."));
+            } else if (micAlwaysOpenHere()) {
+                // Allowed now: the microphone that stays open opens (roadmap 216).
+                QMetaObject::invokeMethod(this, [this] { updateMicCheck(); }, Qt::QueuedConnection);
             }
         });
     };
@@ -3462,7 +3490,19 @@ void MobileEngine::updateMicCheck()
     // Held for a Bluetooth headset's call link (Android, the app in front;
     // headsetKeeperTick): the same open microphone as the meter's.
     const bool link = deviceMic && m_headsetMicHold && !tm.voxEnable();
-    const bool want = vox || meter || link;
+    // Open the whole time the app is connected and in front (roadmap 216): as
+    // the other Flex programs keep it, so that the level and the microphone's
+    // audio chain can be set without transmitting; the radio transmits only at
+    // PTT all the same. On an iPhone, an iPad and a Mac for now (the user's
+    // word is for every device; Android and Linux follow with tries of their
+    // own, as an open microphone moves Android's audio routes). Only once the
+    // microphone has been allowed: this reason alone never asks for it, so a
+    // listener is not asked at the first connect. Not in the background:
+    // nothing is keyed there, and iOS would show the app recording all the
+    // time.
+    const bool always = deviceMic && micAlwaysOpenHere() && m_caps.canTransmit && !tm.voxEnable() && appInFrontForMic()
+                        && qApp->checkPermission(QMicrophonePermission{}) == Qt::PermissionStatus::Granted;
+    const bool want = vox || meter || link || always;
     if (want == m_micCheckOpen && vox == m_voxMicOpen) {
         return;
     }
@@ -3481,10 +3521,11 @@ void MobileEngine::updateMicCheck()
         }
     }
     m_voxMicOpen = vox;
-    qCInfo(lcMobile) << (vox     ? "mic check: microphone open for VOX (it streams to the radio, whose VOX keys on it)"
-                         : meter ? "mic check: microphone open for the Mic meter"
-                         : want  ? "mic check: microphone held open for the Bluetooth headset's call link"
-                                 : "mic check: microphone closed");
+    qCInfo(lcMobile) << (vox      ? "mic check: microphone open for VOX (it streams to the radio, whose VOX keys on it)"
+                         : meter  ? "mic check: microphone open for the Mic meter"
+                         : link   ? "mic check: microphone held open for the Bluetooth headset's call link"
+                         : always ? "mic check: microphone open while the app is connected and in front"
+                                  : "mic check: microphone closed");
     emit txMetersChanged();
 }
 
