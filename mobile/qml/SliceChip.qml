@@ -37,7 +37,13 @@ AppButton {
         radius: Theme.radius
         z: 3
     }
-    Accessible.description: qsTr("Hold for Make TX slice and Close slice")
+    // Make TX slice and Close slice are on the hold only, which TalkBack
+    // and a keyboard cannot give: a screen reader's double tap on the
+    // active chip (where a tap selects nothing new) opens them instead.
+    Accessible.description: chip.slice.active ? qsTr("Opens Make TX slice and Close slice")
+                                              : qsTr("Makes it the active slice")
+    Accessible.onPressAction: chip.slice.active ? sliceMenu.popup(chip, 0, chip.height)
+                                                : Engine.selectSlice(chip.slice.id)
     // Under the pressed chip, not at the last pointer position.
     onPressAndHold: sliceMenu.popup(chip, 0, chip.height)
     // The set power in the TX tag (Evgeny R0ACS, roadmap 36): watts on
