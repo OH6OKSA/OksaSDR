@@ -1109,9 +1109,14 @@ An analog meter keeps its size, as a wider face would also grow taller.
 
 ![The amplifier's readings on the meters while transmitting](manual/meter-amp.jpg)
 
-Receive offers S, Mic, PA temperature and supply voltage; transmit adds
+Receive offers S, Mic, PA temperature, supply voltage and Fan; transmit adds
 Power, SWR, ALC and Compression, which the radio reads only while
 transmitting, and leaves S out (it has nothing to read on the air).
+**Fan** is the radio's main fan speed in RPM, offered where the radio
+reports it (since build 221, on Android and Linux from the next beta;
+thanks John N1JM). Its scale goes to 2000 RPM and grows when the fan runs
+faster: to 4000, then to the radio's own top for the reading (8192 RPM on
+a FLEX-6600M, whose fan idles near 800).
 **Power** has the radio's scale: 0-120 W red from 100 W, 0-600 W red from
 500 W on an Aurora or a radio over 100 W, a QRP radio's own power times
 1.2. With a Power Genius XL in OPERATE it shows the amplifier's output on
@@ -1392,7 +1397,10 @@ the value types it); SPLIT again (or XIT off there) ends it.
   not key (the radio refuses voice there); switch to USB / LSB, or use the
   FTx tab for FT8 / FT4 and the FreeDV tab for RADE. When the radio refuses transmit, its own reason
   is shown.
-  The microphone is open only while transmitting, and the speaker goes
+  On Android and Linux the microphone is open only while transmitting
+  (and for the Mic meter, VOX and a Bluetooth headset, below); on an
+  iPhone, an iPad and a Mac it is open the whole time the app is connected
+  and in front (the next point). The speaker goes
   quiet from the press until the release, so the band noise still playing
   as the radio keys does not reach a phone's microphone and go out at the
   start of the transmission (with **MON** on, the speaker comes back a
@@ -1400,6 +1408,20 @@ the value types it); SPLIT again (or XIT off there) ends it.
   → TX → PTT) makes it a switch: tap to transmit, tap again to stop (TX ■
   while it is on); as a safety it stops by itself after 3 minutes. Space on
   a keyboard works the same way.
+- **The microphone, open the whole time (iPhone, iPad and Mac; since build
+  221)** — once you have allowed the microphone, the app keeps it open the
+  whole time it is connected, with this device's microphone as the radio's
+  input, and in front. The Mic meter then moves in receive too, with the
+  TX tab closed, so the level, the gate and the compressor can be set
+  without transmitting, as with the other Flex programs. The radio
+  transmits only at PTT (or by its VOX). iOS shows its orange microphone
+  mark for as long, and the microphone's audio goes to your radio all the
+  time (some 50 MB an hour over mobile data). In the background the
+  microphone is closed (with VOX on it stays open, as before). The app does
+  not ask for the microphone at the first connect because of this: it asks
+  at the first PTT or when the TX tab is first opened, as before, and a
+  microphone you refused stays shut. On Android and Linux this comes in a
+  later beta; there the microphone opens as before.
 - **PTT's place on a phone** (since build 215 / Android beta 120; asked by
   Antonio Ferrulli IZ7LDG, for a big phone held in the left hand) — Setup ›
   App › **PTT**: *Left*, *Wide* or *Right*. *Right* is where PTT has always
@@ -1603,7 +1625,9 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   microphone. Choose Mic for the left meter and set it so speech peaks
   near −10 dB: while the TX tab is open the microphone is open and the
   meter moves in receive too (nothing is transmitted before PTT; with VOX
-  on, VOX holds the microphone instead). Phone microphones often need +10
+  on, VOX holds the microphone instead; on an iPhone, an iPad and a Mac
+  the microphone is open the whole time since build 221, so the meter
+  moves with the tab closed too). Phone microphones often need +10
   to +20 dB; a limiter at
   −1 dBFS keeps the loudest peaks from clipping. With a microphone on the
   radio it is the radio's mic level (0–100), as SmartSDR's MIC.
@@ -3176,6 +3200,7 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 | *This slice is muted on this band …* | The radio remembers the band's slice muted | Tap the speaker on the info panel |
 | *The radio's CW pitch was 0 Hz …* | The radio had a CW pitch of 0 stored for this app, so CW at zero beat was silent | Nothing: the app set 600 Hz; change it under Controls → CW → Pitch |
 | *Microphone access is off …* | The device does not let the app use the microphone | Allow it in the device's settings (Settings › OksaSDR › Microphone) |
+| Receive stays silent after a call, an alarm or another app's sound, with the app in the background (iPhone, iPad) | iOS does not let the app take its microphone's audio session back in the background | Since build 221 the app takes a playing-only session there instead, so receive should come back by itself when the other sound ends and nothing else plays (the microphone's session returns when the app is in front); if it stays silent, open the app, and send the log |
 | *Host unreachable* or *timed out* to a home-network address (iPhone, iPad, Mac) | iOS keeps the app off the home network until it may use it (Local Network permission); the error then names where | Settings › Privacy & Security › Local Network › OksaSDR on; also check the address and that this device is on the radio's network or VPN |
 | *No free slice for the transmit side of a split* | All the radio's slices are in use | Close a slice (press and hold its chip, or Stations…) |
 | *Set the radio's callsign first* / *The DX cluster needs a callsign* | FT8 / FT4, or the DX cluster, needs a callsign | Setup → Radio → Callsign (the DX cluster can also take one under Spots) |
@@ -3250,7 +3275,7 @@ Bluetooth keyboard on a phone, or Android's DeX):
 | ← / → | Tune one step |
 | ↑ / ↓ | Tune ten steps |
 | Shift + arrows | Ten times as far |
-| Space | PTT (hold) |
+| Space | PTT (hold), unless *Space is PTT* is off (below); never with Control and Option together or with Command |
 | + / − | Zoom |
 | F | Frequency entry |
 | T | TUNE on / off (the TX tab's Tune power) |
@@ -3272,9 +3297,22 @@ then press the button: its key shows beside *PTT key* (Esc cancels).
 Held, it keys PTT as Space does, and lets go when released; with PTT *Tap
 on / off* a press keys and the next unkeys. The key no longer does what it
 did before (a rugged phone's PTT key that sends F2 no longer plays voice
-macro 2), and Space stays PTT too. **Clear** forgets it. PTT is let go
+macro 2), and Space stays PTT beside it (unless switched off, next). **Clear** forgets it. PTT is let go
 when the app leaves the front, and the key keys nothing while an own
 layout is edited. The transmit lock holds it as it holds PTT.
+
+**Space is PTT** (Setup › Transmit, *This device: the space bar*; since
+build 221, on Android and Linux from the next beta; thanks Justin Mann
+AI5OS): with a keyboard Space keys as PTT, and that is how it stands at
+first. Switched **Off**, Space keys nothing: for a screen reader that
+presses the control under its cursor with Space, where the radio could key
+at a press meant for a button. PTT is then the button on the screen or a
+learned PTT key. Either way, Space pressed with Control and Option together
+(VoiceOver's own keys for a press) or with Command never keys; on Android
+and a PC keyboard the same goes for Ctrl and Alt together and for the
+Search (Windows) key. Control or Option alone, which can be the CW paddle
+keys, hold nothing back. With VoiceOver's key set to Caps Lock, or its keys
+locked, a plain Space reaches the app: switch *Space is PTT* off then.
 
 **A Ulanzi dial on a Mac** (thanks Christoph Steinert DM5HF): with Ulanzi
 Studio running on the Mac, give the knob and keys key combinations there,

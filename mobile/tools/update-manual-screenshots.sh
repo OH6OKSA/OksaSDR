@@ -640,7 +640,7 @@ jpg filter 620x420+470+40
 jpg agc 560x545+470+40
 jpg antenna 620x270+470+40
 jpg mode 520x230+320+40
-jpg meter 380x600+0+200
+jpg meter 380x730+0+200
 jpg step 340x260+505+50
 jpg volume 390x350+500+130
 jpg split 520x240+470+40

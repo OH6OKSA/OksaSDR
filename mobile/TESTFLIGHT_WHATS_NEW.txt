@@ -9,17 +9,14 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- Android, a Bluetooth headset used hands-free: receive should be back at once after PTT and stay when a tab closes or the app returns from the background (thanks Mattias SM6YEC). The app holds the headset's microphone open while in front; the radio transmits only at PTT.
-- Phone: PTT > Wide also with the phone on its side: PTT in the middle of the row.
-- Receive audio that could not start (a call or another app's sound in the background) is tried again by itself.
-- The 3D view is no longer switched off for a busy moment.
-- The log's lines begin oksa.…; the demo radio is OksaSDR Demo.
-- Android: when the app stops answering, the log says where.
+- The microphone stays open the whole time the app is connected and in front (once allowed), so the Mic meter moves in receive and the level, gate and compressor can be set without transmitting; the radio transmits only at PTT. iOS shows its orange mark, and the audio goes to your radio (some 50 MB an hour over mobile data). Closed in the background.
+- After a call, an alarm or another app's sound with the app in the background, receive should come back by itself. Not yet run on a device: tell me how it goes.
+- Setup > Transmit > Space is PTT: off for a screen reader that presses with Space. With Control-Option (VoiceOver) or Command, Space never keys (thanks Justin AI5OS).
+- Meters: Fan, the radio's main fan speed (thanks John N1JM).
 
-RECENT (builds 94–215)
+RECENT (builds 94–216)
+- 216: PTT > Wide also with the phone on its side; receive audio that could not start is tried again by itself.
 - 215: PTT Left / Wide / Right (thanks Antonio IZ7LDG); At start > Last radio (thanks Tyler K0OTC); Forgot password? (thanks Bob WB3BOB); Prof tab Save over a profile (thanks Larry W9FLA).
-- 214: FTx > List only is the list; a radio's whole name on its Connect card (thanks Ian VK1HF); PTT above the keyboard.
-- 212: PTT with the side drawer open; Exit Big buttons in the menu (thanks Kent K9EZ); a memory tunes only your own slice.
 
 PLEASE TRY
 - Receive on a few bands with zoom, Band and the 3D view.
@@ -32,8 +29,9 @@ PLEASE TRY
 - Controls > Digi > PSK31 around 14.070: tap a station, answer its CQ at low power, then Log. And RTTY the same way. [TX]
 - VOX with a headset on this device: Controls > TX > VOX on, speak, and the radio keys by its VOX level and delay. [TX]
 - SmartLink over mobile data as well as Wi-Fi: connect, disconnect and connect again; no error should show after your own Disconnect.
-- New: Android with a Bluetooth headset (Audio output Auto): PTT, quick taps, the app to the background and back; receive should stay in the headset. [TX]
-- New: Setup > App > PTT > Wide on a phone, upright and on its side. [TX]
+- New: the app in the background, then a call, an alarm or another app's sound: receive back when it ends, without opening the app.
+- New: the Mic meter in receive with the TX tab closed, then PTT as before. [TX]
+- New: with a keyboard, Space as PTT; then Setup > Transmit > Space is PTT off. [TX]
 - Setup > Spots > RBN, PSK Reporter and Heard me; then call CQ and see Heard me fill.
 - TX > Use the radio's microphone, then a voice macro and Repeat. [TX]
 - A button as PTT (Setup > Transmit > PTT key > Learn), held and with PTT Tap on / off, at low power. [TX]

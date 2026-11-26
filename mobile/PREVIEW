@@ -3,25 +3,33 @@
 # and the Android APK as the run artifact only. Removed when the user
 # releases the build to the testers (mobile-release.yml).
 
-Android beta 122 as a preview, the fourth one: the third without 219's
-attempt. It carries roadmap 214, 218, 221 and 203, each seen working on
-the user's phone in the earlier previews. Android only: the code is under
-Q_OS_ANDROID and in the Android Java, no iOS build is made and build 216
-stays the newest on TestFlight. To everyone only on the user's word after
-the try.
+iOS build 221 with Android beta 122: the user's PuJu for every platform
+(2026-11-26 about 16:50: "Otetaan iosille nuo 209, 213, 215, 216 ja 210
+osalta odotetaan Justinin palautetta eli nyt PuJu jossa kaikki alustat").
+The marker stays for this one push so that the two go out together through
+mobile-release.yml (ios_build=221, android_run=159) and Android's release
+is the build the user tried, not this push's; it is removed right after.
 
-Why a fourth: the third's change for 219 (Speaker to Bluetooth media)
-could not work, as Qt shows the app only one Bluetooth device of a
-headset, and it lost the sound when the headset was switched off and on
-with Bluetooth media chosen. It is taken out; 219 gets its own build.
+iOS build 221: roadmap 209 (Space as PTT can be switched off, and never
+keys with a screen reader's keys), 213 (the radio's fan speed on the
+meters), 215 (receive back in the background after an interruption) and
+216 (the microphone open the whole time the app is connected and in
+front).
 
-On the OnePlus Open with the Jabra Evolve2 65:
-1. Media audio on, Audio output Auto, the headset switched off while
-   connected, then on: the app goes on and stays connected ("Android's
-   audio service has not answered ...", "... answers again (a call took
-   ... ms)", no long "GUI thread stalled"); the sound to the phone and
-   back to the headset.
-2. The screen dark and another app in front, and back: no break.
-3. PTT a few times with the headset.
-4. Bluetooth media chosen, the headset switched off: the sound stays on
-   the phone's speaker, as before the third preview.
+Android beta 122 is run 159, the fourth preview as the user tried it on
+the OnePlus Open on 2026-11-26 (214, 218, 221, 203). This push's own
+Android and Linux builds carry 209 and 213 too (shared code) and stay run
+artifacts: the first of the next beta, for a preview on the phone.
+
+Not run on a device: 215, and the iOS halves of 209 and 216 (an iPad's
+keyboard path, the microphone on iOS). On the iPad and the iPhone:
+1. The app in the background with receive playing, then a call, an alarm
+   or another app's sound for a moment: receive back when it ends, without
+   opening the app ("playing-only session active in the background"); then
+   the app to the front: receive goes on, PTT works ("app in front:
+   play-and-record in place of the playing-only session").
+2. The Mic meter moving in receive with the TX tab closed, iOS's orange
+   mark; the app to the background (the mark goes) and back; PTT.
+3. The Magic Keyboard: Space as PTT as before; Control-Option-Space and
+   Command-Space key nothing; Setup > Transmit > Space is PTT off and on.
+4. A meter's Fan choice.
