@@ -33,6 +33,7 @@ namespace AetherSDR::mobile {
 namespace {
 const QString kPttKeyKey = QStringLiteral("MobileTxPttKey");
 const QString kPttKeyScanKey = QStringLiteral("MobileTxPttKeyScan");
+const QString kSpaceIsPttKey = QStringLiteral("MobileSpaceIsPtt");
 
 // The key events a window gets, before its items: once per key, whatever
 // item has the keyboard.
@@ -58,6 +59,10 @@ void MobileEngine::setupPttKey()
 {
     m_pttKey = AppSettings::instance().value(kPttKeyKey, 0).toInt();
     m_pttKeyScan = AppSettings::instance().value(kPttKeyScanKey, 0).toUInt();
+    m_spaceIsPtt = AppSettings::instance().value(kSpaceIsPttKey, QStringLiteral("True")).toString() != QLatin1String("False");
+    if (!m_spaceIsPtt) {
+        qCInfo(lcMobile) << "Space is PTT: off (Setup › Transmit)";
+    }
     qApp->installEventFilter(new PttKeyFilter(this));
     // A held key let go when the app leaves the front or the keyboard goes
     // elsewhere: its release would never come here.
@@ -79,6 +84,59 @@ void MobileEngine::setupPttKey()
 int MobileEngine::pttKey() const
 {
     return m_pttKey;
+}
+
+// Space as PTT (roadmap 209, Justin Mann AI5OS, who uses the app with
+// VoiceOver on a Mac): with a hardware keyboard Space keyed always, and
+// whatever was held with it. A screen reader presses the control under its
+// cursor with Space too (VoiceOver: Control-Option-Space), so the radio
+// could key at a press meant for a button. Two things: Space pressed with
+// those keys, or with Command, keys nothing; and the whole key can be
+// switched off here, which also covers a reader whose own key is Caps Lock
+// or whose keys are locked (a plain Space comes then). On is as before, and
+// the default: the app began with Space on an iPad's keyboard.
+void MobileEngine::setSpaceIsPtt(bool on)
+{
+    if (on == m_spaceIsPtt) {
+        return;
+    }
+    m_spaceIsPtt = on;
+    // Switched off while GameController's Space holds PTT: let go.
+    if (!on && m_spacePtt) {
+        m_spacePtt = false;
+        setPtt(false, QStringLiteral("Space is PTT switched off"));
+    }
+    AppSettings::instance().setValue(kSpaceIsPttKey, on ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    qCInfo(lcMobile) << "Space is PTT:" << (on ? "on" : "off");
+    emit spaceIsPttChanged();
+}
+
+bool MobileEngine::spaceHeldBackWith(int modifiers, bool appleKeys)
+{
+    // On Apple's systems Qt hands Command on as Control and Control as Meta.
+    const bool control = (modifiers & (appleKeys ? Qt::MetaModifier : Qt::ControlModifier)) != 0;
+    const bool command = (modifiers & (appleKeys ? Qt::ControlModifier : Qt::MetaModifier)) != 0;
+    const bool option = (modifiers & Qt::AltModifier) != 0;
+    return command || (control && option);
+}
+
+bool MobileEngine::spaceHeldBack(int modifiers) const
+{
+#if defined(Q_OS_IOS) || defined(Q_OS_MACOS)
+    return spaceHeldBackWith(modifiers, true);
+#else
+    return spaceHeldBackWith(modifiers, false);
+#endif
+}
+
+void MobileEngine::noteSpaceNotPtt(bool switchedOff)
+{
+    if (m_spaceNotPttLogged < 6) {
+        ++m_spaceNotPttLogged;
+        qCInfo(lcMobile) << (switchedOff ? "Space down: not PTT (Space is PTT is off in Setup › Transmit)"
+                                         : "Space down with Control-Option or Command: not PTT (a screen reader's or the system's key)");
+    }
 }
 
 QString MobileEngine::pttKeyName() const

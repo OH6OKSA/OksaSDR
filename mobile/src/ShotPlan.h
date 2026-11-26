@@ -111,7 +111,11 @@ class MobileEngine;
 //                           <Mac-F1>..<Mac-F12>: an F-key as a Mac hands it to an iPad app
 //   scheme light|dark|none  the device's appearance as Qt reports it (Theme Auto)
 //   txblock on|off          every transmission refused (as in a link plan), logged
-//   keyhold <Fn> MS [go]    that F-key held MS ms: the press, its auto-repeat every
+//   sidekey space|spaceheld down|up  a Space as GameController reports it on an iPad
+//                           (spaceheld: with Control-Option or Command), to the engine
+//   spacemods               log which keys held with Space keep it from PTT
+//   keyhold <Fn> MS [go]    that F-key (or <Space>, <Ctrl-Alt-Space>, <Meta-Space>,
+//                           <Shift-Space>: Space with those keys) held MS ms: the press, its auto-repeat every
 //                           50 ms, the release (the PTT key, F-key repeats); go: the
 //                           next steps run while it is held
 //   focussweep              give the keyboard to every control in view that takes it

@@ -10,7 +10,8 @@ ColumnLayout {
     // A learned PTT key (roadmap 121, Rob Metallo VA3MET's UNIWA F400, whose
     // side key sends F2): the next key pressed after Learn becomes PTT,
     // held as long as the key (Tap on / off: a press toggles), wherever the
-    // keyboard is; it no longer acts as itself. Space stays PTT either way.
+    // keyboard is; it no longer acts as itself. Space stays PTT beside it,
+    // unless switched off (the page's next row, roadmap 209).
     RowLayout {
         Layout.fillWidth: true
         Label { text: qsTr("PTT key"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
@@ -41,7 +42,7 @@ ColumnLayout {
     }
     Label {
         Layout.fillWidth: true
-        text: qsTr("For a button that sends a key (a handset's side PTT key, a Bluetooth button or foot switch): tap Learn, then press it. Held, it keys as PTT; it no longer does what the key did before. Space is PTT anyway.")
+        text: qsTr("For a button that sends a key (a handset's side PTT key, a Bluetooth button or foot switch): tap Learn, then press it. Held, it keys as PTT; it no longer does what the key did before. Space is PTT beside it (below).")
         color: Theme.textDim
         font.pixelSize: Theme.px(12)
         wrapMode: Text.WordWrap

@@ -2,6 +2,7 @@
 
 #include "MobileEngine.h"
 #include "MobileWorkspace.h"
+#include "SideKeys.h"
 
 #include <QAccessible>
 #include <QCoreApplication>
@@ -1773,25 +1774,32 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
         // <F1>..<F12> held MS ms as a hardware keyboard sends it: the press,
         // its auto-repeat every 50 ms, the release (roadmap 120's repeat and
         // 121's learned PTT key).
-        static const QRegularExpression fk(QStringLiteral("^<F([1-9]|1[0-2])>$"));
+        // <Space> too, alone or with the keys held with it as Qt names them
+        // here: <Ctrl-Alt-Space>, <Meta-Space>, <Shift-Space> (roadmap 209).
+        static const QRegularExpression fk(QStringLiteral("^<((?:(?:Ctrl|Alt|Meta|Shift)-)*)(?:F([1-9]|1[0-2])|(Space))>$"));
         const QRegularExpressionMatch m = fk.match(args.value(0));
         const int ms = std::max(60, args.value(1, QStringLiteral("500")).toInt());
         if (window && m.hasMatch()) {
-            const int key = Qt::Key_F1 + m.captured(1).toInt() - 1;
+            const int key = m.captured(3).isEmpty() ? Qt::Key_F1 + m.captured(2).toInt() - 1 : int(Qt::Key_Space);
+            Qt::KeyboardModifiers mods = Qt::NoModifier;
+            if (m.captured(1).contains(QLatin1String("Ctrl-"))) mods |= Qt::ControlModifier;
+            if (m.captured(1).contains(QLatin1String("Alt-"))) mods |= Qt::AltModifier;
+            if (m.captured(1).contains(QLatin1String("Meta-"))) mods |= Qt::MetaModifier;
+            if (m.captured(1).contains(QLatin1String("Shift-"))) mods |= Qt::ShiftModifier;
             QPointer<QQuickWindow> w = window;
-            QWindowSystemInterface::handleKeyEvent(w, QEvent::KeyPress, key, Qt::NoModifier);
+            QWindowSystemInterface::handleKeyEvent(w, QEvent::KeyPress, key, mods);
             QWindowSystemInterface::flushWindowSystemEvents();
             for (int t = 50; t < ms; t += 50) {
-                QTimer::singleShot(t, this, [w, key] {
+                QTimer::singleShot(t, this, [w, key, mods] {
                     if (w) {
-                        QWindowSystemInterface::handleKeyEvent(w, QEvent::KeyPress, key, Qt::NoModifier, QString(), true);
+                        QWindowSystemInterface::handleKeyEvent(w, QEvent::KeyPress, key, mods, QString(), true);
                         QWindowSystemInterface::flushWindowSystemEvents();
                     }
                 });
             }
-            QTimer::singleShot(ms, this, [w, key] {
+            QTimer::singleShot(ms, this, [w, key, mods] {
                 if (w) {
-                    QWindowSystemInterface::handleKeyEvent(w, QEvent::KeyRelease, key, Qt::NoModifier);
+                    QWindowSystemInterface::handleKeyEvent(w, QEvent::KeyRelease, key, mods);
                     QWindowSystemInterface::flushWindowSystemEvents();
                 }
             });
@@ -1801,10 +1809,42 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             qInfo().noquote() << "shot-plan: keyhold" << args.value(0) << ms << "ms" << (go ? "(going on)" : "");
             *delayMs = go ? 100 : ms + 400;
         } else {
-            qWarning().noquote() << "shot-plan: keyhold: give <F1>..<F12> and MS -" << args.join(QLatin1Char(' '));
+            qWarning().noquote() << "shot-plan: keyhold: give <F1>..<F12> or <Space> and MS -" << args.join(QLatin1Char(' '));
             m_failed = true;
             *delayMs = 100;
         }
+    } else if (command == QLatin1String("sidekey")) {
+        // sidekey space|spaceheld down|up: a Space as GameController reports
+        // it on an iPad (spaceheld: pressed with Control-Option or Command),
+        // straight to the engine's handler; the page has to hold the keyboard
+        // as on the device (roadmap 209).
+        const bool held = args.value(0) == QLatin1String("spaceheld");
+        const bool down = args.value(1) == QLatin1String("down");
+        if ((held || args.value(0) == QLatin1String("space")) && (down || args.value(1) == QLatin1String("up"))) {
+            qInfo().noquote() << "shot-plan: sidekey" << args.value(0) << args.value(1) << "- keyboardOnPage" << m_engine.keyboardOnPage();
+            m_engine.testSideKey(int(held && down ? SideKey::SpaceHeldBack : SideKey::Space), down);
+        } else {
+            qWarning().noquote() << "shot-plan: sidekey: give space|spaceheld and down|up -" << args.join(QLatin1Char(' '));
+            m_failed = true;
+        }
+        *delayMs = 300;
+    } else if (command == QLatin1String("spacemods")) {
+        // spacemods: which keys held with Space keep it from PTT, for both
+        // ways Qt hands the keys on (Apple's systems swap Control and Meta).
+        const struct { const char* name; Qt::KeyboardModifiers mods; } rows[] = {
+            {"none", Qt::NoModifier}, {"Shift", Qt::ShiftModifier}, {"Control", Qt::ControlModifier},
+            {"Alt", Qt::AltModifier}, {"Meta", Qt::MetaModifier},
+            {"Control+Alt", Qt::ControlModifier | Qt::AltModifier}, {"Meta+Alt", Qt::MetaModifier | Qt::AltModifier},
+            {"Control+Meta", Qt::ControlModifier | Qt::MetaModifier},
+            {"Control+Alt+Meta", Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier}};
+        for (const auto& row : rows) {
+            qInfo().noquote() << QStringLiteral("shot-plan: spacemods %1: here %2, Apple %3, others %4")
+                                     .arg(QLatin1String(row.name), -17)
+                                     .arg(m_engine.spaceHeldBack(int(row.mods)) ? QStringLiteral("held back") : QStringLiteral("PTT"))
+                                     .arg(MobileEngine::spaceHeldBackWith(int(row.mods), true) ? QStringLiteral("held back") : QStringLiteral("PTT"))
+                                     .arg(MobileEngine::spaceHeldBackWith(int(row.mods), false) ? QStringLiteral("held back") : QStringLiteral("PTT"));
+        }
+        *delayMs = 100;
     } else if (command == QLatin1String("keys")) {
         // Keys through the window as a hardware keyboard sends them; "\\b"
         // is Backspace as an iPad app on a Mac gets it from UIKit (key 8,

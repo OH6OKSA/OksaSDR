@@ -10358,6 +10358,13 @@ void MobileEngine::onSideKey(int keyValue, bool pressed)
 {
     const auto key = static_cast<SideKey>(keyValue);
     noteOperator();
+    if (key == SideKey::SpaceHeldBack) {
+        // Space pressed with Control and Option together or with Command
+        // (SideKeys.mm looks at the keys' own state): a screen reader's or
+        // the system's key, never PTT (roadmap 209).
+        noteSpaceNotPtt(false);
+        return;
+    }
     if (key == SideKey::Space) {
         // Hold-to-talk, as OperatePage does elsewhere: only while the page
         // has the keyboard (no dialog or text entry) and the app is in front.
@@ -10368,6 +10375,11 @@ void MobileEngine::onSideKey(int keyValue, bool pressed)
         }
         if (pressed) {
             if (m_spacePtt || !m_keyboardOnPage || QGuiApplication::applicationState() != Qt::ApplicationActive) {
+                return;
+            }
+            // Switched off in Setup › Transmit (roadmap 209).
+            if (!m_spaceIsPtt) {
+                noteSpaceNotPtt(true);
                 return;
             }
             if (pttToggle() && !cwMode()) {

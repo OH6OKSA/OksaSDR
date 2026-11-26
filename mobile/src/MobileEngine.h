@@ -145,6 +145,9 @@ class MobileEngine : public QObject {
     Q_PROPERTY(int pttKey READ pttKey NOTIFY pttKeyChanged)
     Q_PROPERTY(QString pttKeyName READ pttKeyName NOTIFY pttKeyChanged)
     Q_PROPERTY(bool pttKeyLearning READ pttKeyLearning NOTIFY pttKeyChanged)
+    // Space as PTT on a hardware keyboard (roadmap 209): on unless switched
+    // off in Setup › Transmit, for a screen reader that presses with Space.
+    Q_PROPERTY(bool spaceIsPtt READ spaceIsPtt WRITE setSpaceIsPtt NOTIFY spaceIsPttChanged)
     // The tablet page's own-layout editor is open: the PTT key keys nothing.
     Q_PROPERTY(bool layoutEditing READ layoutEditing WRITE setLayoutEditing NOTIFY layoutEditingChanged)
     Q_PROPERTY(bool pttLatched READ pttLatched NOTIFY pttToggleChanged)
@@ -960,6 +963,22 @@ public:
     int pttKey() const;
     QString pttKeyName() const;
     bool pttKeyLearning() const;
+    bool spaceIsPtt() const { return m_spaceIsPtt; }
+    void setSpaceIsPtt(bool on);
+    // Whether a Space pressed with these keyboard modifiers (Qt's, as the key
+    // event has them) is held back from PTT: with Control and Option (Alt)
+    // together, VoiceOver's own keys for "press this", or with Command (the
+    // Meta key elsewhere), the system's. A paddle key alone (CW paddles on
+    // the Control or the Option keys) holds nothing back.
+    Q_INVOKABLE bool spaceHeldBack(int modifiers) const;
+    // The same for either way Qt hands the keys on: on Apple's systems
+    // Command reads as Control and Control as Meta.
+    static bool spaceHeldBackWith(int modifiers, bool appleKeys);
+    // A Space that was not PTT, for the log (the first few): switched off,
+    // or held back by the keys pressed with it.
+    Q_INVOKABLE void noteSpaceNotPtt(bool switchedOff);
+    // A test's side key, as GameController reports one on an iPad (SideKey).
+    void testSideKey(int key, bool pressed) { onSideKey(key, pressed); }
     Q_INVOKABLE void learnPttKey();
     Q_INVOKABLE void cancelPttKeyLearn();
     Q_INVOKABLE void clearPttKey();
@@ -2398,6 +2417,7 @@ signals:
     void themeChanged();
     void textScaleChanged();
     void pttToggleChanged();
+    void spaceIsPttChanged();
     void pttKeyChanged();
     void documentPicked(const QString& purpose, const QUrl& url);
     void qsoLogBusyChanged();
@@ -3557,6 +3577,8 @@ private:
     bool m_keyboardOnPage{false};
     bool m_spacePtt{false};   // PTT held by Space from GameController
     int m_spaceLogged{0};
+    bool m_spaceIsPtt{true};  // Setup › Transmit › Space is PTT (roadmap 209)
+    int m_spaceNotPttLogged{0};
     bool m_sideDit{false};
     bool m_sideDah{false};
     int m_sideKeysLogged{0};

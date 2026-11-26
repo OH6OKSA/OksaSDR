@@ -64,7 +64,7 @@ void attach(GCKeyboard* keyboard)
     if (s_suspended) {
         return;  // attached when the text field lets go
     }
-    keyboard.keyboardInput.keyChangedHandler = ^(GCKeyboardInput*, GCControllerButtonInput*, GCKeyCode keyCode, BOOL pressed) {
+    keyboard.keyboardInput.keyChangedHandler = ^(GCKeyboardInput* input, GCControllerButtonInput*, GCKeyCode keyCode, BOOL pressed) {
         if (pressed) {
             ++s_seen;
         }
@@ -102,6 +102,21 @@ void attach(GCKeyboard* keyboard)
             key = SideKey::RightOption;
         } else if (keyCode == GCKeyCodeSpacebar) {
             key = SideKey::Space;
+            // Pressed with Control and Option together (VoiceOver's keys for
+            // "press this") or with Command (the system's): not PTT (roadmap
+            // 209). The keys' own state is asked at the press, so nothing is
+            // remembered that could go stale while the handlers are off.
+            if (pressed == YES && input) {
+                const bool control = [input buttonForKeyCode:GCKeyCodeLeftControl].pressed
+                                     || [input buttonForKeyCode:GCKeyCodeRightControl].pressed;
+                const bool option = [input buttonForKeyCode:GCKeyCodeLeftAlt].pressed
+                                    || [input buttonForKeyCode:GCKeyCodeRightAlt].pressed;
+                const bool command = [input buttonForKeyCode:GCKeyCodeLeftGUI].pressed
+                                     || [input buttonForKeyCode:GCKeyCodeRightGUI].pressed;
+                if (command || (control && option)) {
+                    key = SideKey::SpaceHeldBack;
+                }
+            }
         } else {
             return;
         }

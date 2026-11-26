@@ -8,7 +8,9 @@ import AetherMobile
 // F frequency entry, T TUNE (Shift+T two tones), A an ATU tune, F1–F12 the CW
 // memories, Digi macros or voice macros
 // (⌘1–⌘9 and ⌘0 too, Ctrl on Android and a PC keyboard: an iPad's Magic
-// Keyboard has no F-keys), Esc stops them, Space PTT. The page forwards its key events and focus changes; the
+// Keyboard has no F-keys), Esc stops them, Space PTT (unless switched off in
+// Setup › Transmit, and never with a screen reader's keys held: roadmap 209).
+// The page forwards its key events and focus changes; the
 // keyboard focus returns to the page whenever a control took it.
 Item {
     id: keys
@@ -20,6 +22,8 @@ Item {
     property var drawer
     property var macros
     property bool spacePtt: false
+    // A Space down that was not PTT: its release lets nothing go.
+    property bool spaceNotPtt: false
 
     CwKeyboardPaddles { id: paddles }
 
@@ -65,6 +69,14 @@ Item {
         case Qt.Key_Space:
             // iOS: GameController keys Space itself (keyboardOnPage).
             if (Engine.nativeKeyboardSides) break
+            // Switched off in Setup › Transmit, or pressed with a screen
+            // reader's keys or the system's (Control and Option together,
+            // or Command): Space keys nothing (roadmap 209).
+            if (!Engine.spaceIsPtt || Engine.spaceHeldBack(event.modifiers)) {
+                keys.spaceNotPtt = true
+                Engine.noteSpaceNotPtt(!Engine.spaceIsPtt)
+                break
+            }
             if (Engine.pttToggle && !Engine.cwMode) {
                 Engine.togglePtt()
                 break
@@ -85,6 +97,10 @@ Item {
             return true
         }
         if (event.key === Qt.Key_Space && !event.isAutoRepeat) {
+            if (keys.spaceNotPtt) {
+                keys.spaceNotPtt = false
+                return true
+            }
             keys.spacePtt = false
             Engine.setPtt(false, "space released")
             return true

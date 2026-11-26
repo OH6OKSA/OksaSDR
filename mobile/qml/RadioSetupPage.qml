@@ -533,6 +533,25 @@ Popup {
                     // This device's part first (roadmap 131: from the TX tab).
                     Heading { text: qsTr("This device: PTT key (not in CW)") }
                     PttKeySetup { Layout.fillWidth: true }
+                    // Space as PTT (roadmap 209, Justin Mann AI5OS): off for a
+                    // screen reader that presses the controls with Space.
+                    Heading { text: qsTr("This device: the space bar") }
+                    OnOff {
+                        objectName: "spaceIsPtt"
+                        label: qsTr("Space is PTT")
+                        on: Engine.spaceIsPtt
+                        onToggled: (v) => Engine.spaceIsPtt = v
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        // The keys by their names on the device at hand.
+                        text: Qt.platform.os === "ios" || Qt.platform.os === "osx"
+                              ? qsTr("With a keyboard, Space keys as PTT. Off: it keys nothing, for a screen reader that presses with Space. Pressed with Control and Option together (VoiceOver's keys) or with Command it never keys.")
+                              : qsTr("With a keyboard, Space keys as PTT. Off: it keys nothing, for a screen reader that presses with Space. Pressed with Ctrl and Alt together or with the Search (Windows) key it never keys.")
+                        color: Theme.textDim
+                        font.pixelSize: Theme.px(12)
+                        wrapMode: Text.WordWrap
+                    }
                     Heading { text: qsTr("The radio") }
                     Level {
                         label: qsTr("Maximum power")

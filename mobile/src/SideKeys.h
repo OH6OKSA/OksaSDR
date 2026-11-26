@@ -11,8 +11,11 @@ namespace AetherSDR::mobile {
 // one key, and a held Space comes with a release after about 0.1 s (seen on
 // an iPad with a Magic Keyboard), which ended Space PTT at once. iOS reads
 // these from the GameController framework (GCKeyboard) instead. Elsewhere
-// Qt's events do the job and this is unavailable.
-enum class SideKey { LeftControl, RightControl, LeftOption, RightOption, Space };
+// Qt's events do the job and this is unavailable. SpaceHeldBack is a Space
+// pressed with Control and Option together (VoiceOver's keys for "press
+// this") or with Command (the system's): told apart so that it never keys
+// (roadmap 209); its release comes as Space's.
+enum class SideKey { LeftControl, RightControl, LeftOption, RightOption, Space, SpaceHeldBack };
 
 // True where startSideKeys() reports keys (iOS).
 bool sideKeysAvailable();
