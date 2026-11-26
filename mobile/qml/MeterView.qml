@@ -235,6 +235,8 @@ Item {
 
     BarGauge {
         id: bars
+        // The meter is one button that says the reading itself.
+        Accessible.ignored: true
         anchors.fill: parent
         visible: !meter.analog
         kind: meter.kind
@@ -262,8 +264,12 @@ Item {
     TapHandler { onTapped: chooser.open() }
     // One button to a screen reader: what it measures and the reading.
     Accessible.role: Accessible.Button
+    // The S unit too, as the face shows it: valueText is the dBm alone, so
+    // "S meter: -73 dBm" was said under an S9.
     Accessible.name: qsTr("%1 meter: %2").arg(meter.kind === "S" ? qsTr("S") : MeterMarks.meterName(meter.kind, false))
-                     .arg(meter.reading.live ? (meter.analog ? gauge.valueText : bars.valueText) : qsTr("no reading"))
+                     .arg(!meter.reading.live ? qsTr("no reading")
+                          : meter.kind === "S" ? meter.reading.text.trim().split(/\s+/).join(" ")
+                          : (meter.analog ? gauge.valueText : bars.valueText))
     Accessible.description: qsTr("Choose what the meter shows")
     Accessible.onPressAction: chooser.open()
 

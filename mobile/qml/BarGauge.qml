@@ -132,6 +132,22 @@ Item {
         if (kind === "S") return parts.slice(1).join(" ")
         return /^[A-Za-z]+$/.test(parts[0]) ? parts.slice(1).join(" ") : parts.join(" ")
     }
+
+    // The reading in words for a screen reader. Both texts are ignored and
+    // the bar is drawn, so a bar on its own (the amplifier's and tuners'
+    // forward power, reflected power and SWR, which are nowhere else) gave
+    // VoiceOver and TalkBack nothing: an item with no name is left out.
+    // The red zone is said, as it is not only a colour. A host that is one
+    // button with the reading in its name (MeterView) ignores the face.
+    Accessible.role: Accessible.StaticText
+    Accessible.name: {
+        const name = gauge.kind === "S" ? qsTr("S meter") : MeterMarks.meterName(gauge.kind, false)
+        if (!gauge.live || gauge.valueText === "–")
+            return qsTr("%1: no reading").arg(name)
+        const reading = gauge.kind === "S" ? gauge.parts[0] + " " + gauge.valueText : gauge.valueText
+        return qsTr("%1: %2").arg(name).arg(reading)
+               + (gauge.value >= gauge.red ? qsTr(", in the red") : "")
+    }
     // Where "-91 dBm" does not fit beside the S unit: "-91" (not "… dBm").
     readonly property string valueShort: kind === "S" ? valueText.replace(/\s*dBm$/, "")
                                          : kind === "Fan" ? valueText.replace(/\s*RPM$/, "") : valueText
