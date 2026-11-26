@@ -146,7 +146,7 @@ ColumnLayout {
         }
     }
     // Band plan strip along the bottom of the spectrum.
-    Label { text: qsTr("Band plan"); color: Theme.textDim; font.pixelSize: Theme.px(16) }
+    Label { text: qsTr("Band plan"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(16) }
     Flow {
         Layout.fillWidth: true
         spacing: 4

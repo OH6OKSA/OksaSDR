@@ -282,7 +282,7 @@ ColumnLayout {
                     visible: shown
                     Layout.fillWidth: true
                     spacing: Theme.spacing / 2
-                    Label { text: modelData.title; color: Theme.accent; font.pixelSize: 15; font.bold: true }
+                    Label { text: modelData.title; Accessible.role: Accessible.Heading; color: Theme.accent; font.pixelSize: 15; font.bold: true }
                     Loader {
                         id: pinnedLoader
                         Layout.fillWidth: true

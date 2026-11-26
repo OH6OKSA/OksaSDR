@@ -11,6 +11,9 @@ import AetherMobile
 Dialog {
     id: hints
     objectName: "hintsDialog"
+    // Named on its item: Accessible on a Popup itself is refused ("must be
+    // attached to an object deriving from Item").
+    Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => hints.pages[hints.page].title)
     parent: Overlay.overlay
     anchors.centerIn: parent
     width: Math.min(440, parent ? parent.width - 24 : 400)
@@ -63,6 +66,7 @@ Dialog {
             Layout.fillWidth: true
             Label {
                 text: hints.pages[hints.page].title
+                Accessible.role: Accessible.Heading
                 color: Theme.text
                 font.pixelSize: Theme.px(20)
                 font.bold: true

@@ -1448,6 +1448,9 @@ Page {
     Dialog {
         id: renameDialog
         objectName: "renameLayout"
+        // Named on its item: Accessible on a Popup itself is refused ("must be
+        // attached to an object deriving from Item").
+        Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("Rename layout"))
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
@@ -1467,6 +1470,7 @@ Page {
             spacing: Theme.spacing
             Label {
                 text: qsTr("Rename layout")
+                Accessible.role: Accessible.Heading
                 color: Theme.text
                 font.pixelSize: Theme.px(20)
                 font.bold: true
@@ -1499,6 +1503,9 @@ Page {
     Dialog {
         id: deleteLayoutDialog
         objectName: "deleteLayout"
+        // Named on its item: Accessible on a Popup itself is refused ("must be
+        // attached to an object deriving from Item").
+        Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("Delete layout"))
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
@@ -1509,6 +1516,7 @@ Page {
             spacing: Theme.spacing
             Label {
                 text: qsTr("Delete layout")
+                Accessible.role: Accessible.Heading
                 color: Theme.text
                 font.pixelSize: Theme.px(20)
                 font.bold: true

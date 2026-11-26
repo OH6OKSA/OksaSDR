@@ -7,6 +7,9 @@ import AetherMobile
 // panel's press and hold open the same).
 Dialog {
     id: macroEditor
+    // Named on its item: Accessible on a Popup itself is refused ("must be
+    // attached to an object deriving from Item").
+    Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("Macro F%1: {CALL} = your call, {HIS} = the call being worked, {NAME}, {RST}, {GRID}").arg(macroEditor.index + 1))
     property int index: 0
     property alias label: macroLabel.text
     property alias text: macroText.text

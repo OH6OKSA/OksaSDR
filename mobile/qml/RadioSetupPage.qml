@@ -10,6 +10,9 @@ import AetherMobile
 // to the radio; values are re-read once a second while the page is open.
 Popup {
     id: setup
+    // Named on its item: Accessible on a Popup itself is refused ("must be
+    // attached to an object deriving from Item").
+    Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("Radio Setup"))
     objectName: "radioSetup"
     parent: Overlay.overlay
     modal: true
@@ -110,6 +113,7 @@ Popup {
 
     // ---- pieces ----
     component Heading: Label {
+        Accessible.role: Accessible.Heading
         color: Theme.textDim
         font.pixelSize: Theme.px(14)
         Layout.topMargin: Theme.spacing / 2
@@ -125,6 +129,7 @@ Popup {
         Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: Theme.textDim; opacity: 0.5 }
         Label {
             id: deviceName
+            Accessible.role: Accessible.Heading
             color: Theme.text
             font.pixelSize: Theme.px(19)
             font.bold: true
@@ -350,7 +355,7 @@ Popup {
         spacing: Theme.spacing / 2
         RowLayout {
             Layout.fillWidth: true
-            Label { text: qsTr("Radio Setup"); color: Theme.text; font.pixelSize: Theme.px(22); font.bold: true; Layout.fillWidth: true }
+            Label { text: qsTr("Radio Setup"); Accessible.role: Accessible.Heading; color: Theme.text; font.pixelSize: Theme.px(22); font.bold: true; Layout.fillWidth: true }
             AppButton { text: qsTr("Close"); focusPolicy: Qt.NoFocus; onClicked: setup.close() }
         }
         // Fourteen in a row where each gets 88 px with the spacing ("Phone/CW"
@@ -2370,6 +2375,9 @@ Popup {
     Dialog {
         id: risky
         objectName: "setupRisky"
+        // Named on its item: Accessible on a Popup itself is refused ("must be
+        // attached to an object deriving from Item").
+        Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => risky.heading)
         property string heading
         property string text
         property string yes
@@ -2385,6 +2393,7 @@ Popup {
             Label {
                 Layout.fillWidth: true
                 text: risky.heading
+                Accessible.role: Accessible.Heading
                 color: Theme.text
                 font.pixelSize: Theme.px(18)
                 font.bold: true

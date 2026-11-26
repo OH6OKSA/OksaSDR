@@ -62,6 +62,7 @@ Popup {
         }
         Label {
             text: qsTr("DSP")
+            Accessible.role: Accessible.Heading
             color: Theme.textDim
             font.pixelSize: Math.round(Theme.buttonFont * 0.85)
         }

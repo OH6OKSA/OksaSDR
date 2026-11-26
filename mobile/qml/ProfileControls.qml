@@ -21,7 +21,7 @@ ColumnLayout {
         Layout.fillWidth: true
         spacing: Theme.spacing / 2
 
-        Label { text: section.title; color: Theme.textDim; font.pixelSize: Theme.px(16) }
+        Label { text: section.title; Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(16) }
         AppComboBox {
             id: picker
             Accessible.name: section.title
@@ -131,7 +131,7 @@ ColumnLayout {
             setups.result = r.ok ? done : r.error
         }
 
-        Label { text: qsTr("App setups"); color: Theme.textDim; font.pixelSize: Theme.px(16) }
+        Label { text: qsTr("App setups"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(16) }
         AppComboBox {
             id: setupPicker
             objectName: "appSetupPicker"

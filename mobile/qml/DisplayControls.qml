@@ -41,6 +41,7 @@ ColumnLayout {
     Label {
         visible: !Theme.phoneLayout
         text: qsTr("Layout")
+        Accessible.role: Accessible.Heading
         color: Theme.textDim
         font.pixelSize: Theme.px(16)
     }
@@ -102,7 +103,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         Layout.topMargin: Theme.spacing / 2
-        Label { text: qsTr("Bands and steps"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
+        Label { text: qsTr("Bands and steps"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
         AppButton {
             text: Engine.tuneRowsShown ? qsTr("Shown") : qsTr("Hidden")
             checked: Engine.tuneRowsShown
@@ -283,7 +284,7 @@ ColumnLayout {
 
     RowLayout {
         Layout.fillWidth: true
-        Label { text: qsTr("Waterfall"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
+        Label { text: qsTr("Waterfall"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
         AppButton {
             text: qsTr("Auto")
             checked: Engine.wfAutoLevel
@@ -317,7 +318,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         Layout.topMargin: Theme.spacing / 2
-        Label { text: qsTr("Spectrum"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
+        Label { text: qsTr("Spectrum"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
         AppButton {
             text: qsTr("Auto")
             checked: Engine.traceAutoRange

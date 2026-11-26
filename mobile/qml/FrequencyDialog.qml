@@ -9,6 +9,9 @@ import AetherMobile
 Dialog {
     id: dialog
     objectName: "frequencyDialog"
+    // Named on its item: Accessible on a Popup itself is refused ("must be
+    // attached to an object deriving from Item").
+    Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("Frequency entry"))
     modal: true
     anchors.centerIn: parent
     width: Math.min(420, parent.width - 24)

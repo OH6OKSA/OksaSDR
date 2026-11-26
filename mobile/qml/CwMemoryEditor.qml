@@ -7,6 +7,9 @@ import AetherMobile
 // press and hold open the same).
 Dialog {
     id: memoryEditor
+    // Named on its item: Accessible on a Popup itself is refused ("must be
+    // attached to an object deriving from Item").
+    Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("Memory M%1   ({CALL} = your callsign, {HIS} = the call being worked)").arg(memoryEditor.index + 1))
     property int index: 0
     property alias text: memoryField.text
     parent: Overlay.overlay

@@ -11,6 +11,9 @@ import AetherMobile
 Dialog {
     id: dialog
     objectName: "addressDialog"
+    // Named on its item: Accessible on a Popup itself is refused ("must be
+    // attached to an object deriving from Item").
+    Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("Radio IP address or host name"))
     modal: true
     anchors.centerIn: parent
     width: Math.min(420, parent.width - 24)
@@ -87,6 +90,7 @@ Dialog {
 
         Label {
             text: qsTr("Radio IP address or host name")
+            Accessible.role: Accessible.Heading
             color: Theme.textDim
             font.pixelSize: Theme.px(15)
         }

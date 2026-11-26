@@ -223,6 +223,7 @@ Page {
                 Label {
                     text: Engine.lanRadioCount > 0 || (Engine.showDemoRadio && Engine.radios.count > 0)
                           ? qsTr("On this network") : qsTr("Searching this network…")
+                    Accessible.role: Accessible.Heading
                     color: Theme.textDim
                     font.pixelSize: Theme.px(17)
                     wrapMode: Text.Wrap
@@ -267,6 +268,7 @@ Page {
             // ---- SmartLink (remote) ----
             Label {
                 text: qsTr("SmartLink (remote)")
+                Accessible.role: Accessible.Heading
                 color: Theme.textDim
                 font.pixelSize: Theme.px(17)
                 Layout.topMargin: Theme.spacing
@@ -542,6 +544,7 @@ Page {
             // ---- By address ----
             Label {
                 text: qsTr("By IP address or host name")
+                Accessible.role: Accessible.Heading
                 color: Theme.textDim
                 font.pixelSize: Theme.px(17)
                 Layout.topMargin: Theme.spacing
@@ -642,6 +645,9 @@ Page {
     Dialog {
         id: radioEditor
         objectName: "radioEditor"
+        // Named on its item: Accessible on a Popup itself is refused ("must be
+        // attached to an object deriving from Item").
+        Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("Radio"))
         property int index: -1
         property string address: ""
         property string radioName: ""
@@ -662,7 +668,7 @@ Page {
         Timer { id: removeTimer; interval: 3000; onTriggered: radioEditor.removing = false }
         contentItem: ColumnLayout {
             spacing: Theme.spacing
-            Label { text: qsTr("Radio"); color: Theme.text; font.pixelSize: Theme.px(20); font.bold: true }
+            Label { text: qsTr("Radio"); Accessible.role: Accessible.Heading; color: Theme.text; font.pixelSize: Theme.px(20); font.bold: true }
             Label { text: qsTr("Name"); color: Theme.textDim; font.pixelSize: Theme.px(15) }
             TextField {
                 id: nameField
@@ -731,6 +737,9 @@ Page {
     Dialog {
         id: connectionCheck
         objectName: "connectionCheck"
+        // Named on its item: Accessible on a Popup itself is refused ("must be
+        // attached to an object deriving from Item").
+        Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("Connection check"))
         modal: true
         anchors.centerIn: parent
         width: Math.min(560, parent.width - 24)
@@ -743,6 +752,7 @@ Page {
                 Layout.fillWidth: true
                 Label {
                     text: qsTr("Connection check")
+                    Accessible.role: Accessible.Heading
                     color: Theme.text
                     font.pixelSize: Theme.px(20)
                     font.bold: true

@@ -8,6 +8,9 @@ import AetherMobile
 Dialog {
     id: offer
     objectName: "setupSuggestion"
+    // Named on its item: Accessible on a Popup itself is refused ("must be
+    // attached to an object deriving from Item").
+    Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("This radio looks new"))
     signal setupRequested()
     parent: Overlay.overlay
     anchors.centerIn: parent
@@ -27,6 +30,7 @@ Dialog {
         spacing: Theme.spacing
         Label {
             text: qsTr("This radio looks new")
+            Accessible.role: Accessible.Heading
             color: Theme.text
             font.pixelSize: Theme.px(20)
             font.bold: true

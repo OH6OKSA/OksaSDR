@@ -137,7 +137,7 @@ ColumnLayout {
     }
 
     // ---- Station and QRZ.com ----
-    Label { text: qsTr("Station"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
+    Label { text: qsTr("Station"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
     RowLayout {
         Layout.fillWidth: true
         Label {
@@ -216,7 +216,7 @@ ColumnLayout {
     }
 
     // ---- Wavelog / Cloudlog: each logged QSO to the online logbook ----
-    Label { text: qsTr("Wavelog / Cloudlog"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
+    Label { text: qsTr("Wavelog / Cloudlog"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
     TextField {
         id: onlineUrlField
         Accessible.name: qsTr("Logbook address")
@@ -335,7 +335,7 @@ ColumnLayout {
 
     // ---- QRZ.com Logbook, both ways: each logged QSO there, its QSOs read
     // back as worked before ----
-    Label { text: qsTr("QRZ.com Logbook"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
+    Label { text: qsTr("QRZ.com Logbook"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
     RowLayout {
         Layout.fillWidth: true
         PasswordField {
@@ -430,7 +430,7 @@ ColumnLayout {
 
     // ---- A shared ADIF file (iCloud Drive, Google Drive, OneDrive...), both
     // ways, for loggers without a cloud API ----
-    Label { text: qsTr("Shared ADIF file"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
+    Label { text: qsTr("Shared ADIF file"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
     RowLayout {
         Layout.fillWidth: true
         Label {
@@ -496,7 +496,7 @@ ColumnLayout {
 
     // ---- Logger32 on the operator's PC: each logged QSO over TCP (Juho
     // Kontio) ----
-    Label { text: qsTr("Logger32"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
+    Label { text: qsTr("Logger32"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
     // One row where the hint fits beside Save, else Save under the field.
     GridLayout {
         id: logger32Row
@@ -545,7 +545,7 @@ ColumnLayout {
 
     // ---- A logging program on the network, as WSJT-X sends to it
     // (roadmap 89: RUMlogNG, Christoph Steinert DM5HF) ----
-    Label { text: qsTr("Logging program (WSJT-X UDP)"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
+    Label { text: qsTr("Logging program (WSJT-X UDP)"); Accessible.role: Accessible.Heading; color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.topMargin: Theme.spacing }
     GridLayout {
         id: loggerUdpRow
         Layout.fillWidth: true

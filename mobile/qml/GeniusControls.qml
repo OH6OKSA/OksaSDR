@@ -66,7 +66,7 @@ ColumnLayout {
 
         RowLayout {
             Layout.fillWidth: true
-            Label { Layout.fillWidth: true; text: qsTr("Tuner Genius XL"); color: Theme.text; font.pixelSize: Theme.px(17); font.bold: true }
+            Label { Layout.fillWidth: true; text: qsTr("Tuner Genius XL"); Accessible.role: Accessible.Heading; color: Theme.text; font.pixelSize: Theme.px(17); font.bold: true }
             Chip {
                 objectName: "tgxlState"
                 word: genius.t.tuning ? qsTr("TUNING") : !genius.t.operate ? qsTr("STANDBY") : genius.t.bypass ? qsTr("BYPASS") : qsTr("OPERATE")
@@ -266,7 +266,7 @@ ColumnLayout {
 
         RowLayout {
             Layout.fillWidth: true
-            Label { Layout.fillWidth: true; text: qsTr("Power Genius XL"); color: Theme.text; font.pixelSize: Theme.px(17); font.bold: true; elide: Text.ElideRight }
+            Label { Layout.fillWidth: true; text: qsTr("Power Genius XL"); Accessible.role: Accessible.Heading; color: Theme.text; font.pixelSize: Theme.px(17); font.bold: true; elide: Text.ElideRight }
             // IDLE is OPERATE not keyed, as the amplifier's own panel says it.
             Chip {
                 objectName: "pgxlState"
@@ -429,7 +429,7 @@ ColumnLayout {
         readonly property bool canSelect: !!genius.g.control && !!genius.g.direct && !genius.transmitting
         RowLayout {
             Layout.fillWidth: true
-            Label { Layout.fillWidth: true; text: qsTr("Antenna Genius"); color: Theme.text; font.pixelSize: Theme.px(17); font.bold: true; elide: Text.ElideRight }
+            Label { Layout.fillWidth: true; text: qsTr("Antenna Genius"); Accessible.role: Accessible.Heading; color: Theme.text; font.pixelSize: Theme.px(17); font.bold: true; elide: Text.ElideRight }
         }
         Label {
             Layout.fillWidth: true
@@ -498,6 +498,9 @@ ColumnLayout {
     Dialog {
         id: confirm
         objectName: "geniusConfirm"
+        // Named on its item: Accessible on a Popup itself is refused ("must be
+        // attached to an object deriving from Item").
+        Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => confirm.w[0])
         property string action: ""
         property var arg
         function ask(what, a) {
@@ -528,7 +531,7 @@ ColumnLayout {
         readonly property var w: words[action] || ["", "", ""]
         contentItem: ColumnLayout {
             spacing: Theme.spacing
-            Label { Layout.fillWidth: true; text: confirm.w[0]; color: Theme.text; font.pixelSize: Theme.px(18); font.bold: true; wrapMode: Text.Wrap }
+            Label { Layout.fillWidth: true; text: confirm.w[0]; Accessible.role: Accessible.Heading; color: Theme.text; font.pixelSize: Theme.px(18); font.bold: true; wrapMode: Text.Wrap }
             Label { Layout.fillWidth: true; text: confirm.w[1]; color: Theme.textDim; font.pixelSize: Theme.px(15); wrapMode: Text.Wrap }
             RowLayout {
                 Layout.fillWidth: true

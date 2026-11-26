@@ -75,6 +75,7 @@ Popup {
             anchors.left: parent.left
             anchors.bottom: parent.bottom
             text: section.text
+            Accessible.role: Accessible.Heading
             color: Theme.accent
             font.pixelSize: Theme.px(13)
             font.bold: true

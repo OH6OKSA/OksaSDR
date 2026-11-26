@@ -11,6 +11,9 @@ Popup {
     property var options: []
     property string current: ""
     signal picked(string name)
+    // Named on its item: Accessible on a Popup itself is refused ("must be
+    // attached to an object deriving from Item").
+    Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => chooser.title)
     // Modal without dimming: a tap outside only closes it (on the button that
     // opened it too), and never reaches the spectrum below to retune.
     modal: true
@@ -36,6 +39,7 @@ Popup {
         Label {
             visible: chooser.title.length > 0
             text: chooser.title
+            Accessible.role: Accessible.Heading
             color: Theme.textDim
             font.pixelSize: Math.round(Theme.buttonFont * 0.85)
         }
