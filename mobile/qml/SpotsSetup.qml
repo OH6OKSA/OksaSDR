@@ -79,6 +79,8 @@ ColumnLayout {
             onEditingFinished: Engine.setDxCluster("callsign", text)
         }
         AppButton {
+            // "Auto connects with the radio" (the hint below).
+            Accessible.name: qsTr("%1: %2").arg(qsTr("DX cluster")).arg(qsTr("Auto connect"))
             text: qsTr("Auto")
             checked: !!Engine.dxCluster.autoConnect
             leftPadding: 10
@@ -103,6 +105,7 @@ ColumnLayout {
             delegate: AppButton {
                 required property string modelData
                 objectName: "parkSpots" + modelData
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Park spots")).arg(text)
                 text: modelData
                 checked: modelData === "POTA" ? !!Engine.parkSpots.pota : !!Engine.parkSpots.wwff
                 Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
@@ -145,6 +148,7 @@ ColumnLayout {
             }
             AppButton {
                 objectName: "spotFeed_" + parent.modelData.key
+                Accessible.name: qsTr("%1: %2").arg(parent.modelData.label).arg(text)
                 text: checked ? qsTr("On") : qsTr("Off")
                 checked: !!Engine.spotFeeds[parent.modelData.key]
                 Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
@@ -199,6 +203,7 @@ ColumnLayout {
             delegate: AppButton {
                 required property var modelData
                 objectName: "spotDxcc_" + modelData.key
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Needed DXCC")).arg(text)
                 text: modelData.label
                 checked: (al.dxcc || "off") === modelData.key
                 focusPolicy: Qt.NoFocus
@@ -219,6 +224,7 @@ ColumnLayout {
         Label { text: qsTr("Sound"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.fillWidth: true }
         AppButton {
             objectName: "spotAlertSound"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Sound")).arg(text)
             text: al.sound ? qsTr("On") : qsTr("Off")
             checked: !!al.sound
             Layout.preferredWidth: Theme.buttonWidth
@@ -231,6 +237,7 @@ ColumnLayout {
         Label { text: qsTr("Notify while the app is in the background"); color: Theme.textDim; font.pixelSize: Theme.px(14); Layout.fillWidth: true; wrapMode: Text.WordWrap }
         AppButton {
             objectName: "spotAlertNotify"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Notify while the app is in the background")).arg(text)
             text: al.notify ? qsTr("On") : qsTr("Off")
             checked: !!al.notify
             Layout.preferredWidth: Theme.buttonWidth

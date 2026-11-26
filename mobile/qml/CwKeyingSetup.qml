@@ -15,12 +15,14 @@ ColumnLayout {
         Layout.fillWidth: true
         Label { text: qsTr("Key"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.preferredWidth: 64 }
         AppButton {
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Key")).arg(text)
             text: qsTr("Straight key")
             checked: !Engine.cwPaddles
             Layout.fillWidth: true
             onClicked: Engine.cwPaddles = false
         }
         AppButton {
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Key")).arg(text)
             text: qsTr("Paddles")
             checked: Engine.cwPaddles
             Layout.fillWidth: true
@@ -54,6 +56,10 @@ ColumnLayout {
                     { key: "alt", label: "Alt ⌥" }, { key: "brackets", label: "[  ]" }]
             delegate: AppButton {
                 required property var modelData
+                // "[  ]" and "⌥" in words.
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Paddles on a keyboard"))
+                                 .arg(modelData.key === "brackets" ? qsTr("square brackets")
+                                      : modelData.key === "alt" ? qsTr("Alt / Option") : text)
                 text: modelData.label
                 checked: Engine.cwKeyboardPaddles === modelData.key
                 Layout.fillWidth: true

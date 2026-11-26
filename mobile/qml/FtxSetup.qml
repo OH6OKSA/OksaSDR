@@ -104,6 +104,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "pskReporterOff"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Report to PSK Reporter")).arg(text)
             text: qsTr("Off")
             checked: !Engine.pskReporter
             focusPolicy: Qt.NoFocus
@@ -112,6 +113,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "pskReporterOn"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Report to PSK Reporter")).arg(text)
             text: qsTr("On")
             checked: Engine.pskReporter
             focusPolicy: Qt.NoFocus

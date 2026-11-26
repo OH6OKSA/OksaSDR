@@ -18,6 +18,7 @@ ColumnLayout {
         Label { text: qsTr("Theme"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
         AppButton {
             objectName: "themeDark"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Theme")).arg(text)
             text: qsTr("Dark")
             checked: Engine.theme === "dark"
             Layout.preferredWidth: Theme.buttonWidth
@@ -26,6 +27,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "themeLight"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Theme")).arg(text)
             text: qsTr("Light")
             checked: Engine.theme === "light"
             Layout.preferredWidth: Theme.buttonWidth
@@ -35,6 +37,7 @@ ColumnLayout {
         // The device's own appearance, switching with it (roadmap 125).
         AppButton {
             objectName: "themeAuto"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Theme")).arg(text)
             text: qsTr("Auto")
             checked: Engine.theme === "auto"
             Layout.preferredWidth: Theme.buttonWidth
@@ -56,6 +59,7 @@ ColumnLayout {
                 delegate: AppButton {
                     required property var modelData
                     objectName: "textSize" + modelData.v
+                    Accessible.name: qsTr("%1: %2").arg(qsTr("Text size")).arg(text)
                     text: modelData.l
                     checked: Engine.textSize === modelData.v
                     Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
@@ -83,6 +87,7 @@ ColumnLayout {
         Label { text: qsTr("Zoom buttons"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
         AppButton {
             objectName: "displayButtonsLeft"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Zoom buttons")).arg(text)
             text: qsTr("Left")
             checked: !Engine.displayButtonsRight
             Layout.preferredWidth: Theme.buttonWidth
@@ -91,6 +96,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "displayButtonsRight"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Zoom buttons")).arg(text)
             text: qsTr("Right")
             checked: Engine.displayButtonsRight
             Layout.preferredWidth: Theme.buttonWidth
@@ -113,6 +119,7 @@ ColumnLayout {
             delegate: AppButton {
                 required property var modelData
                 objectName: "pttPlace_" + modelData.v
+                Accessible.name: qsTr("%1: %2").arg(qsTr("PTT")).arg(text)
                 text: modelData.t
                 checked: Engine.pttPlace === modelData.v
                 Layout.preferredWidth: Theme.buttonWidth
@@ -130,6 +137,7 @@ ColumnLayout {
         Label { text: qsTr("At start"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
         AppButton {
             objectName: "startRadioList"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("At start")).arg(text)
             text: qsTr("Radio list")
             checked: !Engine.connectAtStart
             Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
@@ -138,6 +146,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "startLastRadio"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("At start")).arg(text)
             text: qsTr("Last radio")
             checked: Engine.connectAtStart
             Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
@@ -154,6 +163,7 @@ ColumnLayout {
             model: [""].concat(Engine.bandPlans)
             delegate: AppButton {
                 required property string modelData
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Band plan")).arg(text)
                 text: modelData.length > 0 ? modelData : qsTr("Off")
                 checked: Engine.bandPlan === modelData
                 leftPadding: 10
@@ -176,6 +186,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "bandPlanLock"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Band plan lock (mode)")).arg(text)
             text: Engine.bandPlanLock ? qsTr("On") : qsTr("Off")
             checked: Engine.bandPlanLock
             leftPadding: 10
@@ -197,6 +208,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "hapticsOn"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Felt taps (phones)")).arg(text)
             text: Engine.hapticsOn ? qsTr("On") : qsTr("Off")
             checked: Engine.hapticsOn
             Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
@@ -210,6 +222,7 @@ ColumnLayout {
         Label { text: qsTr("Hints"); color: Theme.textDim; font.pixelSize: Theme.px(15); Layout.fillWidth: true }
         AppButton {
             objectName: "showHints"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Hints")).arg(text)
             text: qsTr("Show again")
             Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)
             focusPolicy: Qt.NoFocus
@@ -230,6 +243,7 @@ ColumnLayout {
         }
         AppButton {
             objectName: "updateCheckOn"
+            Accessible.name: qsTr("%1: %2").arg(qsTr("New versions")).arg(text)
             text: Engine.updateCheck ? qsTr("On") : qsTr("Off")
             checked: Engine.updateCheck
             Layout.preferredWidth: Math.max(Theme.buttonWidth, implicitWidth)

@@ -104,6 +104,7 @@ ColumnLayout {
         Layout.topMargin: Theme.spacing / 2
         Label { text: qsTr("Bands and steps"); color: Theme.textDim; font.pixelSize: Theme.px(16); Layout.fillWidth: true }
         AppButton {
+            Accessible.name: qsTr("%1: %2").arg(qsTr("Bands and steps")).arg(text)
             text: Engine.tuneRowsShown ? qsTr("Shown") : qsTr("Hidden")
             checked: Engine.tuneRowsShown
             leftPadding: 10

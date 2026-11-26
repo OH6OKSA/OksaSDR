@@ -370,6 +370,7 @@ ColumnLayout {
             delegate: AppButton {
                 required property string modelData
                 objectName: "logTheirSig_" + (modelData || "None")
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Their park")).arg(text)
                 text: modelData.length > 0 ? modelData : qsTr("None")
                 checked: theirSig.value === modelData
                 focusPolicy: Qt.NoFocus
@@ -400,6 +401,7 @@ ColumnLayout {
             model: ["", "POTA", "WWFF"]
             delegate: AppButton {
                 required property string modelData
+                Accessible.name: qsTr("%1: %2").arg(qsTr("My park")).arg(text)
                 text: modelData.length > 0 ? modelData : qsTr("None")
                 objectName: "logMySig_" + (modelData.length > 0 ? modelData : "None")
                 checked: Engine.mySig === modelData

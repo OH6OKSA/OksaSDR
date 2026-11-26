@@ -169,6 +169,7 @@ ColumnLayout {
             label: qsTr("Power")
             AppButton {
                 objectName: "katPowerOn"
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Power")).arg(text)
                 text: qsTr("On")
                 checked: kat.t.power === true
                 enabled: kat.canPower
@@ -177,6 +178,7 @@ ColumnLayout {
             }
             AppButton {
                 objectName: "katPowerOff"
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Power")).arg(text)
                 text: qsTr("Off")
                 checked: kat.t.power === false
                 enabled: kat.canPower
@@ -193,6 +195,7 @@ ColumnLayout {
                 delegate: AppButton {
                     required property var modelData
                     objectName: "katMode_" + modelData.id
+                    Accessible.name: qsTr("%1: %2").arg(qsTr("Mode")).arg(text)
                     text: modelData.name
                     checked: kat.t.mode === modelData.mode
                     enabled: kat.canCommand && kat.t.mode !== undefined
@@ -223,6 +226,7 @@ ColumnLayout {
             label: qsTr("Network")
             AppButton {
                 objectName: "katInLine"
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Network")).arg(text)
                 text: qsTr("In line")
                 checked: kat.t.bypassed === false
                 enabled: kat.canCommand && kat.t.bypassed !== undefined
@@ -231,6 +235,7 @@ ColumnLayout {
             }
             AppButton {
                 objectName: "katBypass"
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Network")).arg(text)
                 text: qsTr("Bypass")
                 checked: kat.t.bypassed === true
                 enabled: kat.canCommand && kat.t.bypassed !== undefined

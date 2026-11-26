@@ -25,6 +25,13 @@ ColumnLayout {
         property string key
         property var value
         objectName: "rtty_" + key + "_" + String(value).replace(".", "_")
+        // The row's name is a Label above the buttons, which a screen reader
+        // never ties to them: "Shift: 170 Hz", "Baud: 45.45", "Mark: 2125 Hz"
+        // (shift and mark in Hz, as the receive line says them).
+        Accessible.name: key === "shift" ? qsTr("%1: %2").arg(qsTr("Shift")).arg(value === 0 ? text : qsTr("%1 Hz").arg(text))
+                       : key === "baud" ? qsTr("%1: %2").arg(qsTr("Baud")).arg(text)
+                       : key === "mark" && value !== 0 ? qsTr("%1: %2").arg(qsTr("Mark")).arg(qsTr("%1 Hz").arg(text))
+                       : text
         checked: rtty.r[key] === value
         Layout.fillWidth: true
         Layout.preferredWidth: 1
@@ -50,6 +57,7 @@ ColumnLayout {
             AppButton {
                 required property string modelData
                 objectName: "textMode" + modelData
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Mode")).arg(text)
                 text: modelData
                 checked: Engine.textMode === modelData
                 focusPolicy: Qt.NoFocus
@@ -82,6 +90,7 @@ ColumnLayout {
             AppButton {
                 required property var modelData
                 objectName: "rttyVia" + modelData.via
+                Accessible.name: qsTr("%1: %2").arg(qsTr("Receive in")).arg(text)
                 text: modelData.label
                 checked: rtty.r.via === modelData.via
                 focusPolicy: Qt.NoFocus
