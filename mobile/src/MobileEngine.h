@@ -2710,6 +2710,9 @@ private:
     // still Auto, and taken when Android lists one again (roadmap 214).
     bool m_headsetLost{false};
     qint64 m_headsetLookAtMs{0};
+    // Android, Bluetooth media: when the headset's music device is looked
+    // for next (roadmap 219; every 5 s besides the word of a change).
+    qint64 m_mediaDeviceLookAtMs{0};
     // A phone call (ringing, in a call, screening): the route is the call's
     // and nothing is asked of Android until it has ended.
     bool m_headsetInCall{false};

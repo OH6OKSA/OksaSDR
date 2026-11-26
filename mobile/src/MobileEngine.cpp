@@ -12793,6 +12793,17 @@ void MobileEngine::headsetKeeperTick()
     if (routeChanged && m_connected && m_audio) {
         QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->reseatTxOnDefaultInput(); }, Qt::QueuedConnection);
     }
+    // Bluetooth media: the headset's music device looked for every 5 s too
+    // (roadmap 219). The word of a device's going or coming arrives while
+    // Android's audio service stands (up to 15 s as a headset goes, roadmap
+    // 221) and the device list cannot be read then, so the change would be
+    // missed: the audio engine falls back to Qt's default by itself, which
+    // with the headset still listed is its call device, silent in this
+    // choice. Nothing happens while the device is the same.
+    if (m_connected && m_audio && now >= m_mediaDeviceLookAtMs && audioOutput() == QLatin1String("Bluetooth")) {
+        m_mediaDeviceLookAtMs = now + 5000;
+        applyAudioOutputDevice();
+    }
     if (!inUse) {
         if (m_headsetMicHold || micRecheck) {
             m_headsetMicHold = false;
