@@ -19,6 +19,15 @@
 // is listed, the call device first (it stays Qt's default output with a
 // headset, which Audio output > Auto uses) and the music device after it,
 // named "Bluetooth media".
+//
+// And (roadmap 218): Android's audio mode left alone while the app holds it.
+// With a Bluetooth headset as its route the app sets its own call mode, which
+// keeps the headset's link up with no microphone open (in the background).
+// Qt set the mode back to normal at every opening of a microphone, so the
+// mode changed each time the app left the front and came back, and the sound
+// broke off for a moment at each change. appHoldsAudioMode is set by the
+// app's Platform class when it takes the headset's route and cleared when it
+// lets it go.
 
 package org.qtproject.qt.android.multimedia;
 
@@ -49,6 +58,8 @@ class QtAudioDeviceManager
     private static final String TAG = "QtAudioDeviceManager";
     // OksaSDR: the mark patch-qt-usb-audio.sh looks for in the compiled class.
     private static final String OKSASDR_PATCH = "OksaSDR audio patch 3";
+    // OksaSDR: the app holds Android's audio mode itself (roadmap 218).
+    static volatile boolean appHoldsAudioMode = false;
 
     static private AudioManager m_audioManager = null;
     static private final AudioDevicesReceiver m_audioDevicesReceiver = new AudioDevicesReceiver();
@@ -522,7 +533,8 @@ class QtAudioDeviceManager
         if (deviceInfo == null)
             return false;
 
-        m_audioManager.setMode(mode);
+        if (!appHoldsAudioMode) // OksaSDR
+            m_audioManager.setMode(mode);
 
         boolean isSink = deviceInfo.isSink();
         if (isSink)

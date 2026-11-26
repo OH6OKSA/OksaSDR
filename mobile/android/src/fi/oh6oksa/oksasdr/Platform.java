@@ -319,6 +319,26 @@ public final class Platform {
         }
     }
 
+    // Tells the app's copy of Qt's audio device class whether the app holds
+    // Android's audio mode itself (roadmap 218): while it does, Qt leaves the
+    // mode alone when a microphone opens. The mode is one for the whole app,
+    // whichever AudioManager sets it, so Qt's "normal" at each opening took
+    // the app's call mode away, and holdHeadsetMode put it back when the app
+    // left the front: a change of mode at both ends of every visit to the
+    // background, and a short break in the sound with each. By name: Qt's
+    // class is not public, and a Qt without the app's copy has no such field
+    // (nothing happens then, and Qt sets the mode as before).
+    private static void holdAudioModeFromQt(boolean hold) {
+        try {
+            Class<?> qt = Class.forName("org.qtproject.qt.android.multimedia.QtAudioDeviceManager");
+            java.lang.reflect.Field field = qt.getDeclaredField("appHoldsAudioMode");
+            field.setAccessible(true);
+            field.setBoolean(null, hold);
+        } catch (Throwable t) {
+            // No such field: Qt sets the mode as before.
+        }
+    }
+
     public static String useHeadset(Context context, boolean on) {
         AudioManager am = audioManager(context);
         if (!on) {
@@ -329,6 +349,7 @@ public final class Platform {
                 am.setBluetoothScoOn(false);
                 am.setSpeakerphoneOn(false);
             }
+            holdAudioModeFromQt(false);
             am.setMode(AudioManager.MODE_NORMAL);
             return "";
         }
@@ -340,8 +361,10 @@ public final class Platform {
                 if (t == AudioDeviceInfo.TYPE_BLUETOOTH_SCO || t == AudioDeviceInfo.TYPE_BLE_HEADSET) {
                     am.setMode(AudioManager.MODE_IN_COMMUNICATION);
                     if (am.setCommunicationDevice(d)) {
+                        holdAudioModeFromQt(true);
                         return describe(d);
                     }
+                    holdAudioModeFromQt(false);
                     am.setMode(AudioManager.MODE_NORMAL);
                 }
             }
@@ -352,6 +375,7 @@ public final class Platform {
                 am.setMode(AudioManager.MODE_IN_COMMUNICATION);
                 am.startBluetoothSco();
                 am.setBluetoothScoOn(true);
+                holdAudioModeFromQt(true);
                 return describe(d);
             }
         }
