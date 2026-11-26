@@ -2574,6 +2574,7 @@ private:
     void updateMicCheck();
     void headsetKeeperTick();
     void retryReceiveOpen(const char* why);
+    void reopenRxOnHeadsetLink(qint64 linkUpMs);
     void releasePtt(const QString& reason);
     void duckReceive(bool on, const char* why);
     void wireSmartLink();
@@ -2642,9 +2643,12 @@ private:
     QTimer m_headsetLinkTimer;
     int m_headsetLinkTicks{0};
     // Android, a Bluetooth headset as the Auto route (roadmap 201). Its call
-    // link is the only way receive reaches a headset used hands-free, and
-    // Android drops it whenever the microphone closes; only a PTT release
-    // took the route again. The keeper looks twice a second: in front the
+    // link is the only way receive reaches a headset used hands-free, and it
+    // dropped whenever the microphone closed; only a PTT release took the
+    // route again. (Why it dropped was found with roadmap 218: Qt takes its
+    // own request for the headset back when a microphone on it closes, and
+    // the app's request went with it. Platform.audioManager has the story
+    // and the cure.) The keeper looks twice a second: in front the
     // microphone is held open for the link (no switching at PTT, no silence
     // after it); a link that is down is taken again, then let go and taken,
     // and said on the page when nothing brings it back.
@@ -2677,6 +2681,11 @@ private:
     // A phone call (ringing, in a call, screening): the route is the call's
     // and nothing is asked of Android until it has ended.
     bool m_headsetInCall{false};
+    // When the keeper last closed the microphone it held for the link (the
+    // app left the front): a link that drops right after that is taken again
+    // at once, without the moment a change in progress otherwise gets
+    // (roadmap 218).
+    qint64 m_headsetMicClosedMs{0};
     // Receive that could not be opened (AudioEngine::rxOpenFailed): tried
     // again every 5 s and when the app comes to the front (roadmap 181 b: an
     // iPad's receive stayed shut after an interruption in the background).

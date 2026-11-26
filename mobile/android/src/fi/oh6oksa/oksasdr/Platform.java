@@ -267,8 +267,60 @@ public final class Platform {
     // connected headset's hands-free link while a radio is connected, as the
     // iOS app does. Returns the headset's name, or "" when none is in use.
 
+    // The AudioManager the app's own audio route is asked through: one of its
+    // own, never the one Qt's audio code holds (roadmap 218). Android keeps
+    // an app's requests for a communication device apart by the AudioManager
+    // they came through, and Qt 6.12 makes such a request of its own when a
+    // microphone opens on a Bluetooth headset and takes it back when that
+    // microphone closes (QtAudioDeviceManager.prepareAudioInput and
+    // releaseAudioDevice, with clearCommunicationDevice). Through a shared
+    // AudioManager that took the app's request with it: the headset's link
+    // dropped whenever the microphone closed, after every transmission and
+    // whenever the app left the front. Android hands out one AudioManager
+    // for each context, so a context of the app's own gives one of its own.
+    private static AudioManager ownAudioManager;
+
+    private static synchronized AudioManager audioManager(Context context) {
+        if (ownAudioManager == null) {
+            Context app = context.getApplicationContext();
+            try {
+                Context own = app.createConfigurationContext(app.getResources().getConfiguration());
+                ownAudioManager = (AudioManager) own.getSystemService(Context.AUDIO_SERVICE);
+            } catch (Throwable t) {
+                ownAudioManager = null;
+            }
+            if (ownAudioManager == null) {
+                ownAudioManager = (AudioManager) app.getSystemService(Context.AUDIO_SERVICE);
+            }
+        }
+        return ownAudioManager;
+    }
+
+    // Whether that AudioManager is another than the one the given context
+    // hands out (the one Qt's audio code got): for the log.
+    public static boolean audioManagerApart(Context context) {
+        try {
+            return audioManager(context) != context.getSystemService(Context.AUDIO_SERVICE);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    // The app's own call mode taken again while a headset is the route
+    // (roadmap 218): Qt sets Android's audio mode back to normal whenever it
+    // opens a microphone, and the app's request for the headset is surest
+    // kept while the mode is the app's. Asked just before the microphone
+    // held for the link is closed, so that the link stays up through it.
+    public static void holdHeadsetMode(Context context) {
+        try {
+            audioManager(context).setMode(AudioManager.MODE_IN_COMMUNICATION);
+        } catch (Throwable t) {
+            // Not given: the link's keeper takes the route again if it drops.
+        }
+    }
+
     public static String useHeadset(Context context, boolean on) {
-        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        AudioManager am = audioManager(context);
         if (!on) {
             if (Build.VERSION.SDK_INT >= 31) {
                 am.clearCommunicationDevice();
@@ -356,7 +408,7 @@ public final class Platform {
             return true;
         }
         if (Build.VERSION.SDK_INT >= 31) {
-            AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            AudioManager am = audioManager(context);
             AudioDeviceInfo d = am.getCommunicationDevice();
             return d != null && d.getType() == AudioDeviceInfo.TYPE_BLE_HEADSET;
         }
@@ -369,7 +421,7 @@ public final class Platform {
     // gave no route this time. The same list useHeadset takes from.
     public static boolean headsetListed(Context context) {
         try {
-            AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            AudioManager am = audioManager(context);
             if (Build.VERSION.SDK_INT >= 31) {
                 for (AudioDeviceInfo d : am.getAvailableCommunicationDevices()) {
                     int t = d.getType();
@@ -396,7 +448,7 @@ public final class Platform {
     // headset's route is the call's and is left alone (roadmap 214).
     public static int audioMode(Context context) {
         try {
-            return ((AudioManager) context.getSystemService(Context.AUDIO_SERVICE)).getMode();
+            return audioManager(context).getMode();
         } catch (Throwable t) {
             return 0;
         }
@@ -404,7 +456,7 @@ public final class Platform {
 
     // Whether Android's communication route is a Bluetooth headset now.
     public static boolean headsetRoute(Context context) {
-        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        AudioManager am = audioManager(context);
         if (Build.VERSION.SDK_INT >= 31) {
             AudioDeviceInfo d = am.getCommunicationDevice();
             return d != null && (d.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
@@ -419,7 +471,7 @@ public final class Platform {
     // headset's media link (A2DP) is there, which Android's Bluetooth
     // settings turn off as the headset's Media audio.
     public static String headsetState(Context context) {
-        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        AudioManager am = audioManager(context);
         String comm;
         if (Build.VERSION.SDK_INT >= 31) {
             AudioDeviceInfo d = am.getCommunicationDevice();
@@ -457,7 +509,7 @@ public final class Platform {
     // it. Returns what is in use.
 
     public static String useSpeaker(Context context) {
-        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        AudioManager am = audioManager(context);
         am.setMode(AudioManager.MODE_IN_COMMUNICATION);
         if (Build.VERSION.SDK_INT >= 31) {
             for (AudioDeviceInfo d : am.getAvailableCommunicationDevices()) {

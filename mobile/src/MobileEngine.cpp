@@ -895,7 +895,7 @@ MobileEngine::MobileEngine(QObject* parent)
             ? QStringLiteral("headset hands-free link up %1 ms after receive opened: receive opened again on it")
                   .arg(linkUpMs - rxOpenedMs)
             : QStringLiteral("no hands-free link state from Android in 4 s with the headset as the route: receive opened again"));
-        QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->reopenRx(); }, Qt::QueuedConnection);
+        reopenRxOnHeadsetLink(linkUpMs);
     });
     m_headsetKeeper.setInterval(500);
     connect(&m_headsetKeeper, &QTimer::timeout, this, &MobileEngine::headsetKeeperTick);
@@ -12497,6 +12497,31 @@ void MobileEngine::watchHeadsetLink()
 #endif
 }
 
+// Android: receive opened again on a headset's link that came up at
+// linkUpMs, unless an opening that was under way meanwhile has landed on the
+// link already. (The engine tries again by itself half a second after an
+// opening that failed while the link was coming up; opening receive once
+// more on top of that cost another 0.7 s of silence: the user's phone, the
+// preview of beta 122.) Looked at on the audio thread, after whatever it was
+// doing. 0: no link time known, opened again as it is.
+void MobileEngine::reopenRxOnHeadsetLink(qint64 linkUpMs)
+{
+#ifdef Q_OS_ANDROID
+    if (!m_audio) {
+        return;
+    }
+    QMetaObject::invokeMethod(m_audio, [audio = m_audio, linkUpMs] {
+        if (linkUpMs > 1 && audio->rxStartedAtMs() > linkUpMs) {
+            qCInfo(lcMobile) << "receive had opened on the headset's link meanwhile: left as it is";
+            return;
+        }
+        audio->reopenRx();
+    }, Qt::QueuedConnection);
+#else
+    Q_UNUSED(linkUpMs);
+#endif
+}
+
 // Receive that could not be opened, tried again (AudioEngine::rxOpenFailed).
 void MobileEngine::retryReceiveOpen(const char* why)
 {
@@ -12537,6 +12562,7 @@ void MobileEngine::headsetKeeperTick()
         m_headsetGaveUp = false;
         m_headsetNextTryMs = 0;
         m_headsetInCall = false;
+        m_headsetMicClosedMs = 0;
         // A headset that was the route and went off Android's list: looked
         // for every 5 s while the choice is still Auto, and taken when it is
         // listed again (not during a phone call).
@@ -12671,6 +12697,16 @@ void MobileEngine::headsetKeeperTick()
         hold = qApp->checkPermission(QMicrophonePermission{}) == Qt::PermissionStatus::Granted;
     }
     if (hold != m_headsetMicHold) {
+        if (!hold && !inFront) {
+            // The app left the front: the microphone closes and the headset
+            // stays the route. The app's call mode is taken again first, so
+            // that the link holds through the closing (roadmap 218; until
+            // then it dropped here every time and was back three seconds
+            // later). The moment is kept: a link that drops all the same is
+            // taken again at once.
+            holdHeadsetMode();
+            m_headsetMicClosedMs = now;
+        }
         m_headsetMicHold = hold;
         updateMicCheck();
     }
@@ -12690,7 +12726,7 @@ void MobileEngine::headsetKeeperTick()
                                               .arg(now - m_headsetBadSinceMs).arg(m_headsetTries)
                                               .arg(reopen ? QStringLiteral(": receive opened again on it") : QString());
             if (reopen) {
-                QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->reopenRx(); }, Qt::QueuedConnection);
+                reopenRxOnHeadsetLink(linkUpMs);
             }
             if (m_headsetNoticeShown) {
                 setLastError({});
@@ -12710,9 +12746,17 @@ void MobileEngine::headsetKeeperTick()
         return;
     }
     if (m_headsetBadSinceMs == 0) {
-        m_headsetBadSinceMs = now;   // a change in progress gets its moment
-        m_headsetNextTryMs = now + 1500;
-        return;
+        m_headsetBadSinceMs = now;
+        // A change in progress gets its moment, 1.5 s. Not a drop right
+        // after the app itself closed the held microphone: its cause is
+        // known, and the route is taken again at once (roadmap 218: that
+        // wait was half of the three seconds of silence when the app left
+        // the front).
+        const bool ownClose = m_headsetMicClosedMs != 0 && now - m_headsetMicClosedMs < 3000;
+        m_headsetNextTryMs = ownClose ? now : now + 1500;
+        if (!ownClose) {
+            return;
+        }
     }
     if (now < m_headsetNextTryMs) {
         return;
@@ -12754,6 +12798,14 @@ void MobileEngine::headsetKeeperTick()
     if (m_headsetTries <= 2) {
         take();
     } else {
+        // Let go for real: while the microphone is held open on the headset,
+        // Qt's own request for the headset stands beside the app's (roadmap
+        // 218), so the microphone closes for the round too.
+        m_headsetCycleUntilMs = now + 1600;
+        if (m_headsetMicHold) {
+            m_headsetMicHold = false;
+            updateMicCheck();
+        }
         dropHeadsetRoute();
         QTimer::singleShot(700, this, take);
     }

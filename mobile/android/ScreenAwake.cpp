@@ -161,6 +161,15 @@ void applyAudioRoute()
     qCInfo(lcAndroid).noquote() << "audio output" << s_outputMode << "->" << route;
     if (s_headsetInUse) {
         qCInfo(lcAndroid).noquote() << "headset:" << headsetState();
+        // Once a run: whether the route is asked through an AudioManager of
+        // the app's own (roadmap 218; Platform.audioManager has the story).
+        static bool said = false;
+        if (!said) {
+            said = true;
+            const bool apart = QJniObject::callStaticMethod<jboolean>(kPlatformClass, "audioManagerApart",
+                "(Landroid/content/Context;)Z", context.object());
+            qCInfo(lcAndroid) << "headset route asked through an AudioManager of the app's own:" << (apart ? "yes" : "no");
+        }
     }
 }
 
@@ -251,6 +260,15 @@ int androidAudioMode()
 {
     return QJniObject::callStaticMethod<jint>(kPlatformClass, "audioMode", "(Landroid/content/Context;)I",
                                               androidContext().object());
+}
+
+void holdHeadsetMode()
+{
+    if (!headsetInUse()) {
+        return;
+    }
+    QJniObject::callStaticMethod<void>(kPlatformClass, "holdHeadsetMode", "(Landroid/content/Context;)V",
+                                       androidContext().object());
 }
 
 void dropHeadsetRoute()

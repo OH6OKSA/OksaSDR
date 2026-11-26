@@ -54,6 +54,10 @@ bool headsetListed();
 // Android's audio mode (AudioManager.MODE_*): 1 ringing, 2 a phone call,
 // 4 call screening; during those the headset's route is the call's.
 int androidAudioMode();
+// The app's own call mode taken again for the headset's route, just before
+// the microphone held for the link is closed: the link then stays up
+// through the closing (roadmap 218).
+void holdHeadsetMode();
 #endif
 
 } // namespace AetherSDR::mobile
