@@ -647,6 +647,24 @@ ColumnLayout {
         default: return "transparent"
         }
     }
+    // What a highlight colour means, in words for a screen reader (a CQ's
+    // own green is left out: the message says CQ).
+    function hlWords(hl) {
+        switch (hl) {
+        case "mycall": return qsTr("your call")
+        case "continent": return qsTr("new continent")
+        case "continentBand": return qsTr("new continent on this band")
+        case "cqzone": return qsTr("new zone")
+        case "cqzoneBand": return qsTr("new zone on this band")
+        case "dxcc": return qsTr("new DXCC")
+        case "dxccBand": return qsTr("new DXCC on this band")
+        case "newcall": return qsTr("new call")
+        case "newcallBand": return qsTr("new call on this band")
+        case "b4": return qsTr("worked before")
+        case "tx": return qsTr("your transmission")
+        default: return ""
+        }
+    }
     // What the list shows; your call, your TX and the station in the QSO
     // always show.
     function passes(row) {
@@ -759,7 +777,13 @@ ColumnLayout {
         Layout.fillWidth: true
         implicitHeight: Math.max(32, decodeText.implicitHeight + 8)
         padding: 2
-        Accessible.name: row.text
+        // The message, its SNR and audio Hz, and in words what the row's
+        // colour says; a double tap answers, as a tap does.
+        Accessible.name: [row.text,
+                          row.snr === "" || row.snr === undefined ? "" : qsTr("%1 dB").arg((row.snr >= 0 ? "+" : "") + row.snr),
+                          qsTr("%1 Hz").arg(row.freq),
+                          digi.hlWords(row.hl)].filter(t => t && t.length > 0).join(", ")
+        Accessible.description: qsTr("Answers this station: transmits in the next slot")
         background: Rectangle {
             color: parent.ground
             radius: 4

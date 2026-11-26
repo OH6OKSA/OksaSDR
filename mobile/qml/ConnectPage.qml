@@ -30,6 +30,16 @@ Page {
         // A third line when there is one (a saved radio's address, which the
         // radio's own name otherwise pushed out of sight: Mike VA3MW).
         property string detail
+        // The title as a screen reader says it: a favourite's "★ " is read
+        // "black star", so its card says "Favourite" instead.
+        property string spokenTitle: title
+        // One button for VoiceOver and TalkBack: the card's lines in one
+        // name (an ItemDelegate's name comes from text, which is not set),
+        // what it shows as a state ("in use", "not reachable") with them,
+        // and a double tap connecting as a tap does.
+        Accessible.role: Accessible.Button
+        Accessible.name: [spokenTitle, subtitle, detail].filter(t => t && t.length > 0).join(", ")
+        Accessible.onPressAction: if (row.enabled) row.clicked()
         Layout.fillWidth: true
         // Taller with a large system text size (Android's font size), so the
         // lines stay inside the card (Ian Gilchrist VK1HF).
@@ -57,9 +67,9 @@ Page {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 2
-                    Label { text: row.title; color: Theme.text; font.pixelSize: Theme.px(20); elide: Text.ElideRight; Layout.fillWidth: true }
-                    Label { text: row.subtitle; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
-                    Label { text: row.detail; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
+                    Label { Accessible.ignored: true; text: row.title; color: Theme.text; font.pixelSize: Theme.px(20); elide: Text.ElideRight; Layout.fillWidth: true }
+                    Label { Accessible.ignored: true; text: row.subtitle; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
+                    Label { Accessible.ignored: true; text: row.detail; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
                 }
                 ConnectChip { visible: row.enabled; down: row.down }
             }
@@ -69,6 +79,7 @@ Page {
             ColumnLayout {
                 spacing: 2
                 Label {
+                    Accessible.ignored: true
                     text: row.title
                     color: Theme.text
                     font.pixelSize: Theme.px(20)
@@ -83,8 +94,8 @@ Page {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 2
-                        Label { text: row.subtitle; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
-                        Label { text: row.detail; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
+                        Label { Accessible.ignored: true; text: row.subtitle; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
+                        Label { Accessible.ignored: true; text: row.detail; visible: text.length > 0; color: Theme.textDim; font.pixelSize: Theme.px(15); elide: Text.ElideRight; Layout.fillWidth: true }
                     }
                     ConnectChip { visible: row.enabled; down: row.down }
                 }
@@ -103,6 +114,7 @@ Page {
         color: down ? Theme.buttonFaceDown : Theme.buttonFace
         Label {
             id: chipLabel
+            Accessible.ignored: true
             anchors.centerIn: parent
             text: qsTr("Connect ›")
             color: Theme.buttonText
@@ -298,6 +310,7 @@ Page {
                                 objectName: "smartLinkFavourite" + favRow.index
                                 stacked: page.stackCards
                                 title: "★ " + favRow.modelData.name
+                                spokenTitle: qsTr("Favourite %1").arg(favRow.modelData.name)
                                 subtitle: favRow.modelData.account
                                           + (favRow.modelData.online ? "" : favRow.modelData.active && Engine.smartLinkState === "signedIn"
                                                                             ? qsTr("   not online") : "")

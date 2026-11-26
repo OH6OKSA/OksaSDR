@@ -591,6 +591,9 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         Layout.preferredHeight: Theme.touchTarget
                         text: qsTr("Disconnect it and connect")
+                        // Every row's button reads the same: the name says which.
+                        readonly property string who: [modelData.program, modelData.station].filter(t => !!t).join(" — ")
+                        Accessible.name: who ? qsTr("Disconnect %1 and connect").arg(who) : text
                         focusPolicy: Qt.NoFocus
                         onClicked: Engine.resolveStationConflict(modelData.handle)
                     }
