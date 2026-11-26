@@ -974,6 +974,12 @@ MobileEngine::MobileEngine(QObject* parent)
         if (androidAudioBusy()) {
             return;   // Android's audio service does not answer now: nothing is known
         }
+        // Bluetooth media follows the headset's music device as it comes and
+        // goes (roadmap 219): the speaker while it is away, the headset again
+        // when it is back. Nothing happens while the device stays the same.
+        if (m_connected && audioOutput() == QLatin1String("Bluetooth")) {
+            applyAudioOutputDevice();
+        }
         const QAudioDevice now = androidAudioDevices().defaultOutput;
         const bool wasWired = std::exchange(m_defaultOutputWired, wired(now));
         if (std::exchange(m_defaultOutputId, now.id()) == now.id() || !(wasWired || m_defaultOutputWired)) {
@@ -12585,10 +12591,16 @@ void MobileEngine::setAudioOutput(const QString& mode)
 // microphone was the headset's in every choice (beta 37, the user's phone;
 // a Bluetooth microphone also turns the link to hands-free, so Bluetooth
 // media lost its sound). Speaker opens the receive stream on the built-in
-// speaker; Auto and Bluetooth on Qt's default output (a connected Bluetooth
-// device first). The microphone: Auto Qt's default input (a Bluetooth
-// headset's first), Speaker and Bluetooth the device's own. Running streams
-// restart on the new device.
+// speaker; Auto on Qt's default output (a wired or USB headset first, then a
+// Bluetooth headset's call device); Bluetooth media on the headset's music
+// device, which the app's copy of Qt's device list names "Bluetooth media"
+// (roadmap 219: Qt showed one Bluetooth device only, on the user's phone the
+// call device, so the choice could not open the music device), and on the
+// phone's speaker when there is none (the headset off, or its media audio
+// off in Android's settings): never on a call device whose link is not up.
+// The microphone: Auto Qt's default input (a Bluetooth headset's first),
+// Speaker and Bluetooth the device's own. Running streams restart on the new
+// device.
 void MobileEngine::applyAudioOutputDevice()
 {
 #ifdef Q_OS_ANDROID
@@ -12605,8 +12617,15 @@ void MobileEngine::applyAudioOutputDevice()
     };
     const QString mode = audioOutput();
     const AndroidAudioDevices devices = androidAudioDevices();
-    const QAudioDevice output = mode == QLatin1String("Speaker")
-        ? named(devices.outputs, QLatin1String("Built in speaker")) : QAudioDevice{};
+    QAudioDevice output;
+    if (mode == QLatin1String("Speaker")) {
+        output = named(devices.outputs, QLatin1String("Built in speaker"));
+    } else if (mode == QLatin1String("Bluetooth")) {
+        output = named(devices.outputs, QLatin1String("Bluetooth media"));
+        if (output.isNull()) {
+            output = named(devices.outputs, QLatin1String("Built in speaker"));
+        }
+    }
     const QAudioDevice input = mode == QLatin1String("Auto")
         ? QAudioDevice{} : named(devices.inputs, QLatin1String("Built in microphone"));
     if (m_outputDeviceApplied && output.id() == m_outputDeviceId && input.id() == m_inputDeviceId) {

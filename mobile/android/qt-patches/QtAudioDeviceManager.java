@@ -8,7 +8,17 @@
 // the microphone on the phone's own speaker and microphone with a USB-C
 // headset plugged in (Jeff Stinger, Pixel 7). They rank with wired
 // headsets. mobile/android/patch-qt-usb-audio.sh compiles this into the Qt
-// install's Qt6AndroidMultimedia.jar; the five changes are marked OksaSDR.
+// install's Qt6AndroidMultimedia.jar; the changes are marked OksaSDR.
+//
+// Also (roadmap 219): a Bluetooth headset's two devices both listed. Qt kept
+// only the first Bluetooth device Android names, the call device (SCO) or the
+// music device (A2DP) as it happened, and called both "Bluetooth": on a phone
+// that names the call device first the app could not open receive on the
+// music device at all, so Audio output > Bluetooth media stayed on the
+// phone's speaker or played on a call link that was not up. Now one of each
+// is listed, the call device first (it stays Qt's default output with a
+// headset, which Audio output > Auto uses) and the music device after it,
+// named "Bluetooth media".
 
 package org.qtproject.qt.android.multimedia;
 
@@ -37,6 +47,8 @@ import org.qtproject.qt.android.UsedFromNativeCode;
 class QtAudioDeviceManager
 {
     private static final String TAG = "QtAudioDeviceManager";
+    // OksaSDR: the mark patch-qt-usb-audio.sh looks for in the compiled class.
+    private static final String OKSASDR_PATCH = "OksaSDR audio patch 3";
 
     static private AudioManager m_audioManager = null;
     static private final AudioDevicesReceiver m_audioDevicesReceiver = new AudioDevicesReceiver();
@@ -144,6 +156,7 @@ class QtAudioDeviceManager
 
     static void setContext(Context context)
     {
+        Log.i(TAG, OKSASDR_PATCH); // OksaSDR
         m_audioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
     }
 
@@ -231,6 +244,7 @@ class QtAudioDeviceManager
             case AudioDeviceInfo.TYPE_AUX_LINE:
                 return "AUX Line";
             case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:
+                return "Bluetooth media"; // OksaSDR: the music device, told apart
             case AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
                 return "Bluetooth";
             case AudioDeviceInfo.TYPE_BUILTIN_EARPIECE:
@@ -291,11 +305,13 @@ class QtAudioDeviceManager
         put(AudioDeviceInfo.TYPE_USB_DEVICE, 1);
         put(AudioDeviceInfo.TYPE_USB_HEADSET, 1); // OksaSDR
         // NOTE: Should TYPE_USB_ACCESSORY also have priority level 1?
-        put(AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, 2);
+        // OksaSDR: the call device before the music device, both before the
+        // speaker (they shared level 2, so Android's order decided).
         put(AudioDeviceInfo.TYPE_BLUETOOTH_SCO, 2);
-        put(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 3);
+        put(AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, 3);
+        put(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 4);
     }};
-    private static final int DEFAULT_PRIORITY = 4;
+    private static final int DEFAULT_PRIORITY = 5;
 
     private static void sortAudioDevices(AudioDeviceInfo[] devices) {
         Comparator<AudioDeviceInfo> deviceTypeComparator = new Comparator<AudioDeviceInfo>() {
@@ -318,7 +334,8 @@ class QtAudioDeviceManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             boolean builtInMicAdded = false;
-            boolean bluetoothDeviceAdded = false;
+            boolean bluetoothScoAdded = false;  // OksaSDR: one of each kind
+            boolean bluetoothA2dpAdded = false; // OksaSDR
             AudioDeviceInfo[] audioDevices = m_audioManager.getDevices(type);
             sortAudioDevices(audioDevices);
 
@@ -339,13 +356,19 @@ class QtAudioDeviceManager
                     }
                     builtInMicAdded = true;
                 } else if (isBluetoothDevice(deviceInfo)) {
-                    if (bluetoothDeviceAdded) {
-                        // Bluetooth device already added. Second device is just a different
-                        // technology profille (like A2DP or SCO). We should not add the same
-                        // device twice. Should we?
-                        continue;
+                    // OksaSDR: a headset's call device (SCO) and its music
+                    // device (A2DP) are two outputs with two uses, so one of
+                    // each kind is listed; Qt listed the first Bluetooth
+                    // device only, whichever kind Android named first.
+                    if (deviceInfo.getType() == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP) {
+                        if (bluetoothA2dpAdded)
+                            continue;
+                        bluetoothA2dpAdded = true;
+                    } else {
+                        if (bluetoothScoAdded)
+                            continue;
+                        bluetoothScoAdded = true;
                     }
-                    bluetoothDeviceAdded = true;
                 }
 
                 filteredDevices.add(deviceInfo);
