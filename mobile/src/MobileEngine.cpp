@@ -951,6 +951,12 @@ MobileEngine::MobileEngine(QObject* parent)
         m_defaultOutputWired = wired(atStart);
     }
     connect(new QMediaDevices(this), &QMediaDevices::audioOutputsChanged, this, [this, wired] {
+        // Bluetooth media plays on the headset's music device by its id
+        // (roadmap 219), and a headset that connects again gets a new one:
+        // the device is looked up again whenever Android's outputs change.
+        if (m_connected && audioOutput() == QLatin1String("Bluetooth")) {
+            applyAudioOutputDevice();
+        }
         if (androidAudioBusy()) {
             return;   // Android's audio service does not answer now: nothing is known
         }
@@ -12491,8 +12497,30 @@ void MobileEngine::applyAudioOutputDevice()
     };
     const QString mode = audioOutput();
     const AndroidAudioDevices devices = androidAudioDevices();
-    const QAudioDevice output = mode == QLatin1String("Speaker")
-        ? named(devices.outputs, QLatin1String("Built in speaker")) : QAudioDevice{};
+    QAudioDevice output;
+    if (mode == QLatin1String("Speaker")) {
+        output = named(devices.outputs, QLatin1String("Built in speaker"));
+    } else if (mode == QLatin1String("Bluetooth")) {
+        // The headset's music device itself, by Android's id for it (which is
+        // Qt's too). Qt's default output is the first Bluetooth device Android
+        // happens to list, the call device or the music device, both named
+        // "Bluetooth": from Speaker the sound stayed on the phone's speaker
+        // (roadmap 219, the user's phone). None listed (media audio off in
+        // Android's settings, no headset): Qt's default, as before.
+        const int id = bluetoothOutputId(true);
+        if (id >= 0) {
+            const QByteArray wanted = QByteArray::number(id);
+            for (const QAudioDevice& candidate : devices.outputs) {
+                if (candidate.id() == wanted) {
+                    output = candidate;
+                    break;
+                }
+            }
+            if (output.isNull()) {
+                qCInfo(lcMobile) << "audio devices: Android's music device" << id << "is not among Qt's outputs: Qt's default";
+            }
+        }
+    }
     const QAudioDevice input = mode == QLatin1String("Auto")
         ? QAudioDevice{} : named(devices.inputs, QLatin1String("Built in microphone"));
     if (m_outputDeviceApplied && output.id() == m_outputDeviceId && input.id() == m_inputDeviceId) {
@@ -12502,7 +12530,8 @@ void MobileEngine::applyAudioOutputDevice()
     m_outputDeviceId = output.id();
     m_inputDeviceId = input.id();
     const auto name = [](const QAudioDevice& device) {
-        return device.isNull() ? QStringLiteral("the system default") : device.description();
+        return device.isNull() ? QStringLiteral("the system default")
+                               : device.description() + QStringLiteral(" (") + QString::fromLatin1(device.id()) + QLatin1Char(')');
     };
     qCInfo(lcMobile).noquote() << "audio devices: output" << name(output) << "/ microphone" << name(input);
     // The microphone first: opening it can change Android's route, which
@@ -12596,6 +12625,19 @@ void MobileEngine::headsetKeeperTick()
         return;
     }
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    // Where Android really plays receive, once for each stream a second
+    // and a half after it started (roadmap 219): Qt's word for the device it
+    // opened is not always that.
+    if (m_connected && m_audio) {
+        const qint64 startedMs = m_audio->rxStartedAtMs();
+        if (startedMs != 0 && startedMs != m_playDeviceSaidFor && now - startedMs >= 1500) {
+            m_playDeviceSaidFor = startedMs;
+            const QString devices = androidPlaybackDevices();
+            if (!devices.isEmpty()) {
+                qCInfo(lcMobile).noquote() << "receive plays on:" << devices << "(Audio output" << audioOutput() + ")";
+            }
+        }
+    }
     const bool inUse = m_connected && m_audio && headsetInUse();
     if (!inUse) {
         if (m_headsetMicHold) {

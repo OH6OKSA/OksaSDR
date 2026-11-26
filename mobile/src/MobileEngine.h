@@ -2686,6 +2686,9 @@ private:
     // at once, without the moment a change in progress otherwise gets
     // (roadmap 218).
     qint64 m_headsetMicClosedMs{0};
+    // Android: the receive stream whose playing device has been said in the
+    // log (its start time), and when it is asked for (roadmap 219).
+    qint64 m_playDeviceSaidFor{0};
     // Receive that could not be opened (AudioEngine::rxOpenFailed): tried
     // again every 5 s and when the app comes to the front (roadmap 181 b: an
     // iPad's receive stayed shut after an interruption in the background).
