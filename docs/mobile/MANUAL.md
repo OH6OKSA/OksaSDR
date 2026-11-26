@@ -1562,8 +1562,7 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   device even with Bluetooth on (e.g. a car or a watch that takes the
   sound); *Bluetooth media* plays through a Bluetooth device's music link,
   which sounds better than a headset's call link, and the device's own
-  microphone transmits (without a Bluetooth device, or with the headset's
-  *Media audio* off in Android's Bluetooth settings, the speaker plays). The
+  microphone transmits (without a Bluetooth device, the speaker plays). The
   choice applies at once and is remembered. Low latency is for a
   wired or very steady link only; on ordinary Wi-Fi it stutters. If Normal
   stutters, try Smooth. Every 10 s with stutter the log gets an
@@ -3406,8 +3405,8 @@ stopped for a few seconds each time the app left the front; if the link
 still drops there, it is taken again at once. A headset switched off or
 lost with its *Media audio* on could stop the whole app for some 15
 seconds, until the radio dropped the connection; since beta 122 the app
-goes on and only the sound takes a moment to move to the phone. Back in
-front, the route of
+goes on and stays connected, and the sound moves to the phone once Android
+lets it (that can still take those 15 seconds). Back in front, the route of
 a headset used for calls only (*Media audio* off) is renewed once if its
 link is down, with a second and a half of silence. If Android does not open the
 link, a notice says so: Controls › Audio › Audio output › *Speaker* and
