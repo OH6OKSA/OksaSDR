@@ -10,6 +10,8 @@
 #include <QDir>
 #include <QFile>
 #include <QFont>
+#include <QHash>
+#include <QPair>
 #include <QPointer>
 #include <QRegularExpression>
 #include <QQmlApplicationEngine>
@@ -20,6 +22,7 @@
 #include <QScreen>
 #include <QSet>
 #include <QThreadPool>
+#include <QStringList>
 #include <QStyleHints>
 #include <QThread>
 #include <QTimer>
@@ -1862,6 +1865,59 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                                      .arg(MobileEngine::spaceHeldBackWith(int(row.mods), false) ? QStringLiteral("held back") : QStringLiteral("PTT"));
         }
         *delayMs = 100;
+    } else if (command == QLatin1String("keyev")) {
+        // One press or release as a hardware keyboard sends it, with the
+        // modifiers held: the learned PTT key's combinations. A modifier
+        // named alone is that modifier key (Alt: Key_Alt).
+        const bool press = args.value(0) == QLatin1String("press");
+        const QStringList parts = args.value(1).split(QLatin1Char('+'), Qt::SkipEmptyParts);
+        static const QHash<QString, QPair<int, Qt::KeyboardModifier>> mods{
+            {QStringLiteral("Alt"), {Qt::Key_Alt, Qt::AltModifier}},
+            {QStringLiteral("Ctrl"), {Qt::Key_Control, Qt::ControlModifier}},
+            {QStringLiteral("Shift"), {Qt::Key_Shift, Qt::ShiftModifier}},
+            {QStringLiteral("Meta"), {Qt::Key_Meta, Qt::MetaModifier}}};
+        static const QRegularExpression fk(QStringLiteral("^F([1-9]|1[0-2])$"));
+        Qt::KeyboardModifiers held;
+        int key = 0;
+        for (const QString& part : parts) {
+            if (mods.contains(part)) {
+                held |= mods.value(part).second;
+                key = mods.value(part).first;
+            } else if (part == QLatin1String("Space")) {
+                key = Qt::Key_Space;
+            } else if (part == QLatin1String("Esc")) {
+                key = Qt::Key_Escape;
+            } else if (const QRegularExpressionMatch m = fk.match(part); m.hasMatch()) {
+                key = Qt::Key_F1 + m.captured(1).toInt() - 1;
+            } else if (part.size() == 1 && part.at(0).isLetter()) {
+                key = part.at(0).toUpper().unicode();
+            } else {
+                key = 0;
+                break;
+            }
+        }
+        if (window && key != 0 && (press || args.value(0) == QLatin1String("release"))) {
+            // The last part is the key itself: a modifier key counts in its
+            // press and not in its release, as Qt reports it on a Mac.
+            if (mods.contains(parts.last()) && !press) {
+                held &= ~Qt::KeyboardModifiers(mods.value(parts.last()).second);
+            }
+            QWindowSystemInterface::handleKeyEvent(window, press ? QEvent::KeyPress : QEvent::KeyRelease, key, held);
+            QWindowSystemInterface::flushWindowSystemEvents();
+            qInfo().noquote() << "shot-plan: keyev" << args.join(QLatin1Char(' '));
+        } else {
+            qWarning().noquote() << "shot-plan: keyev: give press|release and a key -" << args.join(QLatin1Char(' '));
+            m_failed = true;
+        }
+        *delayMs = 200;
+    } else if (command == QLatin1String("pttkey")) {
+        if (arg == QLatin1String("learn")) {
+            m_engine.learnPttKey();
+        } else if (arg == QLatin1String("clear")) {
+            m_engine.clearPttKey();
+        }
+        qInfo().noquote() << "shot-plan: pttkey" << arg << "->" << m_engine.pttKeyName();
+        *delayMs = 200;
     } else if (command == QLatin1String("keys")) {
         // Keys through the window as a hardware keyboard sends them; "\\b"
         // is Backspace as an iPad app on a Mac gets it from UIKit (key 8,
