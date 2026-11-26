@@ -6,16 +6,18 @@ import AetherMobile
 // A spot alert in the middle of the screen (roadmap 132): a call on the watch
 // list or a needed DXCC, spotted from where Spotted from allows. Tune goes
 // to the spot (the slice's mode by the spot, as a tap on it does), × shows
-// the next one (+N more). Not a popup: it never takes the keyboard from the
-// page (Space PTT on a tablet), and the drawers and dialogs stay above it.
+// the next one (+N more). The main window shows it in a popup of its own
+// above the controls drawer, Setup and the dialogs (roadmap 222: as an item
+// of the page it lay under an open drawer, on a phone wholly); that popup
+// takes no focus, so the page keeps the keyboard (Space PTT on a tablet).
 Rectangle {
     id: banner
     objectName: "spotAlertBanner"
     readonly property var a: Engine.spotAlert
-    visible: Engine.connectionState === "connected" && !!a.call
-    z: 50
-    width: Math.min(parent ? parent.width - 2 * Theme.spacing : 400, 640)
-    height: row.implicitHeight + 2 * 8
+    // An alert to show; the host opens and closes by it.
+    readonly property bool wanted: Engine.connectionState === "connected" && !!a.call
+    implicitWidth: 640
+    implicitHeight: row.implicitHeight + 2 * 8
     radius: Theme.radius
     color: Theme.surfaceRaised
     border.color: Theme.warning

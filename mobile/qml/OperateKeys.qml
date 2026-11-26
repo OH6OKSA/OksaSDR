@@ -124,8 +124,13 @@ Item {
     // list closed it before a choice could be made.
     function popupOpen() {
         const kids = keys.page && keys.page.Overlay.overlay ? keys.page.Overlay.overlay.children : []
+        // A spot alert's popup (roadmap 222) is no such popup: it takes no
+        // keys, and it can stay on the screen for long.
+        const win = keys.page ? keys.page.Window.window : null
+        const alert = win && win.alertPopup ? win.alertPopup : null
         for (let i = 0; i < kids.length; ++i) {
             if (!kids[i].visible) continue
+            if (alert && keys.within(alert, kids[i])) continue
             if (!keys.within(keys.drawer, kids[i]) && !keys.within(keys.macros, kids[i])) return true
         }
         return false

@@ -168,8 +168,37 @@ ApplicationWindow {
     // the middle of the screen at every size, where it catches the eye
     // (the user, build 201's preview; at the top it covered the top row's
     // buttons and was easy to miss).
-    SpotAlertBanner {
-        anchors.centerIn: parent
+    // Above the controls drawer, the Macros panel, Setup and the dialogs
+    // (roadmap 222, the user: "pitäisi aina olla päällimmäisenä"): as an
+    // item of the page it lay under an open drawer, on a phone wholly. A
+    // popup that takes no focus and never closes by a press elsewhere, as
+    // the notices and the keyboard's Done: the page keeps the keyboard
+    // (OperateKeys leaves this popup out of the ones that hold it), and a
+    // press on Tune or × is not a press outside the drawer, which stays
+    // open. In the same place as before: the middle of the page's own room.
+    property alias alertPopup: spotAlertPopup
+    Popup {
+        id: spotAlertPopup
+        objectName: "spotAlertPopup"
+        parent: Overlay.overlay
+        z: 900
+        modal: false
+        dim: false
+        focus: false
+        closePolicy: Popup.NoAutoClose
+        padding: 0
+        margins: 0
+        background: null
+        width: Math.min(window.width - window.SafeArea.margins.left - window.barRight - 2 * Theme.spacing, 640)
+        x: Math.round(window.SafeArea.margins.left
+                      + (window.width - window.SafeArea.margins.left - window.barRight - width) / 2)
+        y: Math.round(window.barTop + (window.height - window.barTop - window.barBottom - height) / 2)
+        contentItem: SpotAlertBanner { id: spotAlertBanner }
+        readonly property bool wanted: spotAlertBanner.wanted
+        onWantedChanged: wanted ? open() : close()
+        Component.onCompleted: if (wanted) open()
+        // Whatever closes it while an alert waits: shown again.
+        onClosed: if (wanted) Qt.callLater(open)
     }
 
     // The on-screen keyboard's Done (roadmap 142, Robin Bishop G5OUT): an

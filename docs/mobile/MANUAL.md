@@ -3139,7 +3139,9 @@ tab holds.
     log and country list as the FTx tab's *New DXCC*; worked counts, not
     confirmed (the line under the buttons says so). A spot of either,
     from where the Spots tab's *From* allows, shows in the middle of the
-    screen: the call, frequency, mode and country, why, the spotter and
+    screen, above everything else (since build 222 / Android beta 123 also
+    above the open Controls, Radio Setup and a dialog, which covered it
+    before): the call, frequency, mode and country, why, the spotter and
     the time; **Tune** goes to it and sets the radio for the spot's mode
     (since build 204; the user's idea): CW, USB, LSB, AM or FM by the
     spot; RTTY into RTTY with the mark on the signal; PSK31 / PSK63 into
