@@ -151,27 +151,24 @@ on the device.
 ## Microphone
 
 The microphone is used only to transmit through your radio (voice, RADE
-digital voice) and to record voice keyer messages you choose to record. On
-an iPhone, an iPad and a Mac it is open the whole time the app is connected
-to a radio, with this device's microphone as the radio's input, and in
-front, once you have allowed it (since build 221): the audio streams to
-your radio, which transmits only at PTT or by its VOX, so that the
-microphone's level and audio chain can be set without transmitting; iOS
-shows its microphone indicator for as long, and in the background the
-microphone is closed unless the radio's VOX is on. On Android and Linux
-it is open only while you hold PTT or record, while the TX or eSSB tab is
-shown (for its microphone meter; nothing is transmitted), while you have
-the radio's VOX on with this device's microphone (the audio then streams to
-your radio, whose VOX transmits when you speak), or, on Android, while a
-Bluetooth headset is the app's hands-free set (Audio output *Auto*) and the
-app is connected and in front: a headset's call link stays up only while its
-microphone is open, so the app holds it open then (the audio streams to your
-radio, which transmits only at PTT; Android shows its microphone indicator
-for as long). Transmitting from the device requires the radio's mic
-input to be set to this device ("Use this device's microphone"). The audio
-goes only to your radio and is not recorded or stored, except the voice
-keyer messages you record yourself, which stay on the device. iOS and
-Android ask for microphone permission first.
+digital voice) and to record voice keyer messages you choose to record. It
+is open the whole time the app is connected to a radio, with this device's
+microphone as the radio's input, and in front, once you have allowed it (on
+an iPhone, an iPad and a Mac since build 221, on Android and Linux since
+Android beta 123): the audio streams to your radio, which transmits only at
+PTT or by its VOX, so that the microphone's level and audio chain can be
+set without transmitting. iOS and Android show their microphone indicators
+for as long. In the background the microphone is closed unless the radio's
+VOX is on, and on Android it is not held during a phone call. With a
+Bluetooth headset as the app's hands-free set (Audio output *Auto*) it is
+the headset's microphone, else the device's own. Before those builds the
+microphone was open only while you held PTT or recorded, while the TX or
+eSSB tab was shown, with VOX on, and on Android with a Bluetooth headset.
+Transmitting from the device requires the radio's mic input to be set to
+this device ("Use this device's microphone"). The audio goes only to your
+radio and is not recorded or stored, except the voice keyer messages you
+record yourself, which stay on the device. iOS and Android ask for
+microphone permission first.
 
 ## Bluetooth
 
@@ -256,4 +253,4 @@ children.
 
 Questions about this policy: oh6oksa@gmail.com
 
-Last updated: 2026-11-26 (iPhone, iPad and Mac: the microphone open the whole time the app is connected and in front; Android: the microphone held open for a Bluetooth headset while the app is in front; earlier: Forgot password? on the SmartLink sign-in; the radio used last, kept for At start › Last radio; Android: GitHub for new versions; the microphone with VOX and for the TX tab's meter, speech recognition on the device everywhere, SmartLink accounts and favourites, Bluetooth MIDI search on Android; the Elecraft KPA1500, Bluetooth MIDI controllers, App setups)
+Last updated: 2026-11-26 (the microphone open the whole time the app is connected and in front, on every device; Android: the microphone held open for a Bluetooth headset while the app is in front; earlier: Forgot password? on the SmartLink sign-in; the radio used last, kept for At start › Last radio; Android: GitHub for new versions; the microphone with VOX and for the TX tab's meter, speech recognition on the device everywhere, SmartLink accounts and favourites, Bluetooth MIDI search on Android; the Elecraft KPA1500, Bluetooth MIDI controllers, App setups)

@@ -9,12 +9,11 @@ GETTING STARTED
 - The Manual button (top row) opens the user manual.
 
 NEW IN THIS BUILD
-- The microphone stays open the whole time the app is connected and in front (once allowed), so the Mic meter moves in receive and the level, gate and compressor can be set without transmitting; the radio transmits only at PTT. iOS shows its orange mark, and the audio goes to your radio (some 50 MB an hour over mobile data). Closed in the background.
-- After a call, an alarm or another app's sound with the app in the background, receive should come back by itself. Not yet run on a device: tell me how it goes.
-- Setup > Transmit > Space is PTT: off for a screen reader that presses with Space. With Control-Option (VoiceOver) or Command, Space never keys (thanks Justin AI5OS).
-- Meters: Fan, the radio's main fan speed (thanks John N1JM).
+- A spot alert (a call on your Watch list spotted) now shows above the open Controls, Setup and dialogs. Before, it lay under them.
+- The microphone question iOS asks at first use now says what the app does since build 221.
 
-RECENT (builds 94–216)
+RECENT (builds 94–221)
+- 221: the microphone stays open while the app is connected and in front (once allowed): the Mic meter moves in receive, so level, gate and compressor can be set without transmitting; the radio transmits only at PTT. Closed in the background. Receive should come back by itself after a call in the background (not yet run on a device). Setup > Transmit > Space is PTT (thanks Justin AI5OS). Meters: Fan (thanks John N1JM).
 - 216: PTT > Wide also with the phone on its side; receive audio that could not start is tried again by itself.
 - 215: PTT Left / Wide / Right (thanks Antonio IZ7LDG); At start > Last radio (thanks Tyler K0OTC); Forgot password? (thanks Bob WB3BOB); Prof tab Save over a profile (thanks Larry W9FLA).
 
@@ -32,6 +31,7 @@ PLEASE TRY
 - New: the app in the background, then a call, an alarm or another app's sound: receive back when it ends, without opening the app.
 - New: the Mic meter in receive with the TX tab closed, then PTT as before. [TX]
 - New: with a keyboard, Space as PTT; then Setup > Transmit > Space is PTT off. [TX]
+- New: a Watch list call spotted (Setup > Spots) with Controls open: the alert shows on top.
 - Setup > Spots > RBN, PSK Reporter and Heard me; then call CQ and see Heard me fill.
 - TX > Use the radio's microphone, then a voice macro and Repeat. [TX]
 - A button as PTT (Setup > Transmit > PTT key > Learn), held and with PTT Tap on / off, at low power. [TX]

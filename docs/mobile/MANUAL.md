@@ -1397,10 +1397,10 @@ the value types it); SPLIT again (or XIT off there) ends it.
   not key (the radio refuses voice there); switch to USB / LSB, or use the
   FTx tab for FT8 / FT4 and the FreeDV tab for RADE. When the radio refuses transmit, its own reason
   is shown.
-  On Android and Linux the microphone is open only while transmitting
-  (and for the Mic meter, VOX and a Bluetooth headset, below); on an
-  iPhone, an iPad and a Mac it is open the whole time the app is connected
-  and in front (the next point). The speaker goes
+  The microphone is open the whole time the app is connected and in front
+  (the next point; before Android beta 123 only while transmitting, for
+  the Mic meter, for VOX and for a Bluetooth headset on Android and Linux).
+  The speaker goes
   quiet from the press until the release, so the band noise still playing
   as the radio keys does not reach a phone's microphone and go out at the
   start of the transmission (with **MON** on, the speaker comes back a
@@ -1408,8 +1408,9 @@ the value types it); SPLIT again (or XIT off there) ends it.
   → TX → PTT) makes it a switch: tap to transmit, tap again to stop (TX ■
   while it is on); as a safety it stops by itself after 3 minutes. Space on
   a keyboard works the same way.
-- **The microphone, open the whole time (iPhone, iPad and Mac; since build
-  221)** — once you have allowed the microphone, the app keeps it open the
+- **The microphone, open the whole time (since build 221 on an iPhone,
+  iPad and Mac, since Android beta 123 on Android and Linux)** — once you
+  have allowed the microphone, the app keeps it open the
   whole time it is connected, with this device's microphone as the radio's
   input, and in front. The Mic meter then moves in receive too, with the
   TX tab closed, so the level, the gate and the compressor can be set
@@ -1420,8 +1421,12 @@ the value types it); SPLIT again (or XIT off there) ends it.
   microphone is closed (with VOX on it stays open, as before). The app does
   not ask for the microphone at the first connect because of this: it asks
   at the first PTT or when the TX tab is first opened, as before, and a
-  microphone you refused stays shut. On Android and Linux this comes in a
-  later beta; there the microphone opens as before.
+  microphone you refused stays shut. On Android it is the Bluetooth
+  headset's microphone with *Auto* and a headset connected, else the
+  device's own; Android shows its microphone indicator for as long, and the
+  microphone is not held during a phone call. Opening the TX or eSSB tab no
+  longer opens a microphone in the middle of listening, which some devices
+  took badly.
 - **PTT's place on a phone** (since build 215 / Android beta 120; asked by
   Antonio Ferrulli IZ7LDG, for a big phone held in the left hand) — Setup ›
   App › **PTT**: *Left*, *Wide* or *Right*. *Right* is where PTT has always
@@ -1584,7 +1589,12 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   device even with Bluetooth on (e.g. a car or a watch that takes the
   sound); *Bluetooth media* plays through a Bluetooth device's music link,
   which sounds better than a headset's call link, and the device's own
-  microphone transmits (without a Bluetooth device, the speaker plays). The
+  microphone transmits (without a Bluetooth device, the speaker plays). On
+  Android it opens the headset's music device itself since beta 123 (before,
+  on some phones, the choice stayed on the phone's speaker or was silent);
+  while the headset is off, or its *Media audio* is off in Android's
+  Bluetooth settings, the phone's speaker plays, and the headset takes over
+  again by itself when it is back. The
   choice applies at once and is remembered. Low latency is for a
   wired or very steady link only; on ordinary Wi-Fi it stutters. If Normal
   stutters, try Smooth. Every 10 s with stutter the log gets an
@@ -1625,9 +1635,9 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   microphone. Choose Mic for the left meter and set it so speech peaks
   near −10 dB: while the TX tab is open the microphone is open and the
   meter moves in receive too (nothing is transmitted before PTT; with VOX
-  on, VOX holds the microphone instead; on an iPhone, an iPad and a Mac
-  the microphone is open the whole time since build 221, so the meter
-  moves with the tab closed too). Phone microphones often need +10
+  on, VOX holds the microphone instead; since build 221 / Android beta
+  123 the microphone is open the whole time, so the meter moves with the
+  tab closed too). Phone microphones often need +10
   to +20 dB; a limiter at
   −1 dBFS keeps the loudest peaks from clipping. With a microphone on the
   radio it is the radio's mic level (0–100), as SmartSDR's MIC.
@@ -3442,7 +3452,10 @@ takes it again afterwards. In the background the microphone is closed
 goes on playing through that: with the screen off, the cover closed or
 another app in front receive stays in the headset. Before, the sound
 stopped for a few seconds each time the app left the front; if the link
-still drops there, it is taken again at once. A headset switched off or
+still drops there, it is taken again at once. Since beta 123 the app also
+keeps Android's audio mode its own for as long as the headset is the route:
+in beta 122 the mode changed each time the app left the front or came
+back, with a short break in the sound. A headset switched off or
 lost with its *Media audio* on could stop the whole app for some 15
 seconds, until the radio dropped the connection; since beta 122 the app
 goes on and stays connected, and the sound moves to the phone once Android
@@ -3454,7 +3467,8 @@ back to *Auto*, or the headset connected again, has brought it back. If receive 
 silent, send the log: it says the headset's link at each step. Without
 one, the phone's speaker and microphone are used. **A USB-C headset** (or a
 USB-C to 3.5 mm adapter) is used the same way with *Auto*, ahead of
-Bluetooth; plugged in or out while connected, receive moves over at once. Controls › Audio ›
+Bluetooth; plugged in or out while connected, receive moves over at once,
+and since beta 123 so does the microphone that is kept open. Controls › Audio ›
 **Audio output** changes this: *Speaker* keeps both on the phone, *Bluetooth
 media* plays over the music link with the phone's microphone (see
 [Controls](#8-controls)).
