@@ -57,6 +57,7 @@ ColumnLayout {
             font.family: "monospace"
             font.bold: true
             checked: true
+            primary: true
             focusPolicy: Qt.NoFocus
             Layout.preferredWidth: Math.max(implicitWidth + 12, 76)
             onClicked: Engine.workedCall = ""

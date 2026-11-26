@@ -386,6 +386,7 @@ ColumnLayout {
                         : confirm.action === "poweroff" ? qsTr("Off")
                         : qsTr("Clear")
                     checked: true
+                    primary: true
                     Layout.fillWidth: true
                     onClicked: {
                         const what = confirm.action

@@ -639,6 +639,7 @@ Rectangle {
                 text: qsTr("Log %1").arg(logCall.text.trim().toUpperCase())
                 enabled: logCall.text.trim().length >= 3
                 checked: enabled
+                primary: true
                 focusPolicy: Qt.NoFocus
                 font.pixelSize: Math.round(Math.max(Theme.buttonFont, big.readingPx * 0.8))
                 Layout.fillWidth: true   // the rest of the row beside a call field sized to its content (roadmap 158)
