@@ -111,6 +111,7 @@
 #include <QTimer>
 #include <QTimeZone>
 #include <QMediaDevices>
+#include <QMutex>
 
 #include <algorithm>
 #include <cmath>
@@ -725,6 +726,42 @@ void offerMacTextEntry(QObject* obj)
 }
 }  // namespace
 
+#ifdef Q_OS_ANDROID
+namespace {
+// Qt's lists of audio devices, read on the audio calls' thread and waited
+// for a moment only (roadmap 221). Qt reads them from Android when it is
+// asked, on the asking thread, and that question stands with the rest while
+// Android's audio service is slow (a headset with a music link switched
+// off stopped the app for 15 s; the device change is told on the GUI
+// thread at that very moment). The lists as last read when it does not
+// answer.
+struct AndroidAudioDevices {
+    QList<QAudioDevice> outputs;
+    QList<QAudioDevice> inputs;
+    QAudioDevice defaultOutput;
+};
+
+AndroidAudioDevices androidAudioDevices()
+{
+    static QMutex mutex;
+    static AndroidAudioDevices known;
+    if (!androidAudioBusy()) {
+        auto read = std::make_shared<AndroidAudioDevices>();
+        if (runAndroidAudioCall([read] {
+                read->outputs = QMediaDevices::audioOutputs();
+                read->inputs = QMediaDevices::audioInputs();
+                read->defaultOutput = QMediaDevices::defaultAudioOutput();
+            }, 150)) {
+            QMutexLocker lock(&mutex);
+            known = *read;
+        }
+    }
+    QMutexLocker lock(&mutex);
+    return known;
+}
+} // namespace
+#endif
+
 MobileEngine::MobileEngine(QObject* parent)
     : QObject(parent)
 {
@@ -884,9 +921,8 @@ MobileEngine::MobileEngine(QObject* parent)
         if (linkUpMs > 1 && rxOpenedMs > linkUpMs) {
             return;  // receive opened on the link
         }
-        if (linkUpMs == 0 && !QJniObject::callStaticMethod<jboolean>("fi/oh6oksa/oksasdr/Platform", "headsetRoute",
-                "(Landroid/content/Context;)Z", QNativeInterface::QAndroidApplication::context().object())) {
-            return;  // no headset
+        if (linkUpMs == 0 && !headsetIsAndroidsRoute()) {
+            return;  // no headset (or Android's audio service does not answer now)
         }
         if (linkUpMs == 1) {
             return;  // the link was up before
@@ -909,10 +945,16 @@ MobileEngine::MobileEngine(QObject* parent)
         return d == QLatin1String("USB headset") || d == QLatin1String("USB device")
             || d == QLatin1String("Wired headset") || d == QLatin1String("Wired headphones");
     };
-    m_defaultOutputId = QMediaDevices::defaultAudioOutput().id();
-    m_defaultOutputWired = wired(QMediaDevices::defaultAudioOutput());
+    {
+        const QAudioDevice atStart = androidAudioDevices().defaultOutput;
+        m_defaultOutputId = atStart.id();
+        m_defaultOutputWired = wired(atStart);
+    }
     connect(new QMediaDevices(this), &QMediaDevices::audioOutputsChanged, this, [this, wired] {
-        const QAudioDevice now = QMediaDevices::defaultAudioOutput();
+        if (androidAudioBusy()) {
+            return;   // Android's audio service does not answer now: nothing is known
+        }
+        const QAudioDevice now = androidAudioDevices().defaultOutput;
         const bool wasWired = std::exchange(m_defaultOutputWired, wired(now));
         if (std::exchange(m_defaultOutputId, now.id()) == now.id() || !(wasWired || m_defaultOutputWired)) {
             return;
@@ -12448,10 +12490,11 @@ void MobileEngine::applyAudioOutputDevice()
         return QAudioDevice{};
     };
     const QString mode = audioOutput();
+    const AndroidAudioDevices devices = androidAudioDevices();
     const QAudioDevice output = mode == QLatin1String("Speaker")
-        ? named(QMediaDevices::audioOutputs(), QLatin1String("Built in speaker")) : QAudioDevice{};
+        ? named(devices.outputs, QLatin1String("Built in speaker")) : QAudioDevice{};
     const QAudioDevice input = mode == QLatin1String("Auto")
-        ? QAudioDevice{} : named(QMediaDevices::audioInputs(), QLatin1String("Built in microphone"));
+        ? QAudioDevice{} : named(devices.inputs, QLatin1String("Built in microphone"));
     if (m_outputDeviceApplied && output.id() == m_outputDeviceId && input.id() == m_inputDeviceId) {
         return;
     }
@@ -12546,6 +12589,12 @@ void MobileEngine::retryReceiveOpen(const char* why)
 void MobileEngine::headsetKeeperTick()
 {
 #ifdef Q_OS_ANDROID
+    // Nothing asked of Android's audio service while a call to it is still
+    // out (roadmap 221: it can take 15 s over one while a headset with a
+    // music link goes, and the app stood still with it).
+    if (androidAudioBusy()) {
+        return;
+    }
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
     const bool inUse = m_connected && m_audio && headsetInUse();
     if (!inUse) {
@@ -12596,6 +12645,14 @@ void MobileEngine::headsetKeeperTick()
         }
         return;
     }
+    if (m_headsetLost) {
+        // The route was taken by an answer that came after the tick that
+        // asked for it (Android's audio service was slow): receive opens on
+        // it now.
+        qCInfo(lcMobile).noquote() << "headset route: taken after a slow answer from Android (" + headsetState() + ")";
+        QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->reopenRx(); }, Qt::QueuedConnection);
+        watchHeadsetLink();
+    }
     m_headsetLost = false;
     const Qt::ApplicationState appState = QGuiApplication::applicationState();
     // In front: also while another window has the focus for a moment (a
@@ -12638,6 +12695,9 @@ void MobileEngine::headsetKeeperTick()
             return;
         }
         const QString route = reassertHeadsetRoute();
+        if (androidAudioBusy()) {
+            return;   // the request is still out: nothing is known yet
+        }
         if (route.isEmpty()) {
             if (headsetInUse() && headsetListed()) {
                 // Android lists the headset but gave it no route this time:

@@ -4,15 +4,21 @@
 #include "AudioSession.h"
 
 #include <QApplicationStateChangeEvent>
+#include <QDateTime>
 #include <QDebug>
 #include <QGuiApplication>
 #include <QLoggingCategory>
+#include <QMutex>
 #include <QRegion>
+#include <QSemaphore>
+#include <QThread>
 #include <QTimer>
 #include <QWindow>
 #include <qpa/qwindowsysteminterface.h>
 
 #include <atomic>
+#include <functional>
+#include <memory>
 
 Q_LOGGING_CATEGORY(lcAndroid, "aether.mobile.android")
 
@@ -127,7 +133,82 @@ namespace {
 
 QString s_outputMode = QStringLiteral("Auto");
 bool s_connected = false;
-bool s_headsetInUse = false;   // Auto took a Bluetooth headset's hands-free link
+// Auto took a Bluetooth headset's hands-free link. Written where the route
+// is asked for (the audio calls' thread), read on the GUI thread.
+std::atomic<bool> s_headsetInUse{false};
+
+// ---- Calls to Android's audio service, each waited for only a moment
+// (roadmap 221). The service answers the app's calls one after another and
+// can take 15 s over one while a Bluetooth headset with a music link goes:
+// on the user's phone, switching the headset off with its media audio on
+// stopped the whole app for 15.5 and 15.8 s (the second preview of beta
+// 122), and the radio closed the connection meanwhile. The headset's keeper
+// asks twice a second, on the GUI thread. So every such call runs on a
+// thread of its own, and the GUI thread waits for it a moment at most: a
+// question then answers what it last knew, a request goes on there, and
+// while one is out no other question is asked (audioCallsOut): a slow audio
+// service costs the sound for a while, not the app.
+constexpr int kAskWaitMs = 150;      // a question: the keeper's tick must not stand
+constexpr int kRouteWaitMs = 1500;   // a route change: about a second when all is well
+
+std::atomic<int> s_audioCallsOut{0};
+std::atomic<qint64> s_audioCallLateSinceMs{0};
+
+QObject* audioCallsContext()
+{
+    static QObject* context = [] {
+        auto* thread = new QThread;   // for the whole run
+        thread->setObjectName(QStringLiteral("AndroidAudioCalls"));
+        auto* object = new QObject;
+        object->moveToThread(thread);
+        thread->start();
+        return object;
+    }();
+    return context;
+}
+
+// fn on the audio calls' thread, in the order asked. True when it finished
+// within waitMs (0: not waited for); false when it is still out, in which
+// case nothing it writes may be read here.
+bool runAudioCall(std::function<void()> fn, int waitMs)
+{
+    auto done = std::make_shared<QSemaphore>(0);
+    const qint64 askedMs = QDateTime::currentMSecsSinceEpoch();
+    s_audioCallsOut.fetch_add(1);
+    QMetaObject::invokeMethod(audioCallsContext(), [fn = std::move(fn), done, askedMs] {
+        fn();
+        s_audioCallsOut.fetch_sub(1);
+        if (s_audioCallLateSinceMs.load() != 0 && s_audioCallsOut.load() == 0) {
+            s_audioCallLateSinceMs = 0;
+            qCWarning(lcAndroid).noquote()
+                << QStringLiteral("Android's audio service answers again (a call took %1 ms)")
+                       .arg(QDateTime::currentMSecsSinceEpoch() - askedMs);
+        }
+        done->release();
+    }, Qt::QueuedConnection);
+    if (waitMs <= 0) {
+        return false;
+    }
+    if (done->tryAcquire(1, waitMs)) {
+        return true;
+    }
+    qint64 none = 0;
+    if (s_audioCallLateSinceMs.compare_exchange_strong(none, askedMs)) {
+        qCWarning(lcAndroid).noquote()
+            << QStringLiteral("Android's audio service has not answered in %1 ms: the app goes on without it until it does")
+                   .arg(waitMs);
+    }
+    return false;
+}
+
+QString javaHeadsetState(const QJniObject& context)
+{
+    return QJniObject::callStaticObjectMethod(kPlatformClass, "headsetState",
+        "(Landroid/content/Context;)Ljava/lang/String;", context.object()).toString();
+}
+
+QMutex s_headsetStateMutex;
+QString s_headsetStateKnown;   // the last answer, for a log line while the service is slow
 
 // The audio route while a radio is connected: Auto takes a connected
 // Bluetooth headset's hands-free link (receive and microphone); Speaker and
@@ -136,41 +217,56 @@ bool s_headsetInUse = false;   // Auto took a Bluetooth headset's hands-free lin
 // applyAudioOutputDevice): taking the speaker as the communication device
 // too switched Android's audio mode, and the route change ended the speaker
 // stream just opened (beta 39). Whatever was set before is ended first.
+// On the audio calls' thread (roadmap 221), with the choice as it stood when
+// it was asked.
 void applyAudioRoute()
 {
     const QJniObject context = androidContext();
-    QJniObject::callStaticObjectMethod(kPlatformClass, "useHeadset", "(Landroid/content/Context;Z)Ljava/lang/String;",
-                                       context.object(), jboolean(false));
-    if (!s_connected) {
-        return;
-    }
-    QString route;
+    const QString mode = s_outputMode;
+    const bool connected = s_connected;
+    const auto work = [context, mode, connected] {
+        QJniObject::callStaticObjectMethod(kPlatformClass, "useHeadset", "(Landroid/content/Context;Z)Ljava/lang/String;",
+                                           context.object(), jboolean(false));
+        if (!connected) {
+            return;
+        }
+        QString route;
+        bool inUse = false;
+        if (mode == QLatin1String("Speaker")) {
+            route = QStringLiteral("the device's speaker and microphone (the streams open on them)");
+        } else if (mode == QLatin1String("Bluetooth")) {
+            route = QStringLiteral("Android's media route (a Bluetooth device's media link when connected)");
+        } else {
+            route = QJniObject::callStaticObjectMethod(kPlatformClass, "useHeadset",
+                "(Landroid/content/Context;Z)Ljava/lang/String;", context.object(), jboolean(true)).toString();
+            inUse = !route.isEmpty();
+            if (route.isEmpty()) {
+                route = QStringLiteral("no Bluetooth headset (Android's own route)");
+            }
+        }
+        s_headsetInUse = inUse;
+        qCInfo(lcAndroid).noquote() << "audio output" << mode << "->" << route;
+        if (inUse) {
+            const QString state = javaHeadsetState(context);
+            {
+                QMutexLocker lock(&s_headsetStateMutex);
+                s_headsetStateKnown = state;
+            }
+            qCInfo(lcAndroid).noquote() << "headset:" << state;
+            // Once a run: whether the route is asked through an AudioManager of
+            // the app's own (roadmap 218; Platform.audioManager has the story).
+            static bool said = false;
+            if (!said) {
+                said = true;
+                const bool apart = QJniObject::callStaticMethod<jboolean>(kPlatformClass, "audioManagerApart",
+                    "(Landroid/content/Context;)Z", context.object());
+                qCInfo(lcAndroid) << "headset route asked through an AudioManager of the app's own:" << (apart ? "yes" : "no");
+            }
+        }
+    };
+    // Until the answer is in, the headset is not taken to be the route.
     s_headsetInUse = false;
-    if (s_outputMode == QLatin1String("Speaker")) {
-        route = QStringLiteral("the device's speaker and microphone (the streams open on them)");
-    } else if (s_outputMode == QLatin1String("Bluetooth")) {
-        route = QStringLiteral("Android's media route (a Bluetooth device's media link when connected)");
-    } else {
-        route = QJniObject::callStaticObjectMethod(kPlatformClass, "useHeadset",
-            "(Landroid/content/Context;Z)Ljava/lang/String;", context.object(), jboolean(true)).toString();
-        s_headsetInUse = !route.isEmpty();
-        if (route.isEmpty()) {
-            route = QStringLiteral("no Bluetooth headset (Android's own route)");
-        }
-    }
-    qCInfo(lcAndroid).noquote() << "audio output" << s_outputMode << "->" << route;
-    if (s_headsetInUse) {
-        qCInfo(lcAndroid).noquote() << "headset:" << headsetState();
-        // Once a run: whether the route is asked through an AudioManager of
-        // the app's own (roadmap 218; Platform.audioManager has the story).
-        static bool said = false;
-        if (!said) {
-            said = true;
-            const bool apart = QJniObject::callStaticMethod<jboolean>(kPlatformClass, "audioManagerApart",
-                "(Landroid/content/Context;)Z", context.object());
-            qCInfo(lcAndroid) << "headset route asked through an AudioManager of the app's own:" << (apart ? "yes" : "no");
-        }
-    }
+    runAudioCall(work, kRouteWaitMs);
 }
 
 } // namespace
@@ -221,24 +317,50 @@ void setAudioOutputMode(const QString& mode)
     }
 }
 
+bool androidAudioBusy()
+{
+    return s_audioCallsOut.load() > 0;
+}
+
+bool runAndroidAudioCall(std::function<void()> fn, int waitMs)
+{
+    return runAudioCall(std::move(fn), waitMs);
+}
+
 QString headsetState()
 {
-    return QJniObject::callStaticObjectMethod(kPlatformClass, "headsetState",
-        "(Landroid/content/Context;)Ljava/lang/String;", androidContext().object()).toString();
+    if (!androidAudioBusy()) {
+        const QJniObject context = androidContext();
+        auto out = std::make_shared<QString>();
+        if (runAudioCall([context, out] { *out = javaHeadsetState(context); }, kAskWaitMs)) {
+            QMutexLocker lock(&s_headsetStateMutex);
+            s_headsetStateKnown = *out;
+            return *out;
+        }
+    }
+    QMutexLocker lock(&s_headsetStateMutex);
+    return s_headsetStateKnown + QStringLiteral(" [as last known: Android's audio service is slow]");
 }
 
 bool headsetInUse()
 {
-    return s_connected && s_outputMode == QLatin1String("Auto") && s_headsetInUse;
+    return s_connected && s_outputMode == QLatin1String("Auto") && s_headsetInUse.load();
 }
 
 QString reassertHeadsetRoute()
 {
-    if (!s_connected || s_outputMode != QLatin1String("Auto") || !s_headsetInUse) {
+    if (!headsetInUse() || androidAudioBusy()) {
         return {};
     }
-    return QJniObject::callStaticObjectMethod(kPlatformClass, "useHeadset",
-        "(Landroid/content/Context;Z)Ljava/lang/String;", androidContext().object(), jboolean(true)).toString();
+    const QJniObject context = androidContext();
+    auto out = std::make_shared<QString>();
+    if (!runAudioCall([context, out] {
+            *out = QJniObject::callStaticObjectMethod(kPlatformClass, "useHeadset",
+                "(Landroid/content/Context;Z)Ljava/lang/String;", context.object(), jboolean(true)).toString();
+        }, kRouteWaitMs)) {
+        return {};
+    }
+    return *out;
 }
 
 bool headsetRouteOk()
@@ -246,29 +368,86 @@ bool headsetRouteOk()
     if (!headsetInUse()) {
         return false;
     }
-    return QJniObject::callStaticMethod<jboolean>(kPlatformClass, "headsetRouteOk", "(Landroid/content/Context;)Z",
-                                                  androidContext().object());
+    // The call link's own state first: kept by the app itself (the watch in
+    // Platform), no question to Android's audio service.
+    if (QJniObject::callStaticMethod<jlong>(kPlatformClass, "scoUpAt") != 0) {
+        return true;
+    }
+    // Down, or an LE Audio headset, which has no such link: Android's word
+    // for the communication device.
+    static std::atomic<bool> known{false};
+    if (androidAudioBusy()) {
+        return known.load();
+    }
+    const QJniObject context = androidContext();
+    auto out = std::make_shared<bool>(false);
+    if (runAudioCall([context, out] {
+            *out = QJniObject::callStaticMethod<jboolean>(kPlatformClass, "headsetRouteOk",
+                "(Landroid/content/Context;)Z", context.object());
+        }, kAskWaitMs)) {
+        known = *out;
+    }
+    return known.load();
+}
+
+bool headsetIsAndroidsRoute()
+{
+    if (androidAudioBusy()) {
+        return false;
+    }
+    const QJniObject context = androidContext();
+    auto out = std::make_shared<bool>(false);
+    return runAudioCall([context, out] {
+               *out = QJniObject::callStaticMethod<jboolean>(kPlatformClass, "headsetRoute",
+                   "(Landroid/content/Context;)Z", context.object());
+           }, kAskWaitMs)
+        && *out;
 }
 
 bool headsetListed()
 {
-    return QJniObject::callStaticMethod<jboolean>(kPlatformClass, "headsetListed", "(Landroid/content/Context;)Z",
-                                                  androidContext().object());
+    static std::atomic<bool> known{true};
+    if (androidAudioBusy()) {
+        return known.load();
+    }
+    const QJniObject context = androidContext();
+    auto out = std::make_shared<bool>(false);
+    if (runAudioCall([context, out] {
+            *out = QJniObject::callStaticMethod<jboolean>(kPlatformClass, "headsetListed",
+                "(Landroid/content/Context;)Z", context.object());
+        }, kAskWaitMs)) {
+        known = *out;
+    }
+    return known.load();
 }
 
 int androidAudioMode()
 {
-    return QJniObject::callStaticMethod<jint>(kPlatformClass, "audioMode", "(Landroid/content/Context;)I",
-                                              androidContext().object());
+    static std::atomic<int> known{0};
+    if (androidAudioBusy()) {
+        return known.load();
+    }
+    const QJniObject context = androidContext();
+    auto out = std::make_shared<int>(0);
+    if (runAudioCall([context, out] {
+            *out = QJniObject::callStaticMethod<jint>(kPlatformClass, "audioMode", "(Landroid/content/Context;)I",
+                                                      context.object());
+        }, kAskWaitMs)) {
+        known = *out;
+    }
+    return known.load();
 }
 
 void holdHeadsetMode()
 {
-    if (!headsetInUse()) {
+    if (!headsetInUse() || androidAudioBusy()) {
         return;
     }
-    QJniObject::callStaticMethod<void>(kPlatformClass, "holdHeadsetMode", "(Landroid/content/Context;)V",
-                                       androidContext().object());
+    const QJniObject context = androidContext();
+    runAudioCall([context] {
+        QJniObject::callStaticMethod<void>(kPlatformClass, "holdHeadsetMode", "(Landroid/content/Context;)V",
+                                           context.object());
+    }, kRouteWaitMs);
 }
 
 void dropHeadsetRoute()
@@ -276,8 +455,11 @@ void dropHeadsetRoute()
     if (!headsetInUse()) {
         return;
     }
-    QJniObject::callStaticObjectMethod(kPlatformClass, "useHeadset", "(Landroid/content/Context;Z)Ljava/lang/String;",
-                                       androidContext().object(), jboolean(false));
+    const QJniObject context = androidContext();
+    runAudioCall([context] {
+        QJniObject::callStaticObjectMethod(kPlatformClass, "useHeadset", "(Landroid/content/Context;Z)Ljava/lang/String;",
+                                           context.object(), jboolean(false));
+    }, kRouteWaitMs);
 }
 
 void reapplyAudioRoute()

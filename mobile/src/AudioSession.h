@@ -58,6 +58,19 @@ int androidAudioMode();
 // the microphone held for the link is closed: the link then stays up
 // through the closing (roadmap 218).
 void holdHeadsetMode();
+// Whether a call to Android's audio service is still out (roadmap 221: each
+// is made on a thread of its own and waited for only a moment; the service
+// can take 15 s over one while a headset with a music link goes). While
+// true, the questions above answer what they last knew and the requests
+// are not made: the keeper skips its tick.
+bool androidAudioBusy();
+// fn on that thread, in the order asked; true when it finished within
+// waitMs. When false it is still out there: nothing it writes may be read,
+// so what it fills is shared with it (a shared_ptr), not a local.
+bool runAndroidAudioCall(std::function<void()> fn, int waitMs);
+// Whether Android's communication route is a Bluetooth headset now; false
+// also when it cannot be asked at the moment.
+bool headsetIsAndroidsRoute();
 #endif
 
 } // namespace AetherSDR::mobile
