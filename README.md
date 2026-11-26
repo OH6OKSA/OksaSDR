@@ -403,7 +403,7 @@ radio interface, with no computer running alongside.
 - Magic Keyboard and trackpad: arrows tune, Space is PTT, +/− zoom, F opens
   frequency entry, scroll tunes and ⌘-scroll zooms; a slider, switch or
   list used on the page never keeps the keyboard from them. Any key a
-  button sends can be learned as PTT (Setup › Transmit › PTT key: a handset's side key, a
+  button sends, or a key combination such as Option + Space, can be learned as PTT (Setup › Transmit › PTT key: a handset's side key, a
   Bluetooth button or a foot switch, thanks Rob VA3MET).
 - Safe-area aware: notch, Dynamic Island and the home indicator.
 - VoiceOver and TalkBack: every control has a spoken name; a double tap

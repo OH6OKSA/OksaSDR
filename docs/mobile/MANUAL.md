@@ -3269,6 +3269,12 @@ key…** opens it; since build 200, in the TX tab before build 202; thanks Rob M
 any key a button sends can be PTT, for a handset's side PTT key, a
 Bluetooth button or a foot switch that acts as a keyboard. Tap **Learn**,
 then press the button: its key shows beside *PTT key* (Esc cancels).
+A key combination can be PTT too: hold the modifiers (Option, Control,
+Shift, Command), then press a key, such as Option + Space; or let go of
+the modifiers without pressing a key, such as Control + Option. A
+combination keys only when exactly its modifiers are held, so Space alone
+stays Space, and PTT lets go when the key or one of its modifiers is
+released.
 Held, it keys PTT as Space does, and lets go when released; with PTT *Tap
 on / off* a press keys and the next unkeys. The key no longer does what it
 did before (a rugged phone's PTT key that sends F2 no longer plays voice

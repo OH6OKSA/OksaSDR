@@ -140,8 +140,10 @@ class MobileEngine : public QObject {
     // PTT as a switch (tap on, tap off) instead of hold-to-talk; remembered.
     // A latched transmission stops by itself after kPttToggleLimitS.
     Q_PROPERTY(bool pttToggle READ pttToggle WRITE setPttToggle NOTIFY pttToggleChanged)
-    // A learned PTT key (roadmap 121): any key a button sends, held = PTT;
-    // 0 = none (Space stays PTT either way). Learning takes the next key.
+    // A learned PTT key (roadmap 121): any key a button sends, or a key
+    // combination (modifiers with a key, or modifiers alone), held = PTT;
+    // 0 = none (Space stays PTT either way). Learning takes the next key or
+    // combination.
     Q_PROPERTY(int pttKey READ pttKey NOTIFY pttKeyChanged)
     Q_PROPERTY(QString pttKeyName READ pttKeyName NOTIFY pttKeyChanged)
     Q_PROPERTY(bool pttKeyLearning READ pttKeyLearning NOTIFY pttKeyChanged)
@@ -3602,8 +3604,15 @@ private:
     bool m_pttHeld{false};
     int m_pttKey{0};
     quint32 m_pttKeyScan{0};
+    // The modifiers held with m_pttKey, or the whole combination when
+    // m_pttKey is 0 (Option alone, Control + Option).
+    Qt::KeyboardModifiers m_pttKeyMods;
+    // While learning: every modifier held so far.
+    Qt::KeyboardModifiers m_pttKeyLearnMods;
     bool m_pttKeyLearning{false};
     bool m_pttKeyHeld{false};
+    // The combination's own key went down with PTT: its release is taken.
+    bool m_pttKeyMainDown{false};
     bool m_layoutEditing{false};
     int m_testSystemScheme{0};
     // Receive playback silent while the microphone is keyed (duckReceive).
