@@ -2428,6 +2428,7 @@ Popup {
                     objectName: "setupRiskyYes"
                     text: risky.yes
                     checked: true
+                    primary: true
                     Layout.fillWidth: true
                     onClicked: {
                         const f = risky.apply

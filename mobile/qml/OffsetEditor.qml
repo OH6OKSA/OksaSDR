@@ -115,6 +115,7 @@ Popup {
                 objectName: "offsetDone"
                 text: qsTr("Done")
                 checked: true
+                primary: true
                 focusPolicy: Qt.NoFocus
                 Layout.fillWidth: true
                 onClicked: editor.apply(editor.parseHz(field.text))

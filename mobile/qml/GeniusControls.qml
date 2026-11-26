@@ -537,6 +537,7 @@ ColumnLayout {
                     objectName: "geniusConfirmYes"
                     text: confirm.w[2]
                     checked: true
+                    primary: true
                     Layout.fillWidth: true
                     onClicked: {
                         const a = confirm.action

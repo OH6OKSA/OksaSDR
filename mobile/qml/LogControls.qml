@@ -673,6 +673,7 @@ ColumnLayout {
                     objectName: "logSpotSend"
                     text: qsTr("Spot")
                     checked: true
+                    primary: true
                     enabled: spotDialog.online && spotDialog.line.length > 0
                     Layout.fillWidth: true
                     onClicked: {
@@ -770,6 +771,7 @@ ColumnLayout {
                     objectName: "logSelfSpotSend"
                     text: qsTr("Spot")
                     checked: true
+                    primary: true
                     enabled: !!potaDialog.info.ok && potaDialog.park.length > 0
                     Layout.fillWidth: true
                     onClicked: {
@@ -900,6 +902,7 @@ ColumnLayout {
                         objectName: "logEditSave"
                         text: qsTr("Save")
                         checked: true
+                        primary: true
                         Layout.fillWidth: true
                         onClicked: {
                             const ok = Engine.editQso(qsoEdit.record, {

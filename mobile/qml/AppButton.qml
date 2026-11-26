@@ -14,6 +14,21 @@ Button {
     // An amber frame: something keeps running from this button (a macro
     // that repeats), so it is never left on unseen.
     property bool warn: false
+    // Lit only to stand out (the confirm button of a dialog, the worked
+    // call to clear): checked is then a look, not a state, and is not said.
+    property bool primary: false
+
+    // What a screen reader says of the state: Qt gives a button's checked
+    // to VoiceOver and TalkBack only when the button is checkable, and a
+    // checkable AppButton would flip itself on a tap before onClicked (the
+    // toggles here bind checked to the radio and read !checked). So the
+    // checked look is told as selected: iOS (and the iPad app on a Mac) has
+    // the Selected trait for it, which Qt sets from the selected state;
+    // Android and Linux have no such state through Qt, so the word goes in
+    // the description, which TalkBack reads after the name. A button that
+    // sets its own description says its state there itself.
+    Accessible.selected: control.checked && !control.primary
+    Accessible.description: control.checked && !control.primary && Qt.platform.os !== "ios" ? qsTr("selected") : ""
 
     contentItem: Text {
         text: control.text

@@ -618,6 +618,7 @@ ColumnLayout {
                         : ampTab.elecraft ? qsTr("Clear")
                         : qsTr("Reset")
                     checked: true
+                    primary: true
                     Layout.fillWidth: true
                     onClicked: {
                         const what = confirm.action
