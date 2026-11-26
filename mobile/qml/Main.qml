@@ -201,6 +201,52 @@ ApplicationWindow {
         onClosed: if (wanted) Qt.callLater(open)
     }
 
+    // What a screen reader is told without being on it: a refusal or an
+    // error, why a connection ended, an amplifier's or tuner's fault, a
+    // spot alert. They are shown (the notice over the display, the connect
+    // page's status, the Amp tab's red line, the banner) but a VoiceOver or
+    // TalkBack user hears a text only when the reader is on it, and nothing
+    // moves it there: "TX refused" or "Amplifier fault: SWR" went unheard.
+    // Said once here, from the engine, when the text changes to a new one:
+    // the pages and the controls drawer have several copies, and a closed
+    // drawer's labels are not visible, so the labels themselves would say it
+    // twice or not at all. Polite (after what is being read); only these,
+    // not the mode or the frequency, which the reader is asked for.
+    Item {
+        id: spoken
+        objectName: "spokenNotices"
+        function say(text) {
+            if (text.length > 0)
+                Accessible.announce(text)
+        }
+        function fault(prefix, s) {
+            return s.fault ? qsTr("%1 fault: %2").arg(prefix).arg(s.fault)
+                 : s.ifaceError ? qsTr("%1 error: %2").arg(prefix).arg(s.ifaceError) : ""
+        }
+        readonly property string lastError: Engine.lastError
+        readonly property string ended: Engine.disconnectCause.length > 0
+                                        ? qsTr("The connection ended: %1.").arg(Engine.disconnectCause) : ""
+        readonly property string amp: Engine.amp.set ? fault(qsTr("Amplifier"), Engine.amp) : ""
+        readonly property string kpa: Engine.kpa.set ? fault(qsTr("Amplifier"), Engine.kpa) : ""
+        readonly property string kpa500: Engine.kpa500.set ? fault(qsTr("Amplifier"), Engine.kpa500) : ""
+        readonly property string kat500: Engine.kat500.set && Engine.kat500.fault
+                                         ? qsTr("Tuner fault: %1").arg(Engine.kat500.fault) : ""
+        readonly property string tgxl: Engine.tgxl.present ? (Engine.tgxl.alert || "") : ""
+        readonly property string pgxl: Engine.pgxl.present ? (Engine.pgxl.alert || "") : ""
+        readonly property string spot: Engine.connectionState === "connected" && !!Engine.spotAlert.call
+            ? qsTr("Spot alert: %1 on %2 MHz, %3").arg(Engine.spotAlert.call)
+                  .arg(Number(Engine.spotAlert.mhz || 0).toFixed(3)).arg(Engine.spotAlert.why || "") : ""
+        onLastErrorChanged: say(lastError)
+        onEndedChanged: say(ended)
+        onAmpChanged: say(amp)
+        onKpaChanged: say(kpa)
+        onKpa500Changed: say(kpa500)
+        onKat500Changed: say(kat500)
+        onTgxlChanged: say(tgxl)
+        onPgxlChanged: say(pgxl)
+        onSpotChanged: say(spot)
+    }
+
     // The on-screen keyboard's Done (roadmap 142, Robin Bishop G5OUT): an
     // iPhone's keyboard has no key to put it away, and Return in some fields
     // acts (the Log tab's call logs the contact). It lets go of the field,
