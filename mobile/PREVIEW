@@ -7,6 +7,14 @@ Android beta 123 and iOS build 222 as a preview (the user, 2026-11-26
 about 20:34, to the plan put to them: "123 esiversio Suunnitelma OK.").
 To everyone only on the user's word after the tries.
 
+The second preview (the user, 2026-11-26 about 23:40: "1, 2 ja 3", to:
+Justin Mann's accessibility pull requests #1-#8 in, the key-combination
+half of his #18 brought onto the current code, and a second preview with
+224): Android run 162 and iOS build 223, adding roadmap 224 (a tap on an
+FT8 / FT4 spot calls the station), 27 (screen readers: PRs #1-#8) and 210
+(the learned PTT key as a combination). The audio tries below hold for
+it as for the first.
+
 Android beta 123: roadmap 219 (Bluetooth media on the headset's music
 device: the app's copy of Qt's device list shows a headset's call and
 music devices both), 220 (to be tried again with it), 218 (Android's
@@ -45,3 +53,12 @@ on in Android's Bluetooth settings:
 9. 209 and 213 on Android: Setup > Transmit > Space is PTT; Meters > Fan.
 On the iPad (build 222): a spot alert over the open Controls, Space as
 PTT while it shows.
+
+Second preview, also:
+10. 224: tap the spot of an FT8 station heard in the last minutes (it is
+    called at once), of one not heard ("... : called when heard" under the
+    spot), then Halt TX. On 40 m or 20 m at low power.
+11. PTT key > Learn with a keyboard: Option + Space (or Ctrl + Alt alone),
+    then keying with it; plain Space as before.
+12. A look with TalkBack (or VoiceOver on the iPad): toggles said as
+    selected, PTT's double tap does not key.
