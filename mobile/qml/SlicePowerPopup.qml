@@ -30,6 +30,7 @@ Popup {
         FineSlider {
             objectName: "slicePowerSlider"
             accessibleName: qsTr("RF power")
+            valueText: Engine.rfPowerIsPercent ? qsTr("%1 %").arg(Engine.rfPower) : qsTr("%1 W").arg(Engine.rfPower)
             Layout.fillWidth: true
             from: 0
             to: 100

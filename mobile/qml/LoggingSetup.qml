@@ -184,6 +184,10 @@ ColumnLayout {
         PasswordField {
             id: qrzPassField
             Accessible.name: qsTr("QRZ.com password")
+            // Qt gives a password field no name, only its placeholder: the
+            // service said with it (roadmap 233, issue 17: both keys were
+            // "API key (saved)").
+            Accessible.description: qsTr("%1, %2").arg(qsTr("QRZ.com password")).arg(placeholderText)
             Layout.fillWidth: true
             placeholderText: Engine.qrzUser.length > 0 ? qsTr("password (saved)") : qsTr("password")
             font.pixelSize: Theme.px(15)
@@ -241,6 +245,10 @@ ColumnLayout {
         PasswordField {
             id: onlineKeyField
             Accessible.name: qsTr("API key")
+            // Qt gives a password field no name, only its placeholder: the
+            // service said with it (roadmap 233, issue 17: both keys were
+            // "API key (saved)").
+            Accessible.description: qsTr("%1, %2").arg(qsTr("Wavelog / Cloudlog API key")).arg(placeholderText)
             Layout.fillWidth: true
             Layout.columnSpan: onlineKeyRow.oneRow ? 1 : 2
             placeholderText: Engine.onlineLog.hasKey ? qsTr("API key (saved)") : qsTr("API key (read & write)")
@@ -345,6 +353,10 @@ ColumnLayout {
         PasswordField {
             id: qrzLogKeyField
             Accessible.name: qsTr("QRZ.com Logbook API key")
+            // Qt gives a password field no name, only its placeholder: the
+            // service said with it (roadmap 233, issue 17: both keys were
+            // "API key (saved)").
+            Accessible.description: qsTr("%1, %2").arg(qsTr("QRZ.com Logbook API key")).arg(placeholderText)
             objectName: "qrzLogKey"
             Layout.fillWidth: true
             placeholderText: Engine.qrzLog.hasKey ? qsTr("API key (saved)") : qsTr("Logbook API key")

@@ -30,6 +30,10 @@ Popup {
     padding: Theme.spacing
     background: Rectangle { color: Theme.surface; radius: Theme.radius }
 
+    // The screen reader opens Setup in the shown tab's settings, and a tab
+    // pressed takes it to that tab's (MobileEngineScreenReader.cpp).
+    property Item screenReaderStart: sections.children[setup.section] || null
+
     property var d: ({})
     property var xvtrs: []
     property int section: 0
@@ -376,18 +380,26 @@ Popup {
             columns: width >= 14 * 92 ? 14 : width >= 7 * 92 ? 7 : width >= 5 * 88 ? 5 : width >= 4 * 68 ? 4 : 3
             columnSpacing: 4
             rowSpacing: 4
+            Accessible.role: Accessible.PageTabList
+            Accessible.name: Qt.platform.os === "ios" ? "" : qsTr("Radio Setup sections")
             Repeater {
+                id: setupTabButtons
                 model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("RX"), qsTr("Network"), qsTr("XVTR"), qsTr("Amp"), qsTr("USB"), qsTr("MIDI"), qsTr("Logging"), qsTr("App"), qsTr("Spots"), qsTr("FTx")]
-                delegate: AppButton {
+                delegate: SectionTab {
                     required property int index
                     required property string modelData
                     objectName: "setupTab" + index
                     text: modelData
+                    tabIndex: index
+                    tabCount: setupTabButtons.count
                     checked: setup.section === index
                     focusPolicy: Qt.NoFocus
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
-                    onClicked: setup.section = index
+                    onClicked: {
+                        setup.section = index
+                        Engine.screenReaderFocus(sections.children[index], false)
+                    }
                 }
             }
         }
@@ -547,7 +559,7 @@ Popup {
                     PttKeySetup { Layout.fillWidth: true }
                     // Space as PTT (roadmap 209, Justin Mann AI5OS): off for a
                     // screen reader that presses the controls with Space.
-                    Heading { text: qsTr("This device: the space bar") }
+                    Heading { text: qsTr("This device: the keyboard") }
                     OnOff {
                         objectName: "spaceIsPtt"
                         label: qsTr("Space is PTT")
@@ -560,6 +572,22 @@ Popup {
                         text: Qt.platform.os === "ios" || Qt.platform.os === "osx"
                               ? qsTr("With a keyboard, Space keys as PTT. Off: it keys nothing, for a screen reader that presses with Space. Pressed with Control and Option together (VoiceOver's keys) or with Command it never keys.")
                               : qsTr("With a keyboard, Space keys as PTT. Off: it keys nothing, for a screen reader that presses with Space. Pressed with Ctrl and Alt together or with the Search (Windows) key it never keys.")
+                        color: Theme.textDim
+                        font.pixelSize: Theme.px(12)
+                        wrapMode: Text.WordWrap
+                    }
+                    // The letter keys that transmit (roadmap 227, Justin Mann
+                    // AI5OS; WCAG 2.1.4): on as before, off for a stray key or
+                    // a dictation that must key nothing.
+                    OnOff {
+                        objectName: "letterKeysTx"
+                        label: qsTr("T and A transmit")
+                        on: Engine.letterKeysTx
+                        onToggled: (v) => Engine.letterKeysTx = v
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("With a keyboard, T keys TUNE (Shift+T two tones) and A starts an ATU tune. Off: these letters key nothing, so a stray key or a dictation cannot key the radio.")
                         color: Theme.textDim
                         font.pixelSize: Theme.px(12)
                         wrapMode: Text.WordWrap
@@ -1268,6 +1296,7 @@ Popup {
                         RepeatButton {
                             text: "−"
                             Accessible.name: qsTr("Network MTU, one step down")
+                            Accessible.description: qsTr("now %1 bytes").arg(setup.d.networkMtu || 1450)
                             Layout.preferredWidth: 56
                             onStepped: (n) => network.step(n, -1)
                         }
@@ -1282,6 +1311,7 @@ Popup {
                         RepeatButton {
                             text: "+"
                             Accessible.name: qsTr("Network MTU, one step up")
+                            Accessible.description: qsTr("now %1 bytes").arg(setup.d.networkMtu || 1450)
                             Layout.preferredWidth: 56
                             onStepped: (n) => network.step(n, 1)
                         }

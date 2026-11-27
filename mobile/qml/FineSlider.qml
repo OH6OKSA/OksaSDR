@@ -24,6 +24,10 @@ RowLayout {
     // What it sets, for a screen reader ("Volume", "RF power"); its swipe
     // up or down is one step, sent as the − / + send theirs.
     property string accessibleName: ""
+    // The value with its unit for a screen reader ("25 WPM", "-12 dB"),
+    // read after the value Qt gives as a bare number (roadmap 232, Justin
+    // Mann's issue 16). Empty: nothing more is read.
+    property string valueText: ""
     signal moved(real value)
     spacing: 2
 
@@ -73,6 +77,7 @@ RowLayout {
         snapMode: Slider.SnapAlways
         focusPolicy: Qt.NoFocus
         Accessible.name: fine.accessibleName
+        Accessible.description: fine.valueText
         // A screen reader's swipe steps the slider even while it is
         // disabled (the squelch level moved with SQL off): not here.
         Accessible.onIncreaseAction: if (fine.enabled) fine.nudge(1)

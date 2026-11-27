@@ -178,6 +178,17 @@ public:
     // mic gain), on its own 24 kHz clock. Ends with txClipFinished;
     // stopTxClip stops it. Audio thread.
     Q_INVOKABLE void playTxDigital(const QByteArray& floatMono24k);
+    // The digital clip on air replaced by FLOATMONO24K, laid out alike (the
+    // same start), from the place it has reached: the next CROSSFADEFRAMES
+    // fade from the old samples into the new, the rest is the new clip's, as
+    // WSJT-X's modulator goes on with a changed message (OksaSDR roadmap
+    // 146). False when no digital clip is playing or it is past the new
+    // clip's end. Audio thread.
+    bool swapTxDigital(const QByteArray& floatMono24k, int crossfadeFrames);
+    // The join swapTxDigital makes, on its own (any thread, for tests): OLD's
+    // first POS frames, then CROSSFADEFRAMES fading into NEWCLIP, then the
+    // rest of NEWCLIP. Empty when POS is past either clip's end.
+    static QByteArray spliceTxDigital(const QByteArray& oldClip, const QByteArray& newClip, qint64 pos, int crossfadeFrames);
     // Microphone frames actually delivered since the TX stream started, and
     // the first/last delivery times (ms, monotonic): the real capture rate,
     // to check against the format's nominal one. Any thread.

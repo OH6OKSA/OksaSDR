@@ -33,6 +33,12 @@ Item {
         if (page && page.layoutEditing) return false
         // Any key ends a repeating macro (an F-key then starts its own).
         if (!event.isAutoRepeat) Engine.cancelMacroRepeat("a key")
+        // Esc closes the popup opened last (a chooser, Radio Setup, the
+        // Controls drawer: Engine.closeTopPopup, as the page keeps the
+        // keyboard while they are open), and still stops the keyers below
+        // (Engine.operateKey): it is the key that ends a transmission, so a
+        // popup open does not take that from it.
+        if (event.key === Qt.Key_Escape && !event.isAutoRepeat) Engine.closeTopPopup()
         if (paddles.handlePress(event)) {
             return true
         }
@@ -60,12 +66,14 @@ Item {
         // (a Ulanzi dial's keys on a Mac through Ulanzi Studio, Christoph
         // DM5HF); a held key does not toggle again.
         case Qt.Key_T:
+            // Switched off in Setup › Transmit (roadmap 227): nothing keys.
+            if (!Engine.letterKeysTx) break
             if (!event.isAutoRepeat) {
                 if (event.modifiers & Qt.ShiftModifier) Engine.toggleTwoToneTune()
                 else Engine.toggleTune()
             }
             break
-        case Qt.Key_A: if (!event.isAutoRepeat) Engine.atuTune(); break
+        case Qt.Key_A: if (!event.isAutoRepeat && Engine.letterKeysTx) Engine.atuTune(); break
         case Qt.Key_Space:
             // iOS: GameController keys Space itself (keyboardOnPage).
             if (Engine.nativeKeyboardSides) break

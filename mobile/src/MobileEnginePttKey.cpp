@@ -41,6 +41,8 @@ namespace {
 const QString kPttKeyKey = QStringLiteral("MobileTxPttKey");
 const QString kPttKeyScanKey = QStringLiteral("MobileTxPttKeyScan");
 const QString kSpaceIsPttKey = QStringLiteral("MobileSpaceIsPtt");
+// Setup › Transmit › T and A transmit (roadmap 227).
+const QString kLetterKeysTxKey = QStringLiteral("MobileLetterKeysTx");
 
 const QString kPttKeyModsKey = QStringLiteral("MobileTxPttKeyMods");
 
@@ -142,6 +144,7 @@ void MobileEngine::setupPttKey()
     m_pttKey = AppSettings::instance().value(kPttKeyKey, 0).toInt();
     m_pttKeyScan = AppSettings::instance().value(kPttKeyScanKey, 0).toUInt();
     m_spaceIsPtt = AppSettings::instance().value(kSpaceIsPttKey, QStringLiteral("True")).toString() != QLatin1String("False");
+    m_letterKeysTx = AppSettings::instance().value(kLetterKeysTxKey, QStringLiteral("True")).toString() != QLatin1String("False");
     if (!m_spaceIsPtt) {
         qCInfo(lcMobile) << "Space is PTT: off (Setup › Transmit)";
     }
@@ -201,6 +204,22 @@ void MobileEngine::setSpaceIsPtt(bool on)
     AppSettings::instance().save();
     qCInfo(lcMobile) << "Space is PTT:" << (on ? "on" : "off");
     emit spaceIsPttChanged();
+}
+
+// Roadmap 227 (Justin Mann AI5OS, issue 11; WCAG 2.1.4): the letter keys
+// that transmit with a hardware keyboard, T (TUNE, Shift+T two tones) and A
+// (an ATU tune), can be switched off, so a stray key or a dictation keys
+// nothing. On by default: nothing changes for anyone who uses them.
+void MobileEngine::setLetterKeysTx(bool on)
+{
+    if (on == m_letterKeysTx) {
+        return;
+    }
+    m_letterKeysTx = on;
+    AppSettings::instance().setValue(kLetterKeysTxKey, on ? QStringLiteral("True") : QStringLiteral("False"));
+    AppSettings::instance().save();
+    qCInfo(lcMobile) << "T and A transmit:" << (on ? "on" : "off");
+    emit letterKeysTxChanged();
 }
 
 bool MobileEngine::spaceHeldBackWith(int modifiers, bool appleKeys)

@@ -278,6 +278,8 @@ Item {
     Popup {
         id: chooser
         objectName: "meterChooser"
+        // Opened by a tap on the meter: the screen reader goes in.
+        property bool screenReaderFollows: true
         parent: meter
         y: meter.height + 4
         margins: Theme.spacing

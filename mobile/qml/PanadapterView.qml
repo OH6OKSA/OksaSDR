@@ -487,13 +487,19 @@ Rectangle {
             }
             TapHandler {
                 enabled: notch.modelData.id >= 0
-                onTapped: {
-                    tnfPopup.creating = false
-                    tnfPopup.tnfId = notch.modelData.id
-                    tnfPopup.anchorX = notch.cx
-                    tnfPopup.open()
-                }
+                onTapped: notch.edit()
             }
+            function edit() {
+                tnfPopup.creating = false
+                tnfPopup.tnfId = notch.modelData.id
+                tnfPopup.anchorX = notch.cx
+                tnfPopup.open()
+            }
+            // A screen reader's double tap opens the notch as a tap on its
+            // handle does (roadmap 233, issue 17).
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Notch at %1 MHz").arg(Number(notch.modelData.freq).toFixed(4))
+            Accessible.onPressAction: if (notch.modelData.id >= 0) notch.edit()
             // Drag it along the spectrum (the handle's part; on the waterfall a
             // drag still moves the view), in 10 Hz steps.
             Item {
@@ -592,6 +598,11 @@ Rectangle {
                 color: panArea.spotColor(spotTag.modelData.spot.color)
             }
             TapHandler { onTapped: Engine.tuneToSpot(spotTag.modelData.spot.index) }
+            // A screen reader's double tap does the tap (roadmap 233, Justin
+            // Mann's issue 17: a spot could be tuned only by a touch on it).
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Spot %1, %2 MHz").arg(spotTag.modelData.spot.call).arg(Number(spotTag.modelData.spot.freq).toFixed(4))
+            Accessible.onPressAction: Engine.tuneToSpot(spotTag.modelData.spot.index)
         }
     }
 
@@ -1285,6 +1296,8 @@ Rectangle {
     Popup {
         id: tnfPopup
         objectName: "tnfPopup"
+        // Opened by a tap on a notch or a hold: the screen reader goes in.
+        property bool screenReaderFollows: true
         property int tnfId: -1
         property real anchorX: panArea.width / 2
         // A new notch to confirm (a hold on the display, + TNF): drawn here

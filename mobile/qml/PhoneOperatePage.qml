@@ -779,6 +779,8 @@ Page {
     Drawer {
         id: controlsDrawer
         objectName: "controlsDrawer"
+        // The screen reader opens it in the shown tab (MobileEngineScreenReader.cpp).
+        property Item screenReaderStart: phoneDrawerPanel.currentContent
         edge: page.landscape ? Qt.RightEdge : Qt.BottomEdge
         width: page.landscape ? Math.min(page.width * 0.5, 460) : page.width
         // Its own height counts above what covers the window's bottom: the

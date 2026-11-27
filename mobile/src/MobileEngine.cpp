@@ -1610,10 +1610,9 @@ MobileEngine::MobileEngine(QObject* parent)
             const QString panId = pan->panId();
             // Where the slice was when the session ended (on this radio, not
             // long ago): there again, its mode and filter after it.
-            const bool back = m_lostSlice.mhz > 0.0 && m_lostSliceAge.isValid()
-                && m_lostSliceAge.elapsed() < 10 * 60 * 1000
-                && m_lostSlice.radio == m_session.radioModel().serial();
+            const bool back = lostSliceWanted();
             m_restoreLostSlice = back;
+            m_restoreMadeSlice = back;
             const double mhz = m_lostSlice.mhz;
             // A FLEX may put a slice on the new pan itself (the FLEX-6500
             // and 6600M both did): then that one is put back where the slice
@@ -9769,6 +9768,7 @@ void MobileEngine::tuneToSpot(int index)
             }
         });
         emit controlsSectionRequested(QStringLiteral("RTTY"), opensTab);
+        answerSpot(spot.callsign, false, 3500);
         return;
     }
     // RTTY received in DIGL / DIGU (chosen on the RTTY tab) stays there for an
@@ -9804,9 +9804,60 @@ void MobileEngine::tuneToSpot(int index)
         m_rttySpotTries = 8;
         emit rttyAutotuneRequested(spot.rxFreqMhz, 150.0, false);
         emit controlsSectionRequested(QStringLiteral("RTTY"), opensTab);
+        answerSpot(spot.callsign, false, 2500);
     } else if (mode == QLatin1String("CW")) {
         emit controlsSectionRequested(QStringLiteral("CW"), opensTab);
+        answerSpot(spot.callsign, true, 1000);
     }
+}
+
+// Roadmap 225 (the user: a tap on a spot or a call in the waterfall starts
+// the macro, in CW, RTTY, PSK as FT8 calls since 224): the spot's call
+// becomes the one worked ({HIS}, the Log tab's Call), and once the slice is
+// on the station its answer goes out: CW memory M2 (by default your own
+// call, the answer to a CQ), in RTTY and PSK the Digi tab's Answer macro
+// (F2 unless renamed). The transmit lock (SB) holds it: then the tap only
+// tunes and sets the call. A later tap, or another call picked meanwhile,
+// takes its place.
+void MobileEngine::answerSpot(const QString& call, bool cw, int delayMs)
+{
+    const QString c = call.trimmed().toUpper();
+    if (c.isEmpty()) {
+        return;
+    }
+    setWorkedCall(c);
+    const int seq = ++m_spotAnswerSeq;
+    if (txLocked() && !m_txBlocked) {
+        qCInfo(lcMobile).noquote() << "spot answer:" << c << "is the call worked; transmit locked (SB), nothing sent";
+        return;
+    }
+    QTimer::singleShot(delayMs, this, [this, seq, cw, c] {
+        if (seq != m_spotAnswerSeq || !m_connected || m_workedCall != c || (txLocked() && !m_txBlocked)) {
+            return;
+        }
+        if (cw) {
+            if (!cwMode()) {
+                return;
+            }
+            qCInfo(lcMobile).noquote() << "spot answer:" << c << "- CW memory M2";
+            sendCwMemory(1);
+            return;
+        }
+        if (!textModeActive()) {
+            return;
+        }
+        const QVariantList macros = textMacros();
+        int index = 1;
+        for (int i = 0; i < macros.size(); ++i) {
+            if (macros.at(i).toMap().value(QStringLiteral("label")).toString().compare(QLatin1String("Answer"), Qt::CaseInsensitive) == 0) {
+                index = i;
+                break;
+            }
+        }
+        qCInfo(lcMobile).noquote() << "spot answer:" << c << "- the" << macros.value(index).toMap().value(QStringLiteral("label")).toString()
+                                   << "macro (F" + QString::number(index + 1) + ")";
+        sendTextMacro(index);
+    });
 }
 
 // Roadmap 138: every session's end in the log with its cause. Asked for (the
@@ -9830,6 +9881,9 @@ void MobileEngine::noteSessionEnd()
     qCInfo(lcMobile).noquote() << "disconnect:" << cause << (asked ? "(asked)" : "(not asked)")
                                << (m_session.radioModel().isWan() ? "over SmartLink" : "on the network")
                                << "app state" << int(QGuiApplication::applicationState());
+    // Roadmap 235: lost without the operator asking (the app's own
+    // reconnect after a network change counts as not asked by them).
+    m_lostSliceUnasked = !asked || m_disconnectWhy.startsWith(QLatin1String("the app: "));
     m_disconnectWhy.clear();
     m_lastLinkError.clear();
     const QString shown = asked ? QString() : cause;
@@ -11118,6 +11172,12 @@ void MobileEngine::onConnectionStateChanged(bool connected)
             m_lostSlice = m_sliceNow;
             m_lostSliceAge.start();
         }
+        if (m_testLostSlice.mhz > 0.0) {
+            m_lostSlice = std::exchange(m_testLostSlice, SliceState{});
+            m_lostSlice.radio = m_sliceNow.radio;
+            qCInfo(lcMobile).noquote() << "slice recovery (test): the lost session's slice taken as" << QString::number(m_lostSlice.mhz, 'f', 6)
+                                       << m_lostSlice.mode;
+        }
     }
     m_micDefaulted = false;
     m_cwPitchRepaired = false;
@@ -11187,6 +11247,22 @@ void MobileEngine::onConnectionStateChanged(bool connected)
         // brought its callsign.
         QTimer::singleShot(4000, this, [this] { updatePskFeed(); });
         noteSavedRadioName();
+        // Roadmap 235: after a loss the operator did not ask for (a phone
+        // call, the network), the slice goes back where it was, also on a
+        // connect made by hand: the radio's own memory gave another band
+        // (Ranjith Unnikrishnan: 40 m SSB before a call, 15 m CW after it).
+        if (m_lostSliceUnasked && !lostSliceWanted()) {
+            qCInfo(lcMobile).noquote() << "slice recovery: the last session was lost without being asked to, but its slice is not put back:"
+                                       << (m_lostSlice.mhz <= 0.0 ? QStringLiteral("none kept")
+                                           : m_lostSlice.radio != sliceRadioId() ? QStringLiteral("another radio (or none known)")
+                                                                                                    : QStringLiteral("too long ago"));
+        }
+        if (m_lostSliceUnasked && lostSliceWanted()) {
+            m_restoreLostSlice = true;
+            qCInfo(lcMobile).noquote() << "slice recovery: the last session was lost without being asked to,"
+                                       << QString::number(m_lostSliceAge.elapsed() / 1000) << "s ago; its slice goes back to"
+                                       << QString::number(m_lostSlice.mhz, 'f', 6) << m_lostSlice.mode;
+        }
         selectActiveSlice();
         // A slice RADE left muted when the app last went away.
         QTimer::singleShot(3000, this, [this] { healRadeMute(); });
@@ -11395,11 +11471,35 @@ void MobileEngine::selectActiveSlice()
     }
 }
 
+// The radio a kept slice belongs to: its serial, or for a radio connected
+// to by its address (no serial known then) that address.
+QString MobileEngine::sliceRadioId() const
+{
+    const QString serial = m_session.radioModel().serial();
+    return !serial.isEmpty() ? serial : m_lastTarget.isEmpty() ? QString() : QStringLiteral("address ") + m_lastTarget;
+}
+
+bool MobileEngine::lostSliceWanted() const
+{
+    if (m_lostSlice.mhz <= 0.0 || !m_lostSliceAge.isValid() || m_lostSlice.radio.isEmpty()
+        || m_lostSlice.radio != sliceRadioId()) {
+        return false;
+    }
+    // A slice the app makes again after any reconnect (not long after), and
+    // the radio's own after a loss nobody asked for (roadmap 235).
+    return m_lostSliceAge.elapsed() < 10 * 60 * 1000 || (m_lostSliceUnasked && m_lostSliceAge.elapsed() < kLostSliceUnaskedMs);
+}
+
+void MobileEngine::testLostSlice(double mhz, const QString& mode)
+{
+    m_testLostSlice = {mhz, mode.toUpper(), 0, 0, QString()};
+    qCInfo(lcMobile).noquote() << "slice recovery (test): the next lost session's slice will be" << QString::number(mhz, 'f', 6) << mode;
+}
+
 void MobileEngine::noteSliceState()
 {
     if (m_slice && m_slice->frequency() > 0.0) {
-        m_sliceNow = {m_slice->frequency(), m_slice->mode(), m_slice->filterLow(), m_slice->filterHigh(),
-                      m_session.radioModel().serial()};
+        m_sliceNow = {m_slice->frequency(), m_slice->mode(), m_slice->filterLow(), m_slice->filterHigh(), sliceRadioId()};
     }
 }
 
@@ -11448,9 +11548,24 @@ void MobileEngine::bindSlice(SliceModel* slice)
     m_slice = slice;
     if (slice && std::exchange(m_restoreLostSlice, false)) {
         const SliceState lost = m_lostSlice;
-        qCInfo(lcMobile).noquote() << "slice recovery: back to" << QString::number(lost.mhz, 'f', 6) << lost.mode
-                                   << QStringLiteral("%1..%2 Hz").arg(lost.lo).arg(lost.hi);
-        QTimer::singleShot(300, this, [this, lost] {
+        // Put back once: a later connect goes by how that session ends.
+        m_lostSliceUnasked = false;
+        const bool there = std::abs(slice->frequency() - lost.mhz) < 1e-6 && slice->mode() == lost.mode
+            && (lost.hi <= lost.lo || (slice->filterLow() == lost.lo && slice->filterHigh() == lost.hi));
+        if (there) {
+            qCInfo(lcMobile).noquote() << "slice recovery: the slice is where it was already";
+        } else {
+            qCInfo(lcMobile).noquote() << "slice recovery: back to" << QString::number(lost.mhz, 'f', 6) << lost.mode
+                                       << QStringLiteral("%1..%2 Hz").arg(lost.lo).arg(lost.hi);
+        }
+        // A slice of the radio's own memory after a reconnect gets its first
+        // status while the connection is still being set up: a tune sent at
+        // once was written over by it in the app (the radio itself had
+        // moved; roadmap 235's test). So it waits 1.5 s, and is checked
+        // 2.5 s later and made once more if the slice is not there.
+        const bool made = m_restoreMadeSlice;
+        m_restoreMadeSlice = false;
+        const auto putBack = [this, lost] {
             if (!m_slice) {
                 return;
             }
@@ -11461,6 +11576,19 @@ void MobileEngine::bindSlice(SliceModel* slice)
                 m_slice->setFilterWidth(lost.lo, lost.hi);
             }
             tuneToCentred(lost.mhz);
+        };
+        QTimer::singleShot(made ? 300 : 1500, this, [this, lost, there, putBack] {
+            if (!m_slice || there) {
+                return;
+            }
+            putBack();
+            QTimer::singleShot(2500, this, [this, lost, putBack] {
+                if (m_slice && (std::abs(m_slice->frequency() - lost.mhz) > 1e-6 || (!lost.mode.isEmpty() && m_slice->mode() != lost.mode))) {
+                    qCInfo(lcMobile).noquote() << "slice recovery: not there yet (" << QString::number(m_slice->frequency(), 'f', 6)
+                                               << m_slice->mode() << "): put back once more";
+                    putBack();
+                }
+            });
         });
     }
     bindAgcAutoSlice();
@@ -12834,12 +12962,11 @@ void MobileEngine::headsetKeeperTick()
         m_headsetNextTryMs = 0;
         m_headsetInCall = false;
         m_headsetMicClosedMs = 0;
-        // A headset that was the route and went off Android's list: looked
-        // for every 5 s while the choice is still Auto, and taken when it is
-        // listed again (not during a phone call).
-        if (!m_headsetLost) {
-            return;
-        }
+        // With the choice Auto, a Bluetooth headset Android lists is taken
+        // when it is not the route: one that was the route and went off the
+        // list and came back, and one switched on after connecting (roadmap
+        // 223: it waited for the first PTT, an Audio output change or a new
+        // connect). Looked for every 5 s, not during a phone call.
         if (!m_connected || !m_audio || audioOutput() != QLatin1String("Auto")) {
             m_headsetLost = false;
             return;
@@ -12849,21 +12976,31 @@ void MobileEngine::headsetKeeperTick()
         }
         m_headsetLookAtMs = now + 5000;
         const int lostMode = androidAudioMode();
-        if (lostMode == 1 || lostMode == 2 || lostMode == 4 || !headsetListed()) {
+        if (lostMode == 1 || lostMode == 2 || lostMode == 4) {
             return;
         }
+        if (!headsetListed()) {
+            m_headsetNoRouteSaid = false;
+            return;
+        }
+        const bool wasLost = m_headsetLost;
         reapplyAudioRoute();
         applyAudioOutputDevice();
         if (headsetInUse()) {
             m_headsetLost = false;
-            qCInfo(lcMobile).noquote() << "headset route: Android lists a Bluetooth headset again, its route taken ("
+            m_headsetNoRouteSaid = false;
+            qCInfo(lcMobile).noquote() << (wasLost ? "headset route: Android lists a Bluetooth headset again, its route taken ("
+                                                   : "headset route: a Bluetooth headset switched on, its route taken (")
                                               + headsetState() + ")";
             QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->reopenRx(); }, Qt::QueuedConnection);
             watchHeadsetLink();
         } else {
-            // Listed, but Android gave it no route: looked at again in 20 s.
+            // Listed, but Android gave it no route (another device may hold
+            // it): looked at again in 20 s, said in the log once.
             m_headsetLookAtMs = now + 20000;
-            qCInfo(lcMobile) << "headset route: a Bluetooth headset is listed but Android gave it no route: tried again in 20 s";
+            if (!std::exchange(m_headsetNoRouteSaid, true)) {
+                qCInfo(lcMobile) << "headset route: a Bluetooth headset is listed but Android gave it no route: tried again every 20 s";
+            }
         }
         return;
     }

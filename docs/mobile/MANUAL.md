@@ -477,7 +477,16 @@ The first page lists the ways to reach a radio:
   iPhone and iPad the app asks iOS for time to finish the reconnect, which
   takes about 10 s, so the audio comes back without opening the app. If the radio no longer has the app's slice then (a
   radio that takes one station still holding the old session), the app
-  makes it again on the frequency, mode and filter it had. The eye in the password field
+  makes it again on the frequency, mode and filter it had. And when the
+  radio gives the app a slice from its own memory on another band (an
+  older state, after a session it lost while you were in a phone call),
+  the slice goes back to the frequency, mode and filter it had (since
+  build 224 / Android beta 124; reported by Ranjith Unnikrishnan: 40 m
+  SSB before a call, 15 m CW after it). This holds for the app's own
+  reconnect and for a connect you make by hand afterwards, within two
+  hours, on the same radio, as long as the session ended without your
+  Disconnect; after your own Disconnect the radio's memory decides, as
+  before. The eye in the password field
   shows what you typed (dots again when you leave the field); the QRZ.com
   password and the Wavelog / Cloudlog API key have the same eye.
   **Forgot password?** under the password field (since build 215 /
@@ -2129,6 +2138,10 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   Whaley's request; since build 214 / Android beta 119 the list has the
   room: until then Decode, the bands and Show stayed fixed too and left
   a phone four rows, and the choice took effect only from a 520 px view.)
+  Until you choose, a phone shows *List only* and a tablet *Whole tab*
+  (since build 224 / Android beta 124: Michael Walker VA3MW looked for a
+  full screen of decodes and the way to it was hard to find); your choice
+  under **More** › Scroll stays.
 
   ![List only on a phone with the drawer at full height: the slot bar, the CQ row with More, then the decodes](manual/ft8-list-only.jpg)
 
@@ -2171,6 +2184,15 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   CQ). Tested on the air at 10 W: a call started 5 s late was answered
   in the next slot. Later than that it waits for your next slot, and the
   following calls start on time; Answer CQ does the same.
+  The same holds during a QSO: when the other station's reply is decoded
+  only after your own slot has begun (over a slow link it comes about a
+  second into it), the message already on the air turns into the next one
+  from where it has got to, while less than three quarters of the slot has
+  gone by, instead of the old one going out in full and the QSO losing a
+  whole cycle (as WSJT-X; since build 224 / Android beta 124). The list
+  shows the new message as a TX row of its own. Tested on the air at 10 W:
+  a reply fed in 1.4 s into a CQ turned it into the report in the same
+  slot.
   **CQ** calls CQ on the **TX slice** (the one with the red TX badge), in
   the slot set by **CQ slot**: *Auto* (the next one), *Even* (FT8: 0 and
   30 s, FT4: 0, 15, 30, 45 s) or *Odd* (15 and 45 s; FT4: 7.5, 22.5 …).
@@ -3178,7 +3200,15 @@ tab holds.
     to answer in. **Halt TX**, another band, a CQ of your own, a tap on
     another station's row or the FTx auto stop's minutes without a touch
     end the wait; a QSO under way is finished first. With transmit locked
-    (SB) the tap only tunes. The
+    (SB) the tap only tunes. **A CW, RTTY or PSK spot is answered too**
+    (since build 224 / Android beta 124): the spot's call becomes the one
+    worked (*{HIS}* in the macros, the Log tab's Call), and once the slice
+    is on the station (about a second in CW, two and a half in RTTY,
+    three and a half in PSK, after the autotune) its answer goes out: CW
+    memory **M2** (by default your own call, the answer to a CQ), in RTTY
+    and PSK the Digi tab's **Answer** macro (F2 unless renamed). With
+    transmit locked (SB) the tap only tunes and sets the call. Tested on
+    the air at 10 W in CW and RTTY. The
     mode is the spot's own, else a digital mode named anywhere in its
     comment (*CQ RTTY test*, *TNX FT8*, *BPSK31*), else its comment's
     first or last word, else the band plan. A tap on
@@ -3227,6 +3257,7 @@ Notices and refusals pop up in the middle of the display; tap one, or wait
 | *This slice is muted on this band …* | The radio remembers the band's slice muted | Tap the speaker on the info panel |
 | *The radio's CW pitch was 0 Hz …* | The radio had a CW pitch of 0 stored for this app, so CW at zero beat was silent | Nothing: the app set 600 Hz; change it under Controls → CW → Pitch |
 | *Microphone access is off …* | The device does not let the app use the microphone | Allow it in the device's settings (Settings › OksaSDR › Microphone) |
+| Bluetooth headphones silent now and then, or Bluetooth media silent (Android) | The headphones are connected to another phone, tablet or computer at the same time, with media audio on there too: that device takes the music link, for example for a message's sound | Disconnect the headphones from the other device, or switch its media audio off for them in that device's Bluetooth settings; on this phone, check that the headphones' media audio (on some phones just Audio) is on in Android's Bluetooth settings |
 | Receive stays silent after a call, an alarm or another app's sound, with the app in the background (iPhone, iPad) | iOS does not let the app take its microphone's audio session back in the background | Since build 221 the app takes a playing-only session there instead, so receive should come back by itself when the other sound ends and nothing else plays (the microphone's session returns when the app is in front); if it stays silent, open the app, and send the log |
 | *Host unreachable* or *timed out* to a home-network address (iPhone, iPad, Mac) | iOS keeps the app off the home network until it may use it (Local Network permission); the error then names where | Settings › Privacy & Security › Local Network › OksaSDR on; also check the address and that this device is on the radio's network or VPN |
 | *No free slice for the transmit side of a split* | All the radio's slices are in use | Close a slice (press and hold its chip, or Stations…) |
@@ -3310,11 +3341,15 @@ Bluetooth keyboard on a phone, or Android's DeX):
 | A | An ATU tune cycle (the ATU button bypasses the ATU when it is tuned on this frequency; A always tunes) |
 | F1–F12 | CW memories (CW modes), the Digi tab's macros (F1–F8, RTTY and PSK) or voice macros (voice modes); a held key starts it once (since build 200; before, the key's repeat started it again and again) |
 | ⌘1–⌘9, ⌘0 | As F1–F10, for a keyboard without F-keys (an iPad's Magic Keyboard); Ctrl with the digit on Android and a PC keyboard (not while Ctrl keys the CW paddles) |
-| Esc | Stop CW text, RTTY or PSK text, or a voice macro |
+| Esc | Stop CW text, RTTY or PSK text, or a voice macro; it also closes what was opened last: a chooser (antenna, step, filter), Radio Setup, the Log, a dialog or the Controls drawer (not a spot alert or the macros panel). A question Setup asks is cancelled first and Setup stays open |
 | Scroll | Tune; ⌘- or Ctrl-scroll zooms |
 
 T, Shift + T and A transmit, so the transmit lock (TX tab › Lock) holds
-them as it holds PTT and TUNE.
+them as it holds PTT and TUNE. **Setup › Transmit › T and A transmit**
+switches these letters off, so a stray key or a dictation keys nothing
+(since build 224 / Android beta 124; on by default, as before; Justin
+Mann AI5OS, WCAG 2.1.4). The heading above it, *This device: the
+keyboard*, also holds Space is PTT.
 
 **PTT key** (Setup › Transmit, this device's part: the TX tab's **PTT
 key…** opens it; since build 200, in the TX tab before build 202; thanks Rob Metallo VA3MET):
@@ -3467,7 +3502,8 @@ taken again: five quick tries, then (since beta 122) one every 20 seconds
 for as long as Android lists the headset, so the sound does not stay on
 the phone. A headset that is switched off or goes out of reach gives the
 sound to the phone, and is taken again within five seconds of coming
-back. During a phone call the app leaves the headset to the call and
+back; so is one you switch on only after connecting (since beta 124;
+before, it waited for the first PTT). During a phone call the app leaves the headset to the call and
 takes it again afterwards. In the background the microphone is closed
 (Android does not let it stay open there), and since beta 122 the headset
 goes on playing through that: with the screen off, the cover closed or

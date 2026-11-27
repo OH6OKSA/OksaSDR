@@ -52,6 +52,7 @@ ColumnLayout {
             // With an on / off button beside it named the title, the
             // slider is the stage's level, not a second "Gate".
             accessibleName: cs.toggleKey.length > 0 ? qsTr("%1 level").arg(cs.spokenTitle) : cs.spokenTitle
+            valueText: (csSlider.shown > 0 && cs.from < 0 ? "+" : "") + csSlider.shown.toFixed(cs.decimals) + cs.unit
             Layout.fillWidth: true
             from: cs.from; to: cs.to; stepSize: cs.step
             value: Engine.txChain[cs.key] || 0

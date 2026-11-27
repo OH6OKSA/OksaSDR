@@ -62,7 +62,11 @@ ApplicationWindow {
     // twice (the display went dark for seconds on rotation, WA2N).
     // The start value only: the assignment at completion ends the binding.
     property bool pagePhone: phoneSized
-    Component.onCompleted: pagePhone = phoneSized
+    Component.onCompleted: {
+        pagePhone = phoneSized
+        // A popup that shows takes the screen reader in (MobileEngineScreenReader.cpp).
+        Engine.followPopups(Overlay.overlay)
+    }
     onPhoneSizedChanged: Qt.callLater(() => { window.pagePhone = window.phoneSized })
 
     // The on-screen keyboard over the window (roadmap 142): the render

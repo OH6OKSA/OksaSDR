@@ -1076,6 +1076,15 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
     } else if (command == QLatin1String("slicerecovery")) {
         m_engine.testSliceRecovery();
         *delayMs = 4000;
+    } else if (command == QLatin1String("losttest")) {
+        // losttest MHZ MODE: the slice the session has when it is lost next
+        // (roadmap 235: a loss after which the radio's memory gives another).
+        m_engine.testLostSlice(arg.toDouble(), args.value(1));
+        *delayMs = 100;
+    } else if (command == QLatin1String("reconnect")) {
+        // reconnect ADDRESS: a connect by hand, as the Connect page's card.
+        m_engine.connectToAddress(arg);
+        *delayMs = 1000;
     } else if (command == QLatin1String("dxconnect")) {
         m_engine.testDxConnect(arg.section(QLatin1Char(':'), 0, 0), quint16(arg.section(QLatin1Char(':'), 1).toUInt()));
         *delayMs = 500;
@@ -1348,7 +1357,7 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             const QAccessible::Role role = a->role();
             const bool actionable = role == QAccessible::Button || role == QAccessible::CheckBox
                 || role == QAccessible::RadioButton || role == QAccessible::Slider || role == QAccessible::ComboBox
-                || role == QAccessible::EditableText || role == QAccessible::MenuItem;
+                || role == QAccessible::EditableText || role == QAccessible::MenuItem || role == QAccessible::PageTab;
             if (command != QLatin1String("a11y")) {
                 if (a->text(QAccessible::Name) == name) {
                     found << a;
@@ -1360,9 +1369,13 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                 } else if (actionable) {
                     ++named;
                 }
-                qInfo().noquote() << QStringLiteral("shot-plan: a11y %1 %2 \"%3\" at %4,%5 %6x%7")
+                const QString description = a->text(QAccessible::Description);
+                const QString value = a->valueInterface() ? a->valueInterface()->currentValue().toString() : QString();
+                qInfo().noquote() << QStringLiteral("shot-plan: a11y %1 %2 \"%3\" at %4,%5 %6x%7%8%9")
                                          .arg(actionable && text.trimmed().isEmpty() ? QStringLiteral("UNNAMED") : QStringLiteral("-"))
-                                         .arg(int(role), 0, 16).arg(text).arg(r.x()).arg(r.y()).arg(r.width()).arg(r.height());
+                                         .arg(int(role), 0, 16).arg(text).arg(r.x()).arg(r.y()).arg(r.width()).arg(r.height())
+                                         .arg(value.isEmpty() ? QString() : QStringLiteral(" value %1").arg(value))
+                                         .arg(description.isEmpty() ? QString() : QStringLiteral(" description \"%1\"").arg(description));
             }
             for (int i = 0; i < a->childCount(); ++i) {
                 walk(a->child(i), depth + 1);

@@ -483,6 +483,7 @@ void MobileEngine::syncDigiAudio()
                 }
             }
             handleDigiDecodes(list, slotMs);
+            digiSwapMessage();
         });
         d->audio->setSlice(slice);
         d->audio->setEnabled(true);
@@ -681,9 +682,16 @@ bool MobileEngine::digiListScroll() const
         == QLatin1String("True");
 }
 
+bool MobileEngine::digiListScrollChosen() const
+{
+    return AppSettings::instance().contains(QStringLiteral("MobileDigiListScroll"));
+}
+
 void MobileEngine::setDigiListScroll(bool on)
 {
-    if (on == digiListScroll()) {
+    // Saved also when it is the stored value's default: the choice made
+    // stands over the phone's default (roadmap 193).
+    if (on == digiListScroll() && digiListScrollChosen()) {
         return;
     }
     AppSettings::instance().setValue(QStringLiteral("MobileDigiListScroll"), on ? QStringLiteral("True") : QStringLiteral("False"));
@@ -1279,6 +1287,7 @@ void MobileEngine::digiInjectDecodes(QVariantList rows)
         v = m;
     }
     handleDigiDecodes(rows, Ft8Engine::nowMs());
+    digiSwapMessage();
 }
 
 bool MobileEngine::digiHoundHandle(const QVariantMap& d)
@@ -2158,6 +2167,7 @@ void MobileEngine::startDigiTx(qint64 slotMs)
     }
     const double lead = std::max(0.0, 0.5 - elapsed - kTxLatencyS);
     double leftOutS = 0.0;
+    qint64 layoutFrames = 0;
     if (late && lead <= 0.0) {
         // A late start: leave out what would have gone out by now, so the
         // rest is on air when the other station expects it, and ramp the
@@ -2167,6 +2177,7 @@ void MobileEngine::startDigiTx(qint64 slotMs)
         const qsizetype total = audio.size() / qsizetype(sizeof(float));
         const qsizetype skip = std::min(total, qsizetype(leftOutS * Ft8Engine::kTxSampleRate));
         audio.remove(0, skip * qsizetype(sizeof(float)));
+        layoutFrames = -qint64(skip);
         const double symbolS = m_ft8->protocol() == Ft8Engine::Protocol::Ft4 ? 0.048 : 0.16;
         const int nRamp = int(std::lround(symbolS * Ft8Engine::kTxSampleRate / 8.0));
         auto* f = reinterpret_cast<float*>(audio.data());
@@ -2178,6 +2189,7 @@ void MobileEngine::startDigiTx(qint64 slotMs)
         }
     } else {
         audio.prepend(QByteArray(int(lead * Ft8Engine::kTxSampleRate) * int(sizeof(float)), '\0'));
+        layoutFrames = int(lead * Ft8Engine::kTxSampleRate);
     }
     // Digital-mode audio from this device: allowed in DIGU like RADE (voice
     // PTT is refused there).
@@ -2189,9 +2201,12 @@ void MobileEngine::startDigiTx(qint64 slotMs)
         QTimer::singleShot(150, this, [this, slotMs] { startDigiTx(slotMs); });
         return;
     }
+    m_digiTxSlotMs = slotMs;
+    m_digiTxLayoutFrames = layoutFrames;
     if (m_digiDryRun) {
         m_digiTransmitting = true;
         m_digiSentMsg = m_digiTxMsg;
+        m_digiSentHz = m_digiTxHz;
         ++m_digiTries;
         const int ms = int(qint64(audio.size() / int(sizeof(float))) * 1000 / Ft8Engine::kTxSampleRate);
         qCInfo(lcMobile).noquote() << QStringLiteral("digi: dry TX \"%1\" at %4 Hz, try %2, %3 slot, %5 s into it, %6 ms of audio%7")
@@ -2235,6 +2250,7 @@ void MobileEngine::startDigiTx(qint64 slotMs)
     }
     m_digiTransmitting = true;
     m_digiSentMsg = m_digiTxMsg;
+    m_digiSentHz = m_digiTxHz;
     m_digiTxPeakW = 0.0;
     m_digiTxPeakSwr = 0.0;
     ++m_digiTries;
@@ -2275,6 +2291,94 @@ void MobileEngine::startDigiTx(qint64 slotMs)
                                       .arg(leftOutS > 0.0 ? QStringLiteral(", a late start: its first %1 s left out").arg(leftOutS, 0, 'f', 2)
                                                           : QString());
     emit digiChanged();
+}
+
+// A reply decoded after our slot began (over a slow link the decodes come
+// about a second into it) changes the next message while the old one is on
+// the air. As WSJT-X (mainwindow.cpp m_restart; the modulator keeps its
+// place), the new message takes over from where the old one has got to in
+// this slot, instead of the old one going out in full and the QSO losing
+// a whole cycle (roadmap 146, found in 145's on-air test: F1MXE's report
+// 1.4 s into our slot). Not for a Hound (its R+report goes on the Fox's
+// frequency) and not when the audio frequency would change.
+void MobileEngine::digiSwapMessage()
+{
+    if (!m_ft8 || !m_digiTransmitting || m_digiHound || m_digiState == QLatin1String("idle") || m_digiTxMsg.isEmpty()
+        || m_digiTxMsg == m_digiSentMsg || m_digiTxHz != m_digiSentHz) {
+        return;
+    }
+    const qint64 slotLen = qint64(m_ft8->slotSeconds() * 1000);
+    const qint64 into = Ft8Engine::nowMs() - m_digiTxSlotMs;
+    if (into < 0 || into >= qint64(kLateStartShare * double(slotLen))) {
+        qCInfo(lcMobile).noquote() << QStringLiteral("digi: \"%1\" waits for the next slot of ours (%2 s into this one)")
+                                          .arg(m_digiTxMsg)
+                                          .arg(into / 1000.0, 0, 'f', 2);
+        return;
+    }
+    QString error;
+    QByteArray audio = m_ft8->encode(m_digiTxMsg, m_digiTxHz, &error);
+    if (audio.isEmpty()) {
+        return;
+    }
+    const float gain = float(std::pow(10.0, m_digiTxLevelDb / 20.0));
+    auto* f = reinterpret_cast<float*>(audio.data());
+    for (qsizetype i = 0, n = audio.size() / qsizetype(sizeof(float)); i < n; ++i) {
+        f[i] *= gain;
+    }
+    // Laid out as the clip on air: the same lead silence, or the same
+    // frames of a late start left out.
+    if (m_digiTxLayoutFrames > 0) {
+        audio.prepend(QByteArray(int(m_digiTxLayoutFrames) * int(sizeof(float)), '\0'));
+    } else if (m_digiTxLayoutFrames < 0) {
+        audio.remove(0, std::min<qsizetype>(audio.size(), qsizetype(-m_digiTxLayoutFrames) * qsizetype(sizeof(float))));
+    }
+    const double symbolS = m_ft8->protocol() == Ft8Engine::Protocol::Ft4 ? 0.048 : 0.16;
+    const int crossfade = int(std::lround(symbolS * Ft8Engine::kTxSampleRate / 8.0));
+    const QString oldMsg = m_digiSentMsg;
+    m_digiSentMsg = m_digiTxMsg;
+    // The new message has gone out once now: its next slot is its second try.
+    m_digiTries = 1;
+    qCInfo(lcMobile).noquote() << QStringLiteral("digi: %1TX swapped from \"%2\" to \"%3\" %4 s into the slot")
+                                      .arg(m_digiDryRun ? QStringLiteral("dry ") : QString(), oldMsg, m_digiTxMsg)
+                                      .arg(into / 1000.0, 0, 'f', 2);
+    {
+        SliceModel* own = digiSlice();
+        const QVariantMap row{{QStringLiteral("utc"), QDateTime::fromMSecsSinceEpoch(m_digiTxSlotMs, QTimeZone::UTC).toString(QStringLiteral("HHmmss"))},
+                              {QStringLiteral("snr"), QString()},
+                              {QStringLiteral("dt"), QString()},
+                              {QStringLiteral("freq"), m_digiTxHz},
+                              {QStringLiteral("text"), m_digiTxMsg},
+                              {QStringLiteral("hl"), QStringLiteral("tx")},
+                              {QStringLiteral("sliceId"), own ? own->sliceId() : -1},
+                              {QStringLiteral("slice"), own ? own->letter() : QString()}};
+        m_digiDecodes.prepend(row);
+        while (m_digiDecodes.size() > kMaxDecodes) {
+            m_digiDecodes.removeLast();
+        }
+        emit digiDecodesChanged();
+    }
+    emit digiChanged();
+    if (m_digiDryRun) {
+        return;
+    }
+    // The clip may have ended in the meantime (it should not, under 75 % of
+    // the slot): then the old message counts as the one sent, and the new
+    // one goes out in the next slot of ours.
+    AudioEngine* engine = m_audio;
+    QPointer<MobileEngine> self(this);
+    const int seq = m_digiTxSeq;
+    QMetaObject::invokeMethod(engine, [engine, audio, crossfade, self, oldMsg, seq] {
+        if (engine->swapTxDigital(audio, crossfade)) {
+            return;
+        }
+        QMetaObject::invokeMethod(self, [self, oldMsg, seq] {
+            if (self && self->m_digiTxSeq == seq) {
+                qCInfo(lcMobile).noquote() << "digi: the swap came after the clip ended; the new message goes in the next slot";
+                self->m_digiSentMsg = oldMsg;
+                self->m_digiTries = 0;
+            }
+        }, Qt::QueuedConnection);
+    }, Qt::QueuedConnection);
 }
 
 void MobileEngine::onDigiTxFinished()

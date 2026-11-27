@@ -20,7 +20,11 @@ ColumnLayout {
     // settings fold under More, and only the decode list scrolls, with a
     // bar that shows it does.
     property real viewHeight: 0
-    readonly property bool wantList: Engine.digiListScroll && viewHeight > 0
+    // Scroll as chosen; until it is, a phone shows List only (roadmap 193,
+    // the user's choice (a): Michael Walker VA3MW looked for a full screen
+    // of decodes and the way was hard to find), a tablet the whole tab.
+    readonly property bool listScroll: Engine.digiListScrollChosen ? Engine.digiListScroll : Theme.phoneLayout
+    readonly property bool wantList: listScroll && viewHeight > 0
     property bool settingsOpen: false
     readonly property bool settingsShown: !wantList || settingsOpen
     // List only means the list (roadmap 169, the user: "eihän list only
@@ -179,6 +183,8 @@ ColumnLayout {
                                              ? qsTr("CQ %1").arg(Engine.digiCqTarget) : qsTr("CQ")
             text: Engine.txLocked ? qsTr("%1 · SB").arg(cqText) : cqText
             Accessible.name: Engine.txLocked ? qsTr("%1, transmit locked, standby").arg(cqText) : cqText
+            // Roadmap 229: arming the lock is on a hold only.
+            Accessible.description: Engine.txLocked ? qsTr("hold for a second to arm transmit") : ""
             checked: digi.qso.state === "cq"
             // A Hound never calls CQ: it calls the Fox.
             enabled: Engine.transmitAvailable && !Engine.digiHound
@@ -200,7 +206,9 @@ ColumnLayout {
             font.pixelSize: digi.cqRowFont
             checked: Engine.digiAutoCq
             enabled: !Engine.digiHound
-            Accessible.name: qsTr("Call CQ again after each QSO")
+            // The visible word first (WCAG 2.5.3, roadmap 233), what it does after.
+            Accessible.name: text
+            Accessible.description: (checked && Qt.platform.os !== "ios" ? qsTr("selected") + ", " : "") + qsTr("calls CQ again after each QSO")
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiAutoCq = !Engine.digiAutoCq
@@ -216,7 +224,8 @@ ColumnLayout {
             font.pixelSize: digi.cqRowFont
             checked: Engine.digiAutoAnswer
             enabled: (Engine.transmitAvailable || Engine.digiAutoAnswer) && !Engine.digiHound
-            Accessible.name: Engine.digiAutoAnswer ? qsTr("Stop answering CQs by itself") : qsTr("Answer CQs by itself")
+            Accessible.name: text
+            Accessible.description: (checked && Qt.platform.os !== "ios" ? qsTr("selected") + ", " : "") + (Engine.digiAutoAnswer ? qsTr("stops answering CQs by itself") : qsTr("answers CQs by itself"))
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiAutoAnswer = !Engine.digiAutoAnswer
@@ -244,7 +253,8 @@ ColumnLayout {
             text: qsTr("More")
             font.pixelSize: digi.cqRowFont
             checked: digi.settingsOpen
-            Accessible.name: digi.settingsOpen ? qsTr("Hide the FTx settings") : qsTr("Show the FTx settings")
+            Accessible.name: text
+            Accessible.description: digi.settingsOpen ? qsTr("hides the FTx settings") : qsTr("shows the FTx settings")
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: digi.settingsOpen = !digi.settingsOpen
@@ -264,7 +274,7 @@ ColumnLayout {
             objectName: "digiScrollTab"
             Accessible.name: qsTr("%1: %2").arg(qsTr("Scroll")).arg(text)
             text: qsTr("Whole tab")
-            checked: !Engine.digiListScroll
+            checked: !digi.listScroll
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiListScroll = false
@@ -273,7 +283,7 @@ ColumnLayout {
             objectName: "digiScrollList"
             Accessible.name: qsTr("%1: %2").arg(qsTr("Scroll")).arg(text)
             text: qsTr("List only")
-            checked: Engine.digiListScroll
+            checked: digi.listScroll
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: {
@@ -307,7 +317,8 @@ ColumnLayout {
             text: qsTr("Hound")
             checked: Engine.digiHound
             enabled: Engine.transmitAvailable || Engine.digiHound
-            Accessible.name: qsTr("Hound: call a DXpedition's Fox")
+            Accessible.name: text
+            Accessible.description: (checked && Qt.platform.os !== "ios" ? qsTr("selected") + ", " : "") + qsTr("calls a DXpedition's Fox")
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiHound = true
@@ -317,8 +328,9 @@ ColumnLayout {
             visible: Engine.digiHound
             text: qsTr("All Hz")
             checked: Engine.digiHoundAllHz
-            Accessible.name: Engine.digiHoundAllHz ? qsTr("Show only the Fox's part below 1000 Hz")
-                                                   : qsTr("Show the stations above 1000 Hz too")
+            Accessible.name: text
+            Accessible.description: (checked && Qt.platform.os !== "ios" ? qsTr("selected") + ", " : "") + (Engine.digiHoundAllHz ? qsTr("shows only the Fox's part below 1000 Hz")
+                                                                                                       : qsTr("shows the stations above 1000 Hz too"))
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiHoundAllHz = !Engine.digiHoundAllHz
@@ -515,14 +527,16 @@ ColumnLayout {
         AppButton {
             objectName: "digiZoom"
             text: qsTr("Zoom")
-            Accessible.name: qsTr("Fit the display to the audio band")
+            Accessible.name: text
+            Accessible.description: qsTr("fits the display to the audio band")
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiZoom()
         }
         AppButton {
             objectName: "digiFreeTx"
             text: qsTr("Free")
-            Accessible.name: qsTr("Move TX to the clearest frequency heard")
+            Accessible.name: text
+            Accessible.description: qsTr("moves TX to the clearest frequency heard")
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiFindFreeTx()
         }

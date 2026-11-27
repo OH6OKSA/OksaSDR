@@ -44,6 +44,8 @@ ColumnLayout {
             objectName: "digiPresenceDown"
             text: "−"
             Accessible.name: qsTr("Shorter presence limit")
+            // The value said with it: it changed silently (roadmap 233, issue 17).
+            Accessible.description: qsTr("now %1 min").arg(Engine.digiPresenceMin)
             Layout.preferredWidth: Theme.touchTarget
             focusPolicy: Qt.NoFocus
             enabled: Engine.digiPresenceMin > 1
@@ -53,6 +55,7 @@ ColumnLayout {
             objectName: "digiPresenceUp"
             text: "+"
             Accessible.name: qsTr("Longer presence limit")
+            Accessible.description: qsTr("now %1 min").arg(Engine.digiPresenceMin)
             Layout.preferredWidth: Theme.touchTarget
             focusPolicy: Qt.NoFocus
             enabled: Engine.digiPresenceMin < 60
@@ -75,6 +78,7 @@ ColumnLayout {
             objectName: "digiAnswerCallsDown"
             text: "−"
             Accessible.name: qsTr("Fewer calls to each station")
+            Accessible.description: qsTr("now %1").arg(Engine.digiAnswerCalls)
             Layout.preferredWidth: Theme.touchTarget
             focusPolicy: Qt.NoFocus
             enabled: Engine.digiAnswerCalls > 2
@@ -85,6 +89,7 @@ ColumnLayout {
             objectName: "digiAnswerCallsUp"
             text: "+"
             Accessible.name: qsTr("More calls to each station")
+            Accessible.description: qsTr("now %1").arg(Engine.digiAnswerCalls)
             Layout.preferredWidth: Theme.touchTarget
             focusPolicy: Qt.NoFocus
             enabled: Engine.digiAnswerCalls < 20

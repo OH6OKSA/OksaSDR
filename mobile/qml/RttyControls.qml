@@ -296,6 +296,8 @@ ColumnLayout {
                 leftPadding: 2
                 rightPadding: 2
                 onClicked: Engine.sendTextMacro(index)
+                // Roadmap 229: the hold's edit said to a screen reader.
+                Accessible.description: qsTr("hold to edit")
                 onPressAndHold: {
                     macroEditor.index = index
                     macroEditor.label = modelData.label

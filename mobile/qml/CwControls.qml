@@ -103,6 +103,9 @@ ColumnLayout {
                 Layout.preferredHeight: Theme.touchTarget
                 focusPolicy: Qt.NoFocus
                 onClicked: Engine.sendCwMemory(index)
+                // The edit is on a hold only: a screen reader says so (roadmap
+                // 229; VoiceOver's double tap and hold passes the hold on).
+                Accessible.description: qsTr("hold to edit")
                 onPressAndHold: {
                     memoryEditor.index = index
                     memoryEditor.text = modelData
@@ -210,6 +213,7 @@ ColumnLayout {
     Label { text: qsTr("Speed  %1 WPM").arg(Engine.cwSpeed); color: Theme.textDim; font.pixelSize: Theme.px(15) }
     FineSlider {
         accessibleName: qsTr("CW speed")
+        valueText: qsTr("%1 WPM").arg(Engine.cwSpeed)
         Layout.fillWidth: true
         from: 5
         to: 60
@@ -220,6 +224,7 @@ ColumnLayout {
     Label { text: qsTr("Pitch  %1 Hz").arg(Engine.cwPitch); color: Theme.textDim; font.pixelSize: Theme.px(15) }
     FineSlider {
         accessibleName: qsTr("CW pitch")
+        valueText: qsTr("%1 Hz").arg(Engine.cwPitch)
         Layout.fillWidth: true
         from: 300
         to: 1000

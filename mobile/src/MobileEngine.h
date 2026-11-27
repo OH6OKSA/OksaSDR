@@ -24,6 +24,7 @@
 #include <QObject>
 #include <QPointF>
 #include <QPointer>
+#include <QQuickItem>
 #include <QStringList>
 #include <QElapsedTimer>
 #include <atomic>
@@ -150,6 +151,8 @@ class MobileEngine : public QObject {
     // Space as PTT on a hardware keyboard (roadmap 209): on unless switched
     // off in Setup › Transmit, for a screen reader that presses with Space.
     Q_PROPERTY(bool spaceIsPtt READ spaceIsPtt WRITE setSpaceIsPtt NOTIFY spaceIsPttChanged)
+    // Setup › Transmit › T and A transmit (roadmap 227): the keyboard's letter keys that key the radio.
+    Q_PROPERTY(bool letterKeysTx READ letterKeysTx WRITE setLetterKeysTx NOTIFY letterKeysTxChanged)
     // The tablet page's own-layout editor is open: the PTT key keys nothing.
     Q_PROPERTY(bool layoutEditing READ layoutEditing WRITE setLayoutEditing NOTIFY layoutEditingChanged)
     Q_PROPERTY(bool pttLatched READ pttLatched NOTIFY pttToggleChanged)
@@ -440,6 +443,8 @@ class MobileEngine : public QObject {
     // FTx tab in the drawer: the decode list scrolls on its own under fixed
     // main buttons (Michael Whaley's option B), or the whole tab scrolls.
     Q_PROPERTY(bool digiListScroll READ digiListScroll WRITE setDigiListScroll NOTIFY digiListScrollChanged)
+    // Whether Scroll has been chosen; before that a phone shows List only (roadmap 193).
+    Q_PROPERTY(bool digiListScrollChosen READ digiListScrollChosen NOTIFY digiListScrollChanged)
     // RADE digital voice in the app (FreeDV Radio Autoencoder): on or off,
     // whether this build has it, and its receive state (synced, snr,
     // callsign of the last end of over).
@@ -579,6 +584,8 @@ class MobileEngine : public QObject {
     // more} (empty: none).
     Q_PROPERTY(QVariantMap spotAlertSettings READ spotAlertSettings NOTIFY spotAlertSettingsChanged)
     Q_PROPERTY(QVariantMap spotAlert READ spotAlert NOTIFY spotAlertChanged)
+    // The alerts waiting behind the one shown, newest first (roadmap 172: a list to pick from).
+    Q_PROPERTY(QVariantList spotAlertQueue READ spotAlertQueue NOTIFY spotAlertChanged)
     // Roadmap 136: RBN through the DX cluster, PSK Reporter's live feed and
     // Heard me (by band: who heard this station in the last half hour).
     Q_PROPERTY(QVariantMap spotFeeds READ spotFeeds NOTIFY spotFeedsChanged)
@@ -966,6 +973,8 @@ public:
     QString pttKeyName() const;
     bool pttKeyLearning() const;
     bool spaceIsPtt() const { return m_spaceIsPtt; }
+    bool letterKeysTx() const { return m_letterKeysTx; }
+    void setLetterKeysTx(bool on);
     void setSpaceIsPtt(bool on);
     // Whether a Space pressed with these keyboard modifiers (Qt's, as the key
     // event has them) is held back from PTT: with Control and Option (Alt)
@@ -1116,6 +1125,8 @@ public:
     // The render tool's slice recovery: this app's slice and pan removed and
     // made again, as after a reconnect the radio gave no slice.
     void testSliceRecovery();
+    // Tests (roadmap 235): the slice the session has when it is lost next.
+    void testLostSlice(double mhz, const QString& mode);
     Q_INVOKABLE void setRadioSetup(const QString& key, const QVariant& value);
     // Receive › Calibration's Start, as the desktop's: the cal frequency
     // set, freq_error_ppb cleared, radio pll_start, done when the radio's
@@ -1552,6 +1563,7 @@ public:
     void setDigiFilter(const QString& filter);
     bool digiListScroll() const;
     void setDigiListScroll(bool on);
+    bool digiListScrollChosen() const;
     QVariantList digiFrequencies() const;
     // Calls CQ in the next slot, and keeps calling until someone answers.
     Q_INVOKABLE void digiCallCq();
@@ -1774,6 +1786,10 @@ public:
     QVariantMap spotAlertSettings() const;
     Q_INVOKABLE void setSpotAlertSetting(const QString& key, const QVariant& value);
     QVariantMap spotAlert() const;
+    QVariantList spotAlertQueue() const;
+    // Roadmap 172: the waiting alert I becomes the one shown (the shown one waits
+    // first in its place) and is tuned to, as its Tune.
+    Q_INVOKABLE void tuneQueuedSpotAlert(int i);
     QVariantMap spotFeeds() const;
     bool testKeyboard() const { return m_testKeyboard; }
     void setTestKeyboard(bool on, int height = 0)
@@ -2168,6 +2184,23 @@ public:
     // memories in CW, the Digi macros in RTTY / PSK (F1-F8), the voice keyer
     // in voice modes; Esc stops them all. False for any other key.
     Q_INVOKABLE bool operateKey(int key, int modifiers, bool autoRepeat = false);
+    // The screen reader's cursor to what a button opened (MobileEngineScreenReader.cpp):
+    // into ITEM, to its first element with a name (preferSelected: the
+    // chosen one, a chooser's current choice, when there is one). Only the
+    // screen reader's cursor moves, not the keyboard focus (Space, the arrows);
+    // the desktop build on a Mac moves the keyboard focus, as VoiceOver there
+    // follows nothing else.
+    Q_INVOKABLE void screenReaderFocus(QQuickItem* item, bool preferSelected = false);
+    // Every popup the window's overlay shows from now on takes the screen
+    // reader's cursor in, as a dialog does: a modal one, or one with
+    // screenReaderFollows: true (screenReaderFollows: false keeps it out);
+    // to its screenReaderStart item when it has one, else as above with
+    // preferSelected. Main.qml calls it once with Overlay.overlay.
+    Q_INVOKABLE void followPopups(QQuickItem* overlay);
+    // Esc on the page (OperateKeys): the popup opened last of those still
+    // open whose closePolicy has CloseOnEscape closes (a chooser, a dialog,
+    // Radio Setup, the Controls drawer). True if one did.
+    Q_INVOKABLE bool closeTopPopup();
     // Radio RF power setting (Flex rfpower, 0..100).
     int rfPower() const;
     void setRfPower(int power);
@@ -2423,6 +2456,7 @@ signals:
     void textScaleChanged();
     void pttToggleChanged();
     void spaceIsPttChanged();
+    void letterKeysTxChanged();
     void pttKeyChanged();
     void documentPicked(const QString& purpose, const QUrl& url);
     void qsoLogBusyChanged();
@@ -2690,6 +2724,8 @@ private:
     // after it); a link that is down is taken again, then let go and taken,
     // and said on the page when nothing brings it back.
     QTimer m_headsetKeeper;
+    // A listed headset Android gave no route: said in the log once (roadmap 223).
+    bool m_headsetNoRouteSaid{false};
     qint64 m_headsetBadSinceMs{0};
     int m_headsetTries{0};
     bool m_headsetNoticeShown{false};
@@ -3096,6 +3132,8 @@ private:
     // ours and early enough (WSJT-X's late start), else at the next one.
     void digiLateStart();
     void onDigiTxFinished();
+    // Roadmap 146: a reply decoded after our slot began swaps the message on air.
+    void digiSwapMessage();
     // Keyboard-mode transmit: the next text keyed (or played on while
     // keyed), and what to do when a clip has gone out.
     void startTextTx();
@@ -3160,6 +3198,13 @@ private:
     int m_digiTxSeq{0};
     // The slot a tap started late in (its message cut to stay in time).
     qint64 m_digiLateSlotMs{0};
+    // The transmission under way (roadmap 146): its slot, its audio
+    // frequency, and the clip's layout: frames of lead silence put before
+    // the message (> 0) or frames of a late start left out (< 0), so a
+    // swapped message is laid out alike.
+    qint64 m_digiTxSlotMs{0};
+    int m_digiSentHz{0};
+    qint64 m_digiTxLayoutFrames{0};
     bool m_digiTransmitting{false};
     bool m_digiLogged{false};
     bool m_digiEndAfterTx{false};
@@ -3295,6 +3340,8 @@ private:
     int m_dvkMicPendingId{0};
     QTimer m_dvkMicTimer;
     void restoreDvkMic(const QString& why);
+    // The popups shown, in the order they opened (followPopups), for Esc.
+    QList<QPointer<QObject>> m_shownPopups;
 public:
     // Tests (shot plans): a test tone as voice slot ID's clip, and the
     // radio's mic input set directly.
@@ -3311,7 +3358,10 @@ private:
     quint64 m_pskSpotsIn{0};
     QList<QVariantMap> m_spotAlertQueue;
     QHash<QString, qint64> m_spotAlertSeen;
-    QSoundEffect* m_alertSound{nullptr};
+    // The spot alert's sound (roadmap 237): a player of its own for each
+    // sound, let go once it has played (null between sounds).
+    QPointer<QSoundEffect> m_alertSound;
+    void playSpotAlertSound();
     QSet<QString> m_spotTestCalls;
     void releasePttKey(const QString& why);
     bool ulanziOn() const;
@@ -3485,6 +3535,9 @@ private:
     bool m_txStartArmed{false};  // txArmAtStart: armed once in this run
     bool txLockRefuses(const char* what);
     bool m_txBlocked{false};
+    // Roadmap 225: a spot tapped in CW / RTTY / PSK answers the station.
+    void answerSpot(const QString& call, bool cw, int delayMs);
+    int m_spotAnswerSeq{0};
     // DX cluster: its spots go to the radio ("spot add", as the desktop),
     // deduplicated per call within 1 kHz and sent at most RbnRateLimit a
     // second; the radio shows them to every client and brings them back
@@ -3595,6 +3648,7 @@ private:
     bool m_spacePtt{false};   // PTT held by Space from GameController
     int m_spaceLogged{0};
     bool m_spaceIsPtt{true};  // Setup › Transmit › Space is PTT (roadmap 209)
+    bool m_letterKeysTx{true};  // Setup › Transmit › T and A transmit (roadmap 227)
     int m_spaceNotPttLogged{0};
     bool m_sideDit{false};
     bool m_sideDah{false};
@@ -3756,6 +3810,18 @@ private:
     SliceState m_lostSlice;
     QElapsedTimer m_lostSliceAge;
     bool m_restoreLostSlice{false};
+    // The slice to put back is one the app made (a slice recovery): no wait.
+    bool m_restoreMadeSlice{false};
+    // Roadmap 235: the session that ended was lost without the operator
+    // asking (a call, the network, the radio), and how long the slice it
+    // had is put back after such a loss, also on a connect made by hand.
+    bool m_lostSliceUnasked{false};
+    static constexpr qint64 kLostSliceUnaskedMs = 2 * 60 * 60 * 1000;
+    // Whether the lost session's slice is to be put back on this radio now.
+    bool lostSliceWanted() const;
+    QString sliceRadioId() const;
+    // Tests: the slice the session has when it is lost next (losttest).
+    SliceState m_testLostSlice;
     void noteSliceState();
     QString m_twoToneRestoreMode;    // the radio's tune mode before a two-tone TUNE
     bool m_twoToneOn{false};         // that tune seen on
