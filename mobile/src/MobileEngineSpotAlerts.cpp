@@ -310,6 +310,30 @@ QVariantMap MobileEngine::spotAlert() const
     return a;
 }
 
+QVariantList MobileEngine::spotAlertQueue() const
+{
+    QVariantList list;
+    for (const QVariantMap& a : m_spotAlertQueue) {
+        list << a;
+    }
+    return list;
+}
+
+void MobileEngine::tuneQueuedSpotAlert(int i)
+{
+    if (i < 0 || i >= m_spotAlertQueue.size()) {
+        return;
+    }
+    const QVariantMap picked = m_spotAlertQueue.takeAt(i);
+    if (!m_spotAlert.isEmpty()) {
+        m_spotAlertQueue.prepend(m_spotAlert);
+    }
+    m_spotAlert = picked;
+    qCInfo(lcMobile).noquote() << "spot alert: picked from the list:" << picked.value(QStringLiteral("call")).toString();
+    emit spotAlertChanged();
+    tuneSpotAlert();
+}
+
 void MobileEngine::dismissSpotAlert()
 {
     m_spotAlert = m_spotAlertQueue.isEmpty() ? QVariantMap() : m_spotAlertQueue.takeFirst();

@@ -584,6 +584,8 @@ class MobileEngine : public QObject {
     // more} (empty: none).
     Q_PROPERTY(QVariantMap spotAlertSettings READ spotAlertSettings NOTIFY spotAlertSettingsChanged)
     Q_PROPERTY(QVariantMap spotAlert READ spotAlert NOTIFY spotAlertChanged)
+    // The alerts waiting behind the one shown, newest first (roadmap 172: a list to pick from).
+    Q_PROPERTY(QVariantList spotAlertQueue READ spotAlertQueue NOTIFY spotAlertChanged)
     // Roadmap 136: RBN through the DX cluster, PSK Reporter's live feed and
     // Heard me (by band: who heard this station in the last half hour).
     Q_PROPERTY(QVariantMap spotFeeds READ spotFeeds NOTIFY spotFeedsChanged)
@@ -1784,6 +1786,10 @@ public:
     QVariantMap spotAlertSettings() const;
     Q_INVOKABLE void setSpotAlertSetting(const QString& key, const QVariant& value);
     QVariantMap spotAlert() const;
+    QVariantList spotAlertQueue() const;
+    // Roadmap 172: the waiting alert I becomes the one shown (the shown one waits
+    // first in its place) and is tuned to, as its Tune.
+    Q_INVOKABLE void tuneQueuedSpotAlert(int i);
     QVariantMap spotFeeds() const;
     bool testKeyboard() const { return m_testKeyboard; }
     void setTestKeyboard(bool on, int height = 0)
