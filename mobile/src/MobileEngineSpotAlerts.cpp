@@ -25,10 +25,12 @@
 #include "models/SpotModel.h"
 
 #include <QDateTime>
+#include <QElapsedTimer>
 #include <QGuiApplication>
 #include <QLoggingCategory>
 #include <QRegularExpression>
 #include <QSoundEffect>
+#include <QTimer>
 
 Q_DECLARE_LOGGING_CATEGORY(lcMobile)
 
@@ -243,12 +245,7 @@ void MobileEngine::checkSpotAlert(const SpotData& s)
     qCInfo(lcMobile).noquote() << "spot alert:" << line << "spotted by" << s.spotterCallsign;
     emit spotAlertChanged();
     if (on(kSoundKey, true)) {
-        if (!m_alertSound) {
-            m_alertSound = new QSoundEffect(this);
-            m_alertSound->setSource(QUrl(QStringLiteral("qrc:/sounds/spot-alert.wav")));
-            m_alertSound->setVolume(0.8f);
-        }
-        m_alertSound->play();
+        playSpotAlertSound();
     }
     if (on(kNotifyKey, false) && QGuiApplication::applicationState() != Qt::ApplicationActive) {
         postLocalNotification(tr("Spot: %1").arg(call),
@@ -256,6 +253,51 @@ void MobileEngine::checkSpotAlert(const SpotData& s)
                                   .arg(QString::number(s.rxFreqMhz, 'f', 3), s.mode,
                                        e ? QStringLiteral(", ") + e->name : QString(), why, s.spotterCallsign));
     }
+}
+
+// The spot alert's sound (roadmap 237). Qt's sound player follows the
+// default output for as long as it exists: when the route changed (a
+// Bluetooth headset's media audio going off) it opened a new audio stream
+// at once, even long after its sound, and on Android that start waited
+// 12.5 s in AudioTrack::start on the GUI thread while the headset went: the
+// app stood still (the user's phone, beta 123, 3 s after an alert's sound).
+// The player was kept for good. Now each alert's sound has a player of its
+// own, let go once it has played, so between alerts nothing follows the
+// route. (A player on a thread of its own crashed in Qt 6.12's sound engine
+// on the desktop, at the second alert: not used.)
+void MobileEngine::playSpotAlertSound()
+{
+    // One sound at a time: alerts close together give one sound.
+    if (m_alertSound) {
+        return;
+    }
+    auto* sound = new QSoundEffect(this);
+    m_alertSound = sound;
+    QElapsedTimer started;
+    started.start();
+    // Let go: played, failed, or 10 s gone by (a sound that never started).
+    const auto release = [this, sound, started](const char* why) {
+        if (m_alertSound != sound) {
+            return;
+        }
+        m_alertSound = nullptr;
+        qCInfo(lcMobile).noquote() << "spot alert sound:" << why << "after" << started.elapsed() << "ms, player let go";
+        sound->deleteLater();
+    };
+    connect(sound, &QSoundEffect::playingChanged, sound, [sound, release] {
+        if (!sound->isPlaying()) {
+            release("played");
+        }
+    });
+    connect(sound, &QSoundEffect::statusChanged, sound, [sound, release] {
+        if (sound->status() == QSoundEffect::Error) {
+            release("failed");
+        }
+    });
+    QTimer::singleShot(10000, sound, [release] { release("not played in 10 s"); });
+    sound->setSource(QUrl(QStringLiteral("qrc:/sounds/spot-alert.wav")));
+    sound->setVolume(0.8f);
+    sound->play();
 }
 
 QVariantMap MobileEngine::spotAlert() const

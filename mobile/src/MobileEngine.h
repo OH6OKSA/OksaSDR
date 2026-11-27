@@ -3331,7 +3331,10 @@ private:
     quint64 m_pskSpotsIn{0};
     QList<QVariantMap> m_spotAlertQueue;
     QHash<QString, qint64> m_spotAlertSeen;
-    QSoundEffect* m_alertSound{nullptr};
+    // The spot alert's sound (roadmap 237): a player of its own for each
+    // sound, let go once it has played (null between sounds).
+    QPointer<QSoundEffect> m_alertSound;
+    void playSpotAlertSound();
     QSet<QString> m_spotTestCalls;
     void releasePttKey(const QString& why);
     bool ulanziOn() const;
