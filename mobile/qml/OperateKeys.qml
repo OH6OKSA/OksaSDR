@@ -33,6 +33,12 @@ Item {
         if (page && page.layoutEditing) return false
         // Any key ends a repeating macro (an F-key then starts its own).
         if (!event.isAutoRepeat) Engine.cancelMacroRepeat("a key")
+        // Esc closes the popup opened last (a chooser, Radio Setup, the
+        // Controls drawer: Engine.closeTopPopup, as the page keeps the
+        // keyboard while they are open), and still stops the keyers below
+        // (Engine.operateKey): it is the key that ends a transmission, so a
+        // popup open does not take that from it.
+        if (event.key === Qt.Key_Escape && !event.isAutoRepeat) Engine.closeTopPopup()
         if (paddles.handlePress(event)) {
             return true
         }

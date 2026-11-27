@@ -803,6 +803,8 @@ ColumnLayout {
     Dialog {
         id: qsoEdit
         objectName: "logEditDialog"
+        // Opened by Edit: the screen reader goes in (not modal).
+        property bool screenReaderFollows: true
         // Named on its item: Accessible on a Popup itself is refused ("must be
         // attached to an object deriving from Item").
         Component.onCompleted: contentItem.parent.Accessible.name = Qt.binding(() => qsTr("Edit the contact"))

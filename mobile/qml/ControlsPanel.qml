@@ -116,6 +116,11 @@ ColumnLayout {
         }
     }
 
+    // The drawer's shown tab, where the screen reader goes when the drawer
+    // opens (its screenReaderStart, MobileEngineScreenReader.cpp).
+    // (count read so the binding runs again once the tabs exist).
+    readonly property Item currentContent: panel.multiSelect || tabPages.count === 0 ? null : tabPages.itemAt(tabs.currentIndex)
+
     function toggleSection(name) {
         const list = Engine.pinnedSections.slice()
         const i = list.indexOf(name)
@@ -184,12 +189,17 @@ ColumnLayout {
             columns: panel.buttonColumns
             columnSpacing: 4
             rowSpacing: 4
+            Accessible.role: Accessible.PageTabList
+            Accessible.name: Qt.platform.os === "ios" ? "" : qsTr("Controls sections")
             Repeater {
+                id: sectionTabButtons
                 model: panel.sections
-                delegate: AppButton {
+                delegate: SectionTab {
                     required property int index
                     required property var modelData
                     text: modelData.button
+                    tabIndex: index
+                    tabCount: sectionTabButtons.count
                     // The short label and then the heading ("Mem, Memory"): "FTx" alone
                     // says little to a screen reader.
                     Accessible.name: modelData.title.indexOf(modelData.button) === 0 ? modelData.title
@@ -202,7 +212,11 @@ ColumnLayout {
                     Layout.preferredWidth: 1
                     Layout.preferredHeight: 40
                     focusPolicy: Qt.NoFocus
-                    onClicked: tabs.currentIndex = index
+                    // The screen reader to the tab's settings (MobileEngineScreenReader.cpp).
+                    onClicked: {
+                        tabs.currentIndex = index
+                        Engine.screenReaderFocus(tabPages.itemAt(index), false)
+                    }
                 }
             }
         }
@@ -213,6 +227,7 @@ ColumnLayout {
         Layout.fillHeight: true
         currentIndex: tabs.currentIndex
         Repeater {
+            id: tabPages
             model: panel.multiSelect ? [] : panel.sections
             delegate: PageScroll {
                 id: tabScroll
@@ -255,6 +270,7 @@ ColumnLayout {
         Repeater {
             model: panel.sections
             delegate: AppButton {
+                required property int index
                 required property var modelData
                 text: modelData.button
                 Accessible.name: modelData.title.indexOf(modelData.button) === 0 ? modelData.title
@@ -266,7 +282,13 @@ ColumnLayout {
                 Layout.fillWidth: true
                 Layout.preferredWidth: 1
                 focusPolicy: Qt.NoFocus
-                onClicked: panel.toggleSection(modelData.name)
+                // Shown now: the screen reader to the section, its title
+                // first (MobileEngineScreenReader.cpp); hidden: it stays.
+                onClicked: {
+                    panel.toggleSection(modelData.name)
+                    if (Engine.pinnedSections.indexOf(modelData.name) >= 0)
+                        Engine.screenReaderFocus(pinnedSectionItems.itemAt(index), false)
+                }
             }
         }
     }
@@ -280,6 +302,7 @@ ColumnLayout {
             width: pinnedScroll.availableWidth
             spacing: Theme.spacing
             Repeater {
+                id: pinnedSectionItems
                 model: panel.multiSelect ? panel.sections : []
                 delegate: ColumnLayout {
                     id: pinnedSection

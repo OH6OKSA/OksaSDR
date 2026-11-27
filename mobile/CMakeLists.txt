@@ -65,6 +65,7 @@ qt_add_executable(aether-mobile
     src/MobileEngineMidi.cpp
     src/MobileEngineUlanzi.cpp
     src/MobileEnginePttKey.cpp
+    src/MobileEngineScreenReader.cpp
     src/MobileEnginePicker.cpp
     src/MobileEngineSpotAlerts.cpp
     src/MobileEngineSpotFeeds.cpp
@@ -266,6 +267,7 @@ qt_add_qml_module(aether-mobile
         qml/PhoneOperatePage.qml
         qml/StationsDialog.qml
         qml/StepButton.qml
+        qml/SectionTab.qml
 )
 
 # The generated QML type registrations include the headers by bare name.
