@@ -9655,6 +9655,40 @@ void AudioEngine::playTxDigital(const QByteArray& floatMono24k)
     m_txDigitalTimer->start();
 }
 
+QByteArray AudioEngine::spliceTxDigital(const QByteArray& oldClip, const QByteArray& newClip, qint64 pos, int crossfadeFrames)
+{
+    const qint64 oldFrames = oldClip.size() / static_cast<qint64>(sizeof(float));
+    const qint64 newFrames = newClip.size() / static_cast<qint64>(sizeof(float));
+    if (pos < 0 || pos >= oldFrames || pos >= newFrames) {
+        return {};
+    }
+    QByteArray merged = newClip;
+    auto* m = reinterpret_cast<float*>(merged.data());
+    const auto* o = reinterpret_cast<const float*>(oldClip.constData());
+    // What has gone out stays as it went (nothing reads it again).
+    std::copy(o, o + pos, m);
+    // A raised-cosine fade from the old tone into the new one: no click.
+    const qint64 n = std::min<qint64>(std::max(crossfadeFrames, 0), std::min(oldFrames, newFrames) - pos);
+    for (qint64 i = 0; i < n; ++i) {
+        const float w = static_cast<float>((1.0 - std::cos(M_PI * (static_cast<double>(i) + 0.5) / static_cast<double>(n))) / 2.0);
+        m[pos + i] = o[pos + i] * (1.0f - w) + m[pos + i] * w;
+    }
+    return merged;
+}
+
+bool AudioEngine::swapTxDigital(const QByteArray& floatMono24k, int crossfadeFrames)
+{
+    if (m_txDigitalPlaying.isEmpty() || !m_txDigitalClock.isValid()) {
+        return false;
+    }
+    QByteArray merged = spliceTxDigital(m_txDigitalPlaying, floatMono24k, m_txDigitalPos, crossfadeFrames);
+    if (merged.isEmpty()) {
+        return false;
+    }
+    m_txDigitalPlaying = merged;
+    return true;
+}
+
 void AudioEngine::stopTxClip()
 {
     if (!m_txDigitalPlaying.isEmpty()) {

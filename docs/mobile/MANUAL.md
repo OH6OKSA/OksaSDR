@@ -2171,6 +2171,15 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   CQ). Tested on the air at 10 W: a call started 5 s late was answered
   in the next slot. Later than that it waits for your next slot, and the
   following calls start on time; Answer CQ does the same.
+  The same holds during a QSO: when the other station's reply is decoded
+  only after your own slot has begun (over a slow link it comes about a
+  second into it), the message already on the air turns into the next one
+  from where it has got to, while less than three quarters of the slot has
+  gone by, instead of the old one going out in full and the QSO losing a
+  whole cycle (as WSJT-X; since build 224 / Android beta 124). The list
+  shows the new message as a TX row of its own. Tested on the air at 10 W:
+  a reply fed in 1.4 s into a CQ turned it into the report in the same
+  slot.
   **CQ** calls CQ on the **TX slice** (the one with the red TX badge), in
   the slot set by **CQ slot**: *Auto* (the next one), *Even* (FT8: 0 and
   30 s, FT4: 0, 15, 30, 45 s) or *Odd* (15 and 45 s; FT4: 7.5, 22.5 …).

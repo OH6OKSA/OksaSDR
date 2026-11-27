@@ -6,6 +6,7 @@
 #include "LogBuffer.h"
 #include "MobileEngine.h"
 #include "Ft8Engine.h"
+#include "core/AudioEngine.h"
 #include "models/BandSettings.h"
 #include "DeviceId.h"
 #include "TextScale.h"
@@ -2726,6 +2727,98 @@ int main(int argc, char* argv[])
                               << "target" << engine.digiCqTarget();
             QCoreApplication::quit();
         });
+    } else if (parser.isSet(ft8TestOption) && parser.value(ft8TestOption).split(QLatin1Char(',')).contains(QStringLiteral("swap"))) {
+        // Roadmap 146 without RF: (1) the join by numbers: two messages
+        // spliced 1.4 s into the clip, the largest sample step at the join
+        // against the largest inside a message; (2) dry transmissions: a CQ,
+        // a reply fed in 1.4 s into our own slot swaps the message on air,
+        // and the next reply fed in 12 s into it (past 75 %) waits for the
+        // next slot of ours.
+        {
+            Ft8Engine ft8;
+            QString error;
+            const QByteArray a = ft8.encode(QStringLiteral("CQ OH6OKSA KP32"), 1500.0, &error);
+            const QByteArray b = ft8.encode(QStringLiteral("QQ0TST OH6OKSA -10"), 1500.0, &error);
+            const auto maxStep = [](const QByteArray& clip, qint64 from, qint64 to) {
+                const auto* f = reinterpret_cast<const float*>(clip.constData());
+                const qint64 n = clip.size() / qint64(sizeof(float));
+                float worst = 0.0f;
+                for (qint64 i = std::max<qint64>(1, from); i < std::min(n, to); ++i) {
+                    worst = std::max(worst, std::abs(f[i] - f[i - 1]));
+                }
+                return worst;
+            };
+            // The join at 40 places across one symbol from 1.4 s on: the
+            // largest step a sample makes there, with the fade and without
+            // (a hard cut jumps by up to twice the amplitude where the two
+            // tones' phases differ).
+            const int crossfade = int(std::lround(0.16 * Ft8Engine::kTxSampleRate / 8.0));
+            float worstFade = 0.0f;
+            float worstHard = 0.0f;
+            bool tailSame = true;
+            for (int k = 0; k < 40; ++k) {
+                const qint64 pos = qint64(1.4 * Ft8Engine::kTxSampleRate) + k * qint64(0.16 * Ft8Engine::kTxSampleRate) / 40;
+                const QByteArray joined = AetherSDR::AudioEngine::spliceTxDigital(a, b, pos, crossfade);
+                const QByteArray hard = AetherSDR::AudioEngine::spliceTxDigital(a, b, pos, 0);
+                worstFade = std::max(worstFade, maxStep(joined, pos - 10, pos + crossfade + 10));
+                worstHard = std::max(worstHard, maxStep(hard, pos - 10, pos + 10));
+                tailSame = tailSame && joined.mid(int(pos + crossfade) * 4) == b.mid(int(pos + crossfade) * 4);
+            }
+            qInfo().noquote() << QStringLiteral("swap-test: join at 40 places: clips %1 / %2 frames, largest step inside a message %3, "
+                                                "at the join with the fade %4, without it %5; after the fade the new clip's own %6")
+                                     .arg(a.size() / 4).arg(b.size() / 4)
+                                     .arg(maxStep(a, 0, a.size() / 4), 0, 'f', 4)
+                                     .arg(worstFade, 0, 'f', 4)
+                                     .arg(worstHard, 0, 'f', 4)
+                                     .arg(tailSame ? QStringLiteral("yes") : QStringLiteral("NO"));
+        }
+        engine.setDigiDryRun(true);
+        auto* poll = new QTimer(&app);
+        auto stage = std::make_shared<int>(0);
+        QTimer::singleShot(9000, &app, [&engine, poll, stage] {
+            engine.setDigiProtocol(QStringLiteral("FT8"));
+            engine.setDigiRunning(true);
+            engine.digiCallCq();
+            qInfo().noquote() << "swap-test: CQ ->" << engine.digi().value(QStringLiteral("txMsg")).toString() << engine.lastError();
+            poll->start(50);
+        });
+        QObject::connect(poll, &QTimer::timeout, &app, [&engine, poll, stage] {
+            const QVariantMap d = engine.digi();
+            const qint64 slotLen = 15000;
+            const qint64 into = Ft8Engine::nowMs() % slotLen;
+            const bool tx = d.value(QStringLiteral("transmitting")).toBool();
+            const QString my = d.value(QStringLiteral("myCall")).toString();
+            const auto feed = [&engine](const QString& text) {
+                engine.digiInjectDecodes({QVariantMap{{QStringLiteral("utc"), QStringLiteral("000000")},
+                                                      {QStringLiteral("snr"), -12}, {QStringLiteral("dt"), QStringLiteral("0.2")},
+                                                      {QStringLiteral("freq"), 1500}, {QStringLiteral("text"), text},
+                                                      {QStringLiteral("hl"), QString()}}});
+            };
+            const auto show = [&engine](const QString& what) {
+                const QVariantMap q = engine.digi();
+                qInfo().noquote() << "swap-test:" << what << "->" << q.value(QStringLiteral("state")).toString() << "|"
+                                  << q.value(QStringLiteral("status")).toString() << "| next" << q.value(QStringLiteral("txMsg")).toString()
+                                  << "| transmitting" << q.value(QStringLiteral("transmitting")).toBool();
+            };
+            if (*stage == 0 && tx && into >= 1400 && into < 1800) {
+                *stage = 1;
+                feed(QStringLiteral("%1 QQ0TST KP20").arg(my));
+                show(QStringLiteral("a reply 1.4 s into our CQ slot"));
+            } else if (*stage == 1 && !tx && into > 2000 && into < 3000) {
+                *stage = 2;
+                show(QStringLiteral("after the slot"));
+            } else if (*stage == 2 && tx && into >= 12000 && into < 12400) {
+                *stage = 3;
+                feed(QStringLiteral("%1 QQ0TST R-08").arg(my));
+                show(QStringLiteral("an R-report 12 s into our report slot"));
+            } else if (*stage == 3 && tx && into >= 1400 && into < 1800) {
+                *stage = 4;
+                show(QStringLiteral("the next slot of ours"));
+                engine.digiHalt();
+                poll->stop();
+                QTimer::singleShot(3000, qApp, [] { QCoreApplication::quit(); });
+            }
+        });
     } else if (parser.isSet(ft8TestOption) && parser.value(ft8TestOption).contains(QStringLiteral("hound"))
                && !parser.value(ft8TestOption).contains(QStringLiteral("live"))) {
         // Hound (roadmap 10 a) without RF: dry transmissions, a Fox's CQ,
@@ -2966,6 +3059,37 @@ int main(int argc, char* argv[])
                         << engine.digiAnswerCalls() << ", filter" << engine.digiFilter();
             }
         });
+        // swapfeed (with cq): roadmap 146 on the air. A made-up station's
+        // reply to our CQ is fed in 1.4 s into our first CQ transmission:
+        // the message on the air turns into the report from there; after
+        // that transmission the call is halted (one swapped transmission).
+        if (spec.contains(QStringLiteral("swapfeed"))) {
+            auto* poll = new QTimer(&app);
+            auto stage = std::make_shared<int>(0);
+            QObject::connect(poll, &QTimer::timeout, &app, [&engine, poll, stage] {
+                const QVariantMap d = engine.digi();
+                const qint64 into = Ft8Engine::nowMs() % 15000;
+                const bool tx = d.value(QStringLiteral("transmitting")).toBool();
+                if (*stage == 0 && tx && into >= 1400 && into < 1800
+                    && d.value(QStringLiteral("txMsg")).toString().startsWith(QLatin1String("CQ"))) {
+                    *stage = 1;
+                    const QString my = d.value(QStringLiteral("myCall")).toString();
+                    engine.digiInjectDecodes({QVariantMap{{QStringLiteral("utc"), QStringLiteral("000000")},
+                                                          {QStringLiteral("snr"), -12}, {QStringLiteral("dt"), QStringLiteral("0.2")},
+                                                          {QStringLiteral("freq"), 1500},
+                                                          {QStringLiteral("text"), QStringLiteral("%1 QQ0TST KP20").arg(my)},
+                                                          {QStringLiteral("hl"), QString()}}});
+                    qInfo().noquote() << "swapfeed: reply fed" << into << "ms into our slot; next"
+                                      << engine.digi().value(QStringLiteral("txMsg")).toString();
+                } else if (*stage == 1 && !tx) {
+                    *stage = 2;
+                    engine.digiHalt();
+                    poll->stop();
+                    qInfo().noquote() << "swapfeed: the swapped transmission ended; halted";
+                }
+            });
+            QTimer::singleShot(8500, &app, [poll] { poll->start(50); });
+        }
         // hound,live,fox=D44PX: Hound on the air at 10 W. A decode from the
         // Fox below 1000 Hz (its CQ or a message it sent, not a Hound's call
         // to it) is answered as a tap on its row does, again after each four

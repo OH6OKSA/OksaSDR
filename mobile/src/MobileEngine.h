@@ -3114,6 +3114,8 @@ private:
     // ours and early enough (WSJT-X's late start), else at the next one.
     void digiLateStart();
     void onDigiTxFinished();
+    // Roadmap 146: a reply decoded after our slot began swaps the message on air.
+    void digiSwapMessage();
     // Keyboard-mode transmit: the next text keyed (or played on while
     // keyed), and what to do when a clip has gone out.
     void startTextTx();
@@ -3178,6 +3180,13 @@ private:
     int m_digiTxSeq{0};
     // The slot a tap started late in (its message cut to stay in time).
     qint64 m_digiLateSlotMs{0};
+    // The transmission under way (roadmap 146): its slot, its audio
+    // frequency, and the clip's layout: frames of lead silence put before
+    // the message (> 0) or frames of a late start left out (< 0), so a
+    // swapped message is laid out alike.
+    qint64 m_digiTxSlotMs{0};
+    int m_digiSentHz{0};
+    qint64 m_digiTxLayoutFrames{0};
     bool m_digiTransmitting{false};
     bool m_digiLogged{false};
     bool m_digiEndAfterTx{false};
