@@ -1076,6 +1076,15 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
     } else if (command == QLatin1String("slicerecovery")) {
         m_engine.testSliceRecovery();
         *delayMs = 4000;
+    } else if (command == QLatin1String("losttest")) {
+        // losttest MHZ MODE: the slice the session has when it is lost next
+        // (roadmap 235: a loss after which the radio's memory gives another).
+        m_engine.testLostSlice(arg.toDouble(), args.value(1));
+        *delayMs = 100;
+    } else if (command == QLatin1String("reconnect")) {
+        // reconnect ADDRESS: a connect by hand, as the Connect page's card.
+        m_engine.connectToAddress(arg);
+        *delayMs = 1000;
     } else if (command == QLatin1String("dxconnect")) {
         m_engine.testDxConnect(arg.section(QLatin1Char(':'), 0, 0), quint16(arg.section(QLatin1Char(':'), 1).toUInt()));
         *delayMs = 500;

@@ -1117,6 +1117,8 @@ public:
     // The render tool's slice recovery: this app's slice and pan removed and
     // made again, as after a reconnect the radio gave no slice.
     void testSliceRecovery();
+    // Tests (roadmap 235): the slice the session has when it is lost next.
+    void testLostSlice(double mhz, const QString& mode);
     Q_INVOKABLE void setRadioSetup(const QString& key, const QVariant& value);
     // Receive › Calibration's Start, as the desktop's: the cal frequency
     // set, freq_error_ppb cleared, radio pll_start, done when the radio's
@@ -3788,6 +3790,18 @@ private:
     SliceState m_lostSlice;
     QElapsedTimer m_lostSliceAge;
     bool m_restoreLostSlice{false};
+    // The slice to put back is one the app made (a slice recovery): no wait.
+    bool m_restoreMadeSlice{false};
+    // Roadmap 235: the session that ended was lost without the operator
+    // asking (a call, the network, the radio), and how long the slice it
+    // had is put back after such a loss, also on a connect made by hand.
+    bool m_lostSliceUnasked{false};
+    static constexpr qint64 kLostSliceUnaskedMs = 2 * 60 * 60 * 1000;
+    // Whether the lost session's slice is to be put back on this radio now.
+    bool lostSliceWanted() const;
+    QString sliceRadioId() const;
+    // Tests: the slice the session has when it is lost next (losttest).
+    SliceState m_testLostSlice;
     void noteSliceState();
     QString m_twoToneRestoreMode;    // the radio's tune mode before a two-tone TUNE
     bool m_twoToneOn{false};         // that tune seen on

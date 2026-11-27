@@ -477,7 +477,16 @@ The first page lists the ways to reach a radio:
   iPhone and iPad the app asks iOS for time to finish the reconnect, which
   takes about 10 s, so the audio comes back without opening the app. If the radio no longer has the app's slice then (a
   radio that takes one station still holding the old session), the app
-  makes it again on the frequency, mode and filter it had. The eye in the password field
+  makes it again on the frequency, mode and filter it had. And when the
+  radio gives the app a slice from its own memory on another band (an
+  older state, after a session it lost while you were in a phone call),
+  the slice goes back to the frequency, mode and filter it had (since
+  build 224 / Android beta 124; reported by Ranjith Unnikrishnan: 40 m
+  SSB before a call, 15 m CW after it). This holds for the app's own
+  reconnect and for a connect you make by hand afterwards, within two
+  hours, on the same radio, as long as the session ended without your
+  Disconnect; after your own Disconnect the radio's memory decides, as
+  before. The eye in the password field
   shows what you typed (dots again when you leave the field); the QRZ.com
   password and the Wavelog / Cloudlog API key have the same eye.
   **Forgot password?** under the password field (since build 215 /
