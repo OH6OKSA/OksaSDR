@@ -1808,11 +1808,12 @@ MobileEngine::MobileEngine(QObject* parent)
         });
     }
 
-    // FlexRadios only: the shared source otherwise also sweeps for HL2 and
-    // ANAN radios, a broadcast to UDP 1024 every five seconds for as long as
-    // the app runs, which this client has no use for (roadmap 167).
-    m_discovery = makeLocalRadioDiscoverySource(
-        {.local = true, .simulator = true, .families = {QStringLiteral("flex")}});
+    // The Hermes-Lite 2 side build (branch side/hl2, roadmap 239 / 240):
+    // every family the shared source knows, as before build 214, so a
+    // Hermes-Lite 2 or an ANAN radio is found on the network again. Not
+    // supported: OksaSDR is a FlexRadio app, and no HL2 or ANAN is at hand
+    // to test with.
+    m_discovery = makeLocalRadioDiscoverySource({.local = true, .simulator = true});
     // A radio's coming to the list and its going are logged (roadmap 166):
     // "it does not find my radio" and a check at the radio's own network
     // were both read from a log that said nothing of it. The model, the
