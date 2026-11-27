@@ -3200,7 +3200,15 @@ tab holds.
     to answer in. **Halt TX**, another band, a CQ of your own, a tap on
     another station's row or the FTx auto stop's minutes without a touch
     end the wait; a QSO under way is finished first. With transmit locked
-    (SB) the tap only tunes. The
+    (SB) the tap only tunes. **A CW, RTTY or PSK spot is answered too**
+    (since build 224 / Android beta 124): the spot's call becomes the one
+    worked (*{HIS}* in the macros, the Log tab's Call), and once the slice
+    is on the station (about a second in CW, two and a half in RTTY,
+    three and a half in PSK, after the autotune) its answer goes out: CW
+    memory **M2** (by default your own call, the answer to a CQ), in RTTY
+    and PSK the Digi tab's **Answer** macro (F2 unless renamed). With
+    transmit locked (SB) the tap only tunes and sets the call. Tested on
+    the air at 10 W in CW and RTTY. The
     mode is the spot's own, else a digital mode named anywhere in its
     comment (*CQ RTTY test*, *TNX FT8*, *BPSK31*), else its comment's
     first or last word, else the band plan. A tap on

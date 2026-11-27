@@ -3524,6 +3524,9 @@ private:
     bool m_txStartArmed{false};  // txArmAtStart: armed once in this run
     bool txLockRefuses(const char* what);
     bool m_txBlocked{false};
+    // Roadmap 225: a spot tapped in CW / RTTY / PSK answers the station.
+    void answerSpot(const QString& call, bool cw, int delayMs);
+    int m_spotAnswerSeq{0};
     // DX cluster: its spots go to the radio ("spot add", as the desktop),
     // deduplicated per call within 1 kHz and sent at most RbnRateLimit a
     // second; the radio shows them to every client and brings them back

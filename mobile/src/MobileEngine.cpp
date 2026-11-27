@@ -9767,6 +9767,7 @@ void MobileEngine::tuneToSpot(int index)
             }
         });
         emit controlsSectionRequested(QStringLiteral("RTTY"), opensTab);
+        answerSpot(spot.callsign, false, 3500);
         return;
     }
     // RTTY received in DIGL / DIGU (chosen on the RTTY tab) stays there for an
@@ -9802,9 +9803,60 @@ void MobileEngine::tuneToSpot(int index)
         m_rttySpotTries = 8;
         emit rttyAutotuneRequested(spot.rxFreqMhz, 150.0, false);
         emit controlsSectionRequested(QStringLiteral("RTTY"), opensTab);
+        answerSpot(spot.callsign, false, 2500);
     } else if (mode == QLatin1String("CW")) {
         emit controlsSectionRequested(QStringLiteral("CW"), opensTab);
+        answerSpot(spot.callsign, true, 1000);
     }
+}
+
+// Roadmap 225 (the user: a tap on a spot or a call in the waterfall starts
+// the macro, in CW, RTTY, PSK as FT8 calls since 224): the spot's call
+// becomes the one worked ({HIS}, the Log tab's Call), and once the slice is
+// on the station its answer goes out: CW memory M2 (by default your own
+// call, the answer to a CQ), in RTTY and PSK the Digi tab's Answer macro
+// (F2 unless renamed). The transmit lock (SB) holds it: then the tap only
+// tunes and sets the call. A later tap, or another call picked meanwhile,
+// takes its place.
+void MobileEngine::answerSpot(const QString& call, bool cw, int delayMs)
+{
+    const QString c = call.trimmed().toUpper();
+    if (c.isEmpty()) {
+        return;
+    }
+    setWorkedCall(c);
+    const int seq = ++m_spotAnswerSeq;
+    if (txLocked() && !m_txBlocked) {
+        qCInfo(lcMobile).noquote() << "spot answer:" << c << "is the call worked; transmit locked (SB), nothing sent";
+        return;
+    }
+    QTimer::singleShot(delayMs, this, [this, seq, cw, c] {
+        if (seq != m_spotAnswerSeq || !m_connected || m_workedCall != c || (txLocked() && !m_txBlocked)) {
+            return;
+        }
+        if (cw) {
+            if (!cwMode()) {
+                return;
+            }
+            qCInfo(lcMobile).noquote() << "spot answer:" << c << "- CW memory M2";
+            sendCwMemory(1);
+            return;
+        }
+        if (!textModeActive()) {
+            return;
+        }
+        const QVariantList macros = textMacros();
+        int index = 1;
+        for (int i = 0; i < macros.size(); ++i) {
+            if (macros.at(i).toMap().value(QStringLiteral("label")).toString().compare(QLatin1String("Answer"), Qt::CaseInsensitive) == 0) {
+                index = i;
+                break;
+            }
+        }
+        qCInfo(lcMobile).noquote() << "spot answer:" << c << "- the" << macros.value(index).toMap().value(QStringLiteral("label")).toString()
+                                   << "macro (F" + QString::number(index + 1) + ")";
+        sendTextMacro(index);
+    });
 }
 
 // Roadmap 138: every session's end in the log with its cause. Asked for (the
