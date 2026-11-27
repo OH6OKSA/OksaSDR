@@ -45,7 +45,8 @@ struct LocalDiscoveryOptions {
     // The families to look for ("flex", "hl2", "anan", "rtl"); empty means
     // every one. A client that serves one family names it and sends nothing
     // for the others: the HL2 and ANAN sweeps broadcast a probe to UDP 1024
-    // every five seconds on every network the device is on.
+    // every five seconds on every network the device is on, which a
+    // FlexRadio-only client has no use for (OksaSDR, roadmap 167).
     QStringList families;
 };
 

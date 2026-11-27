@@ -29,11 +29,8 @@ these services:
   other stations; the radio's GPS position, if it has GPS, is only shown in
   Radio Setup.
 - **Local network discovery.** It listens for radio and accessory discovery
-  broadcasts on the local network. To find a Hermes-Lite 2 or an ANAN radio,
-  which do not announce themselves, it also sends a small discovery probe (a
-  broadcast to UDP port 1024) on the local network every five seconds while
-  the app runs; the probe carries nothing about you. iOS asks for permission
-  ("Local Network") before this is allowed.
+  broadcasts on the local network. iOS asks for permission ("Local Network")
+  before this is allowed.
 - **SmartLink** (FlexRadio), if you sign in on the Connect page: your
   FlexRadio account sign-in and the connection to your radio go through
   FlexRadio's SmartLink service, under FlexRadio's terms. With several

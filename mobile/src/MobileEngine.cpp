@@ -1808,12 +1808,11 @@ MobileEngine::MobileEngine(QObject* parent)
         });
     }
 
-    // Every family the shared source knows: a FlexRadio's broadcasts are
-    // listened for, and a Hermes-Lite 2 or an ANAN radio is swept for with a
-    // broadcast probe to UDP 1024 every five seconds (PRIVACY.md says so).
-    // Build 214 looked for FlexRadios only (roadmap 167) and testers who use
-    // a Hermes-Lite 2 with the app lost it from the list (roadmap 239).
-    m_discovery = makeLocalRadioDiscoverySource({.local = true, .simulator = true});
+    // FlexRadios only: the shared source otherwise also sweeps for HL2 and
+    // ANAN radios, a broadcast to UDP 1024 every five seconds for as long as
+    // the app runs, which this client has no use for (roadmap 167).
+    m_discovery = makeLocalRadioDiscoverySource(
+        {.local = true, .simulator = true, .families = {QStringLiteral("flex")}});
     // A radio's coming to the list and its going are logged (roadmap 166):
     // "it does not find my radio" and a check at the radio's own network
     // were both read from a log that said nothing of it. The model, the

@@ -445,10 +445,7 @@ the one last chosen), on HF (below 30 MHz).
 The first page lists the ways to reach a radio:
 
 - **On this network** — FlexRadios found on the local network (on an
-  iPhone or iPad, connect by IP address for now), and a Hermes-Lite 2 or an
-  ANAN radio, which the app looks for with a small probe on the network
-  (again since build 224 / Android beta 124: builds 214 to 223 looked for
-  FlexRadios only). Tap a radio's card, or its
+  iPhone or iPad, connect by IP address for now). Tap a radio's card, or its
   **Connect ›**, to connect. On a phone, and in any
   narrow window, a card gives the radio's name its first row (two lines
   when it needs them) and **Connect ›** sits under it, so a long name is
