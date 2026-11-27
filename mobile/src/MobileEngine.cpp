@@ -12909,12 +12909,11 @@ void MobileEngine::headsetKeeperTick()
         m_headsetNextTryMs = 0;
         m_headsetInCall = false;
         m_headsetMicClosedMs = 0;
-        // A headset that was the route and went off Android's list: looked
-        // for every 5 s while the choice is still Auto, and taken when it is
-        // listed again (not during a phone call).
-        if (!m_headsetLost) {
-            return;
-        }
+        // With the choice Auto, a Bluetooth headset Android lists is taken
+        // when it is not the route: one that was the route and went off the
+        // list and came back, and one switched on after connecting (roadmap
+        // 223: it waited for the first PTT, an Audio output change or a new
+        // connect). Looked for every 5 s, not during a phone call.
         if (!m_connected || !m_audio || audioOutput() != QLatin1String("Auto")) {
             m_headsetLost = false;
             return;
@@ -12924,21 +12923,31 @@ void MobileEngine::headsetKeeperTick()
         }
         m_headsetLookAtMs = now + 5000;
         const int lostMode = androidAudioMode();
-        if (lostMode == 1 || lostMode == 2 || lostMode == 4 || !headsetListed()) {
+        if (lostMode == 1 || lostMode == 2 || lostMode == 4) {
             return;
         }
+        if (!headsetListed()) {
+            m_headsetNoRouteSaid = false;
+            return;
+        }
+        const bool wasLost = m_headsetLost;
         reapplyAudioRoute();
         applyAudioOutputDevice();
         if (headsetInUse()) {
             m_headsetLost = false;
-            qCInfo(lcMobile).noquote() << "headset route: Android lists a Bluetooth headset again, its route taken ("
+            m_headsetNoRouteSaid = false;
+            qCInfo(lcMobile).noquote() << (wasLost ? "headset route: Android lists a Bluetooth headset again, its route taken ("
+                                                   : "headset route: a Bluetooth headset switched on, its route taken (")
                                               + headsetState() + ")";
             QMetaObject::invokeMethod(m_audio, [audio = m_audio] { audio->reopenRx(); }, Qt::QueuedConnection);
             watchHeadsetLink();
         } else {
-            // Listed, but Android gave it no route: looked at again in 20 s.
+            // Listed, but Android gave it no route (another device may hold
+            // it): looked at again in 20 s, said in the log once.
             m_headsetLookAtMs = now + 20000;
-            qCInfo(lcMobile) << "headset route: a Bluetooth headset is listed but Android gave it no route: tried again in 20 s";
+            if (!std::exchange(m_headsetNoRouteSaid, true)) {
+                qCInfo(lcMobile) << "headset route: a Bluetooth headset is listed but Android gave it no route: tried again every 20 s";
+            }
         }
         return;
     }

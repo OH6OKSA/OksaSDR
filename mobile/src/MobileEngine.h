@@ -2710,6 +2710,8 @@ private:
     // after it); a link that is down is taken again, then let go and taken,
     // and said on the page when nothing brings it back.
     QTimer m_headsetKeeper;
+    // A listed headset Android gave no route: said in the log once (roadmap 223).
+    bool m_headsetNoRouteSaid{false};
     qint64 m_headsetBadSinceMs{0};
     int m_headsetTries{0};
     bool m_headsetNoticeShown{false};

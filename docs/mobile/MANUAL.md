@@ -3486,7 +3486,8 @@ taken again: five quick tries, then (since beta 122) one every 20 seconds
 for as long as Android lists the headset, so the sound does not stay on
 the phone. A headset that is switched off or goes out of reach gives the
 sound to the phone, and is taken again within five seconds of coming
-back. During a phone call the app leaves the headset to the call and
+back; so is one you switch on only after connecting (since beta 124;
+before, it waited for the first PTT). During a phone call the app leaves the headset to the call and
 takes it again afterwards. In the background the microphone is closed
 (Android does not let it stay open there), and since beta 122 the headset
 goes on playing through that: with the screen off, the cover closed or
