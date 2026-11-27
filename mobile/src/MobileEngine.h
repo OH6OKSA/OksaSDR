@@ -151,6 +151,8 @@ class MobileEngine : public QObject {
     // Space as PTT on a hardware keyboard (roadmap 209): on unless switched
     // off in Setup › Transmit, for a screen reader that presses with Space.
     Q_PROPERTY(bool spaceIsPtt READ spaceIsPtt WRITE setSpaceIsPtt NOTIFY spaceIsPttChanged)
+    // Setup › Transmit › T and A transmit (roadmap 227): the keyboard's letter keys that key the radio.
+    Q_PROPERTY(bool letterKeysTx READ letterKeysTx WRITE setLetterKeysTx NOTIFY letterKeysTxChanged)
     // The tablet page's own-layout editor is open: the PTT key keys nothing.
     Q_PROPERTY(bool layoutEditing READ layoutEditing WRITE setLayoutEditing NOTIFY layoutEditingChanged)
     Q_PROPERTY(bool pttLatched READ pttLatched NOTIFY pttToggleChanged)
@@ -969,6 +971,8 @@ public:
     QString pttKeyName() const;
     bool pttKeyLearning() const;
     bool spaceIsPtt() const { return m_spaceIsPtt; }
+    bool letterKeysTx() const { return m_letterKeysTx; }
+    void setLetterKeysTx(bool on);
     void setSpaceIsPtt(bool on);
     // Whether a Space pressed with these keyboard modifiers (Qt's, as the key
     // event has them) is held back from PTT: with Control and Option (Alt)
@@ -2446,6 +2450,7 @@ signals:
     void textScaleChanged();
     void pttToggleChanged();
     void spaceIsPttChanged();
+    void letterKeysTxChanged();
     void pttKeyChanged();
     void documentPicked(const QString& purpose, const QUrl& url);
     void qsoLogBusyChanged();
@@ -3637,6 +3642,7 @@ private:
     bool m_spacePtt{false};   // PTT held by Space from GameController
     int m_spaceLogged{0};
     bool m_spaceIsPtt{true};  // Setup › Transmit › Space is PTT (roadmap 209)
+    bool m_letterKeysTx{true};  // Setup › Transmit › T and A transmit (roadmap 227)
     int m_spaceNotPttLogged{0};
     bool m_sideDit{false};
     bool m_sideDah{false};

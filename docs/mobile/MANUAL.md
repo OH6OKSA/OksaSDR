@@ -3345,7 +3345,11 @@ Bluetooth keyboard on a phone, or Android's DeX):
 | Scroll | Tune; ⌘- or Ctrl-scroll zooms |
 
 T, Shift + T and A transmit, so the transmit lock (TX tab › Lock) holds
-them as it holds PTT and TUNE.
+them as it holds PTT and TUNE. **Setup › Transmit › T and A transmit**
+switches these letters off, so a stray key or a dictation keys nothing
+(since build 224 / Android beta 124; on by default, as before; Justin
+Mann AI5OS, WCAG 2.1.4). The heading above it, *This device: the
+keyboard*, also holds Space is PTT.
 
 **PTT key** (Setup › Transmit, this device's part: the TX tab's **PTT
 key…** opens it; since build 200, in the TX tab before build 202; thanks Rob Metallo VA3MET):

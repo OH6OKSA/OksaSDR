@@ -66,12 +66,14 @@ Item {
         // (a Ulanzi dial's keys on a Mac through Ulanzi Studio, Christoph
         // DM5HF); a held key does not toggle again.
         case Qt.Key_T:
+            // Switched off in Setup › Transmit (roadmap 227): nothing keys.
+            if (!Engine.letterKeysTx) break
             if (!event.isAutoRepeat) {
                 if (event.modifiers & Qt.ShiftModifier) Engine.toggleTwoToneTune()
                 else Engine.toggleTune()
             }
             break
-        case Qt.Key_A: if (!event.isAutoRepeat) Engine.atuTune(); break
+        case Qt.Key_A: if (!event.isAutoRepeat && Engine.letterKeysTx) Engine.atuTune(); break
         case Qt.Key_Space:
             // iOS: GameController keys Space itself (keyboardOnPage).
             if (Engine.nativeKeyboardSides) break

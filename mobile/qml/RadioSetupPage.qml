@@ -559,7 +559,7 @@ Popup {
                     PttKeySetup { Layout.fillWidth: true }
                     // Space as PTT (roadmap 209, Justin Mann AI5OS): off for a
                     // screen reader that presses the controls with Space.
-                    Heading { text: qsTr("This device: the space bar") }
+                    Heading { text: qsTr("This device: the keyboard") }
                     OnOff {
                         objectName: "spaceIsPtt"
                         label: qsTr("Space is PTT")
@@ -572,6 +572,22 @@ Popup {
                         text: Qt.platform.os === "ios" || Qt.platform.os === "osx"
                               ? qsTr("With a keyboard, Space keys as PTT. Off: it keys nothing, for a screen reader that presses with Space. Pressed with Control and Option together (VoiceOver's keys) or with Command it never keys.")
                               : qsTr("With a keyboard, Space keys as PTT. Off: it keys nothing, for a screen reader that presses with Space. Pressed with Ctrl and Alt together or with the Search (Windows) key it never keys.")
+                        color: Theme.textDim
+                        font.pixelSize: Theme.px(12)
+                        wrapMode: Text.WordWrap
+                    }
+                    // The letter keys that transmit (roadmap 227, Justin Mann
+                    // AI5OS; WCAG 2.1.4): on as before, off for a stray key or
+                    // a dictation that must key nothing.
+                    OnOff {
+                        objectName: "letterKeysTx"
+                        label: qsTr("T and A transmit")
+                        on: Engine.letterKeysTx
+                        onToggled: (v) => Engine.letterKeysTx = v
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: qsTr("With a keyboard, T keys TUNE (Shift+T two tones) and A starts an ATU tune. Off: these letters key nothing, so a stray key or a dictation cannot key the radio.")
                         color: Theme.textDim
                         font.pixelSize: Theme.px(12)
                         wrapMode: Text.WordWrap
