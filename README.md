@@ -17,8 +17,10 @@ SmartLink (or your own VPN), it is a complete station control surface.
 the radio, the digital modes, the log and the spots are in one app on a
 phone, tablet, Mac or Linux desktop, with no other program beside it.
 On a desktop, a FlexRadio program such as the AetherSDR desktop app works
-together with WSJT-X for FT8 and a logging program of your own; a phone
-or tablet cannot run programs side by side, so OksaSDR has them inside.
+together with WSJT-X for FT8 and a logging program of your own. That works,
+but it means several programs, virtual audio channels and settings between
+them, each one more thing that can break; one app that does it all is
+simpler on a PC too, and on a phone or tablet it is the only way.
 
 - **FT8 and FT4** decoding and calling, Answer CQ / Keep CQ, Hound for
   DXpeditions, new-DXCC colours and PSK Reporter: no WSJT-X.
