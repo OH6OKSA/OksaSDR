@@ -295,6 +295,9 @@ Popup {
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
                     Layout.preferredHeight: Theme.touchTarget
+                    // Roadmap 229: the hold said to a screen reader (recording
+                    // a voice slot is there only).
+                    Accessible.description: macros.kind === "voice" ? qsTr("hold to record, rename or clear") : qsTr("hold to edit")
                     // Roadmap 139: a hold edits here, as on the CW, Digi and
                     // TX tabs (without it Qt took the hold as a tap and sent
                     // the macro: Rob VA3MET's F400).

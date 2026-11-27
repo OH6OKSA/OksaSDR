@@ -103,6 +103,9 @@ ColumnLayout {
                 Layout.preferredHeight: Theme.touchTarget
                 focusPolicy: Qt.NoFocus
                 onClicked: Engine.sendCwMemory(index)
+                // The edit is on a hold only: a screen reader says so (roadmap
+                // 229; VoiceOver's double tap and hold passes the hold on).
+                Accessible.description: qsTr("hold to edit")
                 onPressAndHold: {
                     memoryEditor.index = index
                     memoryEditor.text = modelData

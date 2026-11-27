@@ -183,6 +183,8 @@ ColumnLayout {
                                              ? qsTr("CQ %1").arg(Engine.digiCqTarget) : qsTr("CQ")
             text: Engine.txLocked ? qsTr("%1 · SB").arg(cqText) : cqText
             Accessible.name: Engine.txLocked ? qsTr("%1, transmit locked, standby").arg(cqText) : cqText
+            // Roadmap 229: arming the lock is on a hold only.
+            Accessible.description: Engine.txLocked ? qsTr("hold for a second to arm transmit") : ""
             checked: digi.qso.state === "cq"
             // A Hound never calls CQ: it calls the Fox.
             enabled: Engine.transmitAvailable && !Engine.digiHound

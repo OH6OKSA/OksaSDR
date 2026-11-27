@@ -130,6 +130,8 @@ ColumnLayout {
             text: Engine.tuning ? qsTr("TUNE ●") : Engine.txLocked ? qsTr("TUNE · SB") : qsTr("TUNE")
             // The dot and "SB" in words, as PttButton says them.
             Accessible.name: Engine.tuning ? qsTr("Tune, transmitting") : Engine.txLocked ? qsTr("Tune, transmit locked, standby") : qsTr("Tune")
+            // Roadmap 229: arming the lock is on a hold only.
+            Accessible.description: Engine.txLocked && !Engine.tuning ? qsTr("hold for a second to arm transmit") : ""
             enabled: Engine.tuneAvailable || Engine.tuning
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
