@@ -184,12 +184,17 @@ ColumnLayout {
             columns: panel.buttonColumns
             columnSpacing: 4
             rowSpacing: 4
+            Accessible.role: Accessible.PageTabList
+            Accessible.name: Qt.platform.os === "ios" ? "" : qsTr("Controls sections")
             Repeater {
+                id: sectionTabButtons
                 model: panel.sections
-                delegate: AppButton {
+                delegate: SectionTab {
                     required property int index
                     required property var modelData
                     text: modelData.button
+                    tabIndex: index
+                    tabCount: sectionTabButtons.count
                     // The short label and then the heading ("Mem, Memory"): "FTx" alone
                     // says little to a screen reader.
                     Accessible.name: modelData.title.indexOf(modelData.button) === 0 ? modelData.title

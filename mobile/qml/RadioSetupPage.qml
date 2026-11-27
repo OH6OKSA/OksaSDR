@@ -376,13 +376,18 @@ Popup {
             columns: width >= 14 * 92 ? 14 : width >= 7 * 92 ? 7 : width >= 5 * 88 ? 5 : width >= 4 * 68 ? 4 : 3
             columnSpacing: 4
             rowSpacing: 4
+            Accessible.role: Accessible.PageTabList
+            Accessible.name: Qt.platform.os === "ios" ? "" : qsTr("Radio Setup sections")
             Repeater {
+                id: setupTabButtons
                 model: [qsTr("Radio"), qsTr("Transmit"), qsTr("Phone/CW"), qsTr("Audio"), qsTr("RX"), qsTr("Network"), qsTr("XVTR"), qsTr("Amp"), qsTr("USB"), qsTr("MIDI"), qsTr("Logging"), qsTr("App"), qsTr("Spots"), qsTr("FTx")]
-                delegate: AppButton {
+                delegate: SectionTab {
                     required property int index
                     required property string modelData
                     objectName: "setupTab" + index
                     text: modelData
+                    tabIndex: index
+                    tabCount: setupTabButtons.count
                     checked: setup.section === index
                     focusPolicy: Qt.NoFocus
                     Layout.fillWidth: true

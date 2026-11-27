@@ -1348,7 +1348,7 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
             const QAccessible::Role role = a->role();
             const bool actionable = role == QAccessible::Button || role == QAccessible::CheckBox
                 || role == QAccessible::RadioButton || role == QAccessible::Slider || role == QAccessible::ComboBox
-                || role == QAccessible::EditableText || role == QAccessible::MenuItem;
+                || role == QAccessible::EditableText || role == QAccessible::MenuItem || role == QAccessible::PageTab;
             if (command != QLatin1String("a11y")) {
                 if (a->text(QAccessible::Name) == name) {
                     found << a;
