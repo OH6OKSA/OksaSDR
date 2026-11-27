@@ -1369,9 +1369,13 @@ void ShotPlan::run(const QString& command, const QStringList& args, int* delayMs
                 } else if (actionable) {
                     ++named;
                 }
-                qInfo().noquote() << QStringLiteral("shot-plan: a11y %1 %2 \"%3\" at %4,%5 %6x%7")
+                const QString description = a->text(QAccessible::Description);
+                const QString value = a->valueInterface() ? a->valueInterface()->currentValue().toString() : QString();
+                qInfo().noquote() << QStringLiteral("shot-plan: a11y %1 %2 \"%3\" at %4,%5 %6x%7%8%9")
                                          .arg(actionable && text.trimmed().isEmpty() ? QStringLiteral("UNNAMED") : QStringLiteral("-"))
-                                         .arg(int(role), 0, 16).arg(text).arg(r.x()).arg(r.y()).arg(r.width()).arg(r.height());
+                                         .arg(int(role), 0, 16).arg(text).arg(r.x()).arg(r.y()).arg(r.width()).arg(r.height())
+                                         .arg(value.isEmpty() ? QString() : QStringLiteral(" value %1").arg(value))
+                                         .arg(description.isEmpty() ? QString() : QStringLiteral(" description \"%1\"").arg(description));
             }
             for (int i = 0; i < a->childCount(); ++i) {
                 walk(a->child(i), depth + 1);

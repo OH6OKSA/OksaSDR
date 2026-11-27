@@ -173,6 +173,7 @@ ColumnLayout {
     Label { text: qsTr("Tune power  %1").arg(Engine.tunePower); color: Theme.textDim; font.pixelSize: Theme.px(15) }
     FineSlider {
         accessibleName: qsTr("Tune power")
+        valueText: Engine.rfPowerIsPercent ? qsTr("%1 %").arg(Engine.tunePower) : qsTr("%1 W").arg(Engine.tunePower)
         Layout.fillWidth: true
         from: 0
         to: 100
@@ -187,6 +188,7 @@ ColumnLayout {
     Label { text: Engine.rfPowerIsPercent ? qsTr("RF power  %1 %").arg(Engine.rfPower) : qsTr("RF power  %1 W").arg(Engine.rfPower); color: Theme.textDim; font.pixelSize: Theme.px(15) }
     FineSlider {
         accessibleName: qsTr("RF power")
+        valueText: Engine.rfPowerIsPercent ? qsTr("%1 %").arg(Engine.rfPower) : qsTr("%1 W").arg(Engine.rfPower)
         Layout.fillWidth: true
         from: 0
         to: 100
@@ -390,6 +392,7 @@ ColumnLayout {
         id: micSlider
         objectName: "micLevel"
         accessibleName: qsTr("Mic level")
+        valueText: Engine.transmitAvailable ? qsTr("%1%2 dB").arg(Engine.micGainDb > 0 ? "+" : "").arg(Math.round(Engine.micGainDb)) : ""
         Layout.fillWidth: true
         from: Engine.transmitAvailable ? -20 : 0
         to: Engine.transmitAvailable ? 30 : 100
@@ -635,6 +638,7 @@ ColumnLayout {
         Label { text: qsTr("Low"); color: Theme.textDim; font.pixelSize: Theme.px(13) }
         FineSlider {
             accessibleName: qsTr("TX filter low cut")
+            valueText: qsTr("%1 Hz").arg(Engine.txFilterLow)
             Layout.fillWidth: true
             enabled: Engine.connectionState === "connected"
             from: 0; to: 1000; stepSize: 10
@@ -647,6 +651,7 @@ ColumnLayout {
         Label { text: qsTr("High"); color: Theme.textDim; font.pixelSize: Theme.px(13) }
         FineSlider {
             accessibleName: qsTr("TX filter high cut")
+            valueText: qsTr("%1 Hz").arg(Engine.txFilterHigh)
             Layout.fillWidth: true
             enabled: Engine.connectionState === "connected"
             from: 1000; to: 5000; stepSize: 50

@@ -171,6 +171,7 @@ Popup {
             FineSlider {
                 id: rfGain
                 accessibleName: qsTr("RF gain")
+                valueText: qsTr("%1 dB").arg(Math.round(rfGain.shown))
                 Layout.fillWidth: true
                 from: Engine.rfGainLow
                 to: Engine.rfGainHigh

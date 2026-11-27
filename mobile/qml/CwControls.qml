@@ -210,6 +210,7 @@ ColumnLayout {
     Label { text: qsTr("Speed  %1 WPM").arg(Engine.cwSpeed); color: Theme.textDim; font.pixelSize: Theme.px(15) }
     FineSlider {
         accessibleName: qsTr("CW speed")
+        valueText: qsTr("%1 WPM").arg(Engine.cwSpeed)
         Layout.fillWidth: true
         from: 5
         to: 60
@@ -220,6 +221,7 @@ ColumnLayout {
     Label { text: qsTr("Pitch  %1 Hz").arg(Engine.cwPitch); color: Theme.textDim; font.pixelSize: Theme.px(15) }
     FineSlider {
         accessibleName: qsTr("CW pitch")
+        valueText: qsTr("%1 Hz").arg(Engine.cwPitch)
         Layout.fillWidth: true
         from: 300
         to: 1000
