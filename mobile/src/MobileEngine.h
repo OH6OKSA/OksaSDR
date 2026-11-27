@@ -24,6 +24,7 @@
 #include <QObject>
 #include <QPointF>
 #include <QPointer>
+#include <QQuickItem>
 #include <QStringList>
 #include <QElapsedTimer>
 #include <atomic>
@@ -2168,6 +2169,23 @@ public:
     // memories in CW, the Digi macros in RTTY / PSK (F1-F8), the voice keyer
     // in voice modes; Esc stops them all. False for any other key.
     Q_INVOKABLE bool operateKey(int key, int modifiers, bool autoRepeat = false);
+    // The screen reader's cursor to what a button opened (MobileEngineScreenReader.cpp):
+    // into ITEM, to its first element with a name (preferSelected: the
+    // chosen one, a chooser's current choice, when there is one). Only the
+    // screen reader's cursor moves, not the keyboard focus (Space, the arrows);
+    // the desktop build on a Mac moves the keyboard focus, as VoiceOver there
+    // follows nothing else.
+    Q_INVOKABLE void screenReaderFocus(QQuickItem* item, bool preferSelected = false);
+    // Every popup the window's overlay shows from now on takes the screen
+    // reader's cursor in, as a dialog does: a modal one, or one with
+    // screenReaderFollows: true (screenReaderFollows: false keeps it out);
+    // to its screenReaderStart item when it has one, else as above with
+    // preferSelected. Main.qml calls it once with Overlay.overlay.
+    Q_INVOKABLE void followPopups(QQuickItem* overlay);
+    // Esc on the page (OperateKeys): the popup opened last of those still
+    // open whose closePolicy has CloseOnEscape closes (a chooser, a dialog,
+    // Radio Setup, the Controls drawer). True if one did.
+    Q_INVOKABLE bool closeTopPopup();
     // Radio RF power setting (Flex rfpower, 0..100).
     int rfPower() const;
     void setRfPower(int power);
@@ -3295,6 +3313,8 @@ private:
     int m_dvkMicPendingId{0};
     QTimer m_dvkMicTimer;
     void restoreDvkMic(const QString& why);
+    // The popups shown, in the order they opened (followPopups), for Esc.
+    QList<QPointer<QObject>> m_shownPopups;
 public:
     // Tests (shot plans): a test tone as voice slot ID's clip, and the
     // radio's mic input set directly.

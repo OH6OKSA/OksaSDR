@@ -46,6 +46,9 @@ Popup {
         ? Math.max(0, Math.ceil((Engine.macroRepeatDueAt - now) / 1000)) : 0
 
     modal: false
+    // Opened by the Macros button: the screen reader goes in, as into a
+    // modal popup (MobileEngineScreenReader.cpp).
+    property bool screenReaderFollows: true
     dim: false
     focus: false
     closePolicy: Popup.NoAutoClose

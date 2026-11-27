@@ -3310,7 +3310,7 @@ Bluetooth keyboard on a phone, or Android's DeX):
 | A | An ATU tune cycle (the ATU button bypasses the ATU when it is tuned on this frequency; A always tunes) |
 | F1–F12 | CW memories (CW modes), the Digi tab's macros (F1–F8, RTTY and PSK) or voice macros (voice modes); a held key starts it once (since build 200; before, the key's repeat started it again and again) |
 | ⌘1–⌘9, ⌘0 | As F1–F10, for a keyboard without F-keys (an iPad's Magic Keyboard); Ctrl with the digit on Android and a PC keyboard (not while Ctrl keys the CW paddles) |
-| Esc | Stop CW text, RTTY or PSK text, or a voice macro |
+| Esc | Stop CW text, RTTY or PSK text, or a voice macro; it also closes what was opened last: a chooser (antenna, step, filter), Radio Setup, the Log, a dialog or the Controls drawer (not a spot alert or the macros panel). A question Setup asks is cancelled first and Setup stays open |
 | Scroll | Tune; ⌘- or Ctrl-scroll zooms |
 
 T, Shift + T and A transmit, so the transmit lock (TX tab › Lock) holds

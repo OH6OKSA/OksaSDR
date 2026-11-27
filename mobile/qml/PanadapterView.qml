@@ -1285,6 +1285,8 @@ Rectangle {
     Popup {
         id: tnfPopup
         objectName: "tnfPopup"
+        // Opened by a tap on a notch or a hold: the screen reader goes in.
+        property bool screenReaderFollows: true
         property int tnfId: -1
         property real anchorX: panArea.width / 2
         // A new notch to confirm (a hold on the display, + TNF): drawn here

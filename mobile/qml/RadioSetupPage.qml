@@ -30,6 +30,10 @@ Popup {
     padding: Theme.spacing
     background: Rectangle { color: Theme.surface; radius: Theme.radius }
 
+    // The screen reader opens Setup in the shown tab's settings, and a tab
+    // pressed takes it to that tab's (MobileEngineScreenReader.cpp).
+    property Item screenReaderStart: sections.children[setup.section] || null
+
     property var d: ({})
     property var xvtrs: []
     property int section: 0
@@ -392,7 +396,10 @@ Popup {
                     focusPolicy: Qt.NoFocus
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
-                    onClicked: setup.section = index
+                    onClicked: {
+                        setup.section = index
+                        Engine.screenReaderFocus(sections.children[index], false)
+                    }
                 }
             }
         }

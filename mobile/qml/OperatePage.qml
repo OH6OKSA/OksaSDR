@@ -1222,6 +1222,8 @@ Page {
     Drawer {
         id: controlsDrawer
         objectName: "controlsDrawer"
+        // The screen reader opens it in the shown tab (MobileEngineScreenReader.cpp).
+        property Item screenReaderStart: drawerPanel.currentContent
         edge: page.stacked ? Qt.BottomEdge : Qt.RightEdge
         // At least 320 pt beside the display: a narrow window's 40 % cut the
         // panel's buttons short.
