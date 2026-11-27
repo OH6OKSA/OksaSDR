@@ -204,7 +204,9 @@ ColumnLayout {
             font.pixelSize: digi.cqRowFont
             checked: Engine.digiAutoCq
             enabled: !Engine.digiHound
-            Accessible.name: qsTr("Call CQ again after each QSO")
+            // The visible word first (WCAG 2.5.3, roadmap 233), what it does after.
+            Accessible.name: text
+            Accessible.description: (checked && Qt.platform.os !== "ios" ? qsTr("selected") + ", " : "") + qsTr("calls CQ again after each QSO")
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiAutoCq = !Engine.digiAutoCq
@@ -220,7 +222,8 @@ ColumnLayout {
             font.pixelSize: digi.cqRowFont
             checked: Engine.digiAutoAnswer
             enabled: (Engine.transmitAvailable || Engine.digiAutoAnswer) && !Engine.digiHound
-            Accessible.name: Engine.digiAutoAnswer ? qsTr("Stop answering CQs by itself") : qsTr("Answer CQs by itself")
+            Accessible.name: text
+            Accessible.description: (checked && Qt.platform.os !== "ios" ? qsTr("selected") + ", " : "") + (Engine.digiAutoAnswer ? qsTr("stops answering CQs by itself") : qsTr("answers CQs by itself"))
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiAutoAnswer = !Engine.digiAutoAnswer
@@ -248,7 +251,8 @@ ColumnLayout {
             text: qsTr("More")
             font.pixelSize: digi.cqRowFont
             checked: digi.settingsOpen
-            Accessible.name: digi.settingsOpen ? qsTr("Hide the FTx settings") : qsTr("Show the FTx settings")
+            Accessible.name: text
+            Accessible.description: digi.settingsOpen ? qsTr("hides the FTx settings") : qsTr("shows the FTx settings")
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: digi.settingsOpen = !digi.settingsOpen
@@ -311,7 +315,8 @@ ColumnLayout {
             text: qsTr("Hound")
             checked: Engine.digiHound
             enabled: Engine.transmitAvailable || Engine.digiHound
-            Accessible.name: qsTr("Hound: call a DXpedition's Fox")
+            Accessible.name: text
+            Accessible.description: (checked && Qt.platform.os !== "ios" ? qsTr("selected") + ", " : "") + qsTr("calls a DXpedition's Fox")
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiHound = true
@@ -321,8 +326,9 @@ ColumnLayout {
             visible: Engine.digiHound
             text: qsTr("All Hz")
             checked: Engine.digiHoundAllHz
-            Accessible.name: Engine.digiHoundAllHz ? qsTr("Show only the Fox's part below 1000 Hz")
-                                                   : qsTr("Show the stations above 1000 Hz too")
+            Accessible.name: text
+            Accessible.description: (checked && Qt.platform.os !== "ios" ? qsTr("selected") + ", " : "") + (Engine.digiHoundAllHz ? qsTr("shows only the Fox's part below 1000 Hz")
+                                                                                                       : qsTr("shows the stations above 1000 Hz too"))
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiHoundAllHz = !Engine.digiHoundAllHz
@@ -519,14 +525,16 @@ ColumnLayout {
         AppButton {
             objectName: "digiZoom"
             text: qsTr("Zoom")
-            Accessible.name: qsTr("Fit the display to the audio band")
+            Accessible.name: text
+            Accessible.description: qsTr("fits the display to the audio band")
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiZoom()
         }
         AppButton {
             objectName: "digiFreeTx"
             text: qsTr("Free")
-            Accessible.name: qsTr("Move TX to the clearest frequency heard")
+            Accessible.name: text
+            Accessible.description: qsTr("moves TX to the clearest frequency heard")
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiFindFreeTx()
         }

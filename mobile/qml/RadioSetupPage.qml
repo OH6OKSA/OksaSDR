@@ -1280,6 +1280,7 @@ Popup {
                         RepeatButton {
                             text: "−"
                             Accessible.name: qsTr("Network MTU, one step down")
+                            Accessible.description: qsTr("now %1 bytes").arg(setup.d.networkMtu || 1450)
                             Layout.preferredWidth: 56
                             onStepped: (n) => network.step(n, -1)
                         }
@@ -1294,6 +1295,7 @@ Popup {
                         RepeatButton {
                             text: "+"
                             Accessible.name: qsTr("Network MTU, one step up")
+                            Accessible.description: qsTr("now %1 bytes").arg(setup.d.networkMtu || 1450)
                             Layout.preferredWidth: 56
                             onStepped: (n) => network.step(n, 1)
                         }
