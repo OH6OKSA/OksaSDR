@@ -1,6 +1,6 @@
 # OksaSDR
 
-**A FlexRadio client for iPad, iPhone, Mac, Android and Linux, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine.**
+**One app for the whole station: a FlexRadio client for iPad, iPhone, Mac, Android and Linux, built on the [AetherSDR](https://github.com/aethersdr/AetherSDR) engine.**
 
 [![Mobile iOS build](https://github.com/OH6OKSA/OksaSDR/actions/workflows/mobile-ios.yml/badge.svg?branch=mobile/oksasdr)](https://github.com/OH6OKSA/OksaSDR/actions/workflows/mobile-ios.yml)
 [![Mobile Android build](https://github.com/OH6OKSA/OksaSDR/actions/workflows/mobile-android.yml/badge.svg?branch=mobile/oksasdr)](https://github.com/OH6OKSA/OksaSDR/actions/workflows/mobile-android.yml)
@@ -15,7 +15,10 @@ SmartLink (or your own VPN), it is a complete station control surface.
 
 **One app for the whole station.** This is what makes OksaSDR different:
 the radio, the digital modes, the log and the spots are in one app on a
-phone, tablet or Mac, with no other program beside it.
+phone, tablet, Mac or Linux desktop, with no other program beside it.
+On a desktop, a FlexRadio program such as the AetherSDR desktop app works
+together with WSJT-X for FT8 and a logging program of your own; a phone
+or tablet cannot run programs side by side, so OksaSDR has them inside.
 
 - **FT8 and FT4** decoding and calling, Answer CQ / Keep CQ, Hound for
   DXpeditions, new-DXCC colours and PSK Reporter: no WSJT-X.
@@ -28,7 +31,9 @@ phone, tablet or Mac, with no other program beside it.
   Beacon Network's skimmers and PSK Reporter's digital reports (build
   204), each once, from near you; alerts for a call you hunt or a DXCC
   you need, whose Tune sets the radio for the spot's mode (FT8 / FT4 into
-  FTx); and *Heard me*, who hears your CQ: no cluster client.
+  FTx), with a list to pick from when several come; a tap on a spot tunes
+  and answers the station in FT8, FT4, CW, RTTY and PSK; and *Heard me*,
+  who hears your CQ: no cluster client.
 - **Voice keyer** (also with a headset on the radio's microphone),
   **MIDI controllers** (CTR2), **amplifiers and tuners**
   (Elecraft KPA1500, KPA500 / KAT500, RF-KIT RF2K-S, 4O3A Power Genius

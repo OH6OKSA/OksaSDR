@@ -1,6 +1,6 @@
 OksaSDR (formerly "AetherSDR Mobile")
 
-Welcome, and thank you for testing! OksaSDR is a FlexRadio client for iPad and iPhone, built on the AetherSDR engine. It talks to your radio directly: on your home network, from anywhere over SmartLink, or over your own VPN.
+Welcome, and thank you for testing! OksaSDR is one app for the whole station: the FlexRadio, FT8/FT4, RTTY, PSK, CW, a voice keyer, RADE, the log, spots and DX alerts, with no other programs beside it. Built on the AetherSDR engine, it talks to your radio directly: on your home network, over SmartLink, or over your own VPN.
 
 GETTING STARTED
 - Connect: enter your radio's IP address and tap Connect, or sign in to SmartLink on the Connect page.
@@ -36,7 +36,6 @@ PLEASE TRY
 - New: tap a CW or RTTY spot at low power: M2 or Answer goes out. [TX]
 - New: several Watch list alerts: ▼ and pick one.
 - A button as PTT (Setup > Transmit > PTT key > Learn), held and with PTT Tap on / off, at low power. [TX]
-- Slices on two or more bands (+ Slice, then Band on one): each gets its own panadapter, and the FTx tab decodes them all, FT8 on one and FT4 on another.
 
 REPORTING A PROBLEM
 Right after it happens, open Log in the top row and tap Send to the developer: a mail to oh6oksa@gmail.com opens with the log attached. Add your radio model and what you were doing. Screenshots or a screen recording help a lot.
