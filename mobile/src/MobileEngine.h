@@ -441,6 +441,8 @@ class MobileEngine : public QObject {
     // FTx tab in the drawer: the decode list scrolls on its own under fixed
     // main buttons (Michael Whaley's option B), or the whole tab scrolls.
     Q_PROPERTY(bool digiListScroll READ digiListScroll WRITE setDigiListScroll NOTIFY digiListScrollChanged)
+    // Whether Scroll has been chosen; before that a phone shows List only (roadmap 193).
+    Q_PROPERTY(bool digiListScrollChosen READ digiListScrollChosen NOTIFY digiListScrollChanged)
     // RADE digital voice in the app (FreeDV Radio Autoencoder): on or off,
     // whether this build has it, and its receive state (synced, snr,
     // callsign of the last end of over).
@@ -1555,6 +1557,7 @@ public:
     void setDigiFilter(const QString& filter);
     bool digiListScroll() const;
     void setDigiListScroll(bool on);
+    bool digiListScrollChosen() const;
     QVariantList digiFrequencies() const;
     // Calls CQ in the next slot, and keeps calling until someone answers.
     Q_INVOKABLE void digiCallCq();

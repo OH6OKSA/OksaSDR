@@ -20,7 +20,11 @@ ColumnLayout {
     // settings fold under More, and only the decode list scrolls, with a
     // bar that shows it does.
     property real viewHeight: 0
-    readonly property bool wantList: Engine.digiListScroll && viewHeight > 0
+    // Scroll as chosen; until it is, a phone shows List only (roadmap 193,
+    // the user's choice (a): Michael Walker VA3MW looked for a full screen
+    // of decodes and the way was hard to find), a tablet the whole tab.
+    readonly property bool listScroll: Engine.digiListScrollChosen ? Engine.digiListScroll : Theme.phoneLayout
+    readonly property bool wantList: listScroll && viewHeight > 0
     property bool settingsOpen: false
     readonly property bool settingsShown: !wantList || settingsOpen
     // List only means the list (roadmap 169, the user: "eihän list only
@@ -264,7 +268,7 @@ ColumnLayout {
             objectName: "digiScrollTab"
             Accessible.name: qsTr("%1: %2").arg(qsTr("Scroll")).arg(text)
             text: qsTr("Whole tab")
-            checked: !Engine.digiListScroll
+            checked: !digi.listScroll
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: Engine.digiListScroll = false
@@ -273,7 +277,7 @@ ColumnLayout {
             objectName: "digiScrollList"
             Accessible.name: qsTr("%1: %2").arg(qsTr("Scroll")).arg(text)
             text: qsTr("List only")
-            checked: Engine.digiListScroll
+            checked: digi.listScroll
             Layout.fillWidth: true
             focusPolicy: Qt.NoFocus
             onClicked: {

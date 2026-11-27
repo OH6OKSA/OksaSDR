@@ -682,9 +682,16 @@ bool MobileEngine::digiListScroll() const
         == QLatin1String("True");
 }
 
+bool MobileEngine::digiListScrollChosen() const
+{
+    return AppSettings::instance().contains(QStringLiteral("MobileDigiListScroll"));
+}
+
 void MobileEngine::setDigiListScroll(bool on)
 {
-    if (on == digiListScroll()) {
+    // Saved also when it is the stored value's default: the choice made
+    // stands over the phone's default (roadmap 193).
+    if (on == digiListScroll() && digiListScrollChosen()) {
         return;
     }
     AppSettings::instance().setValue(QStringLiteral("MobileDigiListScroll"), on ? QStringLiteral("True") : QStringLiteral("False"));

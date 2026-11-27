@@ -2138,6 +2138,10 @@ or a 4O3A Power Genius XL or Tuner Genius XL connected to the radio, an
   Whaley's request; since build 214 / Android beta 119 the list has the
   room: until then Decode, the bands and Show stayed fixed too and left
   a phone four rows, and the choice took effect only from a 520 px view.)
+  Until you choose, a phone shows *List only* and a tablet *Whole tab*
+  (since build 224 / Android beta 124: Michael Walker VA3MW looked for a
+  full screen of decodes and the way to it was hard to find); your choice
+  under **More** › Scroll stays.
 
   ![List only on a phone with the drawer at full height: the slot bar, the CQ row with More, then the decodes](manual/ft8-list-only.jpg)
 
